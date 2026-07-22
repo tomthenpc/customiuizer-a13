@@ -1,0 +1,29 @@
+<PreferenceScreen
+	xmlns:android="http://schemas.android.com/apk/res/android"
+	xmlns:app="http://schemas.android.com/apk/res-auto"
+	android:layout_width="match_parent"
+	android:layout_height="match_parent">
+
+	<name.monwf.customiuizer.prefs.PreferenceCategoryEx
+		android:title="@string/support"
+		android:key="pref_key_support">
+		<name.monwf.customiuizer.prefs.PreferenceEx
+			android:title="@string/support_repo_title"
+			android:summary="@string/support_repo_summ"
+			android:key="pref_key_website" />
+		<name.monwf.customiuizer.prefs.PreferenceEx
+			android:title="@string/support_donate_title"
+			android:summary="@string/support_donate_other_summ"
+			android:key="pref_key_payother" />
+		<name.monwf.customiuizer.prefs.PreferenceEx
+			android:title="@string/support_xda_title"
+			android:summary="@string/support_xda_summ"
+			android:key="pref_key_xda" />
+		<name.monwf.customiuizer.prefs.PreferenceEx
+			android:title="@string/support_4pda_title"
+			android:summary="@string/support_4pda_summ"
+			app:isPreferenceVisible="false"
+			android:key="pref_key_4pda" />
+	</name.monwf.customiuizer.prefs.PreferenceCategoryEx>
+
+</PreferenceScreen>
