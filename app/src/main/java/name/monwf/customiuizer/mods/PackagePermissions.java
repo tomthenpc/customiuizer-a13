@@ -120,8 +120,9 @@ public class PackagePermissions {
 			@Override
 			@SuppressWarnings("unchecked")
 			public Object intercept(XposedInterface.Chain chain) throws Throwable {
+				int argCount = chain.getArgs().size();
 				Object result = chain.proceed();
-				if (chain.getArgs().size() < 6) return result;
+				if (argCount < 6) return result;
 				List<ResolveInfo> infos = (List<ResolveInfo>)result;
 				if (infos != null) {
 					for (ResolveInfo info: infos)
