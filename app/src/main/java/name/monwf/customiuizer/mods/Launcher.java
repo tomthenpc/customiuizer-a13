@@ -944,25 +944,31 @@ public class Launcher {
                 @Override
                 protected void after(final AfterHookCallback param) throws Throwable {
                     final Activity act = (Activity)param.getThisObject();
+                    BroadcastReceiver oldReceiver = (BroadcastReceiver) XposedHelpers.getAdditionalInstanceField(act, "secretCodeReceiver");
+                    if (oldReceiver != null) {
+                        try { act.unregisterReceiver(oldReceiver); } catch (Throwable ignored) {}
+                    }
                     IntentFilter intentFilter = new IntentFilter();
                     intentFilter.addAction("android.telephony.action.SECRET_CODE");
                     intentFilter.addDataAuthority("233233", null);
                     intentFilter.addDataScheme("android_secret_code");
 
-                    act.registerReceiver(new BroadcastReceiver() {
+                    BroadcastReceiver secretCodeReceiver = new BroadcastReceiver() {
                         @Override
                         public void onReceive(Context context, Intent intent) {
                             try {
                                 if (intent.getAction() == null) return;
                                 if ("android.telephony.action.SECRET_CODE".equals(intent.getAction())) {
-                                    XposedHelpers.setAdditionalInstanceField(param.getThisObject(), "fromSecretCode", true);
-                                    XposedHelpers.callMethod(param.getThisObject(), "startSecurityHide");
+                                    XposedHelpers.setAdditionalInstanceField(act, "fromSecretCode", true);
+                                    XposedHelpers.callMethod(act, "startSecurityHide");
                                 }
                             } catch (Throwable t) {
                                 XposedHelpers.log(t);
                             }
                         }
-                    }, intentFilter);
+                    };
+                    act.registerReceiver(secretCodeReceiver, intentFilter);
+                    XposedHelpers.setAdditionalInstanceField(act, "secretCodeReceiver", secretCodeReceiver);
                 }
             });
         }
@@ -1356,20 +1362,27 @@ public class Launcher {
         ModuleHelper.findAndHookMethod("com.miui.home.recents.views.RecentsContainer", lpparam.getClassLoader(), "onAttachedToWindow", new MethodHook() {
             @Override
             protected void after(final AfterHookCallback param) throws Throwable {
-                Context mContext = (Context) XposedHelpers.callMethod(param.getThisObject(), "getContext");
-                mContext.registerReceiver(new BroadcastReceiver() {
+                final Object recents = param.getThisObject();
+                final Context mContext = (Context) XposedHelpers.callMethod(recents, "getContext");
+                BroadcastReceiver oldReceiver = (BroadcastReceiver) XposedHelpers.getAdditionalInstanceField(recents, "dismissRecentsReceiver");
+                if (oldReceiver != null) {
+                    try { mContext.unregisterReceiver(oldReceiver); } catch (Throwable ignored) {}
+                }
+                BroadcastReceiver dismissRecentsReceiver = new BroadcastReceiver() {
                     @Override
                     public void onReceive(Context context, Intent intent) {
                         try {
                             String pkgName = intent.getStringExtra("package");
                             if (pkgName != null) {
-                                XposedHelpers.callMethod(param.getThisObject(), "dismissRecentsToLaunchTargetTaskOrHome", pkgName, true);
+                                XposedHelpers.callMethod(recents, "dismissRecentsToLaunchTargetTaskOrHome", pkgName, true);
                             }
                         } catch (Throwable t) {
                             XposedHelpers.log(t);
                         }
                     }
-                }, new IntentFilter(ACTION_PREFIX + "dismissRecentsWhenFreeWindowOpen"), Context.RECEIVER_EXPORTED);
+                };
+                mContext.registerReceiver(dismissRecentsReceiver, new IntentFilter(ACTION_PREFIX + "dismissRecentsWhenFreeWindowOpen"), Context.RECEIVER_EXPORTED);
+                XposedHelpers.setAdditionalInstanceField(recents, "dismissRecentsReceiver", dismissRecentsReceiver);
             }
         });
 

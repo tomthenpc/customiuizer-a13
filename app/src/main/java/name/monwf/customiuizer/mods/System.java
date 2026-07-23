@@ -121,8 +121,6 @@ import java.util.Map;
 import java.util.Properties;
 import java.util.Set;
 import java.util.TimeZone;
-import java.util.Timer;
-import java.util.TimerTask;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.function.Consumer;
 import java.util.function.Predicate;
@@ -396,18 +394,25 @@ public class System {
         ModuleHelper.hookAllConstructors("com.android.keyguard.KeyguardSecurityContainerController", lpparam.getClassLoader(), new MethodHook() {
             @Override
             protected void after(final AfterHookCallback param) throws Throwable {
-                Context mContext = (Context)XposedHelpers.callMethod(param.getThisObject(), "getContext");
-                mContext.registerReceiver(new BroadcastReceiver() {
+                final Object controller = param.getThisObject();
+                final Context mContext = (Context)XposedHelpers.callMethod(controller, "getContext");
+                BroadcastReceiver oldReceiver = (BroadcastReceiver) XposedHelpers.getAdditionalInstanceField(controller, "strongAuthReceiver");
+                if (oldReceiver != null) {
+                    try { mContext.unregisterReceiver(oldReceiver); } catch (Throwable ignored) {}
+                }
+                BroadcastReceiver strongAuthReceiver = new BroadcastReceiver() {
                     @Override
                     public void onReceive(Context context, Intent intent) {
                         try {
-                            Object mCallback = XposedHelpers.getObjectField(param.getThisObject(), "mKeyguardSecurityCallback");
+                            Object mCallback = XposedHelpers.getObjectField(controller, "mKeyguardSecurityCallback");
                             XposedHelpers.callMethod(mCallback, "reportUnlockAttempt", 0, true, 0, 0);
                         } catch (Throwable t) {
                             XposedHelpers.log(t);
                         }
                     }
-                }, new IntentFilter(ACTION_PREFIX + "UnlockStrongAuth"), Context.RECEIVER_NOT_EXPORTED);
+                };
+                mContext.registerReceiver(strongAuthReceiver, new IntentFilter(ACTION_PREFIX + "UnlockStrongAuth"), Context.RECEIVER_NOT_EXPORTED);
+                XposedHelpers.setAdditionalInstanceField(controller, "strongAuthReceiver", strongAuthReceiver);
             }
         });
 
@@ -433,12 +438,17 @@ public class System {
         ModuleHelper.findAndHookMethod("com.android.systemui.keyguard.KeyguardViewMediator", lpparam.getClassLoader(), "setupLocked", new MethodHook() {
             @Override
             protected void after(final AfterHookCallback param) throws Throwable {
-                Context mContext = (Context) XposedHelpers.getObjectField(param.getThisObject(), "mContext");
+                final Object mediator = param.getThisObject();
+                final Context mContext = (Context) XposedHelpers.getObjectField(mediator, "mContext");
+                BroadcastReceiver oldReceiver = (BroadcastReceiver) XposedHelpers.getAdditionalInstanceField(mediator, "smartLockReceiver");
+                if (oldReceiver != null) {
+                    try { mContext.unregisterReceiver(oldReceiver); } catch (Throwable ignored) {}
+                }
                 IntentFilter filter = new IntentFilter();
                 filter.addAction(WifiManager.NETWORK_STATE_CHANGED_ACTION);
                 filter.addAction(ACTION_PREFIX + "UnlockSetForced");
                 filter.addAction(ACTION_PREFIX + "UnlockBTConnection");
-                mContext.registerReceiver(new BroadcastReceiver() {
+                BroadcastReceiver smartLockReceiver = new BroadcastReceiver() {
                     @Override
                     public void onReceive(Context context, Intent intent) {
                         String action = intent.getAction();
@@ -446,7 +456,7 @@ public class System {
                         if (action.equals(ACTION_PREFIX + "UnlockSetForced"))
                             forcedOption = intent.getIntExtra("system_noscreenlock_force", -1);
 
-                        boolean isShowing = (boolean) XposedHelpers.callMethod(param.getThisObject(), "isShowing");
+                        boolean isShowing = (boolean) XposedHelpers.callMethod(mediator, "isShowing");
                         if (!isShowing) return;
                         if (!isAuthOnce()) return;
 
@@ -463,15 +473,15 @@ public class System {
                                 isTrusted = isTrustedBt(lpparam.getClassLoader());
                             }
 
-                        XposedHelpers.setAdditionalStaticField(param.getThisObject(), "isScreenLockDisabled", isTrusted);
+                        XposedHelpers.setAdditionalStaticField(mediator, "isScreenLockDisabled", isTrusted);
                         if (isTrusted) {
                             boolean skip = MainModule.mPrefs.getBoolean("system_noscreenlock_skip");
                             if (skip)
-                                XposedHelpers.callMethod(param.getThisObject(), "keyguardDone");
+                                XposedHelpers.callMethod(mediator, "keyguardDone");
                             else
-                                XposedHelpers.callMethod(param.getThisObject(), "resetStateLocked");
+                                XposedHelpers.callMethod(mediator, "resetStateLocked");
                             isUnlockedInnerCall = true;
-//                            XposedHelpers.callMethod(XposedHelpers.getObjectField(param.getThisObject(), "mUpdateMonitor"), "reportSuccessfulStrongAuthUnlockAttempt");
+//                            XposedHelpers.callMethod(XposedHelpers.getObjectField(mediator, "mUpdateMonitor"), "reportSuccessfulStrongAuthUnlockAttempt");
 					Intent unlockIntent = new Intent(ACTION_PREFIX + "UnlockStrongAuth");
 					unlockIntent.setPackage("com.android.systemui");
 					mContext.sendBroadcast(unlockIntent);
@@ -482,7 +492,9 @@ public class System {
                             XposedHelpers.log(t);
                         }
                     }
-                }, filter, Context.RECEIVER_EXPORTED);
+                };
+                mContext.registerReceiver(smartLockReceiver, filter, Context.RECEIVER_EXPORTED);
+                XposedHelpers.setAdditionalInstanceField(mediator, "smartLockReceiver", smartLockReceiver);
             }
         });
 
@@ -543,12 +555,17 @@ public class System {
         ModuleHelper.hookAllConstructors("com.android.systemui.statusbar.policy.BluetoothControllerImpl", lpparam.getClassLoader(), new MethodHook() {
             @Override
             protected void after(final AfterHookCallback param) {
-                Context mContext = (Context)param.getArgs()[0];
-                mContext.registerReceiver(new BroadcastReceiver() {
+                final Object controller = param.getThisObject();
+                final Context mContext = (Context)param.getArgs()[0];
+                BroadcastReceiver oldReceiver = (BroadcastReceiver) XposedHelpers.getAdditionalInstanceField(controller, "fetchCachedDevicesReceiver");
+                if (oldReceiver != null) {
+                    try { mContext.unregisterReceiver(oldReceiver); } catch (Throwable ignored) {}
+                }
+                BroadcastReceiver fetchCachedDevicesReceiver = new BroadcastReceiver() {
                     public void onReceive(final Context context, Intent intent) {
                         ArrayList<BluetoothDevice> deviceList = new ArrayList<BluetoothDevice>();
                         Intent updateIntent = new Intent(GlobalActions.EVENT_PREFIX + "CACHEDDEVICESUPDATE");
-                        Collection<?> cachedDevices = (Collection<?>)XposedHelpers.callMethod(param.getThisObject(), "getDevices");
+                        Collection<?> cachedDevices = (Collection<?>)XposedHelpers.callMethod(controller, "getDevices");
                         if (cachedDevices != null)
                             for (Object device: cachedDevices) {
                                 BluetoothDevice mDevice = (BluetoothDevice)XposedHelpers.getObjectField(device, "mDevice");
@@ -558,7 +575,9 @@ public class System {
                         updateIntent.setPackage(Helpers.modulePkg);
                         mContext.sendBroadcast(updateIntent);
                     }
-                }, new IntentFilter(ACTION_PREFIX + "FetchCachedDevices"), Context.RECEIVER_EXPORTED);
+                };
+                mContext.registerReceiver(fetchCachedDevicesReceiver, new IntentFilter(ACTION_PREFIX + "FetchCachedDevices"), Context.RECEIVER_EXPORTED);
+                XposedHelpers.setAdditionalInstanceField(controller, "fetchCachedDevicesReceiver", fetchCachedDevicesReceiver);
             }
         });
 
@@ -957,37 +976,38 @@ public class System {
         boolean ccShowSeconds = getCCShowSeconds();
         boolean finalSbShowSeconds = getShowSeconds();
         Context mContext = (Context) XposedHelpers.getObjectField(clockController, "mContext");
-        Timer scheduleTimer = (Timer) XposedHelpers.getAdditionalInstanceField(clockController, "scheduleTimer");
-        if (scheduleTimer != null) {
-            scheduleTimer.cancel();
+        Handler clockHandler = (Handler) XposedHelpers.getAdditionalInstanceField(clockController, "clockHandler");
+        Runnable clockRunnable = (Runnable) XposedHelpers.getAdditionalInstanceField(clockController, "clockRunnable");
+        if (clockHandler != null && clockRunnable != null) {
+            clockHandler.removeCallbacks(clockRunnable);
         }
         if (ccShowSeconds || finalSbShowSeconds) {
-            final Handler mClockHandler = new Handler(mContext.getMainLooper());
-            long delay = 1000 - java.lang.System.currentTimeMillis() % 1000;
-            Timer timer = new Timer();
-            timer.scheduleAtFixedRate(new TimerTask() {
+            if (clockHandler == null) {
+                clockHandler = new Handler(mContext.getMainLooper());
+                XposedHelpers.setAdditionalInstanceField(clockController, "clockHandler", clockHandler);
+            }
+            final Handler handler = clockHandler;
+            final Object controller = clockController;
+            clockRunnable = new Runnable() {
                 @Override
                 public void run() {
-                    mClockHandler.post(new Runnable() {
-                        @Override
-                        public void run() {
-                            Object mCalendar = XposedHelpers.getObjectField(clockController, "mCalendar");
-                            XposedHelpers.callMethod(mCalendar, "setTimeInMillis", java.lang.System.currentTimeMillis());
-                            XposedHelpers.setObjectField(clockController, "mIs24", DateFormat.is24HourFormat(mContext));
-                            ArrayList<Object> mClockListeners = (ArrayList<Object>) XposedHelpers.getObjectField(clockController, "mClockListeners");
-                            Iterator<Object> it = mClockListeners.iterator();
-                            while (it.hasNext()) {
-                                Object clock = it.next();
-                                Object showSeconds = XposedHelpers.getAdditionalInstanceField(clock, "showSeconds");
-                                if (showSeconds != null) {
-                                    XposedHelpers.callMethod(clock, "onTimeChange");
-                                }
-                            }
+                    Object mCalendar = XposedHelpers.getObjectField(controller, "mCalendar");
+                    XposedHelpers.callMethod(mCalendar, "setTimeInMillis", java.lang.System.currentTimeMillis());
+                    XposedHelpers.setObjectField(controller, "mIs24", DateFormat.is24HourFormat(mContext));
+                    ArrayList<Object> mClockListeners = (ArrayList<Object>) XposedHelpers.getObjectField(controller, "mClockListeners");
+                    Iterator<Object> it = mClockListeners.iterator();
+                    while (it.hasNext()) {
+                        Object clock = it.next();
+                        Object showSeconds = XposedHelpers.getAdditionalInstanceField(clock, "showSeconds");
+                        if (showSeconds != null) {
+                            XposedHelpers.callMethod(clock, "onTimeChange");
                         }
-                    });
+                    }
+                    handler.postDelayed(this, 1000);
                 }
-            }, delay, 1000);
-            XposedHelpers.setAdditionalInstanceField(clockController, "scheduleTimer", timer);
+            };
+            XposedHelpers.setAdditionalInstanceField(clockController, "clockRunnable", clockRunnable);
+            handler.postDelayed(clockRunnable, 1000 - java.lang.System.currentTimeMillis() % 1000);
         }
     }
     public static void StatusBarClockTweakHook(PackageReadyParam lpparam) {
@@ -996,17 +1016,23 @@ public class System {
         MethodHook ScheduleHook = new MethodHook() {
             @Override
             protected void after(final AfterHookCallback param) throws Throwable {
-                initSecondTimer(param.getThisObject());
-                Context mContext = (Context) XposedHelpers.getObjectField(param.getThisObject(), "mContext");
+                final Object clockController = param.getThisObject();
+                initSecondTimer(clockController);
+                final Context mContext = (Context) XposedHelpers.getObjectField(clockController, "mContext");
+                BroadcastReceiver oldReceiver = (BroadcastReceiver) XposedHelpers.getAdditionalInstanceField(clockController, "mUpdateTimeReceiver");
+                if (oldReceiver != null) {
+                    try { mContext.unregisterReceiver(oldReceiver); } catch (Throwable ignored) {}
+                }
                 IntentFilter timeSetIntent = new IntentFilter();
                 timeSetIntent.addAction("android.intent.action.TIME_SET");
                 BroadcastReceiver mUpdateTimeReceiver = new BroadcastReceiver() {
                     @Override
                     public void onReceive(Context context, Intent intent) {
-                        initSecondTimer(param.getThisObject());
+                        initSecondTimer(clockController);
                     }
                 };
                 mContext.registerReceiver(mUpdateTimeReceiver, timeSetIntent);
+                XposedHelpers.setAdditionalInstanceField(clockController, "mUpdateTimeReceiver", mUpdateTimeReceiver);
             }
         };
         if (ccClockTweak || statusbarClockTweak) {
@@ -2810,15 +2836,20 @@ public class System {
         ModuleHelper.hookAllMethods("com.android.server.power.PowerManagerService", lpparam.getClassLoader(), "systemReady", new MethodHook() {
             @Override
             protected void after(final AfterHookCallback param) throws Throwable {
-                Context mContext = (Context)XposedHelpers.getObjectField(param.getThisObject(), "mContext");
-                if (mContext != null)
-                    mContext.registerReceiver(new BroadcastReceiver() {
-                        @Override
-                        public void onReceive(Context context, Intent intent) {
-                            try {
-                                boolean mConnected = intent.getBooleanExtra("connected", false);
-                                if (mConnected && mConnected != mUSBConnected) try {
-                                    int mPlugType = XposedHelpers.getIntField(param.getThisObject(), "mPlugType");
+                final Object service = param.getThisObject();
+                final Context mContext = (Context)XposedHelpers.getObjectField(service, "mContext");
+                if (mContext == null) return;
+                BroadcastReceiver oldReceiver = (BroadcastReceiver) XposedHelpers.getAdditionalInstanceField(service, "usbStateReceiver");
+                if (oldReceiver != null) {
+                    try { mContext.unregisterReceiver(oldReceiver); } catch (Throwable ignored) {}
+                }
+                BroadcastReceiver usbStateReceiver = new BroadcastReceiver() {
+                    @Override
+                    public void onReceive(Context context, Intent intent) {
+                        try {
+                            boolean mConnected = intent.getBooleanExtra("connected", false);
+                            if (mConnected && mConnected != mUSBConnected) try {
+                                int mPlugType = XposedHelpers.getIntField(service, "mPlugType");
                                     if (mPlugType != BatteryManager.BATTERY_PLUGGED_USB) return;
                                     String func = MainModule.mPrefs.getString("system_defaultusb", "none");
                                     if ("none".equals(func) || "1".equals(func)) return;
@@ -2834,7 +2865,9 @@ public class System {
                                 XposedHelpers.log(t);
                             }
                         }
-                    }, new IntentFilter("android.hardware.usb.action.USB_STATE"));
+                    };
+                mContext.registerReceiver(usbStateReceiver, new IntentFilter("android.hardware.usb.action.USB_STATE"));
+                XposedHelpers.setAdditionalInstanceField(service, "usbStateReceiver", usbStateReceiver);
             }
         });
 
@@ -2962,31 +2995,42 @@ public class System {
         ModuleHelper.hookAllConstructors("com.android.systemui.statusbar.phone.MiuiPhoneStatusBarPolicy", lpparam.getClassLoader(), new MethodHook() {
             @Override
             protected void after(final AfterHookCallback param) throws Throwable {
-                Context mContext = (Context)XposedHelpers.getObjectField(param.getThisObject(), "mContext");
-                XposedHelpers.setAdditionalInstanceField(param.getThisObject(), "mNextAlarmTime", ModuleHelper.getNextMIUIAlarmTime(mContext));
+                final Object thisObject = param.getThisObject();
+                Context mContext = (Context)XposedHelpers.getObjectField(thisObject, "mContext");
+                XposedHelpers.setAdditionalInstanceField(thisObject, "mNextAlarmTime", ModuleHelper.getNextMIUIAlarmTime(mContext));
                 ContentResolver resolver = mContext.getContentResolver();
+
+                ContentObserver oldObserver = (ContentObserver) XposedHelpers.getAdditionalInstanceField(thisObject, "alarmObserver");
+                if (oldObserver != null) resolver.unregisterContentObserver(oldObserver);
+                BroadcastReceiver oldReceiver = (BroadcastReceiver) XposedHelpers.getAdditionalInstanceField(thisObject, "alarmReceiver");
+                if (oldReceiver != null) {
+                    try { mContext.unregisterReceiver(oldReceiver); } catch (Throwable ignored) {}
+                }
+
                 ContentObserver alarmObserver = new ContentObserver(new Handler()) {
                     @Override
                     public void onChange(boolean selfChange) {
                         if (selfChange) return;
-                        XposedHelpers.setAdditionalInstanceField(param.getThisObject(), "mNextAlarmTime", ModuleHelper.getNextMIUIAlarmTime(mContext));
-                        updateAlarmVisibility(param.getThisObject(), lastState);
+                        XposedHelpers.setAdditionalInstanceField(thisObject, "mNextAlarmTime", ModuleHelper.getNextMIUIAlarmTime(mContext));
+                        updateAlarmVisibility(thisObject, lastState);
                     }
                 };
                 resolver.registerContentObserver(Settings.System.getUriFor("next_alarm_clock_formatted"), false, alarmObserver);
+                XposedHelpers.setAdditionalInstanceField(thisObject, "alarmObserver", alarmObserver);
 
                 IntentFilter filter = new IntentFilter();
                 filter.addAction("android.intent.action.TIME_TICK");
                 filter.addAction("android.intent.action.TIME_SET");
                 filter.addAction("android.intent.action.TIMEZONE_CHANGED");
                 filter.addAction("android.intent.action.LOCALE_CHANGED");
-                final Object thisObject = param.getThisObject();
-                mContext.registerReceiver(new BroadcastReceiver() {
+                BroadcastReceiver alarmReceiver = new BroadcastReceiver() {
                     @Override
                     public void onReceive(Context context, Intent intent) {
                         updateAlarmVisibility(thisObject, lastState);
                     }
-                }, filter);
+                };
+                mContext.registerReceiver(alarmReceiver, filter);
+                XposedHelpers.setAdditionalInstanceField(thisObject, "alarmReceiver", alarmReceiver);
             }
         });
 
@@ -4214,7 +4258,12 @@ public class System {
         ModuleHelper.findAndHookMethod("com.android.server.wm.ActivityTaskManagerService", lpparam.getClassLoader(), "onSystemReady", new MethodHook() {
             @Override
             protected void after(final AfterHookCallback param) throws Throwable {
-                Context mContext = (Context)XposedHelpers.getObjectField(param.getThisObject(), "mContext");
+                final Object service = param.getThisObject();
+                final Context mContext = (Context)XposedHelpers.getObjectField(service, "mContext");
+                BroadcastReceiver oldReceiver = (BroadcastReceiver) XposedHelpers.getAdditionalInstanceField(service, "freeFormReceiver");
+                if (oldReceiver != null) {
+                    try { mContext.unregisterReceiver(oldReceiver); } catch (Throwable ignored) {}
+                }
                 IntentFilter intentFilter = new IntentFilter();
                 intentFilter.addAction(ACTION_PREFIX + "SetFreeFormPackage");
                 BroadcastReceiver mReceiver = new BroadcastReceiver() {
@@ -4230,6 +4279,7 @@ public class System {
                     }
                 };
                 mContext.registerReceiver(mReceiver, intentFilter, Context.RECEIVER_EXPORTED);
+                XposedHelpers.setAdditionalInstanceField(service, "freeFormReceiver", mReceiver);
             }
         });
         ModuleHelper.hookAllMethods("com.android.server.wm.ActivityStarter", lpparam.getClassLoader(), "executeRequest", new MethodHook() {
@@ -4423,20 +4473,27 @@ public class System {
         ModuleHelper.findAndHookMethod("com.android.server.wm.ActivityTaskManagerService", lpparam.getClassLoader(), "onSystemReady", new MethodHook() {
             @Override
             protected void after(final AfterHookCallback param) throws Throwable {
-                Context mContext = (Context)XposedHelpers.getObjectField(param.getThisObject(), "mContext");
+                final Object service = param.getThisObject();
+                final Context mContext = (Context)XposedHelpers.getObjectField(service, "mContext");
                 restoreFwAppsInSetting(mContext);
                 Class<?> MiuiMultiWindowAdapter = findClass("android.util.MiuiMultiWindowAdapter", lpparam.getClassLoader());
                 List<String> blackList = (List<String>) XposedHelpers.getStaticObjectField(MiuiMultiWindowAdapter, "FREEFORM_BLACK_LIST");
                 blackList.clear();
-                mContext.registerReceiver(new BroadcastReceiver() {
+                BroadcastReceiver oldReceiver = (BroadcastReceiver) XposedHelpers.getAdditionalInstanceField(service, "freeformFullscreenReceiver");
+                if (oldReceiver != null) {
+                    try { mContext.unregisterReceiver(oldReceiver); } catch (Throwable ignored) {}
+                }
+                BroadcastReceiver freeformReceiver = new BroadcastReceiver() {
                     @Override
                     public void onReceive(Context context, Intent intent) {
                         String action = intent.getAction();
                         if ("miui.intent.action_launch_fullscreen_from_freeform".equals(action)) {
-                            XposedHelpers.setAdditionalInstanceField(param.getThisObject(), "skipFreeFormStateClear", true);
+                            XposedHelpers.setAdditionalInstanceField(service, "skipFreeFormStateClear", true);
                         }
                     }
-                }, new IntentFilter("miui.intent.action_launch_fullscreen_from_freeform"), Context.RECEIVER_EXPORTED);
+                };
+                mContext.registerReceiver(freeformReceiver, new IntentFilter("miui.intent.action_launch_fullscreen_from_freeform"), Context.RECEIVER_EXPORTED);
+                XposedHelpers.setAdditionalInstanceField(service, "freeformFullscreenReceiver", freeformReceiver);
             }
         });
 

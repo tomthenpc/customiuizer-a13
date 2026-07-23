@@ -56,6 +56,65 @@ public class Controls {
 	private static boolean isWaitingForVolumeLongPressed = false;
 	private static boolean wasRaise2WakeEnabled = false;
 	private static Handler mHandler;
+	private static Context sScreenOnContext;
+	private static Context sPowerContext;
+	private static PowerManager sPowerManager;
+	private static final Runnable mPowerLongPressRunnable = new Runnable() {
+		@Override
+		@SuppressLint("Wakelock")
+		public void run() {
+			if (isPowerPressed) {
+				isPowerLongPressed = true;
+				Context ctx = sPowerContext;
+				PowerManager pm = sPowerManager;
+				if (ctx == null || pm == null) return;
+
+				if (Helpers.mWakeLock == null) {
+					Helpers.mWakeLock = pm.newWakeLock(PowerManager.PARTIAL_WAKE_LOCK, "miuizer:flashlight");
+				}
+
+				if (!isTorchEnabled(ctx) || !Helpers.mWakeLock.isHeld()) {
+					setTorch(ctx, true);
+					if (!Helpers.mWakeLock.isHeld()) Helpers.mWakeLock.acquire(600000);
+				} else {
+					setTorch(ctx, true);
+					if (Helpers.mWakeLock.isHeld()) Helpers.mWakeLock.release();
+				}
+			}
+			isPowerPressed = false;
+			isWaitingForPowerLongPressed = false;
+		}
+	};
+
+	private static Context sVolumeContext;
+	private static PowerManager sVolumePowerManager;
+	private static KeyEvent sVolumeKeyEvent;
+	private static final Runnable mVolumeLongPressRunnable = new Runnable() {
+		@Override
+		public void run() {
+			if (isVolumePressed && GlobalActions.isMediaActionsAllowed(sVolumeContext)) {
+				isVolumeLongPressed = true;
+				KeyEvent keyEvent = sVolumeKeyEvent;
+				if (keyEvent == null) return;
+				switch (keyEvent.getKeyCode()) {
+					case KeyEvent.KEYCODE_VOLUME_UP:
+						int pref_mediaUp = MainModule.mPrefs.getStringAsInt("controls_volumemedia_up", 0);
+						if (pref_mediaUp == 0) break;
+						GlobalActions.sendDownUpKeyEvent(sVolumeContext, pref_mediaUp, true);
+						break;
+					case KeyEvent.KEYCODE_VOLUME_DOWN:
+						int pref_mediaDown = MainModule.mPrefs.getStringAsInt("controls_volumemedia_down", 0);
+						if (pref_mediaDown == 0) break;
+						GlobalActions.sendDownUpKeyEvent(sVolumeContext, pref_mediaDown, true);
+						break;
+					default:
+						break;
+				}
+			}
+			isVolumePressed = false;
+			isWaitingForVolumeLongPressed = false;
+		}
+	};
 
 	private static boolean isTorchEnabled(Context mContext) {
 		return Settings.Global.getInt(mContext.getContentResolver(), "torch_state", 0) != 0;
@@ -88,7 +147,11 @@ public class Controls {
 			@Override
 			protected void after(AfterHookCallback param) throws Throwable {
 				Context mContext = (Context)XposedHelpers.getObjectField(param.getThisObject(), "mContext");
+				if (sScreenOnContext != null) {
+					try { sScreenOnContext.unregisterReceiver(mScreenOnReceiver); } catch (Throwable ignored) {}
+				}
 				mContext.registerReceiver(mScreenOnReceiver, new IntentFilter(Intent.ACTION_SCREEN_ON));
+				sScreenOnContext = mContext;
 			}
 		});
 
@@ -117,33 +180,14 @@ public class Controls {
 					isPowerLongPressed = false;
 
 					mHandler = (Handler)XposedHelpers.getObjectField(param.getThisObject(), "mHandler");
+					sPowerContext = mContext;
+					sPowerManager = mPowerManager;
 
 					int longPressDelay = (MainModule.mPrefs.getBoolean("controls_powerflash_delay") ? ViewConfiguration.getLongPressTimeout() * 3 : ViewConfiguration.getLongPressTimeout()) + 500;
 					// Post only one delayed runnable that waits for long press timeout
 					if (!isWaitingForPowerLongPressed) {
-						mHandler.postDelayed(new Runnable() {
-							@Override
-							@SuppressLint("Wakelock")
-							public void run() {
-								if (isPowerPressed) {
-									isPowerLongPressed = true;
-
-									if (Helpers.mWakeLock == null) {
-										Helpers.mWakeLock = mPowerManager.newWakeLock(PowerManager.PARTIAL_WAKE_LOCK, "miuizer:flashlight");
-									}
-
-									if (!isTorchEnabled(mContext) || !Helpers.mWakeLock.isHeld()) {
-										setTorch(mContext, true);
-										if (!Helpers.mWakeLock.isHeld()) Helpers.mWakeLock.acquire(600000);
-									} else {
-										setTorch(mContext, true);
-										if (Helpers.mWakeLock.isHeld()) Helpers.mWakeLock.release();
-									}
-								}
-								isPowerPressed = false;
-								isWaitingForPowerLongPressed = false;
-							}
-						}, longPressDelay);
+						mHandler.removeCallbacks(mPowerLongPressRunnable);
+						mHandler.postDelayed(mPowerLongPressRunnable, longPressDelay);
 					}
 
 					isWaitingForPowerLongPressed = true;
@@ -151,6 +195,7 @@ public class Controls {
 				}
 
 				if (action == KeyEvent.ACTION_UP) {
+					if (mHandler != null) mHandler.removeCallbacks(mPowerLongPressRunnable);
 					if (isPowerPressed && !isPowerLongPressed) try {
 						if (isTorchEnabled(mContext)) setTorch(mContext, false);
 						if (Helpers.mWakeLock != null && Helpers.mWakeLock.isHeld()) Helpers.mWakeLock.release();
@@ -196,32 +241,14 @@ public class Controls {
 					isVolumeLongPressed = false;
 
 					mHandler = (Handler)XposedHelpers.getObjectField(param.getThisObject(), "mHandler");
+					sVolumeContext = mContext;
+					sVolumePowerManager = mPowerManager;
+					sVolumeKeyEvent = keyEvent;
 
 					// Post only one delayed runnable that waits for long press timeout
 					if (mHandler != null && !isWaitingForVolumeLongPressed) {
-						mHandler.postDelayed(new Runnable() {
-							public void run() {
-								if (isVolumePressed && GlobalActions.isMediaActionsAllowed(mContext)) {
-									isVolumeLongPressed = true;
-									switch (keyEvent.getKeyCode()) {
-										case KeyEvent.KEYCODE_VOLUME_UP:
-											int pref_mediaUp = MainModule.mPrefs.getStringAsInt("controls_volumemedia_up", 0);
-											if (pref_mediaUp == 0) break;
-											GlobalActions.sendDownUpKeyEvent(mContext, pref_mediaUp, true);
-											break;
-										case KeyEvent.KEYCODE_VOLUME_DOWN:
-											int pref_mediaDown = MainModule.mPrefs.getStringAsInt("controls_volumemedia_down", 0);
-											if (pref_mediaDown == 0) break;
-											GlobalActions.sendDownUpKeyEvent(mContext, pref_mediaDown, true);
-											break;
-										default:
-											break;
-									}
-								}
-								isVolumePressed = false;
-								isWaitingForVolumeLongPressed = false;
-							}
-						}, ViewConfiguration.getLongPressTimeout());
+						mHandler.removeCallbacks(mVolumeLongPressRunnable);
+						mHandler.postDelayed(mVolumeLongPressRunnable, ViewConfiguration.getLongPressTimeout());
 					}
 
 					isWaitingForVolumeLongPressed = true;
@@ -230,8 +257,7 @@ public class Controls {
 
 				if (action == KeyEvent.ACTION_UP) {
 					isVolumePressed = false;
-					// Kill all callbacks (removing only posted Runnable is not working... no idea)
-					if (mHandler != null) mHandler.removeCallbacksAndMessages(null);
+					if (mHandler != null) mHandler.removeCallbacks(mVolumeLongPressRunnable);
 					if (!isVolumeLongPressed) {
 						AudioManager am = (AudioManager)mContext.getSystemService(Context.AUDIO_SERVICE);
 						TelecomManager tm = (TelecomManager)mContext.getSystemService(Context.TELECOM_SERVICE);

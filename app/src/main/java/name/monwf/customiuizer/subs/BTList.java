@@ -9,6 +9,7 @@ import android.content.Intent;
 import android.content.IntentFilter;
 import android.os.Bundle;
 import android.os.Handler;
+import android.os.Looper;
 import android.util.Pair;
 import android.view.LayoutInflater;
 import android.view.View;
@@ -40,6 +41,7 @@ public class BTList extends SubFragment {
 	Handler handler;
 	BTAdapter btAdapter1;
 	BTAdapter btAdapter2;
+	Context mAppContext;
 	List<Pair<String, String>> btList = new ArrayList<Pair<String, String>>();
 	Set<String> addresses = new LinkedHashSet<String>();
 	BroadcastReceiver devicesReceiver = new BroadcastReceiver() {
@@ -73,9 +75,10 @@ public class BTList extends SubFragment {
 		key = args.getString("key");
 		addresses = new LinkedHashSet<String>(AppHelper.getStringSetOfAppPrefs(key, new LinkedHashSet<String>()));
 
-		btAdapter1 = new BTAdapter(getContext(), true);
-		btAdapter2 = new BTAdapter(getContext(), false);
-		handler = new Handler();
+		mAppContext = requireContext().getApplicationContext();
+		btAdapter1 = new BTAdapter(mAppContext, true);
+		btAdapter2 = new BTAdapter(mAppContext, false);
+		handler = new Handler(Looper.getMainLooper());
 
 		if (getView() != null) {
 			listView1 = getView().findViewById(android.R.id.text1);
@@ -133,6 +136,7 @@ public class BTList extends SubFragment {
 	Runnable getCachedDevices = new Runnable() {
 		@Override
 		public void run() {
+			if (!BluetoothAdapter.getDefaultAdapter().isEnabled()) return;
 			fetchCachedDevices();
 			handler.postDelayed(getCachedDevices, fetchInterval);
 		}
@@ -141,7 +145,7 @@ public class BTList extends SubFragment {
 	void fetchCachedDevices() {
 		Intent intent = new Intent(GlobalActions.ACTION_PREFIX + "FetchCachedDevices");
 		intent.setPackage("com.android.systemui");
-		getActivity().sendBroadcast(intent);
+		if (mAppContext != null) mAppContext.sendBroadcast(intent);
 	}
 
 	void updateProgressBar() {
@@ -150,16 +154,18 @@ public class BTList extends SubFragment {
 
 	void registerReceivers() {
 		unregisterReceivers();
-		getActivity().registerReceiver(devicesReceiver,
-			new IntentFilter(GlobalActions.EVENT_PREFIX + "CACHEDDEVICESUPDATE"), Context.RECEIVER_EXPORTED);
+		if (mAppContext != null) {
+			mAppContext.registerReceiver(devicesReceiver,
+				new IntentFilter(GlobalActions.EVENT_PREFIX + "CACHEDDEVICESUPDATE"), Context.RECEIVER_EXPORTED);
+		}
 		handler.postDelayed(getCachedDevices, 1000);
 	}
 
 	void unregisterReceivers() {
-		try {
-			handler.removeCallbacks(getCachedDevices);
-			getActivity().unregisterReceiver(devicesReceiver);
-		} catch (Throwable t) {}
+		handler.removeCallbacks(getCachedDevices);
+		if (mAppContext != null) {
+			try { mAppContext.unregisterReceiver(devicesReceiver); } catch (Throwable t) {}
+		}
 	}
 
 	@Override

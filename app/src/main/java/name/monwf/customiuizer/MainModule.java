@@ -19,6 +19,7 @@ import androidx.annotation.Nullable;
 import java.util.ArrayList;
 import java.util.HashSet;
 import java.util.Map;
+import java.util.Set;
 
 import io.github.libxposed.api.XposedModule;
 import io.github.libxposed.api.XposedModuleInterface;
@@ -55,32 +56,93 @@ public class MainModule extends XposedModule {
     public void onModuleLoaded(@NonNull XposedModuleInterface.ModuleLoadedParam param) {
         processName = param.getProcessName();
         XposedHelpers.moduleInst = this;
-        if (param.isSystemServer()) {
-            try {
-                initPrefs();
-            } catch (Throwable t) {
-                XposedHelpers.log(t);
-            }
-        }
     }
 
     private boolean isSupportedAndroidVersion() {
         if (Build.VERSION.SDK_INT == Build.VERSION_CODES.TIRAMISU) {
             return true;
         }
-        XposedHelpers.log("CustoMIUIzer_forA13 disabled on Android API " + Build.VERSION.SDK_INT);
+        XposedHelpers.log("CustoMIUIzer-A14 disabled on Android API " + Build.VERSION.SDK_INT);
         return false;
     }
 
     private void initPrefs() {
         if (prefsLoaded) return;
         SharedPreferences readPrefs = getRemotePreferences(ModuleHelper.prefsName + "_remote");
-        Map<String, ?> allPrefs = readPrefs.getAll();
+        initPrefs(readPrefs.getAll());
+    }
+
+    private void initPrefs(Map<String, ?> allPrefs) {
+        if (prefsLoaded) return;
         if (allPrefs == null || allPrefs.size() == 0)
             XposedHelpers.log("Empty preferences!");
         else
             mPrefs.putAll(allPrefs);
         prefsLoaded = true;
+    }
+
+    private boolean isPrefEnabled(Map<String, ?> allPrefs, String key) {
+        Object val = allPrefs.get(key);
+        return val instanceof Boolean && (Boolean) val;
+    }
+
+    @SuppressWarnings("unchecked")
+    private boolean isInPrefSet(Map<String, ?> allPrefs, String key, String pkg) {
+        Object val = allPrefs.get(key);
+        return val instanceof Set && ((Set<String>) val).contains(pkg);
+    }
+
+    private boolean isVolumeMediaEnabled(Map<String, ?> allPrefs) {
+        Object up = allPrefs.get("pref_key_controls_volumemedia_up");
+        Object down = allPrefs.get("pref_key_controls_volumemedia_down");
+        try {
+            return (up instanceof String && Integer.parseInt((String) up) > 0)
+                || (down instanceof String && Integer.parseInt((String) down) > 0);
+        } catch (NumberFormatException e) {
+            return false;
+        }
+    }
+
+    private boolean needLoadPrefs(String pkg, Map<String, ?> allPrefs) {
+        if ("android".equals(pkg)
+            || "com.android.systemui".equals(pkg)
+            || "com.miui.home".equals(pkg)
+            || "com.mi.android.globallauncher".equals(pkg)
+            || "com.miui.miwallpaper".equals(pkg)
+            || "com.lbe.security.miui".equals(pkg)
+            || "com.android.incallui".equals(pkg)
+            || "com.miui.securitycenter".equals(pkg)
+            || "com.miui.powerkeeper".equals(pkg)
+            || "com.android.settings".equals(pkg)
+            || "com.miui.packageinstaller".equals(pkg)
+            || "com.miui.screenshot".equals(pkg)
+            || "com.miui.gallery".equals(pkg)
+        ) return true;
+
+        if (pkg.startsWith("com.google.android.inputmethod")) return true;
+
+        if ("com.baidu.input".equals(pkg)
+            || "com.baidu.input_mi".equals(pkg)
+            || "com.iflytek.inputmethod".equals(pkg)
+            || "com.iflytek.inputmethod.miui".equals(pkg)
+            || "com.sohu.inputmethod.sogou".equals(pkg)
+            || "com.sohu.inputmethod.sogou.xiaomi".equals(pkg)
+            || pkg.startsWith("com.touchtype.swiftkey")
+            || pkg.startsWith("com.tencent.wetype")) return true;
+
+        if (isPrefEnabled(allPrefs, "pref_key_various_alarmcompat")
+                && isInPrefSet(allPrefs, "pref_key_various_alarmcompat_apps", pkg)) return true;
+
+        if (isPrefEnabled(allPrefs, "pref_key_system_statusbarcolor")
+                && isInPrefSet(allPrefs, "pref_key_system_statusbarcolor_apps", pkg)) return true;
+
+        if (isPrefEnabled(allPrefs, "pref_key_system_nooverscroll")
+                && isInPrefSet(allPrefs, "pref_key_system_nooverscroll_apps", pkg)) return true;
+
+        if (isVolumeMediaEnabled(allPrefs)
+                && isInPrefSet(allPrefs, "pref_key_controls_mediaplayer_apps", pkg)) return true;
+
+        return false;
     }
 
     private void watchPreferenceChange() {
@@ -115,7 +177,7 @@ public class MainModule extends XposedModule {
         if (!isSupportedAndroidVersion()) return;
         initPrefs();
         PackagePermissions.hook(lpparam);
-        GlobalActions.setupGlobalActions(lpparam);
+        if (needGlobalActions()) GlobalActions.setupGlobalActions(lpparam);
 
 //        if (mPrefs.getInt("system_statusbarheight", 19) > 19) {
 //            System.StatusBarHeightHook(lpparam);
@@ -212,10 +274,16 @@ public class MainModule extends XposedModule {
         ) {
             return;
         }
-        initPrefs();
 
-        if (mPrefs.getInt("system_statusbarheight", 19) > 19) System.StatusBarHeightRes();
-        if (mPrefs.getInt("controls_navbarheight", 19) > 19) Controls.NavbarHeightRes();
+        SharedPreferences remote = getRemotePreferences(ModuleHelper.prefsName + "_remote");
+        Map<String, ?> allPrefs = remote.getAll();
+        if (!needLoadPrefs(pkg, allPrefs)) return;
+        initPrefs(allPrefs);
+
+        if (pkg.equals("android") || pkg.equals("com.android.systemui")) {
+            if (mPrefs.getInt("system_statusbarheight", 19) > 19) System.StatusBarHeightRes();
+            if (mPrefs.getInt("controls_navbarheight", 19) > 19) Controls.NavbarHeightRes();
+        }
 
         if (pkg.equals("android")) {
             if (mPrefs.getBoolean("system_cleanshare")) System.CleanShareMenuHook(lpparam);
@@ -720,6 +788,22 @@ public class MainModule extends XposedModule {
         }
         if (closeOnLaunch) Launcher.CloseFolderOrDrawerOnLaunchShortcutMenuHook(lpparam);
         if (mPrefs.getBoolean("system_resizablewidgets")) Launcher.ResizableWidgetsHook(lpparam);
+    }
+
+    private boolean needGlobalActions() {
+        try {
+            for (Map.Entry<String, ?> entry : mPrefs.entrySet()) {
+                String key = entry.getKey();
+                Object value = entry.getValue();
+                if (key != null && key.endsWith("_action") && value instanceof Integer && (Integer) value > 1) {
+                    return true;
+                }
+            }
+        } catch (Throwable ignored) {}
+        if (mPrefs.getStringAsInt("controls_volumemedia_up", 0) > 0 || mPrefs.getStringAsInt("controls_volumemedia_down", 0) > 0) {
+            return !mPrefs.getStringSet("controls_mediaplayer_apps").isEmpty();
+        }
+        return false;
     }
 
 }

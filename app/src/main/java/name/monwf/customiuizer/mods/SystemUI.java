@@ -2660,34 +2660,37 @@ public class SystemUI {
     }
     public static void TempHideOverlaySystemUIHook(PackageReadyParam lpparam) {
         ModuleHelper.hookAllMethods("com.android.wm.shell.pip.PipTaskOrganizer", lpparam.getClassLoader(), "onTaskAppeared", new MethodHook() {
-            private boolean isActListened = false;
             @Override
             protected void after(final AfterHookCallback param) throws Throwable {
-                Context mContext = (Context) XposedHelpers.getObjectField(param.getThisObject(), "mContext");
-                if (!isActListened) {
-                    isActListened = true;
-                    IntentFilter intentFilter = new IntentFilter();
-                    intentFilter.addAction("miui.intent.TAKE_SCREENSHOT");
-                    mContext.registerReceiver(new BroadcastReceiver() {
-                        @Override
-                        public void onReceive(Context context, Intent intent) {
-                            String action = intent.getAction();
-                            if (action == null) return;
-                            if (action.equals("miui.intent.TAKE_SCREENSHOT")) {
-                                boolean state = intent.getBooleanExtra("IsFinished", true);
-                                Object mState = XposedHelpers.getObjectField(param.getThisObject(), "mPipTransitionState");
-                                boolean isPip = (boolean) XposedHelpers.callMethod(mState, "isInPip");
-                                if (isPip) {
-                                    Object mSurfaceControlTransactionFactory = XposedHelpers.getObjectField(param.getThisObject(), "mSurfaceControlTransactionFactory");
-                                    SurfaceControl.Transaction transaction = (SurfaceControl.Transaction) XposedHelpers.callMethod(mSurfaceControlTransactionFactory, "getTransaction");
-                                    SurfaceControl mLeash = (SurfaceControl) XposedHelpers.getObjectField(param.getThisObject(), "mLeash");
-                                    transaction.setVisibility(mLeash, state);
-                                    transaction.apply();
-                                }
+                final Object organizer = param.getThisObject();
+                final Context mContext = (Context) XposedHelpers.getObjectField(organizer, "mContext");
+                BroadcastReceiver oldReceiver = (BroadcastReceiver) XposedHelpers.getAdditionalInstanceField(organizer, "pipScreenshotReceiver");
+                if (oldReceiver != null) {
+                    try { mContext.unregisterReceiver(oldReceiver); } catch (Throwable ignored) {}
+                }
+                IntentFilter intentFilter = new IntentFilter();
+                intentFilter.addAction("miui.intent.TAKE_SCREENSHOT");
+                BroadcastReceiver pipScreenshotReceiver = new BroadcastReceiver() {
+                    @Override
+                    public void onReceive(Context context, Intent intent) {
+                        String action = intent.getAction();
+                        if (action == null) return;
+                        if (action.equals("miui.intent.TAKE_SCREENSHOT")) {
+                            boolean state = intent.getBooleanExtra("IsFinished", true);
+                            Object mState = XposedHelpers.getObjectField(organizer, "mPipTransitionState");
+                            boolean isPip = (boolean) XposedHelpers.callMethod(mState, "isInPip");
+                            if (isPip) {
+                                Object mSurfaceControlTransactionFactory = XposedHelpers.getObjectField(organizer, "mSurfaceControlTransactionFactory");
+                                SurfaceControl.Transaction transaction = (SurfaceControl.Transaction) XposedHelpers.callMethod(mSurfaceControlTransactionFactory, "getTransaction");
+                                SurfaceControl mLeash = (SurfaceControl) XposedHelpers.getObjectField(organizer, "mLeash");
+                                transaction.setVisibility(mLeash, state);
+                                transaction.apply();
                             }
                         }
-                    }, intentFilter, Context.RECEIVER_EXPORTED);
-                }
+                    }
+                };
+                mContext.registerReceiver(pipScreenshotReceiver, intentFilter, Context.RECEIVER_EXPORTED);
+                XposedHelpers.setAdditionalInstanceField(organizer, "pipScreenshotReceiver", pipScreenshotReceiver);
             }
         });
     }
@@ -2892,31 +2895,39 @@ public class SystemUI {
         ModuleHelper.hookAllConstructors("com.android.systemui.statusbar.phone.MiuiNotificationPanelViewController", lpparam.getClassLoader(), new MethodHook() {
             @Override
             protected void after(final AfterHookCallback param) throws Throwable {
+                final Object panel = param.getThisObject();
                 boolean isDefaultLockScreenTheme = (boolean) XposedHelpers.callStaticMethod(MiuiThemeUtilsClass, "isDefaultLockScreenTheme");
                 if (isDefaultLockScreenTheme) {
-                    Object mBlurRatioChangedListener = XposedHelpers.getObjectField(param.getThisObject(), "mBlurRatioChangedListener");
-                    Object notificationShadeDepthController = XposedHelpers.getObjectField(param.getThisObject(), "notificationShadeDepthController");
+                    Object mBlurRatioChangedListener = XposedHelpers.getObjectField(panel, "mBlurRatioChangedListener");
+                    Object notificationShadeDepthController = XposedHelpers.getObjectField(panel, "notificationShadeDepthController");
                     XposedHelpers.callMethod(notificationShadeDepthController, "removeListener", mBlurRatioChangedListener);
-                    View view = (View) XposedHelpers.getObjectField(param.getThisObject(), "mThemeBackgroundView");
+                    View view = (View) XposedHelpers.getObjectField(panel, "mThemeBackgroundView");
                     view.setAlpha(1.0f);
 
+                    Context mContext = view.getContext();
+                    BroadcastReceiver oldReceiver = (BroadcastReceiver) XposedHelpers.getAdditionalInstanceField(panel, "albumArtReceiver");
+                    if (oldReceiver != null) {
+                        try { mContext.unregisterReceiver(oldReceiver); } catch (Throwable ignored) {}
+                    }
                     IntentFilter intentFilter = new IntentFilter();
                     intentFilter.addAction(GlobalActions.EVENT_PREFIX + "UPDATE_LS_ALBUM_ART");
-                    view.getContext().registerReceiver(new BroadcastReceiver() {
+                    BroadcastReceiver albumArtReceiver = new BroadcastReceiver() {
                         @Override
                         public void onReceive(Context context, Intent intent) {
                             String action = intent.getAction();
                             if (action == null) return;
                             if (action.equals(GlobalActions.EVENT_PREFIX + "UPDATE_LS_ALBUM_ART")) {
                                 try {
-                                    XposedHelpers.callMethod(param.getThisObject(), "updateThemeBackground");
+                                    XposedHelpers.callMethod(panel, "updateThemeBackground");
                                 }
                                 catch (Throwable e) {
-                                    XposedHelpers.callMethod(param.getThisObject(), "updateThemeBackgroundVisibility");
+                                    XposedHelpers.callMethod(panel, "updateThemeBackgroundVisibility");
                                 }
                             }
                         }
-                    }, intentFilter, Context.RECEIVER_NOT_EXPORTED);
+                    };
+                    mContext.registerReceiver(albumArtReceiver, intentFilter, Context.RECEIVER_NOT_EXPORTED);
+                    XposedHelpers.setAdditionalInstanceField(panel, "albumArtReceiver", albumArtReceiver);
                 }
             }
         });

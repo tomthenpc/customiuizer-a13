@@ -4,7 +4,6 @@ import android.annotation.SuppressLint;
 import android.app.Activity;
 import android.content.ComponentName;
 import android.content.pm.PackageManager;
-import android.content.res.Configuration;
 import android.os.Bundle;
 import android.os.Handler;
 import android.os.Looper;
@@ -19,7 +18,6 @@ import android.widget.AdapterView;
 import android.widget.ImageView;
 import android.widget.ListAdapter;
 import android.widget.ListView;
-import android.widget.Toast;
 
 import androidx.annotation.Nullable;
 import androidx.appcompat.app.ActionBar;
@@ -57,6 +55,9 @@ public class MainFragment extends PreferenceFragmentBase {
 	private Menu mActionMenu;
 	private RecyclerView listView = null;
 	private ListView resultView = null;
+	private Handler mMainHandler;
+	private Runnable mCheckActiveRunnable;
+	private Runnable mHideKeyboardRunnable;
 	boolean isSearchFocused = false;
 	int inSearchView = 0;
 	String lastFilter;
@@ -103,8 +104,9 @@ public class MainFragment extends PreferenceFragmentBase {
 	}
 
 	private void checkModuleIsActive() {
-		Handler handler = new Handler(Looper.getMainLooper());
-		handler.postDelayed(new Runnable() {
+		if (mMainHandler == null) mMainHandler = new Handler(Looper.getMainLooper());
+		if (mCheckActiveRunnable != null) mMainHandler.removeCallbacks(mCheckActiveRunnable);
+		mCheckActiveRunnable = new Runnable() {
 			@Override
 			public void run() {
 				final AppCompatActivity act = (AppCompatActivity) getActivity();
@@ -116,7 +118,8 @@ public class MainFragment extends PreferenceFragmentBase {
 					});
 				}
 			}
-		}, 800);
+		};
+		mMainHandler.postDelayed(mCheckActiveRunnable, 800);
 	}
 
 	@Override
@@ -217,10 +220,12 @@ public class MainFragment extends PreferenceFragmentBase {
 			public boolean onTouch(View v, MotionEvent event) {
 				if (isSearchFocused) {
 					isSearchFocused = false;
-					Handler handler = new Handler(v.getContext().getMainLooper());
-					handler.postDelayed(() -> {
+					if (mMainHandler == null) mMainHandler = new Handler(v.getContext().getMainLooper());
+					if (mHideKeyboardRunnable != null) mMainHandler.removeCallbacks(mHideKeyboardRunnable);
+					mHideKeyboardRunnable = () -> {
 						Helpers.hideKeyboard((AppCompatActivity) getActivity(), getView());
-					}, getResources().getInteger(android.R.integer.config_shortAnimTime));
+					};
+					mMainHandler.postDelayed(mHideKeyboardRunnable, getResources().getInteger(android.R.integer.config_shortAnimTime));
 					resultView.requestFocus();
 				}
 				return false;
@@ -286,73 +291,6 @@ public class MainFragment extends PreferenceFragmentBase {
 			}
 		});
 
-		findPreference("pref_key_github").setOnPreferenceClickListener(new Preference.OnPreferenceClickListener() {
-			@Override
-			public boolean onPreferenceClick(Preference pref) {
-				Configuration config = act.getResources().getConfiguration();
-				String lang = config.getLocales().get(0).getLanguage();
-				if ("zh".equals(lang)) {
-					Helpers.openURL(act, "https://github.com/tomthenpc/customiuizer-a13/blob/main/README_ZH.md");
-				}
-				else if ("ja".equals(lang)) {
-					Helpers.openURL(act, "https://github.com/tomthenpc/customiuizer-a13/blob/main/README_JP.md");
-				}
-				else if ("pt".equals(lang)) {
-					Helpers.openURL(act, "https://github.com/tomthenpc/customiuizer-a13/blob/main/README_PT-BR.md");
-				}
-				else {
-					Helpers.openURL(act, "https://github.com/tomthenpc/customiuizer-a13");
-				}
-				return true;
-			}
-		});
-
-		Configuration config = act.getResources().getConfiguration();
-		if (config.getLocales().get(0).getCountry().equals("CN")) {
-			PreferenceEx releasesEntry = findPreference("pref_key_releases");
-			releasesEntry.setVisible(true);
-			String releasesUrl = "https://rz3kv5wa4g.jiandaoyun.com/dash/650e43a383027ec3225083e9";
-			releasesEntry.setLongPressListener(new View.OnLongClickListener() {
-				@Override
-				public boolean onLongClick(View v) {
-					Helpers.copyToClipboard(getValidContext(), releasesUrl);
-					Toast.makeText(getValidContext(), "链接已复制", Toast.LENGTH_SHORT).show();
-					return true;
-				}
-			});
-			releasesEntry.setOnPreferenceClickListener(new Preference.OnPreferenceClickListener() {
-				@Override
-				public boolean onPreferenceClick(Preference pref) {
-					openWebPage(releasesUrl);
-					return true;
-				}
-			});
-
-//			PreferenceEx contactEntry = findPreference("pref_key_contact");
-//			contactEntry.setVisible(true);
-//			contactEntry.setOnPreferenceClickListener(new Preference.OnPreferenceClickListener() {
-//				@Override
-//				public boolean onPreferenceClick(Preference pref) {
-//					Intent schemeIntent = new Intent(Intent.ACTION_VIEW, Uri.parse("coolmarket://u/217384"))
-//						.setPackage("com.coolapk.market");
-//					startActivity(schemeIntent);
-//					return true;
-//				}
-//			});
-		}
-		PreferenceEx donateEntry = findPreference("pref_key_donate");
-		donateEntry.setOnPreferenceClickListener(new Preference.OnPreferenceClickListener() {
-			@Override
-			public boolean onPreferenceClick(Preference pref) {
-				if (!config.getLocales().get(0).getCountry().equals("CN")) {
-					Helpers.openURL(act, "https://www.paypal.com/paypalme/tpsxj");
-				}
-				else {
-					openSubFragment(new SubFragment(), null, Helpers.SettingsType.Edit, Helpers.ActionBarType.HomeUp, pref.getTitle().toString(), R.layout.fragment_donate);
-				}
-				return true;
-			}
-		});
 	}
 
 	void findMod(String filter) {
@@ -397,6 +335,15 @@ public class MainFragment extends PreferenceFragmentBase {
 				return false;
 			default:
 				return false;
+		}
+	}
+
+	@Override
+	public void onDestroyView() {
+		super.onDestroyView();
+		if (mMainHandler != null) {
+			if (mCheckActiveRunnable != null) mMainHandler.removeCallbacks(mCheckActiveRunnable);
+			if (mHideKeyboardRunnable != null) mMainHandler.removeCallbacks(mHideKeyboardRunnable);
 		}
 	}
 
