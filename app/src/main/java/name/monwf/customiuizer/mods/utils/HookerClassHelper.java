@@ -31,7 +31,9 @@ public final class HookerClassHelper {
 
         private final Member member;
         private final Object thisObject;
-        private final Object[] args;
+        private final List<Object> argList;
+        private Object[] args;
+        private boolean argsAccessed;
         private boolean skipped;
         private Object result;
         private Throwable throwable;
@@ -39,8 +41,7 @@ public final class HookerClassHelper {
         BeforeHookCallback(XposedInterface.Chain chain) {
             member = chain.getExecutable();
             thisObject = chain.getThisObject();
-            List<Object> argList = chain.getArgs();
-            args = argList.isEmpty() ? EMPTY_ARGS : argList.toArray();
+            argList = chain.getArgs();
         }
 
         public Member getMember() {
@@ -52,6 +53,10 @@ public final class HookerClassHelper {
         }
 
         public Object[] getArgs() {
+            argsAccessed = true;
+            if (args == null) {
+                args = argList.isEmpty() ? EMPTY_ARGS : argList.toArray();
+            }
             return args;
         }
 
@@ -71,7 +76,7 @@ public final class HookerClassHelper {
     public static final class AfterHookCallback {
         private final Member member;
         private final Object thisObject;
-        private final Object[] args;
+        private final BeforeHookCallback before;
         private final boolean skipped;
         private Object result;
         private Throwable throwable;
@@ -79,7 +84,7 @@ public final class HookerClassHelper {
         AfterHookCallback(BeforeHookCallback before, Object result, Throwable throwable) {
             member = before.member;
             thisObject = before.thisObject;
-            args = before.args;
+            this.before = before;
             skipped = before.skipped;
             this.result = result;
             this.throwable = throwable;
@@ -94,7 +99,7 @@ public final class HookerClassHelper {
         }
 
         public Object[] getArgs() {
-            return args;
+            return before.getArgs();
         }
 
         public Object getResult() {
@@ -167,7 +172,7 @@ public final class HookerClassHelper {
             Throwable throwable = before.throwable;
             if (!before.skipped) {
                 try {
-                    result = chain.proceed(before.args);
+                    result = before.argsAccessed ? chain.proceed(before.getArgs()) : chain.proceed();
                 } catch (Throwable t) {
                     throwable = t;
                 }
