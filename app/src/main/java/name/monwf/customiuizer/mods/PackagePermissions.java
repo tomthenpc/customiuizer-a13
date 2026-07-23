@@ -60,7 +60,7 @@ public class PackagePermissions {
 				@Override
 				public Object intercept(XposedInterface.Chain chain) throws Throwable {
 					String pkgName = (String)XposedHelpers.callMethod(chain.getArgs().get(0), "getPackageName");
-					return systemPackages.contains(pkgName) ? true : chain.proceed();
+					return pkgName != null && systemPackages.contains(pkgName) ? true : chain.proceed();
 				}
 			}
 		);
@@ -70,7 +70,7 @@ public class PackagePermissions {
 				@Override
 				public Object intercept(XposedInterface.Chain chain) throws Throwable {
 					String pkgName = (String)XposedHelpers.callMethod(chain.getArgs().get(0), "getName");
-					return systemPackages.contains(pkgName) ? true : chain.proceed();
+					return pkgName != null && systemPackages.contains(pkgName) ? true : chain.proceed();
 				}
 			}
 		);
@@ -126,7 +126,7 @@ public class PackagePermissions {
 				List<ResolveInfo> infos = (List<ResolveInfo>)result;
 				if (infos != null) {
 					for (ResolveInfo info: infos)
-						if (info != null && info.activityInfo != null && systemPackages.contains(info.activityInfo.packageName))
+						if (info != null && info.activityInfo != null && info.activityInfo.packageName != null && systemPackages.contains(info.activityInfo.packageName))
 							XposedHelpers.setObjectField(info, "system", true);
 				}
 				return result;
@@ -149,7 +149,7 @@ public class PackagePermissions {
 			@Override
 			public Object intercept(XposedInterface.Chain chain) throws Throwable {
 				ApplicationInfo ai = (ApplicationInfo)chain.getThisObject();
-				return ai != null && systemPackages.contains(ai.packageName) ? true : chain.proceed();
+				return ai != null && ai.packageName != null && systemPackages.contains(ai.packageName) ? true : chain.proceed();
 			}
 		});
 
@@ -157,7 +157,7 @@ public class PackagePermissions {
 			@Override
 			public Object intercept(XposedInterface.Chain chain) throws Throwable {
 				ApplicationInfo ai = (ApplicationInfo)chain.getThisObject();
-				return ai != null && systemPackages.contains(ai.packageName) ? true : chain.proceed();
+				return ai != null && ai.packageName != null && systemPackages.contains(ai.packageName) ? true : chain.proceed();
 			}
 		});
 
