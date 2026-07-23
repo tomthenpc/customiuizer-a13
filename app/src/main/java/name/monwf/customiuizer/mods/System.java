@@ -269,7 +269,7 @@ public class System {
     }
 
     public static void EnhancedSecurityHook(SystemServerStartingParam lpparam) {
-        ModuleHelper.findAndHookMethod("com.android.server.policy.PhoneWindowManager", lpparam.getClassLoader(), "interceptPowerKeyDown", KeyEvent.class, boolean.class, new MethodHook() {
+        ModuleHelper.hookAllMethodsSilently("com.android.server.policy.PhoneWindowManager", lpparam.getClassLoader(), "interceptPowerKeyDown", new MethodHook() {
             @Override
             protected void after(final AfterHookCallback param) throws Throwable {
                 Context mPWMContext = (Context)XposedHelpers.getObjectField(param.getThisObject(), "mContext");
@@ -284,7 +284,7 @@ public class System {
             }
         });
 
-        ModuleHelper.findAndHookMethod("com.android.server.policy.PhoneWindowManager", lpparam.getClassLoader(), "powerLongPress", new MethodHook() {
+        ModuleHelper.hookAllMethodsSilently("com.android.server.policy.PhoneWindowManager", lpparam.getClassLoader(), "powerLongPress", new MethodHook() {
             @Override
             protected void before(final BeforeHookCallback param) throws Throwable {
                 Context mPWMContext = (Context)XposedHelpers.getObjectField(param.getThisObject(), "mContext");

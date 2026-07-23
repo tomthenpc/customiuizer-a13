@@ -55,6 +55,13 @@ public class MainModule extends XposedModule {
     public void onModuleLoaded(@NonNull XposedModuleInterface.ModuleLoadedParam param) {
         processName = param.getProcessName();
         XposedHelpers.moduleInst = this;
+        if (param.isSystemServer()) {
+            try {
+                initPrefs();
+            } catch (Throwable t) {
+                XposedHelpers.log(t);
+            }
+        }
     }
 
     private boolean isSupportedAndroidVersion() {
