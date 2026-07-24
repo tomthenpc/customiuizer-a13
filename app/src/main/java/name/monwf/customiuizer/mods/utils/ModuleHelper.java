@@ -57,7 +57,7 @@ public class ModuleHelper {
         try {
             return XposedHelpers.doHookMethod(method, callback);
         } catch (Throwable t) {
-            log("Failed to hook " + method.getName() + " method");
+            log("Failed to hook " + method.getName() + " method: " + t);
             return null;
         }
     }
@@ -66,7 +66,7 @@ public class ModuleHelper {
         try {
             return XposedHelpers.findAndHookMethod(className, classLoader, methodName, parameterTypesAndCallback);
         } catch (Throwable t) {
-            log("Failed to hook " + methodName + " method in " + className);
+            log("Failed to hook " + methodName + " method in " + className + ": " + t);
             return null;
         }
     }
@@ -75,7 +75,7 @@ public class ModuleHelper {
         try {
             return XposedHelpers.findAndHookMethod(clazz, methodName, parameterTypesAndCallback);
         } catch (Throwable t) {
-            log("Failed to hook " + methodName + " method in " + clazz.getCanonicalName());
+            log("Failed to hook " + methodName + " method in " + clazz.getCanonicalName() + ": " + t);
             return null;
         }
     }
@@ -104,7 +104,7 @@ public class ModuleHelper {
         try {
             return XposedHelpers.findAndHookConstructor(className, classLoader, parameterTypesAndCallback);
         } catch (Throwable t) {
-            log("Failed to hook constructor in " + className);
+            log("Failed to hook constructor in " + className + ": " + t);
             return null;
         }
     }
@@ -113,9 +113,9 @@ public class ModuleHelper {
         try {
             Class<?> hookClass = XposedHelpers.findClassIfExists(className, classLoader);
             if (hookClass == null || XposedHelpers.hookAllConstructors(hookClass, callback).size() == 0)
-                log("Failed to hook " + className + " constructor");
+                log("Failed to hook " + className + " constructor (no matching constructor found)");
         } catch (Throwable t) {
-            log(t);
+            log("Failed to hook " + className + " constructor: " + t);
         }
     }
 

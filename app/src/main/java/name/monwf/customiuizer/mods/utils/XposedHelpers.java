@@ -423,13 +423,16 @@ public final class XposedHelpers {
         MemberCacheKey.Method key = new MemberCacheKey.Method(clazz, methodName, parameterTypes, true);
 
         return methodCache.computeIfAbsent(key, k -> {
-            try {
-                Method method = k.clazz.getDeclaredMethod(k.name, k.parameters);
-                method.setAccessible(true);
-                return Optional.of(method);
-            } catch (NoSuchMethodException e) {
-                return Optional.empty();
-            }
+            Class<?> clz = k.clazz;
+            do {
+                try {
+                    Method method = clz.getDeclaredMethod(k.name, k.parameters);
+                    method.setAccessible(true);
+                    return Optional.of(method);
+                } catch (NoSuchMethodException ignored) {
+                }
+            } while ((clz = clz.getSuperclass()) != null);
+            return Optional.empty();
         }).orElseThrow(() -> new NoSuchMethodError(key.toString()));
     }
 

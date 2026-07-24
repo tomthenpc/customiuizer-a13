@@ -1,5 +1,12 @@
 # Changelog
 
+## r13.1.1（热修复）
+
+### 修复
+- 修复 `XposedHelpers.findMethodExact` 仅在当前类搜索方法的问题，改为向上搜索父类中声明的方法，解决部分 ROM 上 `SystemUIApplication.onCreate`、`StatusBarMobileView`/`KeyguardBottomAreaView` 等系列 `Failed to hook` 警告。
+- 增强 `ModuleHelper` 失败日志：Hook 失败时输出异常原因，便于后续日志定位。
+- 版本号升级到 `r13.1.1`（`versionCode` 116），APK 输出保持 `CustoMIUIzer-A13-r13.1.1.apk`。
+
 ## r13.1.0（关键节点）
 
 ### 包名与品牌
