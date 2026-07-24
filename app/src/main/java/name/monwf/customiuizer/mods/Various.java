@@ -281,7 +281,7 @@ public class Various {
 			} else {
 				Toast.makeText(act, ModuleHelper.getModuleRes(act).getString(R.string.disable_app_fail), Toast.LENGTH_LONG).show();
 			}
-			new Handler().postDelayed(act::invalidateOptionsMenu, 500);
+			new Handler(Looper.getMainLooper()).postDelayed(act::invalidateOptionsMenu, 500);
 		} catch (Throwable t) {
 			XposedHelpers.log(t);
 		}
@@ -490,8 +490,8 @@ public class Various {
 
 					if (!isHooked[1]) {
 						isHooked[1] = true;
-						Handler myhandler = new Handler(Looper.myLooper());
-						Runnable removeBg = new Runnable() {
+						final Handler myhandler = new Handler(Looper.getMainLooper());
+						final Runnable removeBg = new Runnable() {
 							@Override
 							public void run() {
 								myhandler.removeCallbacks(this);
@@ -519,6 +519,8 @@ public class Various {
 							}
 						};
 						myhandler.postDelayed(removeBg, 150);
+						XposedHelpers.setAdditionalInstanceField(param.getThisObject(), "sideBarHandler", myhandler);
+						XposedHelpers.setAdditionalInstanceField(param.getThisObject(), "sideBarRemoveBg", removeBg);
 					}
 				}
 			}
@@ -532,6 +534,13 @@ public class Various {
 					View view = (View) param.getArgs()[0];
 					view.getContext().unregisterReceiver(showReceiver);
 					XposedHelpers.removeAdditionalInstanceField(param.getThisObject(), "showReceiver");
+				}
+				Handler sideBarHandler = (Handler) XposedHelpers.getAdditionalInstanceField(param.getThisObject(), "sideBarHandler");
+				Runnable sideBarRemoveBg = (Runnable) XposedHelpers.getAdditionalInstanceField(param.getThisObject(), "sideBarRemoveBg");
+				if (sideBarHandler != null && sideBarRemoveBg != null) {
+					sideBarHandler.removeCallbacks(sideBarRemoveBg);
+					XposedHelpers.removeAdditionalInstanceField(param.getThisObject(), "sideBarHandler");
+					XposedHelpers.removeAdditionalInstanceField(param.getThisObject(), "sideBarRemoveBg");
 				}
 			}
 		});

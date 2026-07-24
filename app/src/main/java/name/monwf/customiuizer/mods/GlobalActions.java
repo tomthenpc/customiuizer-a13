@@ -223,7 +223,7 @@ public class GlobalActions {
                             if (wmode < 2 && mActivityType < 2) {
                                 int taskId = XposedHelpers.getIntField(rootTaskInfo, "taskId");
                                 XposedHelpers.callMethod(activityTaskManager, "startActivityFromRecents", taskId, ao.toBundle());
-                                Handler myhandler = new Handler(Looper.myLooper());
+                                Handler myhandler = new Handler(Looper.getMainLooper());
                                 Runnable removeBg = new Runnable() {
                                     @Override
                                     public void run() {
@@ -254,7 +254,7 @@ public class GlobalActions {
                     return;
                 }
                 else if (action.equals(ACTION_PREFIX + "ScrollToTop")) {
-                    new Handler().postDelayed(new Runnable() {
+                    new Handler(Looper.getMainLooper()).postDelayed(new Runnable() {
                         @Override
                         public void run() {
                             try {
