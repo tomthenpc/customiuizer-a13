@@ -1259,7 +1259,6 @@ public class System {
             protected void after(final AfterHookCallback param) throws Throwable {
                 View mView = (View) param.getArgs()[0];
                 Context mContext = mView.getContext();
-                Handler mHandler = new Handler(mContext.getMainLooper());
 
                 Object mControlPanelWindowManager = XposedHelpers.callStaticMethod(findClass("com.android.systemui.Dependency", lpparam.getClassLoader()), "get", findClass("com.android.systemui.controlcenter.phone.ControlPanelWindowManager", lpparam.getClassLoader()));
                 Object notificationShadeDepthController = XposedHelpers.getObjectField(param.getThisObject(), "notificationShadeDepthController");
@@ -3007,7 +3006,7 @@ public class System {
                     try { mContext.unregisterReceiver(oldReceiver); } catch (Throwable ignored) {}
                 }
 
-                ContentObserver alarmObserver = new ContentObserver(new Handler()) {
+                ContentObserver alarmObserver = new ContentObserver(new Handler(mContext.getMainLooper())) {
                     @Override
                     public void onChange(boolean selfChange) {
                         if (selfChange) return;

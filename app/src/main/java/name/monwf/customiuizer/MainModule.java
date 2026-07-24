@@ -62,7 +62,7 @@ public class MainModule extends XposedModule {
         if (Build.VERSION.SDK_INT == Build.VERSION_CODES.TIRAMISU) {
             return true;
         }
-        XposedHelpers.log("CustoMIUIzer-A14 disabled on Android API " + Build.VERSION.SDK_INT);
+        XposedHelpers.log("CustoMIUIzer-A13 disabled on Android API " + Build.VERSION.SDK_INT);
         return false;
     }
 

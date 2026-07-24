@@ -68,6 +68,8 @@ import name.monwf.customiuizer.utils.Helpers;
 public class GlobalActions {
 
     public static Object mStatusBar = null;
+    private static Context mGlobalReceiverContext = null;
+    private static Context mSBReceiverContext = null;
     public static final String ACTION_PREFIX = "name.monwf.customiuizer.mods.action.";
     public static final String EVENT_PREFIX = "name.monwf.customiuizer.mods.event.";
 
@@ -749,6 +751,10 @@ public class GlobalActions {
             protected void after(final AfterHookCallback param) throws Throwable {
                 Context mGlobalContext = (Context)param.getArgs()[0];
 
+                if (mGlobalReceiverContext != null) {
+                    try { mGlobalReceiverContext.unregisterReceiver(mGlobalReceiver); } catch (Throwable ignored) {}
+                }
+
                 IntentFilter intentfilter = new IntentFilter();
 
                 // Actions
@@ -779,6 +785,7 @@ public class GlobalActions {
                 //intentfilter.addAction(ACTION_PREFIX + "QueryXposedService");
 
                 mGlobalContext.registerReceiver(mGlobalReceiver, intentfilter);
+                mGlobalReceiverContext = mGlobalContext;
             }
         });
 
@@ -792,7 +799,11 @@ public class GlobalActions {
                 intentfilter.addAction(ACTION_PREFIX + "ForceClose");
                 intentfilter.addAction(ACTION_PREFIX + "SaveLastMusicPausedTime");
                 final Object thisObject = param.getThisObject();
-                mContext.registerReceiver(new BroadcastReceiver() {
+                BroadcastReceiver oldWindowReceiver = (BroadcastReceiver) XposedHelpers.getAdditionalInstanceField(thisObject, "globalActionsWindowReceiver");
+                if (oldWindowReceiver != null) {
+                    try { mContext.unregisterReceiver(oldWindowReceiver); } catch (Throwable ignored) {}
+                }
+                BroadcastReceiver windowReceiver = new BroadcastReceiver() {
                     public void onReceive(final Context context, Intent intent) {
                         String action = intent.getAction();
                         if (action == null) return;
@@ -828,7 +839,9 @@ public class GlobalActions {
                             Settings.System.putLong(context.getContentResolver(), "last_music_paused_time", currentTimeMillis());
                         }
                     }
-                }, intentfilter);
+                };
+                mContext.registerReceiver(windowReceiver, intentfilter);
+                XposedHelpers.setAdditionalInstanceField(thisObject, "globalActionsWindowReceiver", windowReceiver);
             }
         });
     }
@@ -842,6 +855,11 @@ public class GlobalActions {
             protected void after(final AfterHookCallback param) throws Throwable {
                 mStatusBar = param.getThisObject();
                 Context mStatusBarContext = (Context)XposedHelpers.getObjectField(param.getThisObject(), "mContext");
+
+                if (mSBReceiverContext != null) {
+                    try { mSBReceiverContext.unregisterReceiver(mSBReceiver); } catch (Throwable ignored) {}
+                }
+
                 IntentFilter intentfilter = new IntentFilter();
 
                 intentfilter.addAction(ACTION_PREFIX + "ExpandNotifications");
@@ -867,6 +885,7 @@ public class GlobalActions {
                 intentfilter.addAction(ACTION_PREFIX + "ScrollToTop");
 
                 mStatusBarContext.registerReceiver(mSBReceiver, intentfilter);
+                mSBReceiverContext = mStatusBarContext;
             }
         });
     }
