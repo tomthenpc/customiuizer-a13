@@ -81,29 +81,27 @@ public class MainModule extends XposedModule {
         prefsLoaded = true;
     }
 
-    private boolean isPrefEnabled(Map<String, ?> allPrefs, String key) {
-        Object val = allPrefs.get(key);
-        return val instanceof Boolean && (Boolean) val;
+    private boolean isPrefEnabled(SharedPreferences prefs, String key) {
+        return prefs.getBoolean(key, false);
     }
 
-    @SuppressWarnings("unchecked")
-    private boolean isInPrefSet(Map<String, ?> allPrefs, String key, String pkg) {
-        Object val = allPrefs.get(key);
-        return val instanceof Set && ((Set<String>) val).contains(pkg);
+    private boolean isInPrefSet(SharedPreferences prefs, String key, String pkg) {
+        Set<String> set = prefs.getStringSet(key, null);
+        return set != null && set.contains(pkg);
     }
 
-    private boolean isVolumeMediaEnabled(Map<String, ?> allPrefs) {
-        Object up = allPrefs.get("pref_key_controls_volumemedia_up");
-        Object down = allPrefs.get("pref_key_controls_volumemedia_down");
+    private boolean isVolumeMediaEnabled(SharedPreferences prefs) {
+        String up = prefs.getString("pref_key_controls_volumemedia_up", "0");
+        String down = prefs.getString("pref_key_controls_volumemedia_down", "0");
         try {
-            return (up instanceof String && Integer.parseInt((String) up) > 0)
-                || (down instanceof String && Integer.parseInt((String) down) > 0);
+            return (up != null && Integer.parseInt(up) > 0)
+                || (down != null && Integer.parseInt(down) > 0);
         } catch (NumberFormatException e) {
             return false;
         }
     }
 
-    private boolean needLoadPrefs(String pkg, Map<String, ?> allPrefs) {
+    private boolean needLoadPrefs(String pkg, SharedPreferences prefs) {
         if ("android".equals(pkg)
             || "com.android.systemui".equals(pkg)
             || "com.miui.home".equals(pkg)
@@ -130,17 +128,17 @@ public class MainModule extends XposedModule {
             || pkg.startsWith("com.touchtype.swiftkey")
             || pkg.startsWith("com.tencent.wetype")) return true;
 
-        if (isPrefEnabled(allPrefs, "pref_key_various_alarmcompat")
-                && isInPrefSet(allPrefs, "pref_key_various_alarmcompat_apps", pkg)) return true;
+        if (isPrefEnabled(prefs, "pref_key_various_alarmcompat")
+                && isInPrefSet(prefs, "pref_key_various_alarmcompat_apps", pkg)) return true;
 
-        if (isPrefEnabled(allPrefs, "pref_key_system_statusbarcolor")
-                && isInPrefSet(allPrefs, "pref_key_system_statusbarcolor_apps", pkg)) return true;
+        if (isPrefEnabled(prefs, "pref_key_system_statusbarcolor")
+                && isInPrefSet(prefs, "pref_key_system_statusbarcolor_apps", pkg)) return true;
 
-        if (isPrefEnabled(allPrefs, "pref_key_system_nooverscroll")
-                && isInPrefSet(allPrefs, "pref_key_system_nooverscroll_apps", pkg)) return true;
+        if (isPrefEnabled(prefs, "pref_key_system_nooverscroll")
+                && isInPrefSet(prefs, "pref_key_system_nooverscroll_apps", pkg)) return true;
 
-        if (isVolumeMediaEnabled(allPrefs)
-                && isInPrefSet(allPrefs, "pref_key_controls_mediaplayer_apps", pkg)) return true;
+        if (isVolumeMediaEnabled(prefs)
+                && isInPrefSet(prefs, "pref_key_controls_mediaplayer_apps", pkg)) return true;
 
         return false;
     }
@@ -276,8 +274,8 @@ public class MainModule extends XposedModule {
         }
 
         SharedPreferences remote = getRemotePreferences(ModuleHelper.prefsName + "_remote");
+        if (!needLoadPrefs(pkg, remote)) return;
         Map<String, ?> allPrefs = remote.getAll();
-        if (!needLoadPrefs(pkg, allPrefs)) return;
         initPrefs(allPrefs);
 
         if (pkg.equals("android") || pkg.equals("com.android.systemui")) {
