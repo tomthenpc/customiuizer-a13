@@ -51,10 +51,12 @@ public class MainModule extends XposedModule {
 
     private boolean prefsLoaded;
     private boolean prefsWatcherRegistered;
+    public static volatile boolean processHooked = false;
 
     @Override
     public void onModuleLoaded(@NonNull XposedModuleInterface.ModuleLoadedParam param) {
         processName = param.getProcessName();
+        processHooked = false;
         XposedHelpers.moduleInst = this;
     }
 
@@ -276,7 +278,7 @@ public class MainModule extends XposedModule {
         }
         if (mPrefs.getInt("system_other_wallpaper_scale", 6) > 6) System.WallpaperScaleLevelHook(lpparam);
 
-        watchPreferenceChange();
+        if (processHooked) watchPreferenceChange();
     }
 
     @Override
@@ -311,7 +313,7 @@ public class MainModule extends XposedModule {
                 MainModule.resHooks.setObjectReplacement("android", "bool", "config_allowAllRotations", MainModule.mPrefs.getStringAsInt("system_allrotations2", 1) == 2);
             }
             if (mPrefs.getStringAsInt("system_rotateanim", 1) > 1) System.RotationAnimationRes();
-            watchPreferenceChange();
+            if (processHooked) watchPreferenceChange();
         }
 
         if (pkg.equals("com.baidu.input")
@@ -355,7 +357,7 @@ public class MainModule extends XposedModule {
                         isHooked = true;
                         Context context = (Context) XposedHelpers.callMethod(param.getThisObject(), "getApplicationContext");
                         SystemUI.setupStatusBar(context);
-                        watchPreferenceChange();
+                        if (processHooked) watchPreferenceChange();
                     }
                 }
             });
@@ -730,7 +732,7 @@ public class MainModule extends XposedModule {
             if (mPrefs.getInt("launcher_dock_topmargin", 0) > 0) Launcher.DockMarginTopHook(lpparam);
             if (mPrefs.getInt("launcher_dock_bottommargin", 0) > 0) Launcher.DockMarginBottomHook(lpparam);
 
-            watchPreferenceChange();
+            if (processHooked) watchPreferenceChange();
         }
 
         final boolean isStatusBarColor = mPrefs.getBoolean("system_statusbarcolor") && mPrefs.getStringSet("system_statusbarcolor_apps").contains(pkg);

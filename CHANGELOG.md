@@ -1,5 +1,13 @@
 # Changelog
 
+## r13.1.2（宏观优化）
+
+### 优化
+- 推进「功能关闭零成本」：在 `MainModule` 中引入 `processHooked` 标记。
+- `ModuleHelper` 在成功注册 Hook 时设置 `processHooked = true`，仅在当前进程确实有 Hook 注册时才注册 `SharedPreferences` 变化监听器。
+- 避免在未启用任何功能的进程中长期持有 `OnSharedPreferenceChangeListener`，减少不必要的 IPC 与内存开销。
+- 版本号升级到 `r13.1.2`（`versionCode` 117），APK 输出保持 `CustoMIUIzer-A13-r13.1.2.apk`。
+
 ## r13.1.1（热修复）
 
 ### 修复
