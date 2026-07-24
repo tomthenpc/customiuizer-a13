@@ -9,7 +9,7 @@
 		android:shortcutDisabledMessage="@string/credentials_unlock">
 		<intent
 			android:action="android.intent.action.VIEW"
-			android:targetPackage="name.monwf.customiuizer"
+			android:targetPackage="tv.withaibuild.customiuizer.r13"
 			android:targetClass="name.monwf.customiuizer.Credentials" />
 		<categories android:name="android.shortcut.conversation" />
 	</shortcut>

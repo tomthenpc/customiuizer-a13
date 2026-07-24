@@ -37,7 +37,7 @@ Android versions other than API 33.
   preserves mutable arguments, early return, throwable propagation, and
   after-hook result replacement while they are migrated incrementally.
 
-The application ID is `name.monwf.customiuizer.a13`, so it can coexist with
+The application ID is `tv.withaibuild.customiuizer.r13`, so it can coexist with
 the upstream build and the separate Android 14 branch. Preferences are not
 automatically copied between these independently installed variants.
 
@@ -56,7 +56,7 @@ testing. Output is written under `app/build/outputs/apk/release/`.
 ## Device validation checklist
 
 1. Remove or disable the API 100 edition with the same feature set.
-2. Install `CustoMIUIzer_forA13`, enable it only for the packages in its default
+2. Install `CustoMIUIzer-A13` (米客 A13), enable it only for the packages in its default
    scope, then reboot.
 3. Confirm the settings UI can write remote preferences.
 4. Validate System UI, launcher, system-server, Security Center, Power Keeper,

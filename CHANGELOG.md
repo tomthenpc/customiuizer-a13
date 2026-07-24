@@ -1,5 +1,14 @@
 # Changelog
 
+## r13.1.0（关键节点）
+
+### 包名与品牌
+- 应用包名统一为 `tv.withaibuild.customiuizer.r13`。
+- 应用名统一为 `米客 A13`。
+- 版本号按中版本升级规则提升到 `r13.1.0`，APK 输出保持 `CustoMIUIzer-A13-r13.1.0.apk`。
+- 运行目标仍为 MIUI 14 / Android 13（API 33），Xposed 框架接口仍为 libxposed API 101。
+- README / CHANGELOG 同步更新。
+
 ## r13.0.0-api101
 
 - 从上游 CustoMIUIzer v23.11.26 分叉，适配 MIUI 14 / Android 13。

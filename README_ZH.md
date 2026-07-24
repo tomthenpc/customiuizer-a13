@@ -1,4 +1,4 @@
-# 米客_forA13
+# 米客 A13
 
 这是一个可独立安装的 MIUI 14 / Android 13 维护分支，源码基于 MonwF 的
 [CustoMIUIzer v23.11.26](https://github.com/MonwF/customiuizer/releases/tag/v23.11.26)，
@@ -31,7 +31,7 @@
   提前返回、异常传播和 after 回调修改结果的行为，后续可以按功能组逐步迁移，
   不需要再次更换 API。
 
-应用 ID 为 `name.monwf.customiuizer.a13`，可与上游版和独立 A14 版共存。
+应用 ID 为 `tv.withaibuild.customiuizer.r13`，可与上游版和独立 A14 版共存。
 由于是不同应用，偏好设置不会自动互相复制。
 
 ## 构建

@@ -7,8 +7,8 @@ def hasReleaseSigning = keystorePropertiesFile.isFile()
 if (hasReleaseSigning) {
     keystoreProperties.load(new FileInputStream(keystorePropertiesFile))
 }
-def lastVersion = 114
-def lastVersionName = "r13.0.12"
+def lastVersion = 115
+def lastVersionName = "r13.1.0"
 
 android {
     namespace "name.monwf.customiuizer"
@@ -26,7 +26,7 @@ android {
     }
     compileSdk 36
     defaultConfig {
-        applicationId "name.monwf.customiuizer.r13"
+        applicationId "tv.withaibuild.customiuizer.r13"
         minSdkVersion 33
         //noinspection OldTargetApi,ExpiredTargetSdkVersion
         targetSdkVersion 34
