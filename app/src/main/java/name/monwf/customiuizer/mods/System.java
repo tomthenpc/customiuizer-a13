@@ -1340,7 +1340,11 @@ public class System {
                 if (mContext != null && mHandler != null && mScreenOffRunnable != null && mScreenOnWakeLock != null) {
                     if (mScreenOnWakeLock.isHeld()) {
                         int timeout = MainModule.mPrefs.getInt("system_chargeanimtime", 20) * 1000;
-                        mHandler.postDelayed(mScreenOnWakeLock::release, timeout);
+                        Runnable oldReleaseRunnable = (Runnable) XposedHelpers.getAdditionalInstanceField(param.getThisObject(), "mScreenOnWakeLockReleaseRunnable");
+                        if (oldReleaseRunnable != null) mHandler.removeCallbacks(oldReleaseRunnable);
+                        Runnable releaseRunnable = mScreenOnWakeLock::release;
+                        mHandler.postDelayed(releaseRunnable, timeout);
+                        XposedHelpers.setAdditionalInstanceField(param.getThisObject(), "mScreenOnWakeLockReleaseRunnable", releaseRunnable);
                         mHandler.removeCallbacks(mScreenOffRunnable);
                         mHandler.postDelayed(mScreenOffRunnable, timeout);
                     }
@@ -1360,7 +1364,11 @@ public class System {
                 if (mContext != null && mHandler != null && mScreenOffRunnable != null && mScreenOnWakeLock != null) {
                     if (mScreenOnWakeLock.isHeld()) {
                         int timeout = MainModule.mPrefs.getInt("system_chargeanimtime", 20) * 1000;
-                        mHandler.postDelayed(mScreenOnWakeLock::release, timeout);
+                        Runnable oldReleaseRunnable = (Runnable) XposedHelpers.getAdditionalInstanceField(param.getThisObject(), "mScreenOnWakeLockReleaseRunnable");
+                        if (oldReleaseRunnable != null) mHandler.removeCallbacks(oldReleaseRunnable);
+                        Runnable releaseRunnable = mScreenOnWakeLock::release;
+                        mHandler.postDelayed(releaseRunnable, timeout);
+                        XposedHelpers.setAdditionalInstanceField(param.getThisObject(), "mScreenOnWakeLockReleaseRunnable", releaseRunnable);
                         mHandler.removeCallbacks(mScreenOffRunnable);
                         mHandler.postDelayed(mScreenOffRunnable, timeout);
                     }
@@ -1380,7 +1388,11 @@ public class System {
                 if (mContext != null && mHandler != null && mScreenOffRunnable != null && mScreenOnWakeLock != null) {
                     if (mScreenOnWakeLock.isHeld()) {
                         int timeout = MainModule.mPrefs.getInt("system_chargeanimtime", 20) * 1000;
-                        mHandler.postDelayed(mScreenOnWakeLock::release, timeout);
+                        Runnable oldReleaseRunnable = (Runnable) XposedHelpers.getAdditionalInstanceField(param.getThisObject(), "mScreenOnWakeLockReleaseRunnable");
+                        if (oldReleaseRunnable != null) mHandler.removeCallbacks(oldReleaseRunnable);
+                        Runnable releaseRunnable = mScreenOnWakeLock::release;
+                        mHandler.postDelayed(releaseRunnable, timeout);
+                        XposedHelpers.setAdditionalInstanceField(param.getThisObject(), "mScreenOnWakeLockReleaseRunnable", releaseRunnable);
                         mHandler.removeCallbacks(mScreenOffRunnable);
                         mHandler.postDelayed(mScreenOffRunnable, timeout);
                     }
@@ -4707,6 +4719,7 @@ public class System {
 
                 Context mContext = (Context)XposedHelpers.getObjectField(param.getThisObject(), "mContext");
                 if (mContext == null) return;
+                final Object thisObject = param.getThisObject();
 
                 int handleIncomingUser = 0;
                 try {
@@ -4715,7 +4728,15 @@ public class System {
                 Object wallpaperData = XposedHelpers.callMethod(param.getThisObject(), "getWallpaperSafeLocked", handleIncomingUser, param.getArgs()[5]);
                 File wallpaper = (File)XposedHelpers.getObjectField(wallpaperData, "wallpaperFile");
 
-                new Handler(mContext.getMainLooper()).postDelayed(new Runnable() {
+                Handler wallpaperHandler = (Handler) XposedHelpers.getAdditionalInstanceField(thisObject, "mWallpaperHandler");
+                if (wallpaperHandler == null) {
+                    wallpaperHandler = new Handler(mContext.getMainLooper());
+                    XposedHelpers.setAdditionalInstanceField(thisObject, "mWallpaperHandler", wallpaperHandler);
+                }
+                Runnable oldWallpaperRunnable = (Runnable) XposedHelpers.getAdditionalInstanceField(thisObject, "mWallpaperRunnable");
+                if (oldWallpaperRunnable != null) wallpaperHandler.removeCallbacks(oldWallpaperRunnable);
+
+                final Runnable wallpaperRunnable = new Runnable() {
                     @Override
                     public void run() {
                         if (!wallpaper.exists()) return;
@@ -4780,7 +4801,9 @@ public class System {
                         setIntent.putExtra("apply", true);
                         mContext.sendBroadcast(setIntent);
                     }
-                }, 1800);
+                };
+                wallpaperHandler.postDelayed(wallpaperRunnable, 1800);
+                XposedHelpers.setAdditionalInstanceField(thisObject, "mWallpaperRunnable", wallpaperRunnable);
             }
         });
 
