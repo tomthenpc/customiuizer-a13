@@ -7,8 +7,8 @@ def hasReleaseSigning = keystorePropertiesFile.isFile()
 if (hasReleaseSigning) {
     keystoreProperties.load(new FileInputStream(keystorePropertiesFile))
 }
-def lastVersion = 106
-def lastVersionName = "r14.0.5"
+def lastVersion = 107
+def lastVersionName = "r13.0.5"
 
 android {
     namespace "name.monwf.customiuizer"
