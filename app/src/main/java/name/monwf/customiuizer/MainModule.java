@@ -66,10 +66,14 @@ public class MainModule extends XposedModule {
         return false;
     }
 
+    private SharedPreferences getRemotePrefs() {
+        if (remotePrefs == null) remotePrefs = getRemotePreferences(ModuleHelper.prefsName + "_remote");
+        return remotePrefs;
+    }
+
     private void initPrefs() {
         if (prefsLoaded) return;
-        SharedPreferences readPrefs = getRemotePreferences(ModuleHelper.prefsName + "_remote");
-        initPrefs(readPrefs.getAll());
+        initPrefs(getRemotePrefs().getAll());
     }
 
     private void initPrefs(Map<String, ?> allPrefs) {
@@ -183,7 +187,7 @@ public class MainModule extends XposedModule {
                 }
             }
         };
-        remotePrefs = getRemotePreferences(ModuleHelper.prefsName + "_remote");
+        remotePrefs = getRemotePrefs();
         remotePrefs.registerOnSharedPreferenceChangeListener(mListener);
     }
 
@@ -290,7 +294,7 @@ public class MainModule extends XposedModule {
             return;
         }
 
-        SharedPreferences remote = getRemotePreferences(ModuleHelper.prefsName + "_remote");
+        SharedPreferences remote = getRemotePrefs();
         if (!needLoadPrefs(pkg, remote)) return;
         Map<String, ?> allPrefs = remote.getAll();
         initPrefs(allPrefs);

@@ -70,6 +70,7 @@ public class GlobalActions {
     public static Object mStatusBar = null;
     private static Context mGlobalReceiverContext = null;
     private static Context mSBReceiverContext = null;
+    private static final Handler mMainHandler = new Handler(Looper.getMainLooper());
     public static final String ACTION_PREFIX = "name.monwf.customiuizer.mods.action.";
     public static final String EVENT_PREFIX = "name.monwf.customiuizer.mods.event.";
 
@@ -223,11 +224,10 @@ public class GlobalActions {
                             if (wmode < 2 && mActivityType < 2) {
                                 int taskId = XposedHelpers.getIntField(rootTaskInfo, "taskId");
                                 XposedHelpers.callMethod(activityTaskManager, "startActivityFromRecents", taskId, ao.toBundle());
-                                Handler myhandler = new Handler(Looper.getMainLooper());
                                 Runnable removeBg = new Runnable() {
                                     @Override
                                     public void run() {
-                                        myhandler.removeCallbacks(this);
+                                        mMainHandler.removeCallbacks(this);
                                         try {
                                             Method injectInputEventMethod = InputManager.class.getDeclaredMethod("injectInputEvent", InputEvent.class, int.class);
                                             Method instanceMethod = InputManager.class.getDeclaredMethod("getInstance");
@@ -241,7 +241,7 @@ public class GlobalActions {
                                         catch (Throwable err) {}
                                     }
                                 };
-                                myhandler.postDelayed(removeBg, 120);
+                                mMainHandler.postDelayed(removeBg, 120);
                                 return;
                             }
                         }
@@ -254,7 +254,7 @@ public class GlobalActions {
                     return;
                 }
                 else if (action.equals(ACTION_PREFIX + "ScrollToTop")) {
-                    new Handler(Looper.getMainLooper()).postDelayed(new Runnable() {
+                    mMainHandler.postDelayed(new Runnable() {
                         @Override
                         public void run() {
                             try {
