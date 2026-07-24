@@ -128,6 +128,7 @@ public class SystemUI {
     public static boolean newStyle = false;
     private final static int textIconTagId = ResourceHooks.getFakeResId("text_icon_tag");
     private final static int viewInitedTag = ResourceHooks.getFakeResId("view_inited_tag");
+    private final static int cameraResetTag = ResourceHooks.getFakeResId("camera_reset_tag");
 
     private static List<String> statusbarIconList;
 
@@ -3186,12 +3187,17 @@ public class SystemUI {
                     Object PanelInjector = XposedHelpers.callStaticMethod(findClass("com.android.systemui.Dependency", lpparam.getClassLoader()), "get", findClass("com.android.keyguard.injector.KeyguardPanelViewInjector", lpparam.getClassLoader()));
                     Object panelController = XposedHelpers.getObjectField(PanelInjector, "mPanelViewController");
                     final View mNotificationPanelView = (View) XposedHelpers.getObjectField(PanelInjector, "mPanelView");
-                    mNotificationPanelView.postDelayed(new Runnable() {
+                    Runnable oldResetRunnable = (Runnable) mNotificationPanelView.getTag(cameraResetTag);
+                    if (oldResetRunnable != null) mNotificationPanelView.removeCallbacks(oldResetRunnable);
+                    final Runnable resetRunnable = new Runnable() {
                         @Override
                         public void run() {
                             XposedHelpers.callMethod(panelController, "resetViews", false);
+                            mNotificationPanelView.setTag(cameraResetTag, null);
                         }
-                    }, 500);
+                    };
+                    mNotificationPanelView.postDelayed(resetRunnable, 500);
+                    mNotificationPanelView.setTag(cameraResetTag, resetRunnable);
                 }
             }
         });
@@ -3345,6 +3351,10 @@ public class SystemUI {
             @Override
             protected void after(final AfterHookCallback param) throws Throwable {
                 Context mContext = (Context)XposedHelpers.getObjectField(param.getThisObject(), "mContext");
+                BroadcastReceiver oldReceiver = (BroadcastReceiver) XposedHelpers.getAdditionalInstanceField(param.getThisObject(), "mAfterUnlockReceiver");
+                if (oldReceiver != null) {
+                    try { mContext.unregisterReceiver(oldReceiver); } catch (Throwable ignored) {}
+                }
                 BroadcastReceiver mAfterUnlockReceiver = new BroadcastReceiver() {
                     @Override
                     @SuppressWarnings("unchecked")
@@ -3385,6 +3395,7 @@ public class SystemUI {
                 };
                 mContext.registerReceiver(mAfterUnlockReceiver,
                     new IntentFilter(ACTION_PREFIX + "HandleQSTileClick"), Context.RECEIVER_EXPORTED);
+                XposedHelpers.setAdditionalInstanceField(param.getThisObject(), "mAfterUnlockReceiver", mAfterUnlockReceiver);
             }
         };
 
@@ -3739,6 +3750,10 @@ public class SystemUI {
             @Override
             protected void after(final AfterHookCallback param) throws Throwable {
                 View view = (View) param.getArgs()[0];
+                BroadcastReceiver oldBr = (BroadcastReceiver) XposedHelpers.getAdditionalInstanceField(view, "hideStatusBarScreenshotReceiver");
+                if (oldBr != null) {
+                    try { view.getContext().unregisterReceiver(oldBr); } catch (Throwable ignored) {}
+                }
                 BroadcastReceiver br = new BroadcastReceiver() {
                     @Override
                     public void onReceive(Context context, Intent intent) {
@@ -3749,6 +3764,7 @@ public class SystemUI {
                     }
                 };
                 view.getContext().registerReceiver(br, new IntentFilter("miui.intent.TAKE_SCREENSHOT"), Context.RECEIVER_EXPORTED);
+                XposedHelpers.setAdditionalInstanceField(view, "hideStatusBarScreenshotReceiver", br);
             }
         });
     }
@@ -3758,6 +3774,10 @@ public class SystemUI {
             @Override
             protected void after(final AfterHookCallback param) throws Throwable {
                 View view = (View) XposedHelpers.callMethod(param.getThisObject(), "getView");
+                BroadcastReceiver oldBr = (BroadcastReceiver) XposedHelpers.getAdditionalInstanceField(param.getThisObject(), "hideNavBarScreenshotReceiver");
+                if (oldBr != null) {
+                    try { view.getContext().unregisterReceiver(oldBr); } catch (Throwable ignored) {}
+                }
                 BroadcastReceiver br = new BroadcastReceiver() {
                     @Override
                     public void onReceive(Context context, Intent intent) {
@@ -3771,6 +3791,7 @@ public class SystemUI {
                     }
                 };
                 view.getContext().registerReceiver(br, new IntentFilter("miui.intent.TAKE_SCREENSHOT"), Context.RECEIVER_EXPORTED);
+                XposedHelpers.setAdditionalInstanceField(param.getThisObject(), "hideNavBarScreenshotReceiver", br);
             }
         };
         ModuleHelper.findAndHookMethod("com.android.systemui.navigationbar.NavigationBar", lpparam.getClassLoader(), "onInit", hideNavHook);
