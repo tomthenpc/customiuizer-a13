@@ -143,6 +143,23 @@ public class MainModule extends XposedModule {
         return false;
     }
 
+    private Object getPreferenceValue(SharedPreferences prefs, String key) {
+        if (!prefs.contains(key)) return null;
+        try { return prefs.getString(key, null); }
+        catch (ClassCastException ignore) {}
+        try { return prefs.getStringSet(key, null); }
+        catch (ClassCastException ignore) {}
+        try { return prefs.getBoolean(key, false); }
+        catch (ClassCastException ignore) {}
+        try { return prefs.getInt(key, 0); }
+        catch (ClassCastException ignore) {}
+        try { return prefs.getFloat(key, 0); }
+        catch (ClassCastException ignore) {}
+        try { return prefs.getLong(key, 0); }
+        catch (ClassCastException ignore) {}
+        return prefs.getAll().get(key);
+    }
+
     private void watchPreferenceChange() {
         if (prefsWatcherRegistered) return;
         prefsWatcherRegistered = true;
@@ -152,7 +169,7 @@ public class MainModule extends XposedModule {
         mListener = new SharedPreferences.OnSharedPreferenceChangeListener() {
             @Override
             public void onSharedPreferenceChanged(SharedPreferences sharedPreferences, @Nullable String key) {
-                Object val = sharedPreferences.getAll().get(key);
+                Object val = getPreferenceValue(sharedPreferences, key);
                 if (val == null) {
 //                    XposedHelpers.log(processName + " key removed: " + key);
                     mPrefs.remove(key);
