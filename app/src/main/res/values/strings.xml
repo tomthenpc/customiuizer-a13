@@ -1,5 +1,5 @@
 <resources>
-    <string name="app_name" translatable="false">米客 A14</string>
+    <string name="app_name" translatable="false">米客 A13</string>
     <string name="app_slogan" translatable="false">MIUI 14 / Android 13 · libxposed API 101</string>
     <string name="app_about">About</string>
     <string name="about_version">Version %1$s</string>

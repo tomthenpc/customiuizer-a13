@@ -74,7 +74,7 @@ android {
     }
     applicationVariants.configureEach { variant ->
         variant.outputs.configureEach {
-            setProperty("outputFileName", "CustoMIUIzer-A14-${lastVersionName}.apk")
+            setProperty("outputFileName", "CustoMIUIzer-A13-${lastVersionName}.apk")
         }
     }
 //    gradle.projectsEvaluated {
