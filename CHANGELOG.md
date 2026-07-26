@@ -27,11 +27,21 @@
 - 新证书 SHA-256：`15ce32f03e4d8e62df9390f77431862e59bf2cf95cd5a72f0c7330cdfcca2934`。
 - 旧签名版本不能覆盖安装；后续 A13 版本固定使用该证书。
 
+### Kotlin 迁移
+
+- 第二批迁移：`AboutFragment`、`Credentials`、`CredentialsShortcut`、`PreferenceState`、`ListViewEx`、`BitmapCachedLoader`、`ShakeManager`、`StepCounterController`、`WebPage`。
+- 第三批迁移：`CheckBoxPreferenceEx`、`EditTextPreferenceEx`、`PreferenceCategoryEx`、`PreferenceEx`、`ListPreferenceEx`、`DropDownPreferenceEx`、`SeekBarPreference`、`SpinnerEx`、`SpinnerExFake`。
+- 第四批迁移：`System_AutoBrightness`、`System_LockScreenShortcuts`、`System_StatusbarControls`、`System_Visualizer`、`System_BatteryIndicator`、`System_NoScreenLock`、`System_AirplaneModeConfig`、`System_VibrationAmp`、`System_ScreenshotConfig`、`Various`、`Various_CallUIBright`、`Various_HiddenFeatures`。
+- 第五批迁移：`SoundData`、`PreferenceAdapter`、`ModSearchAdapter`、`ResolveInfoAdapter`、`GetPathUtils`、`ColorCircle`、`AppHelper`。
+- `AppHelper` 改为 Kotlin `object`，`getBooleanOfAppPrefs`、`showInputDialog` 使用 `@JvmOverloads` 保持 Java 重载兼容；`syncPrefsToAnother` 使用 `when` 替代 `instanceof` 链；`removeStringPair` 改用迭代器安全移除。
+- `StepCounterController` 修复 `Handler.removeCallbacks` 与 `Runnable` 生命周期问题；`BitmapCachedLoader` 使用 `@file:Suppress` 处理 `AsyncTask` 弃用。
+- 删除所有对应 Java 源文件，避免重复类定义。
+
 ### 测试与 CI
 
 - 新增 `ModuleMetadataTest` 单元测试，验证 `module.prop` 与 `java_init.list`。
 - 更新 GitHub Actions：运行单元测试、`lintRelease`、Debug 构建、Release R8 代码路径，并校验 Xposed metadata、`applicationId`、`minSdk`、`targetSdk`、Legacy Xposed API 扫描。
-- 本地已验证：`clean`、`:app:test`、`:app:lintRelease`、`:app:assembleDebug`、`:app:assembleRelease` 通过；Release APK 使用新 A13 证书 v2 签名，zipalign 对齐通过。
+- 本地已验证：`clean`、`:app:test`、`:app:lint`、`:app:assembleDebug`、`:app:assembleRelease` 通过；Release APK 使用新 A13 证书 v2 签名，zipalign 对齐通过。
 
 ### 已知未决
 

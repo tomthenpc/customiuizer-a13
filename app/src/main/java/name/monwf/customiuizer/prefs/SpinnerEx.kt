@@ -1,5 +1,6 @@
 package name.monwf.customiuizer.prefs
 
+import android.annotation.SuppressLint
 import android.content.Context
 import android.content.res.Resources
 import android.util.AttributeSet
@@ -11,6 +12,7 @@ import androidx.appcompat.widget.AppCompatSpinner
 import androidx.appcompat.widget.ListPopupWindow
 import name.monwf.customiuizer.R
 
+@SuppressLint("ResourceType")
 open class SpinnerEx @JvmOverloads constructor(
     context: Context,
     attrs: AttributeSet? = null
