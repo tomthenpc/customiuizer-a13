@@ -1,5 +1,22 @@
 # Changelog
 
+## r13.2.1-devin（UI 回归修复）
+
+### 修复
+
+- 修复 Kotlin 迁移后自定义 Preference 类默认样式丢失导致的两个 UI 回归：
+  - 字体 / textAppearance 与重构前不一致；
+  - 开关（SwitchPreference/CheckBoxPreferenceEx）widget 不可见。
+- 根因：迁移后的 `@JvmOverloads` 主构造使用 `defStyleAttr = 0`，导致 `SwitchPreference`、`Preference`、`EditTextPreference`、`ListPreference`、`DropDownPreference`、`PreferenceCategory` 等子类没有使用 `androidx.preference` 主题中定义的 `switchPreferenceStyle`、`preferenceStyle` 等默认样式属性，布局和 widget 未能正确初始化。
+- 将上述自定义 Preference 的默认 `defStyleAttr` 恢复为 `androidx.preference.R.attr.*` 对应值，与 Java 原版的二参构造语义一致。
+
+### 验证
+
+- `:app:test`、`:app:lint`、`:app:assembleRelease` 通过；
+- Release APK 使用 A13 正式签名 v2，zipalign 对齐通过；
+- applicationId、Xposed metadata、API 101/102 边界保持不变；
+- 未合并 main、未创建 tag 或 GitHub Release。
+
 ## r13.2.0-devin（构建现代化与新签名）
 
 ### 包名与版本

@@ -16,7 +16,7 @@ import name.monwf.customiuizer.utils.Helpers
 class DropDownPreferenceEx @JvmOverloads constructor(
     context: Context,
     attrs: AttributeSet? = null,
-    defStyleAttr: Int = 0
+    defStyleAttr: Int = androidx.preference.R.attr.dropdownPreferenceStyle
 ) : DropDownPreference(context, attrs, defStyleAttr), PreferenceState {
 
     private var sValue: CharSequence? = null

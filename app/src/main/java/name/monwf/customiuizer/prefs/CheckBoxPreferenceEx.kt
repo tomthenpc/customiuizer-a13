@@ -14,7 +14,7 @@ import name.monwf.customiuizer.utils.Helpers
 class CheckBoxPreferenceEx @JvmOverloads constructor(
     context: Context,
     attrs: AttributeSet? = null,
-    defStyleAttr: Int = 0
+    defStyleAttr: Int = androidx.preference.R.attr.switchPreferenceStyle
 ) : SwitchPreference(context, attrs, defStyleAttr), PreferenceState {
 
     private val res: Resources = context.resources

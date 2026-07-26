@@ -14,7 +14,7 @@ import name.monwf.customiuizer.R
 class PreferenceCategoryEx @JvmOverloads constructor(
     context: Context,
     attrs: AttributeSet? = null,
-    defStyleAttr: Int = 0
+    defStyleAttr: Int = androidx.preference.R.attr.preferenceCategoryStyle
 ) : PreferenceCategory(context, attrs, defStyleAttr) {
 
     private val dynamic: Boolean
