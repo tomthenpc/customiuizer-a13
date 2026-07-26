@@ -3,6 +3,8 @@
 app/release/*
 app/standalone/*
 /local.properties
+.devin/
+*.log
 /.idea/caches
 /.idea/libraries
 /.idea/modules.xml

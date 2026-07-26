@@ -1,0 +1,30 @@
+[versions]
+agp = "8.7.2"
+kotlin = "2.0.21"
+versions-plugin = "0.51.0"
+libxposed-api = "101.0.1"
+libxposed-service = "101.0.0"
+commons-lang3 = "3.20.0"
+androidx-preference = "1.2.1"
+androidx-palette = "1.0.0"
+androidx-appcompat = "1.7.1"
+kotlinx-coroutines = "1.8.1"
+junit = "4.13.2"
+
+[libraries]
+libxposed-api = { module = "io.github.libxposed:api", version.ref = "libxposed-api" }
+libxposed-service = { module = "io.github.libxposed:service", version.ref = "libxposed-service" }
+commons-lang3 = { module = "org.apache.commons:commons-lang3", version.ref = "commons-lang3" }
+androidx-preference = { module = "androidx.preference:preference", version.ref = "androidx-preference" }
+androidx-palette = { module = "androidx.palette:palette", version.ref = "androidx-palette" }
+androidx-appcompat = { module = "androidx.appcompat:appcompat", version.ref = "androidx-appcompat" }
+kotlin-bom = { module = "org.jetbrains.kotlin:kotlin-bom", version.ref = "kotlin" }
+kotlin-stdlib = { module = "org.jetbrains.kotlin:kotlin-stdlib", version.ref = "kotlin" }
+kotlinx-coroutines-android = { module = "org.jetbrains.kotlinx:kotlinx-coroutines-android", version.ref = "kotlinx-coroutines" }
+kotlinx-coroutines-test = { module = "org.jetbrains.kotlinx:kotlinx-coroutines-test", version.ref = "kotlinx-coroutines" }
+junit = { module = "junit:junit", version.ref = "junit" }
+
+[plugins]
+android-application = { id = "com.android.application", version.ref = "agp" }
+kotlin-android = { id = "org.jetbrains.kotlin.android", version.ref = "kotlin" }
+versions = { id = "com.github.ben-manes.versions", version.ref = "versions-plugin" }
