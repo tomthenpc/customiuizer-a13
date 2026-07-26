@@ -43,7 +43,7 @@ class System_ScreenshotConfig : SubFragment() {
 
     override fun onActivityResult(requestCode: Int, resultCode: Int, data: Intent?) {
         if (resultCode == Activity.RESULT_OK && requestCode == 0) {
-            val dir = GetPathUtils.getDirectoryPathFromUri(activity, data?.data) ?: ""
+            val dir = GetPathUtils.getDirectoryPathFromUri(requireActivity(), data?.data) ?: ""
             findPreference<Preference>("pref_key_system_screenshot_mypath")?.summary = dir
             AppHelper.appPrefs.edit().putString("pref_key_system_screenshot_mypath", dir).apply()
         }
