@@ -61,8 +61,8 @@ class PreferenceEx @JvmOverloads constructor(
         when {
             customSummary != null -> valSummary.text = customSummary
             countAsSummary -> {
-                val count = AppHelper.getStringSetOfAppPrefs(key, LinkedHashSet()).size +
-                    AppHelper.getStringSetOfAppPrefs("${key}_black", LinkedHashSet()).size
+                val count = AppHelper.getStringSetOfAppPrefs(key, LinkedHashSet()).orEmpty().size +
+                    AppHelper.getStringSetOfAppPrefs("${key}_black", LinkedHashSet()).orEmpty().size
                 valSummary.text = count.toString()
             }
             else -> valSummary.text = null
