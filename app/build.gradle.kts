@@ -145,7 +145,7 @@ dependencies {
     compileOnly(libs.libxposed.api)
 
     implementation(libs.libxposed.service)
-    implementation(platform(libs.kotlin.bom))
+    implementation(enforcedPlatform(libs.kotlin.bom))
     implementation(libs.kotlin.stdlib)
     implementation(libs.commons.lang3)
     implementation(libs.androidx.preference)

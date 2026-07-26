@@ -1,5 +1,43 @@
 # Changelog
 
+## r13.2.0-devin（构建现代化与新签名）
+
+### 包名与版本
+
+- `versionCode` 升级到 `118`，`versionName` 升级到 `r13.2.0-devin`。
+- 目标分支 `devin/r13.2-kotlin-api102`。
+
+### 构建系统
+
+- 迁移到 Kotlin DSL 和 Gradle version catalog（`gradle/libs.versions.toml`）。
+- 工具链：AGP 8.7.2 + Gradle 8.9 + Kotlin 2.0.21 + JDK 17。
+- 通过 `enforcedPlatform(kotlin-bom)` 强制统一 Kotlin 标准库版本，解决 `libxposed` 传递依赖 `kotlin-stdlib` 2.2.10 带来的元数据版本冲突。
+- 保留 Debug / Release / Develop 三个构建类型；Release / Develop 必须正式签名，缺少签名配置时明确失败，不再静默回退到 Android Debug 签名。
+
+### Xposed 元数据
+
+- `module.prop` 保持 `minApiVersion=101`，`targetApiVersion` 提升到 `102`，`staticScope=false`。
+- `java_init.list` 保持入口 `name.monwf.customiuizer.MainModule`。
+- 同一 APK 以 API 101 公共加载路径运行，兼容 API 102 框架；未在 API 101 必经入口引入 API 102 专属类型。
+
+### 签名
+
+- 原 A13 签名私钥已遗失，建立新的独立长期签名。
+- 新证书 `CN=CustoMIUIzer A13`，`RSA 4096`，`SHA256withRSA`，有效期 10950 天。
+- 新证书 SHA-256：`15ce32f03e4d8e62df9390f77431862e59bf2cf95cd5a72f0c7330cdfcca2934`。
+- 旧签名版本不能覆盖安装；后续 A13 版本固定使用该证书。
+
+### 测试与 CI
+
+- 新增 `ModuleMetadataTest` 单元测试，验证 `module.prop` 与 `java_init.list`。
+- 更新 GitHub Actions：运行单元测试、`lintRelease`、Debug 构建、Release R8 代码路径，并校验 Xposed metadata、`applicationId`、`minSdk`、`targetSdk`、Legacy Xposed API 扫描。
+- 本地已验证：`clean`、`:app:test`、`:app:lintRelease`、`:app:assembleDebug`、`:app:assembleRelease` 通过；Release APK 使用新 A13 证书 v2 签名，zipalign 对齐通过。
+
+### 已知未决
+
+- 输出 APK 名当前使用 AGP 默认 `app-<variant>.apk`，输出命名恢复为 `CustoMIUIzer-A13-r13.x.x.apk` 将在 AGP VariantOutput API 可用后补齐。
+- 生命周期与高频 Hook 的系统性治理已纳入路线，将在后续提交按功能组推进。
+
 ## r13.1.2（宏观优化）
 
 ### 优化

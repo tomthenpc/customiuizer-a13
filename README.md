@@ -1,72 +1,94 @@
-# CustoMIUIzer_forA13
+# CustoMIUIzer A13
 
-An independently installable MIUI 14 / Android 13 maintenance branch of
-[CustoMIUIzer](https://github.com/MonwF/customiuizer), based on upstream
-[v23.11.26](https://github.com/MonwF/customiuizer/releases/tag/v23.11.26).
+`CustoMIUIzer-A13` is a long-term independently maintained fork of [CustoMIUIzer](https://github.com/MonwF/customiuizer) upstream version `v23.11.26`, targeting MIUI 14 / Android 13 devices.
 
-This branch targets the modern libxposed API 101 runtime used by LSPosed 2.0
-and Vector 2.0. It does not support API 100-only frameworks.
+> **Note**: The `customiuizer-a14` branch is used only as an **engineering reference** (Kotlin DSL, version catalog, CI, testing patterns). It is not a source of A13 runtime facts. A13-specific MIUI class names, method signatures, Hook targets, resource IDs, SystemUI / Launcher structure, ROM gating, preference keys, and Manifest components are not copied from A14.
 
-中文说明：[README_ZH.md](README_ZH.md)
+## Primary Targets
 
-## Primary target
+- **Device**: Redmi Note 11T Pro / Pro+ (`xaga`)
+- **System**: MIUI 14 / Android 13 (API 33)
+- **Reference ROMs**: `V14.0.10.0.TLOINXM`, `V14.0.7.0.TLOCNXM`
+- **Application ID**: `tv.withaibuild.customiuizer.r13`
+- **ABI**: `arm64-v8a`
+- **libxposed**: `minApiVersion=101`, `targetApiVersion=102`, `staticScope=false`
+- **Recommended Framework**: LSPosed 2.0 / Vector 2.0
 
-- Device: Redmi Note 11T Pro / Pro+ (`xaga`)
-- OS: MIUI 14 based on Android 13
-- ROMs: `V14.0.10.0.TLOINXM` and `V14.0.7.0.TLOCNXM`
-- Framework API: libxposed API 101
-- Reference frameworks:
-  - LSPosed `v2.0.4 (7741)`
-  - Vector `v2.0 (3046)`, [Actions run 29805285935](https://github.com/JingMatrix/Vector/actions/runs/29805285935)
+Other MIUI 14 / Android 13 builds may work but are not the primary validation target.
 
-Other Android 13 MIUI 14 builds may work, but they are not part of the primary
-compatibility target. The module intentionally refuses to install hooks on
-Android versions other than API 33.
+## Relationship to Upstream and A14
 
-## API 101 migration
-
-- Uses `io.github.libxposed:api:101.0.1` and service API `101.0.0`.
-- Declares `minApiVersion=101` and `targetApiVersion=101`.
-- Uses the API 101 lifecycle: `onModuleLoaded`, `onPackageReady`, and
-  `onSystemServerStarting`.
-- Registers hooks through `HookBuilder` and `Chain.intercept` with
-  `ExceptionMode.PASSTHROUGH`.
-- Resource and package-permission hooks already use native API 101
-  interceptors.
-- Remaining MIUI feature hooks use a contained compatibility adapter that
-  preserves mutable arguments, early return, throwable propagation, and
-  after-hook result replacement while they are migrated incrementally.
-
-The application ID is `tv.withaibuild.customiuizer.r13`, so it can coexist with
-the upstream build and the separate Android 14 branch. Preferences are not
-automatically copied between these independently installed variants.
+- **Upstream baseline**: Functionality is anchored to `MonwF/customiuizer v23.11.26`.
+- **A13 independence**: Application ID, signing key, version codes, and build system are isolated from upstream and A14; they cannot be installed over each other.
+- **A14 as engineering reference only**: A14 can inform build tooling, version catalog layout, CI structure, and API 101/102 compatibility approaches, but not A13 ROM facts.
 
 ## Build
 
-Requirements: JDK 17 and Android SDK 36.
+Requirements: JDK 17, Android SDK (compile SDK 36, build-tools 37.0.1).
 
 ```bash
+./gradlew :app:assembleDebug
 ./gradlew :app:assembleRelease
 ```
 
-If `../keystore.properties` is present, the release key configured there is
-used. Otherwise Gradle produces a debug-signed release artifact for local
-testing. Output is written under `app/build/outputs/apk/release/`.
+Release / Develop builds require a `../keystore.properties` file pointing to the A13 release keystore (`C:/Users/tv/Documents/buildkey/r13/customiuizer-a13-release.p12`). The build fails explicitly if release signing is missing and never falls back to the Android debug key. Debug builds and regular tests are unaffected.
 
-## Device validation checklist
+Default output directories:
 
-1. Remove or disable the API 100 edition with the same feature set.
-2. Install `CustoMIUIzer-A13` (米客 A13), enable it only for the packages in its default
-   scope, then reboot.
-3. Confirm the settings UI can write remote preferences.
-4. Validate System UI, launcher, system-server, Security Center, Power Keeper,
-   package installer, screenshot, and in-call features separately.
-5. Collect a full LSPosed/Vector log before enabling another feature group if a
-   target ROM uses different MIUI class or method signatures.
+- Debug: `app/build/outputs/apk/debug/`
+- Release: `app/build/outputs/apk/release/`
 
-## Credits and license
+> As of `r13.2.0-devin`, the APK output name follows the AGP default `app-<variant>.apk` because AGP 8.7's VariantOutput API does not expose `outputFileName`. This will be restored to `CustoMIUIzer-A13-r13.x.x.apk` once the API is available.
 
-Based on CustoMIUIzer by Mikanoshi and MonwF. API 101 migration and this A13
-maintenance branch are maintained separately.
+## Verification
 
-Licensed under [GPL-3.0](LICENSE).
+Recommended local verification:
+
+```bash
+./gradlew clean :app:test :app:lintRelease :app:assembleDebug :app:assembleRelease
+```
+
+Verification includes:
+
+- Unit tests (`ModuleMetadataTest` checks `module.prop` / `java_init.list`)
+- `lintRelease`
+- Debug and Release compilation
+- Release R8 + resource shrink
+- zipalign verification
+- `META-INF/xposed/module.prop`: `minApiVersion=101`, `targetApiVersion=102`, `staticScope=false`
+- `META-INF/xposed/java_init.list`: `name.monwf.customiuizer.MainModule`
+- `applicationId = tv.withaibuild.customiuizer.r13`, `minSdk=33`, `targetSdk=34`
+- Release APK signed with v2, certificate CN=`CustoMIUIzer A13`
+
+## Installation
+
+1. Uninstall or disable any previous A13 build signed with the old key (the previous signing key is lost; older builds cannot be overwritten).
+2. Install the new APK, enable the default scope in LSPosed / Vector, and reboot.
+3. Open the app and confirm remote preferences can be read/written.
+4. Verify features by functional group: System UI, Launcher, system_server, Security, PowerKeeper, Package installer, Screenshot, InCallUI.
+5. If a feature fails, disable it and capture full framework logs; MIUI class names and signatures can vary between ROM builds.
+
+## Functionality
+
+The feature set matches upstream `v23.11.26` for the A13 target. Main groups include:
+
+- System: lock screen, status bar, control center, clock, charging animation, screenshot, wallpaper
+- Launcher: icons, gestures, dock, drawer
+- Calls and contacts: in-call UI brightness, hidden features
+- Misc: global gestures, scroll-to-top, freeform, Tasker
+- Settings and preference storage
+
+## Roadmap and Known Limitations
+
+- ✅ New A13 long-term signing key established and verified
+- ✅ Build system migrated to Kotlin DSL + version catalog
+- ✅ API 101/102 compatibility metadata
+- ✅ Unit tests, Lint, and CI baseline
+- 🔄 Lifecycle and high-frequency Hook governance (in progress, per functional group)
+- 🔄 Low-risk Kotlin-first migration (launcher Activities migrated, more to follow)
+- ⏳ Restore APK output naming to `CustoMIUIzer-A13-r13.x.x.apk`
+- ⏳ Real-device regression on reference ROMs
+
+## License and Credits
+
+Based on [Mikanoshi](https://github.com/Mikanoshi) and [MonwF](https://github.com/MonwF) CustoMIUIzer. The A13 independent fork is licensed under [GPL-3.0](LICENSE).
