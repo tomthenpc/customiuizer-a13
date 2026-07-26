@@ -1,0 +1,36 @@
+name: Build
+
+on:
+  push:
+    branches: [main, "agent/**"]
+  pull_request:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  release-apk:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: "17"
+      - uses: gradle/actions/setup-gradle@v4
+      - name: Build and lint release APK
+        run: ./gradlew :app:assembleRelease :app:lintRelease
+      - name: Verify modern Xposed metadata
+        shell: bash
+        run: |
+          apk="$(find app/build/outputs/apk/release -name '*.apk' -print -quit)"
+          test -n "$apk"
+          unzip -p "$apk" META-INF/xposed/module.prop | grep -qx 'minApiVersion=101'
+          unzip -p "$apk" META-INF/xposed/module.prop | grep -qx 'targetApiVersion=101'
+          unzip -p "$apk" META-INF/xposed/java_init.list | grep -qx 'name.monwf.customiuizer.MainModule'
+      - uses: actions/upload-artifact@v4
+        with:
+          name: CustoMIUIzer_forA13
+          path: app/build/outputs/apk/release/*.apk
+          if-no-files-found: error

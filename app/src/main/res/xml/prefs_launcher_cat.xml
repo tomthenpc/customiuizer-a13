@@ -1,0 +1,35 @@
+<PreferenceScreen
+	xmlns:android="http://schemas.android.com/apk/res/android"
+	xmlns:miuizer="http://schemas.android.com/apk/res-auto"
+	android:layout_width="match_parent"
+	android:layout_height="match_parent"
+	android:key="pref_key_cat">
+
+	<name.monwf.customiuizer.prefs.ListPreferenceEx
+		android:key="pref_key_launcher_mods"
+		android:title="@string/launcher_title"
+		android:summary="@string/launcher_summ"
+		android:entries="@array/launchers"
+		android:entryValues="@array/launchers_val"
+		android:defaultValue="1" />
+
+	<name.monwf.customiuizer.prefs.PreferenceEx
+		android:title="@string/launcher_folders"
+		android:key="pref_key_launcher_cat_folders" />
+	<name.monwf.customiuizer.prefs.PreferenceEx
+		android:title="@string/launcher_titles"
+		android:key="pref_key_launcher_cat_titles" />
+	<name.monwf.customiuizer.prefs.PreferenceEx
+		android:title="@string/launcher_privacyapps"
+		android:key="pref_key_launcher_cat_privacyapps" />
+	<name.monwf.customiuizer.prefs.PreferenceEx
+		android:title="@string/launcher_gestures"
+		android:key="pref_key_launcher_cat_gestures" />
+	<name.monwf.customiuizer.prefs.PreferenceEx
+		android:title="@string/launcher_bugfixes"
+		android:key="pref_key_launcher_cat_bugfixes" />
+	<name.monwf.customiuizer.prefs.PreferenceEx
+		android:title="@string/system_mods_other"
+		android:key="pref_key_launcher_cat_other" />
+
+</PreferenceScreen>
