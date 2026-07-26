@@ -1,8 +1,8 @@
-name: Build
+﻿name: Build
 
 on:
   push:
-    branches: [main, "agent/**"]
+    branches: [main, "agent/**", "devin/**", "r13/**"]
   pull_request:
   workflow_dispatch:
 
@@ -10,7 +10,7 @@ permissions:
   contents: read
 
 jobs:
-  release-apk:
+  build:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
@@ -19,18 +19,36 @@ jobs:
           distribution: temurin
           java-version: "17"
       - uses: gradle/actions/setup-gradle@v4
-      - name: Build and lint release APK
-        run: ./gradlew :app:assembleRelease :app:lintRelease
-      - name: Verify modern Xposed metadata
+
+      - name: Run unit tests and lint
+        run: ./gradlew :app:test :app:lintRelease
+
+      - name: Build debug APK and exercise release code path (R8, no signing)
+        run: ./gradlew :app:assembleDebug :app:minifyReleaseWithR8
+
+      - name: Scan for legacy Xposed API references
         shell: bash
         run: |
-          apk="$(find app/build/outputs/apk/release -name '*.apk' -print -quit)"
+          if grep -R "de.robv.android.xposed" app/src/main/java app/build.gradle.kts; then
+            echo "Legacy Xposed API references found"
+            exit 1
+          fi
+
+      - name: Verify Xposed metadata and applicationId
+        shell: bash
+        run: |
+          aapt2_path="$(find "$ANDROID_HOME/build-tools" -name aapt2 -type f | sort -V | tail -1)"
+          apk="$(find app/build/outputs/apk/debug -name '*.apk' -print -quit)"
           test -n "$apk"
           unzip -p "$apk" META-INF/xposed/module.prop | grep -qx 'minApiVersion=101'
-          unzip -p "$apk" META-INF/xposed/module.prop | grep -qx 'targetApiVersion=101'
+          unzip -p "$apk" META-INF/xposed/module.prop | grep -qx 'targetApiVersion=102'
           unzip -p "$apk" META-INF/xposed/java_init.list | grep -qx 'name.monwf.customiuizer.MainModule'
+          "$aapt2_path" dump badging "$apk" | grep -q "package: name='tv.withaibuild.customiuizer.r13'"
+          "$aapt2_path" dump badging "$apk" | grep -q "minSdkVersion:'33'"
+          "$aapt2_path" dump badging "$apk" | grep -q "targetSdkVersion:'34'"
+
       - uses: actions/upload-artifact@v4
         with:
-          name: CustoMIUIzer_forA13
-          path: app/build/outputs/apk/release/*.apk
+          name: CustoMIUIzer_forA13_debug
+          path: app/build/outputs/apk/debug/*.apk
           if-no-files-found: error
