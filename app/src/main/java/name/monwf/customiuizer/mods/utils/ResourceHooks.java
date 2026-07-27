@@ -145,6 +145,8 @@ public class ResourceHooks {
 			Object value;
 			String resFullName = pkgName + ":" + resType + "/" + resName;
 
+			// Reduce map lookups by using a single get() and lazy fallback key.
+			// Use primitive int only for the local variable; the stored ID is still boxed in Pair.second.
 			int modResId = 0;
 			Pair<ReplacementType, Object> replacement = replacements.get(resFullName);
 			if (replacement == null)

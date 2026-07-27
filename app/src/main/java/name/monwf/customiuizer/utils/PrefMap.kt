@@ -1,9 +1,5 @@
 package name.monwf.customiuizer.utils
 
-import java.util.concurrent.ConcurrentHashMap
-
-private val keyCache = ConcurrentHashMap<String, String>()
-
 @Suppress("UNCHECKED_CAST")
 class PrefMap<K, V> : HashMap<K, V>() {
 
@@ -46,5 +42,5 @@ class PrefMap<K, V> : HashMap<K, V>() {
     }
 
     private fun normalizeKey(key: String): String =
-        if (key.startsWith("pref_key_")) key else keyCache.computeIfAbsent(key) { "pref_key_$it" }
+        if (key.startsWith("pref_key_")) key else "pref_key_$key"
 }

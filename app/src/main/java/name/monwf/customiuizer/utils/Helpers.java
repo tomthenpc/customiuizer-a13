@@ -68,7 +68,6 @@ import java.util.Comparator;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
-import java.util.regex.Pattern;
 
 import miui.util.HapticFeedbackUtil;
 import name.monwf.customiuizer.BuildConfig;
@@ -77,9 +76,6 @@ import name.monwf.customiuizer.prefs.PreferenceCategoryEx;
 
 @SuppressWarnings("WeakerAccess")
 public class Helpers {
-
-    public static final Pattern PIPE_SPLIT_PATTERN = Pattern.compile("\\|");
-    public static final Pattern COLON_SPLIT_PATTERN = Pattern.compile(":");
 
     @SuppressLint("StaticFieldLeak")
 
@@ -695,10 +691,24 @@ public class Helpers {
         return null;
     }
 
+    /**
+     * 针对固定 "pkg|activity" 格式的直接解析。
+     *
+     * 仍创建 String[] 与 substring；仅用于把 UI 中已校验的 pkg|activity 字符串拆成两段。
+     * 只在合法单分隔符格式下保证 pkg/activity 两段语义：
+     *   - 无分隔符：返回 [trim(input), ""]
+     *   - 前导分隔符：返回 ["", 第一段之后到下一个分隔符之前的内容]
+     *   - 尾部分隔符：返回 [pkg.trim(), ""]
+     *   - 多个分隔符：仅取前两个 "|" 之间的内容作为 activity
+     *   - 两侧空格会被 trim
+     */
     private static String[] splitPkgAct(String pkgActName) {
         int idx = pkgActName.indexOf('|');
-        if (idx < 1) return new String[] { pkgActName.trim(), "" };
-        return new String[] { pkgActName.substring(0, idx).trim(), pkgActName.substring(idx + 1).trim() };
+        if (idx < 0) return new String[] { pkgActName.trim(), "" };
+        int next = pkgActName.indexOf('|', idx + 1);
+        String pkg = pkgActName.substring(0, idx).trim();
+        String act = next < 0 ? pkgActName.substring(idx + 1).trim() : pkgActName.substring(idx + 1, next).trim();
+        return new String[] { pkg, act };
     }
 
     public static Drawable getShortcutIcon(Context context, String key) {

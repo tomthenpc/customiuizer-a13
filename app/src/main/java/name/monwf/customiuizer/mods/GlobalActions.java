@@ -908,7 +908,7 @@ public class GlobalActions {
             if (intentType == IntentType.SHORTCUT) {
                 intent = Intent.parseUri(prefValue, 0);
             } else {
-                String[] pkgAppArray = Helpers.PIPE_SPLIT_PATTERN.split(prefValue);
+                String[] pkgAppArray = prefValue.split("\\|");
                 if (pkgAppArray.length < 2) return null;
                 ComponentName name = new ComponentName(pkgAppArray[0], pkgAppArray[1]);
                 intent.setComponent(name);

@@ -11,7 +11,8 @@
 
 - **Repository:** `tomthenpc/customiuizer-a13`
 - **Branch:** `devin/r13.2-kotlin-api102`
-- **HEAD:** `80a4ae6`
+- **Last verified code commit:** `c7ee511fb2a0a3896f0cdebf830d8e7a4d3ec59d`
+- **Checkpoint based on commit:** 当前工作区待提交（最终报告给出新 commit hash）
 - **versionName / versionCode:** `r13.2.2-devin` / `120`
 - **applicationId:** `tv.withaibuild.customiuizer.r13`
 - **libxposed API:** `minApiVersion=101`，`targetApiVersion=102`，`staticScope=false`
@@ -34,11 +35,11 @@
 - `StepCounterController.kt`：`ArrayList` 改为 `mutableListOf()`。
 - `WebPage.kt`：移除未使用的 `WebSettings` import。
 - 删除死代码 `utils/SoundData.kt`（仓库内无静态引用、无反射/资源/ProGuard 引用）。
-- `Helpers.java`：`getAppName`/`getAppIcon` 移除 `String.split("\\|")` 正则，改用 `indexOf('|')` + `substring` 的 `splitPkgAct` 辅助方法，避免高频调用时的 regex 编译和数组分配，并增加 null 防御。
+- `Helpers.java`：`getAppName`/`getAppIcon` 改用 `splitPkgAct`（`indexOf('|')` + `substring`）解析固定 `pkg|activity` 格式。该辅助方法仍创建 `String[]` 与 substring；仅保证合法单分隔符格式下的两段语义，前后/中间空格会被 trim；对前导/尾部分隔符、多分隔符返回安全结果。
 - `SystemUI.java`、`AppDataAdapter.java`、`LockedAppAdapter.java`、`PrivacyAppAdapter.java`、`SortableList.java`：显式使用 `Locale` 修复 `DefaultLocale` lint 警告，避免依赖默认 locale 带来的土耳其语等异常。
-- `ResourceHooks.java`：`getResourceReplacement` 用单次 `get` + 懒加载 fallback key 替代 `containsKey` + `get` 两次查找，并将 `modResId` 改为 `int` 原语，减少资源 Hook 热路径的 map 查找与装箱。
-- `PrefMap.kt`：增加 `keyCache` 缓存 `pref_key_` 前缀拼接结果，避免高频 Hook 每次 `mPrefs.getXxx` 都创建新的 key 字符串。
-- `Helpers.java`：新增 `PIPE_SPLIT_PATTERN` 与 `COLON_SPLIT_PATTERN` 预编译 Pattern，供 `GlobalActions.java`、`System.java`、`SystemUI.java` 的 Hook 热路径复用，避免每次 `String.split(regex)` 重新编译正则。
+- `ResourceHooks.java`：`getResourceReplacement` 用单次 `get` + 懒加载 fallback key 替代 `containsKey` + `get` 两次查找，并将局部 `modResId` 改为 `int` 原语，以减少 map 查询次数。`Pair.second` 中仍保存 `Integer` 装箱对象，因此未消除装箱，仅减少局部变量分配与 map 查找。
+- `PrefMap.kt`：`getStringSet` 返回 `emptySet()` 单例。`keyCache` 已撤销：经检查，`MainModule.mPrefs.getXxx` 存在大量动态 key（UUID、包名/Activity 名、user hash 等后缀，如 `key + "_" + pkgName + "|0"`、`key + "_" + uuid + "_activity"`、`system_` + subKey + ...），key 不稳定且数量无界；使用 `ConcurrentHashMap` 缓存会引入无界内存占用，其收益未经基准验证，因此恢复为 `"pref_key_$key"` 直接拼接。
+- ~~`Helpers.java`：新增 `PIPE_SPLIT_PATTERN` 与 `COLON_SPLIT_PATTERN` 预编译 Pattern~~（已撤销）。`String.split(":")` / `String.split("\\|")` 在 Android 中走 `Pattern.fastSplit()` 快路径，不会每次重新编译正则；预编译 Pattern 替换属于无证据优化，已恢复为原始 `String.split`。
 
 ### 测试与构建
 - `./gradlew --no-daemon :app:assembleDebug :app:lintDebug :app:testDebugUnitTest`：BUILD SUCCESSFUL（`cleanup-build8.log`）。
@@ -47,13 +48,15 @@
 - lintDebug：0 errors / 527 warnings（大量 `UnusedResources` 为 `getIdentifier` 动态引用导致，未删除）。
 
 ### Git
-- 第一批 commit `07b1090`（Kotlin 去 `!!` + 死代码清理）已 push。
-- 第二批 commit `22bc856`（`Helpers` 高频优化 + `Locale` lint 修复）已 push。
-- 第三批 commit `9713e3d`（`ResourceHooks` + `PrefMap` 高频优化）已 push。
-- 当前工作区第四批待提交：`Helpers`/`GlobalActions`/`System`/`SystemUI` 预编译 Pattern split 优化 + checkpoint 更新。
+- 代码提交 1：`07b1090`（Kotlin 去 `!!` + 死代码清理）
+- 代码提交 2：`22bc856`（`Helpers.splitPkgAct` + `Locale` lint 修复）
+- 代码提交 3：`9713e3d`（`ResourceHooks` 单次 `get()` + `PrefMap` 理论优化）
+- 代码提交 4：`80a4ae6`（预编译 Pattern split；本轮已撤销其代码改动）
+- 文档提交：`c7ee511`（checkpoint/最终报告更新）
+- 当前工作区：证据纠偏 commit 待提交（撤销 Pattern split、`PrefMap.keyCache`、修正文档表述）。
 
 ### 文档
-- 更新 `docs/DEVIN_R13_CHECKPOINT.md` 为代码审查阶段状态。
+- 更新 `docs/DEVIN_R13_CHECKPOINT.md` 为代码审查与证据纠偏状态。
 
 ## 最新绿色验证
 
@@ -67,7 +70,10 @@
 
 ## 当前问题与阻塞
 
-- 无。
+- 真机验证未完成：LSPosed 加载、SystemUI/Launcher/Settings 主要功能、搜索返回、旋转重建均待确认。
+- API 101/102 实机边界未验证：未在只支持 API 101 的环境运行。
+- APK SHA-256 / 签名证书 SHA-256 未在 release 构建后记录。
+- R8 / shrinkResources 产物、`module.prop`、scope 和入口文件需随本批构建后核对。
 
 ## 待实机验证
 
@@ -84,10 +90,19 @@
   - **预期：** 模块正常加载，SystemUI/Launcher/Settings 主要功能行为与清理前一致。
   - **状态：** pending
 
+## 本轮证据纠偏
+
+- `80a4ae6` 中预编译 `Pattern` split 已撤销：`GlobalActions.java`、`System.java`、`SystemUI.java` 恢复 `String.split`；`Helpers.java` 删除 `PIPE_SPLIT_PATTERN`/`COLON_SPLIT_PATTERN` 与 `Pattern` import。
+- 原因：Android `String.split` 对 `":"` 和 `"\\|"` 走 `Pattern.fastSplit()`，不会每次重新编译正则；预编译 Pattern 没有已证收益，按“无证据不优化”撤销。
+- `Helpers.splitPkgAct()` 保留，文档已修正为“固定 `pkg|activity` 格式直接解析”，明确仍创建 `String[]` 与 substring、边界行为与输入检查。
+- `ResourceHooks` 表述修正：不再声称消除装箱，改为“单次 `get()` + 懒加载 fallback key，使用原语局部变量减少 map 查询”。
+- `PrefMap.keyCache` 已撤销：经遍历 `mPrefs.get*` 调用，发现 41 处含动态 key 拼接，key 不稳定且无界，缓存收益无基准证据，恢复直接拼接。
+
 ## 下一步
 
-- 提交并 push 当前代码审查/清理第一批到 `devin/r13.2-kotlin-api102`。
-- 继续 Phase 5 高频路径专项审查：重点检查 `mods/*.java` 中 `mPrefs.getStringSet`/`getBoolean` 是否可被缓存、Hook 回调中是否存在重复反射/对象分配、主线程阻塞等问题。
+- 提交并 push 证据纠偏 commit 到 `devin/r13.2-kotlin-api102`。
+- 在 Devin 本地重新执行 `git diff --check`、`:app:testDebugUnitTest`、`:app:lintDebug`、`:app:assembleDebug`、`:app:assembleRelease`（正式签名配置），并记录 APK 文件名、大小、SHA-256 与签名证书 SHA-256。
+- 等待真机验证。
 
 ## 发布状态
 
