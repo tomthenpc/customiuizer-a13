@@ -2,7 +2,6 @@ package name.monwf.customiuizer.subs
 
 import android.os.Bundle
 import android.webkit.DownloadListener
-import android.webkit.WebSettings
 import android.webkit.WebView
 import android.webkit.WebViewClient
 import androidx.activity.OnBackPressedCallback

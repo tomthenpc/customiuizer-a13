@@ -8,7 +8,7 @@ class ModuleMetadataTest {
 
     @Test
     fun modulePropDeclaresApi101WithTarget102() {
-        val stream = javaClass.classLoader!!.getResourceAsStream("META-INF/xposed/module.prop")
+        val stream = javaClass.classLoader?.getResourceAsStream("META-INF/xposed/module.prop")
             ?: error("META-INF/xposed/module.prop not found on test classpath")
         val props = Properties()
         stream.use { props.load(it) }
@@ -19,7 +19,7 @@ class ModuleMetadataTest {
 
     @Test
     fun javaInitListDeclaresMainModule() {
-        val stream = javaClass.classLoader!!.getResourceAsStream("META-INF/xposed/java_init.list")
+        val stream = javaClass.classLoader?.getResourceAsStream("META-INF/xposed/java_init.list")
             ?: error("META-INF/xposed/java_init.list not found on test classpath")
         val text = stream.bufferedReader().use { it.readText().trim() }
         assertEquals("name.monwf.customiuizer.MainModule", text)

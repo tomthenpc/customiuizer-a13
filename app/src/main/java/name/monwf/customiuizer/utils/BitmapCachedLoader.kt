@@ -24,12 +24,7 @@ internal class BitmapCachedLoader(
     private val targetRef = WeakReference(target as ImageView)
     private val appInfo = WeakReference(info as AppData)
     private val ctx: Context = context.applicationContext
-    private var theTag: Int = -1
-
-    init {
-        val tag = (target as ImageView).tag
-        if (tag != null) theTag = tag as Int
-    }
+    private val theTag: Int = (target as ImageView).tag as? Int ?: -1
 
     override fun doInBackground(vararg params: Void?): Bitmap? {
         val ad = appInfo.get() ?: return null
@@ -85,8 +80,7 @@ internal class BitmapCachedLoader(
     override fun onPostExecute(bmp: Bitmap?) {
         val itemIcon = targetRef.get() ?: return
         if (bmp == null) return
-        val tag = itemIcon.tag
-        if (tag != null && theTag == tag as Int) {
+        if (theTag == itemIcon.tag as? Int) {
             val drawable = itemIcon.drawable
             if (drawable is TransitionDrawable) {
                 drawable.addLayer(BitmapDrawable(ctx.resources, bmp))

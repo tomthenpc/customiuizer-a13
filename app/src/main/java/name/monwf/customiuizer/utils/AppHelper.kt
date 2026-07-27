@@ -70,12 +70,12 @@ object AppHelper {
 
     @JvmStatic
     fun getIntOfAppPrefs(key: String, defValue: Int): Int {
-        return appPrefs!!.getInt(normalizeKey(key), defValue)
+        return appPrefs?.getInt(normalizeKey(key), defValue) ?: defValue
     }
 
     @JvmStatic
     fun getStringOfAppPrefs(key: String, defValue: String?): String? {
-        return appPrefs!!.getString(normalizeKey(key), defValue)
+        return appPrefs?.getString(normalizeKey(key), defValue) ?: defValue
     }
 
     @JvmStatic
@@ -86,13 +86,13 @@ object AppHelper {
 
     @JvmStatic
     fun getStringSetOfAppPrefs(key: String, defValue: Set<String>?): Set<String>? {
-        return appPrefs!!.getStringSet(normalizeKey(key), defValue)
+        return appPrefs?.getStringSet(normalizeKey(key), defValue) ?: defValue
     }
 
     @JvmStatic
     @JvmOverloads
     fun getBooleanOfAppPrefs(key: String, defValue: Boolean = false): Boolean {
-        return appPrefs!!.getBoolean(normalizeKey(key), defValue)
+        return appPrefs?.getBoolean(normalizeKey(key), defValue) ?: defValue
     }
 
     @JvmStatic

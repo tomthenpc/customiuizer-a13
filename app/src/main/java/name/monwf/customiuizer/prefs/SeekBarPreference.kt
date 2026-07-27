@@ -257,11 +257,13 @@ class SeekBarPreference @JvmOverloads constructor(
             if (mNegativeShift > 0) display -= mNegativeShift
 
             val text = try {
-                if (mUseDisplayDividerValue) {
-                    String.format(mFormat!!, display.toFloat() / mDisplayDividerValue)
-                } else {
-                    String.format(mFormat!!, display)
-                }
+                mFormat?.let { format ->
+                    if (mUseDisplayDividerValue) {
+                        String.format(format, display.toFloat() / mDisplayDividerValue)
+                    } else {
+                        String.format(format, display)
+                    }
+                } ?: display.toString()
             } catch (e: IllegalFormatException) {
                 e.printStackTrace()
                 display.toString()
@@ -274,7 +276,7 @@ class SeekBarPreference @JvmOverloads constructor(
 
     private fun saveValue() {
         val key = getKey() ?: return
-        AppHelper.appPrefs!!.edit().putInt(key, getValue()).apply()
+        AppHelper.appPrefs?.edit()?.putInt(key, getValue())?.apply()
     }
 
     fun setUnsupported(value: Boolean) {

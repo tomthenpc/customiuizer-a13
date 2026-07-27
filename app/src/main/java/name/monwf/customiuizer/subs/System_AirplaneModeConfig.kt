@@ -9,13 +9,11 @@ import androidx.preference.Preference
 import androidx.preference.PreferenceScreen
 import name.monwf.customiuizer.SubFragment
 import name.monwf.customiuizer.prefs.ListPreferenceEx
-import java.util.ArrayList
-import java.util.Arrays
 
 class System_AirplaneModeConfig : SubFragment() {
 
-    private lateinit var radios: ArrayList<String>
-    private lateinit var radiosToggle: ArrayList<String>
+    private var radios: MutableList<String> = mutableListOf()
+    private var radiosToggle: MutableList<String> = mutableListOf()
 
     private val listener = Preference.OnPreferenceChangeListener { _, _ ->
         Handler(Looper.getMainLooper()).post { processValues() }
@@ -64,16 +62,14 @@ class System_AirplaneModeConfig : SubFragment() {
 
         val resolver = activity?.contentResolver
         radios = try {
-            val raw = Settings.Global.getString(resolver, "airplane_mode_radios")
-            ArrayList(Arrays.asList(*(raw?.split(",")?.toTypedArray() ?: emptyArray())))
+            Settings.Global.getString(resolver, "airplane_mode_radios")?.split(",")?.toMutableList() ?: mutableListOf()
         } catch (t: Throwable) {
-            ArrayList()
+            mutableListOf()
         }
         radiosToggle = try {
-            val raw = Settings.Global.getString(resolver, "airplane_mode_toggleable_radios")
-            ArrayList(Arrays.asList(*(raw?.split(",")?.toTypedArray() ?: emptyArray())))
+            Settings.Global.getString(resolver, "airplane_mode_toggleable_radios")?.split(",")?.toMutableList() ?: mutableListOf()
         } catch (t: Throwable) {
-            ArrayList()
+            mutableListOf()
         }
 
         setupPref("pref_key_system_airplanemodeconfig_cell", "cell")

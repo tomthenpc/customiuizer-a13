@@ -29,7 +29,7 @@ class PrefMap<K, V> : HashMap<K, V>() {
 
     fun getStringSet(key: String): Set<String> {
         val value = get(normalizeKey(key) as K)
-        return if (value == null) HashSet() else value as Set<String>
+        return if (value == null) emptySet() else value as Set<String>
     }
 
     fun getBoolean(key: String): Boolean {

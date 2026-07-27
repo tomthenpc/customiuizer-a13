@@ -61,7 +61,7 @@ open class SpinnerEx @JvmOverloads constructor(
     }
 
     fun getSelectedArrayValue(): Int {
-        return entryValues!![selectedItemPosition]
+        return entryValues?.get(selectedItemPosition) ?: 0
     }
 
     private inner class ArrayAdapterEx(

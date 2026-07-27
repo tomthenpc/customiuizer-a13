@@ -18,10 +18,11 @@ class System_AutoBrightness : SubFragment() {
         minBrightness?.setOnSeekBarChangeListener(object : SeekBar.OnSeekBarChangeListener {
             override fun onProgressChanged(seekBar: SeekBar, progress: Int, fromUser: Boolean) {
                 if (!fromUser) return
-                if ((maxBrightness?.getValue() ?: 0) <= progress) {
-                    maxBrightness?.setValue(progress + 1)
+                val max = maxBrightness ?: return
+                if (max.getValue() <= progress) {
+                    max.setValue(progress + 1)
                 }
-                maxBrightness?.setMinValue(progress + 1)
+                max.setMinValue(progress + 1)
             }
 
             override fun onStartTrackingTouch(seekBar: SeekBar) {}

@@ -8,11 +8,10 @@ import android.net.Uri
 import android.os.Handler
 import android.os.Looper
 import android.widget.TextView
-import java.util.ArrayList
 
 object StepCounterController {
 
-    private val stepViewList = ArrayList<TextView>()
+    private val stepViewList = mutableListOf<TextView>()
     private var mHandler: Handler? = null
     private var updateStepsRunnable: Runnable? = null
     private var stepsWithGoal: String? = null
