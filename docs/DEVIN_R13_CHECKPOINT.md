@@ -41,13 +41,15 @@
 
 ### Git
 - 搜索修复已 push 到 `devin/r13.2-kotlin-api102`（`362cf83`）。
+- `AGENTS.md` 与 `docs/DEVIN_R13_CHECKPOINT.md` 已 push 到 `devin/r13.2-kotlin-api102`（`d890b61`）。
 - 当前工作区：
-  - 已修改：`docs/DEVIN_R13_CHECKPOINT.md`（本文件）
-  - 未跟踪：`AGENTS.md`（待提交）、`.vscode/settings.json`、多个本地 APK 与构建日志。
+  - 未跟踪：`.vscode/settings.json`、多个本地 APK 与构建日志。
+  - 无未提交修改。
 
 ### 文档
 - 新建根目录 `AGENTS.md`，合并 A13 项目边界、长期规则与轻度 Claude 风格执行习惯。
 - 更新 `docs/DEVIN_R13_CHECKPOINT.md` 为当前真实状态。
+- 长期规则统一在 `AGENTS.md`，无重复 `Agent.MD`/`AGENT.md`/`CLAUDE.md`。
 
 ## 最新绿色验证
 
@@ -73,7 +75,8 @@
 
 ## 下一步
 
-- 提交并 push `AGENTS.md` 和 `docs/DEVIN_R13_CHECKPOINT.md` 到 `devin/r13.2-kotlin-api102`。
+- 等待用户确认 `AGENTS.md` 与 checkpoint 内容，并实机验证搜索导航返回行为。
+- 若实机验证通过，再评估是否合并/发布。
 
 ## 发布状态
 
