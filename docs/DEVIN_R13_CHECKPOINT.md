@@ -11,8 +11,8 @@
 
 - **Repository:** `tomthenpc/customiuizer-a13`
 - **Branch:** `devin/r13.2-kotlin-api102`
-- **Last verified code commit:** `c7ee511fb2a0a3896f0cdebf830d8e7a4d3ec59d`
-- **Checkpoint based on commit:** 当前工作区待提交（最终报告给出新 commit hash）
+- **Last verified code commit:** `4a9047e`
+- **Checkpoint based on commit:** `4a9047e`
 - **versionName / versionCode:** `r13.2.2-devin` / `120`
 - **applicationId:** `tv.withaibuild.customiuizer.r13`
 - **libxposed API:** `minApiVersion=101`，`targetApiVersion=102`，`staticScope=false`
