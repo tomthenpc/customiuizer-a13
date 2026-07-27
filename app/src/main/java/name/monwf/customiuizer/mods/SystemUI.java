@@ -3616,7 +3616,7 @@ public class SystemUI {
                     pkgAppName = MainModule.mPrefs.getString("system_shortcut_app", "");
                 }
                 if (pkgAppName != null && !pkgAppName.equals("")) {
-                    String[] pkgAppArray = pkgAppName.split("\\|");
+                    String[] pkgAppArray = Helpers.PIPE_SPLIT_PATTERN.split(pkgAppName);
                     if (pkgAppArray.length < 2) return;
 
                     ComponentName name = new ComponentName(pkgAppArray[0], pkgAppArray[1]);

@@ -68,6 +68,7 @@ import java.util.Comparator;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
+import java.util.regex.Pattern;
 
 import miui.util.HapticFeedbackUtil;
 import name.monwf.customiuizer.BuildConfig;
@@ -76,6 +77,9 @@ import name.monwf.customiuizer.prefs.PreferenceCategoryEx;
 
 @SuppressWarnings("WeakerAccess")
 public class Helpers {
+
+    public static final Pattern PIPE_SPLIT_PATTERN = Pattern.compile("\\|");
+    public static final Pattern COLON_SPLIT_PATTERN = Pattern.compile(":");
 
     @SuppressLint("StaticFieldLeak")
 

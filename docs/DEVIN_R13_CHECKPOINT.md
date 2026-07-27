@@ -38,30 +38,32 @@
 - `SystemUI.java`、`AppDataAdapter.java`、`LockedAppAdapter.java`、`PrivacyAppAdapter.java`、`SortableList.java`：显式使用 `Locale` 修复 `DefaultLocale` lint 警告，避免依赖默认 locale 带来的土耳其语等异常。
 - `ResourceHooks.java`：`getResourceReplacement` 用单次 `get` + 懒加载 fallback key 替代 `containsKey` + `get` 两次查找，并将 `modResId` 改为 `int` 原语，减少资源 Hook 热路径的 map 查找与装箱。
 - `PrefMap.kt`：增加 `keyCache` 缓存 `pref_key_` 前缀拼接结果，避免高频 Hook 每次 `mPrefs.getXxx` 都创建新的 key 字符串。
+- `Helpers.java`：新增 `PIPE_SPLIT_PATTERN` 与 `COLON_SPLIT_PATTERN` 预编译 Pattern，供 `GlobalActions.java`、`System.java`、`SystemUI.java` 的 Hook 热路径复用，避免每次 `String.split(regex)` 重新编译正则。
 
 ### 测试与构建
+- `./gradlew --no-daemon :app:assembleDebug :app:lintDebug :app:testDebugUnitTest`：BUILD SUCCESSFUL（`cleanup-build8.log`）。
 - `./gradlew --no-daemon :app:assembleDebug :app:testDebugUnitTest`：BUILD SUCCESSFUL（`cleanup-build7.log`）。
-- `./gradlew --no-daemon :app:assembleDebug :app:lintDebug :app:testDebugUnitTest`：BUILD SUCCESSFUL（`cleanup-build5.log`）。
-- `./gradlew --no-daemon :app:assembleRelease`：BUILD SUCCESSFUL，包含 `lintVitalRelease`（`release-build3.log`）。
+- `./gradlew --no-daemon :app:assembleRelease`：BUILD SUCCESSFUL，包含 `lintVitalRelease`（`release-build4.log`）。
 - lintDebug：0 errors / 527 warnings（大量 `UnusedResources` 为 `getIdentifier` 动态引用导致，未删除）。
 
 ### Git
-- 第一批 commit `07b1090` 已 push。
+- 第一批 commit `07b1090`（Kotlin 去 `!!` + 死代码清理）已 push。
 - 第二批 commit `22bc856`（`Helpers` 高频优化 + `Locale` lint 修复）已 push。
-- 当前工作区第三批待提交：`ResourceHooks` + `PrefMap` 高频优化 + checkpoint 更新。
+- 第三批 commit `9713e3d`（`ResourceHooks` + `PrefMap` 高频优化）已 push。
+- 当前工作区第四批待提交：`Helpers`/`GlobalActions`/`System`/`SystemUI` 预编译 Pattern split 优化 + checkpoint 更新。
 
 ### 文档
 - 更新 `docs/DEVIN_R13_CHECKPOINT.md` 为代码审查阶段状态。
 
 ## 最新绿色验证
 
-- **任务/命令：** `./gradlew --no-daemon :app:assembleDebug :app:testDebugUnitTest`
+- **任务/命令：** `./gradlew --no-daemon :app:assembleDebug :app:lintDebug :app:testDebugUnitTest`
 - **结果：** BUILD SUCCESSFUL
-- **产物：** `cleanup-build7.log`
+- **产物：** `cleanup-build8.log`
 - **验证日期：** 2026-07-27
 - **任务/命令：** `./gradlew --no-daemon :app:assembleRelease`
 - **结果：** BUILD SUCCESSFUL（包含 lintVitalRelease）
-- **产物：** `release-build3.log`
+- **产物：** `release-build4.log`
 
 ## 当前问题与阻塞
 

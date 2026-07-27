@@ -4189,10 +4189,10 @@ public class System {
     public static void unserializeFwApps(String data) {
         fwApps.clear();
         if (data == null || "".equals(data)) return;
-        String[] dataArr = data.split("\\|");
+        String[] dataArr = Helpers.PIPE_SPLIT_PATTERN.split(data);
         for (String appData: dataArr) {
             if ("".equals(appData)) continue;
-            String[] appDataArr = appData.split(":");
+            String[] appDataArr = Helpers.COLON_SPLIT_PATTERN.split(appData);
             fwApps.put(appDataArr[0], new Pair<Float, Rect>(Float.parseFloat(appDataArr[1]), "-".equals(appDataArr[2]) ? null : Rect.unflattenFromString(appDataArr[2])));
         }
     }
@@ -4664,7 +4664,7 @@ public class System {
                 String key = "system_applock_skip_activities";
                 String itemStr = MainModule.mPrefs.getString(key, "");
                 if (itemStr == null || itemStr.isEmpty()) return;
-                String[] itemArr = itemStr.trim().split("\\|");
+                String[] itemArr = Helpers.PIPE_SPLIT_PATTERN.split(itemStr.trim());
                 for (String uuid: itemArr) {
                     String pkgAct = MainModule.mPrefs.getString(key + "_" + uuid + "_activity", "");
                     if (pkgAct.equals(pkgName + "|" + actName)) param.setResult(true);
