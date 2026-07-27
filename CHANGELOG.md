@@ -1,5 +1,20 @@
 # Changelog
 
+## r13.2.2-devin（语言切换修复）
+
+### 修复
+
+- 修复应用内语言从 English 切换为“跟随系统”后不能立即恢复系统中文的问题。
+- 根因：`AppHelper.getLocaleContext` 直接使用 `context.resources.configuration` 并 `setLocale`，修改了应用原始 `Resources` 的 `Configuration` 对象；当后续选择“跟随系统”并返回原始 `Context` 时，其 `Resources` 仍保留上次手动语言（English）。
+- 改为使用 `Configuration(context.resources.configuration)` 先复制一份配置再设置 locale，与 A14 实现一致，避免污染原始 `Context` 的 `Configuration`。
+
+### 验证
+
+- `:app:test`、`:app:lint`、`:app:assembleDebug`、`:app:assembleRelease` 通过；
+- Release APK 使用 A13 正式签名 v2，zipalign 对齐通过；
+- applicationId、Xposed metadata、API 边界保持不变；
+- 未合并 main、未创建 tag 或 GitHub Release。
+
 ## r13.2.1-devin（UI 回归修复）
 
 ### 修复

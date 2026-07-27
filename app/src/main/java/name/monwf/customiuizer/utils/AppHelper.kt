@@ -102,7 +102,7 @@ object AppHelper {
         if (appPrefs != null) {
             val locale = getStringOfAppPrefs("pref_key_miuizer_locale", "auto")
             if (locale == "auto" || locale == "1") return context
-            val config = context.resources.configuration
+            val config = Configuration(context.resources.configuration)
             config.setLocale(Locale.forLanguageTag(locale ?: "auto"))
             return context.createConfigurationContext(config)
         }
