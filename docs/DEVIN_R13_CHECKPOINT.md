@@ -36,28 +36,32 @@
 - 删除死代码 `utils/SoundData.kt`（仓库内无静态引用、无反射/资源/ProGuard 引用）。
 - `Helpers.java`：`getAppName`/`getAppIcon` 移除 `String.split("\\|")` 正则，改用 `indexOf('|')` + `substring` 的 `splitPkgAct` 辅助方法，避免高频调用时的 regex 编译和数组分配，并增加 null 防御。
 - `SystemUI.java`、`AppDataAdapter.java`、`LockedAppAdapter.java`、`PrivacyAppAdapter.java`、`SortableList.java`：显式使用 `Locale` 修复 `DefaultLocale` lint 警告，避免依赖默认 locale 带来的土耳其语等异常。
+- `ResourceHooks.java`：`getResourceReplacement` 用单次 `get` + 懒加载 fallback key 替代 `containsKey` + `get` 两次查找，并将 `modResId` 改为 `int` 原语，减少资源 Hook 热路径的 map 查找与装箱。
+- `PrefMap.kt`：增加 `keyCache` 缓存 `pref_key_` 前缀拼接结果，避免高频 Hook 每次 `mPrefs.getXxx` 都创建新的 key 字符串。
 
 ### 测试与构建
+- `./gradlew --no-daemon :app:assembleDebug :app:testDebugUnitTest`：BUILD SUCCESSFUL（`cleanup-build7.log`）。
 - `./gradlew --no-daemon :app:assembleDebug :app:lintDebug :app:testDebugUnitTest`：BUILD SUCCESSFUL（`cleanup-build5.log`）。
-- `./gradlew --no-daemon :app:assembleRelease`：BUILD SUCCESSFUL，包含 `lintVitalRelease`（`release-build2.log`）。
+- `./gradlew --no-daemon :app:assembleRelease`：BUILD SUCCESSFUL，包含 `lintVitalRelease`（`release-build3.log`）。
 - lintDebug：0 errors / 527 warnings（大量 `UnusedResources` 为 `getIdentifier` 动态引用导致，未删除）。
 
 ### Git
-- 当前工作区未提交：第一批（commit `07b1090` 已 push）。
-- 第二批变更待提交：第二次 `DefaultLocale` 修复、`Helpers.getAppName`/`getAppIcon` 高频优化、checkpoint 更新。
+- 第一批 commit `07b1090` 已 push。
+- 第二批 commit `22bc856`（`Helpers` 高频优化 + `Locale` lint 修复）已 push。
+- 当前工作区第三批待提交：`ResourceHooks` + `PrefMap` 高频优化 + checkpoint 更新。
 
 ### 文档
 - 更新 `docs/DEVIN_R13_CHECKPOINT.md` 为代码审查阶段状态。
 
 ## 最新绿色验证
 
-- **任务/命令：** `./gradlew --no-daemon :app:assembleDebug :app:lintDebug :app:testDebugUnitTest`
+- **任务/命令：** `./gradlew --no-daemon :app:assembleDebug :app:testDebugUnitTest`
 - **结果：** BUILD SUCCESSFUL
-- **产物：** `cleanup-build5.log`
+- **产物：** `cleanup-build7.log`
 - **验证日期：** 2026-07-27
 - **任务/命令：** `./gradlew --no-daemon :app:assembleRelease`
 - **结果：** BUILD SUCCESSFUL（包含 lintVitalRelease）
-- **产物：** `release-build2.log`
+- **产物：** `release-build3.log`
 
 ## 当前问题与阻塞
 

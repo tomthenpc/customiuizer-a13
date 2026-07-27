@@ -144,14 +144,11 @@ public class ResourceHooks {
 		try {
 			Object value;
 			String resFullName = pkgName + ":" + resType + "/" + resName;
-			String resAnyPkgName = "*:" + resType + "/" + resName;
 
-			Integer modResId = null;
-			Pair<ReplacementType, Object> replacement = null;
-			if (replacements.containsKey(resFullName))
-				replacement = replacements.get(resFullName);
-			else if (replacements.containsKey(resAnyPkgName))
-				replacement = replacements.get(resAnyPkgName);
+			int modResId = 0;
+			Pair<ReplacementType, Object> replacement = replacements.get(resFullName);
+			if (replacement == null)
+				replacement = replacements.get("*:" + resType + "/" + resName);
 
 			if (replacement != null) {
 				if (replacement.first == ReplacementType.OBJECT) {return replacement.second;}
@@ -161,7 +158,7 @@ public class ResourceHooks {
 				else if (replacement.first == ReplacementType.ID) modResId = (Integer)replacement.second;
 			}
 
-			if (modResId == null) return null;
+			if (modResId == 0) return null;
 
 			Resources modRes = ModuleHelper.getModuleRes(context);
 			if ("getDrawable".equals(method))
