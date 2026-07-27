@@ -11,8 +11,8 @@
 
 - **Repository:** `tomthenpc/customiuizer-a13`
 - **Branch:** `devin/r13.2-kotlin-api102`
-- **Last verified code commit:** `4a9047e`
-- **Checkpoint based on commit:** `4a9047e`
+- **Last verified code commit:** `990e977`
+- **Checkpoint based on commit:** `990e977`
 - **versionName / versionCode:** `r13.2.2-devin` / `120`
 - **applicationId:** `tv.withaibuild.customiuizer.r13`
 - **libxposed API:** `minApiVersion=101`，`targetApiVersion=102`，`staticScope=false`
@@ -62,18 +62,26 @@
 
 - **任务/命令：** `./gradlew --no-daemon :app:assembleDebug :app:lintDebug :app:testDebugUnitTest`
 - **结果：** BUILD SUCCESSFUL
-- **产物：** `cleanup-build8.log`
-- **验证日期：** 2026-07-27
+- **产物：** `.devin/a13_baseline.log`
+- **验证日期：** 2026-07-28
 - **任务/命令：** `./gradlew --no-daemon :app:assembleRelease`
 - **结果：** BUILD SUCCESSFUL（包含 lintVitalRelease）
-- **产物：** `release-build4.log`
+- **产物：** `.devin/a13_release_baseline.log`
+- **APK 审计：**
+  - `app/build/outputs/apk/release/app-release.apk`
+  - SHA-256：`9D9FE7D6CDD3825571F5490D3840ED0D15608FD27C6D190937CC9B4CC2794CBE`
+  - 签名：v2 only，证书 SHA-256：`C0:EF:F2:DC:4E:66:27:17:19:54:90:DA:78:B1:2A:98:4C:6F:2E:6B:D3:8A:CF:4E:DA:D1:4D:53:E3:D2:2E:70`
+  - `module.prop`：`minApiVersion=101`，`targetApiVersion=102`，`staticScope=false`
+  - scope 列表完整，入口为 `name.monwf.customiuizer.MainModule`
 
 ## 当前问题与阻塞
 
 - 真机验证未完成：LSPosed 加载、SystemUI/Launcher/Settings 主要功能、搜索返回、旋转重建均待确认。
 - API 101/102 实机边界未验证：未在只支持 API 101 的环境运行。
-- APK SHA-256 / 签名证书 SHA-256 未在 release 构建后记录。
-- R8 / shrinkResources 产物、`module.prop`、scope 和入口文件需随本批构建后核对。
+- 已记录的 P1/P2/P3 问题待处理，详见 `docs/ARCHITECTURE_AUDIT_A13.md`：
+  - P1：`registerReceiver` 未显式指定 export flag（Android 14 环境隐患）。
+  - P2：`ResourceHooks.mReplaceHook` 热路径 `findContext()` 开销。
+  - P3：`toRegex()` 与 `System.java:2094` 的 `forEach(new Consumer())`。
 
 ## 待实机验证
 
@@ -98,11 +106,21 @@
 - `ResourceHooks` 表述修正：不再声称消除装箱，改为“单次 `get()` + 懒加载 fallback key，使用原语局部变量减少 map 查询”。
 - `PrefMap.keyCache` 已撤销：经遍历 `mPrefs.get*` 调用，发现 41 处含动态 key 拼接，key 不稳定且无界，缓存收益无基准证据，恢复直接拼接。
 
+## A13 架构审计
+
+- 文档：`docs/ARCHITECTURE_AUDIT_A13.md`
+- 覆盖：入口/生命周期、PrefMap、ResourceHooks、ModuleHelper、XposedHelpers、Phase 3 模式统计、P0-P3 问题清单。
+- P0：0 项（构建与核心 Hook 未发现阻断问题）。
+- P1：1 项，`registerReceiver` export flag 在 Android 14 环境隐患。
+- P2：1 项，`ResourceHooks` 热路径 `findContext()` 开销。
+- P3：2 项，`toRegex()` 与 `forEach(new Consumer())`，用户指示“卡了跳过”，记录待处理。
+
 ## 下一步
 
-- 提交并 push 证据纠偏 commit 到 `devin/r13.2-kotlin-api102`。
-- 在 Devin 本地重新执行 `git diff --check`、`:app:testDebugUnitTest`、`:app:lintDebug`、`:app:assembleDebug`、`:app:assembleRelease`（正式签名配置），并记录 APK 文件名、大小、SHA-256 与签名证书 SHA-256。
-- 等待真机验证。
+- 处理 `docs/ARCHITECTURE_AUDIT_A13.md` 中的 P1/P2/P3 问题（P3 已按用户指示跳过）。
+- 等待并执行真机验证矩阵。
+- 同步 `CHANGELOG.md` / `VERIFICATION.md`。
+- 当前工作区未提交变更仅含文档更新；如需继续推进可 commit 到 `devin/r13.2-kotlin-api102`。
 
 ## 发布状态
 
