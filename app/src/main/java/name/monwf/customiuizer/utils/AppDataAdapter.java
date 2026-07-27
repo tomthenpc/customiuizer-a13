@@ -5,6 +5,7 @@ import java.util.Comparator;
 import java.util.HashSet;
 import java.util.Iterator;
 import java.util.LinkedHashSet;
+import java.util.Locale;
 import java.util.Set;
 import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.concurrent.LinkedBlockingQueue;
@@ -151,7 +152,7 @@ public class AppDataAdapter extends BaseAdapter implements Filterable {
 						return 1;
 					return 0;
 				} else if (aType == Helpers.AppAdapterType.Activities) {
-					return app1.actName.toLowerCase().compareTo(app2.actName.toLowerCase());
+					return app1.actName.toLowerCase(Locale.getDefault()).compareTo(app2.actName.toLowerCase(Locale.getDefault()));
 				} else return 0;
 			}
 		});
@@ -251,7 +252,7 @@ public class AppDataAdapter extends BaseAdapter implements Filterable {
 	private class ItemFilter extends Filter {
 		@Override
 		protected FilterResults performFiltering(CharSequence constraint) {
-			String filterString = constraint.toString().toLowerCase();
+			String filterString = constraint.toString().toLowerCase(Locale.getDefault());
 			FilterResults results = new FilterResults();
 
 			int count = originalAppList.size();
@@ -260,8 +261,8 @@ public class AppDataAdapter extends BaseAdapter implements Filterable {
 
 			for (int i = 0; i < count; i++) {
 				filterableData = originalAppList.get(i);
-				if (aType == Helpers.AppAdapterType.Activities && filterableData.actName.toLowerCase().contains(filterString)) nlist.add(filterableData);
-				else if ((aType == Helpers.AppAdapterType.Standalone && filterableData.pkgName.equals("") && filterableData.actName.equals("")) || filterableData.label.toLowerCase().contains(filterString)) nlist.add(filterableData);
+				if (aType == Helpers.AppAdapterType.Activities && filterableData.actName.toLowerCase(Locale.getDefault()).contains(filterString)) nlist.add(filterableData);
+				else if ((aType == Helpers.AppAdapterType.Standalone && filterableData.pkgName.equals("") && filterableData.actName.equals("")) || filterableData.label.toLowerCase(Locale.getDefault()).contains(filterString)) nlist.add(filterableData);
 			}
 
 			results.values = nlist;

@@ -639,22 +639,27 @@ public class Helpers {
     }
 
     public static CharSequence getAppName(Context context, String pkgActName, boolean forcePkg) {
+        if (pkgActName == null) return null;
         PackageManager pm = context.getPackageManager();
         String not_selected = context.getResources().getString(R.string.notselected);
-        String[] pkgActArray = pkgActName.split("\\|");
-        ApplicationInfo ai;
+        if (pkgActName.equals(not_selected)) return null;
+        String[] pkgActArray = splitPkgAct(pkgActName);
 
-        if (!pkgActName.equals(not_selected))
-            if (pkgActArray.length >= 1 && pkgActArray[0] != null) try {
-                if (!forcePkg && pkgActArray.length >= 2 && pkgActArray[1] != null && !pkgActArray[1].trim().equals("")) {
-                    return pm.getActivityInfo(new ComponentName(pkgActArray[0], pkgActArray[1]), 0).loadLabel(pm).toString();
-                } else if (!pkgActArray[0].trim().equals("")) {
-                    ai = pm.getApplicationInfo(pkgActArray[0], 0);
-                    return pm.getApplicationLabel(ai);
-                }
+        if (pkgActArray[1].isEmpty() || forcePkg) {
+            if (pkgActArray[0].isEmpty()) return null;
+            try {
+                ApplicationInfo ai = pm.getApplicationInfo(pkgActArray[0], 0);
+                return pm.getApplicationLabel(ai);
             } catch (Throwable e) {
                 e.printStackTrace();
             }
+        } else {
+            try {
+                return pm.getActivityInfo(new ComponentName(pkgActArray[0], pkgActArray[1]), 0).loadLabel(pm).toString();
+            } catch (Throwable e) {
+                e.printStackTrace();
+            }
+        }
         return null;
     }
 
@@ -663,20 +668,33 @@ public class Helpers {
     }
 
     public static Drawable getAppIcon(Context context, String pkgActName, boolean forcePkg) {
+        if (pkgActName == null) return null;
         PackageManager pm = context.getPackageManager();
         String not_selected = context.getResources().getString(R.string.notselected);
-        String[] pkgActArray = pkgActName.split("\\|");
+        if (pkgActName.equals(not_selected)) return null;
+        String[] pkgActArray = splitPkgAct(pkgActName);
 
-        if (!pkgActName.equals(not_selected))
-            if (pkgActArray.length >= 1 && pkgActArray[0] != null) try {
-                if (!forcePkg && pkgActArray.length >= 2 && pkgActArray[1] != null && !pkgActArray[1].trim().equals(""))
-                    return pm.getActivityIcon(new ComponentName(pkgActArray[0], pkgActArray[1]));
-                else if (!pkgActArray[0].trim().equals(""))
-                    return pm.getApplicationIcon(pkgActArray[0]);
+        if (pkgActArray[1].isEmpty() || forcePkg) {
+            if (pkgActArray[0].isEmpty()) return null;
+            try {
+                return pm.getApplicationIcon(pkgActArray[0]);
             } catch (Throwable e) {
                 e.printStackTrace();
             }
+        } else {
+            try {
+                return pm.getActivityIcon(new ComponentName(pkgActArray[0], pkgActArray[1]));
+            } catch (Throwable e) {
+                e.printStackTrace();
+            }
+        }
         return null;
+    }
+
+    private static String[] splitPkgAct(String pkgActName) {
+        int idx = pkgActName.indexOf('|');
+        if (idx < 1) return new String[] { pkgActName.trim(), "" };
+        return new String[] { pkgActName.substring(0, idx).trim(), pkgActName.substring(idx + 1).trim() };
     }
 
     public static Drawable getShortcutIcon(Context context, String key) {

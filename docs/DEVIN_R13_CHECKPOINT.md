@@ -22,7 +22,7 @@
 - **最新已确认实机版本:** 未确认
 - **最后正常行为基线:** `MonwF/customiuizer v23.11.26`
 
-## 本轮已完成（全局代码审查与 Kotlin 清理第一批）
+## 本轮已完成（全局代码审查、Kotlin 清理与高频优化第二批）
 
 ### 代码
 - Kotlin 文件去 `!!`（共移除 11 处）：`AppHelper.kt`、`SpinnerEx.kt`、`SpinnerExFake.kt`、`SeekBarPreference.kt`、`System_ScreenshotConfig.kt`、`System_VibrationAmp.kt`、`Various_CallUIBright.kt`、`ModuleMetadataTest.kt`。
@@ -34,28 +34,30 @@
 - `StepCounterController.kt`：`ArrayList` 改为 `mutableListOf()`。
 - `WebPage.kt`：移除未使用的 `WebSettings` import。
 - 删除死代码 `utils/SoundData.kt`（仓库内无静态引用、无反射/资源/ProGuard 引用）。
+- `Helpers.java`：`getAppName`/`getAppIcon` 移除 `String.split("\\|")` 正则，改用 `indexOf('|')` + `substring` 的 `splitPkgAct` 辅助方法，避免高频调用时的 regex 编译和数组分配，并增加 null 防御。
+- `SystemUI.java`、`AppDataAdapter.java`、`LockedAppAdapter.java`、`PrivacyAppAdapter.java`、`SortableList.java`：显式使用 `Locale` 修复 `DefaultLocale` lint 警告，避免依赖默认 locale 带来的土耳其语等异常。
 
 ### 测试与构建
-- `./gradlew --no-daemon :app:assembleDebug :app:testDebugUnitTest`：BUILD SUCCESSFUL（`cleanup-build3.log`）。
-- `./gradlew --no-daemon :app:assembleRelease`：BUILD SUCCESSFUL，包含 `lintVitalRelease`（`release-build.log`）。
-- `./gradlew --no-daemon :app:assembleDebug :app:lintDebug :app:testDebugUnitTest`：BUILD SUCCESSFUL（`cleanup-build2.log`）。
+- `./gradlew --no-daemon :app:assembleDebug :app:lintDebug :app:testDebugUnitTest`：BUILD SUCCESSFUL（`cleanup-build5.log`）。
+- `./gradlew --no-daemon :app:assembleRelease`：BUILD SUCCESSFUL，包含 `lintVitalRelease`（`release-build2.log`）。
 - lintDebug：0 errors / 527 warnings（大量 `UnusedResources` 为 `getIdentifier` 动态引用导致，未删除）。
 
 ### Git
-- 当前工作区有 15 个文件变更：`*.kt` 修改 + `SoundData.kt` 删除；未跟踪的 `.vscode/`、APK、构建日志保持未提交。
+- 当前工作区未提交：第一批（commit `07b1090` 已 push）。
+- 第二批变更待提交：第二次 `DefaultLocale` 修复、`Helpers.getAppName`/`getAppIcon` 高频优化、checkpoint 更新。
 
 ### 文档
 - 更新 `docs/DEVIN_R13_CHECKPOINT.md` 为代码审查阶段状态。
 
 ## 最新绿色验证
 
-- **任务/命令：** `./gradlew --no-daemon :app:assembleDebug :app:testDebugUnitTest`
+- **任务/命令：** `./gradlew --no-daemon :app:assembleDebug :app:lintDebug :app:testDebugUnitTest`
 - **结果：** BUILD SUCCESSFUL
-- **产物：** `cleanup-build3.log`
+- **产物：** `cleanup-build5.log`
 - **验证日期：** 2026-07-27
 - **任务/命令：** `./gradlew --no-daemon :app:assembleRelease`
 - **结果：** BUILD SUCCESSFUL（包含 lintVitalRelease）
-- **产物：** `release-build.log`
+- **产物：** `release-build2.log`
 
 ## 当前问题与阻塞
 

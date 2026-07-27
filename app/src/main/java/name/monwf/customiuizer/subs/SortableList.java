@@ -13,6 +13,7 @@ import android.widget.Toast;
 import java.lang.reflect.Field;
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.Locale;
 import java.util.UUID;
 
 import name.monwf.customiuizer.R;
@@ -147,7 +148,7 @@ public class SortableList extends SubFragment {
 	}
 
 	private String createNewUUID() {
-		return UUID.randomUUID().toString().replaceAll("-", "").toLowerCase();
+		return UUID.randomUUID().toString().replaceAll("-", "").toLowerCase(Locale.ROOT);
 	}
 
 	private void createNewItem(String uuid) {

@@ -18,6 +18,7 @@ import android.widget.TextView;
 import java.lang.reflect.Method;
 import java.util.ArrayList;
 import java.util.Comparator;
+import java.util.Locale;
 import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.concurrent.LinkedBlockingQueue;
 import java.util.concurrent.ThreadPoolExecutor;
@@ -144,7 +145,7 @@ public class LockedAppAdapter extends BaseAdapter implements Filterable {
 	private class ItemFilter extends Filter {
 		@Override
 		protected FilterResults performFiltering(CharSequence constraint) {
-			String filterString = constraint.toString().toLowerCase();
+			String filterString = constraint.toString().toLowerCase(Locale.getDefault());
 			FilterResults results = new FilterResults();
 
 			int count = originalAppList.size();
@@ -153,7 +154,7 @@ public class LockedAppAdapter extends BaseAdapter implements Filterable {
 
 			for (int i = 0; i < count; i++) {
 				filterableData = originalAppList.get(i);
-				if (filterableData.label.toLowerCase().contains(filterString)) nlist.add(filterableData);
+				if (filterableData.label.toLowerCase(Locale.getDefault()).contains(filterString)) nlist.add(filterableData);
 			}
 
 			results.values = nlist;

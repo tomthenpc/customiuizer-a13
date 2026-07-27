@@ -453,7 +453,7 @@ public class SystemUI {
                                             rawCurr = Math.abs(rawCurr);
                                         }
                                         if (Math.abs(rawCurr) > 999) {
-                                            currVal = String.format("%.2f", rawCurr / 1000f);
+                                            currVal = String.format(Locale.getDefault(), "%.2f", rawCurr / 1000f);
                                             preferred = "A";
                                         } else {
                                             currVal = "" + rawCurr;
