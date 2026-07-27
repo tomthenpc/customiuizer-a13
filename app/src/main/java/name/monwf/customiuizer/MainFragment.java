@@ -8,6 +8,7 @@ import android.os.Bundle;
 import android.os.Handler;
 import android.os.Looper;
 import android.text.SpannableString;
+import android.text.TextUtils;
 import android.view.Menu;
 import android.view.MenuInflater;
 import android.view.MenuItem;
@@ -91,6 +92,10 @@ public class MainFragment extends PreferenceFragmentBase {
 	public void onCreate(Bundle savedInstanceState) {
 		toolbarMenu = true;
 		activeMenus = "all";
+		if (savedInstanceState != null) {
+			inSearchView = savedInstanceState.getInt("inSearchView", 0);
+			lastFilter = savedInstanceState.getString("lastFilter", "");
+		}
 		super.onCreate(savedInstanceState, R.xml.prefs_main);
 		tailLayoutId = R.layout.prefs_main12;
 		final AppCompatActivity act = (AppCompatActivity) getActivity();
@@ -138,6 +143,8 @@ public class MainFragment extends PreferenceFragmentBase {
 		MenuItemCompat.setOnActionExpandListener(searchMenuItem, new MenuItemCompat.OnActionExpandListener() {
 			@Override
 			public boolean onMenuItemActionCollapse(MenuItem searchItem) {
+				inSearchView = 0;
+				findMod("");
 				MenuItem item;
 				for (int i = 0; i < mActionMenu.size(); i++) {
 					item = mActionMenu.getItem(i);
@@ -148,6 +155,7 @@ public class MainFragment extends PreferenceFragmentBase {
 
 			@Override
 			public boolean onMenuItemActionExpand(MenuItem searchItem) {
+				inSearchView = 1;
 				MenuItem item = null;
 				for (int i = 0; i < mActionMenu.size(); i++) {
 					item = mActionMenu.getItem(i);
@@ -177,10 +185,14 @@ public class MainFragment extends PreferenceFragmentBase {
 				isSearchFocused = hasFocus;
 			}
 		});
-		if (inSearchView == 2) {
-			MenuItemCompat.expandActionView(searchMenuItem);
-			searchView.setQuery(lastFilter, false);
-			searchView.clearFocus();
+		if (inSearchView != 0 && !TextUtils.isEmpty(lastFilter)) {
+			if (!MenuItemCompat.isActionViewExpanded(searchMenuItem)) {
+				MenuItemCompat.expandActionView(searchMenuItem);
+			}
+			if (!lastFilter.equals(searchView.getQuery().toString())) {
+				searchView.setQuery(lastFilter, false);
+				searchView.clearFocus();
+			}
 		}
 	}
 
@@ -209,8 +221,8 @@ public class MainFragment extends PreferenceFragmentBase {
 		resultView.setOnItemClickListener(new AdapterView.OnItemClickListener() {
 			@Override
 			public void onItemClick(AdapterView<?> parent, View view, int position, long id) {
-				inSearchView = 2;
 				ModData mod = (ModData)parent.getAdapter().getItem(position);
+				collapseSearch();
 				openModCat(mod.cat.name(), mod.sub, mod.key);
 			}
 		});
@@ -294,13 +306,25 @@ public class MainFragment extends PreferenceFragmentBase {
 	}
 
 	void findMod(String filter) {
-		if (inSearchView == 2) return;
+		if (resultView == null || listView == null) return;
 		lastFilter = filter;
 		resultView.setVisibility(filter.equals("") ? View.GONE : View.VISIBLE);
 		listView.setEnabled(filter.equals(""));
 		ListAdapter adapter = resultView.getAdapter();
 		if (adapter == null) return;
 		((ModSearchAdapter)resultView.getAdapter()).getFilter().filter(filter);
+	}
+
+	private void collapseSearch() {
+		if (mActionMenu == null) return;
+		MenuItem searchMenuItem = mActionMenu.findItem(R.id.search_btn);
+		if (searchMenuItem == null) return;
+		if (MenuItemCompat.isActionViewExpanded(searchMenuItem)) {
+			MenuItemCompat.collapseActionView(searchMenuItem);
+		} else {
+			inSearchView = 0;
+			findMod("");
+		}
 	}
 
 	private boolean openModCat(String cat, String sub, String mod) {
@@ -336,6 +360,13 @@ public class MainFragment extends PreferenceFragmentBase {
 			default:
 				return false;
 		}
+	}
+
+	@Override
+	public void onSaveInstanceState(Bundle outState) {
+		super.onSaveInstanceState(outState);
+		outState.putInt("inSearchView", inSearchView);
+		outState.putString("lastFilter", lastFilter);
 	}
 
 	@Override
