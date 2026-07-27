@@ -2,7 +2,6 @@ package name.monwf.customiuizer;
 
 import android.content.ContentProvider;
 import android.content.ContentValues;
-import android.content.SharedPreferences;
 import android.content.UriMatcher;
 import android.content.res.AssetFileDescriptor;
 import android.database.Cursor;
@@ -17,10 +16,10 @@ public class PrefsProvider extends ContentProvider {
     public static final String AUTHORITY = BuildConfig.APPLICATION_ID + ".provider.sharedprefs";
     private static final UriMatcher uriMatcher = new UriMatcher(UriMatcher.NO_MATCH);
 
-    SharedPreferences prefs;
+    private static final int TEST_ASSET = 5;
 
     static {
-        uriMatcher.addURI(AUTHORITY, "test/*", 1);
+        uriMatcher.addURI(AUTHORITY, "test/*", TEST_ASSET);
     }
 
     @Override
@@ -38,7 +37,7 @@ public class PrefsProvider extends ContentProvider {
         if (getContext() == null) return null;
 
         List<String> parts = uri.getPathSegments();
-        if (uriMatcher.match(uri) == 5) {
+        if (uriMatcher.match(uri) == TEST_ASSET) {
             String filename = null;
             String fileType = parts.get(1);
             if ("0".equals(fileType)) filename = "test0.png";

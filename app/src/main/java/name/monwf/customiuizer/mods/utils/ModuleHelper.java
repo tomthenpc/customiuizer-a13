@@ -45,12 +45,20 @@ public class ModuleHelper {
 
     static HashSet<PreferenceObserver> prefObservers = new HashSet<PreferenceObserver>();
 
-    public static void printCallStack() {
-        StackTraceElement[] stackTrace = Thread.currentThread().getStackTrace();
-        for (StackTraceElement el: stackTrace)
-            if (el != null) {
-                log(el.getClassName() + " $$ " + el.getMethodName());
-            }
+    private static Class<?> sActivityThreadClass;
+    private static Method sCurrentApplicationMethod;
+    private static Method sCurrentActivityThreadMethod;
+    private static Method sGetSystemContextMethod;
+
+    private static void ensureActivityThread(ClassLoader classLoader) throws Throwable {
+        if (sActivityThreadClass != null) return;
+        sActivityThreadClass = XposedHelpers.findClass("android.app.ActivityThread", classLoader);
+        sCurrentApplicationMethod = sActivityThreadClass.getDeclaredMethod("currentApplication");
+        sCurrentApplicationMethod.setAccessible(true);
+        sCurrentActivityThreadMethod = sActivityThreadClass.getDeclaredMethod("currentActivityThread");
+        sCurrentActivityThreadMethod.setAccessible(true);
+        sGetSystemContextMethod = sActivityThreadClass.getDeclaredMethod("getSystemContext");
+        sGetSystemContextMethod.setAccessible(true);
     }
 
     public static CustomMethodUnhooker hookMethod(Method method, MethodHook callback) {
@@ -219,10 +227,11 @@ public class ModuleHelper {
     public static Context findContext() {
         Context context = null;
         try {
-            context = (Application)XposedHelpers.callStaticMethod(XposedHelpers.findClass("android.app.ActivityThread", null), "currentApplication");
+            ensureActivityThread(MainModule.class.getClassLoader());
+            context = (Context) sCurrentApplicationMethod.invoke(null);
             if (context == null) {
-                Object currentActivityThread = XposedHelpers.callStaticMethod(XposedHelpers.findClass("android.app.ActivityThread", null), "currentActivityThread");
-                if (currentActivityThread != null) context = (Context)XposedHelpers.callMethod(currentActivityThread, "getSystemContext");
+                Object currentActivityThread = sCurrentActivityThreadMethod.invoke(null);
+                if (currentActivityThread != null) context = (Context) sGetSystemContextMethod.invoke(currentActivityThread);
             }
         } catch (Throwable ignore) {}
         return context;
@@ -231,10 +240,11 @@ public class ModuleHelper {
     public static Context findContext(XposedModuleInterface.PackageReadyParam lpparam) {
         Context context = null;
         try {
-            context = (Application)XposedHelpers.callStaticMethod(XposedHelpers.findClass("android.app.ActivityThread", lpparam.getClassLoader()), "currentApplication");
+            ensureActivityThread(lpparam.getClassLoader());
+            context = (Context) sCurrentApplicationMethod.invoke(null);
             if (context == null) {
-                Object currentActivityThread = XposedHelpers.callStaticMethod(XposedHelpers.findClass("android.app.ActivityThread", null), "currentActivityThread");
-                if (currentActivityThread != null) context = (Context)XposedHelpers.callMethod(currentActivityThread, "getSystemContext");
+                Object currentActivityThread = sCurrentActivityThreadMethod.invoke(null);
+                if (currentActivityThread != null) context = (Context) sGetSystemContextMethod.invoke(currentActivityThread);
             }
         } catch (Throwable ignore) {}
         return context;

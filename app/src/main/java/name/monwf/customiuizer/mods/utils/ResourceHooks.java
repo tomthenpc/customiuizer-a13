@@ -5,6 +5,7 @@ import android.content.res.Resources;
 import android.util.Pair;
 import android.util.SparseIntArray;
 
+import java.util.List;
 import java.util.concurrent.ConcurrentHashMap;
 
 import io.github.libxposed.api.XposedInterface;
@@ -33,7 +34,7 @@ public class ResourceHooks {
 			Context mContext = ModuleHelper.findContext();
 			if (mContext == null) return chain.proceed();
 			String method = chain.getExecutable().getName();
-			Object[] args = chain.getArgs().toArray();
+			List<Object> args = chain.getArgs();
 			Object value = getFakeResource(mContext, method, args);
 			if (value == null) {
 				value = getResourceReplacement(mContext, (Resources)chain.getThisObject(), method, args);
@@ -79,18 +80,18 @@ public class ResourceHooks {
 		}
 	}
 
-	private Object getFakeResource(Context context, String method, Object[] args) {
+	private Object getFakeResource(Context context, String method, List<Object> args) {
 		try {
 			if (context == null) return null;
-			int modResId = fakes.get((int)args[0]);
+			int modResId = fakes.get((int)args.get(0));
 			if (modResId == 0) return null;
 
 			Object value;
 			Resources modRes = ModuleHelper.getModuleRes(context);
 			if ("getDrawable".equals(method))
-				value = XposedHelpers.callMethod(modRes, method, modResId, args[1]);
+				value = XposedHelpers.callMethod(modRes, method, modResId, args.get(1));
 			else if ("getDrawableForDensity".equals(method) || "getFraction".equals(method))
-				value = XposedHelpers.callMethod(modRes, method, modResId, args[1], args[2]);
+				value = XposedHelpers.callMethod(modRes, method, modResId, args.get(1), args.get(2));
 			else
 				value = XposedHelpers.callMethod(modRes, method, modResId);
 			return value;
@@ -127,16 +128,16 @@ public class ResourceHooks {
 		}
 	}
 
-	private Object getResourceReplacement(Context context, Resources res, String method, Object[] args) {
+	private Object getResourceReplacement(Context context, Resources res, String method, List<Object> args) {
 		if (context == null) return null;
 
 		String pkgName = null;
 		String resType = null;
 		String resName = null;
 		try {
-			pkgName = res.getResourcePackageName((int)args[0]);
-			resType = res.getResourceTypeName((int)args[0]);
-			resName = res.getResourceEntryName((int)args[0]);
+			pkgName = res.getResourcePackageName((int)args.get(0));
+			resType = res.getResourceTypeName((int)args.get(0));
+			resName = res.getResourceEntryName((int)args.get(0));
 		} catch (Throwable ignore) {}
 		if (pkgName == null || resType == null || resName == null) return null;
 
@@ -164,9 +165,9 @@ public class ResourceHooks {
 
 			Resources modRes = ModuleHelper.getModuleRes(context);
 			if ("getDrawable".equals(method))
-				value = XposedHelpers.callMethod(modRes, method, modResId, args[1]);
+				value = XposedHelpers.callMethod(modRes, method, modResId, args.get(1));
 			else if ("getDrawableForDensity".equals(method) || "getFraction".equals(method))
-				value = XposedHelpers.callMethod(modRes, method, modResId, args[1], args[2]);
+				value = XposedHelpers.callMethod(modRes, method, modResId, args.get(1), args.get(2));
 			else
 				value = XposedHelpers.callMethod(modRes, method, modResId);
 			return value;

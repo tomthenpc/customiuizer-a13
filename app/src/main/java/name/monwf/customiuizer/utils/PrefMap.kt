@@ -24,7 +24,7 @@ class PrefMap<K, V> : HashMap<K, V>() {
 
     fun getStringAsInt(key: String, defValue: Int): Int {
         val value = get(normalizeKey(key) as K)
-        return if (value == null) defValue else (value as String).toInt()
+        return if (value is String) value.toIntOrNull() ?: defValue else defValue
     }
 
     fun getStringSet(key: String): Set<String> {

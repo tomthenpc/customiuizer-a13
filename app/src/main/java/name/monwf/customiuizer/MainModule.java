@@ -1,15 +1,10 @@
 package name.monwf.customiuizer;
 
 import android.app.Application;
-import android.content.BroadcastReceiver;
 import android.content.Context;
-import android.content.Intent;
-import android.content.IntentFilter;
 import android.content.SharedPreferences;
 import android.content.SharedPreferences.OnSharedPreferenceChangeListener;
 import android.os.Build;
-import android.os.Handler;
-import android.os.Looper;
 import android.provider.Settings;
 import android.widget.LinearLayout;
 
@@ -150,19 +145,6 @@ public class MainModule extends XposedModule {
     }
 
     private Object getPreferenceValue(SharedPreferences prefs, String key) {
-        if (!prefs.contains(key)) return null;
-        try { return prefs.getString(key, null); }
-        catch (ClassCastException ignore) {}
-        try { return prefs.getStringSet(key, null); }
-        catch (ClassCastException ignore) {}
-        try { return prefs.getBoolean(key, false); }
-        catch (ClassCastException ignore) {}
-        try { return prefs.getInt(key, 0); }
-        catch (ClassCastException ignore) {}
-        try { return prefs.getFloat(key, 0); }
-        catch (ClassCastException ignore) {}
-        try { return prefs.getLong(key, 0); }
-        catch (ClassCastException ignore) {}
         return prefs.getAll().get(key);
     }
 
@@ -200,9 +182,6 @@ public class MainModule extends XposedModule {
         PackagePermissions.hook(lpparam);
         if (needGlobalActions()) GlobalActions.setupGlobalActions(lpparam);
 
-//        if (mPrefs.getInt("system_statusbarheight", 19) > 19) {
-//            System.StatusBarHeightHook(lpparam);
-//        }
         if (mPrefs.getBoolean("system_screenshot_overlay")) {
             System.TempHideOverlayAppHook(lpparam);
         }
@@ -214,12 +193,6 @@ public class MainModule extends XposedModule {
             System.OpenAppInFreeFormHook(lpparam);
         }
 
-//            if (mPrefs.getInt("controls_fingerprint1_action", 1) > 1 ||
-//                    mPrefs.getInt("controls_fingerprint2_action", 1) > 1 ||
-//                    mPrefs.getInt("controls_fingerprintlong_action", 1) > 1 ||
-//                    mPrefs.getStringAsInt("controls_fingerprint_accept", 1) > 1 ||
-//                    mPrefs.getStringAsInt("controls_fingerprint_reject", 1) > 1 ||
-//                    mPrefs.getStringAsInt("controls_fingerprint_hangup", 1) > 1) Controls.FingerprintEventsHook(lpparam);
         if (mPrefs.getInt("controls_backlong_action", 1) > 1 ||
             mPrefs.getInt("controls_homelong_action", 1) > 1 ||
             mPrefs.getInt("controls_menulong_action", 1) > 1) Controls.NavBarActionsHook(lpparam);
