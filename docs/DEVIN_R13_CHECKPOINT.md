@@ -11,7 +11,7 @@
 
 - **Repository:** `tomthenpc/customiuizer-a13`
 - **Branch:** `devin/r13.2-kotlin-api102`
-- **HEAD:** `362cf83`
+- **HEAD:** `80a4ae6`
 - **versionName / versionCode:** `r13.2.2-devin` / `120`
 - **applicationId:** `tv.withaibuild.customiuizer.r13`
 - **libxposed API:** `minApiVersion=101`，`targetApiVersion=102`，`staticScope=false`
