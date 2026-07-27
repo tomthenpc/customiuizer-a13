@@ -82,7 +82,7 @@ public class ResourceHooks {
 
 	private Object getFakeResource(Context context, String method, List<Object> args) {
 		try {
-			if (context == null) return null;
+			if (context == null || fakes.size() == 0) return null;
 			int modResId = fakes.get((int)args.get(0));
 			if (modResId == 0) return null;
 
@@ -129,7 +129,7 @@ public class ResourceHooks {
 	}
 
 	private Object getResourceReplacement(Context context, Resources res, String method, List<Object> args) {
-		if (context == null) return null;
+		if (context == null || replacements.isEmpty()) return null;
 
 		String pkgName = null;
 		String resType = null;
