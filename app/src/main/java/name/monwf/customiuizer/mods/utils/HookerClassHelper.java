@@ -33,7 +33,6 @@ public final class HookerClassHelper {
         private final Object thisObject;
         private final List<Object> argList;
         private Object[] args;
-        private boolean argsAccessed;
         private boolean skipped;
         private Object result;
         private Throwable throwable;
@@ -52,12 +51,42 @@ public final class HookerClassHelper {
             return thisObject;
         }
 
+        /**
+         * Materializes the full argument array. Prefer {@link #getArg(int)} for read-only hooks.
+         */
         public Object[] getArgs() {
-            argsAccessed = true;
             if (args == null) {
                 args = argList.isEmpty() ? EMPTY_ARGS : argList.toArray();
             }
             return args;
+        }
+
+        /**
+         * Reads a single argument without copying the argument list.
+         *
+         * <p>Calling {@link #getArgs()} converts the argument list to an array, and
+         * {@code intercept} must then pass that array to {@code chain.proceed(args)}, which
+         * re-marshals every argument. Use this method in hooks that only read arguments.</p>
+         *
+         * @param index the zero-based argument index
+         * @return the argument value
+         */
+        public Object getArg(int index) {
+            return args != null ? args[index] : argList.get(index);
+        }
+
+        /**
+         * Returns the number of arguments without materializing the argument array.
+         */
+        public int getArgsCount() {
+            return args != null ? args.length : argList.size();
+        }
+
+        /**
+         * Returns whether {@link #getArgs()} has been called and an argument array exists.
+         */
+        boolean hasMaterializedArgs() {
+            return args != null;
         }
 
         public void returnAndSkip(Object returnValue) {
@@ -100,6 +129,20 @@ public final class HookerClassHelper {
 
         public Object[] getArgs() {
             return before.getArgs();
+        }
+
+        /**
+         * Reads a single argument without copying the argument list.
+         */
+        public Object getArg(int index) {
+            return before.getArg(index);
+        }
+
+        /**
+         * Returns the number of arguments without materializing the argument array.
+         */
+        public int getArgsCount() {
+            return before.getArgsCount();
         }
 
         public Object getResult() {
@@ -172,7 +215,7 @@ public final class HookerClassHelper {
             Throwable throwable = before.throwable;
             if (!before.skipped) {
                 try {
-                    result = before.argsAccessed ? chain.proceed(before.getArgs()) : chain.proceed();
+                    result = before.hasMaterializedArgs() ? chain.proceed(before.getArgs()) : chain.proceed();
                 } catch (Throwable t) {
                     throwable = t;
                 }

@@ -310,7 +310,11 @@ public class ModuleHelper {
 
     public static void handlePreferenceChanged(@Nullable String key) {
         for (PreferenceObserver prefObserver:prefObservers) {
-            prefObserver.onChange(key);
+            try {
+                prefObserver.onChange(key);
+            } catch (Throwable t) {
+                log(t);
+            }
         }
     }
 
