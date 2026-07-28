@@ -73,6 +73,11 @@ android {
         val releaseSigning = signingConfigs.getByName("v2")
 
         getByName("release") {
+            check(hasReleaseSigning) {
+                "Release signing configuration is missing or incomplete. " +
+                "Ensure ${rootProject.file("../keystore.properties")} exists and defines " +
+                "storeFile, storePassword, keyAlias, and keyPassword."
+            }
             isDebuggable = false
             isMinifyEnabled = true
             isShrinkResources = true
@@ -85,6 +90,11 @@ android {
         }
 
         create("develop") {
+            check(hasReleaseSigning) {
+                "Develop signing configuration is missing or incomplete. " +
+                "Ensure ${rootProject.file("../keystore.properties")} exists and defines " +
+                "storeFile, storePassword, keyAlias, and keyPassword."
+            }
             isDebuggable = false
             isMinifyEnabled = true
             isShrinkResources = true
@@ -126,6 +136,13 @@ android {
 
     buildFeatures {
         buildConfig = true
+    }
+
+    applicationVariants.all {
+        outputs.all {
+            (this as com.android.build.gradle.api.ApkVariantOutput).outputFileName =
+                "CustoMIUIzer-A13-${versionName}.apk"
+        }
     }
 
     dependenciesInfo {
