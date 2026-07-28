@@ -5,9 +5,9 @@
 
 | 文件 | LOC | 所属层 | 所属进程 | 入口 | 静态状态 | 并发 | 动态引用 | A14 对应文件 | 风险 | 建议 | 批次 | 验证要求 |
 | ---- | --- | ------ | -------- | ---- | -------- | ---- | -------- | ------------- | ---- | ---- | ---- | -------- |
-| `app/src/main/java/name/monwf/customiuizer/subs/System.java` | 662 | UI | app/Settings | normal | none | none | none | app/src/main/java/tv/withaibuild/customiuizer/subs/System.kt (Kotlin) | GREEN | 迁移 | B1-3 | 单测 / build / lint / UI 回归 |
+| `app/src/main/java/name/monwf/customiuizer/subs/System.java` | 662 | UI | app/Settings | normal | none | none | none | app/src/main/java/tv/withaibuild/customiuizer/subs/System.kt (Kotlin) | GREEN | 已迁移 | B1-4 已迁移 | 单测 / build / lint / R8 / UI 回归 |
 | `app/src/main/java/name/monwf/customiuizer/utils/SortableListView.java` | 318 | utility | app/Settings | XML inflate | final constants | none | （SortableList 反射访问 mSnapshotShadow） | app/src/main/java/tv/withaibuild/customiuizer/utils/SortableListView.kt (Kotlin) | YELLOW | 自定义 View/拖拽，B2 处理 | B2 | 单测 / build / lint / R8 |
-| `app/src/main/java/name/monwf/customiuizer/subs/MultiAction.java` | 314 | UI | app/Settings | normal | none | none | none | app/src/main/java/tv/withaibuild/customiuizer/subs/MultiAction.kt (Kotlin) | GREEN | 迁移 | B1-3 | 单测 / build / lint / UI 回归 |
+| `app/src/main/java/name/monwf/customiuizer/subs/MultiAction.java` | 314 | UI | app/Settings | normal | none | none | getIdentifier | app/src/main/java/tv/withaibuild/customiuizer/subs/MultiAction.kt (Kotlin) | GREEN | 已迁移 | B1-3 已迁移 | 单测 / build / lint / R8 / UI 回归 |
 | `app/src/main/java/name/monwf/customiuizer/subs/ColorSelector.java` | 168 | UI | app/Settings | normal | none | none | none | app/src/main/java/tv/withaibuild/customiuizer/subs/ColorSelector.kt (Kotlin) | GREEN | 迁移 | B1 | 单测 / build / lint / UI 回归 |
 | `app/src/main/java/name/monwf/customiuizer/subs/ShortcutSelector.java` | 108 | UI | app/Settings | normal | none | none | getIdentifier | app/src/main/java/tv/withaibuild/customiuizer/subs/ShortcutSelector.kt (Kotlin) | GREEN | 已迁移 | B1-2 已迁移 | 单测 / build / lint / R8 |
 | `app/src/main/java/name/monwf/customiuizer/subs/Controls.java` | 98 | UI | app/Settings | normal | none | none | none | app/src/main/java/tv/withaibuild/customiuizer/subs/Controls.kt (Kotlin) | GREEN | 迁移 | B1 | 单测 / build / lint / UI 回归 |
@@ -46,7 +46,7 @@
 
 ## 风险统计
 
-- **GREEN**: 2 个文件（B1-3 待迁移：`MultiAction`、`subs/System`）
+- **GREEN**: 0 个文件（B1 全部完成）
 - **YELLOW**: 24 个文件（`SortableListView` 因反射依赖从 GREEN 调整至 YELLOW）
 - **RED**: 6 个文件
 
@@ -181,12 +181,108 @@
 - `module.prop` / `scope.list` / `java_init.list` 未变；
 - 未见 Legacy Xposed API 或 A14 专属代码。
 
-### 下一批 B1-3 候选
+## B1-3 批次执行结果
 
-- `app/src/main/java/name/monwf/customiuizer/subs/MultiAction.java`（314 LOC，编辑 UI，依赖 `AppSelector`/`ShortcutSelector`）
-- `app/src/main/java/name/monwf/customiuizer/subs/System.java`（662 LOC，系统设置页面，使用 `PrefsProvider`、`AutoRotateService`）
+### 选取文件
 
-合计约 976 LOC，控制在 1000 LOC 以内。
+| 顺序 | 原 Java 文件 | Java LOC | Kotlin 文件 | Kotlin LOC | 迁移结论 | 验证 |
+| ---- | ------------ | -------- | ----------- | ---------- | -------- | ---- |
+| B1-3-1 | `app/src/main/java/name/monwf/customiuizer/subs/MultiAction.java` | 315 | `app/src/main/java/name/monwf/customiuizer/subs/MultiAction.kt` | 246 | 已迁移 | 单测 / build / lint / R8 / UI 回归 |
+
+新增 `app/src/test/java/name/monwf/customiuizer/subs/B1_3_MigrationInteropTest.kt`（40 LOC）。
+
+### JVM 兼容要点
+
+- package/FQCN 不变；
+- 公开无参构造器保留；
+- 继承 `SubFragment`（Java）不变；
+- `MultiAction.Actions` 枚举保持 6 个值，Java 侧仍可用 `MultiAction.Actions.LAUNCHER`；
+- `onCreate` / `onActivityCreated` / `onActivityResult` / `saveSharedPrefs` / `onDestroy` 签名与原 Java 一致；
+- `AppSelector` / `ShortcutSelector` 目标片段调用通过 `setTargetFragment(this, ...)` 保留，requestCode 不变；
+- `SpinnerExFake.getValue()` / `setValue()` / `addValue()` 等 Kotlin 属性访问保持兼容；
+- 未引入 `!!`、coroutine/Flow，未改动 `Intent` extra key 与 `startActivityForResult` requestCode。
+
+### 构建结果
+
+- `./gradlew.bat --no-daemon :app:test`：BUILD SUCCESSFUL，72 tests / 0 failures；
+- `./gradlew.bat --no-daemon :app:lintDebug`：0 errors；
+- `./gradlew.bat --no-daemon :app:assembleDebug`：成功；
+- `./gradlew.bat --no-daemon :app:assembleRelease`：成功；
+- `git diff --check`：通过。
+
+## B1-4 批次执行结果
+
+### 选取文件
+
+| 顺序 | 原 Java 文件 | Java LOC | Kotlin 文件 | Kotlin LOC | 迁移结论 | 验证 |
+| ---- | ------------ | -------- | ----------- | ---------- | -------- | ---- |
+| B1-4-1 | `app/src/main/java/name/monwf/customiuizer/subs/System.java` | 663 | `app/src/main/java/name/monwf/customiuizer/subs/System.kt` | 485 | 已迁移 | 单测 / build / lint / R8 / UI 回归 |
+
+新增 `app/src/test/java/name/monwf/customiuizer/subs/B1_4_MigrationInteropTest.kt`（46 LOC）。
+
+### JVM 兼容要点
+
+- package/FQCN 不变（`name.monwf.customiuizer.subs.System`）；
+- 公开无参构造器保留；
+- 继承 `SubFragment`（Java）不变；
+- `onCreate` / `onCreatePreferences` / `onActivityCreated` / `onActivityResult` 签名与原 Java 一致；
+- `selectSub()` / `openSubFragment(...)` / `openStandaloneApp(...)` / `openAppsEdit` 等来自 Java `SubFragment` 的调用保持不变；
+- `when (sub)` 替代原 `switch (sub)`，所有分支、调用顺序、Intent extra 与 `requestCode` 不变；
+- `findPreference<T>(...)` 安全调用替代原 Java 强制类型转换，未改变正常路径行为；
+- `Settings.Secure.putInt`、`PackageManager.setComponentEnabledSetting`、`AppHelper.showInputDialog` 等系统调用签名与参数不变；
+- `PrefsProvider.AUTHORITY` 用于 `Uri.parse` 保持不变；
+- 未使用 `!!`、coroutine/Flow。
+
+### 构建结果
+
+- `./gradlew.bat --no-daemon :app:test`：BUILD SUCCESSFUL，74 tests / 0 failures；
+- `./gradlew.bat --no-daemon :app:lintDebug`：0 errors；
+- `./gradlew.bat --no-daemon :app:assembleDebug`：成功；
+- `./gradlew.bat --no-daemon :app:assembleRelease`：成功；
+- `git diff --check`：通过。
+
+### R8 审计
+
+- `MultiAction` 与 `System` 在 Release mapping 中均从调用点可达；
+- `System` 字段 `prefSystem` 在 `MainFragment` 中保留引用；
+- 未见 A14 包名、Hook target、资源名或 Android 14 逻辑混入。
+
+## B1 阶段总结
+
+### 已迁移 B1 文件
+
+| 批次 | 文件 | Java LOC | Kotlin LOC | 测试 |
+| ---- | ---- | -------- | ---------- | ---- |
+| B1-1 | `subs/CategorySelector` | 66 | 68 | B1MigrationInteropTest |
+| B1-1 | `subs/Controls` | 99 | 84 | B1MigrationInteropTest |
+| B1-1 | `subs/Launcher` | 97 | 85 | B1MigrationInteropTest |
+| B1-1 | `subs/ColorSelector` | 168 | 138 | B1MigrationInteropTest |
+| B1-2 | `PrefsProvider` | 81 | 56 | B1_2_MigrationInteropTest |
+| B1-2 | `subs/ShortcutSelector` | 109 | 90 | B1_2_MigrationInteropTest |
+| B1-3 | `subs/MultiAction` | 315 | 246 | B1_3_MigrationInteropTest |
+| B1-4 | `subs/System` | 663 | 485 | B1_4_MigrationInteropTest |
+
+合计：删除 Java 1598 LOC，新增 Kotlin 1252 LOC，新增测试 207 LOC。
+
+### B1 验证结论
+
+- 单元测试：74 tests，0 failures，0 errors；
+- lintDebug：0 errors，基线 warnings 数量稳定；
+- assembleDebug / assembleRelease：成功；
+- Release R8 mapping：B1 迁移类均保持可达，无 Manifest/Xposed 元数据变化；
+- 未发现 A14 包名、Hook target、资源名或 API 版本变化；
+- 真机验证未完成，仍为 B1 阶段遗留项。
+
+### 下一批 B2 候选
+
+- `app/src/main/java/name/monwf/customiuizer/utils/SortableListView.java`（自定义 View/拖拽，反射依赖）
+- `app/src/main/java/name/monwf/customiuizer/utils/AudioVisualizer.java`
+- `app/src/main/java/name/monwf/customiuizer/PreferenceFragmentBase.java`
+- `app/src/main/java/name/monwf/customiuizer/SubFragment.java`
+- `app/src/main/java/name/monwf/customiuizer/MainFragment.java`
+- `app/src/main/java/name/monwf/customiuizer/subs/SortableList.java`
+
+按矩阵 YELLOW 顺序分批处理，单个批次控制在 800–1200 LOC。
 
 ## 长期保留的 Java 边界
 
