@@ -62,11 +62,11 @@
 
 - **任务/命令：** `$env:JAVA_HOME='C:\Program Files\Java\jdk-17'; .\gradlew.bat --no-daemon test lintDebug lintRelease lintVitalRelease assembleDebug assembleRelease`
 - **结果：** BUILD SUCCESSFUL
-- **产物：** `.devin/a13_search_full_build_stdout.log`
+- **产物：** `.devin/a13_remoteprefs_full_build2_stdout.log`
 - **验证日期：** 2026-07-28
 - **APK 审计：**
   - `app/build/outputs/apk/release/app-release.apk`
-  - SHA-256：`7F7E6F7D593047FB0505C271A84B930E218D0DD37DFB932B0B176FDE67C2B42C`
+  - SHA-256：`0CD61A0F5772DB761F2ADD44495F1A037F5AE1D44DCBE7FC93D7F48722313657`
   - 签名：v2 only，证书 SHA-256：`C0:EF:F2:DC:4E:66:27:17:19:54:90:DA:78:B1:2A:98:4C:6F:2E:6B:D3:8A:CF:4E:DA:D1:4D:53:E3:D2:2E:70`
   - `module.prop`：`minApiVersion=101`，`targetApiVersion=102`，`staticScope=false`
   - scope 列表完整，入口为 `name.monwf.customiuizer.MainModule`
@@ -113,6 +113,7 @@
 - P1：0 项（已修复）。
 - P2：0 项（已修复）。
 - P3：2 项，`toRegex()` 与 `forEach(new Consumer())`，用户指示“卡了跳过”，记录待处理。
+- `MainModule` / `RemotePreferences`：空 `SharedPreferences` 快照不再固化 `prefsLoaded`；`watchPreferenceChange` 无条件注册并在成功后设置 `prefsWatcherRegistered`；监听回调按旧值类型读取；`ModuleHelper` 移除 `processHooked` 死引用。
 
 ## 本轮新增文档
 
@@ -153,6 +154,9 @@
 - 新增 `SearchNavigation.kt`：纯 JVM 可测的 `SearchRoute`/`SearchRouteResolver`/`SearchStateMachine`。
 - `MainFragment` 搜索流程改为三态 `IDLE/SEARCHING/NAVIGATED`，返回后通过 `shouldClearOnReturn` 清理搜索视图，修复搜索页闪现/二次返回问题。
 - `MainFragment.openModCat` 使用 `SearchRouteResolver` 判断子分类选择器与直接跳转，统一返回 `true`/`false` 语义并处理 `onPreferenceTreeClick` 空指针。
+- `MainModule` 空 `SharedPreferences` 快照不再固化 `prefsLoaded`，避免模块在 provider 未就绪时永久以空配置运行；`watchPreferenceChange` 无条件注册并在成功后设置 `prefsWatcherRegistered`。
+- `MainModule` 偏好变化监听回调按旧值类型读取（Boolean/Integer/Long/Float/String/Set），避免每次 `getAll()` 全量复制并减少跨进程快照成本。
+- `ModuleHelper` 移除所有 `MainModule.processHooked = true` 死引用并整理 `hookAllConstructors` / `hookAllMethods` 空块。
 
 ## 下一步
 

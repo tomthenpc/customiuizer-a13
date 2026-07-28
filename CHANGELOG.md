@@ -23,7 +23,7 @@
 
 - `:app:test`、`:app:lintDebug`、`:app:lintRelease`、`:app:lintVitalRelease`、`:app:assembleDebug`、`:app:assembleRelease` 通过；
 - Release APK 使用 A13 正式签名 v2，zipalign 对齐通过；
-- APK SHA-256：`7F7E6F7D593047FB0505C271A84B930E218D0DD37DFB932B0B176FDE67C2B42C`;
+- APK SHA-256：`0CD61A0F5772DB761F2ADD44495F1A037F5AE1D44DCBE7FC93D7F48722313657`;
 - 签名证书 SHA-256：`C0:EF:F2:DC:4E:66:27:17:19:54:90:DA:78:B1:2A:98:4C:6F:2E:6B:D3:8A:CF:4E:DA:D1:4D:53:E3:D2:2E:70`；
 - `module.prop`、`scope.list`、`java_init.list` 元数据正确；
 - applicationId、Xposed metadata、API 边界保持不变；
@@ -67,6 +67,11 @@
 - P3：`toRegex()`（`AppHelper.kt`、`PreferenceAdapter.kt`）与 `System.java:2094` 的 `forEach(new Consumer())` 可优化；用户指示“卡了跳过”，已记录待后续处理。
 - Locale / AppLocaleController：已按 A14 模式引入单一状态源并补充 17 个单元测试。
 - 搜索导航 / SearchStateMachine / SearchRouteResolver：已按 A14 模式引入并补充 21 个单元测试。
+- RemotePreferences / MainModule：
+  - 空 `SharedPreferences` 快照不再把 `prefsLoaded` 标记为 true，避免模块在 provider 未就绪时永久以空配置运行；增加一次性 `Empty preferences!` 日志。
+  - `watchPreferenceChange` 移除 `processHooked` 门槛，在 `android`、`com.android.systemui`（SystemUIApplication.onCreate 后）、`com.miui.home` 等包恒注册。
+  - 监听回调按旧值类型读取（Boolean/Integer/Long/Float/String/Set），避免每次 `getAll()` 全量复制。
+  - `ModuleHelper` 移除 `processHooked` 死引用并整理 `hookAllConstructors` / `hookAllMethods` 空块。
 
 ## r13.2.1-devin（UI 回归修复）
 

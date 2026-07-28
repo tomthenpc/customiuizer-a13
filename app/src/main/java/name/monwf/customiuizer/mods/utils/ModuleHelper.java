@@ -64,7 +64,6 @@ public class ModuleHelper {
     public static CustomMethodUnhooker hookMethod(Method method, MethodHook callback) {
         try {
             CustomMethodUnhooker unhooker = XposedHelpers.doHookMethod(method, callback);
-            MainModule.processHooked = true;
             return unhooker;
         } catch (Throwable t) {
             log("Failed to hook " + method.getName() + " method: " + t);
@@ -75,7 +74,6 @@ public class ModuleHelper {
     public static CustomMethodUnhooker findAndHookMethod(String className, ClassLoader classLoader, String methodName, Object... parameterTypesAndCallback) {
         try {
             CustomMethodUnhooker unhooker = XposedHelpers.findAndHookMethod(className, classLoader, methodName, parameterTypesAndCallback);
-            MainModule.processHooked = true;
             return unhooker;
         } catch (Throwable t) {
             log("Failed to hook " + methodName + " method in " + className + ": " + t);
@@ -86,7 +84,6 @@ public class ModuleHelper {
     public static CustomMethodUnhooker findAndHookMethod(Class<?> clazz, String methodName, Object... parameterTypesAndCallback) {
         try {
             CustomMethodUnhooker unhooker = XposedHelpers.findAndHookMethod(clazz, methodName, parameterTypesAndCallback);
-            MainModule.processHooked = true;
             return unhooker;
         } catch (Throwable t) {
             log("Failed to hook " + methodName + " method in " + clazz.getCanonicalName() + ": " + t);
@@ -98,7 +95,6 @@ public class ModuleHelper {
     public static boolean findAndHookMethodSilently(String className, ClassLoader classLoader, String methodName, Object... parameterTypesAndCallback) {
         try {
             XposedHelpers.findAndHookMethod(className, classLoader, methodName, parameterTypesAndCallback);
-            MainModule.processHooked = true;
             return true;
         } catch (Throwable t) {
             return false;
@@ -109,7 +105,6 @@ public class ModuleHelper {
     public static boolean findAndHookMethodSilently(Class<?> clazz, String methodName, Object... parameterTypesAndCallback) {
         try {
             XposedHelpers.findAndHookMethod(clazz, methodName, parameterTypesAndCallback);
-            MainModule.processHooked = true;
             return true;
         } catch (Throwable t) {
             return false;
@@ -119,7 +114,6 @@ public class ModuleHelper {
     public static CustomMethodUnhooker findAndHookConstructor(String className, ClassLoader classLoader, Object... parameterTypesAndCallback) {
         try {
             CustomMethodUnhooker unhooker = XposedHelpers.findAndHookConstructor(className, classLoader, parameterTypesAndCallback);
-            MainModule.processHooked = true;
             return unhooker;
         } catch (Throwable t) {
             log("Failed to hook constructor in " + className + ": " + t);
@@ -130,9 +124,7 @@ public class ModuleHelper {
     public static void hookAllConstructors(String className, ClassLoader classLoader, MethodHook callback) {
         try {
             Class<?> hookClass = XposedHelpers.findClassIfExists(className, classLoader);
-            if (hookClass != null && XposedHelpers.hookAllConstructors(hookClass, callback).size() > 0) {
-                MainModule.processHooked = true;
-            } else {
+            if (hookClass == null || XposedHelpers.hookAllConstructors(hookClass, callback).isEmpty()) {
                 log("Failed to hook " + className + " constructor (no matching constructor found)");
             }
         } catch (Throwable t) {
@@ -142,9 +134,7 @@ public class ModuleHelper {
 
     public static void hookAllConstructors(Class<?> hookClass, MethodHook callback) {
         try {
-            if (XposedHelpers.hookAllConstructors(hookClass, callback).size() > 0) {
-                MainModule.processHooked = true;
-            } else {
+            if (XposedHelpers.hookAllConstructors(hookClass, callback).isEmpty()) {
                 log("Failed to hook " + hookClass.getCanonicalName() + " constructor");
             }
         } catch (Throwable t) {
@@ -155,9 +145,7 @@ public class ModuleHelper {
     public static void hookAllMethods(String className, ClassLoader classLoader, String methodName, MethodHook callback) {
         try {
             Class<?> hookClass = XposedHelpers.findClassIfExists(className, classLoader);
-            if (hookClass != null && XposedHelpers.hookAllMethods(hookClass, methodName, callback).size() > 0) {
-                MainModule.processHooked = true;
-            } else {
+            if (hookClass == null || XposedHelpers.hookAllMethods(hookClass, methodName, callback).isEmpty()) {
                 log("Failed to hook " + methodName + " method in " + className);
             }
         } catch (Throwable t) {
@@ -167,9 +155,7 @@ public class ModuleHelper {
 
     public static void hookAllMethods(Class<?> hookClass, String methodName, MethodHook callback) {
         try {
-            if (XposedHelpers.hookAllMethods(hookClass, methodName, callback).size() > 0) {
-                MainModule.processHooked = true;
-            } else {
+            if (XposedHelpers.hookAllMethods(hookClass, methodName, callback).isEmpty()) {
                 log("Failed to hook " + methodName + " method in " + hookClass.getCanonicalName());
             }
         } catch (Throwable t) {
@@ -191,7 +177,6 @@ public class ModuleHelper {
         try {
             Class<?> hookClass = XposedHelpers.findClassIfExists(className, classLoader);
             boolean hooked = hookClass != null && XposedHelpers.hookAllMethods(hookClass, methodName, callback).size() > 0;
-            if (hooked) MainModule.processHooked = true;
             return hooked;
         } catch (Throwable t) {
             return false;
@@ -201,7 +186,6 @@ public class ModuleHelper {
     public static boolean hookAllMethodsSilently(Class<?> hookClass, String methodName, MethodHook callback) {
         try {
             boolean hooked = hookClass != null && XposedHelpers.hookAllMethods(hookClass, methodName, callback).size() > 0;
-            if (hooked) MainModule.processHooked = true;
             return hooked;
         } catch (Throwable t) {
             return false;

@@ -45,13 +45,12 @@ public class MainModule extends XposedModule {
     OnSharedPreferenceChangeListener mListener;
 
     private boolean prefsLoaded;
+    private boolean emptyPrefsReported;
     private boolean prefsWatcherRegistered;
-    public static volatile boolean processHooked = false;
 
     @Override
     public void onModuleLoaded(@NonNull XposedModuleInterface.ModuleLoadedParam param) {
         processName = param.getProcessName();
-        processHooked = false;
         XposedHelpers.moduleInst = this;
     }
 
@@ -75,10 +74,14 @@ public class MainModule extends XposedModule {
 
     private void initPrefs(Map<String, ?> allPrefs) {
         if (prefsLoaded) return;
-        if (allPrefs == null || allPrefs.size() == 0)
-            XposedHelpers.log("Empty preferences!");
-        else
-            mPrefs.putAll(allPrefs);
+        if (allPrefs == null || allPrefs.isEmpty()) {
+            if (!emptyPrefsReported) {
+                emptyPrefsReported = true;
+                XposedHelpers.log("Empty preferences!");
+            }
+            return;
+        }
+        mPrefs.putAll(allPrefs);
         prefsLoaded = true;
     }
 
@@ -144,35 +147,49 @@ public class MainModule extends XposedModule {
         return false;
     }
 
-    private Object getPreferenceValue(SharedPreferences prefs, String key) {
-        return prefs.getAll().get(key);
-    }
-
     private void watchPreferenceChange() {
         if (prefsWatcherRegistered) return;
-        prefsWatcherRegistered = true;
-        HashSet<String> ignoreKeys = new HashSet<>();
-        ignoreKeys.add("pref_key_systemui_restart_time");
 
         mListener = new SharedPreferences.OnSharedPreferenceChangeListener() {
             @Override
             public void onSharedPreferenceChanged(SharedPreferences sharedPreferences, @Nullable String key) {
-                Object val = getPreferenceValue(sharedPreferences, key);
-                if (val == null) {
-//                    XposedHelpers.log(processName + " key removed: " + key);
-                    mPrefs.remove(key);
+                if (key == null) return;
+                Object val;
+                if (sharedPreferences.contains(key)) {
+                    Object oldVal = mPrefs.get(key);
+                    if (oldVal instanceof Boolean) {
+                        val = sharedPreferences.getBoolean(key, false);
+                    } else if (oldVal instanceof Integer) {
+                        val = sharedPreferences.getInt(key, 0);
+                    } else if (oldVal instanceof Long) {
+                        val = sharedPreferences.getLong(key, 0L);
+                    } else if (oldVal instanceof Float) {
+                        val = sharedPreferences.getFloat(key, 0f);
+                    } else if (oldVal instanceof String) {
+                        val = sharedPreferences.getString(key, null);
+                    } else if (oldVal instanceof Set) {
+                        val = sharedPreferences.getStringSet(key, null);
+                    } else {
+                        val = sharedPreferences.getAll().get(key);
+                    }
+                } else {
+                    val = null;
                 }
-                else {
-//                    XposedHelpers.log(processName + " key changed: " + key);
+                if (val == null) {
+                    mPrefs.remove(key);
+                } else {
                     mPrefs.put(key, val);
                 }
-                if (!ignoreKeys.contains(key)) {
+                if (!"pref_key_systemui_restart_time".equals(key)) {
                     ModuleHelper.handlePreferenceChanged(key);
                 }
             }
         };
-        remotePrefs = getRemotePrefs();
+        if (remotePrefs == null) {
+            remotePrefs = getRemotePreferences(ModuleHelper.prefsName + "_remote");
+        }
         remotePrefs.registerOnSharedPreferenceChangeListener(mListener);
+        prefsWatcherRegistered = true;
     }
 
     @Override
@@ -251,7 +268,7 @@ public class MainModule extends XposedModule {
         }
         if (mPrefs.getInt("system_other_wallpaper_scale", 6) > 6) System.WallpaperScaleLevelHook(lpparam);
 
-        if (processHooked) watchPreferenceChange();
+        watchPreferenceChange();
     }
 
     @Override
@@ -286,7 +303,7 @@ public class MainModule extends XposedModule {
                 MainModule.resHooks.setObjectReplacement("android", "bool", "config_allowAllRotations", MainModule.mPrefs.getStringAsInt("system_allrotations2", 1) == 2);
             }
             if (mPrefs.getStringAsInt("system_rotateanim", 1) > 1) System.RotationAnimationRes();
-            if (processHooked) watchPreferenceChange();
+            watchPreferenceChange();
         }
 
         if (pkg.equals("com.baidu.input")
@@ -330,7 +347,7 @@ public class MainModule extends XposedModule {
                         isHooked = true;
                         Context context = (Context) XposedHelpers.callMethod(param.getThisObject(), "getApplicationContext");
                         SystemUI.setupStatusBar(context);
-                        if (processHooked) watchPreferenceChange();
+                        watchPreferenceChange();
                     }
                 }
             });
@@ -705,7 +722,7 @@ public class MainModule extends XposedModule {
             if (mPrefs.getInt("launcher_dock_topmargin", 0) > 0) Launcher.DockMarginTopHook(lpparam);
             if (mPrefs.getInt("launcher_dock_bottommargin", 0) > 0) Launcher.DockMarginBottomHook(lpparam);
 
-            if (processHooked) watchPreferenceChange();
+            watchPreferenceChange();
         }
 
         final boolean isStatusBarColor = mPrefs.getBoolean("system_statusbarcolor") && mPrefs.getStringSet("system_statusbarcolor_apps").contains(pkg);
