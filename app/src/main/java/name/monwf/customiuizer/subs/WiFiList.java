@@ -180,7 +180,7 @@ public class WiFiList extends SubFragment {
 		IntentFilter intentFilter = new IntentFilter();
 		intentFilter.addAction(WifiManager.SCAN_RESULTS_AVAILABLE_ACTION);
 		intentFilter.addAction(WifiManager.NETWORK_STATE_CHANGED_ACTION);
-		mAppContext.registerReceiver(wifiReceiver, intentFilter);
+		mAppContext.registerReceiver(wifiReceiver, intentFilter, Context.RECEIVER_NOT_EXPORTED);
 		handler.postDelayed(getScanResults, 1000);
 	}
 

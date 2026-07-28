@@ -967,7 +967,7 @@ public class Launcher {
                             }
                         }
                     };
-                    act.registerReceiver(secretCodeReceiver, intentFilter);
+                    act.registerReceiver(secretCodeReceiver, intentFilter, Context.RECEIVER_NOT_EXPORTED);
                     XposedHelpers.setAdditionalInstanceField(act, "secretCodeReceiver", secretCodeReceiver);
                 }
             });

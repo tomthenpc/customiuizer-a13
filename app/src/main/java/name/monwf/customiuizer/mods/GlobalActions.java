@@ -784,7 +784,7 @@ public class GlobalActions {
 //				intentfilter.addAction(ACTION_PREFIX + "RunParasitic");
                 //intentfilter.addAction(ACTION_PREFIX + "QueryXposedService");
 
-                mGlobalContext.registerReceiver(mGlobalReceiver, intentfilter);
+                mGlobalContext.registerReceiver(mGlobalReceiver, intentfilter, Context.RECEIVER_EXPORTED);
                 mGlobalReceiverContext = mGlobalContext;
             }
         });
@@ -840,7 +840,7 @@ public class GlobalActions {
                         }
                     }
                 };
-                mContext.registerReceiver(windowReceiver, intentfilter);
+                mContext.registerReceiver(windowReceiver, intentfilter, Context.RECEIVER_EXPORTED);
                 XposedHelpers.setAdditionalInstanceField(thisObject, "globalActionsWindowReceiver", windowReceiver);
             }
         });
@@ -884,7 +884,7 @@ public class GlobalActions {
 
                 intentfilter.addAction(ACTION_PREFIX + "ScrollToTop");
 
-                mStatusBarContext.registerReceiver(mSBReceiver, intentfilter);
+                mStatusBarContext.registerReceiver(mSBReceiver, intentfilter, Context.RECEIVER_EXPORTED);
                 mSBReceiverContext = mStatusBarContext;
             }
         });

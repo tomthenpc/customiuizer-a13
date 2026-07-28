@@ -150,7 +150,7 @@ public class Controls {
 				if (sScreenOnContext != null) {
 					try { sScreenOnContext.unregisterReceiver(mScreenOnReceiver); } catch (Throwable ignored) {}
 				}
-				mContext.registerReceiver(mScreenOnReceiver, new IntentFilter(Intent.ACTION_SCREEN_ON));
+				mContext.registerReceiver(mScreenOnReceiver, new IntentFilter(Intent.ACTION_SCREEN_ON), Context.RECEIVER_NOT_EXPORTED);
 				sScreenOnContext = mContext;
 			}
 		});

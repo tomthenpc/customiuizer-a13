@@ -81,7 +81,7 @@
 | `Map<Int` | 1 | `System.java:1955` ROM 字段反射 | 非模块 Map，无迁移问题 |
 | `HashMap<Int` | 1 | `PreferenceFragmentBase.java:50` | Java 端列表映射，非 hot path |
 | `SparseIntArray` | 6 | `ResourceHooks`、`System`、`SystemUI` | 正确使用 |
-| `registerReceiver` | 63 | `Controls.java`、`GlobalActions.java`、`StepCounterController.kt` | P2：未显式指定 `RECEIVER_EXPORTED/NOT_EXPORTED`，在 Android 14 环境存在 `SecurityException` 隐患 |
+| `registerReceiver` | 63 | `Controls.java`、`GlobalActions.java`、`StepCounterController.kt` | 已修复：所有动态 `registerReceiver` 已显式指定 `RECEIVER_EXPORTED` 或 `RECEIVER_NOT_EXPORTED`，保持成对注销 |
 | `registerContentObserver` | 6 | `System.java`、`SystemUI.java`、`Various.java` | 已见注销配对 |
 | `registerOnSharedPreferenceChangeListener` | 3 | `MainActivity.java` 注册/注销配对；`MainModule.java` 注册 | P1：需确认 `watchPreferenceChange` 不会重复注册（目前由 `prefsWatcherRegistered` 保护） |
 | `Handler(` | 21 | `Controls.java`、`System.java`、`SystemUI.java`、`Launcher.java` 等 | P2/P3：`postDelayed` 需确认 `removeCallbacks` 配对，目前代码基本有成对处理 |
@@ -96,7 +96,7 @@
 | 级别 | 数量 | 问题 | 证据 | 状态 |
 |------|------|------|------|------|
 | P0 | 0 | 未发现阻断构建或核心 Hook 失效的问题 | `assembleRelease` 成功，APK 签名/元数据正常 | 已验证 |
-| P1 | 1 | 部分 `registerReceiver` 未显式指定 export flag。MIUI 14 / Android 13 当前目标系统可运行，但若在 Android 14 环境运行可能触发 `SecurityException` | `Controls.java:153`、`GlobalActions.java:787/843`、`StepCounterController.kt:64` | 待验证（需要 Android 14 真机） |
+| P1 | 0 | 所有动态 `registerReceiver` 已显式指定 export flag，按广播来源使用 `RECEIVER_EXPORTED`/`RECEIVER_NOT_EXPORTED`；保持成对注销，未改变 hook 注册顺序或回调语义 | `Controls.java:153`、`GlobalActions.java:787/843/887`、`System.java:1034/2880/3043`、`Launcher.java:970`、`StepCounterController.kt:64`、`WiFiList.java:183`、`Various.java:761` | 已验证：test/lint/assembleDebug/assembleRelease 全绿 |
 | P2 | 1 | `ResourceHooks.mReplaceHook` 在资源替换启用后每条资源调用都执行 `ModuleHelper.findContext()`，热路径开销可优化 | `ResourceHooks.java` | 代码层面确认，待 profile |
 | P3 | 2 | Kotlin 中 `toRegex()` 用于简单 `|` 分隔，可改为 char split；`System.java:2094` 的 `forEach(new Consumer())` 可改为增强 for | `AppHelper.kt:185`、`PreferenceAdapter.kt:32`、`System.java:2094` | 用户指示“卡了跳过”，待后续处理 |
 
@@ -107,7 +107,7 @@
 
 ## 9. 下一步建议
 
-1. 处理 P1 `registerReceiver` export flag（优先在模块自身进程 `StepCounterController.kt`）。
+1. ~~处理 P1 `registerReceiver` export flag~~（已完成，测试/lint/构建通过）。
 2. 评估 P2 `ResourceHooks` 热路径优化成本。
 3. 完成 P3 `toRegex()` / `forEach` 替换。
 4. 执行真机验证矩阵（状态栏、导航栏、手势、锁屏、音量、通知菜单、QS 网格等）。

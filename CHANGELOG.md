@@ -1,6 +1,6 @@
 # Changelog
 
-## r13.2.2-devin（语言切换修复 + 架构审计）
+## r13.2.2-devin（语言切换修复 + P1 export flag + A13/A14 差距矩阵）
 
 ### 修复
 
@@ -8,11 +8,22 @@
 - 根因：`AppHelper.getLocaleContext` 直接使用 `context.resources.configuration` 并 `setLocale`，修改了应用原始 `Resources` 的 `Configuration` 对象；当后续选择“跟随系统”并返回原始 `Context` 时，其 `Resources` 仍保留上次手动语言（English）。
 - 改为使用 `Configuration(context.resources.configuration)` 先复制一份配置再设置 locale，与 A14 实现一致，避免污染原始 `Context` 的 `Configuration`。
 
+### 新增工程资产
+
+- 新增 `docs/A13_A14_PARITY_MATRIX.md`：对照 A14 `r14.13.5`/`devin/r14.13-kotlin-refactor` 的 22+ 领域差距矩阵、适用/改写/不适用判定、A13 Java/Kotlin 文件统计与分层迁移建议。
+- 更新 `docs/ARCHITECTURE_AUDIT_A13.md` 与 `docs/DEVIN_R13_CHECKPOINT.md` P1 状态。
+
+### P1 registerReceiver export flag
+
+- 扫描 A13 全部动态 `registerReceiver`，为 11 处未指定 export flag 的调用显式添加 `Context.RECEIVER_EXPORTED` 或 `RECEIVER_NOT_EXPORTED`。
+- 判定原则：系统广播用 `RECEIVER_NOT_EXPORTED`，模块自定义跨进程广播用 `RECEIVER_EXPORTED`；保持 Receiver 成对注销与 hook 注册顺序不变。
+- 涉及文件：`Controls.java`、`GlobalActions.java`、`Launcher.java`、`System.java`、`Various.java`、`StepCounterController.kt`、`WiFiList.java`。
+
 ### 验证
 
-- `:app:test`、`:app:lint`、`:app:assembleDebug`、`:app:assembleRelease` 通过；
+- `:app:test`、`:app:lintDebug`、`:app:lintRelease`、`:app:lintVitalRelease`、`:app:assembleDebug`、`:app:assembleRelease` 通过；
 - Release APK 使用 A13 正式签名 v2，zipalign 对齐通过；
-- APK SHA-256：`9D9FE7D6CDD3825571F5490D3840ED0D15608FD27C6D190937CC9B4CC2794CBE`；
+- APK SHA-256：`62ED16BEFE47144548D1C862B640396FDD163D3B19897126DFE9F7BF75276AD1`；
 - 签名证书 SHA-256：`C0:EF:F2:DC:4E:66:27:17:19:54:90:DA:78:B1:2A:98:4C:6F:2E:6B:D3:8A:CF:4E:DA:D1:4D:53:E3:D2:2E:70`；
 - `module.prop`、`scope.list`、`java_init.list` 元数据正确；
 - applicationId、Xposed metadata、API 边界保持不变；
@@ -22,7 +33,7 @@
 
 - 新增 `docs/ARCHITECTURE_AUDIT_A13.md`，覆盖入口/生命周期、PrefMap、ResourceHooks、ModuleHelper、XposedHelpers 与 Phase 3 模式统计。
 - P0：0 项（构建与核心 Hook 未发现阻断问题）。
-- P1：`registerReceiver` 未显式指定 export flag，在 Android 14 环境存在 `SecurityException` 隐患。
+- P1：已修复。全部动态 `registerReceiver` 显式指定 `RECEIVER_EXPORTED` 或 `RECEIVER_NOT_EXPORTED`。
 - P2：`ResourceHooks.mReplaceHook` 热路径 `findContext()` 开销待评估。
 - P3：`toRegex()`（`AppHelper.kt`、`PreferenceAdapter.kt`）与 `System.java:2094` 的 `forEach(new Consumer())` 可优化；用户指示“卡了跳过”，已记录待后续处理。
 

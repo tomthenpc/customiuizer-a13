@@ -758,7 +758,7 @@ public class Various {
 						Object wk = XposedHelpers.getObjectField(param.getThisObject(), finalFieldName);
 						Object frag = XposedHelpers.callMethod(wk, "get");
 						Activity batteryView = (Activity) XposedHelpers.callMethod(frag, "getActivity");
-						int temp = batteryView.registerReceiver(null, new IntentFilter("android.intent.action.BATTERY_CHANGED")).getIntExtra("temperature", 0) / 10;
+						int temp = batteryView.registerReceiver(null, new IntentFilter("android.intent.action.BATTERY_CHANGED"), Context.RECEIVER_NOT_EXPORTED).getIntExtra("temperature", 0) / 10;
 						int symbolResId = batteryView.getResources().getIdentifier("temp_symbol", "id", lpparam.getPackageName());
 						int stateResId = batteryView.getResources().getIdentifier("current_temperature_state", "id", lpparam.getPackageName());
 						TextView stateTv = batteryView.findViewById(stateResId);

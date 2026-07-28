@@ -1031,7 +1031,7 @@ public class System {
                         initSecondTimer(clockController);
                     }
                 };
-                mContext.registerReceiver(mUpdateTimeReceiver, timeSetIntent);
+                mContext.registerReceiver(mUpdateTimeReceiver, timeSetIntent, Context.RECEIVER_NOT_EXPORTED);
                 XposedHelpers.setAdditionalInstanceField(clockController, "mUpdateTimeReceiver", mUpdateTimeReceiver);
             }
         };
@@ -2877,7 +2877,7 @@ public class System {
                             }
                         }
                     };
-                mContext.registerReceiver(usbStateReceiver, new IntentFilter("android.hardware.usb.action.USB_STATE"));
+                mContext.registerReceiver(usbStateReceiver, new IntentFilter("android.hardware.usb.action.USB_STATE"), Context.RECEIVER_NOT_EXPORTED);
                 XposedHelpers.setAdditionalInstanceField(service, "usbStateReceiver", usbStateReceiver);
             }
         });
@@ -3040,7 +3040,7 @@ public class System {
                         updateAlarmVisibility(thisObject, lastState);
                     }
                 };
-                mContext.registerReceiver(alarmReceiver, filter);
+                mContext.registerReceiver(alarmReceiver, filter, Context.RECEIVER_NOT_EXPORTED);
                 XposedHelpers.setAdditionalInstanceField(thisObject, "alarmReceiver", alarmReceiver);
             }
         });

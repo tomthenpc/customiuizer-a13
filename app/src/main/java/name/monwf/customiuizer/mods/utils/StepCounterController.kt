@@ -61,7 +61,7 @@ object StepCounterController {
                 updateSteps(sContext)
             }
         }
-        sContext?.registerReceiver(sTimeTickReceiver, IntentFilter("android.intent.action.TIME_TICK"))
+        sContext?.registerReceiver(sTimeTickReceiver, IntentFilter("android.intent.action.TIME_TICK"), Context.RECEIVER_NOT_EXPORTED)
 
         val looper = Looper.myLooper() ?: Looper.getMainLooper()
         mHandler = Handler(looper)
