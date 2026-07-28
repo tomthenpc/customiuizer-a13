@@ -92,6 +92,7 @@ import java.util.Arrays;
 import java.util.Enumeration;
 import java.util.HashMap;
 import java.util.HashSet;
+import java.lang.ref.WeakReference;
 import java.util.Iterator;
 import java.util.LinkedHashMap;
 import java.util.List;
@@ -285,7 +286,7 @@ public class SystemUI {
                         int i = (int) param.getArgs()[0];
                         ViewGroup mGroup = (ViewGroup) XposedHelpers.getObjectField(param.getThisObject(), "mGroup");
                         mGroup.addView(iconView, i);
-                        mStatusbarTextIcons.add(iconView);
+                        registerStatusbarTextIcon(iconView);
                         param.returnAndSkip(iconView);
                     }
                 }
@@ -311,7 +312,7 @@ public class SystemUI {
                         if (!ti.atRight) {
                             View iconView = createStatusbarTextIcon(mContext, lp, ti);
                             leftIconsContainer.addView(iconView, bvIndex + 1);
-                            mStatusbarTextIcons.add(iconView);
+                            registerStatusbarTextIcon(iconView);
                             XposedHelpers.callMethod(DarkIconDispatcher, "addDarkReceiver", iconView);
                         }
                     }
@@ -320,29 +321,21 @@ public class SystemUI {
             ModuleHelper.findAndHookMethod("com.android.systemui.statusbar.phone.MiuiCollapsedStatusBarFragment", lpparam.getClassLoader(), "showSystemIconArea", boolean.class, new MethodHook() {
                 @Override
                 protected void after(final AfterHookCallback param) throws Throwable {
-                    for (View iconView:mStatusbarTextIcons) {
-                        Object tagData = iconView.getTag(textIconTagId);
-                        if (tagData != null) {
-                            TextIcon ti = (TextIcon) tagData;
-                            if (!ti.atRight) {
-                                XposedHelpers.callMethod(iconView, "setVisibilityByController", true);
-                            }
+                    forEachStatusbarTextIcon((iconView, ti) -> {
+                        if (!ti.atRight) {
+                            XposedHelpers.callMethod(iconView, "setVisibilityByController", true);
                         }
-                    }
+                    });
                 }
             });
             ModuleHelper.findAndHookMethod("com.android.systemui.statusbar.phone.MiuiCollapsedStatusBarFragment", lpparam.getClassLoader(), "hideSystemIconArea", boolean.class, new MethodHook() {
                 @Override
                 protected void after(final AfterHookCallback param) throws Throwable {
-                    for (View iconView:mStatusbarTextIcons) {
-                        Object tagData = iconView.getTag(textIconTagId);
-                        if (tagData != null) {
-                            TextIcon ti = (TextIcon) tagData;
-                            if (!ti.atRight) {
-                                XposedHelpers.callMethod(iconView, "setVisibilityByController", false);
-                            }
+                    forEachStatusbarTextIcon((iconView, ti) -> {
+                        if (!ti.atRight) {
+                            XposedHelpers.callMethod(iconView, "setVisibilityByController", false);
                         }
-                    }
+                    });
                 }
             });
         }
@@ -367,23 +360,19 @@ public class SystemUI {
                     public void handleMessage(Message message) {
                         if (message.what == 100021) {
                             TextIconInfo tii = (TextIconInfo) message.obj;
-                            for (View tv : mStatusbarTextIcons) {
-                                Object tagData = tv.getTag(textIconTagId);
-                                if (tagData != null) {
-                                    TextIcon ti = (TextIcon) tagData;
-                                    if (tii.iconType == ti.iconType) {
-                                        XposedHelpers.callMethod(tv, "setBlocked", !tii.iconShow);
-                                        if (tii.iconShow) {
-                                            if (newStyle) {
-                                                XposedHelpers.callMethod(tv, "setNetworkSpeed", tii.iconText, "");
-                                            }
-                                            else {
-                                                XposedHelpers.callMethod(tv, "setNetworkSpeed", tii.iconText);
-                                            }
+                            forEachStatusbarTextIcon((tv, ti) -> {
+                                if (tii.iconType == ti.iconType) {
+                                    XposedHelpers.callMethod(tv, "setBlocked", !tii.iconShow);
+                                    if (tii.iconShow) {
+                                        if (newStyle) {
+                                            XposedHelpers.callMethod(tv, "setNetworkSpeed", tii.iconText, "");
+                                        }
+                                        else {
+                                            XposedHelpers.callMethod(tv, "setNetworkSpeed", tii.iconText);
                                         }
                                     }
                                 }
-                            }
+                            });
                         }
                     }
                 };
@@ -615,7 +604,36 @@ public class SystemUI {
         initStatusbarTextIcon(mContext, lp, ti, iconView);
         return iconView;
     }
-    static final ArrayList<View> mStatusbarTextIcons = new ArrayList<View>();
+    private static final ArrayList<WeakReference<View>> mStatusbarTextIcons = new ArrayList<WeakReference<View>>();
+
+    private interface StatusbarTextIconConsumer {
+        void accept(View iconView, TextIcon textIcon);
+    }
+
+    private static void registerStatusbarTextIcon(View iconView) {
+        if (iconView == null) return;
+        for (Iterator<WeakReference<View>> it = mStatusbarTextIcons.iterator(); it.hasNext();) {
+            WeakReference<View> ref = it.next();
+            View existing = ref.get();
+            if (existing == null || existing == iconView) it.remove();
+        }
+        mStatusbarTextIcons.add(new WeakReference<View>(iconView));
+    }
+
+    private static void forEachStatusbarTextIcon(StatusbarTextIconConsumer consumer) {
+        for (Iterator<WeakReference<View>> it = mStatusbarTextIcons.iterator(); it.hasNext();) {
+            WeakReference<View> ref = it.next();
+            View iconView = ref.get();
+            if (iconView == null) {
+                it.remove();
+                continue;
+            }
+            Object tagData = iconView.getTag(textIconTagId);
+            if (tagData == null) continue;
+            TextIcon ti = (TextIcon) tagData;
+            consumer.accept(iconView, ti);
+        }
+    }
 
     public static void AddCustomTileHook(PackageReadyParam lpparam) {
         final boolean enable5G = MainModule.mPrefs.getBoolean("system_fivegtile");
@@ -940,7 +958,7 @@ public class SystemUI {
                     for (TextIcon ti:textIcons) {
                         View iconView = createStatusbarTextIcon(mContext, new LinearLayout.LayoutParams(-2, -2), ti);
                         secondRight.addView(iconView, 0);
-                        mStatusbarTextIcons.add(iconView);
+                        registerStatusbarTextIcon(iconView);
                         XposedHelpers.callMethod(DarkIconDispatcher, "addDarkReceiver", iconView);
                     }
                 }
