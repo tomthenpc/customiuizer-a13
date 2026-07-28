@@ -6,7 +6,8 @@
 ## 当前目标
 
 - 完成 B1 / B2-1 / B2-2 / B2-3 / B2-4 / B2-5 / B2-6 / B2-7 / B2-8 / B2-9 Java → Kotlin 迁移；
-- 完成 A13 Claude 审计修复适配（MainModule 空快照/监听器、PrefPair、SystemUI 弱引用、ResourceHooks 热路径、Gradle cache、About 语言入口、r13.2.3-devin 版本）；
+- 完成 A13 Claude 审计修复适配；
+- 进行 B3 Hook 层拆分审计，完成 B3-1 `mods/PackagePermissions` 迁移到 Kotlin；
 - 按阶段自动验证 build / lint / Release 并 push `devin/r13.3-kotlin-migration`。
 
 ## 当前基线
@@ -316,14 +317,15 @@
 - **结果：** BUILD SUCCESSFUL
 - **验证日期：** 2026-07-28
 - **git diff --check：** 0 errors
-- **单元测试：** 111 tests，0 failures，0 errors（locale 迁移后复测通过）
+- **单元测试：** 113 tests，0 failures，0 errors（B3-1 迁移后复测通过）
 - **lintDebug：** 0 errors，520 warnings（基线持平）
 - **assembleDebug / assembleRelease：** 成功
 - **Release APK 审计：** applicationId / version / Xposed 元数据均未变；B1/B2 迁移类在 R8 中均保持可达
-- **当前代码变更范围：** B1 8 个 + B2 15 个 Java 转 Kotlin 生产文件，12 个迁移兼容性测试；A13 Claude 审计 6 项修复与版本更新
+- **当前代码变更范围：** B1 8 个 + B2 15 个 + B3-1 1 个 Java 转 Kotlin 生产文件；13 个迁移兼容性测试；A13 Claude 审计 6 项修复与版本更新
 
 ## 当前问题与阻塞
 
+- B3 剩余 Hook 层：`mods/Various`（B3-2）、`mods/Launcher`（B3-3）、`mods/SystemUI`（B3-4）、`mods/System`（B3-5）待按批次迁移，其中 `SystemUI` / `System` 因体积与状态复杂度需进一步拆分审计；
 - 真机验证未完成：LSPosed 加载、SystemUI/Launcher/Settings 主要功能、搜索返回、旋转重建均待确认；
 - B1-1 4 个设置子页面仍需在 MIUI 14 / Android 13 真机上验证 UI 行为与返回栈。
 - API 101/102 实机边界未验证：未在只支持 API 101 的环境运行。

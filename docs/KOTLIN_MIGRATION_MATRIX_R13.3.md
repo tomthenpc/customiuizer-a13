@@ -563,9 +563,44 @@ B2 全部迁移完成；下一批进入 B3 Hook 层拆分审计。
 - 未引入 A14 包名、Hook target、资源名或 API 版本变化；
 - 真机验证仍未完成。
 
-### 下一批 B3 候选
+## B3 Hook 层拆分与迁移计划
 
-按当前矩阵，`B3` 包含 `mods/System`、`mods/SystemUI`、`mods/Launcher`、`mods/Various`、`mods/PackagePermissions` 等 Hook 层文件。B3 需先进行拆分审计，再分批迁移。
+### 审计结论
+
+B3 目标为 `mods/` 目录下的 Xposed Hook 中心文件。按静态分析结果：
+
+| 文件 | LOC | 公开 Hook 方法数 | 主要风险 | 批次 |
+| ---- | --- | ---- | ---- | ---- |
+| `mods/PackagePermissions` | 159 | 1 | 低；单一 `hook`，仅 `system_server` | B3-1（已完成） |
+| `mods/Various` | 1 106 | ~22 | 中；跨 AppManager / Security / PowerKeeper / Phone / Settings | B3-2 |
+| `mods/Launcher` | 1 508 | ~37 | 中；大量手势 / 动画 / 布局 Hook，含 `GestureDetector` 与内部类 | B3-3 |
+| `mods/SystemUI` | 4 262 | ~45 | 高；状态栏 / QS / 通知 / 锁屏 / 音量，高频绘制路径、静态状态多 | B3-4（需进一步拆分） |
+| `mods/System` | 4 506 | ~75 | 高；`system_server` 核心，电源 / 音量 / 安全 / 通知 / 应用，状态复杂 | B3-5（最后处理） |
+
+### 拆分原则
+
+- 优先迁移边界清晰、调用方少、无高频 UI 绘制的方法；
+- 保持 `MainModule` 现有 `System.xxxHook` / `SystemUI.xxxHook` / `Launcher.xxxHook` / `Various.xxxHook` 调用链不变，必要时通过 `JvmStatic` 暴露同名方法；
+- 不拆分单个 Hook 方法内部逻辑，先按文件整体迁移，降低 `MainModule` 改动风险；
+- 每个迁移文件配对互操作测试；Hook 类因 libxposed 单元测试无法加载时，至少反射验证 `object` / `class` 与入口方法签名；
+- 不迁移 RED 边界文件：`MainModule.java`、`XposedHelpers.java`、`ModuleHelper.java`、`HookerClassHelper.java`、`ResourceHooks.java`。
+
+### B3-1 执行结果
+
+- 迁移文件：`app/src/main/java/name/monwf/customiuizer/mods/PackagePermissions.java` → `PackagePermissions.kt`（159 → 90 LOC）
+- 关键兼容点：
+  - 保持 `public object PackagePermissions` 与 `@JvmStatic fun hook(lpparam: SystemServerStartingParam)`；
+  - `systemPackages` 使用 `ConcurrentHashMap.newKeySet()` 保持线程安全；
+  - `XposedHelpers.getStaticObjectField` 结果通过 `mapNotNull { it as? String }` 安全转换为 `String[]`，消除 unchecked cast 警告；
+  - `MethodHook` 匿名子类替换为 Kotlin `object : MethodHook()`，保持 `intercept` / `chain.proceed` 语义。
+- 测试：新增 `app/src/test/java/name/monwf/customiuizer/mods/B3_1_MigrationInteropTest.kt`（反射验证 Kotlin object 与 `hook` 方法签名）。
+- 验证：`:app:test` 113 tests，0 failures；`:app:lintDebug` 0 errors；`:app:assembleDebug` / `:app:assembleRelease` 成功；`git diff --check` 通过。
+
+### 下一批
+
+- B3-2：`mods/Various.java` → `Various.kt`。
+- B3-3：`mods/Launcher.java` → `Launcher.kt`。
+- B3-4 / B3-5：`mods/SystemUI.java` / `mods/System.java` 暂缓，待进一步拆分审计后决定。
 
 ## 长期保留的 Java 边界
 
