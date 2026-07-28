@@ -10,9 +10,9 @@
 ## 当前基线
 
 - **Repository:** `tomthenpc/customiuizer-a13`
-- **Branch:** `devin/r13.2-kotlin-api102`
-- **Last verified code commit:** `5ab430b`
-- **Checkpoint based on commit:** `5ab430b`
+- **Branch:** `main`
+- **Last verified code commit:** `81f9def`
+- **Checkpoint based on commit:** `81f9def`
 - **versionName / versionCode:** `r13.2.3-test1` / `121`
 - **applicationId:** `tv.withaibuild.customiuizer.r13`
 - **libxposed API:** `minApiVersion=101`，`targetApiVersion=102`，`staticScope=false`
@@ -20,6 +20,9 @@
 - **Legacy Xposed API:** `false`
 - **SDK:** `minSdk=33`，`targetSdk=34`，`compileSdk=36`
 - **ABI:** `arm64-v8a`
+- **GitHub Pre-release:** https://github.com/tomthenpc/customiuizer-a13/releases/tag/r13.2.3-test1
+- **Tag:** `r13.2.3-test1` on `main`
+- **Release APK:** `CustoMIUIzer-A13-r13.2.3-test1.apk`
 - **最新已确认实机版本:** 未确认
 - **最后正常行为基线:** `MonwF/customiuizer v23.11.26`
 
@@ -43,6 +46,9 @@
 - 完整构建：`clean test lint lintRelease lintVitalRelease assembleDebug assembleDevelop assembleRelease` 全部成功。
 - 测试：57 个单元测试通过（含新增 `PrefPairTest`）。
 - Release APK：`tv.withaibuild.customiuizer.r13` / `r13.2.3-test1` / `121` / v2 签名 / R8 / resource shrink / zipalign 对齐 / `module.prop` / `scope.list` / `java_init.list` 正确。
+- 已安全桥接 `devin/r13.2-kotlin-api102` 与 `main`（无共同祖先），`main` 已 fast-forward 到 release 分支，并推送 origin。
+- 已创建并推送 annotated tag `r13.2.3-test1`。
+- 已创建 GitHub Pre-release 并上传签名 APK。
 
 ## 历史批次（全局代码审查、Kotlin 清理与高频优化第二批）
 
