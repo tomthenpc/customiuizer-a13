@@ -1,5 +1,27 @@
 # Changelog
 
+## r13.2.3-test1（工程对齐 Pre-release）
+
+### 修复
+
+- `PrefPair` 替代 `toRegex()` 分隔解析，避免 Regex 实例分配。
+- `SystemUI` 状态栏温度/电流文本图标改用 `WeakReference` 保存，避免旧 View/Context 被静态集合长期强引用。
+
+### 性能
+
+- `ResourceHooks` 已使用 `SparseIntArray` 与单次 `get()` 减少 miss path 开销，保持热路径不反射、不解析资源名称。
+
+### 构建
+
+- 升级 Gradle cache 配置：`org.gradle.configuration-cache=true`、`org.gradle.caching=true`。
+- Release/Develop 构建在签名配置缺失时直接 fail-fast。
+- 统一 APK 输出名为 `CustoMIUIzer-A13-<versionName>.apk`。
+
+### 验证
+
+- `:app:test` 通过；
+- 待执行完整 `:app:lint` / `:app:lintRelease` / `:app:lintVitalRelease` / `:app:assembleDebug` / `:app:assembleRelease`。
+
 ## r13.2.2-devin（语言切换修复 + P1 export flag + P2 ResourceHooks 热路径 + Locale 状态机 + 搜索导航状态机 + A13/A14 差距矩阵）
 
 ### 修复
