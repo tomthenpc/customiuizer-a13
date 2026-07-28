@@ -29,7 +29,7 @@ class PreferenceAdapter(
         items.clear()
         val itemStr = AppHelper.getStringOfAppPrefs(key, "")
         if (itemStr.isNullOrEmpty()) return
-        items.addAll(itemStr.trim().split("\\|".toRegex()))
+        items.addAll(itemStr.trim().split(PrefPair.DELIMITER))
     }
 
     override fun getCount(): Int = items.size

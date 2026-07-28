@@ -922,16 +922,7 @@ public class Helpers {
     }
 
     public static boolean containsStringPair(Set<String> hayStack, String needle) {
-        boolean res = false;
-        if (hayStack == null || hayStack.size() == 0) return false;
-        for (String pair: hayStack) {
-            String[] needles = pair.split("\\|");
-            if (needles[0].equalsIgnoreCase(needle)) {
-                res = true;
-                break;
-            }
-        }
-        return res;
+        return PrefPair.containsFirst(hayStack, needle);
     }
 
     public static Bitmap fastBlur(Bitmap sentBitmap, int radius) {

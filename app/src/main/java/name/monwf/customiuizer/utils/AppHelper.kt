@@ -174,8 +174,7 @@ object AppHelper {
         val iterator = hayStack.iterator()
         while (iterator.hasNext()) {
             val pair = iterator.next()
-            val needles = pair.split("\\|".toRegex(), 2)
-            if (needles[0] == needle) {
+            if (PrefPair.firstEquals(pair, needle)) {
                 iterator.remove()
                 return
             }
