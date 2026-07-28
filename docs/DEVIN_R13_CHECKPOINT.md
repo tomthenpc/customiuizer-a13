@@ -62,15 +62,16 @@
 
 - **任务/命令：** `$env:JAVA_HOME='C:\Program Files\Java\jdk-17'; .\gradlew.bat --no-daemon test lintDebug lintRelease lintVitalRelease assembleDebug assembleRelease`
 - **结果：** BUILD SUCCESSFUL
-- **产物：** `.devin/a13_locale_build_stdout.log`
+- **产物：** `.devin/a13_search_full_build_stdout.log`
 - **验证日期：** 2026-07-28
 - **APK 审计：**
   - `app/build/outputs/apk/release/app-release.apk`
-  - SHA-256：`E61595539D67D6E7E787968D17AC03E7F8F7BF848693A34DD0F3F9ED8BA059DD`
+  - SHA-256：`7F7E6F7D593047FB0505C271A84B930E218D0DD37DFB932B0B176FDE67C2B42C`
   - 签名：v2 only，证书 SHA-256：`C0:EF:F2:DC:4E:66:27:17:19:54:90:DA:78:B1:2A:98:4C:6F:2E:6B:D3:8A:CF:4E:DA:D1:4D:53:E3:D2:2E:70`
   - `module.prop`：`minApiVersion=101`，`targetApiVersion=102`，`staticScope=false`
   - scope 列表完整，入口为 `name.monwf.customiuizer.MainModule`
 - **lintDebug / lintRelease：** 0 errors，warnings 数与基线基本持平（debug 520 / release 511），无 `UnspecifiedRegisterReceiverFlag` 新增错误。
+- **单元测试：** 41 tests，0 failures，0 errors（新增 `SearchStateMachineTest` 10 + `SearchRouteResolverTest` 11 + `AppLocaleControllerTest` 17 + `ModuleMetadataTest` 1）。
 
 ## 当前问题与阻塞
 
@@ -138,6 +139,8 @@
 - `app/src/main/java/name/monwf/customiuizer/utils/AppLocaleController.kt`：单一状态源语言控制器，统一 `Locale.setDefault`、`AppCompatDelegate.setApplicationLocales`、语言选择器绑定与 `Context` 派生。
 - `app/src/test/.../AppLocaleControllerTest.kt`：17 个覆盖 `normalizeLocaleTag` / `getUserLocale` / `getEffectiveLocale` / `setUserLocale` / `buildLocaleDisplayData` / `toLocaleListCompat` / 状态转换的单元测试。
 - `app/src/test/.../FakeSharedPreferences.kt`：用于单元测试的内存 SharedPreferences 实现。
+- `app/src/test/.../SearchStateMachineTest.kt`：10 个状态机转换单元测试。
+- `app/src/test/.../SearchRouteResolverTest.kt`：11 个搜索路由解析单元测试。
 
 ## 本轮主要改动
 
@@ -147,6 +150,9 @@
 - `MainFragment` 语言选择器改为 `AppLocaleController.setupLocalePreference`。
 - `AppHelper.getLocaleContext` 委托给 `AppLocaleController`。
 - `app/build.gradle.kts` 添加 `testOptions.unitTests.isReturnDefaultValues = true` 以支持 `AppLocaleController` 单元测试中的 Android `Log` / `Resources` 调用。
+- 新增 `SearchNavigation.kt`：纯 JVM 可测的 `SearchRoute`/`SearchRouteResolver`/`SearchStateMachine`。
+- `MainFragment` 搜索流程改为三态 `IDLE/SEARCHING/NAVIGATED`，返回后通过 `shouldClearOnReturn` 清理搜索视图，修复搜索页闪现/二次返回问题。
+- `MainFragment.openModCat` 使用 `SearchRouteResolver` 判断子分类选择器与直接跳转，统一返回 `true`/`false` 语义并处理 `onPreferenceTreeClick` 空指针。
 
 ## 下一步
 

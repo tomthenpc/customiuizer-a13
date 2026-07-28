@@ -43,6 +43,9 @@ import name.monwf.customiuizer.utils.AppLocaleController;
 import name.monwf.customiuizer.utils.Helpers;
 import name.monwf.customiuizer.utils.ModData;
 import name.monwf.customiuizer.utils.ModSearchAdapter;
+import name.monwf.customiuizer.utils.SearchRoute;
+import name.monwf.customiuizer.utils.SearchRouteResolver;
+import name.monwf.customiuizer.utils.SearchStateMachine;
 
 public class MainFragment extends PreferenceFragmentBase {
 
@@ -58,7 +61,8 @@ public class MainFragment extends PreferenceFragmentBase {
 	private Runnable mCheckActiveRunnable;
 	private Runnable mHideKeyboardRunnable;
 	boolean isSearchFocused = false;
-	int inSearchView = 0;
+	boolean isRestoringSearch = false;
+	int inSearchView = SearchStateMachine.STATE_IDLE;
 	String lastFilter;
 
 	private final Runnable showUpdateNotification = new Runnable() {
@@ -91,8 +95,9 @@ public class MainFragment extends PreferenceFragmentBase {
 		toolbarMenu = true;
 		activeMenus = "all";
 		if (savedInstanceState != null) {
-			inSearchView = savedInstanceState.getInt("inSearchView", 0);
-			lastFilter = savedInstanceState.getString("lastFilter", "");
+			inSearchView = savedInstanceState.getInt("inSearchView", SearchStateMachine.STATE_IDLE);
+			lastFilter = savedInstanceState.getString("lastFilter");
+			isSearchFocused = savedInstanceState.getBoolean("isSearchFocused", false);
 		}
 		super.onCreate(savedInstanceState, R.xml.prefs_main);
 		tailLayoutId = R.layout.prefs_main12;
@@ -141,8 +146,6 @@ public class MainFragment extends PreferenceFragmentBase {
 		MenuItemCompat.setOnActionExpandListener(searchMenuItem, new MenuItemCompat.OnActionExpandListener() {
 			@Override
 			public boolean onMenuItemActionCollapse(MenuItem searchItem) {
-				inSearchView = 0;
-				findMod("");
 				MenuItem item;
 				for (int i = 0; i < mActionMenu.size(); i++) {
 					item = mActionMenu.getItem(i);
@@ -153,7 +156,6 @@ public class MainFragment extends PreferenceFragmentBase {
 
 			@Override
 			public boolean onMenuItemActionExpand(MenuItem searchItem) {
-				inSearchView = 1;
 				MenuItem item = null;
 				for (int i = 0; i < mActionMenu.size(); i++) {
 					item = mActionMenu.getItem(i);
@@ -170,9 +172,8 @@ public class MainFragment extends PreferenceFragmentBase {
 
 			@Override
 			public boolean onQueryTextChange(String newText) {
-				if (newText.length() > 0) {
-					inSearchView = 1;
-				}
+				if (isRestoringSearch || !SearchStateMachine.canFilter(inSearchView)) return false;
+				inSearchView = SearchStateMachine.transitionOnQuery(inSearchView, newText);
 				findMod(newText);
 				return false;
 			}
@@ -183,14 +184,19 @@ public class MainFragment extends PreferenceFragmentBase {
 				isSearchFocused = hasFocus;
 			}
 		});
-		if (inSearchView != 0 && !TextUtils.isEmpty(lastFilter)) {
+		if (SearchStateMachine.shouldClearOnReturn(inSearchView)) {
+			resetSearchUi(searchMenuItem, searchView);
+		} else if (inSearchView != SearchStateMachine.STATE_IDLE && !TextUtils.isEmpty(lastFilter)) {
+			isRestoringSearch = true;
 			if (!MenuItemCompat.isActionViewExpanded(searchMenuItem)) {
 				MenuItemCompat.expandActionView(searchMenuItem);
 			}
 			if (!lastFilter.equals(searchView.getQuery().toString())) {
 				searchView.setQuery(lastFilter, false);
-				searchView.clearFocus();
+				if (!isSearchFocused) searchView.clearFocus();
 			}
+			isRestoringSearch = false;
+			if (resultView != null && listView != null) findMod(lastFilter);
 		}
 	}
 
@@ -220,8 +226,11 @@ public class MainFragment extends PreferenceFragmentBase {
 			@Override
 			public void onItemClick(AdapterView<?> parent, View view, int position, long id) {
 				ModData mod = (ModData)parent.getAdapter().getItem(position);
-				collapseSearch();
-				openModCat(mod.cat.name(), mod.sub, mod.key);
+				if (openModCat(mod.cat.name(), mod.sub, mod.key)) {
+					inSearchView = SearchStateMachine.STATE_NAVIGATED;
+					isSearchFocused = false;
+					Helpers.hideKeyboard((AppCompatActivity) getActivity(), getView());
+				}
 			}
 		});
 		resultView.setOnTouchListener(new View.OnTouchListener() {
@@ -244,6 +253,12 @@ public class MainFragment extends PreferenceFragmentBase {
 
 		listView = getListView();
 		final Activity act = getActivity();
+
+		if (SearchStateMachine.shouldClearOnReturn(inSearchView)) {
+			resetSearchUi(null, null);
+		} else if (inSearchView != SearchStateMachine.STATE_IDLE && !TextUtils.isEmpty(lastFilter)) {
+			findMod(lastFilter);
+		}
 
 //		PreferenceEx warning = findPreference("pref_key_warning");
 //		if (warning != null) {
@@ -268,57 +283,69 @@ public class MainFragment extends PreferenceFragmentBase {
 	}
 
 	void findMod(String filter) {
+		if (isRestoringSearch || !SearchStateMachine.canFilter(inSearchView)) return;
 		if (resultView == null || listView == null) return;
 		lastFilter = filter;
-		resultView.setVisibility(filter.equals("") ? View.GONE : View.VISIBLE);
-		listView.setEnabled(filter.equals(""));
+		resultView.setVisibility(filter == null || filter.equals("") ? View.GONE : View.VISIBLE);
+		listView.setEnabled(filter == null || filter.equals(""));
 		ListAdapter adapter = resultView.getAdapter();
 		if (adapter == null) return;
-		((ModSearchAdapter)resultView.getAdapter()).getFilter().filter(filter);
+		((ModSearchAdapter)resultView.getAdapter()).getFilter().filter(filter == null ? "" : filter);
 	}
 
-	private void collapseSearch() {
-		if (mActionMenu == null) return;
-		MenuItem searchMenuItem = mActionMenu.findItem(R.id.search_btn);
-		if (searchMenuItem == null) return;
-		if (MenuItemCompat.isActionViewExpanded(searchMenuItem)) {
-			MenuItemCompat.collapseActionView(searchMenuItem);
-		} else {
-			inSearchView = 0;
-			findMod("");
+	private void resetSearchUi(MenuItem searchMenuItem, SearchView searchView) {
+		if (!SearchStateMachine.shouldClearOnReturn(inSearchView)) return;
+		isRestoringSearch = true;
+		try {
+			if (searchMenuItem != null) MenuItemCompat.collapseActionView(searchMenuItem);
+			if (searchView != null) {
+				searchView.setQuery("", false);
+				searchView.clearFocus();
+			}
+			if (resultView != null) resultView.setVisibility(View.GONE);
+			if (listView != null) listView.setEnabled(true);
+			isSearchFocused = false;
+		} finally {
+			isRestoringSearch = false;
 		}
+		inSearchView = SearchStateMachine.STATE_IDLE;
+		lastFilter = null;
 	}
 
 	private boolean openModCat(String cat, String sub, String mod) {
+		SearchRoute route = SearchRouteResolver.resolve(cat, sub, mod);
+		if (route == null) return false;
+		if (!isAdded()) return false;
+
 		Bundle bundle = new Bundle();
-		bundle.putString("cat", cat);
-		if (sub != null) {
-			bundle.putString("sub", sub);
+		bundle.putString("cat", route.getCategory());
+		if (route.getSub() != null) {
+			bundle.putString("sub", route.getSub());
 		}
-		bundle.putString("mod", mod);
+		bundle.putString("mod", route.getKey());
 		catSelector.setTargetFragment(this, 0);
-		switch (cat) {
+		switch (route.getCategory()) {
 			case "pref_key_system":
-				if (sub == null)
+				if (route.isCategorySelector())
 					openSubFragment(catSelector, bundle, Helpers.SettingsType.Preference, Helpers.ActionBarType.HomeUp, R.string.system_mods, R.xml.prefs_system_cat);
 				else
 					openSubFragment(prefSystem, bundle, Helpers.SettingsType.Preference, Helpers.ActionBarType.HomeUp, R.string.system_mods, R.xml.prefs_system);
-				return false;
+				return true;
 			case "pref_key_launcher":
-				if (sub == null)
+				if (route.isCategorySelector())
 					openSubFragment(catSelector, bundle, Helpers.SettingsType.Preference, Helpers.ActionBarType.HomeUp, R.string.launcher_title, R.xml.prefs_launcher_cat);
 				else
 					openSubFragment(prefLauncher, bundle, Helpers.SettingsType.Preference, Helpers.ActionBarType.HomeUp, R.string.launcher_title, R.xml.prefs_launcher);
 				return true;
 			case "pref_key_controls":
-				if (sub == null)
+				if (route.isCategorySelector())
 					openSubFragment(catSelector, bundle, Helpers.SettingsType.Preference, Helpers.ActionBarType.HomeUp, R.string.controls_mods, R.xml.prefs_controls_cat);
 				else
 					openSubFragment(prefControls, bundle, Helpers.SettingsType.Preference, Helpers.ActionBarType.HomeUp, R.string.controls_mods, R.xml.prefs_controls);
-				return false;
+				return true;
 			case "pref_key_various":
 				openSubFragment(prefVarious, bundle, Helpers.SettingsType.Preference, Helpers.ActionBarType.HomeUp, R.string.various_mods, R.xml.prefs_various);
-				return false;
+				return true;
 			default:
 				return false;
 		}
@@ -329,6 +356,7 @@ public class MainFragment extends PreferenceFragmentBase {
 		super.onSaveInstanceState(outState);
 		outState.putInt("inSearchView", inSearchView);
 		outState.putString("lastFilter", lastFilter);
+		outState.putBoolean("isSearchFocused", isSearchFocused);
 	}
 
 	@Override
@@ -342,9 +370,9 @@ public class MainFragment extends PreferenceFragmentBase {
 
 	@Override
 	public boolean onPreferenceTreeClick(Preference preference) {
-		if (preference != null) {
+		if (preference != null && preference.getKey() != null) {
 			PreferenceCategory modsCat = findPreference("prefs_cat");
-			if (modsCat.findPreference(preference.getKey()) != null && openModCat(preference.getKey(), null, null)) {
+			if (modsCat != null && modsCat.findPreference(preference.getKey()) != null && openModCat(preference.getKey(), null, preference.getKey())) {
 				return true;
 			}
 		}

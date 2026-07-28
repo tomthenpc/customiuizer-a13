@@ -92,6 +92,7 @@
 | `XposedHelpers.callMethod` | 403 | 广泛 | 反射调用，无明确回归 |
 | `setResReplacement` / `setDensityReplacement` / `addResource` | 28 / 44 / 20 | `ResourceHooks` | 正常 |
 | `AppLocaleController` | 1 | `utils/AppLocaleController.kt`：单一状态源管理界面语言，已按 A14 模式引入并补充 17 个单元测试 | 正常 |
+| `SearchNavigation` | 1 | `utils/SearchNavigation.kt`：`SearchRouteResolver` + `SearchStateMachine` + `SearchRoute`，已按 A14 引入，`MainFragment` 集成并补充 21 个单元测试 | 正常 |
 
 ## 7. P0/P1/P2/P3 问题清单
 
