@@ -5,25 +5,25 @@
 
 ## 当前目标
 
-- 对齐 A14 工程成熟度并安全发布 `r13.2.3-test1` Pre-release；后续继续分批完成剩余 Kotlin 清理、生命周期审计与 R8/resource shrink 验证。
+- 完成 A13 Kotlin 迁移基线、风险矩阵与第一批候选清单，并提交到 `devin/r13.3-kotlin-migration`；本阶段不迁移生产 Java 文件，只进行审计与文档。
 
 ## 当前基线
 
 - **Repository:** `tomthenpc/customiuizer-a13`
-- **Branch:** `main`
-- **Last verified code commit:** `81f9def`
-- **Checkpoint based on commit:** `81f9def`
-- **versionName / versionCode:** `r13.2.3-test1` / `121`
+- **Branch:** `devin/r13.3-kotlin-migration`
+- **Last verified commit:** `c7ee511`
+- **versionName / versionCode:** `r13.2.3-test1` / `121`（未修改）
 - **applicationId:** `tv.withaibuild.customiuizer.r13`
 - **libxposed API:** `minApiVersion=101`，`targetApiVersion=102`，`staticScope=false`
 - **Hot Reload:** `false`
 - **Legacy Xposed API:** `false`
 - **SDK:** `minSdk=33`，`targetSdk=34`，`compileSdk=36`
 - **ABI:** `arm64-v8a`
-- **GitHub Pre-release:** https://github.com/tomthenpc/customiuizer-a13/releases/tag/r13.2.3-test1
-- **Tag:** `r13.2.3-test1` on `main`
-- **Release APK:** `CustoMIUIzer-A13-r13.2.3-test1.apk`
-- **最新已确认实机版本:** 未确认
+- **本轮新增文档:**
+  - `docs/KOTLIN_MIGRATION_BASELINE_R13.3.md`
+  - `docs/KOTLIN_MIGRATION_MATRIX_R13.3.md`
+- **Java 文件风险统计:** GREEN=9，YELLOW=23，RED=6
+- **第一批候选:** 7 个文件，931 LOC
 - **最后正常行为基线:** `MonwF/customiuizer v23.11.26`
 
 ## 本轮已完成（A14 工程对齐 Pre-release 批次）
@@ -49,6 +49,26 @@
 - 已安全桥接 `devin/r13.2-kotlin-api102` 与 `main`（无共同祖先），`main` 已 fast-forward 到 release 分支，并推送 origin。
 - 已创建并推送 annotated tag `r13.2.3-test1`。
 - 已创建 GitHub Pre-release 并上传签名 APK。
+
+## 本轮已完成（Kotlin 迁移基线 R13.3）
+
+### 文档与审计
+- 生成 `docs/KOTLIN_MIGRATION_BASELINE_R13.3.md`：生产/测试代码统计、Java/Kotlin 文件分布、迁移目标与风险概览。
+- 生成 `docs/KOTLIN_MIGRATION_MATRIX_R13.3.md`：38 个生产 Java 文件的层、进程、入口、静态状态、并发、动态引用、A14 对应、风险、批次、验证要求、第一批候选清单。
+- 生成工具：`build_matrix.py`（仓库外临时脚本，仅用于本阶段文档生成）。
+
+### 风险分级结果
+- **GREEN（9 个）:** `CategorySelector`, `ColorSelector`, `Controls`, `Launcher`, `MultiAction`, `ShortcutSelector`, `SortableListView`, `PrefsProvider`, `subs/System`（`System.java` 过大，列入 B1 候选但未进入第一批）。
+- **YELLOW（23 个）:** 基础 UI/生命周期组件、`mods/*` Hook 中心、含 `Handler`/`Thread`/`Executor`/`CopyOnWrite` 的 utility、含 `getDeclaredMethod`/`getDeclaredField` 的 adapter。
+- **RED（6 个）:** `MainModule.java`、`XposedHelpers.java`、`ModuleHelper.java`、`HookerClassHelper.java`、`ResourceHooks.java`、`org/apache/commons/lang3/reflect/MemberUtilsX.java`。
+
+### 第一批候选（B1）
+- 7 个文件，合计 931 LOC：`CategorySelector` → `PrefsProvider` → `Launcher` → `Controls` → `ShortcutSelector` → `ColorSelector` → `MultiAction`。
+- 筛选条件：GREEN、无类反射、无复杂并发、静态状态简单、独立可测、总 LOC ≤ ~1000。
+
+### 验证
+- `git diff --check`：通过。
+- `.​gradlew.bat --no-daemon test assembleDebug`：BUILD SUCCESSFUL，57 tests / 0 failures / 0 errors。
 
 ## 历史批次（全局代码审查、Kotlin 清理与高频优化第二批）
 
@@ -87,18 +107,13 @@
 
 ## 最新绿色验证
 
-- **任务/命令：** `$env:JAVA_HOME='C:\Program Files\Java\jdk-17'; .\gradlew.bat --no-daemon test lintDebug lintRelease lintVitalRelease assembleDebug assembleRelease`
+- **任务/命令：** `git diff --check` + `.​gradlew.bat --no-daemon test assembleDebug`
 - **结果：** BUILD SUCCESSFUL
-- **产物：** `.devin/a13_remoteprefs_full_build2_stdout.log`
 - **验证日期：** 2026-07-28
-- **APK 审计：**
-  - `app/build/outputs/apk/release/app-release.apk`
-  - SHA-256：`0CD61A0F5772DB761F2ADD44495F1A037F5AE1D44DCBE7FC93D7F48722313657`
-  - 签名：v2 only，证书 SHA-256：`C0:EF:F2:DC:4E:66:27:17:19:54:90:DA:78:B1:2A:98:4C:6F:2E:6B:D3:8A:CF:4E:DA:D1:4D:53:E3:D2:2E:70`
-  - `module.prop`：`minApiVersion=101`，`targetApiVersion=102`，`staticScope=false`
-  - scope 列表完整，入口为 `name.monwf.customiuizer.MainModule`
-- **lintDebug / lintRelease：** 0 errors，warnings 数与基线基本持平（debug 520 / release 511），无 `UnspecifiedRegisterReceiverFlag` 新增错误。
-- **单元测试：** 41 tests，0 failures，0 errors（新增 `SearchStateMachineTest` 10 + `SearchRouteResolverTest` 11 + `AppLocaleControllerTest` 17 + `ModuleMetadataTest` 1）。
+- **git diff --check：** 0 errors
+- **单元测试：** 57 tests，0 failures，0 errors
+- **assembleDebug：** 成功
+- **当前代码变更范围：** 仅 docs 目录下两个 Markdown 文档和本 checkpoint
 
 ## 当前问题与阻塞
 
@@ -187,11 +202,13 @@
 
 ## 下一步
 
-- 按 `docs/A13_A14_PARITY_MATRIX.md` 推进批次 1/2/3 Kotlin 迁移与单元测试。
-- 执行真机验证矩阵：LSPosed 加载、SystemUI/Launcher/Settings 主要功能、搜索返回、旋转重建。
+- 按 `docs/KOTLIN_MIGRATION_MATRIX_R13.3.md` 推进 B1 批次（7 个候选文件）的 Java → Kotlin 迁移。
+- 每个迁移文件配对单元测试，确保 `build / lint / R8 / 实机` 不回归。
+- 继续完成 B2/B3/B4 批次，逐步降低 Java 占比，但保留 RED 边界文件。
 
 ## 发布状态
 
+- 迁移分支 `devin/r13.3-kotlin-migration` 已创建并准备提交/推送。
 - main 已合并：否
 - PR 已创建：否
 - tag 已创建：否
