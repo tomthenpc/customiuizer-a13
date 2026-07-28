@@ -5,16 +5,16 @@
 
 ## 当前目标
 
-- 完成 B1 / B2-1 / B2-2 / B2-3 / B2-4 / B2-5 / B2-6 / B2-7 / B2-8 / B2-9 Java → Kotlin 迁移，B2 全部完成；
-- 当前批次：B3 Hook 层拆分审计（`mods/System`、`mods/SystemUI`、`mods/Launcher`、`mods/Various`、`mods/PackagePermissions` 等），按矩阵分批迁移；
+- 完成 B1 / B2-1 / B2-2 / B2-3 / B2-4 / B2-5 / B2-6 / B2-7 / B2-8 / B2-9 Java → Kotlin 迁移；
+- 完成 A13 Claude 审计修复适配（MainModule 空快照/监听器、PrefPair、SystemUI 弱引用、ResourceHooks 热路径、Gradle cache、About 语言入口、r13.2.3-devin 版本）；
 - 按阶段自动验证 build / lint / Release 并 push `devin/r13.3-kotlin-migration`。
 
 ## 当前基线
 
 - **Repository:** `tomthenpc/customiuizer-a13`
 - **Branch:** `devin/r13.3-kotlin-migration`
-- **Last verified commit:** `f69b31d`
-- **versionName / versionCode:** `r13.2.3-test1` / `121`（未修改）
+- **Last verified commit:** `76e68cb`
+- **versionName / versionCode:** `r13.2.3-devin` / `122`
 - **applicationId:** `tv.withaibuild.customiuizer.r13`
 - **libxposed API:** `minApiVersion=101`，`targetApiVersion=102`，`staticScope=false`
 - **Hot Reload:** `false`
@@ -316,11 +316,11 @@
 - **结果：** BUILD SUCCESSFUL
 - **验证日期：** 2026-07-28
 - **git diff --check：** 0 errors
-- **单元测试：** 111 tests，0 failures，0 errors
+- **单元测试：** 111 tests，0 failures，0 errors（locale 迁移后复测通过）
 - **lintDebug：** 0 errors，520 warnings（基线持平）
 - **assembleDebug / assembleRelease：** 成功
 - **Release APK 审计：** applicationId / version / Xposed 元数据均未变；B1/B2 迁移类在 R8 中均保持可达
-- **当前代码变更范围：** B1 8 个 + B2 15 个 Java 转 Kotlin 生产文件，12 个新增迁移兼容性测试
+- **当前代码变更范围：** B1 8 个 + B2 15 个 Java 转 Kotlin 生产文件，12 个迁移兼容性测试；A13 Claude 审计 6 项修复与版本更新
 
 ## 当前问题与阻塞
 
