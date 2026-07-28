@@ -122,7 +122,6 @@ import java.util.Properties;
 import java.util.Set;
 import java.util.TimeZone;
 import java.util.concurrent.ConcurrentHashMap;
-import java.util.function.Consumer;
 import java.util.function.Predicate;
 import java.util.stream.Collectors;
 
@@ -2091,13 +2090,10 @@ public class System {
                     mContext.getResources().getDisplayMetrics()
                 );
                 int titleId = mContext.getResources().getIdentifier("modal_menu_title", "id", lpparam.getPackageName());
-                mMenuItems.forEach(new Consumer() {
-                    @Override
-                    public void accept(Object obj) {
-                        View menuView = (View) XposedHelpers.callMethod(obj, "getMenuView");
-                        ((TextView) menuView.findViewById(titleId)).setMaxWidth(menuWidth);
-                    }
-                });
+                for (Object obj : mMenuItems) {
+                    View menuView = (View) XposedHelpers.callMethod(obj, "getMenuView");
+                    ((TextView) menuView.findViewById(titleId)).setMaxWidth(menuWidth);
+                }
             }
         });
     }
