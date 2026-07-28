@@ -1,4 +1,14 @@
 <PreferenceScreen
 	xmlns:android="http://schemas.android.com/apk/res/android"
 	android:layout_width="match_parent"
-	android:layout_height="match_parent" />
+	android:layout_height="match_parent">
+
+	<name.monwf.customiuizer.prefs.ListPreferenceEx
+		android:key="pref_key_miuizer_locale"
+		android:title="@string/miuizer_locale_title"
+		android:summary="@string/miuizer_locale_summ"
+		android:entries="@array/placeholder_array"
+		android:entryValues="@array/placeholder_array_strval"
+		android:defaultValue="auto" />
+
+</PreferenceScreen>

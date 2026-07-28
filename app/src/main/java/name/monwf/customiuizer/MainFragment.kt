@@ -254,8 +254,6 @@ class MainFragment : PreferenceFragmentBase() {
             true
         }
 
-        val locale = findPreference<ListPreferenceEx>("pref_key_miuizer_locale")
-        AppLocaleController.setupLocalePreference(locale, AppHelper.appPrefs)
     }
 
     protected fun findMod(filter: String) {

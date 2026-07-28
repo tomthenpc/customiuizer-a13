@@ -5,6 +5,9 @@ import android.os.Bundle
 import android.view.View
 import android.widget.RelativeLayout
 import android.widget.TextView
+import name.monwf.customiuizer.prefs.ListPreferenceEx
+import name.monwf.customiuizer.utils.AppHelper
+import name.monwf.customiuizer.utils.AppLocaleController
 import java.text.SimpleDateFormat
 import java.util.Date
 import java.util.Locale
@@ -15,6 +18,12 @@ class AboutFragment : SubFragment() {
         super.onCreate(savedInstanceState)
         headLayoutId = R.layout.fragment_about_head
         tailLayoutId = R.layout.fragment_about_tail
+    }
+
+    override fun onCreatePreferences(savedInstanceState: Bundle?, rootKey: String?) {
+        super.onCreatePreferences(savedInstanceState, rootKey)
+        val locale = findPreference<ListPreferenceEx>("pref_key_miuizer_locale")
+        AppLocaleController.setupLocalePreference(locale, AppHelper.appPrefs)
     }
 
     override fun fixStubLayout(view: View, postion: Int) {
