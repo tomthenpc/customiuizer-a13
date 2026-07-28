@@ -5,8 +5,8 @@
 
 ## 当前目标
 
-- 完成 B1 / B2-1 / B2-2 / B2-3 / B2-4 / B2-5 / B2-6 Java → Kotlin 迁移，B2 仍有 7 个 YELLOW 候选待处理；
-- 当前批次：B2-7 候选审计与迁移（`AudioVisualizer`）；
+- 完成 B1 / B2-1 / B2-2 / B2-3 / B2-4 / B2-5 / B2-6 / B2-7 Java → Kotlin 迁移，B2 仍有 6 个 YELLOW 候选待处理；
+- 当前批次：B2-8 候选审计与迁移（`AppDataAdapter` / `WiFiList` / `AppSelector` / `BTList`）；
 - 按阶段自动验证 build / lint / Release 并 push `devin/r13.3-kotlin-migration`。
 
 ## 当前基线
@@ -24,11 +24,11 @@
 - **本轮新增/更新文档:**
   - `docs/KOTLIN_MIGRATION_BASELINE_R13.3.md`
   - `docs/KOTLIN_MIGRATION_MATRIX_R13.3.md`（已记录 B1-1 结果与 B1-2 候选）
-- **Java 文件风险统计:** GREEN=0，YELLOW=16，RED=6（B2-1/B2-2/B2-3/B2-4/B2-5/B2-6 后 `SortableListView`、`SortableList`、`SubFragmentWithSearch`、`ActivitySelector`、`MainActivity`、`MainFragment`、`PreferenceFragmentBase`、`SubFragment` 从 YELLOW 移除）
+- **Java 文件风险统计:** GREEN=0，YELLOW=15，RED=6（B2-1/B2-2/B2-3/B2-4/B2-5/B2-6/B2-7 后 `SortableListView`、`SortableList`、`SubFragmentWithSearch`、`ActivitySelector`、`MainActivity`、`MainFragment`、`PreferenceFragmentBase`、`SubFragment`、`AudioVisualizer` 从 YELLOW 移除）
 - **B1 迁移文件:** `CategorySelector`、`Controls`、`Launcher`、`ColorSelector`、`PrefsProvider`、`ShortcutSelector`、`MultiAction`、`subs/System`
-- **B2 已迁移文件:** `SortableListView`、`SortableList`、`SubFragmentWithSearch`、`ActivitySelector`、`MainActivity`、`MainFragment`、`PreferenceFragmentBase`、`SubFragment`
-- **B1+B2 代码规模:** 删除 Java 3838 LOC，新增 Kotlin 3255 LOC，新增测试 545 LOC
-- **B2 剩余候选:** `AudioVisualizer` / `AppDataAdapter` / `WiFiList` / `AppSelector` / `BTList` / `LockedAppAdapter` / `PrivacyAppAdapter`
+- **B2 已迁移文件:** `SortableListView`、`SortableList`、`SubFragmentWithSearch`、`ActivitySelector`、`MainActivity`、`MainFragment`、`PreferenceFragmentBase`、`SubFragment`、`AudioVisualizer`
+- **B1+B2 代码规模:** 删除 Java 4421 LOC，新增 Kotlin 3858 LOC，新增测试 613 LOC
+- **B2 剩余候选:** `AppDataAdapter` / `WiFiList` / `AppSelector` / `BTList` / `LockedAppAdapter` / `PrivacyAppAdapter`
 - **最后正常行为基线:** `MonwF/customiuizer v23.11.26`
 
 ## 本轮已完成（A14 工程对齐 Pre-release 批次）
@@ -136,6 +136,31 @@
 - `git diff --check`：通过；
 - Release APK 审计：applicationId / versionName / versionCode / `module.prop` / `scope.list` / `java_init.list` 均未变；R8 mapping 确认 `MainActivity` / `MainFragment` 保留。
 
+## 本轮已完成（B2-7 批次 Kotlin 迁移）
+
+### 迁移文件
+- `app/src/main/java/name/monwf/customiuizer/utils/AudioVisualizer.java` → `AudioVisualizer.kt`（583 → 603 LOC）
+
+小计：删除 Java 583 LOC，新增 Kotlin 603 LOC；新增 `B2_7_MigrationInteropTest.kt`（68 LOC）。
+
+### JVM 兼容要点
+- package / FQCN / 公开三参/两参/单参构造器（`Context` / `AttributeSet` / `defStyle`）保持不变；
+- 继承 `android.view.View` 不变；
+- 公开枚举 `BarStyle`、`ColorMode`、`RenderType` 保留为 `inner enum class`；
+- `isScreenOn`、`showOnCustom`、`colorMode`、`barStyle`、`renderType`、`glowLevel`、`customColor`、`showInDrawer`、`showWithControllerOnly` 以 `@JvmField` 保持公开字段；
+- 公开方法 `setPlaying`、`updateViewState`、`updateScreenOn`、`updateMusicArt`、`setColor`、`setBitmap`、`onDraw`、`onSizeChanged`、`hasOverlappingRendering` 签名不变；
+- 静态方法 `allZeros(byte[])` 以 `companion object @JvmStatic` 保留；
+- `PaletteTask`（`AsyncTask`）保持并加 `@Suppress("DEPRECATION", "OVERRIDE_DEPRECATION")`；
+- 未使用 `!!`、coroutine/Flow，未改动 preference key / Hook target / 资源名。
+
+### 验证
+- `./gradlew.bat --no-daemon :app:test`：BUILD SUCCESSFUL，98 tests / 0 failures；
+- `./gradlew.bat --no-daemon :app:lintDebug`：0 errors，520 warnings（基线持平）；
+- `./gradlew.bat --no-daemon :app:assembleDebug`：成功；
+- `./gradlew.bat --no-daemon :app:assembleRelease`：成功；
+- `git diff --check`：通过；
+- Release APK 审计：applicationId / versionName / versionCode / `module.prop` / `scope.list` / `java_init.list` 均未变；R8 mapping 确认 `AudioVisualizer` 保留。
+
 ## 本轮已完成（B2-5/B2-6 批次 Kotlin 迁移）
 
 ### 迁移文件
@@ -238,11 +263,11 @@
 - **结果：** BUILD SUCCESSFUL
 - **验证日期：** 2026-07-28
 - **git diff --check：** 0 errors
-- **单元测试：** 94 tests，0 failures，0 errors
+- **单元测试：** 98 tests，0 failures，0 errors
 - **lintDebug：** 0 errors，520 warnings（基线持平）
 - **assembleDebug / assembleRelease：** 成功
 - **Release APK 审计：** applicationId / version / Xposed 元数据均未变；B1/B2 迁移类在 R8 中均保持可达
-- **当前代码变更范围：** B1 8 个 + B2 8 个 Java 转 Kotlin 生产文件，9 个新增迁移兼容性测试
+- **当前代码变更范围：** B1 8 个 + B2 9 个 Java 转 Kotlin 生产文件，10 个新增迁移兼容性测试
 
 ## 当前问题与阻塞
 

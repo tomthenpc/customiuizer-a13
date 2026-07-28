@@ -21,7 +21,7 @@
 | `app/src/main/java/name/monwf/customiuizer/utils/Helpers.java` | 1172 | utility | app/Settings | reflection | process-level mutable | none | Class.forName, getDeclaredMethod | app/src/main/java/tv/withaibuild/customiuizer/utils/Helpers.kt (Kotlin) | YELLOW | 补测试后迁移 | B2/B3 | 单测 / build / R8 |
 | `app/src/main/java/name/monwf/customiuizer/mods/Controls.java` | 1027 | Hook | system_server | reflection | process-level mutable | Handler, Runnable, postDelayed | findAndHookMethod, hookAllMethods, findMethodExact, findClass, XposedHelpers.call | app/src/main/java/tv/withaibuild/customiuizer/mods/Controls.kt (Kotlin) | YELLOW | 拆分后迁移 | B3/B4 | build / R8 / 实机 / 日志 |
 | `app/src/main/java/name/monwf/customiuizer/mods/GlobalActions.java` | 1027 | Hook | system_server | reflection | process-level mutable | Handler, Thread, Runnable, postDelayed | getDeclaredMethod, findAndHookMethod, hookAllMethods, hookAllConstructors, findMethodExact, findField, findClass, XposedHelpers.call | app/src/main/java/tv/withaibuild/customiuizer/mods/GlobalActions.kt (Kotlin) | YELLOW | 拆分后迁移 | B3/B4 | build / R8 / 实机 / 日志 |
-| `app/src/main/java/name/monwf/customiuizer/utils/AudioVisualizer.java` | 583 | utility | app/Settings | normal | none | Handler, Runnable, postDelayed | none | app/src/main/java/tv/withaibuild/customiuizer/utils/AudioVisualizer.kt (Kotlin) | YELLOW | 补测试后迁移 | B2 | 单测 / build / UI 回归 |
+| `app/src/main/java/name/monwf/customiuizer/utils/AudioVisualizer.java` | 583 | utility | app/Settings | normal | none | Handler, Runnable, postDelayed | none | app/src/main/java/tv/withaibuild/customiuizer/utils/AudioVisualizer.kt (Kotlin) | YELLOW | 已迁移 | B2-7 已迁移 | 单测 / build / lint / R8 / UI 回归 |
 | `app/src/main/java/name/monwf/customiuizer/PreferenceFragmentBase.java` | 459 | UI | app/Settings | normal | final constants | none | none | app/src/main/java/tv/withaibuild/customiuizer/PreferenceFragmentBase.kt (Kotlin) | YELLOW | 已迁移 | B2-5/6 已迁移 | 单测 / build / lint / R8 / UI 回归 |
 | `app/src/main/java/name/monwf/customiuizer/SubFragment.java` | 416 | UI | app/Settings | normal | none | postDelayed | none | app/src/main/java/tv/withaibuild/customiuizer/SubFragment.kt (Kotlin) | YELLOW | 已迁移 | B2-5/6 已迁移 | 单测 / build / lint / R8 / UI 回归 |
 | `app/src/main/java/name/monwf/customiuizer/utils/BatteryIndicator.java` | 407 | utility | app/Settings | reflection | none | Handler, Runnable | XposedHelpers.call | app/src/main/java/tv/withaibuild/customiuizer/utils/BatteryIndicator.kt (Kotlin) | YELLOW | 补测试后迁移 | B2/B3 | 单测 / build / R8 |
@@ -47,7 +47,7 @@
 ## 风险统计
 
 - **GREEN**: 0 个文件（B1 全部完成）
-- **YELLOW**: 16 个文件（B2-1/B2-2/B2-3/B2-4/B2-5/B2-6 迁移后 `SortableListView`、`SortableList`、`SubFragmentWithSearch`、`ActivitySelector`、`MainActivity`、`MainFragment`、`PreferenceFragmentBase`、`SubFragment` 从 YELLOW 移除）
+- **YELLOW**: 15 个文件（B2-1/B2-2/B2-3/B2-4/B2-5/B2-6/B2-7 迁移后 `SortableListView`、`SortableList`、`SubFragmentWithSearch`、`ActivitySelector`、`MainActivity`、`MainFragment`、`PreferenceFragmentBase`、`SubFragment`、`AudioVisualizer` 从 YELLOW 移除）
 - **RED**: 6 个文件
 
 ## 第一批低风险候选（B1）
@@ -472,7 +472,43 @@
 - `SubFragment` 中 `openAppsEdit` 等公开 listener 字段因 `@JvmField` 保持可达；
 - 未见 A14 包名、Hook target、资源名或 API 版本变化。
 
-## B2 阶段总结（截至 B2-6）
+## B2-7 批次执行结果
+
+### 选取文件
+
+| 顺序 | 原 Java 文件 | Java LOC | Kotlin 文件 | Kotlin LOC | 迁移结论 | 验证 |
+| ---- | ------------ | -------- | ----------- | ---------- | -------- | ---- |
+| B2-7 | `app/src/main/java/name/monwf/customiuizer/utils/AudioVisualizer.java` | 583 | `app/src/main/java/name/monwf/customiuizer/utils/AudioVisualizer.kt` | 603 | 已迁移 | 单测 / build / lint / R8 / UI 回归 |
+
+新增 `app/src/test/java/name/monwf/customiuizer/utils/B2_7_MigrationInteropTest.kt`（68 LOC）。
+
+### JVM 兼容要点
+
+- `AudioVisualizer`：
+  - package / FQCN / 公开三参/两参/单参构造器（`Context` / `AttributeSet` / `defStyle`）保持不变；
+  - 继承 `android.view.View` 不变；
+  - 公开枚举 `BarStyle`、`ColorMode`、`RenderType` 保留为 `inner enum class`；
+  - `isScreenOn`、`showOnCustom`、`colorMode`、`barStyle`、`renderType`、`glowLevel`、`customColor`、`showInDrawer`、`showWithControllerOnly` 以 `@JvmField` 保持公开字段；
+  - 公开方法 `setPlaying`、`updateViewState`、`updateScreenOn`、`updateMusicArt`、`setColor`、`setBitmap`、`onDraw`、`onSizeChanged`、`hasOverlappingRendering` 签名不变；
+  - 静态方法 `allZeros(byte[])` 以 `companion object @JvmStatic` 保留；
+  - `PaletteTask`（`AsyncTask`）保持并加 `@Suppress("DEPRECATION", "OVERRIDE_DEPRECATION")`；
+  - 未使用 `!!`、coroutine/Flow，未改动 preference key / Hook target / 资源名。
+
+### 构建结果
+
+- `./gradlew.bat --no-daemon :app:test`：BUILD SUCCESSFUL，98 tests / 0 failures；
+- `./gradlew.bat --no-daemon :app:lintDebug`：0 errors；
+- `./gradlew.bat --no-daemon :app:assembleDebug`：成功；
+- `./gradlew.bat --no-daemon :app:assembleRelease`：成功；
+- `git diff --check`：通过。
+
+### R8 审计
+
+- `AudioVisualizer` 在 Release mapping 中从调用点（`mods/SystemUI`、`mods/System` 等）可达；
+- 公开字段/方法与枚举因 `@JvmField` / 默认可见性保持可达；
+- 未见 A14 包名、Hook target、资源名或 API 版本变化。
+
+## B2 阶段总结（截至 B2-7）
 
 ### 已迁移 B2 文件
 
@@ -484,12 +520,12 @@
 | B2-4 | `MainActivity` / `MainFragment` | 608 | 554 | B2_4_MigrationInteropTest |
 | B2-5 | `PreferenceFragmentBase` | 459 | 406 | B2_5_6_MigrationInteropTest |
 | B2-6 | `SubFragment` | 416 | 430 | B2_5_6_MigrationInteropTest |
+| B2-7 | `utils/AudioVisualizer` | 583 | 603 | B2_7_MigrationInteropTest |
 
-合计：删除 Java 2240 LOC，新增 Kotlin 2003 LOC，新增测试 338 LOC。
+合计：删除 Java 2823 LOC，新增 Kotlin 2606 LOC，新增测试 406 LOC。
 
 ### 当前 B2 剩余候选
 
-- `AudioVisualizer`（583 LOC）
 - `AppDataAdapter`（289 LOC）
 - `WiFiList`（279 LOC）
 - `AppSelector`（270 LOC）
@@ -499,18 +535,21 @@
 
 ### 验证结论
 
-- 单元测试：94 tests，0 failures，0 errors；
+- 单元测试：98 tests，0 failures，0 errors；
 - lintDebug：0 errors；
 - assembleDebug / assembleRelease：成功；
 - Release R8 mapping：B2 迁移类均保持可达；
 - 未引入 A14 包名、Hook target、资源名或 API 版本变化；
 - 真机验证仍未完成。
 
-### 下一批 B2-7 候选
+### 下一批 B2-8 候选
 
-- `AudioVisualizer`（583 LOC）
+- `AppDataAdapter`（289 LOC）
+- `WiFiList`（279 LOC）
+- `AppSelector`（270 LOC）
+- `BTList`（264 LOC）
 
-按 YELLOW 矩阵分批处理，单个批次控制在 800–1200 LOC。
+合计约 1102 LOC；按 YELLOW 矩阵分批处理，单个批次控制在 800–1200 LOC。
 
 ### 下一批 B3 候选
 
