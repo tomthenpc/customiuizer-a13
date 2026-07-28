@@ -1,5 +1,21 @@
 # Changelog
 
+## r13.2.4-devin（B3-2 Various Kotlin 迁移）
+
+### 迁移
+
+- 将 `app/src/main/java/name/monwf/customiuizer/mods/Various.java` 迁移为 `Various.kt`。
+- 保留全部 public `@JvmStatic` hook 方法、`mLastPackageInfo` / `mSupportFragment` `@JvmField` 字段及 `checkBundle` 兼容性。
+- 新增 `B3_2_MigrationInteropTest` 反射验证迁移后的 Kotlin object 结构与关键方法签名。
+
+### 验证
+
+- `:app:test`：121 tests，0 failures（含 B3_2 新增测试）。
+- `:app:lintDebug`：0 errors。
+- `:app:assembleDebug` / `:app:assembleRelease`：成功。
+- Release R8 mapping 中 `Various` / `PackagePermissions` 类未被重命名。
+- `git diff --check`：通过。
+
 ## r13.2.3-devin（Claude 审计修复适配）
 
 ### 修复
