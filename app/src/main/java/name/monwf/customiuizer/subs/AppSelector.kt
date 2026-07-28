@@ -1,0 +1,298 @@
+@file:Suppress("DEPRECATION", "OVERRIDE_DEPRECATION")
+package name.monwf.customiuizer.subs
+
+import android.app.Activity
+import android.content.Context
+import android.content.DialogInterface
+import android.content.Intent
+import android.net.Uri
+import android.os.Bundle
+import android.text.TextUtils
+import android.view.View
+import android.widget.AdapterView
+import androidx.appcompat.app.AlertDialog
+import name.monwf.customiuizer.R
+import name.monwf.customiuizer.SubFragmentWithSearch
+import name.monwf.customiuizer.utils.AppData
+import name.monwf.customiuizer.utils.AppDataAdapter
+import name.monwf.customiuizer.utils.AppHelper
+import name.monwf.customiuizer.utils.Helpers
+import name.monwf.customiuizer.utils.LockedAppAdapter
+import name.monwf.customiuizer.utils.PrivacyAppAdapter
+
+class AppSelector : SubFragmentWithSearch() {
+
+    private var initialized = false
+    private var standalone = false
+    private var multi = false
+    private var bwlist = false
+    private var privacy = false
+    private var applock = false
+    private var customTitles = false
+    private var share = false
+    private var openwith = false
+    private var isActivity = false
+    private var key: String? = null
+    private var process: Runnable? = null
+
+    override fun onCreate(savedInstanceState: Bundle?) {
+        this.padded = false
+        super.onCreate(savedInstanceState)
+
+        val args = requireArguments()
+        standalone = args.getBoolean("standalone")
+        multi = args.getBoolean("multi")
+        bwlist = args.getBoolean("bw")
+        privacy = args.getBoolean("privacy")
+        applock = args.getBoolean("applock")
+        customTitles = args.getBoolean("custom_titles")
+        share = args.getBoolean("share")
+        openwith = args.getBoolean("openwith")
+        isActivity = args.getBoolean("activity")
+        key = args.getString("key")
+
+        process = Runnable {
+            val context = getValidContext()
+            if (!isAdded) return@Runnable
+            when {
+                multi && key != null -> {
+                    val list = when {
+                        openwith -> Helpers.openWithAppsList
+                        share -> Helpers.shareAppsList
+                        else -> Helpers.installedAppsList
+                    } ?: return@Runnable
+                    listView?.adapter = AppDataAdapter(
+                        context,
+                        list,
+                        Helpers.AppAdapterType.Mutli,
+                        key,
+                        bwlist
+                    )
+                }
+                privacy -> {
+                    val list = Helpers.installedAppsList ?: return@Runnable
+                    listView?.adapter = PrivacyAppAdapter(context, list)
+                }
+                applock -> {
+                    val list = Helpers.installedAppsList ?: return@Runnable
+                    listView?.adapter = LockedAppAdapter(context, list)
+                }
+                customTitles -> {
+                    val list = Helpers.launchableAppsList ?: return@Runnable
+                    listView?.adapter = AppDataAdapter(context, list, Helpers.AppAdapterType.CustomTitles, key)
+                }
+                standalone && key != null -> {
+                    val list = Helpers.launchableAppsList ?: return@Runnable
+                    listView?.adapter = AppDataAdapter(context, list, Helpers.AppAdapterType.Standalone, key)
+                }
+                isActivity -> {
+                    val list = Helpers.installedAppsList ?: return@Runnable
+                    listView?.adapter = AppDataAdapter(context, list, Helpers.AppAdapterType.Default, key)
+                }
+                else -> {
+                    val list = Helpers.launchableAppsList ?: return@Runnable
+                    listView?.adapter = AppDataAdapter(context, list)
+                }
+            }
+            listView?.onItemClickListener = AdapterView.OnItemClickListener { parent, _, position, _ ->
+                val key = this@AppSelector.key ?: ""
+                if (multi && key.isNotEmpty()) {
+                    val app = (parent.adapter as? AppDataAdapter)?.getItem(position) ?: return@OnItemClickListener
+                    val selectedApps = java.util.LinkedHashSet(
+                        AppHelper.getStringSetOfAppPrefs(key, emptySet()) ?: emptySet()
+                    )
+                    if (bwlist) {
+                        val selectedAppsBlack = java.util.LinkedHashSet(
+                            AppHelper.getStringSetOfAppPrefs(key + "_black", emptySet()) ?: emptySet()
+                        )
+                        when {
+                            selectedApps.contains(app.pkgName) -> {
+                                selectedApps.remove(app.pkgName)
+                                selectedAppsBlack.add(app.pkgName)
+                            }
+                            selectedAppsBlack.contains(app.pkgName) -> {
+                                selectedApps.remove(app.pkgName)
+                                selectedAppsBlack.remove(app.pkgName)
+                            }
+                            else -> {
+                                selectedApps.add(app.pkgName)
+                                selectedAppsBlack.remove(app.pkgName)
+                            }
+                        }
+                        AppHelper.appPrefs?.edit()?.putStringSet(key + "_black", selectedAppsBlack)?.apply()
+                    } else if (selectedApps.contains(if (share || openwith) "${app.pkgName}|${app.user}" else app.pkgName)) {
+                        selectedApps.remove(if (share || openwith) "${app.pkgName}|${app.user}" else app.pkgName)
+                    } else {
+                        selectedApps.add(if (share || openwith) "${app.pkgName}|${app.user}" else app.pkgName)
+                        if (openwith) {
+                            val mimeKey = key + "_" + app.pkgName + "|" + app.user
+                            val mimeFlags = AppHelper.getIntOfAppPrefs(mimeKey, Helpers.MimeType.ALL)
+                            val checkedTypes = booleanArrayOf(
+                                (mimeFlags and Helpers.MimeType.IMAGE) == Helpers.MimeType.IMAGE,
+                                (mimeFlags and Helpers.MimeType.AUDIO) == Helpers.MimeType.AUDIO,
+                                (mimeFlags and Helpers.MimeType.VIDEO) == Helpers.MimeType.VIDEO,
+                                (mimeFlags and Helpers.MimeType.DOCUMENT) == Helpers.MimeType.DOCUMENT,
+                                (mimeFlags and Helpers.MimeType.ARCHIVE) == Helpers.MimeType.ARCHIVE,
+                                (mimeFlags and Helpers.MimeType.LINK) == Helpers.MimeType.LINK,
+                                (mimeFlags and Helpers.MimeType.OTHERS) == Helpers.MimeType.OTHERS
+                            )
+                            val builder = AlertDialog.Builder(activity ?: return@OnItemClickListener)
+                            builder.setTitle(R.string.system_cleanopenwith_datatype)
+                            builder.setMultiChoiceItems(R.array.mimetypes, checkedTypes) { _, which, isChecked ->
+                                checkedTypes[which] = isChecked
+                            }
+                            builder.setCancelable(true)
+                            builder.setPositiveButton(android.R.string.ok) { _, _ ->
+                                var sum = 0
+                                for (i in checkedTypes.indices) {
+                                    if (checkedTypes[i]) sum += 1 shl i
+                                }
+                                AppHelper.appPrefs?.edit()?.putInt(mimeKey, sum)?.apply()
+                            }
+                            builder.show()
+                        }
+                    }
+                    AppHelper.appPrefs?.edit()?.putStringSet(key, selectedApps)?.apply()
+                    (parent.adapter as? AppDataAdapter)?.updateSelectedApps()
+                } else if (isActivity) {
+                    val app = (parent.adapter as? AppDataAdapter)?.getItem(position) ?: return@OnItemClickListener
+                    val args2 = Bundle().apply {
+                        putString("key", key)
+                        putString("package", app.pkgName)
+                        putInt("user", app.user)
+                    }
+                    val activitySelect = ActivitySelector()
+                    @Suppress("DEPRECATION")
+                    activitySelect.setTargetFragment(this@AppSelector, targetRequestCode)
+                    openSubFragment(
+                        activitySelect,
+                        args2,
+                        Helpers.SettingsType.Edit,
+                        Helpers.ActionBarType.HomeUp,
+                        R.string.select_activity,
+                        R.layout.prefs_app_selector
+                    )
+                } else if (privacy) {
+                    val app = (parent.adapter as? PrivacyAppAdapter)?.getItem(position) ?: return@OnItemClickListener
+                    try {
+                        @Suppress("WrongConstant")
+                        val mSecurityManager = activity?.getSystemService("security") ?: return@OnItemClickListener
+                        val isPrivacyApp = mSecurityManager::class.java.getDeclaredMethod("isPrivacyApp", String::class.java, Int::class.javaPrimitiveType)
+                        isPrivacyApp.isAccessible = true
+                        val setPrivacyApp = mSecurityManager::class.java.getDeclaredMethod("setPrivacyApp", String::class.java, Int::class.javaPrimitiveType, java.lang.Boolean.TYPE)
+                        setPrivacyApp.isAccessible = true
+                        setPrivacyApp.invoke(mSecurityManager, app.pkgName, app.user, !(isPrivacyApp.invoke(mSecurityManager, app.pkgName, app.user) as? Boolean ?: false))
+                        (parent.adapter as? PrivacyAppAdapter)?.notifyDataSetChanged()
+                        activity?.contentResolver?.notifyChange(
+                            Uri.parse("content://com.miui.securitycenter.provider/update_privacyapps_icon"),
+                            null
+                        )
+                    } catch (t: Throwable) {
+                        t.printStackTrace()
+                    }
+                } else if (applock) {
+                    val app = (parent.adapter as? LockedAppAdapter)?.getItem(position) ?: return@OnItemClickListener
+                    try {
+                        @Suppress("WrongConstant")
+                        val mSecurityManager = activity?.getSystemService("security") ?: return@OnItemClickListener
+                        val getApplicationAccessControlEnabledAsUser = mSecurityManager::class.java.getDeclaredMethod(
+                            "getApplicationAccessControlEnabledAsUser",
+                            String::class.java,
+                            Int::class.javaPrimitiveType
+                        )
+                        getApplicationAccessControlEnabledAsUser.isAccessible = true
+                        val setApplicationAccessControlEnabledForUser = mSecurityManager::class.java.getDeclaredMethod(
+                            "setApplicationAccessControlEnabledForUser",
+                            String::class.java,
+                            java.lang.Boolean.TYPE,
+                            Int::class.javaPrimitiveType
+                        )
+                        setApplicationAccessControlEnabledForUser.isAccessible = true
+                        val currentEnabled = getApplicationAccessControlEnabledAsUser.invoke(mSecurityManager, app.pkgName, app.user) as? Boolean ?: false
+                        setApplicationAccessControlEnabledForUser.invoke(mSecurityManager, app.pkgName, !currentEnabled, app.user)
+                        (parent.adapter as? LockedAppAdapter)?.notifyDataSetChanged()
+                    } catch (t: Throwable) {
+                        t.printStackTrace()
+                    }
+                } else if (customTitles) {
+                    val app = (parent.adapter as? AppDataAdapter)?.getItem(position) ?: return@OnItemClickListener
+                    AppHelper.showInputDialog(
+                        activity ?: return@OnItemClickListener,
+                        key + ":" + app.pkgName + "|" + app.actName + "|" + app.user,
+                        R.string.launcher_renameapps_modified,
+                        0,
+                        1,
+                        object : Helpers.InputCallback {
+                            override fun onInputFinished(key: String, text: String) {
+                                if (TextUtils.isEmpty(text)) {
+                                    AppHelper.appPrefs?.edit()?.remove(key)?.apply()
+                                } else {
+                                    AppHelper.appPrefs?.edit()?.putString(key, text)?.apply()
+                                }
+                                (parent.adapter as? AppDataAdapter)?.notifyDataSetChanged()
+                            }
+                        }
+                    )
+                } else {
+                    val intent = Intent(activity ?: return@OnItemClickListener, this@AppSelector::class.java)
+                    val app = (parent.adapter as? AppDataAdapter)?.getItem(position) ?: return@OnItemClickListener
+                    if (app.pkgName == "" && app.actName == "") {
+                        intent.putExtra("app", "")
+                    } else {
+                        intent.putExtra("app", app.pkgName + "|" + app.actName)
+                    }
+                    intent.putExtra("user", app.user)
+                    @Suppress("DEPRECATION")
+                    targetFragment?.onActivityResult(targetRequestCode, Activity.RESULT_OK, intent)
+                    finish()
+                }
+            }
+            view?.findViewById<View>(R.id.am_progressBar)?.visibility = View.GONE
+        }
+    }
+
+    @Suppress("DEPRECATION")
+    override fun onActivityCreated(savedInstanceState: Bundle?) {
+        super.onActivityCreated(savedInstanceState)
+
+        val act = activity
+        if (initialized) {
+            process?.run()
+        } else {
+            Thread {
+                try {
+                    Thread.sleep(animDur.toLong())
+                } catch (_: Throwable) {
+                }
+                if (act != null) {
+                    try {
+                        if (isActivity || privacy || applock || (multi && key != null)) {
+                            if (openwith) {
+                                if (Helpers.openWithAppsList == null) Helpers.getOpenWithApps(act)
+                            } else if (share) {
+                                if (Helpers.shareAppsList == null) Helpers.getShareApps(act)
+                            } else {
+                                if (Helpers.installedAppsList == null) Helpers.getInstalledApps(act)
+                            }
+                        } else {
+                            if (Helpers.launchableAppsList == null) Helpers.getLaunchableApps(act)
+                        }
+                        initialized = true
+                        act.runOnUiThread(process)
+                    } catch (e: Throwable) {
+                        e.printStackTrace()
+                    }
+                }
+            }.start()
+        }
+    }
+
+    override fun onActivityResult(requestCode: Int, resultCode: Int, data: Intent?) {
+        if (resultCode == Activity.RESULT_OK && requestCode == targetRequestCode) {
+            @Suppress("DEPRECATION")
+            targetFragment?.onActivityResult(targetRequestCode, Activity.RESULT_OK, data)
+            finish()
+        }
+        super.onActivityResult(requestCode, resultCode, data)
+    }
+}

@@ -38,13 +38,14 @@ class ActivitySelector : SubFragmentWithSearch() {
         user = args.getInt("user")
 
         val process = Runnable {
+            val context = activity ?: return@Runnable
             if (activities.size == 0) {
-                Toast.makeText(activity, R.string.no_activities_found, Toast.LENGTH_SHORT).show()
+                Toast.makeText(context, R.string.no_activities_found, Toast.LENGTH_SHORT).show()
                 finish()
                 return@Runnable
             }
             listView?.adapter = AppDataAdapter(
-                activity?.applicationContext,
+                context.applicationContext,
                 activities,
                 Helpers.AppAdapterType.Activities,
                 null

@@ -26,10 +26,10 @@
 | `app/src/main/java/name/monwf/customiuizer/SubFragment.java` | 416 | UI | app/Settings | normal | none | postDelayed | none | app/src/main/java/tv/withaibuild/customiuizer/SubFragment.kt (Kotlin) | YELLOW | 已迁移 | B2-5/6 已迁移 | 单测 / build / lint / R8 / UI 回归 |
 | `app/src/main/java/name/monwf/customiuizer/utils/BatteryIndicator.java` | 407 | utility | app/Settings | reflection | none | Handler, Runnable | XposedHelpers.call | app/src/main/java/tv/withaibuild/customiuizer/utils/BatteryIndicator.kt (Kotlin) | YELLOW | 补测试后迁移 | B2/B3 | 单测 / build / R8 |
 | `app/src/main/java/name/monwf/customiuizer/MainFragment.java` | 381 | UI | app/Settings | normal | none | Handler, Thread, Runnable, postDelayed | none | app/src/main/java/tv/withaibuild/customiuizer/MainFragment.kt (Kotlin) | YELLOW | 已迁移 | B2-4 已迁移 | 单测 / build / lint / R8 / UI 回归 |
-| `app/src/main/java/name/monwf/customiuizer/utils/AppDataAdapter.java` | 289 | utility | app/Settings | normal | none | Runnable, CopyOnWrite | none | app/src/main/java/tv/withaibuild/customiuizer/utils/AppDataAdapter.kt (Kotlin) | YELLOW | 补测试后迁移 | B2 | 单测 / build / UI 回归 |
-| `app/src/main/java/name/monwf/customiuizer/subs/WiFiList.java` | 279 | UI | app/Settings | normal | none | Handler, Runnable, postDelayed | none | app/src/main/java/tv/withaibuild/customiuizer/subs/WiFiList.kt (Kotlin) | YELLOW | 补测试后迁移 | B2 | 单测 / build / UI 回归 |
-| `app/src/main/java/name/monwf/customiuizer/subs/AppSelector.java` | 270 | UI | app/Settings | reflection | none | Thread, Runnable | getDeclaredMethod | app/src/main/java/tv/withaibuild/customiuizer/subs/AppSelector.kt (Kotlin) | YELLOW | 补测试后迁移 | B2 | 单测 / build / R8 |
-| `app/src/main/java/name/monwf/customiuizer/subs/BTList.java` | 264 | UI | app/Settings | normal | none | Handler, Runnable, postDelayed | none | app/src/main/java/tv/withaibuild/customiuizer/subs/BTList.kt (Kotlin) | YELLOW | 补测试后迁移 | B2 | 单测 / build / UI 回归 |
+| `app/src/main/java/name/monwf/customiuizer/utils/AppDataAdapter.java` | 289 | utility | app/Settings | normal | none | Runnable, CopyOnWrite | none | app/src/main/java/tv/withaibuild/customiuizer/utils/AppDataAdapter.kt (Kotlin) | YELLOW | 已迁移 | B2-8 已迁移 | 单测 / build / UI 回归 |
+| `app/src/main/java/name/monwf/customiuizer/subs/WiFiList.java` | 279 | UI | app/Settings | normal | none | Handler, Runnable, postDelayed | none | app/src/main/java/tv/withaibuild/customiuizer/subs/WiFiList.kt (Kotlin) | YELLOW | 已迁移 | B2-8 已迁移 | 单测 / build / UI 回归 |
+| `app/src/main/java/name/monwf/customiuizer/subs/AppSelector.java` | 270 | UI | app/Settings | reflection | none | Thread, Runnable | getDeclaredMethod | app/src/main/java/tv/withaibuild/customiuizer/subs/AppSelector.kt (Kotlin) | YELLOW | 已迁移 | B2-8 已迁移 | 单测 / build / R8 |
+| `app/src/main/java/name/monwf/customiuizer/subs/BTList.java` | 264 | UI | app/Settings | normal | none | Handler, Runnable, postDelayed | none | app/src/main/java/tv/withaibuild/customiuizer/subs/BTList.kt (Kotlin) | YELLOW | 已迁移 | B2-8 已迁移 | 单测 / build / UI 回归 |
 | `app/src/main/java/name/monwf/customiuizer/MainActivity.java` | 225 | UI | app/Settings | Manifest/XML | none | none | none | app/src/main/java/tv/withaibuild/customiuizer/MainActivity.kt (Kotlin) | YELLOW | 已迁移 | B2-4 已迁移 | 单测 / build / lint / R8 / UI 回归 |
 | `app/src/main/java/name/monwf/customiuizer/subs/SortableList.java` | 210 | UI | app/Settings | reflection | none | none | getDeclaredField | app/src/main/java/tv/withaibuild/customiuizer/subs/SortableList.kt (Kotlin) | YELLOW | 已迁移 | B2-2 已迁移 | 单测 / build / lint / R8 / UI 回归 |
 | `app/src/main/java/name/monwf/customiuizer/utils/LockedAppAdapter.java` | 181 | utility | app/Settings | reflection | none | Runnable, CopyOnWrite | getDeclaredMethod | app/src/main/java/tv/withaibuild/customiuizer/utils/LockedAppAdapter.kt (Kotlin) | YELLOW | 补测试后迁移 | B2/B3 | 单测 / build / R8 |
@@ -508,7 +508,31 @@
 - 公开字段/方法与枚举因 `@JvmField` / 默认可见性保持可达；
 - 未见 A14 包名、Hook target、资源名或 API 版本变化。
 
-## B2 阶段总结（截至 B2-7）
+## B2-8 批次执行结果
+
+### 迁移文件
+
+- `app/src/main/java/name/monwf/customiuizer/utils/AppDataAdapter.java` → `AppDataAdapter.kt`（289 → 312 LOC）
+- `app/src/main/java/name/monwf/customiuizer/subs/WiFiList.java` → `WiFiList.kt`（279 → 256 LOC）
+- `app/src/main/java/name/monwf/customiuizer/subs/AppSelector.java` → `AppSelector.kt`（270 → 289 LOC）
+- `app/src/main/java/name/monwf/customiuizer/subs/BTList.java` → `BTList.kt`（264 → 230 LOC）
+- 新增 `app/src/test/java/name/monwf/customiuizer/subs/B2_8_MigrationInteropTest.kt`（110 LOC）
+
+### 关键兼容点
+
+- `AppDataAdapter`：公开继承 `BaseAdapter` / `Filterable`；保留三 / 四 / 五参数构造器；`getCount` / `getItem` / `getItemId` / `getView` / `getFilter` / `updateSelectedApps` 签名不变；`ItemFilter` 为私有内部类；继续使用 `ThreadPoolExecutor` 与 `BitmapCachedLoader`；未引入 `!!`/coroutine；避免 `toRegex()` 拆分，使用 `lowercase(Locale)` 与 `removeAll { }`。
+- `WiFiList` / `BTList`：保留公开无参构造器；`SubFragment` 继承不变；`onCreate` / `onActivityCreated` / `onResume` / `onPause` / `onDestroy` 签名不变；`registerReceivers` / `unregisterReceivers` / `updateProgressBar` / `isWiFiReady` / `isLocationServicesEnabled` / `fetchCachedDevices` 公开方法保留；`WiFiAdapter` / `BTAdapter` 内部类保留；使用 `Context.RECEIVER_NOT_EXPORTED` / `RECEIVER_EXPORTED` 注册；避免 `toRegex()` 拆分 BSSID/地址。
+- `AppSelector`：继承 `SubFragmentWithSearch`；保留公开无参构造器；`onCreate` / `onActivityCreated` / `onActivityResult` 签名不变；保留 `setTargetFragment`（已 `@Suppress("DEPRECATION")`）与 `targetRequestCode`；继续使用 `Thread` 加载应用列表；`Helpers.MimeType` 位运算逻辑不变。
+
+### 验证
+
+- `./gradlew.bat --no-daemon :app:test`：BUILD SUCCESSFUL，107 tests / 0 failures；
+- `./gradlew.bat --no-daemon :app:lintDebug`：0 errors；
+- `./gradlew.bat --no-daemon :app:assembleDebug` / `:app:assembleRelease`：成功；
+- `git diff --check`：通过；
+- Release R8 mapping：B2-8 迁移类保持可达，applicationId / version / Xposed 元数据未变。
+
+## B2 阶段总结（截至 B2-8）
 
 ### 已迁移 B2 文件
 
@@ -521,35 +545,30 @@
 | B2-5 | `PreferenceFragmentBase` | 459 | 406 | B2_5_6_MigrationInteropTest |
 | B2-6 | `SubFragment` | 416 | 430 | B2_5_6_MigrationInteropTest |
 | B2-7 | `utils/AudioVisualizer` | 583 | 603 | B2_7_MigrationInteropTest |
+| B2-8 | `utils/AppDataAdapter` / `subs/WiFiList` / `subs/AppSelector` / `subs/BTList` | 1102 | 1087 | B2_8_MigrationInteropTest |
 
-合计：删除 Java 2823 LOC，新增 Kotlin 2606 LOC，新增测试 406 LOC。
+合计：删除 Java 3925 LOC，新增 Kotlin 3693 LOC，新增测试 516 LOC。
 
 ### 当前 B2 剩余候选
 
-- `AppDataAdapter`（289 LOC）
-- `WiFiList`（279 LOC）
-- `AppSelector`（270 LOC）
-- `BTList`（264 LOC）
 - `LockedAppAdapter`（181 LOC）
 - `PrivacyAppAdapter`（170 LOC）
 
 ### 验证结论
 
-- 单元测试：98 tests，0 failures，0 errors；
+- 单元测试：107 tests，0 failures，0 errors；
 - lintDebug：0 errors；
 - assembleDebug / assembleRelease：成功；
 - Release R8 mapping：B2 迁移类均保持可达；
 - 未引入 A14 包名、Hook target、资源名或 API 版本变化；
 - 真机验证仍未完成。
 
-### 下一批 B2-8 候选
+### 下一批 B2-9 候选
 
-- `AppDataAdapter`（289 LOC）
-- `WiFiList`（279 LOC）
-- `AppSelector`（270 LOC）
-- `BTList`（264 LOC）
+- `LockedAppAdapter`（181 LOC）
+- `PrivacyAppAdapter`（170 LOC）
 
-合计约 1102 LOC；按 YELLOW 矩阵分批处理，单个批次控制在 800–1200 LOC。
+合计约 351 LOC；按 YELLOW 矩阵继续收尾 B2，再进入 B3 Hook 层拆分审计。
 
 ### 下一批 B3 候选
 
