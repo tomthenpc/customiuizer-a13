@@ -5,15 +5,15 @@
 
 ## 当前目标
 
-- 对 A13 项目进行全局代码审查、死代码清理、Kotlin 惯用化与性能优化（低频低风险优先），保持功能行为、JVM/Hook 兼容和构建稳定。
+- 对齐 A14 工程成熟度并安全发布 `r13.2.3-test1` Pre-release；后续继续分批完成剩余 Kotlin 清理、生命周期审计与 R8/resource shrink 验证。
 
 ## 当前基线
 
 - **Repository:** `tomthenpc/customiuizer-a13`
 - **Branch:** `devin/r13.2-kotlin-api102`
-- **Last verified code commit:** `3c03ccb`
-- **Checkpoint based on commit:** `3c03ccb`
-- **versionName / versionCode:** `r13.2.2-devin` / `120`
+- **Last verified code commit:** `5ab430b`
+- **Checkpoint based on commit:** `5ab430b`
+- **versionName / versionCode:** `r13.2.3-test1` / `121`
 - **applicationId:** `tv.withaibuild.customiuizer.r13`
 - **libxposed API:** `minApiVersion=101`，`targetApiVersion=102`，`staticScope=false`
 - **Hot Reload:** `false`
@@ -23,7 +23,28 @@
 - **最新已确认实机版本:** 未确认
 - **最后正常行为基线:** `MonwF/customiuizer v23.11.26`
 
-## 本轮已完成（全局代码审查、Kotlin 清理与高频优化第二批）
+## 本轮已完成（A14 工程对齐 Pre-release 批次）
+
+### 工程审计与文档
+- 创建 `docs/A13_A14_ENGINEERING_PARITY.md`：Git、构建、签名、API 101/102、生命周期、热路径、Locale、R8 等差距矩阵。
+- 创建 `docs/LSPOSED_FULL_LOG_REVIEW_PROTOCOL.md`：动态日志路径审查协议。
+- 创建 `.devin/ACTIVE_TASK.md`：当前 Pre-release 任务状态。
+
+### 可移植追赶项
+- 新增 `PrefPair.kt` 与 `PrefPairTest.kt`：`first`/`second`/`firstEquals`/`containsFirst` 避免 `toRegex()` 分配。
+- `AppHelper.removeStringPair`、`PreferenceAdapter.updateItems`、`Helpers.containsStringPair` 改为使用 `PrefPair`。
+- `SystemUI.mStatusbarTextIcons` 从 `ArrayList<View>` 改为 `WeakReference<View>`，注册与遍历自动清理失效引用。
+
+### 构建配置
+- `gradle.properties`：移除 `android.enableResourceOptimizations` 与 `org.gradle.unsafe.configuration-cache`；启用 `org.gradle.configuration-cache=true` 与 `org.gradle.caching=true`。
+- `app/build.gradle.kts`：`release`/`develop` 签名缺失时 `check()` fail-fast；设置统一 APK 输出名 `CustoMIUIzer-A13-<versionName>.apk`。
+
+### 验证
+- 完整构建：`clean test lint lintRelease lintVitalRelease assembleDebug assembleDevelop assembleRelease` 全部成功。
+- 测试：57 个单元测试通过（含新增 `PrefPairTest`）。
+- Release APK：`tv.withaibuild.customiuizer.r13` / `r13.2.3-test1` / `121` / v2 签名 / R8 / resource shrink / zipalign 对齐 / `module.prop` / `scope.list` / `java_init.list` 正确。
+
+## 历史批次（全局代码审查、Kotlin 清理与高频优化第二批）
 
 ### 代码
 - Kotlin 文件去 `!!`（共移除 11 处）：`AppHelper.kt`、`SpinnerEx.kt`、`SpinnerExFake.kt`、`SeekBarPreference.kt`、`System_ScreenshotConfig.kt`、`System_VibrationAmp.kt`、`Various_CallUIBright.kt`、`ModuleMetadataTest.kt`。
