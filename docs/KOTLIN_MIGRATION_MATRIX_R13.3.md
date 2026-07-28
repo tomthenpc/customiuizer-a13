@@ -32,9 +32,9 @@
 | `app/src/main/java/name/monwf/customiuizer/subs/BTList.java` | 264 | UI | app/Settings | normal | none | Handler, Runnable, postDelayed | none | app/src/main/java/tv/withaibuild/customiuizer/subs/BTList.kt (Kotlin) | YELLOW | 已迁移 | B2-8 已迁移 | 单测 / build / UI 回归 |
 | `app/src/main/java/name/monwf/customiuizer/MainActivity.java` | 225 | UI | app/Settings | Manifest/XML | none | none | none | app/src/main/java/tv/withaibuild/customiuizer/MainActivity.kt (Kotlin) | YELLOW | 已迁移 | B2-4 已迁移 | 单测 / build / lint / R8 / UI 回归 |
 | `app/src/main/java/name/monwf/customiuizer/subs/SortableList.java` | 210 | UI | app/Settings | reflection | none | none | getDeclaredField | app/src/main/java/tv/withaibuild/customiuizer/subs/SortableList.kt (Kotlin) | YELLOW | 已迁移 | B2-2 已迁移 | 单测 / build / lint / R8 / UI 回归 |
-| `app/src/main/java/name/monwf/customiuizer/utils/LockedAppAdapter.java` | 181 | utility | app/Settings | reflection | none | Runnable, CopyOnWrite | getDeclaredMethod | app/src/main/java/tv/withaibuild/customiuizer/utils/LockedAppAdapter.kt (Kotlin) | YELLOW | 补测试后迁移 | B2/B3 | 单测 / build / R8 |
+| `app/src/main/java/name/monwf/customiuizer/utils/LockedAppAdapter.java` | 181 | utility | app/Settings | reflection | none | Runnable, CopyOnWrite | getDeclaredMethod | app/src/main/java/tv/withaibuild/customiuizer/utils/LockedAppAdapter.kt (Kotlin) | YELLOW | 已迁移 | B2-9 已迁移 | 单测 / build / R8 |
 | `app/src/main/java/name/monwf/customiuizer/mods/PackagePermissions.java` | 178 | Hook | multi | reflection | low risk mutable | none | findAndHookMethod, hookAllMethods, findClass, XposedHelpers.call | app/src/main/java/tv/withaibuild/customiuizer/mods/PackagePermissions.kt (Kotlin) | YELLOW | 拆分后迁移 | B3/B4 | build / R8 / 实机 / 日志 |
-| `app/src/main/java/name/monwf/customiuizer/utils/PrivacyAppAdapter.java` | 170 | utility | app/Settings | reflection | none | Runnable, CopyOnWrite | getDeclaredMethod | app/src/main/java/tv/withaibuild/customiuizer/utils/PrivacyAppAdapter.kt (Kotlin) | YELLOW | 补测试后迁移 | B2/B3 | 单测 / build / R8 |
+| `app/src/main/java/name/monwf/customiuizer/utils/PrivacyAppAdapter.java` | 170 | utility | app/Settings | reflection | none | Runnable, CopyOnWrite | getDeclaredMethod | app/src/main/java/tv/withaibuild/customiuizer/utils/PrivacyAppAdapter.kt (Kotlin) | YELLOW | 已迁移 | B2-9 已迁移 | 单测 / build / R8 |
 | `app/src/main/java/name/monwf/customiuizer/SubFragmentWithSearch.java` | 116 | UI | app/Settings | normal | none | none | none | app/src/main/java/tv/withaibuild/customiuizer/SubFragmentWithSearch.kt (Kotlin) | YELLOW | 已迁移 | B2-3 已迁移 | 单测 / build / lint / R8 / UI 回归 |
 | `app/src/main/java/name/monwf/customiuizer/subs/ActivitySelector.java` | 109 | UI | app/Settings | normal | none | Thread, Runnable | none | app/src/main/java/tv/withaibuild/customiuizer/subs/ActivitySelector.kt (Kotlin) | YELLOW | 已迁移 | B2-3 已迁移 | 单测 / build / lint / R8 / UI 回归 |
 | `app/src/main/java/name/monwf/customiuizer/mods/utils/XposedHelpers.java` | 1821 | infrastructure | system_server | reflection | process-level mutable | synchronized, Atomic | getDeclaredMethod, getDeclaredField, findAndHookMethod, hookAllMethods, hookAllConstructors, findMethodExact, findConstructorExact, findField, findClass | app/src/main/java/tv/withaibuild/customiuizer/mods/utils/XposedHelpers.java (Java) | RED | 保留 Java | 保留区 | build / R8 / 实机 |
@@ -546,29 +546,22 @@
 | B2-6 | `SubFragment` | 416 | 430 | B2_5_6_MigrationInteropTest |
 | B2-7 | `utils/AudioVisualizer` | 583 | 603 | B2_7_MigrationInteropTest |
 | B2-8 | `utils/AppDataAdapter` / `subs/WiFiList` / `subs/AppSelector` / `subs/BTList` | 1102 | 1087 | B2_8_MigrationInteropTest |
+| B2-9 | `utils/LockedAppAdapter` / `utils/PrivacyAppAdapter` | 351 | 345 | B2_9_MigrationInteropTest |
 
-合计：删除 Java 3925 LOC，新增 Kotlin 3693 LOC，新增测试 516 LOC。
+合计：删除 Java 4276 LOC，新增 Kotlin 4038 LOC，新增测试 564 LOC。
 
 ### 当前 B2 剩余候选
 
-- `LockedAppAdapter`（181 LOC）
-- `PrivacyAppAdapter`（170 LOC）
+B2 全部迁移完成；下一批进入 B3 Hook 层拆分审计。
 
 ### 验证结论
 
-- 单元测试：107 tests，0 failures，0 errors；
+- 单元测试：111 tests，0 failures，0 errors；
 - lintDebug：0 errors；
 - assembleDebug / assembleRelease：成功；
 - Release R8 mapping：B2 迁移类均保持可达；
 - 未引入 A14 包名、Hook target、资源名或 API 版本变化；
 - 真机验证仍未完成。
-
-### 下一批 B2-9 候选
-
-- `LockedAppAdapter`（181 LOC）
-- `PrivacyAppAdapter`（170 LOC）
-
-合计约 351 LOC；按 YELLOW 矩阵继续收尾 B2，再进入 B3 Hook 层拆分审计。
 
 ### 下一批 B3 候选
 
