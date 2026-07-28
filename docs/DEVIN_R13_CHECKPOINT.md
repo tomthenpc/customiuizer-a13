@@ -14,7 +14,7 @@
 
 - **Repository:** `tomthenpc/customiuizer-a13`
 - **Branch:** `devin/r13.3-kotlin-migration`
-- **Last verified commit:** （B3-2 提交后更新）
+- **Last verified commit:** `fc8c79d9d9a82887754e1515d4bac3f83c8b3a5c`
 - **versionName / versionCode:** `r13.2.4-devin` / `123`
 - **applicationId:** `tv.withaibuild.customiuizer.r13`
 - **libxposed API:** `minApiVersion=101`，`targetApiVersion=102`，`staticScope=false`
