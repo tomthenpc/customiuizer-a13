@@ -35,8 +35,8 @@
 | `app/src/main/java/name/monwf/customiuizer/utils/LockedAppAdapter.java` | 181 | utility | app/Settings | reflection | none | Runnable, CopyOnWrite | getDeclaredMethod | app/src/main/java/tv/withaibuild/customiuizer/utils/LockedAppAdapter.kt (Kotlin) | YELLOW | 补测试后迁移 | B2/B3 | 单测 / build / R8 |
 | `app/src/main/java/name/monwf/customiuizer/mods/PackagePermissions.java` | 178 | Hook | multi | reflection | low risk mutable | none | findAndHookMethod, hookAllMethods, findClass, XposedHelpers.call | app/src/main/java/tv/withaibuild/customiuizer/mods/PackagePermissions.kt (Kotlin) | YELLOW | 拆分后迁移 | B3/B4 | build / R8 / 实机 / 日志 |
 | `app/src/main/java/name/monwf/customiuizer/utils/PrivacyAppAdapter.java` | 170 | utility | app/Settings | reflection | none | Runnable, CopyOnWrite | getDeclaredMethod | app/src/main/java/tv/withaibuild/customiuizer/utils/PrivacyAppAdapter.kt (Kotlin) | YELLOW | 补测试后迁移 | B2/B3 | 单测 / build / R8 |
-| `app/src/main/java/name/monwf/customiuizer/SubFragmentWithSearch.java` | 116 | UI | app/Settings | normal | none | none | none | app/src/main/java/tv/withaibuild/customiuizer/SubFragmentWithSearch.kt (Kotlin) | YELLOW | 补测试后迁移 | B2 | 单测 / build / UI 回归 |
-| `app/src/main/java/name/monwf/customiuizer/subs/ActivitySelector.java` | 109 | UI | app/Settings | normal | none | Thread, Runnable | none | app/src/main/java/tv/withaibuild/customiuizer/subs/ActivitySelector.kt (Kotlin) | YELLOW | 补测试后迁移 | B2 | 单测 / build / UI 回归 |
+| `app/src/main/java/name/monwf/customiuizer/SubFragmentWithSearch.java` | 116 | UI | app/Settings | normal | none | none | none | app/src/main/java/tv/withaibuild/customiuizer/SubFragmentWithSearch.kt (Kotlin) | YELLOW | 已迁移 | B2-3 已迁移 | 单测 / build / lint / R8 / UI 回归 |
+| `app/src/main/java/name/monwf/customiuizer/subs/ActivitySelector.java` | 109 | UI | app/Settings | normal | none | Thread, Runnable | none | app/src/main/java/tv/withaibuild/customiuizer/subs/ActivitySelector.kt (Kotlin) | YELLOW | 已迁移 | B2-3 已迁移 | 单测 / build / lint / R8 / UI 回归 |
 | `app/src/main/java/name/monwf/customiuizer/mods/utils/XposedHelpers.java` | 1821 | infrastructure | system_server | reflection | process-level mutable | synchronized, Atomic | getDeclaredMethod, getDeclaredField, findAndHookMethod, hookAllMethods, hookAllConstructors, findMethodExact, findConstructorExact, findField, findClass | app/src/main/java/tv/withaibuild/customiuizer/mods/utils/XposedHelpers.java (Java) | RED | 保留 Java | 保留区 | build / R8 / 实机 |
 | `app/src/main/java/name/monwf/customiuizer/MainModule.java` | 820 | infrastructure | infrastructure/multi | libxposed, reflection | low risk mutable | none | findAndHookMethod, XposedHelpers.call, XposedModule, onPackageReady, onSystemServerStarting, onModuleLoaded | app/src/main/java/tv/withaibuild/customiuizer/MainModule.java (Java) | RED | 保留 Java | 保留区 | build / R8 / 实机 |
 | `app/src/main/java/name/monwf/customiuizer/mods/utils/ModuleHelper.java` | 385 | infrastructure | system_server | reflection | process-level mutable | synchronized | getDeclaredMethod, findAndHookMethod, hookAllMethods, hookAllConstructors, findClass, XposedHelpers.call | app/src/main/java/tv/withaibuild/customiuizer/mods/utils/ModuleHelper.kt (Kotlin) | RED | 保留 Java | 保留区 | build / R8 / 实机 |
@@ -47,7 +47,7 @@
 ## 风险统计
 
 - **GREEN**: 0 个文件（B1 全部完成）
-- **YELLOW**: 22 个文件（B2-1/B2-2 迁移后 `SortableListView`、`SortableList` 从 YELLOW 移除）
+- **YELLOW**: 20 个文件（B2-1/B2-2/B2-3 迁移后 `SortableListView`、`SortableList`、`SubFragmentWithSearch`、`ActivitySelector` 从 YELLOW 移除）
 - **RED**: 6 个文件
 
 ## 第一批低风险候选（B1）
@@ -340,7 +340,50 @@
 - `mSnapshotShadow` 字段因反射访问被 R8 保留；
 - 未见 A14 包名、Hook target、资源名或 API 版本变化。
 
-## B2 阶段总结（截至 B2-2）
+## B2-3 批次执行结果
+
+### 选取文件
+
+| 顺序 | 原 Java 文件 | Java LOC | Kotlin 文件 | Kotlin LOC | 迁移结论 | 验证 |
+| ---- | ------------ | -------- | ----------- | ---------- | -------- | ---- |
+| B2-3-1 | `app/src/main/java/name/monwf/customiuizer/SubFragmentWithSearch.java` | 117 | `app/src/main/java/name/monwf/customiuizer/SubFragmentWithSearch.kt` | 97 | 已迁移 | 单测 / build / lint / R8 / UI 回归 |
+| B2-3-2 | `app/src/main/java/name/monwf/customiuizer/subs/ActivitySelector.java` | 110 | `app/src/main/java/name/monwf/customiuizer/subs/ActivitySelector.kt` | 95 | 已迁移 | 单测 / build / lint / R8 / UI 回归 |
+
+新增 `app/src/test/java/name/monwf/customiuizer/B2_3_MigrationInteropTest.kt`（51 LOC）。
+
+### JVM 兼容要点
+
+- `SubFragmentWithSearch`：
+  - package/FQCN 不变；
+  - 继承 `SubFragment`（Java）不变；
+  - `listView` 使用 `@JvmField` 保持公开字段，保证 Java 子类 `AppSelector` 仍可直接访问；
+  - `setActionModeStyle(View)` 与 `applyFilter(String)` 方法签名不变；
+  - `onActivityCreated` 签名与行为不变；
+  - 搜索输入监听、焦点管理、键盘隐藏、列表触摸分发逻辑保持原 Java 行为；
+- `ActivitySelector`：
+  - package/FQCN 不变；
+  - 公开无参构造器保留；
+  - 继承 `SubFragmentWithSearch`（Kotlin）不变；
+  - `onCreate` / `onActivityCreated` 签名不变；
+  - 后台线程解析 `PackageInfo.activities` 逻辑、列表适配器设置、点击/长按返回 `Intent` 行为不变；
+  - `targetFragment` / `targetRequestCode` 调用已加 `@Suppress("DEPRECATION")`；
+  - 未使用 `!!`、coroutine/Flow。
+
+### 构建结果
+
+- `./gradlew.bat --no-daemon :app:test`：BUILD SUCCESSFUL，84 tests / 0 failures；
+- `./gradlew.bat --no-daemon :app:lintDebug`：0 errors；
+- `./gradlew.bat --no-daemon :app:assembleDebug`：成功；
+- `./gradlew.bat --no-daemon :app:assembleRelease`：成功；
+- `git diff --check`：通过。
+
+### R8 审计
+
+- `SubFragmentWithSearch` 与 `ActivitySelector` 在 Release mapping 中从调用点可达；
+- `listView` 字段因 `@JvmField` 保持公开且未被 R8 内联删除；
+- 未见 A14 包名、Hook target、资源名或 API 版本变化。
+
+## B2 阶段总结（截至 B2-3）
 
 ### 已迁移 B2 文件
 
@@ -348,8 +391,9 @@
 | ---- | ---- | -------- | ---------- | ---- |
 | B2-1 | `utils/SortableListView` | 319 | 260 | B2_1_MigrationInteropTest |
 | B2-2 | `subs/SortableList` | 211 | 161 | B2_2_MigrationInteropTest |
+| B2-3 | `SubFragmentWithSearch` / `subs/ActivitySelector` | 227 | 192 | B2_3_MigrationInteropTest |
 
-合计：删除 Java 530 LOC，新增 Kotlin 421 LOC，新增测试 102 LOC。
+合计：删除 Java 757 LOC，新增 Kotlin 613 LOC，新增测试 153 LOC。
 
 ### 当前 B2 剩余候选
 
@@ -364,17 +408,22 @@
 - `MainActivity`（225 LOC）
 - `LockedAppAdapter`（181 LOC）
 - `PrivacyAppAdapter`（170 LOC）
-- `SubFragmentWithSearch`（116 LOC）
-- `ActivitySelector`（109 LOC）
 
 ### 验证结论
 
-- 单元测试：80 tests，0 failures，0 errors；
+- 单元测试：84 tests，0 failures，0 errors；
 - lintDebug：0 errors；
 - assembleDebug / assembleRelease：成功；
 - Release R8 mapping：B2 迁移类均保持可达；
 - 未引入 A14 包名、Hook target、资源名或 API 版本变化；
 - 真机验证仍未完成。
+
+### 下一批 B2-4 候选
+
+- `MainActivity`（225 LOC）
+- `MainFragment`（381 LOC）
+
+按 YELLOW 矩阵分批处理，单个批次控制在 800–1200 LOC。
 
 ### 下一批 B3 候选
 

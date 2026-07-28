@@ -5,15 +5,15 @@
 
 ## 当前目标
 
-- 完成 B1 / B2-1 / B2-2 Java → Kotlin 迁移，B2 仍有 13 个 YELLOW 候选待处理；
-- 当前批次：B2-3 候选审计与分批迁移（`SubFragmentWithSearch` / `ActivitySelector` 等）；
+- 完成 B1 / B2-1 / B2-2 / B2-3 Java → Kotlin 迁移，B2 仍有 11 个 YELLOW 候选待处理；
+- 当前批次：B2-4 候选审计与分批迁移（`MainActivity` / `MainFragment`）；
 - 按阶段自动验证 build / lint / Release 并 push `devin/r13.3-kotlin-migration`。
 
 ## 当前基线
 
 - **Repository:** `tomthenpc/customiuizer-a13`
 - **Branch:** `devin/r13.3-kotlin-migration`
-- **Last verified commit:** `0129dcb`
+- **Last verified commit:** `0b466ec`
 - **versionName / versionCode:** `r13.2.3-test1` / `121`（未修改）
 - **applicationId:** `tv.withaibuild.customiuizer.r13`
 - **libxposed API:** `minApiVersion=101`，`targetApiVersion=102`，`staticScope=false`
@@ -24,11 +24,11 @@
 - **本轮新增/更新文档:**
   - `docs/KOTLIN_MIGRATION_BASELINE_R13.3.md`
   - `docs/KOTLIN_MIGRATION_MATRIX_R13.3.md`（已记录 B1-1 结果与 B1-2 候选）
-- **Java 文件风险统计:** GREEN=0，YELLOW=22，RED=6（B2-1/B2-2 后 `SortableListView`、`SortableList` 从 YELLOW 移除）
+- **Java 文件风险统计:** GREEN=0，YELLOW=20，RED=6（B2-1/B2-2/B2-3 后 `SortableListView`、`SortableList`、`SubFragmentWithSearch`、`ActivitySelector` 从 YELLOW 移除）
 - **B1 迁移文件:** `CategorySelector`、`Controls`、`Launcher`、`ColorSelector`、`PrefsProvider`、`ShortcutSelector`、`MultiAction`、`subs/System`
-- **B2 已迁移文件:** `SortableListView`、`SortableList`
-- **B1+B2 代码规模:** 删除 Java 2128 LOC，新增 Kotlin 1673 LOC，新增测试 309 LOC
-- **B2 剩余候选:** `AudioVisualizer` / `PreferenceFragmentBase` / `SubFragment` / `MainFragment` / `AppDataAdapter` / `WiFiList` / `AppSelector` / `BTList` / `MainActivity` / `LockedAppAdapter` / `PrivacyAppAdapter` / `SubFragmentWithSearch` / `ActivitySelector`
+- **B2 已迁移文件:** `SortableListView`、`SortableList`、`SubFragmentWithSearch`、`ActivitySelector`
+- **B1+B2 代码规模:** 删除 Java 2355 LOC，新增 Kotlin 1865 LOC，新增测试 360 LOC
+- **B2 剩余候选:** `AudioVisualizer` / `PreferenceFragmentBase` / `SubFragment` / `MainFragment` / `AppDataAdapter` / `WiFiList` / `AppSelector` / `BTList` / `MainActivity` / `LockedAppAdapter` / `PrivacyAppAdapter`
 - **最后正常行为基线:** `MonwF/customiuizer v23.11.26`
 
 ## 本轮已完成（A14 工程对齐 Pre-release 批次）
@@ -107,9 +107,9 @@
 - 日间/夜间主题、Toolbar 菜单、返回栈行为；
 - MIUI 14 / Android 13 真机 LSPosed 加载无新增异常。
 
-### 下一批候选（B2-3）
-- `SubFragmentWithSearch`（116 LOC，搜索页基类，多个子页面依赖）
-- `ActivitySelector`（109 LOC，轻量级子页面）
+### 下一批候选（B2-4）
+- `MainActivity`（225 LOC，入口 Activity）
+- `MainFragment`（381 LOC，主设置页）
 
 > 继续按 YELLOW 矩阵分批处理，单个批次控制在 800–1200 LOC。
 
@@ -181,11 +181,11 @@
 - **结果：** BUILD SUCCESSFUL
 - **验证日期：** 2026-07-28
 - **git diff --check：** 0 errors
-- **单元测试：** 80 tests，0 failures，0 errors
+- **单元测试：** 84 tests，0 failures，0 errors
 - **lintDebug：** 0 errors，520 warnings（基线持平）
 - **assembleDebug / assembleRelease：** 成功
 - **Release APK 审计：** applicationId / version / Xposed 元数据均未变；B1/B2 迁移类在 R8 中均保持可达
-- **当前代码变更范围：** B1 8 个 + B2 2 个 Java 转 Kotlin 生产文件，6 个新增测试
+- **当前代码变更范围：** B1 8 个 + B2 5 个 Java 转 Kotlin 生产文件，9 个新增测试
 
 ## 当前问题与阻塞
 
