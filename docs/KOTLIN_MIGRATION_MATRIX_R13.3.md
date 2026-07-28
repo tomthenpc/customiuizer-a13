@@ -5,14 +5,14 @@
 
 | 文件 | LOC | 所属层 | 所属进程 | 入口 | 静态状态 | 并发 | 动态引用 | A14 对应文件 | 风险 | 建议 | 批次 | 验证要求 |
 | ---- | --- | ------ | -------- | ---- | -------- | ---- | -------- | ------------- | ---- | ---- | ---- | -------- |
-| `app/src/main/java/name/monwf/customiuizer/subs/System.java` | 662 | UI | app/Settings | normal | none | none | none | app/src/main/java/tv/withaibuild/customiuizer/subs/System.kt (Kotlin) | GREEN | 迁移 | B1 | 单测 / build / lint / UI 回归 |
-| `app/src/main/java/name/monwf/customiuizer/utils/SortableListView.java` | 318 | utility | app/Settings | normal | final constants | none | none | app/src/main/java/tv/withaibuild/customiuizer/utils/SortableListView.kt (Kotlin) | GREEN | 迁移 | B1 | 单测 / build / lint |
-| `app/src/main/java/name/monwf/customiuizer/subs/MultiAction.java` | 314 | UI | app/Settings | normal | none | none | none | app/src/main/java/tv/withaibuild/customiuizer/subs/MultiAction.kt (Kotlin) | GREEN | 迁移 | B1 | 单测 / build / lint / UI 回归 |
+| `app/src/main/java/name/monwf/customiuizer/subs/System.java` | 662 | UI | app/Settings | normal | none | none | none | app/src/main/java/tv/withaibuild/customiuizer/subs/System.kt (Kotlin) | GREEN | 迁移 | B1-3 | 单测 / build / lint / UI 回归 |
+| `app/src/main/java/name/monwf/customiuizer/utils/SortableListView.java` | 318 | utility | app/Settings | XML inflate | final constants | none | （SortableList 反射访问 mSnapshotShadow） | app/src/main/java/tv/withaibuild/customiuizer/utils/SortableListView.kt (Kotlin) | YELLOW | 自定义 View/拖拽，B2 处理 | B2 | 单测 / build / lint / R8 |
+| `app/src/main/java/name/monwf/customiuizer/subs/MultiAction.java` | 314 | UI | app/Settings | normal | none | none | none | app/src/main/java/tv/withaibuild/customiuizer/subs/MultiAction.kt (Kotlin) | GREEN | 迁移 | B1-3 | 单测 / build / lint / UI 回归 |
 | `app/src/main/java/name/monwf/customiuizer/subs/ColorSelector.java` | 168 | UI | app/Settings | normal | none | none | none | app/src/main/java/tv/withaibuild/customiuizer/subs/ColorSelector.kt (Kotlin) | GREEN | 迁移 | B1 | 单测 / build / lint / UI 回归 |
-| `app/src/main/java/name/monwf/customiuizer/subs/ShortcutSelector.java` | 108 | UI | app/Settings | normal | none | none | none | app/src/main/java/tv/withaibuild/customiuizer/subs/ShortcutSelector.kt (Kotlin) | GREEN | 迁移 | B1 | 单测 / build / lint / UI 回归 |
+| `app/src/main/java/name/monwf/customiuizer/subs/ShortcutSelector.java` | 108 | UI | app/Settings | normal | none | none | getIdentifier | app/src/main/java/tv/withaibuild/customiuizer/subs/ShortcutSelector.kt (Kotlin) | GREEN | 已迁移 | B1-2 已迁移 | 单测 / build / lint / R8 |
 | `app/src/main/java/name/monwf/customiuizer/subs/Controls.java` | 98 | UI | app/Settings | normal | none | none | none | app/src/main/java/tv/withaibuild/customiuizer/subs/Controls.kt (Kotlin) | GREEN | 迁移 | B1 | 单测 / build / lint / UI 回归 |
 | `app/src/main/java/name/monwf/customiuizer/subs/Launcher.java` | 97 | UI | app/Settings | normal | none | none | none | app/src/main/java/tv/withaibuild/customiuizer/subs/Launcher.kt (Kotlin) | GREEN | 迁移 | B1 | 单测 / build / lint / UI 回归 |
-| `app/src/main/java/name/monwf/customiuizer/PrefsProvider.java` | 80 | UI/utility | app/Settings | Manifest/XML | final constants | none | none | app/src/main/java/tv/withaibuild/customiuizer/PrefsProvider.kt (Kotlin) | GREEN | 迁移 | B1 | 单测 / build / lint / UI 回归 |
+| `app/src/main/java/name/monwf/customiuizer/PrefsProvider.java` | 80 | UI/utility | app/Settings | Manifest/XML | final constants | none | none | app/src/main/java/tv/withaibuild/customiuizer/PrefsProvider.kt (Kotlin) | GREEN | 已迁移 | B1-2 已迁移 | 单测 / build / lint / R8 / Provider |
 | `app/src/main/java/name/monwf/customiuizer/subs/CategorySelector.java` | 66 | UI | app/Settings | normal | none | none | none | app/src/main/java/tv/withaibuild/customiuizer/subs/CategorySelector.kt (Kotlin) | GREEN | 迁移 | B1 | 单测 / build / lint / UI 回归 |
 | `app/src/main/java/name/monwf/customiuizer/mods/System.java` | 4857 | Hook | system_server | reflection | process-level mutable | synchronized, Handler, Runnable, postDelayed | findAndHookMethod, hookAllMethods, hookAllConstructors, findClass, XposedHelpers.call | app/src/main/java/tv/withaibuild/customiuizer/mods/System.kt (Kotlin) | YELLOW | 拆分后迁移 | B3/B4 | build / R8 / 实机 / 日志 |
 | `app/src/main/java/name/monwf/customiuizer/mods/SystemUI.java` | 4463 | Hook | SystemUI | reflection | process-level mutable | Handler, Runnable, postDelayed | loadClass, findAndHookMethod, hookAllMethods, hookAllConstructors, findMethodExact, findClass, XposedHelpers.call | app/src/main/java/tv/withaibuild/customiuizer/mods/SystemUI.kt (Kotlin) | YELLOW | 拆分后迁移 | B3/B4 | build / R8 / 实机 / 日志 |
@@ -46,8 +46,8 @@
 
 ## 风险统计
 
-- **GREEN**: 9 个文件
-- **YELLOW**: 23 个文件
+- **GREEN**: 2 个文件（B1-3 待迁移：`MultiAction`、`subs/System`）
+- **YELLOW**: 24 个文件（`SortableListView` 因反射依赖从 GREEN 调整至 YELLOW）
 - **RED**: 6 个文件
 
 ## 第一批低风险候选（B1）
@@ -129,16 +129,64 @@
 - 日间/夜间主题、 Toolbar 菜单、返回栈行为；
 - MIUI 14 / Android 13 真机 LSPosed 环境加载无新异常。
 
-### 下一批 B1-2 候选
+## B1-2 批次执行结果
 
-从剩余 GREEN 文件中挑选，保持总增量可控：
+### 选取文件
 
-- `app/src/main/java/name/monwf/customiuizer/PrefsProvider.java`（80 LOC，Provider，需同步验证 Manifest/authority）；
-- `app/src/main/java/name/monwf/customiuizer/subs/ShortcutSelector.java`（108 LOC，含 `getIdentifier`/`FileOutputStream`，但仍在 UI 层）；
-- `app/src/main/java/name/monwf/customiuizer/utils/SortableListView.java`（318 LOC，自定义 View，低风险但需 UI 回归）；
-- `app/src/main/java/name/monwf/customiuizer/subs/MultiAction.java`（314 LOC，编辑 UI，含 App 数据展示，较复杂）。
+| 顺序 | 原 Java 文件 | Java LOC | Kotlin 文件 | Kotlin LOC | 迁移结论 | 验证 |
+| ---- | ------------ | -------- | ----------- | ---------- | -------- | ---- |
+| B1-2-1 | `app/src/main/java/name/monwf/customiuizer/PrefsProvider.java` | 81 | `app/src/main/java/name/monwf/customiuizer/PrefsProvider.kt` | 56 | 已迁移 | 单测 / build / lint / Release R8 |
+| B1-2-2 | `app/src/main/java/name/monwf/customiuizer/subs/ShortcutSelector.java` | 109 | `app/src/main/java/name/monwf/customiuizer/subs/ShortcutSelector.kt` | 90 | 已迁移 | 单测 / build / lint / Release R8 |
 
-**B1-2 推荐组合**：`PrefsProvider` + `ShortcutSelector` + `SortableListView`（约 506 LOC），不进入 B1-2 实施阶段前仍需你确认。
+小计：删除 Java 190 LOC，新增 Kotlin 146 LOC，新增测试 41 LOC。
+
+### 审计调整
+
+- `app/src/main/java/name/monwf/customiuizer/utils/SortableListView.java` 因 `subs/SortableList.java` 通过反射访问其私有字段 `mSnapshotShadow`，且属于自定义 View/拖拽动画，从 B1 移至 **B2**，原 GREEN 调整为 YELLOW，批次改为 `B2`。
+
+### JVM 兼容措施
+
+- `PrefsProvider`：
+  - FQCN 与 package 保持不变；
+  - `public static final String AUTHORITY` 迁移为 `companion object const val AUTHORITY`，Java 侧仍可用 `PrefsProvider.AUTHORITY`；
+  - `ContentProvider` 标准重写方法签名不变；
+  - `openAssetFile` 使用 `getOrNull(1)` 安全取 `pathSegments` 第二段，`when` 替换原 if-else；
+  - Manifest `android:name=".PrefsProvider"` / `authority` 未变，R8 mapping 显示类名未被重命名。
+- `ShortcutSelector`：
+  - package/FQCN 不变；
+  - 公开无参构造器保留；
+  - 继承 `SubFragmentWithSearch`（Java）不变；
+  - `onCreate` / `onActivityCreated` / `onActivityResult` 签名与原 Java 一致；
+  - `targetFragment?.onActivityResult(...)` 替换 `getTargetFragment().onActivityResult(...)`，行为等效；
+  - 未引入 `!!`、coroutine/Flow，未改动 `startActivityForResult` requestCode、Intent extra key。
+
+### 测试覆盖
+
+新增 `app/src/test/java/name/monwf/customiuizer/B1_2_MigrationInteropTest.kt`（41 LOC）：
+- 反射验证 `PrefsProvider` 继承 `ContentProvider`，`AUTHORITY` 为 `public static final` 且值正确；
+- 反射验证 `ShortcutSelector` 可默认构造、继承 `SubFragmentWithSearch`、`onActivityCreated` 与 `onActivityResult` 方法签名保留。
+
+### 构建结果
+
+- `./gradlew.bat --no-daemon :app:test`：BUILD SUCCESSFUL，70 tests / 0 failures（B1-1 68 + B1-2 2）；
+- `./gradlew.bat --no-daemon :app:lintDebug`：0 errors，520 warnings；
+- `./gradlew.bat --no-daemon :app:assembleDebug`：成功；
+- `./gradlew.bat --no-daemon :app:assembleRelease`：成功；
+- `git diff --check`：通过。
+
+### R8 审计
+
+- `PrefsProvider` 在 Release mapping 中保留原名（Manifest 入口）；
+- `ShortcutSelector` 被 R8 重命名为 `ff:`，仍从 `SubFragment.openMultiAction`/`SortableList` 等调用点可达；
+- `module.prop` / `scope.list` / `java_init.list` 未变；
+- 未见 Legacy Xposed API 或 A14 专属代码。
+
+### 下一批 B1-3 候选
+
+- `app/src/main/java/name/monwf/customiuizer/subs/MultiAction.java`（314 LOC，编辑 UI，依赖 `AppSelector`/`ShortcutSelector`）
+- `app/src/main/java/name/monwf/customiuizer/subs/System.java`（662 LOC，系统设置页面，使用 `PrefsProvider`、`AutoRotateService`）
+
+合计约 976 LOC，控制在 1000 LOC 以内。
 
 ## 长期保留的 Java 边界
 

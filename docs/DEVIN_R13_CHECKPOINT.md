@@ -5,14 +5,15 @@
 
 ## 当前目标
 
-- 完成 B1-1 首批低风险 Java → Kotlin 迁移（`subs/` 4 个设置子页面），配对测试，验证 build / lint / Release，并提交到 `devin/r13.3-kotlin-migration`；
-- 不进入 B1-2，等待下一阶段指令。
+- 完成 B1 全部剩余低风险 Java → Kotlin 迁移，进入 B2/B3/B4 并保留高风险 Java 边界；
+- 当前批次：B1-3 `MultiAction` + `subs/System`（约 976 LOC）；
+- 按阶段自动验证 build / lint / Release 并 push `devin/r13.3-kotlin-migration`。
 
 ## 当前基线
 
 - **Repository:** `tomthenpc/customiuizer-a13`
 - **Branch:** `devin/r13.3-kotlin-migration`
-- **Last verified commit:** `ef6936b`
+- **Last verified commit:** `c896252`
 - **versionName / versionCode:** `r13.2.3-test1` / `121`（未修改）
 - **applicationId:** `tv.withaibuild.customiuizer.r13`
 - **libxposed API:** `minApiVersion=101`，`targetApiVersion=102`，`staticScope=false`
@@ -23,9 +24,11 @@
 - **本轮新增/更新文档:**
   - `docs/KOTLIN_MIGRATION_BASELINE_R13.3.md`
   - `docs/KOTLIN_MIGRATION_MATRIX_R13.3.md`（已记录 B1-1 结果与 B1-2 候选）
-- **Java 文件风险统计:** GREEN=5（B1-1 迁移 4 个后），YELLOW=23，RED=6
-- **第一批候选:** 7 个文件，931 LOC；其中 B1-1 已迁移 4 个（433 LOC），剩余 3 个（498 LOC）归入 B1-2
+- **Java 文件风险统计:** GREEN=2（`MultiAction`、`subs/System` 待迁移），YELLOW=24（`SortableListView` 因反射依赖从 GREEN 调整至 YELLOW），RED=6
+- **第一批候选（B1）:** 9 个文件；B1-1 已迁移 4 个（433 LOC），B1-2 已迁移 2 个（190 LOC），B1-3 待迁移 2 个（976 LOC），`SortableListView` 移至 B2
 - **B1-1 迁移文件:** `CategorySelector` / `Controls` / `Launcher` / `ColorSelector`
+- **B1-2 迁移文件:** `PrefsProvider` / `ShortcutSelector`
+- **B1-3 候选:** `MultiAction` / `subs/System`
 - **最后正常行为基线:** `MonwF/customiuizer v23.11.26`
 
 ## 本轮已完成（A14 工程对齐 Pre-release 批次）
@@ -104,12 +107,38 @@
 - 日间/夜间主题、Toolbar 菜单、返回栈行为；
 - MIUI 14 / Android 13 真机 LSPosed 加载无新增异常。
 
-### 下一批候选（B1-2）
-- `PrefsProvider`（80 LOC）
-- `ShortcutSelector`（108 LOC）
-- `SortableListView`（318 LOC）
+### 下一批候选（B1-3）
+- `MultiAction`（314 LOC）
+- `subs/System`（662 LOC）
 
-> 不进入 B1-2，等待后续指令。
+> 完成 B1-3 后执行 B1 全量验证，自动进入 B2。
+
+## 本轮已完成（B1-2 批次 Kotlin 迁移）
+
+### 迁移文件
+- `app/src/main/java/name/monwf/customiuizer/PrefsProvider.java` → `PrefsProvider.kt`（81 → 56 LOC）
+- `app/src/main/java/name/monwf/customiuizer/subs/ShortcutSelector.java` → `ShortcutSelector.kt`（109 → 90 LOC）
+
+小计：删除 Java 190 LOC，新增 Kotlin 146 LOC；新增 `B1_2_MigrationInteropTest.kt`（41 LOC）。
+
+### JVM 兼容要点
+- `PrefsProvider` FQCN/package 不变，`AUTHORITY` 为 `companion object const val`，Java 侧仍可读 `PrefsProvider.AUTHORITY`；
+- `ContentProvider` 重写方法签名不变，公开无参构造器保留；
+- Manifest `android:name=".PrefsProvider"` / `authorities` 未变，R8 mapping 显示类名未被重命名；
+- `ShortcutSelector` 继承 `SubFragmentWithSearch`（Java）不变，公开无参构造器保留；
+- `onCreate` / `onActivityCreated` / `onActivityResult` 签名一致；
+- 未使用 `!!`、coroutine/Flow，未改动 `startActivityForResult` requestCode 与 Intent extra key。
+
+### 验证
+- `./gradlew.bat --no-daemon :app:test`：BUILD SUCCESSFUL，70 tests / 0 failures；
+- `./gradlew.bat --no-daemon :app:lintDebug`：0 errors，520 warnings；
+- `./gradlew.bat --no-daemon :app:assembleDebug`：成功；
+- `./gradlew.bat --no-daemon :app:assembleRelease`：成功；
+- `git diff --check`：通过；
+- R8 mapping 确认 `PrefsProvider` 保留原名，`ShortcutSelector` 可达。
+
+### 审计调整
+- `SortableListView` 因 `SortableList` 反射访问 `mSnapshotShadow`，且属于自定义 View/拖拽，从 B1 移至 B2（YELLOW）。
 
 ## 历史批次（全局代码审查、Kotlin 清理与高频优化第二批）
 
@@ -152,11 +181,11 @@
 - **结果：** BUILD SUCCESSFUL
 - **验证日期：** 2026-07-28
 - **git diff --check：** 0 errors
-- **单元测试：** 68 tests，0 failures，0 errors
+- **单元测试：** 70 tests，0 failures，0 errors
 - **lintDebug：** 0 errors，520 warnings（基线持平）
 - **assembleDebug / assembleRelease：** 成功
-- **Release APK 审计：** applicationId / version / Xposed 元数据均未变，R8 保留迁移类
-- **当前代码变更范围：** 4 个 Java 转 Kotlin 生产文件、1 个新增测试、2 个 docs 更新
+- **Release APK 审计：** applicationId / version / Xposed 元数据均未变，`PrefsProvider` 因 Manifest 保留原名
+- **当前代码变更范围：** B1-2 2 个 Java 转 Kotlin 生产文件、1 个新增测试
 
 ## 当前问题与阻塞
 
