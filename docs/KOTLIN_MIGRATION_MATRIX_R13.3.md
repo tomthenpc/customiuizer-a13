@@ -66,6 +66,80 @@
 
 合计：7 个文件，931 LOC。
 
+## B1-1 批次执行结果
+
+本批次从第一批候选中进一步筛选，遵循同层（`subs/` 设置子页面）、同生命周期、无反射/无 Hook/无大型逻辑、可独立验证/回退原则。
+
+### 选取文件
+
+| 顺序 | 原 Java 文件 | Java LOC | Kotlin 文件 | Kotlin LOC | 迁移结论 | 验证 |
+| ---- | ------------ | -------- | ----------- | ---------- | -------- | ---- |
+| B1-1-1 | `app/src/main/java/name/monwf/customiuizer/subs/CategorySelector.java` | 66 | `app/src/main/java/name/monwf/customiuizer/subs/CategorySelector.kt` | 68 | 已迁移 | 单测 / build / lint |
+| B1-1-2 | `app/src/main/java/name/monwf/customiuizer/subs/Controls.java` | 99 | `app/src/main/java/name/monwf/customiuizer/subs/Controls.kt` | 84 | 已迁移 | 单测 / build / lint |
+| B1-1-3 | `app/src/main/java/name/monwf/customiuizer/subs/Launcher.java` | 97 | `app/src/main/java/name/monwf/customiuizer/subs/Launcher.kt` | 85 | 已迁移 | 单测 / build / lint |
+| B1-1-4 | `app/src/main/java/name/monwf/customiuizer/subs/ColorSelector.java` | 168 | `app/src/main/java/name/monwf/customiuizer/subs/ColorSelector.kt` | 138 | 已迁移 | 单测 / build / lint |
+
+小计：删除 Java 433 LOC，新增 Kotlin 375 LOC，新增测试 80 LOC。
+
+### JVM 兼容措施
+
+- package 与 FQCN 保持不变：`name.monwf.customiuizer.subs` 包名及类名未变；
+- 默认无参构造器保持公开，Java 侧 `new CategorySelector()` / `new Controls()` / `new Launcher()` / `new ColorSelector()` 仍可编译；
+- `MainFragment` 的 `catSelector`、`prefLauncher`、`prefControls` 字段类型仍为对应类，无 `@JvmName`/`@JvmStatic` 调整需求；
+- `SubFragment.openColorSelector(...)` 内部 `new ColorSelector()` 仍可用；
+- 重载 `openSubFragment(...)` 调用未改动签名；
+- `onCreate`、`onCreatePreferences`、`onActivityCreated`、`onSaveInstanceState` 方法签名与原 Java 一致；
+- `ColorSelector` 的 `setSelected`/`updateSelColor` 由 package-private 改为 `private`，仅类内使用，反射验证可达；
+- `ColorSelector` 中 `ColorCircle.ColorListener` 因是 Kotlin 接口，迁移为 `object : ColorCircle.ColorListener` 显式实现；
+- 未使用 `!!`，未引入 coroutine/Flow，未改变 Preference key、Hook target、资源名；
+- 所有 `findPreference` 调用改为 `?.` 安全访问，避免原 Java 中找不到 key 时 NPE，行为仅在异常路径变化。
+
+### 测试覆盖
+
+新增 `app/src/test/java/name/monwf/customiuizer/subs/B1MigrationInteropTest.kt`（80 LOC）：
+- 反射验证 4 个 Kotlin 类可默认构造、继承 `SubFragment`、保留 `onCreate`/`onActivityCreated`/`onCreatePreferences`/`onSaveInstanceState` 签名；
+- 验证 `MainFragment` 的 `catSelector`、`prefLauncher`、`prefControls` 字段 FQCN 仍为迁移后的类；
+- 验证 `SubFragment.openColorSelector` 方法在 R8 后仍引用 `ColorSelector`。
+
+### 构建结果
+
+- `./gradlew.bat --no-daemon :app:test`：BUILD SUCCESSFUL，68 tests / 0 failures；
+- `./gradlew.bat --no-daemon :app:lintDebug`：0 errors，520 warnings（与基线一致，无新增）；
+- `./gradlew.bat --no-daemon :app:assembleDebug`：成功；
+- `./gradlew.bat --no-daemon :app:assembleRelease`：成功；
+- `git diff --check`：通过。
+
+### APK / R8 审计
+
+- Release APK：`app/build/outputs/apk/release/CustoMIUIzer-A13-r13.2.3-test1.apk`；
+- applicationId：`tv.withaibuild.customiuizer.r13`（未变）；
+- versionName：`r13.2.3-test1` / versionCode：`121`（未变）；
+- `META-INF/xposed/module.prop`：`minApiVersion=101`、`targetApiVersion=102`、`staticScope=false`（未变）；
+- `META-INF/xposed/scope.list`：scope 内容未变；
+- `META-INF/xposed/java_init.list`：`name.monwf.customiuizer.MainModule`（未变）；
+- R8 mapping 确认 4 个迁移类均保留并被重命名为：`CategorySelector -> M2:`、`ColorSelector -> h3:`、`Controls -> j4:`、`Launcher -> ha:`；
+- 未见 Legacy Xposed API、A14 包名或 Android 14 逻辑混入；
+- 签名证书与基线一致，未重新生成签名文件。
+
+### 尚未实机验证
+
+- 设置主页面点击各分类进入子页面；
+- `ColorSelector` 颜色选择、透明度拖动、十六进制输入、旋转恢复；
+- `Launcher` 与 `Controls` 各 preference 点击响应；
+- 日间/夜间主题、 Toolbar 菜单、返回栈行为；
+- MIUI 14 / Android 13 真机 LSPosed 环境加载无新异常。
+
+### 下一批 B1-2 候选
+
+从剩余 GREEN 文件中挑选，保持总增量可控：
+
+- `app/src/main/java/name/monwf/customiuizer/PrefsProvider.java`（80 LOC，Provider，需同步验证 Manifest/authority）；
+- `app/src/main/java/name/monwf/customiuizer/subs/ShortcutSelector.java`（108 LOC，含 `getIdentifier`/`FileOutputStream`，但仍在 UI 层）；
+- `app/src/main/java/name/monwf/customiuizer/utils/SortableListView.java`（318 LOC，自定义 View，低风险但需 UI 回归）；
+- `app/src/main/java/name/monwf/customiuizer/subs/MultiAction.java`（314 LOC，编辑 UI，含 App 数据展示，较复杂）。
+
+**B1-2 推荐组合**：`PrefsProvider` + `ShortcutSelector` + `SortableListView`（约 506 LOC），不进入 B1-2 实施阶段前仍需你确认。
+
 ## 长期保留的 Java 边界
 
 以下文件在当前阶段标记为 RED，原因已在矩阵中体现：
