@@ -31,17 +31,32 @@ public class ResourceHooks {
 	private final MethodHook mReplaceHook = new MethodHook() {
 		@Override
 		public Object intercept(XposedInterface.Chain chain) throws Throwable {
+			List<Object> args = chain.getArgs();
+			int resId = (int) args.get(0);
+
+			// Fakes table is keyed by the fake resource id, so we can test for a hit
+			// without invoking findContext() or the costly executable name JNI call.
+			int modResId = fakes.get(resId);
+			if (modResId != 0) {
+				Context mContext = ModuleHelper.findContext();
+				if (mContext != null) {
+					String method = chain.getExecutable().getName();
+					Object value = getFakeResource(mContext, method, args);
+					if (value != null) return value;
+				}
+			}
+
+			// Avoid all findContext/name-resolution work when no replacements are registered.
+			if (replacements.isEmpty()) return chain.proceed();
+
 			Context mContext = ModuleHelper.findContext();
 			if (mContext == null) return chain.proceed();
+
 			String method = chain.getExecutable().getName();
-			List<Object> args = chain.getArgs();
-			Object value = getFakeResource(mContext, method, args);
-			if (value == null) {
-				value = getResourceReplacement(mContext, (Resources)chain.getThisObject(), method, args);
-				if (value == null) return chain.proceed();
-				if ("getDimensionPixelOffset".equals(method) || "getDimensionPixelSize".equals(method)) {
-					if (value instanceof Float) value = ((Float)value).intValue();
-				}
+			Object value = getResourceReplacement(mContext, (Resources)chain.getThisObject(), method, args);
+			if (value == null) return chain.proceed();
+			if ("getDimensionPixelOffset".equals(method) || "getDimensionPixelSize".equals(method)) {
+				if (value instanceof Float) value = ((Float)value).intValue();
 			}
 			return value;
 		}

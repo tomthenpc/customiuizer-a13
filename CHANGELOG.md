@@ -1,6 +1,6 @@
 # Changelog
 
-## r13.2.2-devin（语言切换修复 + P1 export flag + A13/A14 差距矩阵）
+## r13.2.2-devin（语言切换修复 + P1 export flag + P2 ResourceHooks 热路径 + A13/A14 差距矩阵）
 
 ### 修复
 
@@ -23,18 +23,25 @@
 
 - `:app:test`、`:app:lintDebug`、`:app:lintRelease`、`:app:lintVitalRelease`、`:app:assembleDebug`、`:app:assembleRelease` 通过；
 - Release APK 使用 A13 正式签名 v2，zipalign 对齐通过；
-- APK SHA-256：`62ED16BEFE47144548D1C862B640396FDD163D3B19897126DFE9F7BF75276AD1`；
+- APK SHA-256：`BF20D3535B03891C805E6EB5775D2B02D9CE89349A85F18ADA968BA29A805785`;
 - 签名证书 SHA-256：`C0:EF:F2:DC:4E:66:27:17:19:54:90:DA:78:B1:2A:98:4C:6F:2E:6B:D3:8A:CF:4E:DA:D1:4D:53:E3:D2:2E:70`；
 - `module.prop`、`scope.list`、`java_init.list` 元数据正确；
 - applicationId、Xposed metadata、API 边界保持不变；
 - 未合并 main、未创建 tag 或 GitHub Release。
+
+### P2 ResourceHooks 热路径优化
+
+- 优化 `ResourceHooks.mReplaceHook.intercept`：先按 `resId` 查 `fakes` 表，命中或 `replacements` 非空时才调用 `ModuleHelper.findContext()`。
+- 延迟 `chain.getExecutable().getName()` JNI 调用到命中路径；未命中时直接 `chain.proceed()`。
+- 保持 `fakes`/`replacements` 写入、`getFakeResource()`、`getResourceReplacement()` 语义不变。
+- 涉及文件：`app/src/main/java/name/monwf/customiuizer/mods/utils/ResourceHooks.java`。
 
 ### 架构审计
 
 - 新增 `docs/ARCHITECTURE_AUDIT_A13.md`，覆盖入口/生命周期、PrefMap、ResourceHooks、ModuleHelper、XposedHelpers 与 Phase 3 模式统计。
 - P0：0 项（构建与核心 Hook 未发现阻断问题）。
 - P1：已修复。全部动态 `registerReceiver` 显式指定 `RECEIVER_EXPORTED` 或 `RECEIVER_NOT_EXPORTED`。
-- P2：`ResourceHooks.mReplaceHook` 热路径 `findContext()` 开销待评估。
+- P2：已修复。`ResourceHooks.mReplaceHook` 延迟 `findContext()` 与 `chain.executable.name` 到命中路径，未命中直接 `chain.proceed()`。
 - P3：`toRegex()`（`AppHelper.kt`、`PreferenceAdapter.kt`）与 `System.java:2094` 的 `forEach(new Consumer())` 可优化；用户指示“卡了跳过”，已记录待后续处理。
 
 ## r13.2.1-devin（UI 回归修复）

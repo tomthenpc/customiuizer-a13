@@ -56,6 +56,7 @@
 - `ConcurrentHashMap<String, Replacement> replacements`：按 `package:type/name` 维度替换 `ID`、`DENSITY`、`OBJECT`。
 - `applyHooks()` 通过 `hooksApplied` 保证只注册一次 `Resources` 方法 Hook。
 - `mReplaceHook` 每条资源访问都会调用 `getFakeResource` / `getResourceReplacement`；两者都有 `isEmpty()` 快速路径。
+- 已优化：`mReplaceHook` 先检查 `fakes.get(resId)`，命中或 `replacements` 非空时才调用 `ModuleHelper.findContext()`；`chain.getExecutable().getName()` 也延迟到命中路径；未命中时直接 `chain.proceed()`。
 
 ### 5.3 ModuleHelper
 
@@ -97,7 +98,7 @@
 |------|------|------|------|------|
 | P0 | 0 | 未发现阻断构建或核心 Hook 失效的问题 | `assembleRelease` 成功，APK 签名/元数据正常 | 已验证 |
 | P1 | 0 | 所有动态 `registerReceiver` 已显式指定 export flag，按广播来源使用 `RECEIVER_EXPORTED`/`RECEIVER_NOT_EXPORTED`；保持成对注销，未改变 hook 注册顺序或回调语义 | `Controls.java:153`、`GlobalActions.java:787/843/887`、`System.java:1034/2880/3043`、`Launcher.java:970`、`StepCounterController.kt:64`、`WiFiList.java:183`、`Various.java:761` | 已验证：test/lint/assembleDebug/assembleRelease 全绿 |
-| P2 | 1 | `ResourceHooks.mReplaceHook` 在资源替换启用后每条资源调用都执行 `ModuleHelper.findContext()`，热路径开销可优化 | `ResourceHooks.java` | 代码层面确认，待 profile |
+| P2 | 0 | `ResourceHooks.mReplaceHook` 已延迟 `findContext()` 与 `chain.getExecutable().getName()` 到命中路径；未命中时直接短路，保持原有 `fakes`/`replacements` 语义 | `ResourceHooks.java:31-62` | 已验证：test/lint/assembleDebug/assembleRelease 全绿 |
 | P3 | 2 | Kotlin 中 `toRegex()` 用于简单 `|` 分隔，可改为 char split；`System.java:2094` 的 `forEach(new Consumer())` 可改为增强 for | `AppHelper.kt:185`、`PreferenceAdapter.kt:32`、`System.java:2094` | 用户指示“卡了跳过”，待后续处理 |
 
 ## 8. 本次处理与跳过项
@@ -108,7 +109,7 @@
 ## 9. 下一步建议
 
 1. ~~处理 P1 `registerReceiver` export flag~~（已完成，测试/lint/构建通过）。
-2. 评估 P2 `ResourceHooks` 热路径优化成本。
+2. ~~评估 P2 `ResourceHooks` 热路径优化成本~~（已完成，已按 A14 延迟执行模式优化）。
 3. 完成 P3 `toRegex()` / `forEach` 替换。
 4. 执行真机验证矩阵（状态栏、导航栏、手势、锁屏、音量、通知菜单、QS 网格等）。
 5. 同步 `CHANGELOG.md` 与 `VERIFICATION.md`。

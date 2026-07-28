@@ -62,11 +62,11 @@
 
 - **任务/命令：** `$env:JAVA_HOME='C:\Program Files\Java\jdk-17'; .\gradlew.bat --no-daemon test lintDebug lintRelease lintVitalRelease assembleDebug assembleRelease`
 - **结果：** BUILD SUCCESSFUL
-- **产物：** `.devin/a13_p1_build.log`
+- **产物：** `.devin/a13_p2_build.log`
 - **验证日期：** 2026-07-28
 - **APK 审计：**
   - `app/build/outputs/apk/release/app-release.apk`
-  - SHA-256：`62ED16BEFE47144548D1C862B640396FDD163D3B19897126DFE9F7BF75276AD1`
+  - SHA-256：`BF20D3535B03891C805E6EB5775D2B02D9CE89349A85F18ADA968BA29A805785`
   - 签名：v2 only，证书 SHA-256：`C0:EF:F2:DC:4E:66:27:17:19:54:90:DA:78:B1:2A:98:4C:6F:2E:6B:D3:8A:CF:4E:DA:D1:4D:53:E3:D2:2E:70`
   - `module.prop`：`minApiVersion=101`，`targetApiVersion=102`，`staticScope=false`
   - scope 列表完整，入口为 `name.monwf.customiuizer.MainModule`
@@ -78,7 +78,7 @@
 - API 101/102 实机边界未验证：未在只支持 API 101 的环境运行。
 - 已记录的 P1/P2/P3 问题，详见 `docs/ARCHITECTURE_AUDIT_A13.md`：
   - ~~P1：`registerReceiver` 未显式指定 export flag~~（本轮已修复，见下方 P1 清单）。
-  - P2：`ResourceHooks.mReplaceHook` 热路径 `findContext()` 开销。
+  - ~~P2：`ResourceHooks.mReplaceHook` 热路径 `findContext()` 开销~~（本轮已修复，见下方 P2 清单）。
   - P3：`toRegex()` 与 `System.java:2094` 的 `forEach(new Consumer())`（用户指示“卡了跳过”，仍待后续处理）。
 
 ## 待实机验证
@@ -109,8 +109,8 @@
 - 文档：`docs/ARCHITECTURE_AUDIT_A13.md`
 - 覆盖：入口/生命周期、PrefMap、ResourceHooks、ModuleHelper、XposedHelpers、Phase 3 模式统计、P0-P3 问题清单。
 - P0：0 项（构建与核心 Hook 未发现阻断问题）。
-- P1：1 项，`registerReceiver` export flag 在 Android 14 环境隐患。
-- P2：1 项，`ResourceHooks` 热路径 `findContext()` 开销。
+- P1：0 项（已修复）。
+- P2：0 项（已修复）。
 - P3：2 项，`toRegex()` 与 `forEach(new Consumer())`，用户指示“卡了跳过”，记录待处理。
 
 ## 本轮新增文档
@@ -126,10 +126,16 @@
 - 保持 Receiver 成对注销逻辑不变；未改变 hook target、注册顺序或回调语义。
 - 构建验证：`test` / `lintDebug` / `lintRelease` / `lintVitalRelease` / `assembleDebug` / `assembleRelease` 全绿。
 
+## P2 ResourceHooks 热路径优化
+
+- 优化 `mReplaceHook.intercept`：先按 `resId` 查 `fakes` 表，命中或 `replacements` 非空时才调用 `ModuleHelper.findContext()`；`chain.getExecutable().getName()` 也延迟到命中路径。
+- 未命中时直接 `chain.proceed()`，避免每次系统资源访问都执行反射/ActivityThread 探测。
+- 保持 `fakes`/`replacements` 写入路径、`applyHooks()`、`getFakeResource()`、`getResourceReplacement()` 语义不变；`getDimensionPixelOffset` / `getDimensionPixelSize` Float 转 Int 逻辑保留。
+- 构建验证：`test` / `lintDebug` / `lintRelease` / `lintVitalRelease` / `assembleDebug` / `assembleRelease` 全绿；lint warnings 519 / 510 与基线持平。
+
 ## 下一步
 
-- 处理 `docs/ARCHITECTURE_AUDIT_A13.md` 中的 P2（`ResourceHooks` 热路径）。
-- 按 `docs/A13_A14_PARITY_MATRIX.md` 推进批次 1/2/3 Kotlin 迁移与单元测试。
+按 `docs/A13_A14_PARITY_MATRIX.md` 推进批次 1/2/3 Kotlin 迁移与单元测试。
 - 执行真机验证矩阵：LSPosed 加载、SystemUI/Launcher/Settings 主要功能、搜索返回、旋转重建。
 
 ## 发布状态
