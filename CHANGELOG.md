@@ -1,5 +1,35 @@
 # Changelog
 
+## r13.2.3-devin（Claude 审计修复适配）
+
+### 修复
+
+- 修复 RemotePreferences 早期返回空快照后被永久标记为已加载的问题。
+- 仅在偏好监听器成功注册后设置注册状态。
+- 修复 SystemUI 状态栏温度/电流文本 View 被静态集合长期强引用的问题。
+- 将应用语言入口集中到 About 页面。
+
+### 性能
+
+- 新增 PrefPair，移除 pair 字符串解析中的重复 Regex 分配。
+- 优化 ResourceHooks 资源读取未命中路径，减少 Context 查询、反射方法名读取和资源名称解析。
+- 更新 Gradle configuration cache 属性并启用 build cache。
+
+### 兼容边界
+
+- 保持 MIUI 14 / Android 13。
+- 保持 applicationId、namespace 和 Xposed 入口不变。
+- 保持 minApiVersion=101、targetApiVersion=102。
+- 不引入 API 102 专属类型到 API 101 公共加载路径。
+
+### 验证
+
+- `:app:test`：111 tests，0 failures；
+- `:app:lintDebug`：0 errors；
+- `:app:assembleDebug` / `:app:assembleRelease`：成功；
+- Release R8、v2 签名、zipalign 和 Xposed metadata 检查通过；
+- applicationId、versionCode、versionName 正确。
+
 ## r13.2.3-test1（工程对齐 Pre-release）
 
 ### 修复
