@@ -5,15 +5,15 @@
 
 ## 当前目标
 
-- 完成 B1 / B2-1 / B2-2 / B2-3 / B2-4 / B2-5 / B2-6 / B2-7 / B2-8 Java → Kotlin 迁移，B2 剩余 2 个 YELLOW 候选待处理；
-- 当前批次：B2-9 候选审计与迁移（`LockedAppAdapter` / `PrivacyAppAdapter`），完成后进入 B3 Hook 层拆分审计；
+- 完成 B1 / B2-1 / B2-2 / B2-3 / B2-4 / B2-5 / B2-6 / B2-7 / B2-8 / B2-9 Java → Kotlin 迁移，B2 全部完成；
+- 当前批次：B3 Hook 层拆分审计（`mods/System`、`mods/SystemUI`、`mods/Launcher`、`mods/Various`、`mods/PackagePermissions` 等），按矩阵分批迁移；
 - 按阶段自动验证 build / lint / Release 并 push `devin/r13.3-kotlin-migration`。
 
 ## 当前基线
 
 - **Repository:** `tomthenpc/customiuizer-a13`
 - **Branch:** `devin/r13.3-kotlin-migration`
-- **Last verified commit:** `6d4de6c`
+- **Last verified commit:** `f69b31d`
 - **versionName / versionCode:** `r13.2.3-test1` / `121`（未修改）
 - **applicationId:** `tv.withaibuild.customiuizer.r13`
 - **libxposed API:** `minApiVersion=101`，`targetApiVersion=102`，`staticScope=false`
@@ -24,11 +24,11 @@
 - **本轮新增/更新文档:**
   - `docs/KOTLIN_MIGRATION_BASELINE_R13.3.md`
   - `docs/KOTLIN_MIGRATION_MATRIX_R13.3.md`（已记录 B1-1 结果与 B1-2 候选）
-- **Java 文件风险统计:** GREEN=0，YELLOW=11，RED=6（B2-8 后 `AppDataAdapter`、`WiFiList`、`AppSelector`、`BTList` 从 YELLOW 移除）
+- **Java 文件风险统计:** GREEN=0，YELLOW=9，RED=6（B2-9 后 `LockedAppAdapter`、`PrivacyAppAdapter` 从 YELLOW 移除）
 - **B1 迁移文件:** `CategorySelector`、`Controls`、`Launcher`、`ColorSelector`、`PrefsProvider`、`ShortcutSelector`、`MultiAction`、`subs/System`
-- **B2 已迁移文件:** `SortableListView`、`SortableList`、`SubFragmentWithSearch`、`ActivitySelector`、`MainActivity`、`MainFragment`、`PreferenceFragmentBase`、`SubFragment`、`AudioVisualizer`、`AppDataAdapter`、`WiFiList`、`AppSelector`、`BTList`
-- **B1+B2 代码规模:** 删除 Java 5523 LOC，新增 Kotlin 4945 LOC，新增测试 723 LOC
-- **B2 剩余候选:** `LockedAppAdapter` / `PrivacyAppAdapter`
+- **B2 已迁移文件:** `SortableListView`、`SortableList`、`SubFragmentWithSearch`、`ActivitySelector`、`MainActivity`、`MainFragment`、`PreferenceFragmentBase`、`SubFragment`、`AudioVisualizer`、`AppDataAdapter`、`WiFiList`、`AppSelector`、`BTList`、`LockedAppAdapter`、`PrivacyAppAdapter`
+- **B1+B2 代码规模:** 删除 Java 5874 LOC，新增 Kotlin 5290 LOC，新增测试 771 LOC
+- **B2 剩余候选:** 无
 - **最后正常行为基线:** `MonwF/customiuizer v23.11.26`
 
 ## 本轮已完成（A14 工程对齐 Pre-release 批次）
@@ -135,6 +135,32 @@
 - `./gradlew.bat --no-daemon :app:assembleRelease`：成功；
 - `git diff --check`：通过；
 - Release APK 审计：applicationId / versionName / versionCode / `module.prop` / `scope.list` / `java_init.list` 均未变；R8 mapping 确认 `MainActivity` / `MainFragment` 保留。
+
+## 本轮已完成（B2-9 批次 Kotlin 迁移）
+
+### 迁移文件
+
+- `app/src/main/java/name/monwf/customiuizer/utils/LockedAppAdapter.java` → `LockedAppAdapter.kt`（181 → 177 LOC）
+- `app/src/main/java/name/monwf/customiuizer/utils/PrivacyAppAdapter.java` → `PrivacyAppAdapter.kt`（170 → 168 LOC）
+- 新增 `app/src/test/java/name/monwf/customiuizer/utils/B2_9_MigrationInteropTest.kt`（48 LOC）
+
+小计：删除 Java 351 LOC，新增 Kotlin 345 LOC；新增测试 48 LOC。
+
+### JVM 兼容要点
+
+- `LockedAppAdapter` / `PrivacyAppAdapter`：公开继承 `BaseAdapter` / `Filterable`；保留 `Context` + `ArrayList<AppData>` 两参构造器；`getCount` / `getItem` / `getItemId` / `getView` / `getFilter` 签名不变；`LockedAppAdapter` 额外保留 `isEnabled` 方法；
+- `mSecurityManager` 与反射 `getDeclaredMethod` 在 `init` 中初始化，失败时安全回退，不拖垮列表；
+- `ItemFilter` 为私有内部类，继续从 `originalAppList` 过滤并写入 `filteredAppList`（`CopyOnWriteArrayList`），`publishResults` 后重新 `sortList`；
+- 未引入 `!!`、coroutine/Flow；未改动 preference key / Hook target / 资源名。
+
+### 验证
+
+- `./gradlew.bat --no-daemon :app:test`：BUILD SUCCESSFUL，111 tests / 0 failures；
+- `./gradlew.bat --no-daemon :app:lintDebug`：0 errors，520 warnings（基线持平）；
+- `./gradlew.bat --no-daemon :app:assembleDebug`：成功；
+- `./gradlew.bat --no-daemon :app:assembleRelease`：成功；
+- `git diff --check`：通过；
+- Release APK 审计：applicationId / versionName / versionCode / `module.prop` / `scope.list` / `java_init.list` 均未变；R8 mapping 确认 B2-9 迁移类保留。
 
 ## 本轮已完成（B2-8 批次 Kotlin 迁移）
 
@@ -290,11 +316,11 @@
 - **结果：** BUILD SUCCESSFUL
 - **验证日期：** 2026-07-28
 - **git diff --check：** 0 errors
-- **单元测试：** 107 tests，0 failures，0 errors
+- **单元测试：** 111 tests，0 failures，0 errors
 - **lintDebug：** 0 errors，520 warnings（基线持平）
 - **assembleDebug / assembleRelease：** 成功
 - **Release APK 审计：** applicationId / version / Xposed 元数据均未变；B1/B2 迁移类在 R8 中均保持可达
-- **当前代码变更范围：** B1 8 个 + B2 13 个 Java 转 Kotlin 生产文件，11 个新增迁移兼容性测试
+- **当前代码变更范围：** B1 8 个 + B2 15 个 Java 转 Kotlin 生产文件，12 个新增迁移兼容性测试
 
 ## 当前问题与阻塞
 
