@@ -92,7 +92,7 @@ class SortableList : SubFragment() {
                     putString("key", "${key}_$uuid")
                     putInt("actions", MultiAction.Actions.LOCKSCREEN.ordinal)
                 }
-                openSubFragment(MultiAction(), bundle, Helpers.SettingsType.Edit, Helpers.ActionBarType.Edit, titleResId, R.layout.prefs_multiaction)
+                openSubFragment(MultiAction(), bundle, Helpers.SettingsType.Edit, Helpers.ActionBarType.Edit, titleResId ?: "", R.layout.prefs_multiaction)
             }
         }
 

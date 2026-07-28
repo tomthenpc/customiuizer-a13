@@ -191,7 +191,7 @@ class MainFragment : PreferenceFragmentBase() {
     override fun onActivityCreated(savedInstanceState: Bundle?) {
         super.onActivityCreated(savedInstanceState)
 
-        val actionBar: ActionBar? = actionBar
+        val actionBar: ActionBar? = getActionBar()
         actionBar?.setTitle(R.string.app_name)
 
         val view = view ?: return

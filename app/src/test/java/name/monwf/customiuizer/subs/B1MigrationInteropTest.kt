@@ -88,7 +88,7 @@ class B1MigrationInteropTest {
     fun subFragmentOpenColorSelectorMethodStillReferencesColorSelector() {
         val preferenceCls = Class.forName("androidx.preference.Preference", false, loader)
         val subFragmentCls = Class.forName("name.monwf.customiuizer.SubFragment", false, loader)
-        val method = subFragmentCls.getDeclaredMethod("openColorSelector", preferenceCls)
+        val method = subFragmentCls.getDeclaredMethod("doOpenColorSelector", preferenceCls)
         assertEquals("void", method.returnType.name)
     }
 }

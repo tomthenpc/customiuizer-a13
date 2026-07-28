@@ -5,8 +5,8 @@
 
 ## 当前目标
 
-- 完成 B1 / B2-1 / B2-2 / B2-3 / B2-4 Java → Kotlin 迁移，B2 仍有 9 个 YELLOW 候选待处理；
-- 当前批次：B2-5 候选审计与分批迁移（`PreferenceFragmentBase` / `SubFragment`）；
+- 完成 B1 / B2-1 / B2-2 / B2-3 / B2-4 / B2-5 / B2-6 Java → Kotlin 迁移，B2 仍有 7 个 YELLOW 候选待处理；
+- 当前批次：B2-7 候选审计与迁移（`AudioVisualizer`）；
 - 按阶段自动验证 build / lint / Release 并 push `devin/r13.3-kotlin-migration`。
 
 ## 当前基线
@@ -24,11 +24,11 @@
 - **本轮新增/更新文档:**
   - `docs/KOTLIN_MIGRATION_BASELINE_R13.3.md`
   - `docs/KOTLIN_MIGRATION_MATRIX_R13.3.md`（已记录 B1-1 结果与 B1-2 候选）
-- **Java 文件风险统计:** GREEN=0，YELLOW=18，RED=6（B2-1/B2-2/B2-3/B2-4 后 `SortableListView`、`SortableList`、`SubFragmentWithSearch`、`ActivitySelector`、`MainActivity`、`MainFragment` 从 YELLOW 移除）
+- **Java 文件风险统计:** GREEN=0，YELLOW=16，RED=6（B2-1/B2-2/B2-3/B2-4/B2-5/B2-6 后 `SortableListView`、`SortableList`、`SubFragmentWithSearch`、`ActivitySelector`、`MainActivity`、`MainFragment`、`PreferenceFragmentBase`、`SubFragment` 从 YELLOW 移除）
 - **B1 迁移文件:** `CategorySelector`、`Controls`、`Launcher`、`ColorSelector`、`PrefsProvider`、`ShortcutSelector`、`MultiAction`、`subs/System`
-- **B2 已迁移文件:** `SortableListView`、`SortableList`、`SubFragmentWithSearch`、`ActivitySelector`、`MainActivity`、`MainFragment`
-- **B1+B2 代码规模:** 删除 Java 2963 LOC，新增 Kotlin 2419 LOC，新增测试 448 LOC
-- **B2 剩余候选:** `AudioVisualizer` / `PreferenceFragmentBase` / `SubFragment` / `AppDataAdapter` / `WiFiList` / `AppSelector` / `BTList` / `LockedAppAdapter` / `PrivacyAppAdapter`
+- **B2 已迁移文件:** `SortableListView`、`SortableList`、`SubFragmentWithSearch`、`ActivitySelector`、`MainActivity`、`MainFragment`、`PreferenceFragmentBase`、`SubFragment`
+- **B1+B2 代码规模:** 删除 Java 3838 LOC，新增 Kotlin 3255 LOC，新增测试 545 LOC
+- **B2 剩余候选:** `AudioVisualizer` / `AppDataAdapter` / `WiFiList` / `AppSelector` / `BTList` / `LockedAppAdapter` / `PrivacyAppAdapter`
 - **最后正常行为基线:** `MonwF/customiuizer v23.11.26`
 
 ## 本轮已完成（A14 工程对齐 Pre-release 批次）
@@ -107,9 +107,8 @@
 - 日间/夜间主题、Toolbar 菜单、返回栈行为；
 - MIUI 14 / Android 13 真机 LSPosed 加载无新增异常。
 
-### 下一批候选（B2-5）
-- `PreferenceFragmentBase`（459 LOC，偏好基类）
-- `SubFragment`（416 LOC，子页面基类）
+### 下一批候选（B2-7）
+- `AudioVisualizer`（583 LOC，音频可视化工具类）
 
 > 继续按 YELLOW 矩阵分批处理，单个批次控制在 800–1200 LOC。
 
@@ -136,6 +135,40 @@
 - `./gradlew.bat --no-daemon :app:assembleRelease`：成功；
 - `git diff --check`：通过；
 - Release APK 审计：applicationId / versionName / versionCode / `module.prop` / `scope.list` / `java_init.list` 均未变；R8 mapping 确认 `MainActivity` / `MainFragment` 保留。
+
+## 本轮已完成（B2-5/B2-6 批次 Kotlin 迁移）
+
+### 迁移文件
+- `app/src/main/java/name/monwf/customiuizer/PreferenceFragmentBase.java` → `PreferenceFragmentBase.kt`（459 → 406 LOC）
+- `app/src/main/java/name/monwf/customiuizer/SubFragment.java` → `SubFragment.kt`（416 → 430 LOC）
+
+小计：删除 Java 875 LOC，新增 Kotlin 836 LOC；新增 `B2_5_6_MigrationInteropTest.kt`（97 LOC）。
+
+### JVM 兼容要点
+- `PreferenceFragmentBase`：
+  - package / FQCN / 公开无参构造器保持不变；
+  - 继承 `PreferenceFragmentCompat` 不变；
+  - `PICK_BACKFILE` / `SAVE_BACKFILE` 以 `companion object const val` 保持公开静态常量；
+  - `toolbarMenu` / `activeMenus` / `headLayoutId` / `tailLayoutId` / `isCustomActionBar` / `pageUrl` / `mapKeys` 以 `@JvmField protected` 保持字段访问语义；
+  - `getActionBar` / `onCreateOptionsMenu` / `onOptionsItemSelected` / `onCreate` / `onCreatePreferences` / `onViewCreated` / `openSubFragment` / `backupSettings` / `restoreSettings` / `doRestoreSettings` / `onActivityResult` 签名不变；
+  - 已废弃 API 调用已加 `@Suppress("DEPRECATION")`；
+  - 未使用 `!!`、coroutine/Flow。
+- `SubFragment`：
+  - package / FQCN / 公开无参构造器保持不变；
+  - 继承 `PreferenceFragmentBase`（Kotlin）不变；
+  - `settingsType` / `abType` / `settingTitle` / `padded` / `sub` / `catInfo` / `isStandalone` / `openAppsEdit` 等公开字段使用 `@JvmField` 保持公开字段；
+  - `onCreate` / `onCreatePreferences` / `onCreateView` / `onViewCreated` / `onActivityCreated` / `onStart` / `saveSharedPrefs` / `loadSharedPrefs` / `selectSub` / `finish` / `confirmEdit` 签名不变；
+  - `openColorSelector` 字段保留，原 `openColorSelector(Preference)` 方法重命名为 `doOpenColorSelector(Preference)` 以避免 Kotlin 属性/方法命名冲突，调用点与外部使用只依赖字段；
+  - `setTargetFragment` 已废弃调用已加 `@Suppress("DEPRECATION")`；
+  - 未使用 `!!`、coroutine/Flow。
+
+### 验证
+- `./gradlew.bat --no-daemon :app:test`：BUILD SUCCESSFUL，94 tests / 0 failures；
+- `./gradlew.bat --no-daemon :app:lintDebug`：0 errors，520 warnings（基线持平）；
+- `./gradlew.bat --no-daemon :app:assembleDebug`：成功；
+- `./gradlew.bat --no-daemon :app:assembleRelease`：成功；
+- `git diff --check`：通过；
+- Release APK 审计：applicationId / versionName / versionCode / `module.prop` / `scope.list` / `java_init.list` 均未变；R8 mapping 确认 `PreferenceFragmentBase` / `SubFragment` 保留。
 
 ## 本轮已完成（B1-2 批次 Kotlin 迁移）
 
@@ -205,11 +238,11 @@
 - **结果：** BUILD SUCCESSFUL
 - **验证日期：** 2026-07-28
 - **git diff --check：** 0 errors
-- **单元测试：** 89 tests，0 failures，0 errors
+- **单元测试：** 94 tests，0 failures，0 errors
 - **lintDebug：** 0 errors，520 warnings（基线持平）
 - **assembleDebug / assembleRelease：** 成功
 - **Release APK 审计：** applicationId / version / Xposed 元数据均未变；B1/B2 迁移类在 R8 中均保持可达
-- **当前代码变更范围：** B1 8 个 + B2 6 个 Java 转 Kotlin 生产文件，8 个新增迁移兼容性测试
+- **当前代码变更范围：** B1 8 个 + B2 8 个 Java 转 Kotlin 生产文件，9 个新增迁移兼容性测试
 
 ## 当前问题与阻塞
 
