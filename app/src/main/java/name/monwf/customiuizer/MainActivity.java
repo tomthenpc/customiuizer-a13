@@ -26,6 +26,7 @@ import io.github.libxposed.service.XposedService;
 import io.github.libxposed.service.XposedServiceHelper;
 import name.monwf.customiuizer.mods.GlobalActions;
 import name.monwf.customiuizer.utils.AppHelper;
+import name.monwf.customiuizer.utils.AppLocaleController;
 import name.monwf.customiuizer.utils.Helpers;
 
 public class MainActivity extends AppCompatActivity {
@@ -36,7 +37,7 @@ public class MainActivity extends AppCompatActivity {
     @Override
     protected void attachBaseContext(Context base) {
         try {
-            super.attachBaseContext(AppHelper.getLocaleContext(base));
+            super.attachBaseContext(AppLocaleController.getLocaleContext(base, AppHelper.appPrefs));
         } catch (Throwable t) {
             t.printStackTrace();
         }

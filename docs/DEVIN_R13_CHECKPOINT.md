@@ -62,15 +62,15 @@
 
 - **任务/命令：** `$env:JAVA_HOME='C:\Program Files\Java\jdk-17'; .\gradlew.bat --no-daemon test lintDebug lintRelease lintVitalRelease assembleDebug assembleRelease`
 - **结果：** BUILD SUCCESSFUL
-- **产物：** `.devin/a13_p2_build.log`
+- **产物：** `.devin/a13_locale_build_stdout.log`
 - **验证日期：** 2026-07-28
 - **APK 审计：**
   - `app/build/outputs/apk/release/app-release.apk`
-  - SHA-256：`BF20D3535B03891C805E6EB5775D2B02D9CE89349A85F18ADA968BA29A805785`
+  - SHA-256：`E61595539D67D6E7E787968D17AC03E7F8F7BF848693A34DD0F3F9ED8BA059DD`
   - 签名：v2 only，证书 SHA-256：`C0:EF:F2:DC:4E:66:27:17:19:54:90:DA:78:B1:2A:98:4C:6F:2E:6B:D3:8A:CF:4E:DA:D1:4D:53:E3:D2:2E:70`
   - `module.prop`：`minApiVersion=101`，`targetApiVersion=102`，`staticScope=false`
   - scope 列表完整，入口为 `name.monwf.customiuizer.MainModule`
-- **lintDebug / lintRelease：** 0 errors，warnings 数与基线持平（debug 519 / release 510），无 `UnspecifiedRegisterReceiverFlag` 新增错误。
+- **lintDebug / lintRelease：** 0 errors，warnings 数与基线基本持平（debug 520 / release 511），无 `UnspecifiedRegisterReceiverFlag` 新增错误。
 
 ## 当前问题与阻塞
 
@@ -133,9 +133,24 @@
 - 保持 `fakes`/`replacements` 写入路径、`applyHooks()`、`getFakeResource()`、`getResourceReplacement()` 语义不变；`getDimensionPixelOffset` / `getDimensionPixelSize` Float 转 Int 逻辑保留。
 - 构建验证：`test` / `lintDebug` / `lintRelease` / `lintVitalRelease` / `assembleDebug` / `assembleRelease` 全绿；lint warnings 519 / 510 与基线持平。
 
+## 本轮新增工程资产
+
+- `app/src/main/java/name/monwf/customiuizer/utils/AppLocaleController.kt`：单一状态源语言控制器，统一 `Locale.setDefault`、`AppCompatDelegate.setApplicationLocales`、语言选择器绑定与 `Context` 派生。
+- `app/src/test/.../AppLocaleControllerTest.kt`：17 个覆盖 `normalizeLocaleTag` / `getUserLocale` / `getEffectiveLocale` / `setUserLocale` / `buildLocaleDisplayData` / `toLocaleListCompat` / 状态转换的单元测试。
+- `app/src/test/.../FakeSharedPreferences.kt`：用于单元测试的内存 SharedPreferences 实现。
+
+## 本轮主要改动
+
+- `AppLocaleController`：接管 `MainApplication.onCreate`、`MainActivity.attachBaseContext`、`MainFragment` 语言选择器、`AppHelper.getLocaleContext` / `getProtectedContext` 的 locale 逻辑。
+- `MainApplication` 移除 `attachBaseContext` 中直接 `Locale.setDefault`，改为 `onCreate` 调用 `AppLocaleController.applyLocale`。
+- `MainActivity.attachBaseContext` 改为 `AppLocaleController.getLocaleContext(base, AppHelper.appPrefs)`。
+- `MainFragment` 语言选择器改为 `AppLocaleController.setupLocalePreference`。
+- `AppHelper.getLocaleContext` 委托给 `AppLocaleController`。
+- `app/build.gradle.kts` 添加 `testOptions.unitTests.isReturnDefaultValues = true` 以支持 `AppLocaleController` 单元测试中的 Android `Log` / `Resources` 调用。
+
 ## 下一步
 
-按 `docs/A13_A14_PARITY_MATRIX.md` 推进批次 1/2/3 Kotlin 迁移与单元测试。
+- 按 `docs/A13_A14_PARITY_MATRIX.md` 推进批次 1/2/3 Kotlin 迁移与单元测试。
 - 执行真机验证矩阵：LSPosed 加载、SystemUI/Launcher/Settings 主要功能、搜索返回、旋转重建。
 
 ## 发布状态

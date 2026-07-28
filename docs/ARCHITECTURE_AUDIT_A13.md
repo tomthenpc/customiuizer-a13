@@ -91,6 +91,7 @@
 | `synchronized` | 14 | `ModuleHelper`、`XposedHelpers` | 基本合理 |
 | `XposedHelpers.callMethod` | 403 | 广泛 | 反射调用，无明确回归 |
 | `setResReplacement` / `setDensityReplacement` / `addResource` | 28 / 44 / 20 | `ResourceHooks` | 正常 |
+| `AppLocaleController` | 1 | `utils/AppLocaleController.kt`：单一状态源管理界面语言，已按 A14 模式引入并补充 17 个单元测试 | 正常 |
 
 ## 7. P0/P1/P2/P3 问题清单
 

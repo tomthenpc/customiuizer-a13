@@ -14,7 +14,6 @@ import androidx.appcompat.app.AlertDialog
 import io.github.libxposed.service.RemotePreferences
 import name.monwf.customiuizer.R
 import name.monwf.customiuizer.mods.GlobalActions
-import java.util.Locale
 
 @Suppress("NAME_SHADOWING")
 object AppHelper {
@@ -99,14 +98,7 @@ object AppHelper {
     @Synchronized
     @Throws(Throwable::class)
     fun getLocaleContext(context: Context): Context {
-        if (appPrefs != null) {
-            val locale = getStringOfAppPrefs("pref_key_miuizer_locale", "auto")
-            if (locale == "auto" || locale == "1") return context
-            val config = Configuration(context.resources.configuration)
-            config.setLocale(Locale.forLanguageTag(locale ?: "auto"))
-            return context.createConfigurationContext(config)
-        }
-        return context
+        return AppLocaleController.getLocaleContext(context, appPrefs)
     }
 
     @JvmStatic

@@ -43,8 +43,8 @@
 | 16 | DexKit 生命周期 | A14 使用 DexKit 2.2.0，已防止 `XposedHelpers.createBridge` 重复创建，用完关闭 | A13 未集成 DexKit；`XposedHelpers` 无 DexKit bridge | A14 专属 | 低 | A13 不需要 DexKit 时不引入；如后续需要，按 A14 模式封装 | — | 不适用 |
 | 17 | 资源和反射缓存 | A14 `XposedHelpers` 已缓存 `getApplicationClassLoader` 失败回退；`ResourceHooks` 线程安全发布 | A13 `XposedHelpers` 仍可能每次反射探测失败类；`ResourceHooks` 仍用 `ConcurrentHashMap` + `SparseIntArray` 非线程安全发布 | 需要按 A13 改写 | 中 | 移植失败回退缓存和 copy-on-write 资源替换表 | 构建 + 实机 | 未开始 |
 | 18 | 搜索导航 | A14 已建立 `0/1/2` 搜索状态机、`SearchRouteResolver`、`SearchStateMachine` 单元测试；修复 `Various`/子分类返回 | A13 有 `search-fix` APK 但源码状态需确认；`MainActivity` / `MainModule` 逻辑需审计 | 需要按 A13 改写 | 高 | 不复制 A14 页面，按 A13 `openModCat()` 和 `ModData.sub` 结构建立等价状态机 | 实机搜索/返回/重建 | 待审计 |
-| 19 | Locale / 主题 / Fragment 重建 | A14 有 `AppLocaleController`、`LOCALE_STATE_MACHINE.md`、完整 `AppLocaleControllerTest` | A13 最近修复 `AppHelper.getLocaleContext` Configuration 复制问题，但无状态机文档和测试 | 需要按 A13 改写 | 中 | 引入 `AppLocaleController` 单一状态源并补充测试 | `test` + 实机语言/主题/旋转 | 未开始 |
-| 20 | 单元测试 | 68+ tests，覆盖 Locale、Search、PrefPair 等；`AppLocaleControllerTest` 23 个 | 仅 1 个 Kotlin test | 需要按 A13 改写 | 中 | 优先为已修复问题（Locale、搜索、资源替换）添加测试 | `test` | 未开始 |
+| 19 | Locale / 主题 / Fragment 重建 | A14 有 `AppLocaleController`、`LOCALE_STATE_MACHINE.md`、完整 `AppLocaleControllerTest` | A13 已引入 `AppLocaleController`，集成到 `MainApplication`/`MainActivity`/`MainFragment`/`AppHelper`，并补充 `AppLocaleControllerTest` 17 个用例 | 需要按 A13 改写 | 中 | 已引入 `AppLocaleController` 单一状态源并补充测试；`LOCALE_STATE_MACHINE.md` 可选补充 | `test` + 实机语言/主题/旋转 | 已完成（P2） |
+| 20 | 单元测试 | 68+ tests，覆盖 Locale、Search、PrefPair 等；`AppLocaleControllerTest` 23 个 | `AppLocaleControllerTest` 17 个用例 + `ModuleMetadataTest` 1 个用例；其他领域待补充 | 需要按 A13 改写 | 中 | 已为 Locale 添加 `AppLocaleControllerTest`；后续按修复问题补充 Search / ResourceHooks 等测试 | `test` | 进行中 |
 | 21 | APK 元数据审计 | 已建立完整流程：`apksigner verify`、aapt2 `dump badging`、`module.prop`、scope、签名证书 SHA-256 记录 | 同 A14，已有 `docs/ARCHITECTURE_AUDIT_A13.md` 记录 | 直接适用 | 低 | 每次 Release 后执行并记录 | APK 审计 | 已完成 |
 | 22 | 实机验证和日志审计 | 已执行 API 101 完整重启日志审计（Xiaomi 13 / Android 14 / SDK 34 实际 API 101） | 未执行完整真机验证矩阵 | 需要按 A13 改写 | 高 | 待设备可用时执行 LSPosed/Vector 日志审计 | 实机 | 待实机 |
 

@@ -1,6 +1,6 @@
 # Changelog
 
-## r13.2.2-devin（语言切换修复 + P1 export flag + P2 ResourceHooks 热路径 + A13/A14 差距矩阵）
+## r13.2.2-devin（语言切换修复 + P1 export flag + P2 ResourceHooks 热路径 + Locale 状态机 + A13/A14 差距矩阵）
 
 ### 修复
 
@@ -23,7 +23,7 @@
 
 - `:app:test`、`:app:lintDebug`、`:app:lintRelease`、`:app:lintVitalRelease`、`:app:assembleDebug`、`:app:assembleRelease` 通过；
 - Release APK 使用 A13 正式签名 v2，zipalign 对齐通过；
-- APK SHA-256：`BF20D3535B03891C805E6EB5775D2B02D9CE89349A85F18ADA968BA29A805785`;
+- APK SHA-256：`E61595539D67D6E7E787968D17AC03E7F8F7BF848693A34DD0F3F9ED8BA059DD`;
 - 签名证书 SHA-256：`C0:EF:F2:DC:4E:66:27:17:19:54:90:DA:78:B1:2A:98:4C:6F:2E:6B:D3:8A:CF:4E:DA:D1:4D:53:E3:D2:2E:70`；
 - `module.prop`、`scope.list`、`java_init.list` 元数据正确；
 - applicationId、Xposed metadata、API 边界保持不变；
@@ -36,6 +36,18 @@
 - 保持 `fakes`/`replacements` 写入、`getFakeResource()`、`getResourceReplacement()` 语义不变。
 - 涉及文件：`app/src/main/java/name/monwf/customiuizer/mods/utils/ResourceHooks.java`。
 
+### Locale 状态机与 AppLocaleController
+
+- 新增 `AppLocaleController`：单一状态源管理界面语言。
+  - 唯一持久化状态 `pref_key_miuizer_locale`；其余（`Locale.getDefault()`、`AppCompatDelegate` 应用 locale、`Configuration`）均由其推导。
+  - `applyLocale` / `setUserLocale` / `getEffectiveLocale` / `toLocaleListCompat` / `buildLocaleDisplayData` / `setupLocalePreference`。
+- `MainApplication.onCreate` 调用 `AppLocaleController.applyLocale`。
+- `MainActivity.attachBaseContext` 使用 `AppLocaleController.getLocaleContext`。
+- `MainFragment` 语言选择器绑定 `AppLocaleController.setupLocalePreference`。
+- `AppHelper.getLocaleContext` / `getProtectedContext` 委托给 `AppLocaleController`。
+- `app/build.gradle.kts` 添加 `testOptions.unitTests.isReturnDefaultValues = true`，支持 JVM 单元测试中的 Android `Log` / `Resources` 存根。
+- 新增 17 个 `AppLocaleControllerTest` 单元测试 + `FakeSharedPreferences` 测试替身。
+
 ### 架构审计
 
 - 新增 `docs/ARCHITECTURE_AUDIT_A13.md`，覆盖入口/生命周期、PrefMap、ResourceHooks、ModuleHelper、XposedHelpers 与 Phase 3 模式统计。
@@ -43,6 +55,7 @@
 - P1：已修复。全部动态 `registerReceiver` 显式指定 `RECEIVER_EXPORTED` 或 `RECEIVER_NOT_EXPORTED`。
 - P2：已修复。`ResourceHooks.mReplaceHook` 延迟 `findContext()` 与 `chain.executable.name` 到命中路径，未命中直接 `chain.proceed()`。
 - P3：`toRegex()`（`AppHelper.kt`、`PreferenceAdapter.kt`）与 `System.java:2094` 的 `forEach(new Consumer())` 可优化；用户指示“卡了跳过”，已记录待后续处理。
+- Locale / AppLocaleController：已按 A14 模式引入单一状态源并补充 17 个单元测试。
 
 ## r13.2.1-devin（UI 回归修复）
 
