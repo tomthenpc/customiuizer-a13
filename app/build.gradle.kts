@@ -175,4 +175,5 @@ dependencies {
     implementation(libs.androidx.appcompat)
 
     testImplementation(libs.junit)
+    testImplementation(libs.libxposed.api)
 }
