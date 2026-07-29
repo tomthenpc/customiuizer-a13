@@ -51,7 +51,13 @@ class PrefMap<K, V> : HashMap<K, V>() {
 
     fun getBoolean(key: String, defValue: Boolean): Boolean {
         val value = get(normalizeKey(key) as K)
-        return if (value == null) defValue else value as Boolean
+        return when (value) {
+            null -> defValue
+            is Boolean -> value
+            "true", "1" -> true
+            "false", "0" -> false
+            else -> defValue
+        }
     }
 
     override fun put(key: K, value: V): V? {

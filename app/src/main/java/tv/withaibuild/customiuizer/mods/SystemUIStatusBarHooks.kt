@@ -36,6 +36,7 @@ import tv.withaibuild.customiuizer.mods.utils.ResourceHooks
 import tv.withaibuild.customiuizer.mods.utils.StepCounterController
 import tv.withaibuild.customiuizer.mods.utils.XposedHelpers
 import tv.withaibuild.customiuizer.utils.Helpers
+import tv.withaibuild.customiuizer.utils.PrefMap
 import java.io.FileInputStream
 import java.io.RandomAccessFile
 import java.lang.ref.WeakReference
@@ -124,10 +125,143 @@ object SystemUIStatusBarHooks {
         }
     }
 
+    /**
+     * Immutable snapshot of all device-info monitor settings that the ticker must read.
+     *
+     * Fixed settings (master toggles, left/right slot, font/size/margins) are captured at
+     * hook installation and require a SystemUI restart to change. This snapshot is rebuilt
+     * once per tick so the whole pass uses a single consistent view of the dynamic settings.
+     */
+    internal data class DeviceMonitorSnapshot(
+        val showBatteryDetail: Boolean,
+        val showDeviceTemp: Boolean,
+        val batteryInCharge: Boolean,
+        val batteryContentOpt: Int,
+        val batteryTempDecimal: Boolean,
+        val batteryFixCurrentRatio: Boolean,
+        val batteryPositive: Boolean,
+        val batterySingleRow: Boolean,
+        val batteryReverseOrder: Boolean,
+        val batteryHideUnit: Int,
+        val deviceTempContentOpt: Int,
+        val deviceTempHideUnit: Boolean,
+        val deviceTempSingleRow: Boolean,
+        val deviceTempReverseOrder: Boolean
+    )
+
+    @JvmStatic
+    internal fun readDeviceMonitorSnapshot(prefs: PrefMap<String, Any>): DeviceMonitorSnapshot {
+        return DeviceMonitorSnapshot(
+            showBatteryDetail = prefs.getBoolean("system_statusbar_batterytempandcurrent"),
+            showDeviceTemp = prefs.getBoolean("system_statusbar_showdevicetemperature"),
+            batteryInCharge = prefs.getBoolean("system_statusbar_batterytempandcurrent_incharge"),
+            batteryContentOpt = prefs.getStringAsInt("system_statusbar_batterytempandcurrent_content", 1),
+            batteryTempDecimal = prefs.getBoolean("system_statusbar_batterytempandcurrent_temp_decimal"),
+            batteryFixCurrentRatio = prefs.getBoolean("system_statusbar_batterytempandcurrent_fixcurrentratio"),
+            batteryPositive = prefs.getBoolean("system_statusbar_batterytempandcurrent_positive"),
+            batterySingleRow = prefs.getBoolean("system_statusbar_batterytempandcurrent_singlerow"),
+            batteryReverseOrder = prefs.getBoolean("system_statusbar_batterytempandcurrent_reverseorder"),
+            batteryHideUnit = prefs.getStringAsInt("system_statusbar_batterytempandcurrent_hideunit", 0),
+            deviceTempContentOpt = prefs.getStringAsInt("system_statusbar_showdevicetemperature_content", 1),
+            deviceTempHideUnit = prefs.getBoolean("system_statusbar_showdevicetemperature_hideunit"),
+            deviceTempSingleRow = prefs.getBoolean("system_statusbar_showdevicetemperature_singlerow"),
+            deviceTempReverseOrder = prefs.getBoolean("system_statusbar_showdevicetemperature_reverseorder")
+        )
+    }
+
+    private fun parseSysfsInt(raw: String?, fallback: Int = 0): Int {
+        return raw?.trim()?.toIntOrNull() ?: fallback
+    }
+
+    @JvmStatic
+    internal fun buildBatteryInfo(snap: DeviceMonitorSnapshot, props: Properties): String {
+        val opt = snap.batteryContentOpt
+        var simpleTempVal = ""
+        if (opt == 1 || opt == 4) {
+            val tempVal = parseSysfsInt(props.getProperty("POWER_SUPPLY_TEMP"))
+            simpleTempVal = if (snap.batteryTempDecimal) {
+                (tempVal / 10f).toString()
+            } else {
+                if (tempVal % 10 == 0) (tempVal / 10).toString() else (tempVal / 10f).toString()
+            }
+        }
+
+        var currVal = ""
+        var preferred = "mA"
+        var currentRatio = 1000f
+        if (snap.batteryFixCurrentRatio) currentRatio = 1f
+        var rawCurr = -1 * Math.round(parseSysfsInt(props.getProperty("POWER_SUPPLY_CURRENT_NOW")) / currentRatio)
+
+        if (opt == 1 || opt == 3 || opt == 5) {
+            if (snap.batteryPositive) rawCurr = Math.abs(rawCurr)
+            if (Math.abs(rawCurr) > 999) {
+                currVal = String.format(Locale.getDefault(), "%.2f", rawCurr / 1000f)
+                preferred = "A"
+            } else {
+                currVal = rawCurr.toString()
+            }
+        }
+
+        val hideUnit = snap.batteryHideUnit
+        val tempUnit = if (hideUnit == 1 || hideUnit == 2) "" else "℃"
+        val powerUnit = if (hideUnit == 1 || hideUnit == 3) "" else "W"
+        val currUnit = if (hideUnit == 1 || hideUnit == 3) "" else preferred
+
+        var simpleWatt = ""
+        if (opt == 2 || opt == 4 || opt == 5) {
+            val voltVal = parseSysfsInt(props.getProperty("POWER_SUPPLY_VOLTAGE_NOW")) / 1000f / 1000f
+            simpleWatt = String.format(Locale.getDefault(), "%.2f", Math.abs(voltVal * rawCurr) / 1000)
+        }
+
+        val splitChar = if (snap.batterySingleRow) " " else "\n"
+        return when (opt) {
+            1 -> if (snap.batteryReverseOrder) {
+                "$currVal$currUnit$splitChar$simpleTempVal$tempUnit"
+            } else {
+                "$simpleTempVal$tempUnit$splitChar$currVal$currUnit"
+            }
+            4 -> if (snap.batteryReverseOrder) {
+                "$simpleWatt$powerUnit$splitChar$simpleTempVal$tempUnit"
+            } else {
+                "$simpleTempVal$tempUnit$splitChar$simpleWatt$powerUnit"
+            }
+            2 -> "$simpleWatt$powerUnit"
+            5 -> if (snap.batteryReverseOrder) {
+                "$simpleWatt$powerUnit$splitChar$currVal$currUnit"
+            } else {
+                "$currVal$currUnit$splitChar$simpleWatt$powerUnit"
+            }
+            else -> "$currVal$currUnit"
+        }
+    }
+
+    @JvmStatic
+    internal fun buildDeviceInfo(snap: DeviceMonitorSnapshot, props: Properties, cpuProps: String): String {
+        val batteryTempVal = parseSysfsInt(props.getProperty("POWER_SUPPLY_TEMP"))
+        val cpuTempVal = parseSysfsInt(cpuProps)
+        val simpleBatteryTemp = String.format(Locale.getDefault(), "%.1f", batteryTempVal / 10f)
+        val simpleCpuTemp = String.format(Locale.getDefault(), "%.1f", cpuTempVal / 1000f)
+        val opt = snap.deviceTempContentOpt
+        val hideUnit = snap.deviceTempHideUnit
+        val tempUnit = if (hideUnit) "" else "℃"
+        val splitChar = if (snap.deviceTempSingleRow) " " else "\n"
+        return when (opt) {
+            1 -> if (snap.deviceTempReverseOrder) {
+                "$simpleCpuTemp$tempUnit$splitChar$simpleBatteryTemp$tempUnit"
+            } else {
+                "$simpleBatteryTemp$tempUnit$splitChar$simpleCpuTemp$tempUnit"
+            }
+            2 -> "$simpleBatteryTemp$tempUnit"
+            else -> "$simpleCpuTemp$tempUnit"
+        }
+    }
+
     @JvmStatic
     fun MonitorDeviceInfoHook(lpparam: PackageReadyParam) {
         data class TextIconInfo(var iconShow: Boolean = false, var iconType: Int = 0, var iconText: String = "")
 
+        // Fixed settings: master toggles and left/right slot position determine which hooks are
+        // installed and where the icon lives. Changing them requires a SystemUI restart.
         val showBatteryDetail = MainModule.mPrefs.getBoolean("system_statusbar_batterytempandcurrent")
         val showDeviceTemp = MainModule.mPrefs.getBoolean("system_statusbar_showdevicetemperature")
         val ChargeUtilsClass = if (showBatteryDetail) XposedHelpers.findClassIfExists("com.android.keyguard.charge.ChargeUtils", lpparam.classLoader) else null
@@ -247,6 +381,7 @@ object SystemUIStatusBarHooks {
 
             override fun after(param: AfterHookCallback) {
                 val mContext = param.getArgs()[0] as? Context ?: return
+                // mHandler runs on the main looper and only touches the snapshot-carrying message.
                 val mHandler = object : Handler(Looper.getMainLooper()) {
                     override fun handleMessage(message: Message) {
                         try {
@@ -272,10 +407,20 @@ object SystemUIStatusBarHooks {
                 mBgHandler = object : Handler(looper) {
                     override fun handleMessage(message: Message) {
                         if (message.what == 200021) {
-                            var batteryInfo = ""
-                            var deviceInfo = ""
-                            var showBatteryInfo = showBatteryDetail
-                            if (showBatteryInfo && MainModule.mPrefs.getBoolean("system_statusbar_batterytempandcurrent_incharge") && ChargeUtilsClass != null) {
+                            // Refresh one immutable snapshot per tick. The ticker must not hold
+                            // a configuration captured at hook time, and must not re-read
+                            // individual preferences inside the same pass.
+                            val snap = readDeviceMonitorSnapshot(MainModule.mPrefs)
+
+                            // No extra ticker work when both features are disabled.
+                            if (!snap.showBatteryDetail && !snap.showDeviceTemp) {
+                                mBgHandler?.removeMessages(200021)
+                                mBgHandler?.sendEmptyMessageDelayed(200021, 2000)
+                                return
+                            }
+
+                            var showBatteryInfo = snap.showBatteryDetail
+                            if (showBatteryInfo && snap.batteryInCharge && ChargeUtilsClass != null) {
                                 val batteryStatus = ModuleHelper.getStaticObjectFieldSilently(ChargeUtilsClass, "sBatteryStatus")
                                 if (ModuleHelper.NOT_EXIST_SYMBOL.equals(batteryStatus)) {
                                     showBatteryInfo = false
@@ -283,18 +428,25 @@ object SystemUIStatusBarHooks {
                                     showBatteryInfo = XposedHelpers.callMethod(batteryStatus, "isCharging") as? Boolean ?: false
                                 }
                             }
+
+                            var batteryInfo = ""
+                            var deviceInfo = ""
                             val powerMgr = mContext.getSystemService(Context.POWER_SERVICE) as? PowerManager
                             val isScreenOn = powerMgr?.isInteractive ?: false
                             if (isScreenOn) {
+                                val shouldReadCpu = snap.showDeviceTemp
+                                val shouldReadBatteryProps = showBatteryInfo || (snap.showDeviceTemp && snap.deviceTempContentOpt != 3)
                                 var props: Properties? = null
                                 var cpuProps: String? = null
                                 var fis: FileInputStream? = null
                                 var cpuReader: RandomAccessFile? = null
                                 try {
-                                    fis = FileInputStream("/sys/class/power_supply/battery/uevent")
-                                    props = Properties()
-                                    props.load(fis)
-                                    if (showDeviceTemp) {
+                                    if (shouldReadBatteryProps) {
+                                        fis = FileInputStream("/sys/class/power_supply/battery/uevent")
+                                        props = Properties()
+                                        props.load(fis)
+                                    }
+                                    if (shouldReadCpu) {
                                         cpuReader = RandomAccessFile("/sys/devices/virtual/thermal/thermal_zone0/temp", "r")
                                         cpuProps = cpuReader.readLine()
                                     }
@@ -307,88 +459,16 @@ object SystemUIStatusBarHooks {
                                     }
                                 }
                                 if (showBatteryInfo && props != null) {
-                                    val opt = MainModule.mPrefs.getStringAsInt("system_statusbar_batterytempandcurrent_content", 1)
-                                    var simpleTempVal = ""
-                                    if (opt == 1 || opt == 4) {
-                                        val decimal = MainModule.mPrefs.getBoolean("system_statusbar_batterytempandcurrent_temp_decimal")
-                                        val tempVal = Integer.parseInt(props.getProperty("POWER_SUPPLY_TEMP"))
-                                        simpleTempVal = if (decimal) {
-                                            (tempVal / 10f).toString()
-                                        } else {
-                                            if (tempVal % 10 == 0) (tempVal / 10).toString() else (tempVal / 10f).toString()
-                                        }
-                                    }
-                                    var currVal = ""
-                                    var preferred = "mA"
-                                    var currentRatio = 1000f
-                                    if (MainModule.mPrefs.getBoolean("system_statusbar_batterytempandcurrent_fixcurrentratio")) {
-                                        currentRatio = 1f
-                                    }
-                                    var rawCurr = -1 * Math.round(Integer.parseInt(props.getProperty("POWER_SUPPLY_CURRENT_NOW")) / currentRatio)
-                                    if (opt == 1 || opt == 3 || opt == 5) {
-                                        if (MainModule.mPrefs.getBoolean("system_statusbar_batterytempandcurrent_positive")) {
-                                            rawCurr = Math.abs(rawCurr)
-                                        }
-                                        if (Math.abs(rawCurr) > 999) {
-                                            currVal = String.format(Locale.getDefault(), "%.2f", rawCurr / 1000f)
-                                            preferred = "A"
-                                        } else {
-                                            currVal = rawCurr.toString()
-                                        }
-                                    }
-                                    val hideUnit = MainModule.mPrefs.getStringAsInt("system_statusbar_batterytempandcurrent_hideunit", 0)
-                                    val tempUnit = if (hideUnit == 1 || hideUnit == 2) "" else "℃"
-                                    val powerUnit = if (hideUnit == 1 || hideUnit == 3) "" else "W"
-                                    val currUnit = if (hideUnit == 1 || hideUnit == 3) "" else preferred
-                                    val voltVal = Integer.parseInt(props.getProperty("POWER_SUPPLY_VOLTAGE_NOW")) / 1000f / 1000f
-                                    val simpleWatt = String.format(Locale.getDefault(), "%.2f", Math.abs(voltVal * rawCurr) / 1000)
-                                    val splitChar = if (MainModule.mPrefs.getBoolean("system_statusbar_batterytempandcurrent_singlerow")) " " else "\n"
-                                    batteryInfo = when (opt) {
-                                        1 -> if (MainModule.mPrefs.getBoolean("system_statusbar_batterytempandcurrent_reverseorder")) {
-                                            "$currVal$currUnit$splitChar$simpleTempVal$tempUnit"
-                                        } else {
-                                            "$simpleTempVal$tempUnit$splitChar$currVal$currUnit"
-                                        }
-                                        4 -> if (MainModule.mPrefs.getBoolean("system_statusbar_batterytempandcurrent_reverseorder")) {
-                                            "$simpleWatt$powerUnit$splitChar$simpleTempVal$tempUnit"
-                                        } else {
-                                            "$simpleTempVal$tempUnit$splitChar$simpleWatt$powerUnit"
-                                        }
-                                        2 -> "$simpleWatt$powerUnit"
-                                        5 -> if (MainModule.mPrefs.getBoolean("system_statusbar_batterytempandcurrent_reverseorder")) {
-                                            "$simpleWatt$powerUnit$splitChar$currVal$currUnit"
-                                        } else {
-                                            "$currVal$currUnit$splitChar$simpleWatt$powerUnit"
-                                        }
-                                        else -> "$currVal$currUnit"
-                                    }
+                                    batteryInfo = buildBatteryInfo(snap, props)
                                 }
-                                if (showDeviceTemp && props != null && cpuProps != null) {
-                                    val batteryTempVal = Integer.parseInt(props.getProperty("POWER_SUPPLY_TEMP"))
-                                    val cpuTempVal = Integer.parseInt(cpuProps)
-                                    val simpleBatteryTemp = String.format(Locale.getDefault(), "%.1f", batteryTempVal / 10f)
-                                    val simpleCpuTemp = String.format(Locale.getDefault(), "%.1f", cpuTempVal / 1000f)
-                                    val opt = MainModule.mPrefs.getStringAsInt("system_statusbar_showdevicetemperature_content", 1)
-                                    val hideUnit = MainModule.mPrefs.getBoolean("system_statusbar_showdevicetemperature_hideunit")
-                                    val tempUnit = if (hideUnit) "" else "℃"
-                                    val splitChar = if (MainModule.mPrefs.getBoolean("system_statusbar_showdevicetemperature_singlerow")) " " else "\n"
-                                    deviceInfo = if (opt == 1) {
-                                        if (MainModule.mPrefs.getBoolean("system_statusbar_showdevicetemperature_reverseorder")) {
-                                            "$simpleCpuTemp$tempUnit$splitChar$simpleBatteryTemp$tempUnit"
-                                        } else {
-                                            "$simpleBatteryTemp$tempUnit$splitChar$simpleCpuTemp$tempUnit"
-                                        }
-                                    } else if (opt == 2) {
-                                        "$simpleBatteryTemp$tempUnit"
-                                    } else {
-                                        "$simpleCpuTemp$tempUnit"
-                                    }
+                                if (snap.showDeviceTemp && props != null && cpuProps != null) {
+                                    deviceInfo = buildDeviceInfo(snap, props, cpuProps)
                                 }
-                                if (showBatteryDetail) {
+                                if (snap.showBatteryDetail) {
                                     val tii = TextIconInfo(true, 91, batteryInfo)
                                     mHandler.obtainMessage(100021, tii).sendToTarget()
                                 }
-                                if (showDeviceTemp) {
+                                if (snap.showDeviceTemp) {
                                     val tii = TextIconInfo(true, 92, deviceInfo)
                                     mHandler.obtainMessage(100021, tii).sendToTarget()
                                 }
@@ -411,6 +491,11 @@ object SystemUIStatusBarHooks {
         }
     }
 
+    /**
+     * Style and layout settings are applied once when the icon view is created.
+     * Runtime changes to font size, margins, alignment, or fixed width require
+     * a SystemUI restart.
+     */
     private fun initStatusbarTextIcon(mContext: Context, lp: LinearLayout.LayoutParams, ti: TextIcon, iconView: View) {
         XposedHelpers.setObjectField(iconView, "mVisibleByController", true)
         XposedHelpers.setObjectField(iconView, "mShown", true)
