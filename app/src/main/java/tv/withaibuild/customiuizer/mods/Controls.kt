@@ -422,7 +422,7 @@ object Controls {
         }
         leftbtn.setOnLongClickListener {
             val ctx = it.context
-            ModuleHelper.guarded(false) { handleNavBarAction(ctx, "controls_navbarleftlong"); true }
+            ModuleHelper.guarded(false) { handleNavBarAction(ctx, "controls_navbarleftlong") }
         }
         leftbtn.addView(left)
 
@@ -449,7 +449,7 @@ object Controls {
         }
         rightbtn.setOnLongClickListener {
             val ctx = it.context
-            ModuleHelper.guarded(false) { handleNavBarAction(ctx, "controls_navbarrightlong"); true }
+            ModuleHelper.guarded(false) { handleNavBarAction(ctx, "controls_navbarrightlong") }
         }
         rightbtn.addView(right)
 
