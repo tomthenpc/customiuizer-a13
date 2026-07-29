@@ -45,7 +45,7 @@ object SystemFreeformAndMultiWindowHooks {
     fun unserializeFwApps(data: String?) {
         fwApps.clear()
         if (data == null || "" == data) return
-        val dataArr = data.split("\\|".toRegex())
+        val dataArr = data.split('|')
         for (appData in dataArr) {
             if ("" == appData) continue
             val appDataArr = appData.split(":")

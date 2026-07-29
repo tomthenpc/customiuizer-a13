@@ -104,7 +104,7 @@ object SystemLockScreenMoreHooks {
                 val key = "system_applock_skip_activities"
                 val itemStr = MainModule.mPrefs.getString(key, "")
                 if (itemStr.isEmpty()) return
-                val itemArr = itemStr.trim().split("\\|".toRegex())
+                val itemArr = itemStr.trim().split('|')
                 for (uuid in itemArr) {
                     val pkgAct = MainModule.mPrefs.getString(key + "_" + uuid + "_activity", "")
                     if (pkgAct == "$pkgName|$actName") param.setResult(true)
