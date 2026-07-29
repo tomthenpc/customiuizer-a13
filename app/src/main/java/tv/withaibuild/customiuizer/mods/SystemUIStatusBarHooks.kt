@@ -133,8 +133,6 @@ object SystemUIStatusBarHooks {
      * once per tick so the whole pass uses a single consistent view of the dynamic settings.
      */
     internal data class DeviceMonitorSnapshot(
-        val showBatteryDetail: Boolean,
-        val showDeviceTemp: Boolean,
         val batteryInCharge: Boolean,
         val batteryContentOpt: Int,
         val batteryTempDecimal: Boolean,
@@ -152,8 +150,6 @@ object SystemUIStatusBarHooks {
     @JvmStatic
     internal fun readDeviceMonitorSnapshot(prefs: PrefMap<String, Any>): DeviceMonitorSnapshot {
         return DeviceMonitorSnapshot(
-            showBatteryDetail = prefs.getBoolean("system_statusbar_batterytempandcurrent"),
-            showDeviceTemp = prefs.getBoolean("system_statusbar_showdevicetemperature"),
             batteryInCharge = prefs.getBoolean("system_statusbar_batterytempandcurrent_incharge"),
             batteryContentOpt = prefs.getStringAsInt("system_statusbar_batterytempandcurrent_content", 1),
             batteryTempDecimal = prefs.getBoolean("system_statusbar_batterytempandcurrent_temp_decimal"),
@@ -236,23 +232,29 @@ object SystemUIStatusBarHooks {
     }
 
     @JvmStatic
-    internal fun buildDeviceInfo(snap: DeviceMonitorSnapshot, props: Properties, cpuProps: String): String {
-        val batteryTempVal = parseSysfsInt(props.getProperty("POWER_SUPPLY_TEMP"))
-        val cpuTempVal = parseSysfsInt(cpuProps)
-        val simpleBatteryTemp = String.format(Locale.getDefault(), "%.1f", batteryTempVal / 10f)
-        val simpleCpuTemp = String.format(Locale.getDefault(), "%.1f", cpuTempVal / 1000f)
-        val opt = snap.deviceTempContentOpt
+    internal fun buildDeviceInfo(snap: DeviceMonitorSnapshot, batteryTemp: String?, cpuTemp: String?): String {
+        val opt = if (snap.deviceTempContentOpt in 1..3) snap.deviceTempContentOpt else 1
         val hideUnit = snap.deviceTempHideUnit
         val tempUnit = if (hideUnit) "" else "℃"
         val splitChar = if (snap.deviceTempSingleRow) " " else "\n"
         return when (opt) {
-            1 -> if (snap.deviceTempReverseOrder) {
-                "$simpleCpuTemp$tempUnit$splitChar$simpleBatteryTemp$tempUnit"
-            } else {
-                "$simpleBatteryTemp$tempUnit$splitChar$simpleCpuTemp$tempUnit"
+            1 -> {
+                val simpleBatteryTemp = String.format(Locale.getDefault(), "%.1f", parseSysfsInt(batteryTemp) / 10f)
+                val simpleCpuTemp = String.format(Locale.getDefault(), "%.1f", parseSysfsInt(cpuTemp) / 1000f)
+                if (snap.deviceTempReverseOrder) {
+                    "$simpleCpuTemp$tempUnit$splitChar$simpleBatteryTemp$tempUnit"
+                } else {
+                    "$simpleBatteryTemp$tempUnit$splitChar$simpleCpuTemp$tempUnit"
+                }
             }
-            2 -> "$simpleBatteryTemp$tempUnit"
-            else -> "$simpleCpuTemp$tempUnit"
+            2 -> {
+                val simpleBatteryTemp = String.format(Locale.getDefault(), "%.1f", parseSysfsInt(batteryTemp) / 10f)
+                "$simpleBatteryTemp$tempUnit"
+            }
+            else -> {
+                val simpleCpuTemp = String.format(Locale.getDefault(), "%.1f", parseSysfsInt(cpuTemp) / 1000f)
+                "$simpleCpuTemp$tempUnit"
+            }
         }
     }
 
@@ -412,14 +414,15 @@ object SystemUIStatusBarHooks {
                             // individual preferences inside the same pass.
                             val snap = readDeviceMonitorSnapshot(MainModule.mPrefs)
 
-                            // No extra ticker work when both features are disabled.
-                            if (!snap.showBatteryDetail && !snap.showDeviceTemp) {
+                            // Master toggles are fixed at hook installation; the ticker must not
+                            // dynamically enable an icon that has no slot.
+                            if (!showBatteryDetail && !showDeviceTemp) {
                                 mBgHandler?.removeMessages(200021)
                                 mBgHandler?.sendEmptyMessageDelayed(200021, 2000)
                                 return
                             }
 
-                            var showBatteryInfo = snap.showBatteryDetail
+                            var showBatteryInfo = showBatteryDetail
                             if (showBatteryInfo && snap.batteryInCharge && ChargeUtilsClass != null) {
                                 val batteryStatus = ModuleHelper.getStaticObjectFieldSilently(ChargeUtilsClass, "sBatteryStatus")
                                 if (ModuleHelper.NOT_EXIST_SYMBOL.equals(batteryStatus)) {
@@ -434,21 +437,29 @@ object SystemUIStatusBarHooks {
                             val powerMgr = mContext.getSystemService(Context.POWER_SERVICE) as? PowerManager
                             val isScreenOn = powerMgr?.isInteractive ?: false
                             if (isScreenOn) {
-                                val shouldReadCpu = snap.showDeviceTemp
-                                val shouldReadBatteryProps = showBatteryInfo || (snap.showDeviceTemp && snap.deviceTempContentOpt != 3)
+                                val resolvedDeviceTempContent =
+                                    if (snap.deviceTempContentOpt in 1..3) snap.deviceTempContentOpt else 1
+                                val needsBatteryTemp = resolvedDeviceTempContent == 1 || resolvedDeviceTempContent == 2
+                                val needsCpuTemp = resolvedDeviceTempContent == 1 || resolvedDeviceTempContent == 3
+
+                                val needBatteryUevent = showBatteryInfo || (showDeviceTemp && needsBatteryTemp)
+                                val needCpu = showDeviceTemp && needsCpuTemp
+
                                 var props: Properties? = null
-                                var cpuProps: String? = null
+                                var batteryTemp: String? = null
+                                var cpuTemp: String? = null
                                 var fis: FileInputStream? = null
                                 var cpuReader: RandomAccessFile? = null
                                 try {
-                                    if (shouldReadBatteryProps) {
+                                    if (needBatteryUevent) {
                                         fis = FileInputStream("/sys/class/power_supply/battery/uevent")
                                         props = Properties()
                                         props.load(fis)
+                                        batteryTemp = props.getProperty("POWER_SUPPLY_TEMP")
                                     }
-                                    if (shouldReadCpu) {
+                                    if (needCpu) {
                                         cpuReader = RandomAccessFile("/sys/devices/virtual/thermal/thermal_zone0/temp", "r")
-                                        cpuProps = cpuReader.readLine()
+                                        cpuTemp = cpuReader.readLine()
                                     }
                                 } catch (_: Throwable) {
                                 } finally {
@@ -461,14 +472,14 @@ object SystemUIStatusBarHooks {
                                 if (showBatteryInfo && props != null) {
                                     batteryInfo = buildBatteryInfo(snap, props)
                                 }
-                                if (snap.showDeviceTemp && props != null && cpuProps != null) {
-                                    deviceInfo = buildDeviceInfo(snap, props, cpuProps)
+                                if (showDeviceTemp) {
+                                    deviceInfo = buildDeviceInfo(snap, batteryTemp, cpuTemp)
                                 }
-                                if (snap.showBatteryDetail) {
+                                if (showBatteryDetail) {
                                     val tii = TextIconInfo(true, 91, batteryInfo)
                                     mHandler.obtainMessage(100021, tii).sendToTarget()
                                 }
-                                if (snap.showDeviceTemp) {
+                                if (showDeviceTemp) {
                                     val tii = TextIconInfo(true, 92, deviceInfo)
                                     mHandler.obtainMessage(100021, tii).sendToTarget()
                                 }

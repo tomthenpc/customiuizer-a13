@@ -1,7 +1,9 @@
 package tv.withaibuild.customiuizer.utils
 
 import org.junit.Assert.assertEquals
+import org.junit.Assert.assertFalse
 import org.junit.Assert.assertNotSame
+import org.junit.Assert.assertTrue
 import org.junit.Before
 import org.junit.Test
 
@@ -12,6 +14,42 @@ class PrefMapTest {
     @Before
     fun setUp() {
         map = PrefMap()
+    }
+
+    @Test
+    fun getBooleanReturnsTrueAndFalse() {
+        map["pref_key_true"] = true
+        map["pref_key_false"] = false
+        assertTrue(map.getBoolean("true"))
+        assertFalse(map.getBoolean("false"))
+    }
+
+    @Test
+    fun getBooleanParsesStringTrueFalse() {
+        map["pref_key_t"] = "true"
+        map["pref_key_one"] = "1"
+        map["pref_key_f"] = "false"
+        map["pref_key_zero"] = "0"
+        assertTrue(map.getBoolean("t"))
+        assertTrue(map.getBoolean("one"))
+        assertFalse(map.getBoolean("f"))
+        assertFalse(map.getBoolean("zero"))
+    }
+
+    @Test
+    fun getBooleanUnknownValueReturnsDefault() {
+        map["pref_key_unknown"] = "notABoolean"
+        map["pref_key_number"] = 42
+        assertFalse(map.getBoolean("unknown"))
+        assertFalse(map.getBoolean("number"))
+        assertTrue(map.getBoolean("unknown", true))
+        assertTrue(map.getBoolean("number", true))
+    }
+
+    @Test
+    fun getBooleanMissingKeyReturnsDefault() {
+        assertFalse(map.getBoolean("missing"))
+        assertTrue(map.getBoolean("missing", true))
     }
 
     @Test

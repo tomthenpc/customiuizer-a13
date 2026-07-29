@@ -3,6 +3,8 @@ package tv.withaibuild.customiuizer.mods
 import org.junit.After
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse
+import org.junit.Assert.assertNotNull
+import org.junit.Assert.assertNull
 import org.junit.Assert.assertTrue
 import org.junit.Before
 import org.junit.Test
@@ -37,8 +39,6 @@ class SystemUIStatusBarHooksDeviceMonitorTest {
     @Test
     fun snapshotReadsAllDynamicValues() {
         val map = prefs(
-            "system_statusbar_batterytempandcurrent" to true,
-            "system_statusbar_showdevicetemperature" to true,
             "system_statusbar_batterytempandcurrent_incharge" to true,
             "system_statusbar_batterytempandcurrent_content" to "4",
             "system_statusbar_batterytempandcurrent_temp_decimal" to true,
@@ -55,8 +55,6 @@ class SystemUIStatusBarHooksDeviceMonitorTest {
 
         val snap = SystemUIStatusBarHooks.readDeviceMonitorSnapshot(map)
 
-        assertTrue(snap.showBatteryDetail)
-        assertTrue(snap.showDeviceTemp)
         assertTrue(snap.batteryInCharge)
         assertEquals(4, snap.batteryContentOpt)
         assertTrue(snap.batteryTempDecimal)
@@ -75,6 +73,7 @@ class SystemUIStatusBarHooksDeviceMonitorTest {
     fun snapshotDoesNotIncludeFixedSlotSettings() {
         val map = prefs(
             "system_statusbar_batterytempandcurrent" to true,
+            "system_statusbar_showdevicetemperature" to true,
             "system_statusbar_batterytempandcurrent_atright" to true,
             "system_statusbar_showdevicetemperature_atright" to true,
             "system_statusbar_batterytempandcurrent_fontsize" to 30,
@@ -83,23 +82,34 @@ class SystemUIStatusBarHooksDeviceMonitorTest {
 
         val snap = SystemUIStatusBarHooks.readDeviceMonitorSnapshot(map)
 
-        assertTrue(snap.showBatteryDetail)
-        // At-right and style/margin settings are not part of the per-tick snapshot.
+        // Master toggles, at-right and style/margin settings are not part of the per-tick snapshot.
         assertEquals(1, snap.batteryContentOpt)
+    }
+
+    @Test
+    fun snapshotDoesNotContainMasterToggles() {
+        val map = prefs(
+            "system_statusbar_batterytempandcurrent" to true,
+            "system_statusbar_showdevicetemperature" to true
+        )
+
+        val snap = SystemUIStatusBarHooks.readDeviceMonitorSnapshot(map)
+
+        val clazz = snap::class.java
+        assertNull("showBatteryDetail must not be a snapshot field", clazz.getDeclaredFieldOrNull("showBatteryDetail"))
+        assertNull("showDeviceTemp must not be a snapshot field", clazz.getDeclaredFieldOrNull("showDeviceTemp"))
     }
 
     @Test
     fun snapshotUsesDefaultsForMissingAndMalformedValues() {
         val map = prefs(
-            "system_statusbar_batterytempandcurrent" to "notABoolean",
+            "system_statusbar_batterytempandcurrent_incharge" to "notABoolean",
             "system_statusbar_batterytempandcurrent_content" to "bad",
             "system_statusbar_batterytempandcurrent_hideunit" to "alsoBad"
         )
 
         val snap = SystemUIStatusBarHooks.readDeviceMonitorSnapshot(map)
 
-        assertFalse(snap.showBatteryDetail)
-        assertFalse(snap.showDeviceTemp)
         assertFalse(snap.batteryInCharge)
         assertEquals(1, snap.batteryContentOpt)
         assertEquals(0, snap.batteryHideUnit)
@@ -125,7 +135,6 @@ class SystemUIStatusBarHooksDeviceMonitorTest {
     @Test
     fun nextTickSeesUpdatedPreferences() {
         val map = prefs(
-            "system_statusbar_batterytempandcurrent" to true,
             "system_statusbar_batterytempandcurrent_content" to "1",
             "system_statusbar_batterytempandcurrent_hideunit" to "0"
         )
@@ -139,24 +148,8 @@ class SystemUIStatusBarHooksDeviceMonitorTest {
     }
 
     @Test
-    fun disabledFeaturesResultInNoMonitorWorkFlags() {
-        val map = prefs(
-            "system_statusbar_batterytempandcurrent" to false,
-            "system_statusbar_showdevicetemperature" to false
-        )
-
-        val snap = SystemUIStatusBarHooks.readDeviceMonitorSnapshot(map)
-
-        assertFalse(snap.showBatteryDetail)
-        assertFalse(snap.showDeviceTemp)
-        // With both features off, the real ticker returns early and performs no file I/O.
-    }
-
-    @Test
     fun buildBatteryInfoUsesSnapshotConsistently() {
         val snap = SystemUIStatusBarHooks.DeviceMonitorSnapshot(
-            showBatteryDetail = true,
-            showDeviceTemp = false,
             batteryInCharge = false,
             batteryContentOpt = 1,
             batteryTempDecimal = false,
@@ -187,8 +180,6 @@ class SystemUIStatusBarHooksDeviceMonitorTest {
     @Test
     fun buildBatteryInfoReactsToSnapshotChanges() {
         val snap = SystemUIStatusBarHooks.DeviceMonitorSnapshot(
-            showBatteryDetail = true,
-            showDeviceTemp = false,
             batteryInCharge = false,
             batteryContentOpt = 1,
             batteryTempDecimal = false,
@@ -219,8 +210,6 @@ class SystemUIStatusBarHooksDeviceMonitorTest {
     @Test
     fun buildBatteryInfoHandlesMissingSysfsKeys() {
         val snap = SystemUIStatusBarHooks.DeviceMonitorSnapshot(
-            showBatteryDetail = true,
-            showDeviceTemp = false,
             batteryInCharge = false,
             batteryContentOpt = 1,
             batteryTempDecimal = false,
@@ -244,10 +233,8 @@ class SystemUIStatusBarHooksDeviceMonitorTest {
     }
 
     @Test
-    fun buildDeviceInfoUsesSnapshot() {
+    fun buildDeviceInfoDualTemperatureReadsBoth() {
         val snap = SystemUIStatusBarHooks.DeviceMonitorSnapshot(
-            showBatteryDetail = false,
-            showDeviceTemp = true,
             batteryInCharge = false,
             batteryContentOpt = 1,
             batteryTempDecimal = false,
@@ -262,13 +249,86 @@ class SystemUIStatusBarHooksDeviceMonitorTest {
             deviceTempReverseOrder = true
         )
 
-        val props = Properties().apply {
-            setProperty("POWER_SUPPLY_TEMP", "360")
-        }
-
-        val text = SystemUIStatusBarHooks.buildDeviceInfo(snap, props, "45000")
+        val text = SystemUIStatusBarHooks.buildDeviceInfo(snap, "360", "45000")
 
         // reverse order with single row: CPU 45.0℃ before battery 36.0℃
         assertEquals("45.0\u2103 36.0\u2103", text)
+    }
+
+    @Test
+    fun buildDeviceInfoBatteryOnlyDoesNotNeedCpu() {
+        val snap = SystemUIStatusBarHooks.DeviceMonitorSnapshot(
+            batteryInCharge = false,
+            batteryContentOpt = 1,
+            batteryTempDecimal = false,
+            batteryFixCurrentRatio = false,
+            batteryPositive = false,
+            batterySingleRow = false,
+            batteryReverseOrder = false,
+            batteryHideUnit = 0,
+            deviceTempContentOpt = 2,
+            deviceTempHideUnit = false,
+            deviceTempSingleRow = true,
+            deviceTempReverseOrder = false
+        )
+
+        val text = SystemUIStatusBarHooks.buildDeviceInfo(snap, "360", null)
+
+        // content=2: only battery temperature, CPU may be null
+        assertEquals("36.0\u2103", text)
+    }
+
+    @Test
+    fun buildDeviceInfoCpuOnlyDoesNotNeedBattery() {
+        val snap = SystemUIStatusBarHooks.DeviceMonitorSnapshot(
+            batteryInCharge = false,
+            batteryContentOpt = 1,
+            batteryTempDecimal = false,
+            batteryFixCurrentRatio = false,
+            batteryPositive = false,
+            batterySingleRow = false,
+            batteryReverseOrder = false,
+            batteryHideUnit = 0,
+            deviceTempContentOpt = 3,
+            deviceTempHideUnit = false,
+            deviceTempSingleRow = false,
+            deviceTempReverseOrder = false
+        )
+
+        val text = SystemUIStatusBarHooks.buildDeviceInfo(snap, null, "45000")
+
+        // content=3: only CPU temperature, battery may be null
+        assertEquals("45.0\u2103", text)
+    }
+
+    @Test
+    fun buildDeviceInfoIllegalContentFallsBackToDual() {
+        val snap = SystemUIStatusBarHooks.DeviceMonitorSnapshot(
+            batteryInCharge = false,
+            batteryContentOpt = 1,
+            batteryTempDecimal = false,
+            batteryFixCurrentRatio = false,
+            batteryPositive = false,
+            batterySingleRow = false,
+            batteryReverseOrder = false,
+            batteryHideUnit = 0,
+            deviceTempContentOpt = 42,
+            deviceTempHideUnit = false,
+            deviceTempSingleRow = true,
+            deviceTempReverseOrder = false
+        )
+
+        val text = SystemUIStatusBarHooks.buildDeviceInfo(snap, "360", "45000")
+
+        // Illegal content value falls back to mode 1 (battery + CPU)
+        assertEquals("36.0\u2103 45.0\u2103", text)
+    }
+
+    private fun Class<*>.getDeclaredFieldOrNull(name: String): java.lang.reflect.Field? {
+        return try {
+            getDeclaredField(name)
+        } catch (_: NoSuchFieldException) {
+            null
+        }
     }
 }
