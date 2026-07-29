@@ -37,6 +37,52 @@ object AppHelper {
     @JvmField
     var RESTORED_FROM_BACKUP: String = "restored_from_backup"
 
+    private val pendingRemoteEdits = LinkedHashMap<String, Any?>()
+
+    private const val REMOTE_CLEAR_MARKER = "__prefs_clear_all__"
+
+    @JvmStatic
+    @Synchronized
+    fun queueRemotePreferenceEdit(key: String, value: Any?) {
+        if (key == REMOTE_CLEAR_MARKER) return
+        pendingRemoteEdits[key] = value
+    }
+
+    @JvmStatic
+    @Synchronized
+    fun queueRemotePreferenceClear() {
+        pendingRemoteEdits.clear()
+        pendingRemoteEdits[REMOTE_CLEAR_MARKER] = null
+    }
+
+    @JvmStatic
+    @Synchronized
+    fun flushRemotePreferenceEdits(remote: SharedPreferences?) {
+        val target = remote ?: return
+        if (pendingRemoteEdits.isEmpty()) return
+        val edit = target.edit()
+        val hasClear = pendingRemoteEdits.containsKey(REMOTE_CLEAR_MARKER)
+        val entries = pendingRemoteEdits.toList()
+        pendingRemoteEdits.clear()
+        if (hasClear) edit.clear()
+        for ((key, value) in entries) {
+            if (key == REMOTE_CLEAR_MARKER) continue
+            when (value) {
+                null -> edit.remove(key)
+                is Boolean -> edit.putBoolean(key, value)
+                is Float -> edit.putFloat(key, value)
+                is Int -> edit.putInt(key, value)
+                is Long -> edit.putLong(key, value)
+                is String -> edit.putString(key, value)
+                is Set<*> -> {
+                    @Suppress("UNCHECKED_CAST")
+                    edit.putStringSet(key, value as Set<String>)
+                }
+            }
+        }
+        edit.apply()
+    }
+
     @JvmStatic
     fun log(line: String) {
         Log.i(TAG, "[CustoMIUIzer] $line")

@@ -119,11 +119,11 @@ object AppLocaleController {
     /** 映射用户 tag 到 AppCompat 期望的 [LocaleListCompat]。 */
     @JvmStatic
     fun toLocaleListCompat(tag: String): LocaleListCompat = try {
-        when (normalizeLocaleTag(tag)) {
+        val normalized = normalizeLocaleTag(tag)
+        when (normalized) {
             "auto" -> LocaleListCompat.getEmptyLocaleList()
             else -> try {
-                val locale = Locale.forLanguageTag(tag)
-                LocaleListCompat.create(locale)
+                LocaleListCompat.forLanguageTags(normalized)
             } catch (t: Throwable) {
                 LocaleListCompat.getEmptyLocaleList()
             }

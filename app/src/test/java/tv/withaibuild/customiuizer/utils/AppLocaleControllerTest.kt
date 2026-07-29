@@ -195,6 +195,21 @@ class AppLocaleControllerTest {
     }
 
     @Test
+    fun toLocaleListCompatPreservesRegionTag() {
+        val ptBr = AppLocaleController.toLocaleListCompat("pt-BR")
+        assertNotNull(ptBr)
+        assertEquals("pt-BR", ptBr.toLanguageTags())
+
+        val zhCn = AppLocaleController.toLocaleListCompat("zh-CN")
+        assertNotNull(zhCn)
+        assertEquals("zh-CN", zhCn.toLanguageTags())
+
+        val zhTw = AppLocaleController.toLocaleListCompat("zh-TW")
+        assertNotNull(zhTw)
+        assertEquals("zh-TW", zhTw.toLanguageTags())
+    }
+
+    @Test
     fun stateTransitionMatrix() {
         assertTrue(AppLocaleController.setUserLocale(fakePrefs, "zh-CN"))
         assertEquals(Locale.SIMPLIFIED_CHINESE, Locale.getDefault())

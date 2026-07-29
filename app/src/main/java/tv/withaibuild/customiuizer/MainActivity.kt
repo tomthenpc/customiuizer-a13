@@ -41,6 +41,7 @@ class MainActivity : AppCompatActivity() {
                 override fun onServiceBind(service: io.github.libxposed.service.XposedService) {
                     AppHelper.moduleActive = true
                     AppHelper.remotePrefs = service.getRemotePreferences(AppHelper.prefsName + "_remote") as io.github.libxposed.service.RemotePreferences
+                    AppHelper.flushRemotePreferenceEdits(AppHelper.remotePrefs)
                 }
 
                 override fun onServiceDied(service: io.github.libxposed.service.XposedService) {
@@ -71,18 +72,26 @@ class MainActivity : AppCompatActivity() {
         )
 
         prefsChanged = android.content.SharedPreferences.OnSharedPreferenceChangeListener { sharedPreferences, key ->
-            if (AppHelper.remotePrefs == null) return@OnSharedPreferenceChangeListener
             if (key == null) {
-                val prefEdit = AppHelper.remotePrefs?.edit() ?: return@OnSharedPreferenceChangeListener
-                AppHelper.remotePrefs?.getAll()?.keys?.forEach { remoteKey ->
-                    prefEdit.remove(remoteKey)
+                if (AppHelper.remotePrefs == null) {
+                    AppHelper.queueRemotePreferenceClear()
+                } else {
+                    val prefEdit = AppHelper.remotePrefs?.edit() ?: return@OnSharedPreferenceChangeListener
+                    AppHelper.remotePrefs?.getAll()?.keys?.forEach { remoteKey ->
+                        prefEdit.remove(remoteKey)
+                    }
+                    prefEdit.apply()
                 }
-                prefEdit.apply()
                 return@OnSharedPreferenceChangeListener
             }
             if (ignoreKeys.contains(key)) return@OnSharedPreferenceChangeListener
 
             val value = sharedPreferences.all[key]
+            if (AppHelper.remotePrefs == null) {
+                AppHelper.queueRemotePreferenceEdit(key, value)
+                return@OnSharedPreferenceChangeListener
+            }
+
             val prefEdit = AppHelper.remotePrefs?.edit() ?: return@OnSharedPreferenceChangeListener
             when (value) {
                 null -> prefEdit.remove(key)

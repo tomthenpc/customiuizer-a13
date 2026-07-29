@@ -3,6 +3,10 @@ package tv.withaibuild.customiuizer.utils
 @Suppress("UNCHECKED_CAST")
 class PrefMap<K, V> : HashMap<K, V>() {
 
+    private data class CachedInt(val raw: String, val value: Int?)
+
+    private val parsedIntCache = java.util.concurrent.ConcurrentHashMap<K, CachedInt>()
+
     fun getObject(key: String, defValue: Any?): Any? {
         return get(key as K) ?: defValue
     }
@@ -23,8 +27,17 @@ class PrefMap<K, V> : HashMap<K, V>() {
     }
 
     fun getStringAsInt(key: String, defValue: Int): Int {
-        val value = get(normalizeKey(key) as K)
-        return if (value is String) value.toIntOrNull() ?: defValue else defValue
+        val value = get(normalizeKey(key) as K) ?: return defValue
+        if (value is Number) return value.toInt()
+        if (value !is String) return defValue
+
+        val normalized = normalizeKey(key) as K
+        val cached = parsedIntCache[normalized]
+        if (cached != null && cached.raw == value) return cached.value ?: defValue
+
+        val parsed = value.toIntOrNull()
+        parsedIntCache[normalized] = CachedInt(value, parsed)
+        return parsed ?: defValue
     }
 
     fun getStringSet(key: String): Set<String> {
@@ -39,6 +52,26 @@ class PrefMap<K, V> : HashMap<K, V>() {
     fun getBoolean(key: String, defValue: Boolean): Boolean {
         val value = get(normalizeKey(key) as K)
         return if (value == null) defValue else value as Boolean
+    }
+
+    override fun put(key: K, value: V): V? {
+        parsedIntCache.remove(key)
+        return super.put(key, value)
+    }
+
+    override fun putAll(from: Map<out K, V>) {
+        for ((k, _) in from) parsedIntCache.remove(k)
+        super.putAll(from)
+    }
+
+    override fun remove(key: K): V? {
+        parsedIntCache.remove(key)
+        return super.remove(key)
+    }
+
+    override fun clear() {
+        parsedIntCache.clear()
+        super.clear()
     }
 
     private fun normalizeKey(key: String): String =
