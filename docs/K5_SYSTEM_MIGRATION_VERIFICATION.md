@@ -1,5 +1,7 @@
 # K5 `System.java` → Kotlin 迁移验证报告（K5.2 修正版）
 
+> 后续包名迁移说明：本报告描述的 K5 验证时，源码包仍为 `name.monwf.customiuizer`。在独立的 `devin/r13.4-package-migration` 提交中，源码包被迁移为 `tv.withaibuild.customiuizer`，`applicationId` 保持 `tv.withaibuild.customiuizer.r13` 不变，K5 的方法映射和调用语义未改变。
+
 ## 1. 基线提交
 
 - 迁移前备份分支：`backup/r13-k5-before-system-java-removal`（`8df0c3d`）

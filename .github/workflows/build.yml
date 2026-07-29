@@ -42,7 +42,7 @@ jobs:
           test -n "$apk"
           unzip -p "$apk" META-INF/xposed/module.prop | grep -qx 'minApiVersion=101'
           unzip -p "$apk" META-INF/xposed/module.prop | grep -qx 'targetApiVersion=102'
-          unzip -p "$apk" META-INF/xposed/java_init.list | grep -qx 'name.monwf.customiuizer.MainModule'
+          unzip -p "$apk" META-INF/xposed/java_init.list | grep -qx 'tv.withaibuild.customiuizer.MainModule'
           "$aapt2_path" dump badging "$apk" | grep -q "package: name='tv.withaibuild.customiuizer.r13'"
           "$aapt2_path" dump badging "$apk" | grep -q "minSdkVersion:'33'"
           "$aapt2_path" dump badging "$apk" | grep -q "targetSdkVersion:'34'"

@@ -25,13 +25,17 @@ from collections import defaultdict
 SCRIPT = Path(__file__).resolve()
 REPO = SCRIPT.parent.parent
 
-MAIN_MODULE = REPO / "app/src/main/java/name/monwf/customiuizer/MainModule.java"
-SYSTEM_FACADE = REPO / "app/src/main/java/name/monwf/customiuizer/mods/System.kt"
-MODS_DIR = REPO / "app/src/main/java/name/monwf/customiuizer/mods"
+MAIN_MODULE = REPO / "app/src/main/java/tv/withaibuild/customiuizer/MainModule.java"
+SYSTEM_FACADE = REPO / "app/src/main/java/tv/withaibuild/customiuizer/mods/System.kt"
+MODS_DIR = REPO / "app/src/main/java/tv/withaibuild/customiuizer/mods"
 BUILD_DIR = REPO / "app/build"
 MAPPING_DIR = BUILD_DIR / "outputs/mapping"
 APK_DIR = BUILD_DIR / "outputs/apk"
-OLD_SYSTEM_JAVA_PATH = "app/src/main/java/name/monwf/customiuizer/mods/System.java"
+# Current and historical paths for baseline System.java
+SYSTEM_JAVA_CANDIDATES = [
+    "app/src/main/java/tv/withaibuild/customiuizer/mods/System.java",
+    "app/src/main/java/name/monwf/customiuizer/mods/System.java",
+]
 EXPECTED_HOOKS_COUNT = 17  # User originally asked for 18; repository currently contains 17 System*Hooks files (excluding SystemUI*)
 
 # ---------------------------------------------------------------------------
@@ -806,7 +810,7 @@ def canonicalize_mapping_arg(arg: str) -> str:
 
 
 def mapping_matches_facade(mapping: dict, facade: dict) -> bool:
-    if mapping["class"] != "name.monwf.customiuizer.mods.System":
+    if mapping["class"] != "tv.withaibuild.customiuizer.mods.System":
         return False
     if mapping["name"] != facade["name"]:
         return False
@@ -844,7 +848,7 @@ def parse_usage(path: Path) -> list[dict]:
 
 
 def usage_matches_facade(usage: list[dict], facade: dict) -> bool:
-    class_name = "name.monwf.customiuizer.mods.System"
+    class_name = "tv.withaibuild.customiuizer.mods.System"
     method_re = re.compile(
         rf"{re.escape(facade['name'])}\s*\(([^)]*)\)"
     )
@@ -1084,12 +1088,19 @@ def main() -> int:
     # --- 1. Baseline ---
     baseline_methods: list[dict] = []
     if args.baseline_ref:
-        baseline_text = run_git_show(args.baseline_ref, OLD_SYSTEM_JAVA_PATH)
+        baseline_text = None
+        used_baseline_path = None
+        for candidate in SYSTEM_JAVA_CANDIDATES:
+            baseline_text = run_git_show(args.baseline_ref, candidate)
+            if baseline_text is not None:
+                used_baseline_path = candidate
+                break
         if baseline_text is None:
             r.warn(f"Baseline ref '{args.baseline_ref}' not found; old System.java could not be read")
         else:
             baseline_methods = parse_java_methods(baseline_text, require_static=True)
             r.add(f"## Baseline {args.baseline_ref}")
+            r.add(f"- Baseline System.java path: {used_baseline_path}")
             r.add(f"- Public static methods in old System.java: {len(baseline_methods)}")
             r.add("")
 
@@ -1313,15 +1324,15 @@ def main() -> int:
         if analyzer and mapping_path:
             r.add(f"- apkanalyzer: {analyzer}")
             dex_out = run_apkanalyzer_dex_packages(apk, analyzer, mapping_path)
-            lines = [ln for ln in dex_out.splitlines() if ("name.monwf.customiuizer.mods" in ln or "name.monwf.customiuizer.MainModule" in ln)]
+            lines = [ln for ln in dex_out.splitlines() if ("tv.withaibuild.customiuizer.mods" in ln or "tv.withaibuild.customiuizer.MainModule" in ln)]
             if lines:
-                r.add(f"- DEX entries for `name.monwf.customiuizer.mods` / `MainModule`: {len(lines)}")
+                r.add(f"- DEX entries for `tv.withaibuild.customiuizer.mods` / `MainModule`: {len(lines)}")
                 for ln in lines[:20]:
                     r.add(f"    {ln}")
                 if len(lines) > 20:
                     r.add(f"    ... and {len(lines) - 20} more")
             else:
-                r.add("- No DEX entries matching `name.monwf.customiuizer.mods` or `MainModule`; apkanalyzer output:")
+                r.add("- No DEX entries matching `tv.withaibuild.customiuizer.mods` or `MainModule`; apkanalyzer output:")
                 for ln in dex_out.splitlines()[:20]:
                     r.add(f"    {ln}")
         else:

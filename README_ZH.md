@@ -56,7 +56,7 @@ Release / Develop 构建要求项目根目录上级存在 `../keystore.propertie
 - Release R8 + resource shrink
 - zipalign 对齐
 - `META-INF/xposed/module.prop`：`minApiVersion=101`、`targetApiVersion=102`、`staticScope=false`
-- `META-INF/xposed/java_init.list`：`name.monwf.customiuizer.MainModule`
+- `META-INF/xposed/java_init.list`：`tv.withaibuild.customiuizer.MainModule`
 - `applicationId = tv.withaibuild.customiuizer.r13`，`minSdk=33`，`targetSdk=34`
 - Release APK v2 签名证书 CN=`CustoMIUIzer A13`
 

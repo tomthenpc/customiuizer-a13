@@ -3,7 +3,7 @@
 	android:layout_width="match_parent"
 	android:layout_height="match_parent">
 
-	<name.monwf.customiuizer.prefs.ListPreferenceEx
+	<tv.withaibuild.customiuizer.prefs.ListPreferenceEx
 		android:key="pref_key_miuizer_locale"
 		android:title="@string/miuizer_locale_title"
 		android:summary="@string/miuizer_locale_summ"

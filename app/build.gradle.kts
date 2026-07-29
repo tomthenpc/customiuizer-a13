@@ -31,7 +31,7 @@ val supportedLocales = setOf(
 )
 
 android {
-    namespace = "name.monwf.customiuizer"
+    namespace = "tv.withaibuild.customiuizer"
     compileSdk = 36
 
     signingConfigs {

@@ -56,7 +56,7 @@ Verification includes:
 - Release R8 + resource shrink
 - zipalign verification
 - `META-INF/xposed/module.prop`: `minApiVersion=101`, `targetApiVersion=102`, `staticScope=false`
-- `META-INF/xposed/java_init.list`: `name.monwf.customiuizer.MainModule`
+- `META-INF/xposed/java_init.list`: `tv.withaibuild.customiuizer.MainModule`
 - `applicationId = tv.withaibuild.customiuizer.r13`, `minSdk=33`, `targetSdk=34`
 - Release APK signed with v2, certificate CN=`CustoMIUIzer A13`
 
