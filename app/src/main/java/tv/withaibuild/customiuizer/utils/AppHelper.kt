@@ -38,7 +38,11 @@ object AppHelper {
     var RESTORED_FROM_BACKUP: String = "restored_from_backup"
 
     @JvmField
-    var mirrorIgnoreKeys: Set<String> = emptySet()
+    var mirrorIgnoreKeys: Set<String> = hashSetOf(
+        "pref_key_miuizer_locale",
+        "pref_key_miuizer_launchericon",
+        "pref_key_miuizer_synced_from_lsposed"
+    )
 
     @JvmField
     @Volatile
@@ -95,7 +99,12 @@ object AppHelper {
     @Synchronized
     fun reconcileRemotePreferences(remote: SharedPreferences?) {
         val target = remote ?: return
-        val localAll = appPrefs?.all ?: emptyMap()
+        val local = appPrefs
+        if (local == null) {
+            mirrorDirty = true
+            return
+        }
+        val localAll = try { local.all } catch (t: Throwable) { mirrorDirty = true; return }
         val remoteAll = try { target.all } catch (t: Throwable) { mirrorDirty = true; return }
 
         val editor = target.edit()

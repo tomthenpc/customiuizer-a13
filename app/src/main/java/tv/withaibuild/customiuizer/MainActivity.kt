@@ -36,6 +36,13 @@ class MainActivity : AppCompatActivity() {
         super.onCreate(savedInstanceState)
         setContentView(R.layout.activity_main)
 
+        val ignoreKeys = hashSetOf(
+            "pref_key_miuizer_locale",
+            "pref_key_miuizer_launchericon",
+            "pref_key_miuizer_synced_from_lsposed"
+        )
+        AppHelper.setMirrorIgnoreKeys(ignoreKeys)
+
         if (AppHelper.remotePrefs == null) {
             XposedServiceHelper.registerListener(object : XposedServiceHelper.OnServiceListener {
                 override fun onServiceBind(service: io.github.libxposed.service.XposedService) {
@@ -64,13 +71,6 @@ class MainActivity : AppCompatActivity() {
                 .replace(R.id.fragment_container, newFrag)
                 .commit()
         }
-
-        val ignoreKeys = hashSetOf(
-            "pref_key_miuizer_locale",
-            "pref_key_miuizer_launchericon",
-            "pref_key_miuizer_synced_from_lsposed"
-        )
-        AppHelper.setMirrorIgnoreKeys(ignoreKeys)
 
         prefsChanged = android.content.SharedPreferences.OnSharedPreferenceChangeListener { _, key ->
             val value = if (key == null) null else AppHelper.appPrefs?.all?.get(key)

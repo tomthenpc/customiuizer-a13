@@ -197,4 +197,72 @@ class AppHelperTest {
         AppHelper.resetMirrorState()
         assertFalse(AppHelper.mirrorDirty)
     }
+
+    @Test
+    fun appPrefsNotInitializedDoesNotDeleteRemoteAndMarksDirty() {
+        AppHelper.appPrefs = null
+
+        val remote = FakeSharedPreferences()
+        remote.put("pref_key_foo", "value")
+        remote.put("remote_only_key", "keep")
+
+        AppHelper.reconcileRemotePreferences(remote)
+
+        assertTrue("appPrefs not initialized must mark dirty", AppHelper.mirrorDirty)
+        assertEquals("value", remote.getString("pref_key_foo", null))
+        assertEquals("keep", remote.getString("remote_only_key", null))
+    }
+
+    @Test
+    fun defaultMirrorIgnoreKeysAreActiveBeforeActivityInjection() {
+        val appPrefs = FakeSharedPreferences()
+        appPrefs.put("pref_key_miuizer_locale", "en")
+        appPrefs.put("pref_key_foo", "value")
+        AppHelper.appPrefs = appPrefs
+
+        // mirrorIgnoreKeys are not set by the test, relying on AppHelper default.
+        assertTrue(AppHelper.mirrorIgnoreKeys.contains("pref_key_miuizer_locale"))
+        assertTrue(AppHelper.mirrorIgnoreKeys.contains("pref_key_miuizer_launchericon"))
+        assertTrue(AppHelper.mirrorIgnoreKeys.contains("pref_key_miuizer_synced_from_lsposed"))
+
+        val remote = FakeSharedPreferences()
+        remote.put("pref_key_miuizer_locale", "zh")
+        remote.put("pref_key_miuizer_launchericon", true)
+        remote.put("pref_key_miuizer_synced_from_lsposed", "x")
+
+        AppHelper.reconcileRemotePreferences(remote)
+
+        assertEquals("zh", remote.getString("pref_key_miuizer_locale", null))
+        assertEquals(true, remote.getBoolean("pref_key_miuizer_launchericon", false))
+        assertEquals("x", remote.getString("pref_key_miuizer_synced_from_lsposed", null))
+        assertEquals("value", remote.getString("pref_key_foo", null))
+    }
+
+    @Test
+    fun serviceImmediateCallbackPreservesLocalOnlyAndRemoteOnlyKeys() {
+        // Simulates onServiceBind firing before MainActivity fully injects ignore keys.
+        val appPrefs = FakeSharedPreferences()
+        appPrefs.put("pref_key_miuizer_locale", "en")
+        appPrefs.put("pref_key_miuizer_launchericon", "ic_new")
+        appPrefs.put("pref_key_miuizer_synced_from_lsposed", "false")
+        appPrefs.put("pref_key_foo", "value")
+        AppHelper.appPrefs = appPrefs
+
+        val remote = FakeSharedPreferences()
+        remote.put("pref_key_miuizer_locale", "zh")
+        remote.put("pref_key_miuizer_launchericon", "ic_old")
+        remote.put("pref_key_miuizer_synced_from_lsposed", "true")
+        remote.put("pref_key_foo", "stale")
+        remote.put("pref_key_stale", "drop")
+        remote.put("remote_only_key", "keep")
+
+        AppHelper.reconcileRemotePreferences(remote)
+
+        assertEquals("zh", remote.getString("pref_key_miuizer_locale", null))
+        assertEquals("ic_old", remote.getString("pref_key_miuizer_launchericon", null))
+        assertEquals("true", remote.getString("pref_key_miuizer_synced_from_lsposed", null))
+        assertEquals("value", remote.getString("pref_key_foo", null))
+        assertNull("stale mirrored key not in local is removed", remote.getString("pref_key_stale", null))
+        assertEquals("keep", remote.getString("remote_only_key", null))
+    }
 }
