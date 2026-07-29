@@ -377,6 +377,93 @@ git diff --check
 
 不得声称未经测量的性能、内存或续航提升。
 
+## A14 工程方法对齐（A13 适配版）
+
+A14 仓库 `tomthenpc/customiuizer-a14` 仅作为工程方法、流程与验证门禁的参考基线，不得直接复制其 Android 14 类名、Hook target、包名、资源或 Manifest。以下条目为 A13 必须遵守的增量规则。
+
+### 1. 回调异常边界
+
+- `MethodHook.intercept` / `before` / `after` 内部已有 try/catch，异常不逃出 hook 主体。
+- 模块在 hook 里注册给框架的回调（`Handler.handleMessage`、`BroadcastReceiver.onReceive`、`ContentObserver.onChange`、`Runnable.run`、`post {}` / `runOnUiThread {}` / `setOnXxxListener {}`）**不在**上述保护内。
+- 这些回调必须在函数入口或 lambda 入口用 `ModuleHelper.guarded` 兜底，需要返回值时使用“不消费”兜底值（如 `false`）。
+- `ModuleHelper.guarded` 到位后，`mods/` 下这些形状一律受其约束。
+
+### 2. Receiver / Observer / Listener 所有权
+
+- 动态 `registerReceiver` 必须显式指定 `RECEIVER_EXPORTED` 或 `RECEIVER_NOT_EXPORTED`。
+- 匿名 Receiver 无法被注销，必须走统一注册表；具名字段 receiver 必须在同文件中有 `unregisterReceiver`。
+- `BroadcastReceiver`、`ContentObserver`、偏好观察者必须有明确 owner，owner 销毁时同步注销。
+- 不得把旧 receiver 存进被 hook 实例的 additional instance field 后认为下次构造会清理，因为 `hookAllConstructors` 中 `thisObject` 每次都是新实例。
+
+### 3. 热路径参数零复制
+
+- 只读单个参数用 `chain.getArg(i)`，不调用 `XposedHelpers.getArgsArray(chain)`。
+- 只读多个参数可用 `chain.args`（List，不复制）。
+- 确实要改写参数时才生成数组：`XposedHelpers.getArgsArray(chain)` → 修改 → `chain.proceed(args)`。
+- `Chain.getArg(int)` 在 libxposed API 101 已存在，不影响最低运行基线。
+
+### 4. 协程异常处理
+
+- A13 当前 `MainModule` 与 `mods` 以 Handler/Runnable 为主，尚未大规模使用协程。
+- 若后续引入 `CoroutineScope`，必须附加 `ModuleHelper.coroutineFailureHandler`（或等效异常处理器）到 scope，而不是包每个 `launch`。
+- `SupervisorJob()` 不吞异常，不能单独使用。
+
+### 5. Java → Kotlin 回归审计
+
+- 迁移或审计 Java → Kotlin 文件时，必须先与迁移前 Java 原版比对控制流。
+- 强制命令：
+  ```powershell
+  git log --follow -- app/src/main/java/<path>.kt
+  git show "<迁移commit>^:app/src/main/java/<path>.java" |
+      Select-String -Pattern '\bbreak\b|\bcontinue\b' -Context 6,1
+  ```
+- 判定规则：
+  - Java `switch` 中的 `break` 在 Kotlin `when` 中消失正常。
+  - 循环体内的 `break` / `continue` 消失，一律先按回归处理。
+  - 不得以 `runCatching`、深层 scope function、集合链或 Sequence 隐藏 Hook 热路径控制流。
+- `String.split("\\|")` 等单字符快路径不得翻译成 `split("\\|".toRegex())`。
+- `Map<Int, *>` / `Map<Long, *>` 热路径优先评估 `SparseArray` / `LongSparseArray`。
+
+### 6. 大文件拆分证明
+
+- 拆分前必须测量：public 入口、私有 helper、跨域调用、共享字段、静态初始化、Java 调用点、反射入口、R8 keep、Hook 注册顺序、`Chain.proceed()` 次数。
+- 一次拆分只需要机械证明：
+  1. 每个被搬动的成员文本逐字节不变；
+  2. `MainModule` 有序调用序列不变（仅接收者类型变化）。
+- facade 只能保存兼容入口并转发到唯一实现，不得复制实现、重新读取偏好、新建注册表、动态扫描、反射路由、隐藏异常或重复注册 Hook。
+- 删除 `System.java` 等原文件是最后一个独立动作，必须在前序验证全部通过后执行。
+
+### 7. 日志分析方法
+
+- 不直接读取 LSPosed `full.log` 原文。
+- 优先使用 `tools/analyze_lsposed_log.py --profile a13`。
+- 先确认日志中是否有 `CustoMIUIzer <version> (<versionCode>) loaded in <进程>`；没有则分析价值大减。
+- 包名出现不等于模块问题，必须看到模块源码、Hook 失败、崩溃、ANR 或因果堆栈。
+
+### 8. 内存基线
+
+- 建立 A/B/C 对照实验：模块禁用、当前版本用户配置、较早稳定版本。
+- 使用 `tools/capture-memory-baseline.ps1` 和 `tools/compare-memory-baseline.py`。
+- 目标进程至少包括：`tv.withaibuild.customiuizer.r13`、`system_server`、`com.android.systemui`、`com.miui.home`。
+- 每次场景采样 ≥3 次，对比中位数 PSS/RSS/Java heap/native heap/private dirty/FD 数。
+
+### 9. 长任务连续性
+
+- 每完成一个阶段更新 `.devin/ACTIVE_TASK.md`。
+- 冻结时记录：分支、HEAD、工作区改动、已完成迁移、未完成迁移、最近一次成功构建、最近一次失败/取消命令、当前暂停点、下一步。
+- 恢复时先执行 `git status` / `git diff --stat` / `git diff --check`，检查是否有等待或被取消的命令，再检查进程状态，然后从 `.devin/ACTIVE_TASK.md` 第一个未完成动作继续。
+
+### 10. 验证结果分级
+
+最终报告必须区分：
+
+- **已验证**：构建/测试/实机证据完整且可复现；
+- **代码层面确认**：静态可判定；
+- **待实机验证**：需真机或 LSPosed 日志；
+- **无法确认**：当前无法验证，必须说明原因。
+
+禁止把 A14 验证、旧版本验证、Debug 验证或 API 101 验证冒充为 A13 当前源码的 API 102 / Release 验证。
+
 ## 执行方式
 
 以 Devin 自主执行为主，吸收 Claude 的审计纪律：
