@@ -38,6 +38,42 @@ SYSTEM_JAVA_CANDIDATES = [
 ]
 EXPECTED_HOOKS_COUNT = 17  # User originally asked for 18; repository currently contains 17 System*Hooks files (excluding SystemUI*)
 
+# These private static helpers existed in old System.java but were not part of the
+# public facade API. They were split into the corresponding System*Hooks objects as
+# private/internal helpers and are not called from outside the facade domain.
+# They must not be re-exposed through the System.kt facade.
+INTERNAL_SYSTEM_ALLOWLIST: dict[str, str] = {
+    "DisableFloatingWindowBlacklistHook": "internal helper in SystemFreeformAndMultiWindowHooks",
+    "checkLastCheck": "internal helper in SystemLockScreenMoreHooks",
+    "checkToast": "internal helper in SystemStatusBarAndClockHooks",
+    "checkVibration": "internal helper in SystemNotificationMoreHooks",
+    "constrainValue": "internal helper in SystemDisplayAndWindowHooks",
+    "getActionBarColor": "internal helper in SystemStatusBarAndClockHooks",
+    "getCCShowSeconds": "internal helper in SystemStatusBarClockAndMoreHooks",
+    "getContentType": "internal helper in SystemShareAndOpenWithHooks",
+    "getShowSeconds": "internal helper in SystemStatusBarClockAndMoreHooks",
+    "hideMimeType": "internal helper in SystemShareAndOpenWithHooks",
+    "hookToolbar": "internal helper in SystemStatusBarAndClockHooks",
+    "hookUpdateTime": "internal helper in SystemAudioAndVisualAndMoreHooks",
+    "hookWindowDecor": "internal helper in SystemStatusBarAndClockHooks",
+    "initClockStyle": "internal helper in SystemStatusBarClockAndMoreHooks",
+    "initSecondTimer": "internal helper in SystemStatusBarClockAndMoreHooks",
+    "isAuthOnce": "internal helper in SystemLockScreenMoreHooks",
+    "isIgnored": "internal helper in SystemStatusBarAndClockHooks",
+    "isRemoveApp": "internal helper in SystemShareAndOpenWithHooks",
+    "isTrusted": "internal helper in SystemLockScreenMoreHooks",
+    "isTrustedBt": "internal helper in SystemLockScreenMoreHooks",
+    "isTrustedWiFi": "internal helper in SystemLockScreenMoreHooks",
+    "isUnlocked": "internal helper in SystemLockScreenMoreHooks",
+    "patchActivityOptions": "internal helper in SystemFreeformAndMultiWindowHooks",
+    "processLSEvent": "internal helper in SystemAudioAndVisualAndMoreHooks",
+    "removeListener": "internal helper in SystemAudioAndVisualAndMoreHooks / SystemUILockScreenHooks",
+    "saveLastCheck": "internal helper in SystemLockScreenMoreHooks",
+    "shouldOpenInFreeForm": "internal helper in SystemFreeformAndMultiWindowHooks",
+    "updateAlarmVisibility": "internal helper in SystemStatusBarMoreHooks",
+    "updateAudioVisualizerState": "internal helper in SystemAudioAndVisualAndMoreHooks",
+}
+
 # ---------------------------------------------------------------------------
 # Helpers
 # ---------------------------------------------------------------------------
@@ -287,11 +323,12 @@ def parse_java_args(args_raw: str) -> list[tuple[str, str, str, str]]:
     return result
 
 
-def parse_java_methods(text: str, require_static: bool = True) -> list[dict]:
+def parse_java_methods(text: str, require_static: bool = True, require_public: bool = False) -> list[dict]:
     methods = []
     for m in JAVA_METHOD_RE.finditer(text):
         ret_raw = m.group("ret").strip()
         name = m.group("name")
+        visibility = m.group("vis")
         if ret_raw in ("class", "interface", "enum"):
             continue
         # skip constructors (return type matches class name, no static)
@@ -299,11 +336,15 @@ def parse_java_methods(text: str, require_static: bool = True) -> list[dict]:
             continue
         if require_static and not re.search(r"\bstatic\b", m.group("mods") or ""):
             continue
+        if require_public and visibility != "public":
+            continue
         args = parse_java_args(m.group("args"))
         start = m.end()
         end = find_matching_brace_robust(text, start - 1)
         methods.append({
             "name": name,
+            "vis": visibility,
+            "is_public": visibility == "public",
             "ret_raw": ret_raw,
             "ret_canonical": _canonical_type(ret_raw),
             "ret_erased": _erased_type(ret_raw),
@@ -485,6 +526,167 @@ def erased_key(method: dict) -> tuple[str, tuple[str, ...], str]:
 
 
 # ---------------------------------------------------------------------------
+# javap-based System.class public API comparison
+# ---------------------------------------------------------------------------
+
+def find_javap() -> Path | None:
+    """Locate a javap executable."""
+    for env in ("JAVA_HOME", "JDK_HOME"):
+        home = os.environ.get(env)
+        if home:
+            candidate = Path(home) / "bin" / "javap.exe"
+            if candidate.exists():
+                return candidate
+    candidate = Path(r"C:\Users\tv\Downloads\Peengeek\.tools\jdk-17\bin\javap.exe")
+    if candidate.exists():
+        return candidate
+    return None
+
+
+def find_system_class(repo: Path, build_prefix: str = "debug") -> Path | None:
+    """Find the most recently compiled System.class for the current facade."""
+    candidates = list(repo.rglob(f"{build_prefix}/tv/withaibuild/customiuizer/mods/System.class"))
+    if not candidates:
+        candidates = list(repo.rglob("tv/withaibuild/customiuizer/mods/System.class"))
+    if not candidates:
+        return None
+    return max(candidates, key=lambda p: p.stat().st_mtime)
+
+
+def run_javap_public_s(class_file: Path) -> str:
+    javap = find_javap()
+    if not javap:
+        raise RuntimeError("javap not found; set JAVA_HOME or add javap to PATH")
+    result = subprocess.run(
+        [str(javap), "-public", "-s", str(class_file)],
+        capture_output=True,
+        text=True,
+        check=True,
+    )
+    return result.stdout
+
+
+def parse_javap_public_methods(output: str) -> dict[str, list[str]]:
+    """Return method name -> list of JVM descriptors from `javap -public -s`."""
+    methods: dict[str, list[str]] = defaultdict(list)
+    name: str | None = None
+    for line in output.splitlines():
+        line = line.strip()
+        m = re.match(r"public static (?:final )?[\w\.\$<>,\[\]\?\s]+ (\w+)\((.*)\);", line)
+        if m:
+            name = m.group(1)
+            continue
+        if name and line.startswith("descriptor:"):
+            desc = line.split(":", 1)[1].strip()
+            methods[name].append(desc)
+            name = None
+    return dict(methods)
+
+
+def javap_compare(baseline_class: Path | None, current_class: Path | None, r: Reporter) -> tuple[set[str], set[str], set[tuple[str, ...]]] | None:
+    """Compare public API of baseline and current System.class using javap."""
+    if not current_class:
+        r.warn("Current System.class not found; cannot run javap comparison")
+        return None
+    if not baseline_class:
+        r.warn("Baseline System.class not provided; cannot run javap comparison")
+        return None
+
+    try:
+        base_out = run_javap_public_s(baseline_class)
+        curr_out = run_javap_public_s(current_class)
+    except (subprocess.CalledProcessError, RuntimeError) as e:
+        r.warn(f"javap comparison failed: {e}")
+        return None
+
+    base_methods = parse_javap_public_methods(base_out)
+    curr_methods = parse_javap_public_methods(curr_out)
+
+    base_sigs: set[tuple[str, ...]] = set()
+    curr_sigs: set[tuple[str, ...]] = set()
+    for name, descs in base_methods.items():
+        for d in descs:
+            base_sigs.add((name, d))
+    for name, descs in curr_methods.items():
+        for d in descs:
+            curr_sigs.add((name, d))
+
+    missing = base_sigs - curr_sigs
+    extra = curr_sigs - base_sigs
+
+    r.add("## javap -public -s System.class comparison")
+    r.add(f"- Baseline class: {baseline_class}")
+    r.add(f"- Current class: {current_class}")
+    r.add(f"- Baseline public signatures: {len(base_sigs)}")
+    r.add(f"- Current public signatures: {len(curr_sigs)}")
+    r.add(f"- Missing from current: {len(missing)}")
+    r.add(f"- Extra in current: {len(extra)}")
+    if missing:
+        for sig in sorted(missing):
+            r.add(f"  - javap missing: {sig[0]} {sig[1]}")
+    if extra:
+        for sig in sorted(extra):
+            r.add(f"  - javap extra: {sig[0]} {sig[1]}")
+    r.add("")
+
+    if missing:
+        r.fail("javap public API comparison found missing signatures in current System.class")
+    if extra:
+        r.fail("javap public API comparison found extra signatures in current System.class")
+
+    return base_methods, curr_methods, base_sigs, curr_sigs
+
+
+# ---------------------------------------------------------------------------
+# Whole-repo System.* call resolution
+# ---------------------------------------------------------------------------
+
+def resolve_system_calls(repo: Path, facade_methods: list[dict]) -> tuple[list[dict], list[dict]]:
+    """Resolve every System.<method>( call in .java/.kt files against the facade."""
+    facade_by_name = defaultdict(list)
+    for fm in facade_methods:
+        facade_by_name[fm["name"]].append(fm)
+
+    calls: list[dict] = []
+    unresolved: list[dict] = []
+
+    for p in repo.rglob("*"):
+        if not p.is_file() or p.suffix not in (".java", ".kt"):
+            continue
+        text = p.read_text(encoding="utf-8", errors="ignore")
+        for m in JAVA_CALL_RE.finditer(text):
+            pos = m.start()
+            if is_in_line_comment(text, pos):
+                continue
+            name = m.group(1)
+            if name in JAVA_LANG_SYSTEM_METHODS:
+                continue
+            end_pos, call_args = extract_call_args(text, m.end() - 1)
+            if not call_args:
+                call_args = []
+            matches = [fm for fm in facade_by_name.get(name, []) if len(fm["args"]) == len(call_args)]
+            if len(matches) == 0:
+                unresolved.append({
+                    "file": str(p.relative_to(repo)),
+                    "line": text[:pos].count("\n") + 1,
+                    "name": name,
+                    "arg_count": len(call_args),
+                    "call_args": call_args,
+                    "reason": "no facade method with matching name and argument count",
+                })
+            else:
+                calls.append({
+                    "file": str(p.relative_to(repo)),
+                    "line": text[:pos].count("\n") + 1,
+                    "name": name,
+                    "arg_count": len(call_args),
+                    "resolved_full_key": full_key(matches[0]),
+                })
+
+    return calls, unresolved
+
+
+# ---------------------------------------------------------------------------
 # Delegation validation
 # ---------------------------------------------------------------------------
 
@@ -574,6 +776,16 @@ def validate_delegation(method: dict, allowed_objects: set[str]) -> tuple[bool, 
 JAVA_CALL_RE = re.compile(
     r"(?<![A-Za-z0-9_.])System\.([A-Za-z0-9_]+)\s*\(",
 )
+
+# java.lang.System methods that must not be treated as facade calls
+JAVA_LANG_SYSTEM_METHODS = {
+    "arraycopy", "clearProperty", "console", "currentTimeMillis", "exit", "gc",
+    "getenv", "getLogger", "getProperties", "getProperty", "getSecurityManager",
+    "identityHashCode", "inheritedChannel", "lineSeparator", "load", "loadLibrary",
+    "mapLibraryName", "nanoTime", "out", "err", "in", "println", "print",
+    "runFinalization", "setErr", "setIn", "setOut", "setProperties", "setProperty",
+    "setSecurityManager",
+}
 
 
 def find_matching_brace(text: str, open_pos: int) -> int:
@@ -674,6 +886,8 @@ def resolve_mainmodule_calls(text: str, facade_methods: list[dict]) -> tuple[lis
         pos = m.start()
         name = m.group(1)
         if is_in_line_comment(text, pos):
+            continue
+        if name in JAVA_LANG_SYSTEM_METHODS:
             continue
         end_pos, call_args = extract_call_args(text, m.end() - 1)
         if not call_args:
@@ -1098,10 +1312,13 @@ def main() -> int:
         if baseline_text is None:
             r.warn(f"Baseline ref '{args.baseline_ref}' not found; old System.java could not be read")
         else:
-            baseline_methods = parse_java_methods(baseline_text, require_static=True)
+            # Parse all static methods (public and non-public) so we can
+            # classify private helpers that moved into System*Hooks.
+            baseline_methods = parse_java_methods(baseline_text, require_static=True, require_public=False)
             r.add(f"## Baseline {args.baseline_ref}")
             r.add(f"- Baseline System.java path: {used_baseline_path}")
-            r.add(f"- Public static methods in old System.java: {len(baseline_methods)}")
+            r.add(f"- Static methods in old System.java: {len(baseline_methods)}")
+            r.add(f"- Public static methods in old System.java: {sum(1 for m in baseline_methods if m['is_public'])}")
             r.add("")
 
     # --- 2. Facade parsing ---
@@ -1137,35 +1354,116 @@ def main() -> int:
         r.fail(f"Facade has duplicate JVM erased signatures: {', '.join(str(k) for k in duplicate_erased[:10])}")
     r.add("")
 
-    # --- 3. Baseline comparison ---
+    # --- 3. Baseline comparison (with allowlist classification) ---
+    javap_result = None
     if baseline_methods:
-        baseline_keys = {full_key(m) for m in baseline_methods}
+        # Public-only and full baseline keys
+        public_baseline_methods = [m for m in baseline_methods if m["is_public"]]
+        baseline_keys = {full_key(m) for m in public_baseline_methods}
+        all_baseline_keys = {full_key(m) for m in baseline_methods}
         facade_keys = set(facade_by_full.keys())
+
         missing_from_facade = sorted(baseline_keys - facade_keys, key=lambda k: (k[0], k[1]))
-        new_in_facade = sorted(facade_keys - baseline_keys, key=lambda k: (k[0], k[1]))
+        missing_nonpublic = sorted(all_baseline_keys - baseline_keys - facade_keys, key=lambda k: (k[0], k[1]))
+        new_in_facade = sorted(facade_keys - all_baseline_keys, key=lambda k: (k[0], k[1]))
+
         same_name_different_sig = []
         baseline_by_name = defaultdict(list)
         for m in baseline_methods:
             baseline_by_name[m["name"]].append(full_key(m))
         for m in facade_methods:
             if m["name"] in baseline_by_name and full_key(m) not in baseline_by_name[m["name"]]:
+                # Signature changed for the same name
                 same_name_different_sig.append((m["name"], baseline_by_name[m["name"]], full_key(m)))
 
+        # javap cross-check using compiled .class files if available
+        current_class = find_system_class(REPO)
+        baseline_class = None
+        if current_class:
+            for candidate in [
+                REPO.parent / "customiuizer-a13-baseline-build" / "app" / "build" / "intermediates" / "javac" / "debug" / "compileDebugJavaWithJavac" / "classes" / "name" / "monwf" / "customiuizer" / "mods" / "System.class",
+                REPO.parent / "customiuizer-a13-baseline-build" / "app" / "build" / "intermediates" / "javac" / "release" / "compileReleaseJavaWithJavac" / "classes" / "name" / "monwf" / "customiuizer" / "mods" / "System.class",
+            ]:
+                if candidate.exists():
+                    baseline_class = candidate
+                    break
+        javap_result = javap_compare(baseline_class, current_class, r)
+
         r.add("## Baseline comparison")
-        r.add(f"- Old System.java full signatures: {len(baseline_keys)}")
+        r.add(f"- Old System.java full signatures (all static): {len(all_baseline_keys)}")
+        r.add(f"- Old System.java full signatures (public static): {len(baseline_keys)}")
         r.add(f"- Current facade full signatures: {len(facade_keys)}")
-        r.add(f"- Missing from current facade: {len(missing_from_facade)}")
-        if missing_from_facade:
-            for k in missing_from_facade[:30]:
-                r.add(f"  - {k[0]}({', '.join(k[1])}): {k[2]}")
-            if len(missing_from_facade) > 30:
-                r.add(f"  ... and {len(missing_from_facade) - 30} more")
+        r.add(f"- Missing public from current facade: {len(missing_from_facade)}")
+        r.add(f"- Missing non-public from current facade: {len(missing_nonpublic)}")
         r.add(f"- New in current facade: {len(new_in_facade)}")
+
+        # Categorize missing public methods
+        real_missing: list[tuple] = []
+        internal_allowlisted: list[tuple] = []
+        for k in missing_from_facade:
+            if k[0] in INTERNAL_SYSTEM_ALLOWLIST:
+                internal_allowlisted.append(k)
+            else:
+                real_missing.append(k)
+
+        if real_missing:
+            r.add("- Missing public methods not in allowlist (real missing):")
+            for k in real_missing[:30]:
+                r.add(f"  - {k[0]}({', '.join(k[1])}): {k[2]}")
+            if len(real_missing) > 30:
+                r.add(f"  ... and {len(real_missing) - 30} more")
+
+        if internal_allowlisted:
+            r.add(f"- Missing public methods in allowlist (internal helpers, no facade needed): {len(internal_allowlisted)}")
+            for k in internal_allowlisted:
+                reason = INTERNAL_SYSTEM_ALLOWLIST.get(k[0], "internal helper")
+                r.add(f"  - {k[0]}({', '.join(k[1])}): {k[2]}  [{reason}]")
+
+        # Categorize non-public (private/package) methods missing from facade.
+        # These were private helpers in old System.java; they should be in the
+        # allowlist and have moved into System*Hooks.
+        nonpublic_allowlisted: list[tuple] = []
+        nonpublic_unclassified: list[tuple] = []
+        for k in missing_nonpublic:
+            if k[0] in INTERNAL_SYSTEM_ALLOWLIST:
+                nonpublic_allowlisted.append(k)
+            else:
+                nonpublic_unclassified.append(k)
+
+        if nonpublic_allowlisted:
+            r.add(f"- Non-public methods in allowlist (migrated to Hooks, no facade needed): {len(nonpublic_allowlisted)}")
+            for k in nonpublic_allowlisted:
+                reason = INTERNAL_SYSTEM_ALLOWLIST.get(k[0], "internal helper")
+                r.add(f"  - {k[0]}({', '.join(k[1])}): {k[2]}  [{reason}]")
+
+        if nonpublic_unclassified:
+            r.add(f"- Non-public methods not in allowlist (unclassified): {len(nonpublic_unclassified)}")
+            for k in nonpublic_unclassified[:30]:
+                r.add(f"  - {k[0]}({', '.join(k[1])}): {k[2]}")
+
+        if new_in_facade:
+            r.add("- New in current facade:")
+            for k in new_in_facade[:30]:
+                r.add(f"  - {k[0]}({', '.join(k[1])}): {k[2]}")
+            if len(new_in_facade) > 30:
+                r.add(f"  ... and {len(new_in_facade) - 30} more")
+
         if same_name_different_sig:
             r.add(f"- Same name but different signature: {len(same_name_different_sig)}")
-            for name, old, new in same_name_different_sig[:10]:
+            for name, old, new in same_name_different_sig[:20]:
                 r.add(f"  - {name}: old={old[0][1:]}, new={new[1:]}")
+
         r.add("")
+
+        if real_missing:
+            for k in real_missing:
+                r.fail(f"Missing facade method: {k[0]}({', '.join(k[1])}): {k[2]}")
+        if nonpublic_unclassified:
+            for k in nonpublic_unclassified:
+                r.fail(f"Unclassified non-public helper missing from facade: {k[0]}({', '.join(k[1])}): {k[2]}")
+        if same_name_different_sig:
+            for name, old, new in same_name_different_sig:
+                r.fail(f"Facade signature changed for {name}: old={old[0][1:]}, new={new[1:]}")
 
     # --- 4. MainModule call resolution ---
     if not MAIN_MODULE.exists():
@@ -1188,6 +1486,23 @@ def main() -> int:
     else:
         unique_call_keys = sorted({c['resolved_full_key'] for c in calls}, key=lambda k: k[0])
         r.add(f"- Unique resolved facade signatures: {len(unique_call_keys)}")
+    r.add("")
+
+    # --- 4b. Whole-repo System.* call resolution ---
+    all_calls, all_unresolved = resolve_system_calls(REPO, facade_methods)
+    r.add("## Whole-repo System.* calls")
+    r.add(f"- Total call sites in repo: {len(all_calls) + len(all_unresolved)}")
+    r.add(f"- Resolved calls: {len(all_calls)}")
+    r.add(f"- Unresolved calls: {len(all_unresolved)}")
+
+    if all_unresolved:
+        for u in all_unresolved[:30]:
+            r.fail(f"Unresolved System.{u['name']}({', '.join(u['call_args'])}) at {u['file']}:{u['line']} - {u['reason']}")
+        if len(all_unresolved) > 30:
+            r.add(f"  ... and {len(all_unresolved) - 30} more unresolved")
+    else:
+        unique_all_keys = sorted({c['resolved_full_key'] for c in all_calls}, key=lambda k: k[0])
+        r.add(f"- Unique resolved facade signatures: {len(unique_all_keys)}")
     r.add("")
 
     # --- 5. System*Hooks parsing and hard checks ---
