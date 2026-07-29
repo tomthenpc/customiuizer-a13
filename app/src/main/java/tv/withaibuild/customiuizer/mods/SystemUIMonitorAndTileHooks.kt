@@ -93,7 +93,9 @@ object SystemUIMonitorAndTileHooks {
                     if (mListening) {
                         val contentObserver = object : ContentObserver(Handler(mContext.mainLooper)) {
                             override fun onChange(selfChange: Boolean) {
-                                XposedHelpers.callMethod(param.getThisObject(), "refreshState")
+                                ModuleHelper.guarded {
+                                    XposedHelpers.callMethod(param.getThisObject(), "refreshState")
+                                }
                             }
                         }
                         mContext.contentResolver.registerContentObserver(Settings.Global.getUriFor("fiveg_user_enable"), false, contentObserver)

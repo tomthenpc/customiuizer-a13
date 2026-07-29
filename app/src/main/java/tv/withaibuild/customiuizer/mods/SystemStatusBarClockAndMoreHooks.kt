@@ -370,17 +370,20 @@ object SystemStatusBarClockAndMoreHooks {
             val controller = clockController
             val newRunnable = object : Runnable {
                 override fun run() {
-                    val mCalendar = XposedHelpers.getObjectField(controller, "mCalendar")
-                    XposedHelpers.callMethod(mCalendar, "setTimeInMillis", java.lang.System.currentTimeMillis())
-                    XposedHelpers.setObjectField(controller, "mIs24", DateFormat.is24HourFormat(mContext))
-                    val mClockListeners = XposedHelpers.getObjectField(controller, "mClockListeners") as? ArrayList<Any> ?: return
-                    for (clock in mClockListeners) {
-                        val showSeconds = XposedHelpers.getAdditionalInstanceField(clock, "showSeconds")
-                        if (showSeconds != null) {
-                            XposedHelpers.callMethod(clock, "onTimeChange")
+                    val self = this
+                    ModuleHelper.guarded {
+                        val mCalendar = XposedHelpers.getObjectField(controller, "mCalendar")
+                        XposedHelpers.callMethod(mCalendar, "setTimeInMillis", java.lang.System.currentTimeMillis())
+                        XposedHelpers.setObjectField(controller, "mIs24", DateFormat.is24HourFormat(mContext))
+                        val mClockListeners = XposedHelpers.getObjectField(controller, "mClockListeners") as? ArrayList<Any> ?: return@guarded
+                        for (clock in mClockListeners) {
+                            val showSeconds = XposedHelpers.getAdditionalInstanceField(clock, "showSeconds")
+                            if (showSeconds != null) {
+                                XposedHelpers.callMethod(clock, "onTimeChange")
+                            }
                         }
+                        handler.postDelayed(self, 1000L)
                     }
-                    handler.postDelayed(this, 1000L)
                 }
             }
             XposedHelpers.setAdditionalInstanceField(clockController, "clockRunnable", newRunnable)

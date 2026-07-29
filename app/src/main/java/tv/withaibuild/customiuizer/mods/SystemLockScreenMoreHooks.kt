@@ -397,16 +397,18 @@ object SystemLockScreenMoreHooks {
                 }
                 val fetchCachedDevicesReceiver = object : BroadcastReceiver() {
                     override fun onReceive(context: Context, intent: Intent) {
-                        val deviceList = ArrayList<BluetoothDevice>()
-                        val updateIntent = Intent(GlobalActions.EVENT_PREFIX + "CACHEDDEVICESUPDATE")
-                        val cachedDevices = XposedHelpers.callMethod(controller, "getDevices") as? Collection<*> ?: return
-                        for (device in cachedDevices) {
-                            val mDevice = XposedHelpers.getObjectField(device, "mDevice") as? BluetoothDevice
-                            if (mDevice != null) deviceList.add(mDevice)
+                        ModuleHelper.guarded {
+                            val deviceList = ArrayList<BluetoothDevice>()
+                            val updateIntent = Intent(GlobalActions.EVENT_PREFIX + "CACHEDDEVICESUPDATE")
+                            val cachedDevices = XposedHelpers.callMethod(controller, "getDevices") as? Collection<*> ?: return@guarded
+                            for (device in cachedDevices) {
+                                val mDevice = XposedHelpers.getObjectField(device, "mDevice") as? BluetoothDevice
+                                if (mDevice != null) deviceList.add(mDevice)
+                            }
+                            updateIntent.putParcelableArrayListExtra("device_list", deviceList)
+                            updateIntent.setPackage(tv.withaibuild.customiuizer.utils.Helpers.modulePkg)
+                            mContext.sendBroadcast(updateIntent)
                         }
-                        updateIntent.putParcelableArrayListExtra("device_list", deviceList)
-                        updateIntent.setPackage(tv.withaibuild.customiuizer.utils.Helpers.modulePkg)
-                        mContext.sendBroadcast(updateIntent)
                     }
                 }
                 mContext.registerReceiver(fetchCachedDevicesReceiver, IntentFilter(GlobalActions.ACTION_PREFIX + "FetchCachedDevices"), Context.RECEIVER_EXPORTED)

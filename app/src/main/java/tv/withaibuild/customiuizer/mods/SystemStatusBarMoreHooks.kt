@@ -128,9 +128,11 @@ object SystemStatusBarMoreHooks {
 
                 val alarmObserver = object : ContentObserver(Handler(mContext.mainLooper)) {
                     override fun onChange(selfChange: Boolean) {
-                        if (selfChange) return
-                        XposedHelpers.setAdditionalInstanceField(thisObject, "mNextAlarmTime", ModuleHelper.getNextMIUIAlarmTime(mContext))
-                        updateAlarmVisibility(thisObject, lastState)
+                        ModuleHelper.guarded {
+                            if (selfChange) return@guarded
+                            XposedHelpers.setAdditionalInstanceField(thisObject, "mNextAlarmTime", ModuleHelper.getNextMIUIAlarmTime(mContext))
+                            updateAlarmVisibility(thisObject, lastState)
+                        }
                     }
                 }
                 resolver.registerContentObserver(Settings.System.getUriFor("next_alarm_clock_formatted"), false, alarmObserver)

@@ -29,16 +29,18 @@ object SystemUIScreenshotHooks {
                 val intentFilter = IntentFilter("miui.intent.TAKE_SCREENSHOT")
                 val pipScreenshotReceiver = object : BroadcastReceiver() {
                     override fun onReceive(context: Context, intent: Intent) {
-                        if (intent.action != "miui.intent.TAKE_SCREENSHOT") return
-                        val state = intent.getBooleanExtra("IsFinished", true)
-                        val mState = XposedHelpers.getObjectField(organizer, "mPipTransitionState") ?: return
-                        val isPip = XposedHelpers.callMethod(mState, "isInPip") as? Boolean ?: return
-                        if (isPip) {
-                            val mSurfaceControlTransactionFactory = XposedHelpers.getObjectField(organizer, "mSurfaceControlTransactionFactory")
-                            val transaction = XposedHelpers.callMethod(mSurfaceControlTransactionFactory, "getTransaction") as? SurfaceControl.Transaction ?: return
-                            val mLeash = XposedHelpers.getObjectField(organizer, "mLeash") as? SurfaceControl ?: return
-                            transaction.setVisibility(mLeash, state)
-                            transaction.apply()
+                        ModuleHelper.guarded {
+                            if (intent.action != "miui.intent.TAKE_SCREENSHOT") return@guarded
+                            val state = intent.getBooleanExtra("IsFinished", true)
+                            val mState = XposedHelpers.getObjectField(organizer, "mPipTransitionState") ?: return@guarded
+                            val isPip = XposedHelpers.callMethod(mState, "isInPip") as? Boolean ?: return@guarded
+                            if (isPip) {
+                                val mSurfaceControlTransactionFactory = XposedHelpers.getObjectField(organizer, "mSurfaceControlTransactionFactory")
+                                val transaction = XposedHelpers.callMethod(mSurfaceControlTransactionFactory, "getTransaction") as? SurfaceControl.Transaction ?: return@guarded
+                                val mLeash = XposedHelpers.getObjectField(organizer, "mLeash") as? SurfaceControl ?: return@guarded
+                                transaction.setVisibility(mLeash, state)
+                                transaction.apply()
+                            }
                         }
                     }
                 }

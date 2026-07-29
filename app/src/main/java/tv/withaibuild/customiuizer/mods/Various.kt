@@ -829,8 +829,10 @@ object Various {
                 val resolver = mContext.contentResolver
                 val alarmObserver = object : ContentObserver(Handler(mContext.mainLooper)) {
                     override fun onChange(selfChange: Boolean) {
-                        if (selfChange) return
-                        XposedHelpers.setAdditionalInstanceField(param.thisObject, "mNextAlarmTime", ModuleHelper.getNextMIUIAlarmTime(mContext))
+                        ModuleHelper.guarded {
+                            if (selfChange) return@guarded
+                            XposedHelpers.setAdditionalInstanceField(param.thisObject, "mNextAlarmTime", ModuleHelper.getNextMIUIAlarmTime(mContext))
+                        }
                     }
                 }
                 alarmObserver.onChange(false)
