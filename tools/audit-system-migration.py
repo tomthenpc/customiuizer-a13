@@ -16,6 +16,7 @@ import re
 import os
 import sys
 import hashlib
+import shutil
 import subprocess
 from pathlib import Path
 from datetime import datetime, timezone
@@ -534,12 +535,15 @@ def find_javap() -> Path | None:
     for env in ("JAVA_HOME", "JDK_HOME"):
         home = os.environ.get(env)
         if home:
-            candidate = Path(home) / "bin" / "javap.exe"
+            candidate = Path(home) / "bin" / "javap"
             if candidate.exists():
                 return candidate
-    candidate = Path(r"C:\Users\tv\Downloads\Peengeek\.tools\jdk-17\bin\javap.exe")
-    if candidate.exists():
-        return candidate
+            candidate = candidate.with_suffix(".exe")
+            if candidate.exists():
+                return candidate
+    which = shutil.which("javap")
+    if which:
+        return Path(which)
     return None
 
 
