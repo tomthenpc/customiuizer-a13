@@ -37,6 +37,9 @@ import java.lang.reflect.Field;
 import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Member;
 import java.lang.reflect.Method;
+import java.lang.ref.Reference;
+import java.lang.ref.ReferenceQueue;
+import java.lang.ref.WeakReference;
 import java.lang.reflect.Modifier;
 import java.util.Arrays;
 import java.util.HashMap;
@@ -67,7 +70,107 @@ public final class XposedHelpers {
     private static final ConcurrentHashMap<MemberCacheKey.Field, Optional<Field>> fieldCache = new ConcurrentHashMap<>();
     private static final ConcurrentHashMap<MemberCacheKey.Method, Optional<Method>> methodCache = new ConcurrentHashMap<>();
     private static final ConcurrentHashMap<MemberCacheKey.Constructor, Optional<Constructor<?>>> constructorCache = new ConcurrentHashMap<>();
-    private static final WeakHashMap<Object, HashMap<String, Object>> additionalFields = new WeakHashMap<>();
+    /**
+     * Sentinel value used in additional-field maps because {@link ConcurrentHashMap} does not allow null.
+     */
+    private static final Object NULL_VALUE = new Object();
+
+    private interface InstanceKey {
+        Object target();
+    }
+
+    private static final class WeakInstanceKey extends WeakReference<Object> implements InstanceKey {
+        private final int hash;
+
+        WeakInstanceKey(Object target, ReferenceQueue<Object> queue) {
+            super(target, queue);
+            this.hash = System.identityHashCode(target);
+        }
+
+        @Override
+        public Object target() {
+            return get();
+        }
+
+        @Override
+        public int hashCode() {
+            return hash;
+        }
+
+        @Override
+        public boolean equals(Object o) {
+            if (this == o) return true;
+            if (!(o instanceof InstanceKey)) return false;
+            Object mine = get();
+            return mine != null && mine == ((InstanceKey) o).target();
+        }
+    }
+
+    private static final class LookupInstanceKey implements InstanceKey {
+        private Object target;
+        private int hash;
+
+        void bind(Object target) {
+            this.target = target;
+            this.hash = System.identityHashCode(target);
+        }
+
+        void release() {
+            this.target = null;
+        }
+
+        @Override
+        public Object target() {
+            return target;
+        }
+
+        @Override
+        public int hashCode() {
+            return hash;
+        }
+
+        @Override
+        public boolean equals(Object o) {
+            if (this == o) return true;
+            if (!(o instanceof InstanceKey)) return false;
+            Object mine = target;
+            return mine != null && mine == ((InstanceKey) o).target();
+        }
+    }
+
+    private static final ConcurrentHashMap<InstanceKey, ConcurrentHashMap<String, Object>> additionalFields =
+            new ConcurrentHashMap<>();
+    private static final ReferenceQueue<Object> additionalFieldsQueue = new ReferenceQueue<>();
+    private static final ThreadLocal<LookupInstanceKey> additionalFieldProbe =
+            ThreadLocal.withInitial(LookupInstanceKey::new);
+
+    private static void expungeStaleAdditionalFields() {
+        Reference<?> stale;
+        while ((stale = additionalFieldsQueue.poll()) != null) {
+            additionalFields.remove(stale);
+        }
+    }
+
+    private static ConcurrentHashMap<String, Object> findAdditionalFields(Object obj) {
+        LookupInstanceKey probe = additionalFieldProbe.get();
+        probe.bind(obj);
+        try {
+            return additionalFields.get(probe);
+        } finally {
+            probe.release();
+        }
+    }
+
+    private static ConcurrentHashMap<String, Object> openAdditionalFields(Object obj) {
+        ConcurrentHashMap<String, Object> existing = findAdditionalFields(obj);
+        if (existing != null) return existing;
+
+        ConcurrentHashMap<String, Object> created = new ConcurrentHashMap<>();
+        ConcurrentHashMap<String, Object> raced =
+                additionalFields.putIfAbsent(new WeakInstanceKey(obj, additionalFieldsQueue), created);
+        return raced != null ? raced : created;
+    }
+
     private static final HashMap<String, ThreadLocal<AtomicInteger>> sMethodDepth = new HashMap<>();
 
     /**
@@ -1631,18 +1734,9 @@ public final class XposedHelpers {
         if (key == null)
             throw new NullPointerException("key must not be null");
 
-        HashMap<String, Object> objectFields;
-        synchronized (additionalFields) {
-            objectFields = additionalFields.get(obj);
-            if (objectFields == null) {
-                objectFields = new HashMap<>();
-                additionalFields.put(obj, objectFields);
-            }
-        }
-
-        synchronized (objectFields) {
-            return objectFields.put(key, value);
-        }
+        expungeStaleAdditionalFields();
+        Object previous = openAdditionalFields(obj).put(key, value == null ? NULL_VALUE : value);
+        return previous == NULL_VALUE ? null : previous;
     }
 
     /**
@@ -1658,16 +1752,10 @@ public final class XposedHelpers {
         if (key == null)
             throw new NullPointerException("key must not be null");
 
-        HashMap<String, Object> objectFields;
-        synchronized (additionalFields) {
-            objectFields = additionalFields.get(obj);
-            if (objectFields == null)
-                return null;
-        }
-
-        synchronized (objectFields) {
-            return objectFields.get(key);
-        }
+        ConcurrentHashMap<String, Object> objectFields = findAdditionalFields(obj);
+        if (objectFields == null) return null;
+        Object value = objectFields.get(key);
+        return value == NULL_VALUE ? null : value;
     }
 
     /**
@@ -1683,16 +1771,11 @@ public final class XposedHelpers {
         if (key == null)
             throw new NullPointerException("key must not be null");
 
-        HashMap<String, Object> objectFields;
-        synchronized (additionalFields) {
-            objectFields = additionalFields.get(obj);
-            if (objectFields == null)
-                return null;
-        }
-
-        synchronized (objectFields) {
-            return objectFields.remove(key);
-        }
+        expungeStaleAdditionalFields();
+        ConcurrentHashMap<String, Object> objectFields = findAdditionalFields(obj);
+        if (objectFields == null) return null;
+        Object previous = objectFields.remove(key);
+        return previous == NULL_VALUE ? null : previous;
     }
 
     /**
