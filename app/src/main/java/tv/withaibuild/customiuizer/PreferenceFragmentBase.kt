@@ -151,17 +151,31 @@ open class PreferenceFragmentBase : PreferenceFragmentCompat() {
                 return true
             }
             R.id.softreboot -> {
-                if (!AppHelper.moduleActive) {
-                    showXposedDialog(activity as? AppCompatActivity)
-                    return true
-                }
-                AlertDialog.Builder(getValidContext())
+                val ctx = getValidContext()
+                AlertDialog.Builder(ctx)
                     .setTitle(R.string.soft_reboot)
                     .setMessage(R.string.soft_reboot_ask)
                     .setPositiveButton(android.R.string.ok) { _, _ ->
                         val intent = Intent(GlobalActions.ACTION_PREFIX + "FastReboot")
+                        // Explicitly addressed; ordered so SystemUI can report whether it
+                        // actually handled the request. Not gated on this process's bind state.
                         intent.setPackage("com.android.systemui")
-                        getValidContext().sendBroadcast(intent)
+
+                        val resultReceiver = object : android.content.BroadcastReceiver() {
+                            override fun onReceive(context: android.content.Context, received: android.content.Intent) {
+                                if (resultCode != GlobalActions.ACTION_UNHANDLED) return
+                                // Resolve the Activity at result time, not at send time.
+                                val current = activity as? AppCompatActivity ?: return
+                                if (!isAdded) return
+                                if (current.isFinishing || current.isDestroyed) return
+                                showXposedDialog(current)
+                            }
+                        }
+
+                        ctx.sendOrderedBroadcast(
+                            intent, null, resultReceiver, null,
+                            GlobalActions.ACTION_UNHANDLED, null, null
+                        )
                     }
                     .setNegativeButton(android.R.string.cancel) { _, _ -> }
                     .show()
@@ -183,8 +197,8 @@ open class PreferenceFragmentBase : PreferenceFragmentCompat() {
     }
 
     fun showXposedDialog(act: AppCompatActivity?) {
-        val context = act ?: getValidContext()
-        AlertDialog.Builder(context)
+        if (act == null || act.isFinishing || act.isDestroyed) return
+        AlertDialog.Builder(act)
             .setTitle(R.string.warning)
             .setMessage(R.string.module_not_active)
             .setCancelable(true)

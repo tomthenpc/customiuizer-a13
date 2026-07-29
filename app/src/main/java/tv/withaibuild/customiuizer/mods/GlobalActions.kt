@@ -72,6 +72,11 @@ object GlobalActions {
     const val ACTION_PREFIX: String = "tv.withaibuild.customiuizer.mods.action."
     const val EVENT_PREFIX: String = "tv.withaibuild.customiuizer.mods.event."
 
+    // Result codes for ordered broadcasts. RESULT_FIRST_USER (1) is used as the sentinel
+    // for "no one claimed/handled this action".
+    const val ACTION_UNHANDLED: Int = Activity.RESULT_FIRST_USER
+    const val ACTION_HANDLED: Int = Activity.RESULT_FIRST_USER + 1
+
     @JvmStatic
     @JvmOverloads
     fun handleAction(context: Context?, key: String?, skipLock: Boolean = false): Boolean {
@@ -151,6 +156,36 @@ object GlobalActions {
         }
     }
 
+    /**
+     * Performs the soft reboot and reports the outcome via the ordered broadcast's
+     * result code. Must not depend on the settings process LSPosed bind state.
+     *
+     * [pm] is the PowerManager instance from which the hidden `mService` field is read.
+     */
+    @JvmStatic
+    fun performFastReboot(receiver: BroadcastReceiver, pm: Any?) {
+        performFastReboot(pm, receiver.isOrderedBroadcast, { code -> receiver.resultCode = code })
+    }
+
+    @JvmStatic
+    internal fun performFastReboot(pm: Any?, isOrdered: Boolean, setResultCode: (Int) -> Unit) {
+        val mService = try {
+            XposedHelpers.getObjectField(pm, "mService")
+        } catch (t: Throwable) {
+            if (isOrdered) setResultCode(ACTION_UNHANDLED)
+            XposedHelpers.log(t)
+            return
+        }
+        // Resolve before we claim; a ROM without the field keeps the broadcast unhandled.
+        if (isOrdered) setResultCode(ACTION_HANDLED)
+        try {
+            XposedHelpers.callMethod(mService, "reboot", false, null, false)
+        } catch (t: Throwable) {
+            if (isOrdered) setResultCode(ACTION_UNHANDLED)
+            XposedHelpers.log(t)
+        }
+    }
+
     private val mSBReceiver = object : BroadcastReceiver() {
         @SuppressLint("WrongConstant")
         override fun onReceive(context: Context, intent: Intent) {
@@ -162,8 +197,7 @@ object GlobalActions {
                     ACTION_PREFIX + "RestartSystemUI" -> Process.killProcess(Process.myPid())
                     ACTION_PREFIX + "FastReboot" -> {
                         val pm = context.getSystemService(Context.POWER_SERVICE) as? PowerManager ?: return
-                        val mService = XposedHelpers.getObjectField(pm, "mService")
-                        XposedHelpers.callMethod(mService, "reboot", false, null, false)
+                        performFastReboot(this, pm)
                     }
                     ACTION_PREFIX + "ClearNotifications" -> {
                         val nms = callStaticMethod(NotificationManager::class.java, "getService")
