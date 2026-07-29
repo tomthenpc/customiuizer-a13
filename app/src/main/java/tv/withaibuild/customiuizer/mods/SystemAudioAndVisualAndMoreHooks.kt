@@ -239,7 +239,7 @@ object SystemAudioAndVisualAndMoreHooks {
                 } else {
                     val mHandler = XposedHelpers.getObjectField(param.thisObject, "mHandler") as? Handler ?: return
                     mHandler.postDelayed({
-                        XposedHelpers.callMethod(mNotificationPanel, "setShowQSPanel", true)
+                        ModuleHelper.guarded { XposedHelpers.callMethod(mNotificationPanel, "setShowQSPanel", true) }
                     }, 300)
                 }
             }
@@ -531,7 +531,7 @@ object SystemAudioAndVisualAndMoreHooks {
                 val opt = MainModule.mPrefs.getStringAsInt("system_inactivebrightness", 1)
                 if (opt == 2) {
                     val mSlider = XposedHelpers.getObjectField(param.thisObject, "mSlider") as? SeekBar ?: return
-                    mSlider.setOnTouchListener { _, _ -> true }
+                    mSlider.setOnTouchListener { _, _ -> ModuleHelper.guarded(true) { true } }
                 } else if (opt == 3) {
                     try {
                         val sliderView = param.thisObject as? View ?: return

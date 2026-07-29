@@ -920,9 +920,11 @@ object SystemUIControlCenterHooks {
                 override fun after(param: AfterHookCallback) {
                     val clockView = XposedHelpers.getObjectField(param.getThisObject(), "clockView") as? TextView ?: return
                     clockView.setOnClickListener {
-                        val activityStarter = XposedHelpers.getObjectField(param.getThisObject(), "activityStarter")
-                        val addFlags = Intent("android.settings.SETTINGS").addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
-                        XposedHelpers.callMethod(activityStarter, "postStartActivityDismissingKeyguard", addFlags, 350)
+                        ModuleHelper.guarded {
+                            val activityStarter = XposedHelpers.getObjectField(param.getThisObject(), "activityStarter")
+                            val addFlags = Intent("android.settings.SETTINGS").addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
+                            XposedHelpers.callMethod(activityStarter, "postStartActivityDismissingKeyguard", addFlags, 350)
+                        }
                     }
                     clockView.setOnLongClickListener {
                         ModuleHelper.guarded(false) {

@@ -276,7 +276,7 @@ object Various {
             } else {
                 Toast.makeText(act, ModuleHelper.getModuleRes(act).getString(R.string.disable_app_fail), Toast.LENGTH_LONG).show()
             }
-            Handler(Looper.getMainLooper()).postDelayed(Runnable { act.invalidateOptionsMenu() }, 500)
+            Handler(Looper.getMainLooper()).postDelayed(Runnable { ModuleHelper.guarded { act.invalidateOptionsMenu() } }, 500)
         } catch (t: Throwable) {
             XposedHelpers.log(t)
         }

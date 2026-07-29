@@ -76,7 +76,7 @@ object LauncherLayoutHooks {
                     mHandler = android.os.Handler(mContext.mainLooper) { msg ->
                         val seekBar = msg.obj as? View
                         if (seekBar != null) {
-                            seekBar.animate().alpha(0.0f).setDuration(300).withEndAction { seekBar.visibility = View.GONE }.start()
+                            seekBar.animate().alpha(0.0f).setDuration(300).withEndAction { ModuleHelper.guarded { seekBar.visibility = View.GONE } }.start()
                         }
                         true
                     }

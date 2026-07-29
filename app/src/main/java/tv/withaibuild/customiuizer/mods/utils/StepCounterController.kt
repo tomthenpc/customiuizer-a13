@@ -65,7 +65,7 @@ object StepCounterController {
 
         val looper = Looper.myLooper() ?: Looper.getMainLooper()
         mHandler = Handler(looper)
-        updateStepsRunnable = Runnable { updateSteps(sContext) }
+        updateStepsRunnable = Runnable { ModuleHelper.guarded { updateSteps(sContext) } }
     }
 
     @JvmStatic

@@ -399,12 +399,14 @@ object SystemFreeformAndMultiWindowHooks {
                 override fun after(param: AfterHookCallback) {
                     val mHandler = XposedHelpers.getObjectField(param.thisObject, "mHandler") as? Handler ?: return
                     mHandler.postDelayed({
-                        val mMenuItemMultiWindow = XposedHelpers.getObjectField(param.thisObject, "mMenuItemMultiWindow") as? ImageView
-                        val mMenuItemSmallWindow = XposedHelpers.getObjectField(param.thisObject, "mMenuItemSmallWindow") as? ImageView
-                        mMenuItemMultiWindow?.isEnabled = true
-                        mMenuItemMultiWindow?.imageAlpha = 255
-                        mMenuItemSmallWindow?.isEnabled = true
-                        mMenuItemSmallWindow?.imageAlpha = 255
+                        ModuleHelper.guarded {
+                            val mMenuItemMultiWindow = XposedHelpers.getObjectField(param.thisObject, "mMenuItemMultiWindow") as? ImageView
+                            val mMenuItemSmallWindow = XposedHelpers.getObjectField(param.thisObject, "mMenuItemSmallWindow") as? ImageView
+                            mMenuItemMultiWindow?.isEnabled = true
+                            mMenuItemMultiWindow?.imageAlpha = 255
+                            mMenuItemSmallWindow?.isEnabled = true
+                            mMenuItemSmallWindow?.imageAlpha = 255
+                        }
                     }, 200)
                 }
             })

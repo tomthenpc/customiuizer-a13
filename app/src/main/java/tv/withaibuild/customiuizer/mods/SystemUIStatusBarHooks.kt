@@ -1251,7 +1251,7 @@ object SystemUIStatusBarHooks {
                         lp.width = viewWidth
                         meter.layoutParams = lp
                     }
-                    meter.postDelayed({ initNetSpeedStyle(meter) }, 200)
+                    meter.postDelayed({ ModuleHelper.guarded { initNetSpeedStyle(meter) } }, 200)
                 }
             }
         })

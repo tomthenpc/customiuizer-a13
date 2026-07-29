@@ -423,7 +423,7 @@ object SystemStatusBarClockAndMoreHooks {
                     val isSelected = MainModule.mPrefs.getStringSet("system_expandheadups_apps").contains(pkgName)
                     if (opt == 2 && !isSelected || opt == 3 && isSelected) {
                         notifyRow.postDelayed({
-                            XposedHelpers.callMethod(param.thisObject, "expandNotification")
+                            ModuleHelper.guarded { XposedHelpers.callMethod(param.thisObject, "expandNotification") }
                         }, 60)
                     }
                 }

@@ -415,8 +415,10 @@ object SystemUILockScreenHooks {
                     val oldResetRunnable = mNotificationPanelView.getTag(cameraResetTag) as? Runnable
                     if (oldResetRunnable != null) mNotificationPanelView.removeCallbacks(oldResetRunnable)
                     val resetRunnable = Runnable {
-                        XposedHelpers.callMethod(panelController, "resetViews", false)
-                        mNotificationPanelView.setTag(cameraResetTag, null)
+                        ModuleHelper.guarded {
+                            XposedHelpers.callMethod(panelController, "resetViews", false)
+                            mNotificationPanelView.setTag(cameraResetTag, null)
+                        }
                     }
                     mNotificationPanelView.postDelayed(resetRunnable, 500)
                     mNotificationPanelView.setTag(cameraResetTag, resetRunnable)
@@ -683,11 +685,13 @@ object SystemUILockScreenHooks {
                                     val keepOpened = MainModule.mPrefs.getBoolean("system_secureqs_keepopened")
                                     val expandAfter = usingControlCenter && keepOpened
                                     XposedHelpers.callMethod(mStatusBar, "postQSRunnableDismissingKeyguard", !keepOpened, Runnable {
-                                        val intent = Intent(GlobalActions.ACTION_PREFIX + "HandleQSTileClick")
-                                        intent.putExtra("tileName", tileName)
-                                        intent.putExtra("expandAfter", expandAfter)
-                                        intent.putExtra("usingCenter", usingControlCenter)
-                                        mContext.sendBroadcast(intent)
+                                        ModuleHelper.guarded {
+                                            val intent = Intent(GlobalActions.ACTION_PREFIX + "HandleQSTileClick")
+                                            intent.putExtra("tileName", tileName)
+                                            intent.putExtra("expandAfter", expandAfter)
+                                            intent.putExtra("usingCenter", usingControlCenter)
+                                            mContext.sendBroadcast(intent)
+                                        }
                                     })
                                 } catch (t: Throwable) {
                                     XposedHelpers.log(t)

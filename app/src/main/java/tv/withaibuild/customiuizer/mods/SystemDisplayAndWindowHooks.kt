@@ -215,7 +215,7 @@ object SystemDisplayAndWindowHooks {
                     val timeout = MainModule.mPrefs.getInt("system_chargeanimtime", 20) * 1000
                     val oldReleaseRunnable = XposedHelpers.getAdditionalInstanceField(param.thisObject, "mScreenOnWakeLockReleaseRunnable") as? Runnable
                     if (oldReleaseRunnable != null) mHandler.removeCallbacks(oldReleaseRunnable)
-                    val releaseRunnable = Runnable { mScreenOnWakeLock.release() }
+                    val releaseRunnable = Runnable { ModuleHelper.guarded { mScreenOnWakeLock.release() } }
                     mHandler.postDelayed(releaseRunnable, timeout.toLong())
                     XposedHelpers.setAdditionalInstanceField(param.thisObject, "mScreenOnWakeLockReleaseRunnable", releaseRunnable)
                     mHandler.removeCallbacks(mScreenOffRunnable)
