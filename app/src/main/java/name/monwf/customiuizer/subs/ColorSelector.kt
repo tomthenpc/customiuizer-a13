@@ -129,8 +129,8 @@ class ColorSelector : SubFragment() {
                 0,
                 1,
                 object : Helpers.InputCallback {
-                    override fun onInputFinished(key: String?, text: String?) {
-                        if (key != null && !text.isNullOrBlank()) {
+                    override fun onInputFinished(key: String, text: String) {
+                        if (text.isNotBlank()) {
                             try {
                                 text.let { colorCircle?.setColor(Color.parseColor(it), true) }
                             } catch (_: IllegalArgumentException) {}
