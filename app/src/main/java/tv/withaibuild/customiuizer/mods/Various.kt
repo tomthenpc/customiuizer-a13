@@ -81,9 +81,9 @@ object Various {
     @JvmField
     var mSupportFragment: Any? = null
 
-    private val MIUI_CORE_APPS = ArrayList(Arrays.asList(
+    private val MIUI_CORE_APPS = setOf(
         "com.lbe.security.miui", "com.miui.securitycenter", "com.miui.packageinstaller"
-    ))
+    )
 
     @JvmStatic
     fun AppInfoHook(lpparam: PackageReadyParam) {
@@ -286,8 +286,12 @@ object Various {
     fun AppsDisableServiceHook(lpparam: SystemServerStartingParam) {
         ModuleHelper.findAndHookMethod("com.android.server.pm.PackageManagerServiceImpl", lpparam.classLoader, "canBeDisabled", String::class.java, Int::class.javaPrimitiveType, object : MethodHook() {
             override fun after(param: AfterHookCallback) {
-                val canBeDisabled = param.result as? Boolean ?: false
-                if (!canBeDisabled && !MIUI_CORE_APPS.contains(param.args[0] as? String)) {
+                // Do not mask an exception thrown by the original PackageManager call;
+                // only override the result on a normal return path.
+                if (param.throwable != null) return
+                val pkgName = param.getArg(0) as? String ?: return
+                val canBeDisabled = param.result as? Boolean ?: return
+                if (!canBeDisabled && !MIUI_CORE_APPS.contains(pkgName)) {
                     param.setResult(true)
                 }
             }
