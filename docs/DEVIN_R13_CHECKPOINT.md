@@ -14,7 +14,7 @@
 
 - **Repository:** `tomthenpc/customiuizer-a13`
 - **Branch:** `devin/r13.3-kotlin-migration`
-- **Last verified commit:** `fc8c79d9d9a82887754e1515d4bac3f83c8b3a5c`
+- **Last verified commit:** `bd6cc772440789d335a4bd1fd7d766934bbe2b07`
 - **versionName / versionCode:** `r13.2.4-devin` / `123`
 - **applicationId:** `tv.withaibuild.customiuizer.r13`
 - **libxposed API:** `minApiVersion=101`，`targetApiVersion=102`，`staticScope=false`
@@ -26,7 +26,7 @@
   - `docs/KOTLIN_MIGRATION_BASELINE_R13.3.md`
   - `docs/KOTLIN_MIGRATION_MATRIX_R13.3.md`（已记录 B1-1 结果与 B1-2 候选）
 - **Java 文件风险统计:** GREEN=0，YELLOW=9，RED=6（B2-9 后 `LockedAppAdapter`、`PrivacyAppAdapter` 从 YELLOW 移除）
-- **B3 已迁移文件:** `PackagePermissions`（B3-1）、`Various`（B3-2）
+- **B3 已迁移文件:** `PackagePermissions`（B3-1）、`Various`（B3-2）、`SystemUI`（K4）
 - **B2 已迁移文件:** `SortableListView`、`SortableList`、`SubFragmentWithSearch`、`ActivitySelector`、`MainActivity`、`MainFragment`、`PreferenceFragmentBase`、`SubFragment`、`AudioVisualizer`、`AppDataAdapter`、`WiFiList`、`AppSelector`、`BTList`、`LockedAppAdapter`、`PrivacyAppAdapter`
 - **B1+B2 代码规模:** 删除 Java 5874 LOC，新增 Kotlin 5290 LOC，新增测试 771 LOC
 - **B2 剩余候选:** 无
@@ -313,19 +313,19 @@
 
 ## 最新绿色验证
 
-- **任务/命令：** `git diff --check` + `.​gradlew.bat --no-daemon :app:test :app:lintDebug :app:assembleDebug :app:assembleRelease`
+- **任务/命令：** `git diff --check` + `\gradlew.bat :app:compileDebugKotlin :app:testDebugUnitTest :app:lintDebug :app:lintRelease :app:lintVitalRelease :app:assembleDebug :app:assembleRelease`
 - **结果：** BUILD SUCCESSFUL
-- **验证日期：** 2026-07-28
+- **验证日期：** 2026-07-29
 - **git diff --check：** 0 errors
-- **单元测试：** 121 tests，0 failures，0 errors（B3-2 迁移后复测通过）
-- **lintDebug：** 0 errors，520 warnings（基线持平）
+- **单元测试：** 129 tests，0 failures，0 errors
+- **lintDebug / lintRelease / lintVitalRelease：** 0 errors
 - **assembleDebug / assembleRelease：** 成功
-- **Release APK 审计：** applicationId / version / Xposed 元数据均未变；B1/B2/B3-1/B3-2 迁移类在 R8 中均保持可达
-- **当前代码变更范围：** B1 8 个 + B2 15 个 + B3-2 个 Java 转 Kotlin 生产文件；14 个迁移兼容性测试；A13 Claude 审计 6 项修复与版本更新
+- **Release APK：** `app/build/outputs/apk/release/CustoMIUIzer-A13-r13.2.4-devin.apk`
+- **当前代码变更范围：** K4 完成 `mods/SystemUI.java` 拆分迁移为 8 个 Kotlin 文件并删除原 Java
 
 ## 当前问题与阻塞
 
-- B3 剩余 Hook 层：`mods/Launcher`（B3-3）、`mods/SystemUI`（B3-4）、`mods/System`（B3-5）待按批次迁移，其中 `SystemUI` / `System` 因体积与状态复杂度需进一步拆分审计；
+- B3 剩余 Hook 层：`mods/System`（B3-5）待按批次迁移；`SystemUI` 已于 K4 完成拆分迁移；
 - 真机验证未完成：LSPosed 加载、SystemUI/Launcher/Settings 主要功能、搜索返回、旋转重建均待确认；
 - B1-1 4 个设置子页面仍需在 MIUI 14 / Android 13 真机上验证 UI 行为与返回栈。
 - API 101/102 实机边界未验证：未在只支持 API 101 的环境运行。
