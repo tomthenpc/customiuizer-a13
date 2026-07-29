@@ -16,7 +16,7 @@
 | `app/src/main/java/name/monwf/customiuizer/subs/CategorySelector.java` | 66 | UI | app/Settings | normal | none | none | none | app/src/main/java/tv/withaibuild/customiuizer/subs/CategorySelector.kt (Kotlin) | GREEN | 迁移 | B1 | 单测 / build / lint / UI 回归 |
 | `app/src/main/java/name/monwf/customiuizer/mods/System.java` | 4857 | Hook | system_server | reflection | process-level mutable | synchronized, Handler, Runnable, postDelayed | findAndHookMethod, hookAllMethods, hookAllConstructors, findClass, XposedHelpers.call | app/src/main/java/tv/withaibuild/customiuizer/mods/System.kt (Kotlin) | YELLOW | 拆分后迁移 | B3/B4 | build / R8 / 实机 / 日志 |
 | `app/src/main/java/name/monwf/customiuizer/mods/SystemUI.java` | 4463 | Hook | SystemUI | reflection | process-level mutable | Handler, Runnable, postDelayed | loadClass, findAndHookMethod, hookAllMethods, hookAllConstructors, findMethodExact, findClass, XposedHelpers.call | app/src/main/java/tv/withaibuild/customiuizer/mods/SystemUI.kt (Kotlin) | YELLOW | 拆分后迁移 | B3/B4 | build / R8 / 实机 / 日志 |
-| `app/src/main/java/name/monwf/customiuizer/mods/Launcher.java` | 1643 | Hook | Launcher | reflection | low risk mutable | Handler, Thread, Runnable | findAndHookMethod, hookAllMethods, hookAllConstructors, findClass, XposedHelpers.call | app/src/main/java/tv/withaibuild/customiuizer/mods/Launcher.kt (Kotlin) | YELLOW | 拆分后迁移 | B3/B4 | build / R8 / 实机 / 日志 |
+| `app/src/main/java/name/monwf/customiuizer/mods/Launcher.java` | 1643 | Hook | Launcher | reflection | low risk mutable | Handler, Thread, Runnable | findAndHookMethod, hookAllMethods, hookAllConstructors, findClass, XposedHelpers.call | app/src/main/java/tv/withaibuild/customiuizer/mods/Launcher.kt (Kotlin) | GREEN | 已迁移 | B3-3 已迁移 | build / R8 / 实机 / 日志 |
 | `app/src/main/java/name/monwf/customiuizer/mods/Various.java` | 1181 | Hook | multi | reflection | process-level mutable | Handler, Thread, Runnable, postDelayed | findAndHookMethod, hookAllMethods, hookAllConstructors, findClass, XposedHelpers.call | app/src/main/java/tv/withaibuild/customiuizer/mods/Various.kt (Kotlin) | YELLOW | 拆分后迁移 | B3/B4 | build / R8 / 实机 / 日志 |
 | `app/src/main/java/name/monwf/customiuizer/utils/Helpers.java` | 1172 | utility | app/Settings | reflection | process-level mutable | none | Class.forName, getDeclaredMethod | app/src/main/java/tv/withaibuild/customiuizer/utils/Helpers.kt (Kotlin) | YELLOW | 补测试后迁移 | B2/B3 | 单测 / build / R8 |
 | `app/src/main/java/name/monwf/customiuizer/mods/Controls.java` | 1027 | Hook | system_server | reflection | process-level mutable | Handler, Runnable, postDelayed | findAndHookMethod, hookAllMethods, findMethodExact, findClass, XposedHelpers.call | app/src/main/java/tv/withaibuild/customiuizer/mods/Controls.kt (Kotlin) | YELLOW | 拆分后迁移 | B3/B4 | build / R8 / 实机 / 日志 |
@@ -573,7 +573,7 @@ B3 目标为 `mods/` 目录下的 Xposed Hook 中心文件。按静态分析结�
 | ---- | --- | ---- | ---- | ---- |
 | `mods/PackagePermissions` | 159 | 1 | 低；单一 `hook`，仅 `system_server` | B3-1（已完成） |
 | `mods/Various` | 1 106 | ~22 | 中；跨 AppManager / Security / PowerKeeper / Phone / Settings | B3-2（已完成） |
-| `mods/Launcher` | 1 508 | ~37 | 中；大量手势 / 动画 / 布局 Hook，含 `GestureDetector` 与内部类 | B3-3 |
+| `mods/Launcher` | 1 508 | ~37 | 中；大量手势 / 动画 / 布局 Hook，含 `GestureDetector` 与内部类 | B3-3（已完成） |
 | `mods/SystemUI` | 4 262 | ~45 | 高；状态栏 / QS / 通知 / 锁屏 / 音量，高频绘制路径、静态状态多 | B3-4（需进一步拆分） |
 | `mods/System` | 4 506 | ~75 | 高；`system_server` 核心，电源 / 音量 / 安全 / 通知 / 应用，状态复杂 | B3-5（最后处理） |
 
@@ -611,7 +611,7 @@ B3 目标为 `mods/` 目录下的 Xposed Hook 中心文件。按静态分析结�
 ### 下一批
 
 - B3-2：`mods/Various.java` → `Various.kt`。
-- B3-3：`mods/Launcher.java` → `Launcher.kt`。
+- B3-3：`mods/Launcher.java` → `Launcher.kt`（已完成）。
 - B3-4 / B3-5：`mods/SystemUI.java` / `mods/System.java` 暂缓，待进一步拆分审计后决定。
 
 ## 长期保留的 Java 边界
