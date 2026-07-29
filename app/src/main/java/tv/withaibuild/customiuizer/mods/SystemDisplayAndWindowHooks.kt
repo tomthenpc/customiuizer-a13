@@ -96,32 +96,34 @@ object SystemDisplayAndWindowHooks {
                 XposedHelpers.setAdditionalInstanceField(view, "currentTouchY", 0F)
 
                 view.setOnTouchListener { v, event ->
-                    if (event.action != android.view.MotionEvent.ACTION_DOWN) return@setOnTouchListener false
+                    ModuleHelper.guarded(false) {
+                        if (event.action != android.view.MotionEvent.ACTION_DOWN) return@guarded false
 
-                    val lastTouchTime = XposedHelpers.getAdditionalInstanceField(view, "currentTouchTime") as? Long ?: 0L
-                    val lastTouchX = XposedHelpers.getAdditionalInstanceField(view, "currentTouchX") as? Float ?: 0F
-                    val lastTouchY = XposedHelpers.getAdditionalInstanceField(view, "currentTouchY") as? Float ?: 0F
+                        val lastTouchTime = XposedHelpers.getAdditionalInstanceField(view, "currentTouchTime") as? Long ?: 0L
+                        val lastTouchX = XposedHelpers.getAdditionalInstanceField(view, "currentTouchX") as? Float ?: 0F
+                        val lastTouchY = XposedHelpers.getAdditionalInstanceField(view, "currentTouchY") as? Float ?: 0F
 
-                    var currentTouchTime = java.lang.System.currentTimeMillis()
-                    val currentTouchX = event.x
-                    val currentTouchY = event.y
+                        var currentTouchTime = java.lang.System.currentTimeMillis()
+                        val currentTouchX = event.x
+                        val currentTouchY = event.y
 
-                    if (currentTouchTime - lastTouchTime < 250L &&
-                        kotlin.math.abs(currentTouchX - lastTouchX) < 100F &&
-                        kotlin.math.abs(currentTouchY - lastTouchY) < 100F
-                    ) {
-                        val keyguardMgr = v.context.getSystemService(Context.KEYGUARD_SERVICE) as? android.app.KeyguardManager
-                        if (keyguardMgr?.isKeyguardLocked == true) {
-                            GlobalActions.commonSendAction(v.context, "GoToSleep")
+                        if (currentTouchTime - lastTouchTime < 250L &&
+                            kotlin.math.abs(currentTouchX - lastTouchX) < 100F &&
+                            kotlin.math.abs(currentTouchY - lastTouchY) < 100F
+                        ) {
+                            val keyguardMgr = v.context.getSystemService(Context.KEYGUARD_SERVICE) as? android.app.KeyguardManager
+                            if (keyguardMgr?.isKeyguardLocked == true) {
+                                GlobalActions.commonSendAction(v.context, "GoToSleep")
+                            }
+                            currentTouchTime = 0L
                         }
-                        currentTouchTime = 0L
+
+                        XposedHelpers.setAdditionalInstanceField(view, "currentTouchTime", currentTouchTime)
+                        XposedHelpers.setAdditionalInstanceField(view, "currentTouchX", currentTouchX)
+                        XposedHelpers.setAdditionalInstanceField(view, "currentTouchY", currentTouchY)
+
+                        false
                     }
-
-                    XposedHelpers.setAdditionalInstanceField(view, "currentTouchTime", currentTouchTime)
-                    XposedHelpers.setAdditionalInstanceField(view, "currentTouchX", currentTouchX)
-                    XposedHelpers.setAdditionalInstanceField(view, "currentTouchY", currentTouchY)
-
-                    false
                 }
             }
         })

@@ -925,12 +925,14 @@ object SystemUIControlCenterHooks {
                         XposedHelpers.callMethod(activityStarter, "postStartActivityDismissingKeyguard", addFlags, 350)
                     }
                     clockView.setOnLongClickListener {
-                        val lazyQsCustomizer = XposedHelpers.getObjectField(param.getThisObject(), "qsCustomizer")
-                        val qsCustomizer = XposedHelpers.callMethod(lazyQsCustomizer, "get")
-                        XposedHelpers.callMethod(qsCustomizer, "show")
-                        val hapticFeedback = XposedHelpers.getObjectField(param.getThisObject(), "hapticFeedback")
-                        XposedHelpers.callMethod(hapticFeedback, "postLongClick")
-                        true
+                        ModuleHelper.guarded(false) {
+                            val lazyQsCustomizer = XposedHelpers.getObjectField(param.getThisObject(), "qsCustomizer")
+                            val qsCustomizer = XposedHelpers.callMethod(lazyQsCustomizer, "get")
+                            XposedHelpers.callMethod(qsCustomizer, "show")
+                            val hapticFeedback = XposedHelpers.getObjectField(param.getThisObject(), "hapticFeedback")
+                            XposedHelpers.callMethod(hapticFeedback, "postLongClick")
+                            true
+                        }
                     }
                 }
             })

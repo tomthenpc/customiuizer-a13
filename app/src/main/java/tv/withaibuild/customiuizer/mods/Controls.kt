@@ -55,25 +55,27 @@ object Controls {
     private var sPowerManager: PowerManager? = null
 
     private val mPowerLongPressRunnable = Runnable {
-        if (isPowerPressed) {
-            isPowerLongPressed = true
-            val ctx = sPowerContext ?: return@Runnable
-            val pm = sPowerManager ?: return@Runnable
+        ModuleHelper.guarded {
+            if (isPowerPressed) {
+                isPowerLongPressed = true
+                val ctx = sPowerContext ?: return@guarded
+                val pm = sPowerManager ?: return@guarded
 
-            if (Helpers.mWakeLock == null) {
-                Helpers.mWakeLock = pm.newWakeLock(PowerManager.PARTIAL_WAKE_LOCK, "miuizer:flashlight")
-            }
+                if (Helpers.mWakeLock == null) {
+                    Helpers.mWakeLock = pm.newWakeLock(PowerManager.PARTIAL_WAKE_LOCK, "miuizer:flashlight")
+                }
 
-            if (!isTorchEnabled(ctx) || Helpers.mWakeLock?.isHeld == false) {
-                setTorch(ctx, true)
-                if (Helpers.mWakeLock?.isHeld == false) Helpers.mWakeLock?.acquire(600000)
-            } else {
-                setTorch(ctx, true)
-                if (Helpers.mWakeLock?.isHeld == true) Helpers.mWakeLock?.release()
+                if (!isTorchEnabled(ctx) || Helpers.mWakeLock?.isHeld == false) {
+                    setTorch(ctx, true)
+                    if (Helpers.mWakeLock?.isHeld == false) Helpers.mWakeLock?.acquire(600000)
+                } else {
+                    setTorch(ctx, true)
+                    if (Helpers.mWakeLock?.isHeld == true) Helpers.mWakeLock?.release()
+                }
             }
+            isPowerPressed = false
+            isWaitingForPowerLongPressed = false
         }
-        isPowerPressed = false
-        isWaitingForPowerLongPressed = false
     }
 
     private var sVolumeContext: Context? = null
@@ -81,26 +83,28 @@ object Controls {
     private var sVolumeKeyEvent: KeyEvent? = null
 
     private val mVolumeLongPressRunnable = Runnable {
-        if (isVolumePressed) {
-            val ctx = sVolumeContext ?: return@Runnable
-            if (!GlobalActions.isMediaActionsAllowed(ctx)) return@Runnable
-            isVolumeLongPressed = true
-            val keyEvent = sVolumeKeyEvent ?: return@Runnable
-            when (keyEvent.keyCode) {
-                KeyEvent.KEYCODE_VOLUME_UP -> {
-                    val prefMediaUp = MainModule.mPrefs.getStringAsInt("controls_volumemedia_up", 0)
-                    if (prefMediaUp == 0) return@Runnable
-                    GlobalActions.sendDownUpKeyEvent(ctx, prefMediaUp, true)
-                }
-                KeyEvent.KEYCODE_VOLUME_DOWN -> {
-                    val prefMediaDown = MainModule.mPrefs.getStringAsInt("controls_volumemedia_down", 0)
-                    if (prefMediaDown == 0) return@Runnable
-                    GlobalActions.sendDownUpKeyEvent(ctx, prefMediaDown, true)
+        ModuleHelper.guarded {
+            if (isVolumePressed) {
+                val ctx = sVolumeContext ?: return@guarded
+                if (!GlobalActions.isMediaActionsAllowed(ctx)) return@guarded
+                isVolumeLongPressed = true
+                val keyEvent = sVolumeKeyEvent ?: return@guarded
+                when (keyEvent.keyCode) {
+                    KeyEvent.KEYCODE_VOLUME_UP -> {
+                        val prefMediaUp = MainModule.mPrefs.getStringAsInt("controls_volumemedia_up", 0)
+                        if (prefMediaUp == 0) return@guarded
+                        GlobalActions.sendDownUpKeyEvent(ctx, prefMediaUp, true)
+                    }
+                    KeyEvent.KEYCODE_VOLUME_DOWN -> {
+                        val prefMediaDown = MainModule.mPrefs.getStringAsInt("controls_volumemedia_down", 0)
+                        if (prefMediaDown == 0) return@guarded
+                        GlobalActions.sendDownUpKeyEvent(ctx, prefMediaDown, true)
+                    }
                 }
             }
+            isVolumePressed = false
+            isWaitingForVolumeLongPressed = false
         }
-        isVolumePressed = false
-        isWaitingForVolumeLongPressed = false
     }
 
     private fun isTorchEnabled(mContext: Context): Boolean {
@@ -412,8 +416,14 @@ object Controls {
         } catch (_: Throwable) {}
         leftbtn.isClickable = true
         leftbtn.isHapticFeedbackEnabled = true
-        leftbtn.setOnClickListener { handleNavBarAction(it.context, "controls_navbarleft") }
-        leftbtn.setOnLongClickListener { handleNavBarAction(it.context, "controls_navbarleftlong") }
+        leftbtn.setOnClickListener {
+            val ctx = it.context
+            ModuleHelper.guarded { handleNavBarAction(ctx, "controls_navbarleft") }
+        }
+        leftbtn.setOnLongClickListener {
+            val ctx = it.context
+            ModuleHelper.guarded(false) { handleNavBarAction(ctx, "controls_navbarleftlong"); true }
+        }
         leftbtn.addView(left)
 
         val rightbtn = LinearLayout(mContext)
@@ -433,8 +443,14 @@ object Controls {
         } catch (_: Throwable) {}
         rightbtn.isClickable = true
         rightbtn.isHapticFeedbackEnabled = true
-        rightbtn.setOnClickListener { handleNavBarAction(it.context, "controls_navbarright") }
-        rightbtn.setOnLongClickListener { handleNavBarAction(it.context, "controls_navbarrightlong") }
+        rightbtn.setOnClickListener {
+            val ctx = it.context
+            ModuleHelper.guarded { handleNavBarAction(ctx, "controls_navbarright") }
+        }
+        rightbtn.setOnLongClickListener {
+            val ctx = it.context
+            ModuleHelper.guarded(false) { handleNavBarAction(ctx, "controls_navbarrightlong"); true }
+        }
         rightbtn.addView(right)
 
         val hasLeftAction = MainModule.mPrefs.getInt("controls_navbarleft_action", 1) > 1 || MainModule.mPrefs.getInt("controls_navbarleftlong_action", 1) > 1
@@ -553,18 +569,22 @@ object Controls {
     private var isFingerprintLongPressHandled = false
 
     private val singlePressFingerprint = Runnable {
-        val ctx = miuiPWMContext ?: return@Runnable
-        val hdl = miuiPWMHandler ?: return@Runnable
-        hdl.removeCallbacks(longPressFingerprint)
-        if (!handleCallAction(2)) GlobalActions.handleAction(ctx, "controls_fingerprint1")
+        ModuleHelper.guarded {
+            val ctx = miuiPWMContext ?: return@guarded
+            val hdl = miuiPWMHandler ?: return@guarded
+            hdl.removeCallbacks(longPressFingerprint)
+            if (!handleCallAction(2)) GlobalActions.handleAction(ctx, "controls_fingerprint1")
+        }
     }
 
     private val longPressFingerprint = Runnable {
-        if (isFingerprintPressed) {
-            val ctx = miuiPWMContext ?: return@Runnable
-            isFingerprintLongPressed = true
-            isFingerprintLongPressHandled = handleCallAction(4)
-            Helpers.performStrongVibration(ctx, true)
+        ModuleHelper.guarded {
+            if (isFingerprintPressed) {
+                val ctx = miuiPWMContext ?: return@guarded
+                isFingerprintLongPressed = true
+                isFingerprintLongPressHandled = handleCallAction(4)
+                Helpers.performStrongVibration(ctx, true)
+            }
         }
     }
 
