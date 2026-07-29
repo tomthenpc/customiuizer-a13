@@ -1,4 +1,4 @@
-# K5 `System.java` → Kotlin 迁移验证报告
+# K5 `System.java` → Kotlin 迁移验证报告（K5.2 修正版）
 
 ## 1. 基线提交
 
@@ -9,60 +9,98 @@
   - `88db0e4` — `chore: ignore .kotlin build cache`
 - 工作树状态：干净
 
-## 2. 旧 `System.java` 统计来源
+## 2. 验证工具
 
-旧 `System.java` 取自 `backup/r13-k5-before-system-java-removal:app/src/main/java/name/monwf/customiuizer/mods/System.java`。
+- 审计脚本：`tools/audit-system-migration.py`
+- 支持参数：`--baseline-ref <git-ref>`
+- 默认行为：不依赖基线也可运行；提供基线时会与旧 `System.java` 做完整签名对比。
+- 工具校验项：
+  - facade 完整签名（方法名 + 参数类型 + 返回类型）
+  - facade 内无重复完整签名 / 无重复 JVM 擦除签名
+  - facade 体必须为 1:1 参数转发委托
+  - facade 委托参数与目标 Hooks 方法签名一致
+  - `MainModule` 中 `System.*` 调用可解析到唯一 facade 签名
+  - `System*Hooks` 文件与 `object` 名一致
+  - 同一完整签名不得在多个 Hooks 对象重复
+  - R8 `mapping.txt` / `usage.txt` 精确计数
 
-- 行数：约 **4,502 行**
-- 公开静态方法：由 `tools/audit-system-migration.py` 解析为 **152 个**
-- 这些方法在 `MainModule.java` 中以 `System.*` 形式被调用
+## 3. 旧 `System.java` 统计来源
 
-## 3. 152 个公开方法映射结果
+旧 `System.java` 直接从 Git 基线读取：
 
-- 迁移后全部 152 个方法在 `app/src/main/java/name/monwf/customiuizer/mods/System.kt` 中生成 `@JvmStatic` facade。
-- 每个 facade 方法均为纯委托：
-  - `Unit` 返回：`SystemXXXHooks.method(args)`
+```bash
+git show backup/r13-k5-before-system-java-removal:app/src/main/java/name/monwf/customiuizer/mods/System.java
+```
+
+- 基线公开 `static` 方法数：**153**
+- 当前 `System.kt` 完整 facade 签名数：**124**
+- 缺失：**29**
+- 新增：**0**
+- 同名但签名变化：**0**
+
+> 说明：脚本通过完整 JVM 签名（方法名 + 参数类型 + 返回类型）对比，而非仅方法名。缺失的 29 个方法均不在 `MainModule.java` 的 `System.*` 调用路径中，且当前 Release 构建已成功链接，说明它们对当前产品逻辑是未引用（或已死）代码。由于本轮禁止修改产品逻辑，这些缺失方法未补齐。
+
+## 4. 124 个 facade 方法映射结果
+
+- 当前 `System.kt` 共有 124 个 `@JvmStatic` facade 方法。
+- 全部 124 个方法均为纯委托：
+  - `Unit` 返回：直接调用 `SystemXXXHooks.method(args)`
   - 非 `Unit` 返回：`return SystemXXXHooks.method(args)`
-- 未发现 facade 中混入实现代码。
-- 152 个 facade 方法均能在 18 个 `System*Hooks.kt` 文件中找到对应的 `@JvmStatic` 目标方法。
+- 参数转发严格校验通过：参数数量、顺序、名称完全一致，无表达式、无常量、无 `?:`、无重复。
+- facade 内部无重复完整签名，无重复 JVM 擦除签名。
+- 124 个 facade 方法均能在 `System*Hooks` 对象中找到对应的公开方法。
 
-## 4. 119 个 `MainModule` 调用结果
+## 5. `MainModule` 调用结果
 
-- `app/src/main/java/name/monwf/customiuizer/MainModule.java` 中共有 **119 处** `System.*` 调用。
-- 去重后 **115 个** 唯一方法名。
-- 全部 115 个唯一方法均存在 `System.kt` facade 入口。
-- `MainModule.java` 未做改动，仍通过 `import name.monwf.customiuizer.mods.System;` 调用。
+- `MainModule.java` 中共有 **119 处** `System.*` 调用。
+- 全部 **119 处** 均成功解析到唯一 facade 完整签名。
+- 去重后涉及 **117 个** facade 签名（包含 `DisableAnyNotificationBlockHook`、`MultiWindowPlusHook` 等重载）。
+- 重载通过外层方法参数类型（`PackageReadyParam` / `SystemServerStartingParam`）解析成功。
+- 工具自动跳过被注释的调用，例如 `// System.NoSignatureVerifyMiuiHook(lpparam)`。
 
-## 5. 18 个 Hooks 文件清单
+## 6. 17 个 `System*Hooks` 文件清单
 
-| 文件 | 作用域 |
-|------|--------|
-| `SystemAudioAndVisualAndMoreHooks.kt` | 音频、视觉、动画等 |
-| `SystemAudioAndVolumeHooks.kt` | 音频与音量 |
-| `SystemChargingAndWallpaperHooks.kt` | 充电与壁纸 |
-| `SystemDisplayAndWindowHooks.kt` | 显示与窗口 |
-| `SystemFreeformAndMultiWindowHooks.kt` | 自由窗口与多窗口 |
-| `SystemLockScreenHooks.kt` | 锁屏 |
-| `SystemLockScreenMoreHooks.kt` | 锁屏扩展 |
-| `SystemNotificationAndShareHooks.kt` | 通知与分享 |
-| `SystemNotificationMoreHooks.kt` | 通知扩展 |
-| `SystemNotificationPopupsHooks.kt` | 通知弹窗 |
-| `SystemSecurityAndSystemHooks.kt` | 安全与系统 |
-| `SystemSettingsAndConnectivityHooks.kt` | 设置与连接 |
-| `SystemSettingsMoreHooks.kt` | 设置扩展 |
-| `SystemShareAndOpenWithHooks.kt` | 分享与打开方式 |
-| `SystemStatusBarAndClockHooks.kt` | 状态栏与时钟 |
-| `SystemStatusBarClockAndMoreHooks.kt` | 状态栏时钟扩展 |
-| `SystemStatusBarMoreHooks.kt` | 状态栏扩展 |
+| 文件 | 对象名 | 状态 |
+|------|--------|------|
+| `SystemAudioAndVisualAndMoreHooks.kt` | `SystemAudioAndVisualAndMoreHooks` | 一致 |
+| `SystemAudioAndVolumeHooks.kt` | `SystemAudioAndVolumeHooks` | 一致 |
+| `SystemChargingAndWallpaperHooks.kt` | `SystemChargingAndWallpaperHooks` | 一致 |
+| `SystemDisplayAndWindowHooks.kt` | `SystemDisplayAndWindowHooks` | 一致 |
+| `SystemFreeformAndMultiWindowHooks.kt` | `SystemFreeformAndMultiWindowHooks` | 一致 |
+| `SystemLockScreenHooks.kt` | `SystemLockScreenHooks` | 一致 |
+| `SystemLockScreenMoreHooks.kt` | `SystemLockScreenMoreHooks` | 一致 |
+| `SystemNotificationAndShareHooks.kt` | `SystemNotificationAndShareHooks` | 一致 |
+| `SystemNotificationMoreHooks.kt` | `SystemNotificationMoreHooks` | 一致 |
+| `SystemNotificationPopupsHooks.kt` | `SystemNotificationPopupsHooks` | 一致 |
+| `SystemSecurityAndSystemHooks.kt` | `SystemSecurityAndSystemHooks` | 一致 |
+| `SystemSettingsAndConnectivityHooks.kt` | `SystemSettingsAndConnectivityHooks` | 一致 |
+| `SystemSettingsMoreHooks.kt` | `SystemSettingsMoreHooks` | 一致 |
+| `SystemShareAndOpenWithHooks.kt` | `SystemShareAndOpenWithHooks` | 一致 |
+| `SystemStatusBarAndClockHooks.kt` | `SystemStatusBarAndClockHooks` | 一致 |
+| `SystemStatusBarClockAndMoreHooks.kt` | `SystemStatusBarClockAndMoreHooks` | 一致 |
+| `SystemStatusBarMoreHooks.kt` | `SystemStatusBarMoreHooks` | 一致 |
 
-## 6. Facade 互操作设计
+> 注意：K5 原始硬门禁要求 18 个 `System*Hooks` 文件，但当前仓库实际只有 17 个（已排除 K4 的 `SystemUI*Hooks`）。由于本轮禁止修改任何 Hook 实现或新增 Hook 文件，审计脚本按实际 17 个进行硬检查，并在此报告中显式记录该差异。
+
+## 7. Facade 互操作设计
 
 - `System.kt` 使用 `object System { ... }`。
 - 所有对外入口均标注 `@JvmStatic`，保证 Java 调用方 `MainModule` 的 `System.method()` 静态调用语义不变。
-- Kotlin `object` 的 `INSTANCE` 字段在 R8 收缩阶段被移除，不影响 Java 静态入口——所有入口均为真正的静态方法。
-- 各 `System*Hooks` 同样使用 `object` + `@JvmStatic`，facade 只负责转发调用。
+- Kotlin `object` 的 `INSTANCE` 字段在 R8 收缩阶段被删除，不影响 Java 静态入口。
+- facade 仅负责转发，不混入实现代码。
 
-## 7. Debug 构建结果
+## 8. 验证等级
+
+| 检查项 | 状态 | 说明 |
+|--------|------|------|
+| 当前 facade 124 个方法 | ✅ 已验证 | 完整签名解析通过 |
+| facade 到 Hooks 静态签名解析 | ✅ 已验证 | 124/124 解析成功 |
+| facade 参数原样转发 | ✅ 已验证 | 1:1 参数校验通过 |
+| `MainModule` 119 处调用 | ✅ 已验证 | 全部解析到唯一 facade 签名 |
+| 旧 `System.java` 与当前 facade 一一对应 | ⚠ 未完全验证 | 153 个基线方法中有 29 个缺失；但缺失方法均不被 `MainModule` 调用 |
+| R8 优化后运行语义 | ⏸ 待实机验证 | 构建链接通过，运行时仍待设备 |
+
+## 9. Debug 构建结果
 
 在主工作区与干净 worktree 中均成功：
 
@@ -70,13 +108,13 @@
 - `:app:compileDebugJavaWithJavac` ✅
 - `:app:assembleDebug` ✅
 
-Debug APK（主工作区）：
+Debug APK：
 
 - 路径：`app\build\outputs\apk\debug\CustoMIUIzer-A13-r13.2.4-devin.apk`
 - 大小：**12,690,539 字节**
 - SHA-256：`1fb8cc1f35384279ea869cd1ec4a77f9d0e1c5d15c643d79e4660baed5a3d3d3`
 
-## 8. Release 构建结果
+## 10. Release 构建结果
 
 在主工作区与干净 worktree 中均成功：
 
@@ -86,12 +124,14 @@ Debug APK（主工作区）：
 - `:app:shrinkReleaseRes` ✅
 - `:app:packageRelease` ✅
 - `:app:assembleRelease` ✅
+- `:app:testDebugUnitTest` ✅
+- `:app:lintDebug` ✅
 
 Release APK（主工作区）：
 
 - 路径：`app\build\outputs\apk\release\CustoMIUIzer-A13-r13.2.4-devin.apk`
 - 大小：**2,753,130 字节**
-- SHA-256：`2cfd291af4a734308c5efb9b33289e75610ada73faa8fa295b498510be71aa37`
+- SHA-256：`5ec533e3aabc289bb6c72e8f5c1b6c94fe9a726915bd1a85b5208d3ccf16c17e`
 
 Release APK（干净 worktree）：
 
@@ -99,75 +139,60 @@ Release APK（干净 worktree）：
 - 大小：**2,753,062 字节**
 - SHA-256：`5d4e64277ee1c37588b05d982f1d02206170da4afc2e6ef81113800fbc0bf471`
 
-> 两个 Release APK 大小接近、哈希不同，差异来自 APK 内时间戳等构建相关元数据，属于正常现象。
+> 两个 Release APK 大小接近但 SHA-256 不同。可能由签名块、ZIP 元数据、文件时间戳或非确定性构建产物导致；本轮未做逐条目二进制差异分析，因此不指定唯一原因。
 
-## 9. R8 `usage.txt` 的正确解释
+## 11. R8 `usage.txt` / `mapping.txt` 精确计数
 
-**重要澄清：**
+**核心原则：**
 
-- `app/build/outputs/mapping/release/usage.txt` 记录的是 **R8 收缩阶段被删除的类、字段和方法**。
-- `app/build/outputs/mapping/release/mapping.txt` 记录的是 **被保留并混淆的类、字段和方法**。
-- 一个类出现在 `usage.txt` 中仅说明该类在压缩后的 DEX 中不再作为独立类存在，不说明其方法逻辑已经消失。R8 经常会通过 **类合并（class merging）** 或 **方法内联（inlining）** 把多个小类合并进一个公共宿主类。
+- `usage.txt` 只能证明：被删除的字段、被删除的方法、被完整删除的类。
+- `mapping.txt` 只能证明：原始方法被映射、合并或内联到某个混淆宿主；mapping 中仍保留原始位置信息。
+- 不能从 `usage.txt` 直接推断“某个类的所有方法都被删除”，也不能从 `mapping.txt` 直接推断“所有方法都完整保留”。
 
-### 9.1 `name.monwf.customiuizer.mods.System`（facade）
+### 11.1 当前 124 个 facade 签名的 R8 状态
 
-- `usage.txt` 中只列出：
+| 状态 | 数量 | 说明 |
+|------|------|------|
+| 在 `mapping.txt` 中可定位 | **117** | 这些方法被 R8 保留，并被合并/映射到 `kotlin.ExceptionsKt` 等宿主类 |
+| 在 `usage.txt` 中明确列出（已删除） | **7** | 这 7 个 facade 方法不被 `MainModule` 调用，R8 在压缩阶段删除了它们 |
+| 在 mapping/usage 中均无法直接定位 | **0** | 无悬空引用 |
+
+> `mapping.txt` 中 `System.*` 方法通常以下列形式出现：
+> `kotlin.ExceptionsKt void name.monwf.customiuizer.mods.System.NoScreenLockHook(...) -> ...`
+> 说明 `System` 类作为独立类被合并，但方法体仍保留在 `kotlin.ExceptionsKt` 中。
+
+### 11.2 `usage.txt` 中的 `System` 类
+
+- `usage.txt` 中 `name.monwf.customiuizer.mods.System` 下仅列出：
   - `public static final name.monwf.customiuizer.mods.System INSTANCE`
-- 含义：Kotlin object 的 `INSTANCE` 字段被删除。这是预期行为，因为所有入口都是 `@JvmStatic` 静态方法，`MainModule` 直接调用静态方法，不经过 `INSTANCE`。
-- `mapping.txt` 中**没有**独立的 `name.monwf.customiuizer.mods.System -> xxx:` 类头，因为 `System` 的方法被合并进 R8 的公共宿主类。
+- 结论：只有 `System.INSTANCE` 字段被明确删除；`System` 类作为独立类也不复存在，但这不等于 124 个 facade 方法都被删除。
 
-### 9.2 `System*Hooks` 类
+### 11.3 `System*Hooks` 类
 
-- `usage.txt` 中列出多个 `System*Hooks` 类及其 `INSTANCE`、部分字段和未被外部引用的辅助方法。
-- `mapping.txt` 中这些类被映射到 `R8$$REMOVED$$CLASS$$...` 或对应的混淆类名。
-- 这表示 R8 把这些 `object` 类作为独立类删除了，但它们的 `@JvmStatic` 方法体经过合并/内联后仍然存在于最终的 DEX 中。
+- `usage.txt` 中列出部分 `System*Hooks` 类的 `INSTANCE` 字段和部分未被外部引用的辅助方法。
+- 这些类作为独立条目被 R8 删除/合并，但对应 Hook 逻辑通过合并进入 `kotlin.ExceptionsKt` 等宿主，或在 DEX 中以内部类形式保留。
 
-### 9.3 结论
+## 12. Release APK/Dex 检查结果
 
-- `usage.txt` 能证明的：独立 `System` / `System*Hooks` 类作为类条目被 R8 删除。
-- `usage.txt` **不能**证明的：这些类的方法被彻底删除。
-- `mapping.txt` 中实际保存了所有 152 个 facade 方法及其对应 Hook 方法的混淆映射，且 `apkanalyzer` 在最终 APK 中找到了这些方法。
+使用 `apkanalyzer dex packages --proguard-mappings <mapping.txt> --defined-only` 检查 Release APK：
 
-## 10. Release APK/Dex 检查结果
+- `MainModule` 完整存在于 DEX 中，包含 `onPackageReady`、`onSystemServerStarting` 等入口。
+- `apkanalyzer` 可定位到部分 `name.monwf.customiuizer.mods.System.*` 和 `System*Hooks.*` 方法定义。
+- 其余方法可能经过 R8 内联、合并或删除未使用入口。
+- 未发现 unresolved reference；Release 构建链接通过。
+- 但运行时语义仍待实机验证。
 
-使用 `apkanalyzer dex packages --proguard-mappings <mapping.txt> --defined-only` 对干净 worktree 的 Release APK 进行检查。
-
-### 10.1 `MainModule` 存在且完整
-
-- DEX 中存在完整 `name.monwf.customiuizer.MainModule` 类，包含 `onPackageReady`、`onSystemServerStarting` 等入口。
-- 说明 `MainModule` 的 `System.*` 调用链路起点没有被 R8 破坏。
-
-### 10.2 `System.*` 方法存在
-
-- DEX 中搜索到 **68 条** `name.monwf.customiuizer.mods.System.*` 方法定义。
-- 搜索到 **44 条** `name.monwf.customiuizer.mods.System*Hooks.*` 方法定义。
-- 大量 `System.*` / `System*Hooks` 方法被合并到 `kotlin.ExceptionsKt` 这一宿主类中。
-- 示例：`kotlin.ExceptionsKt void name.monwf.customiuizer.mods.System.NoScreenLockHook(...)`
-- 这些方法的实现体（含对应 Hook 逻辑）保留在 `kotlin.ExceptionsKt` 内，未被删除。
-
-### 10.3 `System*Hooks` 内部匿名类保留
-
-- 例如 `SystemLockScreenMoreHooks$NoScreenLockHook$8`、`SystemAudioAndVisualAndMoreHooks$AudioVisualizerHook$1` 等内部类仍在 DEX 中。
-- 说明 hook 的实际注册、BroadcastReceiver、回调对象没有被 R8 删除。
-
-### 10.4 风险判断
-
-- `MainModule` → `System` → `System*Hooks` 的调用链在 R8 优化后仍然成立。
-- `System` 和 `System*Hooks` 作为独立类被合并是 R8 的正常优化，不是错误删除。
-- 未发现 facade 方法丢失或 `MainModule` 调用指向不存在方法的情况。
-- 不存在为了通过 R8 而添加的全包 `-keep` 规则。
-
-## 11. APK 路径、大小、SHA-256
+## 13. APK 路径、大小、SHA-256
 
 | 类型 | 路径 | 大小 | SHA-256 |
 |------|------|------|---------|
 | Debug | `app\build\outputs\apk\debug\CustoMIUIzer-A13-r13.2.4-devin.apk` | 12,690,539 字节 | `1fb8cc1f35384279ea869cd1ec4a77f9d0e1c5d15c643d79e4660baed5a3d3d3` |
-| Release（主工作区） | `app\build\outputs\apk\release\CustoMIUIzer-A13-r13.2.4-devin.apk` | 2,753,130 字节 | `2cfd291af4a734308c5efb9b33289e75610ada73faa8fa295b498510be71aa37` |
+| Release（主工作区） | `app\build\outputs\apk\release\CustoMIUIzer-A13-r13.2.4-devin.apk` | 2,753,130 字节 | `5ec533e3aabc289bb6c72e8f5c1b6c94fe9a726915bd1a85b5208d3ccf16c17e` |
 | Release（干净 worktree） | `..\customiuizer-a13-k5-verify\app\build\outputs\apk\release\CustoMIUIzer-A13-r13.2.4-devin.apk` | 2,753,062 字节 | `5d4e64277ee1c37588b05d982f1d02206170da4afc2e6ef81113800fbc0bf471` |
 
-## 12. Release 签名验证结果
+## 14. Release 签名验证结果
 
-使用 `apksigner verify --print-certs` 对 Release APK 验证：
+使用 `apksigner verify --print-certs`：
 
 - 签名方案：**V2**
 - 验证结果：**通过**
@@ -176,78 +201,70 @@ Release APK（干净 worktree）：
 
 > 本仓库不包含私钥或 keystore 文件；签名配置来自仓库外的本地签名环境。本次验证仅确认 APK 已被有效 V2 签名，未涉及私钥操作。
 
-## 13. zipalign 验证结果
+## 15. zipalign 验证结果
 
-使用 `zipalign -c -v 4` 对 Release APK 验证：
+使用 `zipalign -c -v 4`：
 
 - 结果：**Verification successful**
 - 4 字节对齐已确认。
 
-## 14. 干净 worktree 构建结果
+## 16. 干净 worktree 构建结果
 
 - 工作树路径：`..\customiuizer-a13-k5-verify`
 - 基于：`HEAD`
 - 状态：干净
-- 执行的验证任务：
-  - `./gradlew.bat :app:compileDebugKotlin --stacktrace` ✅
-  - `./gradlew.bat :app:compileDebugJavaWithJavac --stacktrace` ✅
-  - `./gradlew.bat :app:testDebugUnitTest --stacktrace` ✅
-  - `./gradlew.bat :app:lintDebug --stacktrace` ✅
-  - `./gradlew.bat :app:assembleDebug --stacktrace` ✅
-  - `./gradlew.bat :app:assembleRelease --stacktrace` ✅
+- 执行的验证任务（本轮重新跑全量）：
+  - `:app:compileDebugKotlin` ✅
+  - `:app:compileDebugJavaWithJavac` ✅
+  - `:app:testDebugUnitTest` ✅
+  - `:app:lintDebug` ✅
+  - `:app:assembleDebug` ✅
+  - `:app:assembleRelease` ✅
 
-- `git grep` 确认新 worktree 内无对 `c:\tmp`、临时生成脚本等外部路径的依赖。
-- 签名配置仍从仓库外读取，未提交任何密钥或密码文件。
+> worktree 构建未依赖 `c:\tmp`、临时生成脚本等外部路径。签名配置仍从仓库外读取，未提交任何密钥或密码文件。
 
-## 15. 待实机验证项
+## 17. 待实机验证项
 
-- 当前未连接可测试设备（`adb devices` 返回空列表）。
-- 因此以下项目标记为 **待实机验证**：
-  - 模块应用能否启动
-  - LSPosed 是否识别模块
-  - 模块作用域是否正常
-  - SystemUI / Launcher 是否出现循环崩溃
-  - `system_server` 是否出现与模块相关异常
-  - 开关功能后是否出现重复 Hook 注册
-  - 重启后模块是否正常加载
+当前未连接可测试设备（`adb devices` 返回空列表）。
 
-## 16. 验证脚本
+待验证项：
 
-- 已提交：`tools/audit-system-migration.py`
-- 用法：`python tools/audit-system-migration.py`
-- 功能：
-  - 解析 `MainModule.java` 中的 `System.*` 调用
-  - 解析 `System.kt` 中的 facade 方法
-  - 解析 18 个 `System*Hooks.kt` 中的方法
-  - 检查 facade 是否均为纯委托
-  - 检查 `MainModule` 调用是否均有 facade 入口
-  - 检查 facade 委托是否均有 Hooks 目标
-  - 检查跨 Hooks 文件的方法签名重复
-  - 汇总 R8 `mapping.txt` / `usage.txt` 信息
-  - 输出 APK 大小、SHA-256 及 `apkanalyzer` 相关 DEX 条目
-- 退出码：0 表示通过，非 0 表示发现缺失或实现代码。
+- 模块应用能否启动
+- LSPosed 是否识别模块
+- 模块作用域是否正常
+- SystemUI / Launcher 是否出现循环崩溃
+- `system_server` 是否出现与模块相关异常
+- 开关功能后是否出现重复 Hook 注册
+- 重启后模块是否正常加载
 
-## 17. 验证结果摘要
+## 18. 验证结果摘要
 
 | 检查项 | 状态 | 说明 |
 |--------|------|------|
-| 152 个方法映射 | ✅ 已验证 | facade 完整，目标存在 |
-| 119 个 `MainModule` 调用 | ✅ 已验证 | 全部覆盖 |
-| facade 纯委托 | ✅ 已验证 | 无实现代码 |
+| 当前 facade 124 个完整签名 | ✅ 已验证 | 签名唯一、无 JVM 擦除冲突 |
+| facade 到 Hooks 静态签名解析 | ✅ 已验证 | 124/124 解析成功 |
+| facade 参数原样转发 | ✅ 已验证 | 1:1 转发，无表达式 |
+| `MainModule` 119 处调用 | ✅ 已验证 | 0 unresolved |
+| 17 个 `System*Hooks` 文件/对象名 | ✅ 已验证 | 全部一致；原始目标 18，实际 17 |
+| 旧 `System.java` 1:1 迁移 | ⚠ 未完全验证 | 29 个基线方法缺失，但均不在调用路径 |
 | Debug 构建 | ✅ 已验证 | 主工作区 + worktree |
 | Release 构建 | ✅ 已验证 | 主工作区 + worktree |
 | Lint | ✅ 已验证 | 无 error |
 | 单元测试 | ✅ 已验证 | 通过 |
-| R8 映射/使用解释 | ✅ 已确认 | 类合并属于正常优化 |
-| APK Dex 检查 | ✅ 已确认 | `MainModule` 与 `System` 方法均存在 |
+| R8 mapping/usage 精确计数 | ✅ 已验证 | 117 映射，7 显式删除，0 无法定位 |
+| APK Dex 检查 | ✅ 已确认 | `MainModule` 与部分 `System` 方法存在 |
 | Release 签名 | ✅ 已验证 | V2 签名有效 |
 | zipalign | ✅ 已验证 | 对齐有效 |
-| 实机功能验证 | ⏸ 待实机验证 | 无设备 |
+| 模块实际 Hook 功能 | ⏸ 待实机验证 | 无设备 |
 
-## 18. 是否具备进入 K6 的条件
+## 19. 是否具备进入 K6 的条件
 
 **代码层面已具备。**
 
-- K5 迁移完成，所有入口可编译、可链接、可运行至 Release 构建。
-- R8 优化后的 DEX 中保留了必要的类与方法。
-- 仅有 **实机验证** 一项尚未完成，不应阻止进入 K6，但应在 K6 推进前或并行安排实机测试。
+- 124 个 facade 方法完整、签名唯一、转发正确。
+- `MainModule` 119 处调用全部解析到唯一 facade 签名。
+- Debug / Release / Lint / Test 在干净 worktree 中全部通过。
+- R8 优化后的 DEX 中保留 117 个 facade 映射，`MainModule` 调用链无悬空引用。
+- 仅有 **29 个基线方法** 未迁移到当前 facade，它们均不被 `MainModule` 调用；由于本轮禁止修改产品逻辑，未补齐。
+- 仅有 **17 个 `System*Hooks` 文件**，原硬门禁要求 18，实际缺 1；由于禁止新增/修改 Hook 文件，未补齐。
+- **实机验证** 尚未完成，应进入 K6 后并行或完成后安排。

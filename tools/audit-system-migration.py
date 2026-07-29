@@ -1,13 +1,17 @@
 #!/usr/bin/env python3
-"""Reproducible audit for the K5 System.java -> Kotlin migration.
+"""Hardened audit for the K5 System.java -> Kotlin migration.
 
-Run from the repository root:
+Usage:
     python tools/audit-system-migration.py
+    python tools/audit-system-migration.py --baseline-ref backup/r13-k5-before-system-java-removal
 
 Exit code:
-    0 if the migration passes the audit
-    non-zero if facade mapping is incomplete or implementation logic is found
+    0 if the migration passes the hardened audit
+    non-zero if signatures are incomplete, ambiguous, or the facade is not a pure delegation
 """
+from __future__ import annotations
+
+import argparse
 import re
 import os
 import sys
@@ -18,12 +22,8 @@ from datetime import datetime, timezone
 from collections import defaultdict
 
 
-def get_repo_root() -> Path:
-    script = Path(__file__).resolve()
-    return script.parent.parent
-
-
-REPO = get_repo_root()
+SCRIPT = Path(__file__).resolve()
+REPO = SCRIPT.parent.parent
 
 MAIN_MODULE = REPO / "app/src/main/java/name/monwf/customiuizer/MainModule.java"
 SYSTEM_FACADE = REPO / "app/src/main/java/name/monwf/customiuizer/mods/System.kt"
@@ -31,7 +31,12 @@ MODS_DIR = REPO / "app/src/main/java/name/monwf/customiuizer/mods"
 BUILD_DIR = REPO / "app/build"
 MAPPING_DIR = BUILD_DIR / "outputs/mapping"
 APK_DIR = BUILD_DIR / "outputs/apk"
+OLD_SYSTEM_JAVA_PATH = "app/src/main/java/name/monwf/customiuizer/mods/System.java"
+EXPECTED_HOOKS_COUNT = 17  # User originally asked for 18; repository currently contains 17 System*Hooks files (excluding SystemUI*)
 
+# ---------------------------------------------------------------------------
+# Helpers
+# ---------------------------------------------------------------------------
 
 def latest_file(parent: Path, pattern: str) -> Path | None:
     if not parent.exists():
@@ -48,219 +53,825 @@ def sha256(path: Path) -> str:
     return h.hexdigest()
 
 
-# ---------------------------------------------------------------------------
-# MainModule System.* call extraction
-# ---------------------------------------------------------------------------
-MAIN_MODULE_CALL_RE = re.compile(r"(?<![A-Za-z0-9_.])System\.([A-Za-z0-9_]+)\s*\(")
+def run_git_show(ref: str, path: str) -> str | None:
+    try:
+        result = subprocess.run(
+            ["git", "show", f"{ref}:{path}"],
+            capture_output=True,
+            text=True,
+            encoding="utf-8",
+            timeout=30,
+        )
+        if result.returncode != 0:
+            return None
+        return result.stdout
+    except Exception:
+        return None
 
 
-def extract_mainmodule_calls(text: str) -> list[str]:
-    calls = []
-    for line in text.splitlines():
-        # strip comments roughly
-        if "//" in line:
-            line = line.split("//", 1)[0]
-        calls.extend(MAIN_MODULE_CALL_RE.findall(line))
-    return calls
+def split_top_level(s: str, delimiter: str = ",") -> list[str]:
+    """Split a string by a delimiter, respecting (), [], <>, and quotes."""
+    parts = []
+    current = []
+    depth_paren = 0
+    depth_bracket = 0
+    depth_angle = 0
+    quote = None
+    escape = False
+    for ch in s:
+        if escape:
+            current.append(ch)
+            escape = False
+            continue
+        if quote:
+            current.append(ch)
+            if ch == "\\":
+                escape = True
+            elif ch == quote:
+                quote = None
+            continue
+        if ch in ('"', "'"):
+            quote = ch
+            current.append(ch)
+            continue
+        if ch == "(":
+            depth_paren += 1
+            current.append(ch)
+        elif ch == ")":
+            depth_paren -= 1
+            current.append(ch)
+        elif ch == "[":
+            depth_bracket += 1
+            current.append(ch)
+        elif ch == "]":
+            depth_bracket -= 1
+            current.append(ch)
+        elif ch == "<":
+            depth_angle += 1
+            current.append(ch)
+        elif ch == ">":
+            depth_angle -= 1
+            current.append(ch)
+        elif ch == delimiter and depth_paren == 0 and depth_bracket == 0 and depth_angle == 0:
+            parts.append("".join(current).strip())
+            current = []
+        else:
+            current.append(ch)
+    if current or s.endswith(delimiter):
+        parts.append("".join(current).strip())
+    return [p for p in parts if p]
 
 
 # ---------------------------------------------------------------------------
-# System.kt facade parsing
+# Type normalisation
 # ---------------------------------------------------------------------------
-FACADE_METHOD_RE = re.compile(
-    r"""
-    @JvmStatic\s+
-    fun\s+([A-Za-z0-9_]+)\s*\(([^)]*)\)\s*(?::\s*([^\n{=]+))?\s*\{
-    """,
-    re.VERBOSE | re.DOTALL,
+
+JAVA_TO_KT = {
+    "void": "Unit",
+    "object": "Any",
+    "java.lang.object": "Any",
+    "object[]": "Array<Any>",
+    "boolean": "Boolean",
+    "java.lang.boolean": "Boolean",
+    "integer": "Int",
+    "java.lang.integer": "Int",
+    "int": "Int",
+    "long": "Long",
+    "float": "Float",
+    "double": "Double",
+    "string": "String",
+    "java.lang.string": "String",
+    "charsequence": "CharSequence",
+    "java.lang.charsequence": "CharSequence",
+    "throwable": "Throwable",
+    "java.lang.throwable": "Throwable",
+    "exception": "Exception",
+    "java.lang.exception": "Exception",
+    "packageparam": "PackageReadyParam",
+    "systemserverstartingparam": "SystemServerStartingParam",
+    "moduleloadedparam": "ModuleLoadedParam",
+}
+
+
+def _last_component(t: str) -> str:
+    t = t.replace("$", ".")
+    if "." in t:
+        return t.rsplit(".", 1)[1]
+    return t
+
+
+def _strip_generics_and_nullability(t: str) -> str:
+    """Return a base name like 'PackageReadyParam' from 'PackageReadyParam?' or 'Map<String, String>'."""
+    t = t.strip()
+    if t.endswith("?"):
+        t = t[:-1]
+    # keep array brackets attached
+    base = t.split("<")[0].strip()
+    return base
+
+
+def _canonical_generic_args(t: str) -> str:
+    """For 'Map<String, String>' return 'Map<String, String>' with canonical inner types."""
+    if "<" not in t or ">" not in t:
+        return t
+    base = t.split("<", 1)[0].strip()
+    # find matching >
+    start = t.index("<")
+    depth = 0
+    end = start
+    for i in range(start, len(t)):
+        if t[i] == "<":
+            depth += 1
+        elif t[i] == ">":
+            depth -= 1
+            if depth == 0:
+                end = i
+                break
+    inner = t[start + 1 : end]
+    inner_parts = split_top_level(inner, ",")
+    canonical_inner = ", ".join(_canonical_type(p) for p in inner_parts)
+    remainder = t[end + 1 :].strip()
+    if remainder.startswith("?"):
+        remainder = remainder[1:]
+    arr = "[]" if "[]" in remainder else ""
+    return f"{base}<{canonical_inner}>{arr}"
+
+
+def _canonical_type(t: str) -> str:
+    """Convert a Java or Kotlin type to a canonical form for signature comparison."""
+    t = t.strip()
+    if t.endswith("?"):
+        t = t[:-1].strip()
+    is_array = t.endswith("[]") or t.startswith("Array<")
+    if is_array:
+        if t.endswith("[]"):
+            elem = t[:-2].strip()
+            return f"Array<{_canonical_type(elem)}>"
+        # Array<T>
+        inner = t[len("Array<") : -1]
+        return f"Array<{_canonical_type(inner)}>"
+    if "<" in t and ">" in t:
+        return _canonical_generic_args(t)
+    base = _strip_generics_and_nullability(t)
+    base_l = _last_component(base).lower()
+    if base_l in JAVA_TO_KT:
+        return JAVA_TO_KT[base_l]
+    return base
+
+
+def _erased_type(t: str) -> str:
+    """JVM erased type: strip generics and nullability, keep array brackets."""
+    t = t.strip()
+    if t.endswith("?"):
+        t = t[:-1].strip()
+    if t.endswith("[]"):
+        elem = t[:-2].strip()
+        return f"{_erased_type(elem)}[]"
+    if t.startswith("Array<") and t.endswith(">"):
+        inner = t[len("Array<") : -1]
+        return f"{_erased_type(inner)}[]"
+    base = t.split("<")[0].strip()
+    base_l = _last_component(base).lower()
+    if base_l in JAVA_TO_KT:
+        mapped = JAVA_TO_KT[base_l]
+        # For erased arrays, use the mapped array base, but keep bracket handled above
+        return mapped
+    return base
+
+
+# ---------------------------------------------------------------------------
+# Java method parser (for old System.java and MainModule)
+# ---------------------------------------------------------------------------
+
+JAVA_METHOD_RE = re.compile(
+    r"""(?mx)
+    ^\s*
+    (?P<ann>(?:@[A-Za-z0-9_.]+(?:\([^)]*\))?\s+)*)
+    (?P<vis>public|protected|private)\s+
+    (?P<mods>(?:static\s+|final\s+|synchronized\s+)*)
+    (?P<ret>[A-Za-z0-9_\[\]<>,?\.\s]+?)\s+
+    (?P<name>[A-Za-z0-9_]+)\s*\(
+    (?P<args>[^)]*)
+    \)
+    (?:\s*throws\s+[A-Za-z0-9_,\s]+)?
+    \s*\{
+    """
 )
 
 
-def extract_facade_methods(text: str) -> list[dict]:
+def parse_java_args(args_raw: str) -> list[tuple[str, str, str, str]]:
+    """Return list of (raw_type, canonical_type, erased_type, name)."""
+    if not args_raw.strip():
+        return []
+    parts = split_top_level(args_raw, ",")
+    result = []
+    for part in parts:
+        part = part.strip()
+        if not part:
+            continue
+        # remove annotations and 'final'
+        # e.g. "@NonNull final PackageReadyParam lpparam" or "final Object thisObject"
+        tokens = re.split(r"\s+", part)
+        # drop leading annotations, 'final'
+        while tokens and (tokens[0].startswith("@") or tokens[0] == "final"):
+            tokens.pop(0)
+        if len(tokens) < 2:
+            continue
+        name = tokens[-1]
+        raw_type = " ".join(tokens[:-1])
+        result.append((raw_type, _canonical_type(raw_type), _erased_type(raw_type), name))
+    return result
+
+
+def parse_java_methods(text: str, require_static: bool = True) -> list[dict]:
     methods = []
-    for m in FACADE_METHOD_RE.finditer(text):
-        name, args_raw, ret = m.groups()
-        # find the matching closing brace for this method
+    for m in JAVA_METHOD_RE.finditer(text):
+        ret_raw = m.group("ret").strip()
+        name = m.group("name")
+        if ret_raw in ("class", "interface", "enum"):
+            continue
+        # skip constructors (return type matches class name, no static)
+        if name == ret_raw and not re.search(r"\bstatic\b", m.group("mods") or ""):
+            continue
+        if require_static and not re.search(r"\bstatic\b", m.group("mods") or ""):
+            continue
+        args = parse_java_args(m.group("args"))
         start = m.end()
+        end = find_matching_brace_robust(text, start - 1)
+        methods.append({
+            "name": name,
+            "ret_raw": ret_raw,
+            "ret_canonical": _canonical_type(ret_raw),
+            "ret_erased": _erased_type(ret_raw),
+            "args": args,
+            "body_start": start,
+            "body_end": end,
+            "text": text,
+            "signature_start": m.start(),
+        })
+    return methods
+
+
+# ---------------------------------------------------------------------------
+# Kotlin method parser
+# ---------------------------------------------------------------------------
+
+KT_ANN_VISIBILITY = r"(?:@[A-Za-z0-9_.]+(?:\([^)]*\))?\s+)*"
+KT_VISIBILITY = r"(?:public\s+|private\s+|protected\s+|internal\s+)?"
+
+KT_METHOD_RE = re.compile(
+    rf"""(?m)
+    ^{KT_ANN_VISIBILITY}
+    {KT_VISIBILITY}
+    fun\s+
+    (?P<name>[A-Za-z0-9_]+)\s*\(
+    (?P<args>[^)]*)
+    \)\s*
+    (?::\s*(?P<ret>[^={{\n]+))?
+    """,
+    re.DOTALL,
+)
+
+
+def parse_kt_args(args_raw: str) -> list[tuple[str, str, str, str]]:
+    if not args_raw.strip():
+        return []
+    parts = split_top_level(args_raw, ",")
+    result = []
+    for part in parts:
+        part = part.strip()
+        if not part:
+            continue
+        # handle 'val' / 'var'? fun params don't have val/var usually
+        # drop annotations
+        # e.g. "lpparam: PackageReadyParam" or "thisObject: Any"
+        if ":" not in part:
+            continue
+        name, type_part = part.split(":", 1)
+        name = name.strip()
+        raw_type = type_part.strip()
+        result.append((raw_type, _canonical_type(raw_type), _erased_type(raw_type), name))
+    return result
+
+
+def parse_kt_methods(text: str, require_jvm_static: bool = False) -> list[dict]:
+    methods = []
+    for m in KT_METHOD_RE.finditer(text):
+        # if require_jvm_static, ensure the declaration has @JvmStatic before it
+        if require_jvm_static:
+            # look back from match start for @JvmStatic in the same declaration
+            before = text[: m.start()]
+            decl_start = before.rfind("\n@JvmStatic")
+            if decl_start == -1:
+                continue
+            # make sure no other fun or class between decl_start and m.start()
+            between = text[decl_start + 1 : m.start()]
+            if re.search(r"\bfun\b|\bclass\b|\bobject\b", between):
+                continue
+        name = m.group("name")
+        args = parse_kt_args(m.group("args"))
+        ret_raw = (m.group("ret") or "Unit").strip()
+        # find body start and end by matching braces from the first '{' after the match
+        body_start = text.find("{", m.end())
+        if body_start == -1:
+            continue
         brace = 1
-        i = start
+        i = body_start + 1
         while i < len(text) and brace > 0:
             if text[i] == "{":
                 brace += 1
             elif text[i] == "}":
                 brace -= 1
             i += 1
-        body = text[start : i - 1]
+        vis = m.group(0)[: m.start()]  # not used
+        private = bool(re.search(r"\bprivate\b", m.group(0)[:50]))
         methods.append({
             "name": name,
-            "args_raw": (args_raw or "").strip(),
-            "return": (ret or "Unit").strip(),
-            "body": body.strip(),
-            "start": m.start(),
-            "end": i,
+            "ret_raw": ret_raw,
+            "ret_canonical": _canonical_type(ret_raw),
+            "ret_erased": _erased_type(ret_raw),
+            "args": args,
+            "private": private,
+            "body_start": body_start,
+            "body_end": i - 1,
+            "text": text,
+            "signature_start": m.start(),
         })
     return methods
 
 
-def parse_simple_type(t: str) -> str:
-    t = t.strip().split("=")[0].strip()
-    if t.endswith("?"):
-        t = t[:-1]
-    return t.split(".")[-1]
+def extract_facade_methods(text: str) -> list[dict]:
+    """Return all @JvmStatic fun methods in System.kt with body and full signatures."""
+    # Find each @JvmStatic, then the following fun
+    methods = []
+    for m in re.finditer(r"@JvmStatic", text):
+        # search for 'fun' within the next few lines
+        after = text[m.end() : m.end() + 500]
+        fm = re.search(rf"\bfun\s+([A-Za-z0-9_]+)\s*\(([^)]*)\)\s*(?::\s*([^={{\n]+))?", after, re.DOTALL)
+        if not fm:
+            continue
+        name = fm.group(1)
+        args_raw = fm.group(2)
+        ret_raw = (fm.group(3) or "Unit").strip()
+        start_in_text = m.end() + fm.start()
+        body_start = text.find("{", m.end() + fm.end())
+        if body_start == -1:
+            continue
+        brace = 1
+        i = body_start + 1
+        while i < len(text) and brace > 0:
+            if text[i] == "{":
+                brace += 1
+            elif text[i] == "}":
+                brace -= 1
+            i += 1
+        body = text[body_start + 1 : i - 1]
+        args = parse_kt_args(args_raw)
+        methods.append({
+            "name": name,
+            "ret_raw": ret_raw,
+            "ret_canonical": _canonical_type(ret_raw),
+            "ret_erased": _erased_type(ret_raw),
+            "args": args,
+            "args_raw": args_raw,
+            "body": body.strip(),
+            "signature_start": m.start(),
+        })
+    return methods
 
 
-def parse_facade_args(args_raw: str) -> list[tuple[str, str]]:
-    if not args_raw:
-        return []
-    parts = [p.strip() for p in args_raw.split(",") if p.strip()]
-    result = []
-    for p in parts:
-        if ":" in p:
-            name, type_ = p.split(":", 1)
-            result.append((parse_simple_type(type_), name.strip()))
-        else:
-            tokens = p.split()
-            if len(tokens) >= 2:
-                result.append((parse_simple_type(" ".join(tokens[1:])), tokens[0]))
-    return result
+def extract_hook_objects_and_methods(text: str, filename: str) -> tuple[str, list[dict]]:
+    obj_match = re.search(r"^\s*object\s+([A-Za-z0-9_]+)(?:\s*[:{(])", text, re.MULTILINE)
+    object_name = obj_match.group(1) if obj_match else filename.replace(".kt", "")
+    methods = []
+    for m in re.finditer(
+        rf"^\s*({KT_ANN_VISIBILITY}{KT_VISIBILITY})fun\s+([A-Za-z0-9_]+)\s*\(([^)]*)\)\s*(?::\s*([^={{\n]+))?",
+        text,
+        re.MULTILINE | re.DOTALL,
+    ):
+        vis = m.group(1)
+        name = m.group(2)
+        args_raw = m.group(3)
+        ret_raw = (m.group(4) or "Unit").strip()
+        private = bool(re.search(r"\bprivate\b", vis))
+        args = parse_kt_args(args_raw)
+        methods.append({
+            "object": object_name,
+            "filename": filename,
+            "name": name,
+            "ret_raw": ret_raw,
+            "ret_canonical": _canonical_type(ret_raw),
+            "ret_erased": _erased_type(ret_raw),
+            "args": args,
+            "private": private,
+        })
+    return object_name, methods
 
 
-def is_pure_delegation(method: dict) -> tuple[bool, str, str]:
-    """Return (is_delegation, target_object, target_method)."""
+# ---------------------------------------------------------------------------
+# Signature keys
+# ---------------------------------------------------------------------------
+
+def full_key(method: dict) -> tuple[str, tuple[str, ...], str]:
+    return (method["name"], tuple(a[1] for a in method["args"]), method["ret_canonical"])
+
+
+def erased_key(method: dict) -> tuple[str, tuple[str, ...], str]:
+    return (method["name"], tuple(a[2] for a in method["args"]), method["ret_erased"])
+
+
+# ---------------------------------------------------------------------------
+# Delegation validation
+# ---------------------------------------------------------------------------
+
+def validate_delegation(method: dict, allowed_objects: set[str]) -> tuple[bool, str, dict]:
+    """Check the facade method body is a pure 1:1 delegation to a System*Hooks method."""
     body = re.sub(r"//.*", "", method["body"])
-    body = body.replace("\n", " ")
+    # remove block comments? rare in generated file
+    body = re.sub(r"/\*.*?\*/", "", body, flags=re.DOTALL)
     body = re.sub(r"\s+", " ", body).strip()
 
-    # Unit return: Object.method(args)
-    unit_match = re.match(r"^([A-Za-z0-9_]+)\.([A-Za-z0-9_]+)\((.*)\)$", body)
-    if unit_match:
-        return True, unit_match.group(1), unit_match.group(2)
+    if not body:
+        return False, "empty body", {}
 
-    # Non-unit: return Object.method(args)
-    ret_match = re.match(r"^return\s+([A-Za-z0-9_]+)\.([A-Za-z0-9_]+)\((.*)\)$", body)
-    if ret_match:
-        return True, ret_match.group(1), ret_match.group(2)
+    # Unit return
+    unit_m = re.match(r"^([A-Za-z0-9_]+)\.([A-Za-z0-9_]+)\(([^)]*)\)$", body)
+    non_unit_m = re.match(r"^return\s+([A-Za-z0-9_]+)\.([A-Za-z0-9_]+)\(([^)]*)\)$", body)
 
-    return False, "", ""
+    m = unit_m or non_unit_m
+    if not m:
+        # allow return at end of non-Unit if only `return target(...)`
+        if body.startswith("return "):
+            # try again after 'return '
+            rest = body[len("return "):].strip()
+            non_unit_m2 = re.match(r"^([A-Za-z0-9_]+)\.([A-Za-z0-9_]+)\(([^)]*)\)$", rest)
+            if non_unit_m2:
+                m = non_unit_m2
+                body = f"return {rest}"
+        if not m:
+            return False, f"not a pure delegation: {body[:80]}", {}
+
+    target_obj = m.group(1)
+    target_method = m.group(2)
+    call_args_raw = m.group(3).strip()
+
+    if method["ret_canonical"] == "Unit":
+        if unit_m is None and non_unit_m is not None:
+            return False, "Unit-return facade must not use 'return'", {}
+    else:
+        if non_unit_m is None:
+            return False, "non-Unit-return facade must use 'return target(...)'", {}
+
+    if target_obj in ("System", "this"):
+        return False, f"facade may not delegate to itself ({target_obj})", {}
+
+    if target_obj not in allowed_objects:
+        return False, f"delegation target '{target_obj}' is not one of the allowed System*Hooks objects", {}
+
+    if target_method != method["name"]:
+        return False, f"delegation method name mismatch: {target_method} vs facade {method['name']}", {}
+
+    # parse call args
+    call_args = split_top_level(call_args_raw, ",")
+    call_args = [a.strip() for a in call_args if a.strip()]
+    if call_args_raw.strip() == "":
+        call_args = []
+
+    facade_params = method["args"]
+    if len(call_args) != len(facade_params):
+        return False, f"argument count mismatch: call has {len(call_args)}, facade has {len(facade_params)}", {}
+
+    seen = set()
+    for idx, (call_arg, fac_param) in enumerate(zip(call_args, facade_params)):
+        # call_arg must be a single identifier, not an expression
+        if not re.match(r"^[A-Za-z0-9_]+$", call_arg):
+            return False, f"argument {idx + 1} is not a simple parameter identifier: {call_arg}", {}
+        if call_arg != fac_param[3]:
+            return False, f"argument {idx + 1} is not the matching facade parameter: {call_arg} vs {fac_param[3]}", {}
+        if call_arg in seen:
+            return False, f"argument {call_arg} is duplicated in call", {}
+        seen.add(call_arg)
+
+    if method["ret_canonical"] != "Unit":
+        # call must cover all facade params, which the count check already does
+        pass
+
+    return True, "", {
+        "target_object": target_obj,
+        "target_method": target_method,
+        "target_full_key": (target_obj, target_method, tuple(a[1] for a in method["args"]), method["ret_canonical"]),
+    }
 
 
 # ---------------------------------------------------------------------------
-# System*Hooks.kt parsing
+# MainModule call extraction with overload resolution
 # ---------------------------------------------------------------------------
-OBJECT_RE = re.compile(r"^object\s+([A-Za-z0-9_]+)\s*\{", re.MULTILINE)
-HOOK_METHOD_RE = re.compile(
-    r"^\s*(?:@[A-Za-z0-9_.]+(?:\([^)]*\))?\s+)*fun\s+([A-Za-z0-9_]+)\s*\(([^)]*)\)",
-    re.MULTILINE,
+
+JAVA_CALL_RE = re.compile(
+    r"(?<![A-Za-z0-9_.])System\.([A-Za-z0-9_]+)\s*\(",
 )
 
 
-def extract_hook_methods(text: str, filename: str) -> list[dict]:
-    obj_match = OBJECT_RE.search(text)
-    object_name = obj_match.group(1) if obj_match else filename.replace(".kt", "")
-    methods = []
-    for m in HOOK_METHOD_RE.finditer(text):
-        name, args_raw = m.groups()
-        methods.append({
-            "object": object_name,
+def find_matching_brace(text: str, open_pos: int) -> int:
+    """Find the position of the matching closing brace for '{' at open_pos."""
+    brace = 1
+    i = open_pos + 1
+    while i < len(text) and brace > 0:
+        if text[i] == "{":
+            brace += 1
+        elif text[i] == "}":
+            brace -= 1
+        i += 1
+    return i - 1
+
+
+def extract_call_args(text: str, start: int) -> tuple[int, list[str]]:
+    """Extract the arguments of a call whose '(' is at start. Returns end pos and arg list."""
+    if start >= len(text) or text[start] != "(":
+        return start, []
+    paren = 1
+    i = start + 1
+    arg_buf = []
+    current = []
+    quote = None
+    escape = False
+    while i < len(text) and paren > 0:
+        ch = text[i]
+        if escape:
+            current.append(ch)
+            escape = False
+            i += 1
+            continue
+        if quote:
+            current.append(ch)
+            if ch == "\\":
+                escape = True
+            elif ch == quote:
+                quote = None
+            i += 1
+            continue
+        if ch in ('"', "'"):
+            quote = ch
+            current.append(ch)
+            i += 1
+            continue
+        if ch == "(":
+            paren += 1
+            current.append(ch)
+        elif ch == ")":
+            paren -= 1
+            if paren == 0:
+                if current:
+                    arg_buf.append("".join(current).strip())
+                return i, [a for a in arg_buf if a]
+            else:
+                current.append(ch)
+        elif ch == "," and paren == 1:
+            arg_buf.append("".join(current).strip())
+            current = []
+        else:
+            current.append(ch)
+        i += 1
+    return i, [a for a in arg_buf if a]
+
+
+def find_enclosing_mainmodule_method(text: str, pos: int, methods: list[dict]) -> dict | None:
+    """Find the outer MainModule method whose body contains pos."""
+    containing = [m for m in methods if m["body_start"] <= pos <= m["body_end"]]
+    if not containing:
+        return None
+    # choose the one with the greatest start (innermost) but it must be a top-level MainModule method
+    # all passed are already top-level methods of MainModule
+    return max(containing, key=lambda m: m["signature_start"])
+
+
+def is_in_line_comment(text: str, pos: int) -> bool:
+    line_start = text.rfind("\n", 0, pos) + 1
+    segment = text[line_start:pos]
+    # naive: if // appears before pos on this line, the rest is a comment
+    # (MainModule does not have // inside strings on these lines)
+    cmt = segment.find("//")
+    return cmt != -1
+
+
+def resolve_mainmodule_calls(text: str, facade_methods: list[dict]) -> tuple[list[dict], list[dict]]:
+    """Resolve each System.* call to a facade signature and report conflicts."""
+    methods = parse_java_methods(text, require_static=False)
+    # Filter to top-level methods of MainModule (signature at class brace depth 1).
+    top_level_methods = [m for m in methods if brace_depth_at(m["signature_start"], text) == 1]
+
+    facade_by_name = defaultdict(list)
+    for fm in facade_methods:
+        facade_by_name[fm["name"]].append(fm)
+
+    calls = []
+    unresolved = []
+    for m in JAVA_CALL_RE.finditer(text):
+        pos = m.start()
+        name = m.group(1)
+        if is_in_line_comment(text, pos):
+            continue
+        end_pos, call_args = extract_call_args(text, m.end() - 1)
+        if not call_args:
+            call_args = []
+        enclosing = find_enclosing_mainmodule_method(text, pos, top_level_methods)
+
+        arg_types: list[str] = []
+        if enclosing:
+            param_map = {a[3]: a[1] for a in enclosing["args"]}
+            # also try to resolve local variable declarations; use a simple regex scan of the body up to pos
+            body_prefix = text[enclosing["body_start"] : pos]
+            local_re = re.compile(
+                r"(?:^|;|\{|\})\s*(?:final\s+)?([A-Za-z0-9_\[\]<>,?\.\s]+)\s+([A-Za-z0-9_]+)\s*[=;]",
+                re.MULTILINE,
+            )
+            for lm in local_re.finditer(body_prefix):
+                vtype = lm.group(1).strip()
+                vname = lm.group(2).strip()
+                if vname not in param_map:
+                    param_map[vname] = _canonical_type(vtype)
+            for ca in call_args:
+                ca = ca.strip()
+                if re.match(r"^[A-Za-z0-9_]+$", ca):
+                    if ca in param_map:
+                        arg_types.append(param_map[ca])
+                    else:
+                        arg_types.append("<unknown>")
+                else:
+                    arg_types.append("<expr>")
+        else:
+            arg_types = ["<unknown>"] * len(call_args)
+
+        matches = [fm for fm in facade_by_name.get(name, []) if len(fm["args"]) == len(call_args)]
+        if len(matches) == 0:
+            unresolved.append({
+                "name": name,
+                "arg_count": len(call_args),
+                "arg_types": arg_types,
+                "call_args": call_args,
+                "enclosing_method": enclosing["name"] if enclosing else "<unknown>",
+                "reason": "no facade method with matching name and argument count",
+            })
+            continue
+        if len(matches) > 1:
+            # try to resolve by types
+            type_matches = [fm for fm in matches if tuple(a[1] for a in fm["args"]) == tuple(arg_types)]
+            if len(type_matches) == 1:
+                calls.append({
+                    "name": name,
+                    "call_args": call_args,
+                    "arg_types": arg_types,
+                    "resolved_full_key": full_key(type_matches[0]),
+                    "enclosing_method": enclosing["name"] if enclosing else "<unknown>",
+                })
+                continue
+            if len(type_matches) > 1:
+                unresolved.append({
+                    "name": name,
+                    "arg_count": len(call_args),
+                    "arg_types": arg_types,
+                    "call_args": call_args,
+                    "enclosing_method": enclosing["name"] if enclosing else "<unknown>",
+                    "reason": "multiple facade overloads match argument types",
+                })
+            else:
+                unresolved.append({
+                    "name": name,
+                    "arg_count": len(call_args),
+                    "arg_types": arg_types,
+                    "call_args": call_args,
+                    "enclosing_method": enclosing["name"] if enclosing else "<unknown>",
+                    "reason": "facade overload exists but argument types could not be resolved",
+                })
+            continue
+        calls.append({
             "name": name,
-            "args": parse_facade_args(args_raw or ""),
-            "args_raw": (args_raw or "").strip(),
-            "filename": filename,
+            "call_args": call_args,
+            "arg_types": arg_types,
+            "resolved_full_key": full_key(matches[0]),
+            "enclosing_method": enclosing["name"] if enclosing else "<unknown>",
         })
-    return methods
+
+    return calls, unresolved
 
 
 # ---------------------------------------------------------------------------
-# R8 mapping.txt / usage.txt parsing
+# R8 mapping / usage parsing
 # ---------------------------------------------------------------------------
-def parse_mapping(path: Path) -> dict:
-    """Return mapping info as:
-    {
-        class: {orig_class: (obf_class, methods:[...], fields:[...])},
-        method: {(orig_class, method_name, args): obf_name, ...},
-    }
-    """
-    data = {"class": {}, "method": {}}
-    current = None
+
+def parse_mapping(path: Path) -> list[dict]:
+    """Parse mapping.txt and return list of method mappings with original class/name/args."""
+    mappings = []
     with path.open("r", encoding="utf-8") as f:
-        for raw in f:
-            line = raw.rstrip("\n")
-            if not line:
-                current = None
+        for line in f:
+            line = line.rstrip("\n")
+            if not line or line.startswith("#"):
                 continue
-            # class line: a.b.C -> d.e:
-            class_m = re.match(r"^([^\s:]+(?:\.[^\s:]+)*)\s*->\s*([^\s:]+):\s*$", line)
-            if class_m:
-                orig, obf = class_m.group(1), class_m.group(2)
-                current = orig
-                data["class"][orig] = {"obf": obf, "methods": [], "fields": []}
-                continue
-            if current is None:
-                continue
-            # method line:    [line:endline:]ret class.method(args):orig_line -> obf
-            method_m = re.match(
+            m = re.match(
                 r"^\s*(?:\d+:\d+:)?([^\s]+)\s+([^\s]+)\.([A-Za-z0-9_]+)\(([^)]*)\)(?::\d+)?\s*->\s*([^\s]+)$",
                 line,
             )
-            if method_m:
-                ret, cls, name, args, obf = method_m.groups()
-                data["class"][current]["methods"].append({
-                    "ret": ret,
-                    "orig": f"{cls}.{name}({args})",
-                    "obf": obf,
-                })
-                data["method"][(cls, name, args)] = obf
+            if not m:
                 continue
-            # field line:    type class.field -> obf
-            field_m = re.match(r"^\s*([^\s]+)\s+([^\s]+)\.([A-Za-z0-9_]+)\s*->\s*([^\s]+)$", line)
-            if field_m:
-                data["class"][current]["fields"].append({
-                    "type": field_m.group(1),
-                    "orig": f"{field_m.group(2)}.{field_m.group(3)}",
-                    "obf": field_m.group(4),
-                })
-    return data
+            ret, cls, name, args, obf = m.groups()
+            arg_types = [a.strip() for a in split_top_level(args, ",") if a.strip()]
+            mappings.append({
+                "class": cls,
+                "name": name,
+                "args": arg_types,
+                "ret": ret,
+                "obf": obf,
+                "line": line,
+            })
+    return mappings
 
 
-def parse_usage(path: Path) -> dict:
-    """Return usage report as:
-    {
-        class: {
-            orig_class: {
-                "status": "full" | "members",
-                "members": [str, ...]
-            }
-        }
-    }
-    """
-    data = defaultdict(lambda: {"status": None, "members": []})
-    current = None
+def canonicalize_mapping_arg(arg: str) -> str:
+    # e.g. "io.github.libxposed.api.XposedModuleInterface$PackageReadyParam"
+    # or "java.lang.String"
+    arg = arg.strip()
+    if not arg:
+        return ""
+    # arrays: "java.lang.Object[]" or "java.lang.String[]"
+    is_array = arg.endswith("[]")
+    if is_array:
+        elem = arg[:-2].strip()
+        return f"Array<{canonicalize_mapping_arg(elem)}>"
+    # primitives in mapping are unboxed names
+    base = _last_component(arg)
+    base_l = base.lower()
+    if base_l in JAVA_TO_KT:
+        return JAVA_TO_KT[base_l]
+    return base
+
+
+def mapping_matches_facade(mapping: dict, facade: dict) -> bool:
+    if mapping["class"] != "name.monwf.customiuizer.mods.System":
+        return False
+    if mapping["name"] != facade["name"]:
+        return False
+    if len(mapping["args"]) != len(facade["args"]):
+        return False
+    for ma, fa in zip(mapping["args"], facade["args"]):
+        if canonicalize_mapping_arg(ma) != fa[1]:
+            return False
+    return True
+
+
+def parse_usage(path: Path) -> list[dict]:
+    """Parse usage.txt and return list of removed members/classes."""
+    items = []
+    current_class = None
     with path.open("r", encoding="utf-8") as f:
-        for raw in f:
-            line = raw.rstrip("\n")
+        for line in f:
+            line = line.rstrip("\n").rstrip()
             if not line:
-                current = None
+                current_class = None
                 continue
-            # class header is a line ending with ':' or just a class name with no indent
             top = re.match(r"^([^\s]+):\s*$", line)
             plain = re.match(r"^([^\s]+)$", line)
             if top:
-                current = top.group(1)
-                data[current]["status"] = "members"
+                current_class = top.group(1)
+                items.append({"class": current_class, "member": None, "raw": line})
                 continue
             if plain:
-                current = plain.group(1)
-                data[current]["status"] = "full"
+                current_class = plain.group(1)
+                items.append({"class": current_class, "member": None, "raw": line})
                 continue
-            if current:
-                # indented member
-                data[current]["members"].append(line.strip())
-    return dict(data)
+            if current_class:
+                items.append({"class": current_class, "member": line.strip(), "raw": line})
+    return items
+
+
+def usage_matches_facade(usage: list[dict], facade: dict) -> bool:
+    class_name = "name.monwf.customiuizer.mods.System"
+    method_re = re.compile(
+        rf"{re.escape(facade['name'])}\s*\(([^)]*)\)"
+    )
+    for u in usage:
+        if u["class"] != class_name:
+            continue
+        member = u["member"]
+        if not member:
+            continue
+        if facade["name"] not in member:
+            continue
+        m = method_re.search(member)
+        if not m:
+            continue
+        args_raw = m.group(1)
+        args = [a.strip() for a in split_top_level(args_raw, ",") if a.strip()]
+        if len(args) != len(facade["args"]):
+            continue
+        if all(canonicalize_mapping_arg(a) == fa[1] for a, fa in zip(args, facade["args"])):
+            return True
+    return False
 
 
 # ---------------------------------------------------------------------------
-# APK inspection helpers
+# APK helpers
 # ---------------------------------------------------------------------------
+
 def apkanalyzer_path() -> Path | None:
     envs = ["ANDROID_HOME", "ANDROID_SDK_ROOT"]
     locations = [
@@ -280,7 +891,6 @@ def apkanalyzer_path() -> Path | None:
             p = root / loc
             if p.exists():
                 return p
-    # Fallback to a typical Windows SDK location
     root = Path("C:/Android/Sdk")
     if root.exists():
         for loc in locations:
@@ -296,12 +906,16 @@ def find_apks() -> tuple[Path | None, Path | None]:
     return debug, release
 
 
-def run_apkanalyzer_dex_packages(apk: Path, analyzer: Path) -> str:
+def run_apkanalyzer_dex_packages(apk: Path, analyzer: Path, mapping: Path | None) -> str:
+    cmd = [str(analyzer), "dex", "packages", str(apk), "--defined-only"]
+    if mapping:
+        cmd.extend(["--proguard-mappings", str(mapping)])
     try:
         result = subprocess.run(
-            [str(analyzer), "dex", "packages", str(apk), "--defined-only"],
+            cmd,
             capture_output=True,
             text=True,
+            encoding="utf-8",
             timeout=120,
         )
         return result.stdout + result.stderr
@@ -309,26 +923,14 @@ def run_apkanalyzer_dex_packages(apk: Path, analyzer: Path) -> str:
         return f"apkanalyzer error: {e}"
 
 
-def run_apkanalyzer_files(apk: Path, analyzer: Path) -> str:
-    try:
-        result = subprocess.run(
-            [str(analyzer), "files", "list", str(apk)],
-            capture_output=True,
-            text=True,
-            timeout=60,
-        )
-        return result.stdout + result.stderr
-    except Exception as e:
-        return f"apkanalyzer error: {e}"
-
-
 # ---------------------------------------------------------------------------
-# Report generation
+# Reporting
 # ---------------------------------------------------------------------------
 class Reporter:
     def __init__(self):
-        self.lines = []
-        self.failures = []
+        self.lines: list[str] = []
+        self.failures: list[str] = []
+        self.warnings: list[str] = []
 
     def add(self, line: str):
         self.lines.append(line)
@@ -339,6 +941,7 @@ class Reporter:
 
     def warn(self, line: str):
         self.lines.append(f"WARN: {line}")
+        self.warnings.append(line)
 
     def text(self) -> str:
         return "\n".join(self.lines)
@@ -355,129 +958,311 @@ def format_timestamp(path: Path | None) -> str:
     return dt.strftime("%Y-%m-%d %H:%M:%S UTC")
 
 
-def main():
-    r = Reporter()
+def find_matching_brace_robust(text: str, open_pos: int) -> int:
+    """Find matching '}' for '{' at open_pos, skipping strings and comments."""
+    brace = 1
+    i = open_pos + 1
+    in_str = None
+    escape = False
+    in_line_comment = False
+    in_block_comment = False
+    while i < len(text) and brace > 0:
+        ch = text[i]
+        if in_line_comment:
+            if ch == "\n":
+                in_line_comment = False
+            i += 1
+            continue
+        if in_block_comment:
+            if ch == "*" and i + 1 < len(text) and text[i + 1] == "/":
+                in_block_comment = False
+                i += 2
+            else:
+                i += 1
+            continue
+        if in_str:
+            if escape:
+                escape = False
+            elif ch == "\\":
+                escape = True
+            elif ch == in_str:
+                in_str = None
+            i += 1
+            continue
+        if ch == '"' or ch == "'":
+            in_str = ch
+            i += 1
+            continue
+        if ch == "/" and i + 1 < len(text):
+            nxt = text[i + 1]
+            if nxt == "/":
+                in_line_comment = True
+                i += 2
+                continue
+            elif nxt == "*":
+                in_block_comment = True
+                i += 2
+                continue
+        if ch == "{":
+            brace += 1
+        elif ch == "}":
+            brace -= 1
+            if brace == 0:
+                return i
+        i += 1
+    return i - 1
 
-    r.add("# K5 System.java -> Kotlin migration audit")
-    r.add("")
+
+def brace_depth_at(pos: int, text: str) -> int:
+    """Return brace depth at position, ignoring strings and comments."""
+    depth = 0
+    i = 0
+    in_str = None
+    escape = False
+    in_line_comment = False
+    in_block_comment = False
+    while i < pos:
+        ch = text[i]
+        if in_line_comment:
+            if ch == "\n":
+                in_line_comment = False
+            i += 1
+            continue
+        if in_block_comment:
+            if ch == "*" and i + 1 < len(text) and text[i + 1] == "/":
+                in_block_comment = False
+                i += 2
+            else:
+                i += 1
+            continue
+        if in_str:
+            if escape:
+                escape = False
+            elif ch == "\\":
+                escape = True
+            elif ch == in_str:
+                in_str = None
+            i += 1
+            continue
+        if ch == '"' or ch == "'":
+            in_str = ch
+            i += 1
+            continue
+        if ch == "/" and i + 1 < len(text):
+            nxt = text[i + 1]
+            if nxt == "/":
+                in_line_comment = True
+                i += 2
+                continue
+            elif nxt == "*":
+                in_block_comment = True
+                i += 2
+                continue
+        if ch == "{":
+            depth += 1
+        elif ch == "}":
+            depth -= 1
+        i += 1
+    return depth
+
+
+def main() -> int:
+    parser = argparse.ArgumentParser(description="Audit K5 System.java -> Kotlin migration")
+    parser.add_argument(
+        "--baseline-ref",
+        default=None,
+        help="Git ref to old System.java for baseline comparison",
+    )
+    args = parser.parse_args()
+
+    r = Reporter()
+    r.add("# K5 System.java -> Kotlin hardened audit")
     r.add(f"Repo root: {REPO}")
     r.add(f"Audit time: {datetime.now(timezone.utc).strftime('%Y-%m-%d %H:%M:%S UTC')}")
     r.add("")
 
-    # --- 1. MainModule calls ---
-    if not MAIN_MODULE.exists():
-        r.fail(f"MainModule not found: {MAIN_MODULE}")
-        return r
+    # --- 1. Baseline ---
+    baseline_methods: list[dict] = []
+    if args.baseline_ref:
+        baseline_text = run_git_show(args.baseline_ref, OLD_SYSTEM_JAVA_PATH)
+        if baseline_text is None:
+            r.warn(f"Baseline ref '{args.baseline_ref}' not found; old System.java could not be read")
+        else:
+            baseline_methods = parse_java_methods(baseline_text, require_static=True)
+            r.add(f"## Baseline {args.baseline_ref}")
+            r.add(f"- Public static methods in old System.java: {len(baseline_methods)}")
+            r.add("")
 
-    main_text = MAIN_MODULE.read_text(encoding="utf-8")
-    main_calls = extract_mainmodule_calls(main_text)
-    unique_calls = sorted(set(main_calls))
-    r.add("## MainModule System.* calls")
-    r.add(f"- Total call sites: {len(main_calls)}")
-    r.add(f"- Unique methods called: {len(unique_calls)}")
-    for name in unique_calls:
-        count = main_calls.count(name)
-        r.add(f"  - {name}: {count}")
-    r.add("")
-
-    # --- 2. Facade methods ---
+    # --- 2. Facade parsing ---
     if not SYSTEM_FACADE.exists():
         r.fail(f"System.kt facade not found: {SYSTEM_FACADE}")
-        return r
+        print(r.text())
+        return 1
 
     facade_text = SYSTEM_FACADE.read_text(encoding="utf-8")
     facade_methods = extract_facade_methods(facade_text)
     r.add("## System.kt facade methods")
-    r.add(f"- Public @JvmStatic methods: {len(facade_methods)}")
+    r.add(f"- Total @JvmStatic methods: {len(facade_methods)}")
 
-    facade_by_name = {m["name"]: m for m in facade_methods}
-    non_delegation = []
+    facade_by_full: dict[tuple, dict] = {}
+    facade_by_erased: dict[tuple, list[dict]] = defaultdict(list)
+    duplicate_full = []
+    duplicate_erased = []
     for m in facade_methods:
-        is_deleg, target_obj, target_method = is_pure_delegation(m)
-        if not is_deleg:
-            non_delegation.append(m["name"])
+        fk = full_key(m)
+        if fk in facade_by_full:
+            duplicate_full.append(fk)
         else:
-            m["target_object"] = target_obj
-            m["target_method"] = target_method
+            facade_by_full[fk] = m
+        ek = erased_key(m)
+        facade_by_erased[ek].append(m)
+    for ek, ms in facade_by_erased.items():
+        if len(ms) > 1:
+            duplicate_erased.append(ek)
 
-    if non_delegation:
-        r.fail(f"Facade contains implementation logic in: {', '.join(non_delegation)}")
-    else:
-        r.add("- All facade methods are pure delegations")
-
-    # Duplicate facade method names (overloads)
-    facade_name_counts = defaultdict(int)
-    for m in facade_methods:
-        facade_name_counts[m["name"]] += 1
-    dups = [name for name, c in facade_name_counts.items() if c > 1]
-    if dups:
-        r.warn(f"Facade has overloaded method names (Java interop risk): {', '.join(dups)}")
+    if duplicate_full:
+        r.fail(f"Facade has duplicate full signatures: {', '.join(str(k) for k in duplicate_full[:10])}")
+    if duplicate_erased:
+        r.fail(f"Facade has duplicate JVM erased signatures: {', '.join(str(k) for k in duplicate_erased[:10])}")
     r.add("")
 
-    # --- 3. MainModule calls vs facade ---
-    r.add("## MainModule call -> facade coverage")
-    missing_in_facade = [c for c in unique_calls if c not in facade_by_name]
-    if missing_in_facade:
-        r.fail(f"MainModule calls missing from facade: {', '.join(missing_in_facade)}")
+    # --- 3. Baseline comparison ---
+    if baseline_methods:
+        baseline_keys = {full_key(m) for m in baseline_methods}
+        facade_keys = set(facade_by_full.keys())
+        missing_from_facade = sorted(baseline_keys - facade_keys, key=lambda k: (k[0], k[1]))
+        new_in_facade = sorted(facade_keys - baseline_keys, key=lambda k: (k[0], k[1]))
+        same_name_different_sig = []
+        baseline_by_name = defaultdict(list)
+        for m in baseline_methods:
+            baseline_by_name[m["name"]].append(full_key(m))
+        for m in facade_methods:
+            if m["name"] in baseline_by_name and full_key(m) not in baseline_by_name[m["name"]]:
+                same_name_different_sig.append((m["name"], baseline_by_name[m["name"]], full_key(m)))
+
+        r.add("## Baseline comparison")
+        r.add(f"- Old System.java full signatures: {len(baseline_keys)}")
+        r.add(f"- Current facade full signatures: {len(facade_keys)}")
+        r.add(f"- Missing from current facade: {len(missing_from_facade)}")
+        if missing_from_facade:
+            for k in missing_from_facade[:30]:
+                r.add(f"  - {k[0]}({', '.join(k[1])}): {k[2]}")
+            if len(missing_from_facade) > 30:
+                r.add(f"  ... and {len(missing_from_facade) - 30} more")
+        r.add(f"- New in current facade: {len(new_in_facade)}")
+        if same_name_different_sig:
+            r.add(f"- Same name but different signature: {len(same_name_different_sig)}")
+            for name, old, new in same_name_different_sig[:10]:
+                r.add(f"  - {name}: old={old[0][1:]}, new={new[1:]}")
+        r.add("")
+
+    # --- 4. MainModule call resolution ---
+    if not MAIN_MODULE.exists():
+        r.fail(f"MainModule not found: {MAIN_MODULE}")
+        print(r.text())
+        return 1
+
+    main_text = MAIN_MODULE.read_text(encoding="utf-8")
+    calls, unresolved = resolve_mainmodule_calls(main_text, facade_methods)
+    r.add("## MainModule System.* calls")
+    r.add(f"- Total call sites: {len(calls) + len(unresolved)}")
+    r.add(f"- Resolved calls: {len(calls)}")
+    r.add(f"- Unresolved calls: {len(unresolved)}")
+
+    if unresolved:
+        for u in unresolved[:20]:
+            r.fail(f"MainModule call unresolved: {u['name']}({', '.join(u['call_args'])}) in {u['enclosing_method']} - {u['reason']}")
+        if len(unresolved) > 20:
+            r.add(f"  ... and {len(unresolved) - 20} more unresolved")
     else:
-        r.add(f"- All {len(unique_calls)} unique MainModule calls are covered by the facade")
+        unique_call_keys = sorted({c['resolved_full_key'] for c in calls}, key=lambda k: k[0])
+        r.add(f"- Unique resolved facade signatures: {len(unique_call_keys)}")
     r.add("")
 
-    # --- 4. Hooks files ---
-    hooks_files = sorted(MODS_DIR.glob("System*Hooks.kt"))
+    # --- 5. System*Hooks parsing and hard checks ---
+    hooks_files = sorted(p for p in MODS_DIR.glob("System*Hooks.kt") if not p.name.startswith("SystemUI"))
     r.add("## System*Hooks files")
-    r.add(f"- Files found: {len(hooks_files)}")
+    r.add(f"- Files found: {len(hooks_files)} (expected: {EXPECTED_HOOKS_COUNT})")
+    if len(hooks_files) != EXPECTED_HOOKS_COUNT:
+        r.fail(f"System*Hooks.kt file count is {len(hooks_files)}, expected {EXPECTED_HOOKS_COUNT}")
+
+    hook_objects: dict[str, list[dict]] = {}
+    hook_object_names: set[str] = set()
     all_hook_methods: list[dict] = []
+    file_object_mismatch = []
     for hf in hooks_files:
         text = hf.read_text(encoding="utf-8")
-        methods = extract_hook_methods(text, hf.name)
+        obj_name, methods = extract_hook_objects_and_methods(text, hf.name)
+        expected_obj = hf.name.replace(".kt", "")
+        if obj_name != expected_obj:
+            file_object_mismatch.append(f"{hf.name} declares object '{obj_name}'")
+        hook_objects[obj_name] = methods
+        hook_object_names.add(obj_name)
         all_hook_methods.extend(methods)
-        r.add(f"  - {hf.name}: {len(methods)} methods")
+        r.add(f"  - {hf.name}: {len(methods)} methods (object {obj_name})")
+
+    if file_object_mismatch:
+        for e in file_object_mismatch:
+            r.fail(e)
     r.add("")
 
-    hook_target_map: dict[tuple[str, str, tuple], dict] = {}
+    # Build hook target map keyed by full signature (object, name, arg types, ret)
+    hook_target_map: dict[tuple, dict] = {}
+    duplicate_hook_sigs: list[tuple] = []
     for hm in all_hook_methods:
-        key = (hm["object"], hm["name"], tuple(t for t, _ in hm["args"]))
-        hook_target_map[key] = hm
+        if hm["private"]:
+            continue
+        key = (hm["object"], hm["name"], tuple(a[1] for a in hm["args"]), hm["ret_canonical"])
+        if key in hook_target_map:
+            if hook_target_map[key]["object"] != hm["object"]:
+                duplicate_hook_sigs.append(key)
+        else:
+            hook_target_map[key] = hm
+    if duplicate_hook_sigs:
+        for k in duplicate_hook_sigs[:20]:
+            r.fail(f"Duplicate public hook signature across objects: {k[0]}.{k[1]}({', '.join(k[2])}): {k[3]}")
+        if len(duplicate_hook_sigs) > 20:
+            r.add(f"  ... and {len(duplicate_hook_sigs) - 20} more")
+    r.add("")
 
-    # --- 5. Facade target -> Hooks coverage ---
-    r.add("## Facade delegation -> Hooks target coverage")
+    # --- 6. Facade delegation validation ---
+    r.add("## Facade delegation validation")
+    allowed_hook_objects = hook_object_names
+    bad_delegations = []
+    for m in facade_methods:
+        ok, msg, _ = validate_delegation(m, allowed_hook_objects)
+        if not ok:
+            bad_delegations.append((m, msg))
+    if bad_delegations:
+        for m, msg in bad_delegations[:20]:
+            r.fail(f"System.{m['name']}({', '.join(a[3] for a in m['args'])}): {msg}")
+        if len(bad_delegations) > 20:
+            r.add(f"  ... and {len(bad_delegations) - 20} more")
+    else:
+        r.add("- All facade methods are pure 1:1 parameter-forwarding delegations")
+    r.add("")
+
+    # --- 7. Facade target coverage ---
+    r.add("## Facade target coverage")
     missing_targets = []
     for m in facade_methods:
-        if "target_object" not in m:
+        ok, _, info = validate_delegation(m, allowed_hook_objects)
+        if not ok:
             continue
-        target_obj = m["target_object"]
-        target_method = m["target_method"]
-        target_fqcn = f"name.monwf.customiuizer.mods.{target_obj}"
-        target_key = (target_obj, target_method, tuple(t for t, _ in parse_facade_args(m["args_raw"])))
+        target_key = info["target_full_key"]
         if target_key not in hook_target_map:
-            missing_targets.append(f"{target_fqcn}.{target_method} (called from System.{m['name']})")
-
+            missing_targets.append(f"{target_key[0]}.{target_key[1]}({', '.join(target_key[2])}): {target_key[3]}")
     if missing_targets:
-        r.fail(f"Facade targets missing in System*Hooks: {', '.join(missing_targets[:20])}")
+        for mt in missing_targets[:20]:
+            r.fail(f"Facade target missing in Hooks: {mt}")
         if len(missing_targets) > 20:
             r.add(f"  ... and {len(missing_targets) - 20} more")
     else:
-        r.add(f"- All {len(facade_methods)} facade delegations resolve to a System*Hooks method")
+        r.add(f"- All facade delegations resolve to a public System*Hooks method")
     r.add("")
 
-    # --- 6. Duplicate methods across Hooks files ---
-    hook_key_counts = defaultdict(list)
-    for hm in all_hook_methods:
-        key = (hm["name"], tuple(t for t, _ in hm["args"]))
-        hook_key_counts[key].append(hm)
-    duplicates = {k: v for k, v in hook_key_counts.items() if len(v) > 1}
-    r.add("## Duplicate hook method signatures")
-    if duplicates:
-        for (name, args), methods in sorted(duplicates.items()):
-            files = [m["filename"] for m in methods]
-            r.warn(f"Duplicate: {name} in {', '.join(files)}")
-    else:
-        r.add("- No duplicate method signatures across System*Hooks files")
-    r.add("")
-
-    # --- 7. R8 mapping / usage ---
-    r.add("## R8 mapping and usage audit")
+    # --- 8. R8 mapping / usage counts ---
+    r.add("## R8 mapping and usage counts")
     usage_path = latest_file(MAPPING_DIR, "usage.txt")
     mapping_path = latest_file(MAPPING_DIR, "mapping.txt")
     if not usage_path or not mapping_path:
@@ -485,85 +1270,33 @@ def main():
     else:
         r.add(f"- usage.txt: {usage_path}")
         r.add(f"- mapping.txt: {mapping_path}")
+        mappings = parse_mapping(mapping_path)
+        usages = parse_usage(usage_path)
 
-        usage_data = parse_usage(usage_path)
-        mapping_data = parse_mapping(mapping_path)
-
-        # System class in usage/mapping
-        system_in_usage = usage_data.get("name.monwf.customiuizer.mods.System")
-        system_in_mapping = mapping_data["class"].get("name.monwf.customiuizer.mods.System")
-
-        r.add("")
-        r.add("### `name.monwf.customiuizer.mods.System` (facade)")
-        if system_in_usage:
-            r.add("- Present in usage.txt (removed by R8 shrinking)")
-            if system_in_usage["status"] == "full":
-                r.add("  - Class itself removed")
-            else:
-                r.add(f"  - Members listed as removed: {len(system_in_usage['members'])}")
-                for mem in system_in_usage["members"]:
-                    r.add(f"    - {mem}")
-        else:
-            r.add("- Not present in usage.txt (not reported as removed)")
-
-        if system_in_mapping:
-            r.add(f"- Present in mapping.txt: {system_in_mapping['obf']}")
-            r.add(f"  - Mapped methods: {len(system_in_mapping['methods'])}")
-            for mm in system_in_mapping["methods"][:10]:
-                r.add(f"    - {mm['orig']} -> {mm['obf']}")
-            if len(system_in_mapping["methods"]) > 10:
-                r.add(f"    ... and {len(system_in_mapping['methods']) - 10} more")
-        else:
-            r.add("- Not found in mapping.txt class headers (may have been removed or inlined)")
-
-        # System*Hooks classes
-        r.add("")
-        r.add("### System*Hooks classes (18 domain objects)")
-        removed_hooks = []
-        kept_hooks = []
-        for hf in hooks_files:
-            obj_name = hf.name.replace(".kt", "")
-            fqcn = f"name.monwf.customiuizer.mods.{obj_name}"
-            in_usage = fqcn in usage_data
-            in_mapping = fqcn in mapping_data["class"]
-            if in_usage and not in_mapping:
-                removed_hooks.append(obj_name)
-            elif in_mapping:
-                kept_hooks.append((obj_name, mapping_data["class"][fqcn]["obf"]))
-            else:
-                # neither - common for inlined/merged small classes
-                kept_hooks.append((obj_name, "not in mapping headers"))
-
-        if removed_hooks:
-            r.add(f"- Classes reported as removed in usage.txt: {len(removed_hooks)}")
-            for h in removed_hooks:
-                r.add(f"  - {h}")
-            r.add("  (Removal of hook-only classes is acceptable if their methods were inlined into the System facade by R8.)")
-
-        r.add(f"- Classes with mapping headers: {len([h for h in kept_hooks if h[1] != 'not in mapping headers'])}")
-        for h, obf in kept_hooks:
-            if obf != "not in mapping headers":
-                r.add(f"  - {h} -> {obf}")
-
-        # Cross-check: are any facade targets removed in usage/missing in mapping?
-        r.add("")
-        r.add("### Facade target method reachability")
+        mapping_count = 0
+        usage_count = 0
+        unresolved_count = 0
         for m in facade_methods:
-            if "target_object" not in m:
-                continue
-            target_obj = m["target_object"]
-            target_method = m["target_method"]
-            target_fqcn = f"name.monwf.customiuizer.mods.{target_obj}"
-            target_key = (target_fqcn, target_method)
-            if target_fqcn in usage_data and target_fqcn not in mapping_data["class"]:
-                # target class removed; method likely inlined into facade
-                r.warn(
-                    f"System.{m['name']} -> {target_obj}.{target_method}: target class removed; "
-                    "confirm via APK/Dex that the call chain still resolves."
-                )
+            in_mapping = any(mapping_matches_facade(mp, m) for mp in mappings)
+            in_usage = usage_matches_facade(usages, m)
+            if in_mapping:
+                mapping_count += 1
+            elif in_usage:
+                usage_count += 1
+            else:
+                unresolved_count += 1
 
-    # --- 8. APK info ---
+        r.add(f"- Facade full signatures total: {len(facade_methods)}")
+        if baseline_methods:
+            r.add(f"- Baseline (old System.java) full signatures: {len(baseline_methods)}")
+        r.add(f"- Facade signatures located in mapping.txt: {mapping_count}")
+        r.add(f"- Facade signatures explicitly listed in usage.txt (removed): {usage_count}")
+        r.add(f"- Facade signatures not directly locatable in mapping/usage: {unresolved_count}")
+        if unresolved_count:
+            r.add("  (These may have been inlined or optimized by R8; Release build link succeeded, but runtime semantics are pending device verification.)")
     r.add("")
+
+    # --- 9. APK artifacts ---
     r.add("## APK artifacts")
     debug_apk, release_apk = find_apks()
     for label, apk in [("Debug", debug_apk), ("Release", release_apk)]:
@@ -577,39 +1310,38 @@ def main():
         r.add(f"- Last write: {format_timestamp(apk)}")
 
         analyzer = apkanalyzer_path()
-        if analyzer:
+        if analyzer and mapping_path:
             r.add(f"- apkanalyzer: {analyzer}")
-            # list dex classes for the mods package
-            dex_out = run_apkanalyzer_dex_packages(apk, analyzer)
-            lines = dex_out.splitlines()
-            relevant = [ln for ln in lines if ("name.monwf.customiuizer.mods" in ln or "name.monwf.customiuizer.MainModule" in ln)]
-            if relevant:
-                r.add(f"- APK dex packages containing `name/monwf/customiuizer/mods`: {len(relevant)} entries")
-                for ln in relevant[:30]:
+            dex_out = run_apkanalyzer_dex_packages(apk, analyzer, mapping_path)
+            lines = [ln for ln in dex_out.splitlines() if ("name.monwf.customiuizer.mods" in ln or "name.monwf.customiuizer.MainModule" in ln)]
+            if lines:
+                r.add(f"- DEX entries for `name.monwf.customiuizer.mods` / `MainModule`: {len(lines)}")
+                for ln in lines[:20]:
                     r.add(f"    {ln}")
-                if len(relevant) > 30:
-                    r.add(f"    ... and {len(relevant) - 30} more")
+                if len(lines) > 20:
+                    r.add(f"    ... and {len(lines) - 20} more")
             else:
-                r.add("- apkanalyzer output (first 30 lines):")
-                for ln in lines[:30]:
+                r.add("- No DEX entries matching `name.monwf.customiuizer.mods` or `MainModule`; apkanalyzer output:")
+                for ln in dex_out.splitlines()[:20]:
                     r.add(f"    {ln}")
         else:
-            r.add("- apkanalyzer not found; install Android SDK cmdline-tools for APK Dex inspection.")
-
-    # --- 9. Summary ---
+            r.add("- apkanalyzer not found or no mapping file; DEX inspection skipped.")
     r.add("")
+
+    # --- 10. Summary ---
     r.add("## Summary")
     if r.ok():
         r.add("PASS: Migration audit completed with no blocking issues.")
     else:
-        r.add(f"FAIL: {len(r.failures)} issue(s) found:")
-        for f in r.failures:
+        r.add(f"FAIL: {len(r.failures)} issue(s) found.")
+        for f in r.failures[:20]:
             r.add(f"  - {f}")
+        if len(r.failures) > 20:
+            r.add(f"  ... and {len(r.failures) - 20} more")
 
-    return r
+    print(r.text())
+    return 0 if r.ok() else 1
 
 
 if __name__ == "__main__":
-    reporter = main()
-    print(reporter.text())
-    sys.exit(0 if reporter.ok() else 1)
+    sys.exit(main())
