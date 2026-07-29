@@ -37,50 +37,99 @@ object AppHelper {
     @JvmField
     var RESTORED_FROM_BACKUP: String = "restored_from_backup"
 
-    private val pendingRemoteEdits = LinkedHashMap<String, Any?>()
+    @JvmField
+    var mirrorIgnoreKeys: Set<String> = emptySet()
 
-    private const val REMOTE_CLEAR_MARKER = "__prefs_clear_all__"
+    @JvmField
+    @Volatile
+    var mirrorDirty: Boolean = false
 
     @JvmStatic
     @Synchronized
-    fun queueRemotePreferenceEdit(key: String, value: Any?) {
-        if (key == REMOTE_CLEAR_MARKER) return
-        pendingRemoteEdits[key] = value
+    fun setMirrorIgnoreKeys(keys: Set<String>) {
+        mirrorIgnoreKeys = keys
     }
 
     @JvmStatic
     @Synchronized
-    fun queueRemotePreferenceClear() {
-        pendingRemoteEdits.clear()
-        pendingRemoteEdits[REMOTE_CLEAR_MARKER] = null
+    fun resetMirrorState() {
+        mirrorDirty = false
     }
 
-    @JvmStatic
-    @Synchronized
-    fun flushRemotePreferenceEdits(remote: SharedPreferences?) {
-        val target = remote ?: return
-        if (pendingRemoteEdits.isEmpty()) return
-        val edit = target.edit()
-        val hasClear = pendingRemoteEdits.containsKey(REMOTE_CLEAR_MARKER)
-        val entries = pendingRemoteEdits.toList()
-        pendingRemoteEdits.clear()
-        if (hasClear) edit.clear()
-        for ((key, value) in entries) {
-            if (key == REMOTE_CLEAR_MARKER) continue
-            when (value) {
-                null -> edit.remove(key)
-                is Boolean -> edit.putBoolean(key, value)
-                is Float -> edit.putFloat(key, value)
-                is Int -> edit.putInt(key, value)
-                is Long -> edit.putLong(key, value)
-                is String -> edit.putString(key, value)
-                is Set<*> -> {
-                    @Suppress("UNCHECKED_CAST")
-                    edit.putStringSet(key, value as Set<String>)
-                }
+    private fun isMirroredKey(key: String): Boolean =
+        key.startsWith("pref_key_") && !mirrorIgnoreKeys.contains(key)
+
+    private fun putPreferenceValue(editor: SharedPreferences.Editor, key: String, value: Any?) {
+        when (value) {
+            null -> editor.remove(key)
+            is Boolean -> editor.putBoolean(key, value)
+            is Float -> editor.putFloat(key, value)
+            is Int -> editor.putInt(key, value)
+            is Long -> editor.putLong(key, value)
+            is String -> editor.putString(key, value)
+            is Set<*> -> {
+                @Suppress("UNCHECKED_CAST")
+                editor.putStringSet(key, value as Set<String>)
             }
         }
-        edit.apply()
+    }
+
+    @JvmStatic
+    @Synchronized
+    fun onLocalPreferenceChanged(remote: SharedPreferences?, key: String?, value: Any?) {
+        val target = remote ?: run { mirrorDirty = true; return }
+        if (key == null) {
+            // 整个 preference 文件被清空，走全量 reconciliation。
+            reconcileRemotePreferences(target)
+            return
+        }
+        if (!isMirroredKey(key)) return
+
+        val editor = target.edit()
+        putPreferenceValue(editor, key, value)
+        val committed = try { editor.commit() } catch (t: Throwable) { false }
+        if (!committed) mirrorDirty = true
+    }
+
+    @JvmStatic
+    @Synchronized
+    fun reconcileRemotePreferences(remote: SharedPreferences?) {
+        val target = remote ?: return
+        val localAll = appPrefs?.all ?: emptyMap()
+        val remoteAll = try { target.all } catch (t: Throwable) { mirrorDirty = true; return }
+
+        val editor = target.edit()
+        var hasChange = false
+
+        // 1. 同步本地镜像范围的 key 到 remote
+        for ((key, value) in localAll) {
+            if (!isMirroredKey(key)) continue
+            if (remoteAll[key] != value) {
+                putPreferenceValue(editor, key, value)
+                hasChange = true
+            }
+        }
+
+        // 2. 删除镜像范围内本地已不存在的 remote key（不盲目 clear，保留 remote-only）
+        for (key in remoteAll.keys) {
+            if (!isMirroredKey(key)) continue
+            if (!localAll.containsKey(key)) {
+                editor.remove(key)
+                hasChange = true
+            }
+        }
+
+        if (!hasChange) {
+            mirrorDirty = false
+            return
+        }
+
+        val committed = try { editor.commit() } catch (t: Throwable) { false }
+        if (committed) {
+            mirrorDirty = false
+        } else {
+            mirrorDirty = true
+        }
     }
 
     @JvmStatic

@@ -5,80 +5,196 @@ import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse
 import org.junit.Assert.assertNull
 import org.junit.Assert.assertTrue
+import org.junit.Before
 import org.junit.Test
 
 class AppHelperTest {
 
+    @Before
+    fun setUp() {
+        AppHelper.resetMirrorState()
+        AppHelper.mirrorIgnoreKeys = setOf(
+            "pref_key_miuizer_locale",
+            "pref_key_miuizer_launchericon",
+            "pref_key_miuizer_synced_from_lsposed"
+        )
+    }
+
     @After
     fun tearDown() {
-        // Ensure the queue is empty after each test so they do not interfere.
-        AppHelper.flushRemotePreferenceEdits(null)
+        AppHelper.resetMirrorState()
+        AppHelper.appPrefs = null
     }
 
     @Test
-    fun queueRemotePreferenceEditIsFlushedInOrder() {
+    fun unboundEditsAreSyncedOnBindReconciliation() {
+        val appPrefs = FakeSharedPreferences()
+        appPrefs.put("pref_key_foo", true)
+        appPrefs.put("pref_key_bar", 42)
+        AppHelper.appPrefs = appPrefs
+
+        AppHelper.onLocalPreferenceChanged(null, "pref_key_foo", true)
+        AppHelper.onLocalPreferenceChanged(null, "pref_key_bar", 42)
+        assertTrue("changes without remote should mark dirty", AppHelper.mirrorDirty)
+
         val remote = FakeSharedPreferences()
-
-        AppHelper.queueRemotePreferenceEdit("pref_key_foo", true)
-        AppHelper.queueRemotePreferenceEdit("pref_key_bar", 42)
-        AppHelper.queueRemotePreferenceEdit("pref_key_baz", "text")
-
-        AppHelper.flushRemotePreferenceEdits(remote)
+        AppHelper.reconcileRemotePreferences(remote)
 
         assertEquals(true, remote.getBoolean("pref_key_foo", false))
         assertEquals(42, remote.getInt("pref_key_bar", 0))
-        assertEquals("text", remote.getString("pref_key_baz", null))
+        assertFalse("reconcile success clears dirty", AppHelper.mirrorDirty)
     }
 
     @Test
-    fun queueRemotePreferenceClearDropsPreClearValues() {
+    fun reconcileRecoversFromLocalAfterProcessRebuild() {
+        val appPrefs = FakeSharedPreferences()
+        appPrefs.put("pref_key_foo", "value")
+        AppHelper.appPrefs = appPrefs
+
+        // Simulate a new remote after process restart without any in-memory queue.
         val remote = FakeSharedPreferences()
-        remote.put("pref_key_old", "remove")
+        AppHelper.reconcileRemotePreferences(remote)
 
-        AppHelper.queueRemotePreferenceEdit("pref_key_foo", "x")
-        AppHelper.queueRemotePreferenceClear()
-        AppHelper.queueRemotePreferenceEdit("pref_key_bar", "y")
-
-        AppHelper.flushRemotePreferenceEdits(remote)
-
-        assertNull(remote.getString("pref_key_foo", null))
-        assertEquals("y", remote.getString("pref_key_bar", null))
-        assertNull(remote.getString("pref_key_old", null))
+        assertEquals("value", remote.getString("pref_key_foo", null))
+        assertFalse(AppHelper.mirrorDirty)
     }
 
     @Test
-    fun nullRemoteDoesNotFlush() {
-        AppHelper.queueRemotePreferenceEdit("pref_key_foo", true)
-        AppHelper.flushRemotePreferenceEdits(null)
+    fun commitFailurePreservesDirtyStateAndSucceedsOnNextBind() {
+        val appPrefs = FakeSharedPreferences()
+        appPrefs.put("pref_key_foo", true)
+        AppHelper.appPrefs = appPrefs
+
+        val failingRemote = FakeSharedPreferences()
+        failingRemote.commitResult = false
+
+        AppHelper.reconcileRemotePreferences(failingRemote)
+
+        assertFalse("failed commit must not write", failingRemote.contains("pref_key_foo"))
+        assertTrue("dirty state is preserved on failure", AppHelper.mirrorDirty)
+
+        val succeedingRemote = FakeSharedPreferences()
+        AppHelper.reconcileRemotePreferences(succeedingRemote)
+
+        assertTrue(succeedingRemote.getBoolean("pref_key_foo", false))
+        assertFalse(AppHelper.mirrorDirty)
+    }
+
+    @Test
+    fun incrementalEditRetriesOnNextBindIfCommitFails() {
+        val appPrefs = FakeSharedPreferences()
+        appPrefs.put("pref_key_foo", true)
+        AppHelper.appPrefs = appPrefs
+
+        val failingRemote = FakeSharedPreferences()
+        failingRemote.commitResult = false
+
+        AppHelper.onLocalPreferenceChanged(failingRemote, "pref_key_foo", true)
+
+        assertTrue(AppHelper.mirrorDirty)
+        assertFalse(failingRemote.contains("pref_key_foo"))
+
+        val succeedingRemote = FakeSharedPreferences()
+        AppHelper.reconcileRemotePreferences(succeedingRemote)
+
+        assertTrue(succeedingRemote.getBoolean("pref_key_foo", false))
+        assertFalse(AppHelper.mirrorDirty)
+    }
+
+    @Test
+    fun clearThenNewSettingsKeepCorrectOrderAndRemoteOnly() {
+        val appPrefs = FakeSharedPreferences()
+        appPrefs.put("pref_key_old", "x")
+        appPrefs.put("pref_key_new", "y")
+        AppHelper.appPrefs = appPrefs
 
         val remote = FakeSharedPreferences()
-        AppHelper.flushRemotePreferenceEdits(remote)
+        remote.put("pref_key_old", "stale")
+        remote.put("remote_only_key", "keep")
 
+        // First reconcile establishes state.
+        AppHelper.reconcileRemotePreferences(remote)
+        assertEquals("y", remote.getString("pref_key_new", null))
+        assertEquals("keep", remote.getString("remote_only_key", null))
+
+        // Clear local and add a new key.
+        appPrefs.put("pref_key_new", null)
+        appPrefs.put("pref_key_old", null)
+        appPrefs.put("pref_key_after_clear", "z")
+
+        AppHelper.reconcileRemotePreferences(remote)
+
+        assertNull("old key removed", remote.getString("pref_key_old", null))
+        assertNull("removed key stays removed", remote.getString("pref_key_new", null))
+        assertEquals("z", remote.getString("pref_key_after_clear", null))
+        assertEquals("keep", remote.getString("remote_only_key", null))
+    }
+
+    @Test
+    fun localOnlyAndRemoteOnlyKeysArePreserved() {
+        val appPrefs = FakeSharedPreferences()
+        appPrefs.put("pref_key_locale", "en")
+        appPrefs.put("pref_key_foo", true)
+        AppHelper.appPrefs = appPrefs
+
+        AppHelper.setMirrorIgnoreKeys(setOf("pref_key_locale"))
+
+        val remote = FakeSharedPreferences()
+        remote.put("pref_key_locale", "zh")
+        remote.put("remote_only_key", "keep")
+        remote.put("pref_key_foo", false)
+
+        AppHelper.reconcileRemotePreferences(remote)
+
+        assertEquals("zh", remote.getString("pref_key_locale", null))
         assertEquals(true, remote.getBoolean("pref_key_foo", false))
+        assertEquals("keep", remote.getString("remote_only_key", null))
     }
 
     @Test
-    fun removeIsFlushedAsRemove() {
+    fun multipleEditsToSameKeyKeepLastValue() {
+        val appPrefs = FakeSharedPreferences()
+        appPrefs.put("pref_key_foo", "first")
+        AppHelper.appPrefs = appPrefs
+
         val remote = FakeSharedPreferences()
-        remote.put("pref_key_foo", "value")
 
-        AppHelper.queueRemotePreferenceEdit("pref_key_foo", null)
-        AppHelper.flushRemotePreferenceEdits(remote)
+        AppHelper.onLocalPreferenceChanged(remote, "pref_key_foo", "first")
+        assertEquals("first", remote.getString("pref_key_foo", null))
 
-        assertFalse(remote.contains("pref_key_foo"))
-        assertNull(remote.getString("pref_key_foo", null))
+        appPrefs.put("pref_key_foo", "last")
+        AppHelper.onLocalPreferenceChanged(remote, "pref_key_foo", "last")
+        assertEquals("last", remote.getString("pref_key_foo", null))
     }
 
     @Test
-    fun stringSetIsFlushed() {
+    fun fullClearReconcilesWithoutBlindClear() {
+        val appPrefs = FakeSharedPreferences()
+        appPrefs.put("pref_key_keep", "value")
+        AppHelper.appPrefs = appPrefs
+
         val remote = FakeSharedPreferences()
-        val set = setOf("a", "b")
+        remote.put("pref_key_drop", "x")
+        remote.put("remote_only_key", "keep")
 
-        AppHelper.queueRemotePreferenceEdit("pref_key_set", set)
-        AppHelper.flushRemotePreferenceEdits(remote)
+        // onSharedPreferenceChanged with null key means a full clear.
+        AppHelper.onLocalPreferenceChanged(remote, null, null)
 
-        @Suppress("UNCHECKED_CAST")
-        val stored = remote.getStringSet("pref_key_set", null) as Set<String>
-        assertEquals(set, stored)
+        assertNull(remote.getString("pref_key_drop", null))
+        assertEquals("value", remote.getString("pref_key_keep", null))
+        assertEquals("keep", remote.getString("remote_only_key", null))
+    }
+
+    @Test
+    fun resetMirrorStateClearsDirty() {
+        val appPrefs = FakeSharedPreferences()
+        appPrefs.put("pref_key_foo", true)
+        AppHelper.appPrefs = appPrefs
+
+        AppHelper.onLocalPreferenceChanged(null, "pref_key_foo", true)
+        assertTrue(AppHelper.mirrorDirty)
+
+        AppHelper.resetMirrorState()
+        assertFalse(AppHelper.mirrorDirty)
     }
 }

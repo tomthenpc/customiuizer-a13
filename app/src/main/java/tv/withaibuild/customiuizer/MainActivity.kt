@@ -41,7 +41,7 @@ class MainActivity : AppCompatActivity() {
                 override fun onServiceBind(service: io.github.libxposed.service.XposedService) {
                     AppHelper.moduleActive = true
                     AppHelper.remotePrefs = service.getRemotePreferences(AppHelper.prefsName + "_remote") as io.github.libxposed.service.RemotePreferences
-                    AppHelper.flushRemotePreferenceEdits(AppHelper.remotePrefs)
+                    AppHelper.reconcileRemotePreferences(AppHelper.remotePrefs)
                 }
 
                 override fun onServiceDied(service: io.github.libxposed.service.XposedService) {
@@ -70,43 +70,11 @@ class MainActivity : AppCompatActivity() {
             "pref_key_miuizer_launchericon",
             "pref_key_miuizer_synced_from_lsposed"
         )
+        AppHelper.setMirrorIgnoreKeys(ignoreKeys)
 
-        prefsChanged = android.content.SharedPreferences.OnSharedPreferenceChangeListener { sharedPreferences, key ->
-            if (key == null) {
-                if (AppHelper.remotePrefs == null) {
-                    AppHelper.queueRemotePreferenceClear()
-                } else {
-                    val prefEdit = AppHelper.remotePrefs?.edit() ?: return@OnSharedPreferenceChangeListener
-                    AppHelper.remotePrefs?.getAll()?.keys?.forEach { remoteKey ->
-                        prefEdit.remove(remoteKey)
-                    }
-                    prefEdit.apply()
-                }
-                return@OnSharedPreferenceChangeListener
-            }
-            if (ignoreKeys.contains(key)) return@OnSharedPreferenceChangeListener
-
-            val value = sharedPreferences.all[key]
-            if (AppHelper.remotePrefs == null) {
-                AppHelper.queueRemotePreferenceEdit(key, value)
-                return@OnSharedPreferenceChangeListener
-            }
-
-            val prefEdit = AppHelper.remotePrefs?.edit() ?: return@OnSharedPreferenceChangeListener
-            when (value) {
-                null -> prefEdit.remove(key)
-                is Boolean -> prefEdit.putBoolean(key, value)
-                is Float -> prefEdit.putFloat(key, value)
-                is Int -> prefEdit.putInt(key, value)
-                is Long -> prefEdit.putLong(key, value)
-                is String -> prefEdit.putString(key, value)
-                is Set<*> -> {
-                    @Suppress("UNCHECKED_CAST")
-                    val stringSet = value as Set<String>
-                    prefEdit.putStringSet(key, stringSet)
-                }
-            }
-            prefEdit.apply()
+        prefsChanged = android.content.SharedPreferences.OnSharedPreferenceChangeListener { _, key ->
+            val value = if (key == null) null else AppHelper.appPrefs?.all?.get(key)
+            AppHelper.onLocalPreferenceChanged(AppHelper.remotePrefs, key, value)
         }
 
         AppHelper.appPrefs?.registerOnSharedPreferenceChangeListener(prefsChanged)

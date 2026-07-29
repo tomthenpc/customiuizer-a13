@@ -6,6 +6,8 @@ class FakeSharedPreferences : SharedPreferences {
 
     private val values = HashMap<String, Any?>()
 
+    var commitResult: Boolean = true
+
     fun put(key: String, value: Any?) {
         values[key] = value
     }
@@ -51,50 +53,70 @@ class FakeSharedPreferences : SharedPreferences {
 
     override fun unregisterOnSharedPreferenceChangeListener(listener: SharedPreferences.OnSharedPreferenceChangeListener) {}
 
-    class FakeEditor(private val values: MutableMap<String, Any?>) : SharedPreferences.Editor {
+    inner class FakeEditor(private val values: MutableMap<String, Any?>) : SharedPreferences.Editor {
+
+        private val staged = HashMap<String, Any?>()
+        private val removed = HashSet<String>()
+        private var clearAll = false
 
         override fun putString(key: String, value: String?): SharedPreferences.Editor {
-            if (value != null) values[key] = value
+            if (value != null) staged[key] = value else removed.add(key)
             return this
         }
 
         override fun putStringSet(key: String, values: Set<String>?): SharedPreferences.Editor {
-            if (values != null) this.values[key] = values
+            if (values != null) staged[key] = values else removed.add(key)
             return this
         }
 
         override fun putInt(key: String, value: Int): SharedPreferences.Editor {
-            values[key] = value
+            staged[key] = value
             return this
         }
 
         override fun putLong(key: String, value: Long): SharedPreferences.Editor {
-            values[key] = value
+            staged[key] = value
             return this
         }
 
         override fun putFloat(key: String, value: Float): SharedPreferences.Editor {
-            values[key] = value
+            staged[key] = value
             return this
         }
 
         override fun putBoolean(key: String, value: Boolean): SharedPreferences.Editor {
-            values[key] = value
+            staged[key] = value
             return this
         }
 
         override fun remove(key: String): SharedPreferences.Editor {
-            values.remove(key)
+            removed.add(key)
             return this
         }
 
         override fun clear(): SharedPreferences.Editor {
-            values.clear()
+            clearAll = true
             return this
         }
 
-        override fun commit(): Boolean = true
+        override fun commit(): Boolean {
+            return applyAndReturn(commitResult)
+        }
 
-        override fun apply() {}
+        override fun apply() {
+            applyAndReturn(true)
+        }
+
+        private fun applyAndReturn(result: Boolean): Boolean {
+            if (result) {
+                if (clearAll) values.clear()
+                values.putAll(staged)
+                for (key in removed) values.remove(key)
+            }
+            staged.clear()
+            removed.clear()
+            clearAll = false
+            return result
+        }
     }
 }
