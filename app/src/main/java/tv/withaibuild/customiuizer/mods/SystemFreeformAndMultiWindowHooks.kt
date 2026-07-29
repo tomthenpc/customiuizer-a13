@@ -150,10 +150,12 @@ object SystemFreeformAndMultiWindowHooks {
                 intentFilter.addAction(GlobalActions.ACTION_PREFIX + "SetFreeFormPackage")
                 val mReceiver = object : android.content.BroadcastReceiver() {
                     override fun onReceive(context: Context, intent: Intent) {
-                        val action = intent.action ?: return
-                        if (action == GlobalActions.ACTION_PREFIX + "SetFreeFormPackage") {
-                            val pkg = intent.getStringExtra("package")
-                            XposedHelpers.setAdditionalStaticField(MiuiFreeFormManager::class.java, "nextFreeformPackage", pkg)
+                        ModuleHelper.guarded {
+                            val action = intent.action ?: return@guarded
+                            if (action == GlobalActions.ACTION_PREFIX + "SetFreeFormPackage") {
+                                val pkg = intent.getStringExtra("package")
+                                XposedHelpers.setAdditionalStaticField(MiuiFreeFormManager::class.java, "nextFreeformPackage", pkg)
+                            }
                         }
                     }
                 }
@@ -326,9 +328,11 @@ object SystemFreeformAndMultiWindowHooks {
                 }
                 val freeformReceiver = object : android.content.BroadcastReceiver() {
                     override fun onReceive(context: Context, intent: Intent) {
-                        val action = intent.action
-                        if ("miui.intent.action_launch_fullscreen_from_freeform" == action) {
-                            XposedHelpers.setAdditionalInstanceField(service, "skipFreeFormStateClear", true)
+                        ModuleHelper.guarded {
+                            val action = intent.action
+                            if ("miui.intent.action_launch_fullscreen_from_freeform" == action) {
+                                XposedHelpers.setAdditionalInstanceField(service, "skipFreeFormStateClear", true)
+                            }
                         }
                     }
                 }

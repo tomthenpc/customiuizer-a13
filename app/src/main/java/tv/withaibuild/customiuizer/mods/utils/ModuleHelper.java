@@ -25,6 +25,7 @@ import java.util.Calendar;
 import java.util.HashSet;
 import java.util.Locale;
 import java.util.TimeZone;
+import java.util.concurrent.Callable;
 
 import io.github.libxposed.api.XposedModuleInterface;
 import tv.withaibuild.customiuizer.MainModule;
@@ -384,6 +385,34 @@ public class ModuleHelper {
                 return null;
         } catch (Throwable t) {
             return null;
+        }
+    }
+
+    /**
+     * Runs a framework/deferred callback, logging instead of propagating any failure.
+     *
+     * Framework callbacks (BroadcastReceiver.onReceive, Handler.handleMessage,
+     * Runnable.run, View listeners, etc.) run outside the MethodHook try/catch.
+     * An uncaught exception inside them can crash system_server, SystemUI or Launcher.
+     */
+    public static void guarded(Runnable block) {
+        try {
+            block.run();
+        } catch (Throwable t) {
+            log(t);
+        }
+    }
+
+    /**
+     * Guarded variant that returns a value. The fallback is returned when the body fails
+     * so the framework sees a safe, "not consumed" result.
+     */
+    public static <T> T guarded(T fallback, Callable<T> block) {
+        try {
+            return block.call();
+        } catch (Throwable t) {
+            log(t);
+            return fallback;
         }
     }
 }

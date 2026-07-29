@@ -369,11 +369,13 @@ object SystemUILockScreenHooks {
                 override fun after(param: AfterHookCallback) {
                     val mLeftAffordanceView = XposedHelpers.getObjectField(param.getThisObject(), "mLeftAffordanceView") as? View ?: return
                     mLeftAffordanceView.setOnLongClickListener {
-                        val flashlightController = XposedHelpers.getObjectField(param.getThisObject(), "mFlashlightController")
-                        val z = !(XposedHelpers.callMethod(flashlightController, "isEnabled") as? Boolean ?: false)
-                        XposedHelpers.callMethod(flashlightController, "setFlashlight", z)
-                        XposedHelpers.callMethod(param.getThisObject(), "updateLeftAffordanceIcon")
-                        true
+                        ModuleHelper.guarded(false) {
+                            val flashlightController = XposedHelpers.getObjectField(param.getThisObject(), "mFlashlightController")
+                            val z = !(XposedHelpers.callMethod(flashlightController, "isEnabled") as? Boolean ?: false)
+                            XposedHelpers.callMethod(flashlightController, "setFlashlight", z)
+                            XposedHelpers.callMethod(param.getThisObject(), "updateLeftAffordanceIcon")
+                            true
+                        }
                     }
                 }
             })

@@ -500,31 +500,33 @@ object Various {
                     val myhandler = Handler(Looper.getMainLooper())
                     val removeBg = object : Runnable {
                         override fun run() {
-                            myhandler.removeCallbacks(this)
-                            if (!enableSideBar) {
-                                val li = XposedHelpers.getObjectField(view, "mListenerInfo")
-                                if (li != null) {
-                                    val mOnTouchListener = XposedHelpers.getObjectField(li, "mOnTouchListener")
-                                    if (mOnTouchListener != null) {
-                                        ModuleHelper.findAndHookMethod(mOnTouchListener.javaClass, "onTouch", View::class.java, MotionEvent::class.java, object : MethodHook() {
-                                            override fun before(param: BeforeHookCallback) {
-                                                val me = param.args[1] as? MotionEvent ?: return
-                                                if (me.source != 9999) {
-                                                    param.returnAndSkip(false)
+                            try {
+                                myhandler.removeCallbacks(this)
+                                if (!enableSideBar) {
+                                    val li = XposedHelpers.getObjectField(view, "mListenerInfo")
+                                    if (li != null) {
+                                        val mOnTouchListener = XposedHelpers.getObjectField(li, "mOnTouchListener")
+                                        if (mOnTouchListener != null) {
+                                            ModuleHelper.findAndHookMethod(mOnTouchListener.javaClass, "onTouch", View::class.java, MotionEvent::class.java, object : MethodHook() {
+                                                override fun before(param: BeforeHookCallback) {
+                                                    val me = param.args[1] as? MotionEvent ?: return
+                                                    if (me.source != 9999) {
+                                                        param.returnAndSkip(false)
+                                                    }
                                                 }
+                                            })
+                                        }
+                                    }
+                                    view.background?.let { bg ->
+                                        ModuleHelper.findAndHookMethod(bg.javaClass, "draw", Canvas::class.java, object : MethodHook() {
+                                            override fun before(param: BeforeHookCallback) {
+                                                param.returnAndSkip(null)
                                             }
                                         })
                                     }
+                                    view.setBackground(null)
                                 }
-                                view.background?.let { bg ->
-                                    ModuleHelper.findAndHookMethod(bg.javaClass, "draw", Canvas::class.java, object : MethodHook() {
-                                        override fun before(param: BeforeHookCallback) {
-                                            param.returnAndSkip(null)
-                                        }
-                                    })
-                                }
-                                view.setBackground(null)
-                            }
+                            } catch (t: Throwable) { XposedHelpers.log(t) }
                         }
                     }
                     myhandler.postDelayed(removeBg, 150)

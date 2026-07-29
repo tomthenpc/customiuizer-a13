@@ -249,21 +249,23 @@ object SystemUIStatusBarHooks {
                 val mContext = param.getArgs()[0] as? Context ?: return
                 val mHandler = object : Handler(Looper.getMainLooper()) {
                     override fun handleMessage(message: Message) {
-                        if (message.what == 100021) {
-                            val tii = message.obj as? TextIconInfo ?: return
-                            forEachStatusbarTextIcon { tv, ti ->
-                                if (tii.iconType == ti.iconType) {
-                                    XposedHelpers.callMethod(tv, "setBlocked", !tii.iconShow)
-                                    if (tii.iconShow) {
-                                        if (SystemUI.newStyle) {
-                                            XposedHelpers.callMethod(tv, "setNetworkSpeed", tii.iconText, "")
-                                        } else {
-                                            XposedHelpers.callMethod(tv, "setNetworkSpeed", tii.iconText)
+                        try {
+                            if (message.what == 100021) {
+                                val tii = message.obj as? TextIconInfo ?: return
+                                forEachStatusbarTextIcon { tv, ti ->
+                                    if (tii.iconType == ti.iconType) {
+                                        XposedHelpers.callMethod(tv, "setBlocked", !tii.iconShow)
+                                        if (tii.iconShow) {
+                                            if (SystemUI.newStyle) {
+                                                XposedHelpers.callMethod(tv, "setNetworkSpeed", tii.iconText, "")
+                                            } else {
+                                                XposedHelpers.callMethod(tv, "setNetworkSpeed", tii.iconText)
+                                            }
                                         }
                                     }
                                 }
                             }
-                        }
+                        } catch (t: Throwable) { XposedHelpers.log(t) }
                     }
                 }
                 val looper = param.getArgs()[1] as? Looper ?: Looper.myLooper() ?: return
