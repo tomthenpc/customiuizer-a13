@@ -230,7 +230,13 @@ class FeatureCatalogTest {
             "hideDismissView",
             "hideLockScreenHint",
             "folderColumns",
-            "titleTopMargin"
+            "titleTopMargin",
+            "noLightUpOnCharge",
+            "allRotations",
+            "noNetworkSpeedSeparator",
+            "hideIconsClock",
+            "noUnlockAnimation",
+            "maxHotseatIconsCount"
         )
         assertEquals(ids, FeatureCatalog.specs().map { it.id }.toSet())
     }
