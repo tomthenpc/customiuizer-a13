@@ -1,14 +1,20 @@
 <PreferenceScreen
 	xmlns:android="http://schemas.android.com/apk/res/android"
+	xmlns:miuizer="http://schemas.android.com/apk/res-auto"
 	android:layout_width="match_parent"
 	android:layout_height="match_parent">
 
-	<tv.withaibuild.customiuizer.prefs.ListPreferenceEx
-		android:key="pref_key_miuizer_locale"
-		android:title="@string/miuizer_locale_title"
-		android:summary="@string/miuizer_locale_summ"
-		android:entries="@array/placeholder_array"
-		android:entryValues="@array/placeholder_array_strval"
-		android:defaultValue="auto" />
+	<tv.withaibuild.customiuizer.prefs.PreferenceCategoryEx
+		android:key="pref_key_miuizer_settings"
+		android:title="@string/miuizer">
+		<tv.withaibuild.customiuizer.prefs.ListPreferenceEx
+			android:key="pref_key_miuizer_locale"
+			android:title="@string/miuizer_locale_title"
+			android:summary="@string/miuizer_locale_summ"
+			android:entries="@array/placeholder_array"
+			android:entryValues="@array/placeholder_array_strval"
+			android:defaultValue="auto"
+			miuizer:valueAsSummary="true" />
+	</tv.withaibuild.customiuizer.prefs.PreferenceCategoryEx>
 
 </PreferenceScreen>
