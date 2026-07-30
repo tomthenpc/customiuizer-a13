@@ -14,8 +14,9 @@ import android.graphics.Paint
 import android.graphics.Path
 import android.graphics.Shader
 import android.media.audiofx.Visualizer
-import android.os.AsyncTask
 import android.os.Handler
+import android.os.Process
+import android.os.SystemClock
 import android.util.AttributeSet
 import android.view.Choreographer
 import android.view.View
@@ -26,8 +27,12 @@ import tv.withaibuild.customiuizer.MainModule
 import tv.withaibuild.customiuizer.mods.utils.ModuleHelper
 import tv.withaibuild.customiuizer.mods.utils.XposedHelpers
 import java.io.File
+import java.util.concurrent.Future
+import java.util.concurrent.LinkedBlockingQueue
+import java.util.concurrent.ThreadPoolExecutor
+import java.util.concurrent.TimeUnit
+import java.util.concurrent.atomic.AtomicInteger
 
-@Suppress("DEPRECATION")
 class AudioVisualizer @JvmOverloads constructor(
     context: Context,
     attrs: AttributeSet? = null,
@@ -51,6 +56,28 @@ class AudioVisualizer @JvmOverloads constructor(
     }
 
     companion object {
+        private val workerNumber = AtomicInteger()
+
+        private fun createWorker(role: String): ThreadPoolExecutor =
+            ThreadPoolExecutor(
+                1,
+                1,
+                15L,
+                TimeUnit.SECONDS,
+                LinkedBlockingQueue(),
+                { runnable ->
+                    Thread(
+                        {
+                            Process.setThreadPriority(Process.THREAD_PRIORITY_BACKGROUND)
+                            runnable.run()
+                        },
+                        "Pengeek-AudioVisualizer-$role-${workerNumber.incrementAndGet()}"
+                    )
+                }
+            ).apply {
+                allowCoreThreadTimeOut(true)
+            }
+
         @JvmStatic
         fun allZeros(array: ByteArray?): Boolean {
             if (array == null) return true
@@ -74,7 +101,9 @@ class AudioVisualizer @JvmOverloads constructor(
     private val mDensity: Float
     private val mPaint: Paint
     private lateinit var mGlowPaint: Paint
+    @Volatile
     private var mVisualizer: Visualizer? = null
+    private val visualizerLock = Any()
     private var mVisualizerColorAnimator: ObjectAnimator? = null
     private var mVisualizerGlowColorAnimator: ObjectAnimator? = null
 
@@ -109,6 +138,14 @@ class AudioVisualizer @JvmOverloads constructor(
     private var viewAttached = false
     private var viewVisible = true
     private var windowVisible = true
+    @Volatile
+    private var visualizerGeneration = 0L
+    @Volatile
+    private var paletteGeneration = 0L
+    private var paletteFuture: Future<*>? = null
+    private val paletteHandlerToken = Any()
+    private val visualizerExecutor = createWorker("Visualizer")
+    private val paletteExecutor = createWorker("Palette")
 
     @JvmField
     var showOnCustom = false
@@ -140,37 +177,43 @@ class AudioVisualizer @JvmOverloads constructor(
     private var mFrameCallbackScheduled = false
     private val mFrameCallback = object : Choreographer.FrameCallback {
         override fun doFrame(frameTimeNanos: Long) {
-            if (detached || !mDisplaying) {
-                mFrameCallbackScheduled = false
-                return
+            ModuleHelper.guarded("AudioVisualizer.frameCallback") {
+                runFrame(frameTimeNanos)
             }
-            if (mNewDataPending) applyNewData(frameTimeNanos)
-
-            val duration = animDur.coerceAtLeast(1)
-            val elapsedMs = (frameTimeNanos - mFrameStartTime) / 1_000_000f
-            val fraction = (elapsedMs / duration).coerceIn(0f, 1f)
-            var changed = false
-            for (band in 0 until mBandsNum) {
-                val start = mBandStarts[band]
-                val target = mBandTargets[band]
-                if (start == Float.MAX_VALUE || target == Float.MAX_VALUE) continue
-                val interpolated = if (target < start) {
-                    decel.getInterpolation(fraction)
-                } else {
-                    accel.getInterpolation(fraction)
-                }
-                val value = start + (target - start) * interpolated
-                val point = band * 4 + 3
-                if (mFFTPoints[point] != value) {
-                    mFFTPoints[point] = value
-                    changed = true
-                }
-            }
-            if (changed) postInvalidateOnAnimation()
-
-            mFrameCallbackScheduled = false
-            if (mNewDataPending || fraction < 1f) startFrameScheduler()
         }
+    }
+
+    private fun runFrame(frameTimeNanos: Long) {
+        if (detached || !mDisplaying) {
+            mFrameCallbackScheduled = false
+            return
+        }
+        if (mNewDataPending) applyNewData(frameTimeNanos)
+
+        val duration = animDur.coerceAtLeast(1)
+        val elapsedMs = (frameTimeNanos - mFrameStartTime) / 1_000_000f
+        val fraction = (elapsedMs / duration).coerceIn(0f, 1f)
+        var changed = false
+        for (band in 0 until mBandsNum) {
+            val start = mBandStarts[band]
+            val target = mBandTargets[band]
+            if (start == Float.MAX_VALUE || target == Float.MAX_VALUE) continue
+            val interpolated = if (target < start) {
+                decel.getInterpolation(fraction)
+            } else {
+                accel.getInterpolation(fraction)
+            }
+            val value = start + (target - start) * interpolated
+            val point = band * 4 + 3
+            if (mFFTPoints[point] != value) {
+                mFFTPoints[point] = value
+                changed = true
+            }
+        }
+        if (changed) postInvalidateOnAnimation()
+
+        mFrameCallbackScheduled = false
+        if (mNewDataPending || fraction < 1f) startFrameScheduler()
     }
 
     private fun applyNewData(frameTimeNanos: Long) {
@@ -197,27 +240,8 @@ class AudioVisualizer @JvmOverloads constructor(
     }
 
     private val mVisualizerListener: Visualizer.OnDataCaptureListener
-    private val mLinkVisualizer: Runnable
-    private val mUnlinkVisualizer: Runnable
     private val randomizeColor: Runnable
     private val paletteResult: PaletteAsyncListener
-
-    @Suppress("DEPRECATION", "OVERRIDE_DEPRECATION")
-    private inner class PaletteTask(private val resultListener: PaletteAsyncListener) : AsyncTask<Bitmap, Void, Palette?>() {
-        override fun doInBackground(vararg bitmaps: Bitmap?): Palette? {
-            return try {
-                val bitmap = bitmaps.getOrNull(0) ?: return null
-                Palette.from(bitmap).generate()
-            } catch (t: Throwable) {
-                XposedHelpers.log(t)
-                null
-            }
-        }
-
-        override fun onPostExecute(result: Palette?) {
-            result?.let { resultListener.onGenerated(it) }
-        }
-    }
 
     init {
         setLayerType(LAYER_TYPE_HARDWARE, null)
@@ -311,37 +335,17 @@ class AudioVisualizer @JvmOverloads constructor(
 
         computeBandBinLimits(Visualizer.getCaptureSizeRange()[1])
 
-        mLinkVisualizer = Runnable {
-            try {
-                mVisualizer = Visualizer(0).apply {
-                    enabled = false
-                    captureSize = Visualizer.getCaptureSizeRange()[1]
-                    scalingMode = Visualizer.SCALING_MODE_NORMALIZED
-                    setDataCaptureListener(mVisualizerListener, Visualizer.getMaxCaptureRate(), false, true)
-                    enabled = true
-                }
-            } catch (t: Throwable) {
-                XposedHelpers.log(t)
-            }
-        }
-
-        mUnlinkVisualizer = Runnable {
-            mVisualizer?.let {
-                try {
-                    it.enabled = false
-                    it.release()
-                    mVisualizer = null
-                } catch (t: Throwable) {
-                    XposedHelpers.log(t)
-                }
-            }
-        }
-
         randomizeColor = Runnable {
-            if (colorMode != ColorMode.DYNAMIC) return@Runnable
-            setColor(getRandomColor())
-            mHandler.removeCallbacks(this@AudioVisualizer.randomizeColor)
-            mHandler.postDelayed(this@AudioVisualizer.randomizeColor, randomizeInterval.toLong())
+            ModuleHelper.guarded("AudioVisualizer.randomizeColor") {
+                if (colorMode == ColorMode.DYNAMIC && !detached && mDisplaying) {
+                    setColor(getRandomColor())
+                    mHandler.removeCallbacks(this@AudioVisualizer.randomizeColor)
+                    mHandler.postDelayed(
+                        this@AudioVisualizer.randomizeColor,
+                        randomizeInterval.toLong()
+                    )
+                }
+            }
         }
 
         paletteResult = object : PaletteAsyncListener {
@@ -483,10 +487,11 @@ class AudioVisualizer @JvmOverloads constructor(
         mDisplaying = false
         stopFrameScheduler()
         mHandler.removeCallbacks(randomizeColor)
+        cancelPaletteWork()
         animate().cancel()
         mVisualizerColorAnimator?.cancel()
         mVisualizerGlowColorAnimator?.cancel()
-        AsyncTask.execute(mUnlinkVisualizer)
+        detachCurrentVisualizer()
         mArt = null
         mProcessedArt = null
     }
@@ -568,18 +573,123 @@ class AudioVisualizer @JvmOverloads constructor(
         }
     }
 
+    private fun scheduleVisualizerLink() {
+        val generation = ++visualizerGeneration
+        visualizerExecutor.execute {
+            val candidate = createVisualizer()
+            mHandler.post {
+                ModuleHelper.guarded("AudioVisualizer.publishVisualizer") {
+                    if (
+                        candidate == null ||
+                        detached ||
+                        !mDisplaying ||
+                        generation != visualizerGeneration
+                    ) {
+                        scheduleVisualizerRelease(candidate)
+                    } else {
+                        val previous = synchronized(visualizerLock) {
+                            val current = mVisualizer
+                            mVisualizer = candidate
+                            current
+                        }
+                        if (previous !== candidate) scheduleVisualizerRelease(previous)
+                    }
+                }
+            }
+        }
+    }
+
+    private fun createVisualizer(): Visualizer? = try {
+        Visualizer(0).apply {
+            enabled = false
+            captureSize = Visualizer.getCaptureSizeRange()[1]
+            scalingMode = Visualizer.SCALING_MODE_NORMALIZED
+            setDataCaptureListener(
+                mVisualizerListener,
+                Visualizer.getMaxCaptureRate(),
+                false,
+                true
+            )
+            enabled = true
+        }
+    } catch (t: Throwable) {
+        XposedHelpers.log(t)
+        null
+    }
+
+    private fun detachCurrentVisualizer() {
+        visualizerGeneration++
+        val current = synchronized(visualizerLock) {
+            val visualizer = mVisualizer
+            mVisualizer = null
+            visualizer
+        }
+        scheduleVisualizerRelease(current)
+    }
+
+    private fun scheduleVisualizerRelease(visualizer: Visualizer?) {
+        if (visualizer == null) return
+        visualizerExecutor.execute {
+            try {
+                visualizer.enabled = false
+            } catch (t: Throwable) {
+                XposedHelpers.log(t)
+            }
+            try {
+                visualizer.release()
+            } catch (t: Throwable) {
+                XposedHelpers.log(t)
+            }
+        }
+    }
+
     fun setBitmap() {
         try {
             if (mProcessedArt == mArt && mArt != null) return
-            mProcessedArt = mArt
-            if (mProcessedArt != null) {
-                PaletteTask(paletteResult).executeOnExecutor(AsyncTask.THREAD_POOL_EXECUTOR, mProcessedArt)
-            } else {
+            val art = mArt
+            mProcessedArt = art
+            cancelPaletteWork()
+            if (art == null) {
                 setColor(Color.TRANSPARENT)
+                return
+            }
+
+            val generation = paletteGeneration
+            paletteFuture = paletteExecutor.submit {
+                val palette = try {
+                    Palette.from(art).generate()
+                } catch (t: Throwable) {
+                    XposedHelpers.log(t)
+                    null
+                }
+                if (palette == null) return@submit
+                mHandler.postAtTime(
+                    {
+                        ModuleHelper.guarded("AudioVisualizer.paletteResult") {
+                            if (
+                                !detached &&
+                                generation == paletteGeneration &&
+                                mArt === art &&
+                                colorMode == ColorMode.MATCH
+                            ) {
+                                paletteResult.onGenerated(palette)
+                            }
+                        }
+                    },
+                    paletteHandlerToken,
+                    SystemClock.uptimeMillis()
+                )
             }
         } catch (t: Throwable) {
             XposedHelpers.log(t)
         }
+    }
+
+    private fun cancelPaletteWork() {
+        paletteGeneration++
+        paletteFuture?.cancel(true)
+        paletteFuture = null
+        mHandler.removeCallbacksAndMessages(paletteHandlerToken)
     }
 
     fun setColor(color: Int) {
@@ -612,6 +722,7 @@ class AudioVisualizer @JvmOverloads constructor(
     }
 
     private fun updateColorMode() {
+        if (colorMode != ColorMode.MATCH) cancelPaletteWork()
         if (!isMusicPlaying) return
         when (colorMode) {
             ColorMode.MATCH -> setBitmap()
@@ -690,6 +801,7 @@ class AudioVisualizer @JvmOverloads constructor(
     }
 
     fun updateMusicArt(art: Bitmap?) {
+        cancelPaletteWork()
         mArt = art
         updateColorMode()
     }
@@ -703,7 +815,7 @@ class AudioVisualizer @JvmOverloads constructor(
         if (mPlaying && viewAttached && viewVisible && windowVisible) {
             if (!mDisplaying) {
                 mDisplaying = true
-                AsyncTask.execute(mLinkVisualizer)
+                scheduleVisualizerLink()
                 mHandler.removeCallbacks(randomizeColor)
                 mHandler.postDelayed(randomizeColor, randomizeInterval.toLong())
                 animate().alpha(1.0f).withEndAction(null).setDuration(Math.round(800 * animDur / 65f).toLong())
@@ -713,12 +825,12 @@ class AudioVisualizer @JvmOverloads constructor(
                 mDisplaying = false
                 stopFrameScheduler()
                 mHandler.removeCallbacks(randomizeColor)
+                detachCurrentVisualizer()
                 if (isOnKeyguard) {
-                    animate().alpha(0.0f).withEndAction { AsyncTask.execute(mUnlinkVisualizer) }
+                    animate().alpha(0.0f).withEndAction(null)
                         .setDuration(Math.round(600 * animDur / 65f).toLong())
                 } else {
                     alpha = 0.0f
-                    AsyncTask.execute(mUnlinkVisualizer)
                 }
             }
         }
