@@ -1,7 +1,6 @@
 package tv.withaibuild.customiuizer.utils
 
 import android.animation.ObjectAnimator
-import android.animation.ValueAnimator
 import android.content.Context
 import android.content.res.Configuration
 import android.graphics.Bitmap
@@ -18,6 +17,7 @@ import android.media.audiofx.Visualizer
 import android.os.AsyncTask
 import android.os.Handler
 import android.util.AttributeSet
+import android.view.Choreographer
 import android.view.View
 import android.view.animation.AccelerateInterpolator
 import android.view.animation.DecelerateInterpolator
@@ -78,8 +78,14 @@ class AudioVisualizer @JvmOverloads constructor(
     private var mVisualizerColorAnimator: ObjectAnimator? = null
     private var mVisualizerGlowColorAnimator: ObjectAnimator? = null
 
-    private val mValueAnimators: Array<ValueAnimator>
     private val mFFTPoints: FloatArray
+    private var mFftSize = 0
+    private val mBandBinLimits = IntArray(mBandsNum) { Int.MAX_VALUE }
+    private val mBandStarts = FloatArray(mBandsNum) { Float.MAX_VALUE }
+    private val mBandTargets = FloatArray(mBandsNum) { Float.MAX_VALUE }
+    private val mPendingTargets = FloatArray(mBandsNum) { Float.MAX_VALUE }
+    private val mComputedTargets = FloatArray(mBandsNum) { Float.MAX_VALUE }
+    private val mFrameLock = Any()
     private val mRainbow: IntArray
     private val mRainbowVertical: IntArray
     private val mPositions: FloatArray
@@ -92,12 +98,17 @@ class AudioVisualizer @JvmOverloads constructor(
     private var isExpandedPanel = false
     private var isOnCustomLockScreen = false
     private var mPlaying = false
+    @Volatile
     private var mDisplaying = false
     private var mOpaqueColor = 0
     private var mColor = 0
     private val mHandler: Handler
     private var mArt: Bitmap? = null
     private var mProcessedArt: Bitmap? = null
+    private var detached = false
+    private var viewAttached = false
+    private var viewVisible = true
+    private var windowVisible = true
 
     @JvmField
     var showOnCustom = false
@@ -121,6 +132,69 @@ class AudioVisualizer @JvmOverloads constructor(
 
     private val accel = AccelerateInterpolator()
     private val decel = DecelerateInterpolator()
+
+    @Volatile
+    private var mNewDataPending = false
+    private var mFrameStartTime = 0L
+    @Volatile
+    private var mFrameCallbackScheduled = false
+    private val mFrameCallback = object : Choreographer.FrameCallback {
+        override fun doFrame(frameTimeNanos: Long) {
+            if (detached || !mDisplaying) {
+                mFrameCallbackScheduled = false
+                return
+            }
+            if (mNewDataPending) applyNewData(frameTimeNanos)
+
+            val duration = animDur.coerceAtLeast(1)
+            val elapsedMs = (frameTimeNanos - mFrameStartTime) / 1_000_000f
+            val fraction = (elapsedMs / duration).coerceIn(0f, 1f)
+            var changed = false
+            for (band in 0 until mBandsNum) {
+                val start = mBandStarts[band]
+                val target = mBandTargets[band]
+                if (start == Float.MAX_VALUE || target == Float.MAX_VALUE) continue
+                val interpolated = if (target < start) {
+                    decel.getInterpolation(fraction)
+                } else {
+                    accel.getInterpolation(fraction)
+                }
+                val value = start + (target - start) * interpolated
+                val point = band * 4 + 3
+                if (mFFTPoints[point] != value) {
+                    mFFTPoints[point] = value
+                    changed = true
+                }
+            }
+            if (changed) postInvalidateOnAnimation()
+
+            mFrameCallbackScheduled = false
+            if (mNewDataPending || fraction < 1f) startFrameScheduler()
+        }
+    }
+
+    private fun applyNewData(frameTimeNanos: Long) {
+        synchronized(mFrameLock) {
+            if (!mNewDataPending) return
+            System.arraycopy(mPendingTargets, 0, mBandTargets, 0, mBandsNum)
+            mNewDataPending = false
+        }
+        for (band in 0 until mBandsNum) {
+            mBandStarts[band] = mFFTPoints[band * 4 + 3]
+        }
+        mFrameStartTime = frameTimeNanos
+    }
+
+    private fun startFrameScheduler() {
+        if (detached || !mDisplaying || mFrameCallbackScheduled) return
+        mFrameCallbackScheduled = true
+        Choreographer.getInstance().postFrameCallback(mFrameCallback)
+    }
+
+    private fun stopFrameScheduler() {
+        mFrameCallbackScheduled = false
+        Choreographer.getInstance().removeFrameCallback(mFrameCallback)
+    }
 
     private val mVisualizerListener: Visualizer.OnDataCaptureListener
     private val mLinkVisualizer: Runnable
@@ -167,15 +241,11 @@ class AudioVisualizer @JvmOverloads constructor(
         mRainbow = IntArray(mBandsNum)
         mRainbowVertical = IntArray(mBandsNum)
         mPositions = FloatArray(mBandsNum)
-        mValueAnimators = Array(mBandsNum) { i ->
-            val j = i * 4 + 3
-            ValueAnimator().apply {
-                duration = animDur.toLong()
-                addUpdateListener { animation ->
-                    mFFTPoints[j] = animation.animatedValue as Float
-                    postInvalidate()
-                }
-            }
+        for (band in 0 until mBandsNum) {
+            mBandStarts[band] = mHeight.toFloat()
+            mBandTargets[band] = mHeight.toFloat()
+            mPendingTargets[band] = mHeight.toFloat()
+            mComputedTargets[band] = mHeight.toFloat()
         }
 
         showOnCustom = MainModule.mPrefs.getBoolean("system_visualizer_custom")
@@ -201,16 +271,19 @@ class AudioVisualizer @JvmOverloads constructor(
 
             override fun onFftDataCapture(visualizer: Visualizer, fft: ByteArray, samplingRate: Int) {
                 try {
-                    val bandWidth = samplingRate.toFloat() / fft.size
+                    if (detached || !mDisplaying) return
+                    if (mFftSize != fft.size) computeBandBinLimits(fft.size)
+
+                    val silentFrame = allZeros(fft)
                     var band = 0
                     var i = 1
                     val maxHeight = minOf(maxDp * mDensity, mHeight / 2.0f)
 
-                    while (band < mBandsNum && i < fft.size / 2) {
+                    while (band < mBandsNum && i < mFftSize / 2) {
                         magnitude = 0f
 
-                        if (!allZeros(fft)) {
-                            while (i < fft.size / 2 && i * bandWidth <= mBands[band] * samplingRate / 44100f) {
+                        if (!silentFrame) {
+                            while (i < mBandBinLimits[band]) {
                                 real = fft[i * 2]
                                 imaginary = fft[i * 2 + 1]
                                 magnitude = maxOf(magnitude, real * real + imaginary * imaginary + 0f)
@@ -220,21 +293,23 @@ class AudioVisualizer @JvmOverloads constructor(
 
                         dbValue = if (magnitude > 0) (10 * Math.log10(magnitude.toDouble())).toInt() else 0
                         maxDb = maxOf(maxDb, dbValue.toFloat())
-                        val oldVal = mFFTPoints[band * 4 + 3]
-                        val newVal = mFFTPoints[band * 4 + 1] - maxHeight * dbValue / maxDb
-
-                        mValueAnimators[band].cancel()
-                        mValueAnimators[band].interpolator = if (newVal < oldVal) decel else accel
-                        mValueAnimators[band].setFloatValues(oldVal, newVal)
-                        mValueAnimators[band].start()
-
+                        mComputedTargets[band] =
+                            mFFTPoints[band * 4 + 1] - maxHeight * dbValue / maxDb
                         band++
                     }
+
+                    synchronized(mFrameLock) {
+                        System.arraycopy(mComputedTargets, 0, mPendingTargets, 0, band)
+                        mNewDataPending = true
+                    }
+                    if (!mFrameCallbackScheduled) post { startFrameScheduler() }
                 } catch (t: Throwable) {
                     XposedHelpers.log(t)
                 }
             }
         }
+
+        computeBandBinLimits(Visualizer.getCaptureSizeRange()[1])
 
         mLinkVisualizer = Runnable {
             try {
@@ -291,11 +366,11 @@ class AudioVisualizer @JvmOverloads constructor(
 
         ModuleHelper.observePreferenceChange(object : ModuleHelper.PreferenceObserver {
             override fun onChange(key: String) {
+                if (detached) return
                 try {
                     when (key) {
                         "pref_key_system_visualizer_animdur" -> {
                             animDur = MainModule.mPrefs.getInt("system_visualizer_animdur", 65)
-                            for (valueAnimator in mValueAnimators) valueAnimator.duration = animDur.toLong()
                         }
                         "pref_key_system_visualizer_transp" -> {
                             transparency = Math.round(255f - 255f * MainModule.mPrefs.getInt("system_visualizer_transp", 40) / 100f)
@@ -352,6 +427,16 @@ class AudioVisualizer @JvmOverloads constructor(
         )
     }
 
+    private fun computeBandBinLimits(fftSize: Int) {
+        mFftSize = fftSize
+        val half = fftSize / 2
+        for (band in 0 until mBandsNum) {
+            val limit =
+                ((mBands[band] * half / 22050f).toInt() + 1).coerceAtMost(half)
+            mBandBinLimits[band] = limit.coerceAtLeast(1)
+        }
+    }
+
     private fun updateGlowPaint() {
         mGlowPaint = Paint(mPaint)
         if (glowLevel == 0) return
@@ -369,8 +454,39 @@ class AudioVisualizer @JvmOverloads constructor(
         }
     }
 
+    override fun onAttachedToWindow() {
+        super.onAttachedToWindow()
+        detached = false
+        viewAttached = true
+        viewVisible = visibility == VISIBLE
+        windowVisible = windowVisibility == VISIBLE
+        checkStateChanged()
+    }
+
+    override fun onVisibilityChanged(changedView: View, visibility: Int) {
+        super.onVisibilityChanged(changedView, visibility)
+        if (changedView !== this) return
+        viewVisible = visibility == VISIBLE
+        checkStateChanged()
+    }
+
+    override fun onWindowVisibilityChanged(visibility: Int) {
+        super.onWindowVisibilityChanged(visibility)
+        windowVisible = visibility == VISIBLE
+        checkStateChanged()
+    }
+
     override fun onDetachedFromWindow() {
         super.onDetachedFromWindow()
+        detached = true
+        viewAttached = false
+        mDisplaying = false
+        stopFrameScheduler()
+        mHandler.removeCallbacks(randomizeColor)
+        animate().cancel()
+        mVisualizerColorAnimator?.cancel()
+        mVisualizerGlowColorAnimator?.cancel()
+        AsyncTask.execute(mUnlinkVisualizer)
         mArt = null
         mProcessedArt = null
     }
@@ -390,6 +506,10 @@ class AudioVisualizer @JvmOverloads constructor(
             mFFTPoints[i * 4 + 2] = mFFTPoints[i * 4]
             mFFTPoints[i * 4 + 1] = h.toFloat()
             mFFTPoints[i * 4 + 3] = h.toFloat()
+            mBandStarts[i] = h.toFloat()
+            mBandTargets[i] = h.toFloat()
+            mPendingTargets[i] = h.toFloat()
+            mComputedTargets[i] = h.toFloat()
         }
     }
 
@@ -400,6 +520,7 @@ class AudioVisualizer @JvmOverloads constructor(
     override fun onDraw(canvas: Canvas) {
         super.onDraw(canvas)
 
+        if (!mDisplaying) return
         try {
             if (mVisualizer?.enabled != true) return
         } catch (_: Throwable) {
@@ -578,7 +699,8 @@ class AudioVisualizer @JvmOverloads constructor(
     }
 
     private fun checkStateChanged() {
-        if (mPlaying) {
+        if (detached) return
+        if (mPlaying && viewAttached && viewVisible && windowVisible) {
             if (!mDisplaying) {
                 mDisplaying = true
                 AsyncTask.execute(mLinkVisualizer)
@@ -589,6 +711,7 @@ class AudioVisualizer @JvmOverloads constructor(
         } else {
             if (mDisplaying) {
                 mDisplaying = false
+                stopFrameScheduler()
                 mHandler.removeCallbacks(randomizeColor)
                 if (isOnKeyguard) {
                     animate().alpha(0.0f).withEndAction { AsyncTask.execute(mUnlinkVisualizer) }
