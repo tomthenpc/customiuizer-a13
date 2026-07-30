@@ -27,6 +27,25 @@ internal fun appIconCacheKey(appData: AppData): String {
     return if (actName.isEmpty()) pkgName else "$pkgName|$actName"
 }
 
+internal class IconLoadRegistry<T> {
+    private val lock = Any()
+    private val waitersByKey = HashMap<String, MutableList<T>>()
+
+    fun join(key: String, waiter: T): Boolean = synchronized(lock) {
+        val waiters = waitersByKey.getOrPut(key) { ArrayList() }
+        waiters.add(waiter)
+        waiters.size == 1
+    }
+
+    fun release(key: String): List<T> = synchronized(lock) {
+        waitersByKey.remove(key)?.toList().orEmpty()
+    }
+
+    internal fun pendingKeyCount(): Int = synchronized(lock) {
+        waitersByKey.size
+    }
+}
+
 internal class BitmapCachedLoader(
     target: ImageView,
     info: AppData,
@@ -43,11 +62,7 @@ internal class BitmapCachedLoader(
         iconKey = appIconCacheKey(appData)
         if (iconKey.isEmpty()) return
 
-        val isLeader = synchronized(inFlightLock) {
-            val waiters = inFlight.getOrPut(iconKey) { ArrayList() }
-            waiters.add(this)
-            waiters.size == 1
-        }
+        val isLeader = inFlight.join(iconKey, this)
         if (!isLeader) return
 
         try {
@@ -118,9 +133,7 @@ internal class BitmapCachedLoader(
     }
 
     private fun publish(bitmap: Bitmap) {
-        val waiters = synchronized(inFlightLock) {
-            inFlight.remove(iconKey)?.toList() ?: return
-        }
+        val waiters = inFlight.release(iconKey)
         for (loader in waiters) {
             try {
                 loader.applyToTarget(bitmap)
@@ -141,9 +154,7 @@ internal class BitmapCachedLoader(
     }
 
     private fun releaseWaiters() {
-        synchronized(inFlightLock) {
-            inFlight.remove(iconKey)
-        }
+        inFlight.release(iconKey)
     }
 
     companion object {
@@ -176,7 +187,6 @@ internal class BitmapCachedLoader(
             allowCoreThreadTimeOut(true)
         }
         private val mainHandler = Handler(Looper.getMainLooper())
-        private val inFlightLock = Any()
-        private val inFlight = HashMap<String, MutableList<BitmapCachedLoader>>()
+        private val inFlight = IconLoadRegistry<BitmapCachedLoader>()
     }
 }
