@@ -143,6 +143,14 @@ caad0d2 build: make Gradle wrapper executable
 
 编译输出仍有 MIUI/Android 13 兼容代码的 deprecated、unchecked cast 和静态条件 warning；本轮未通过全局 suppress、禁用 Lint、扩大 keep 或删除功能处理这些非阻断项。
 
+## 远端 CI 状态
+
+- 起始基线 `505c97e` 的 Build run `30502766473` 因 `gradlew` 为 `100644`，在 Linux checkout 后以 `Permission denied` 失败。
+- `caad0d2` 修正可执行位后，手动对本分支触发 Build run `30506718701`；checkout、Java/Gradle setup 和 `./gradlew` 启动成功。
+- 该 run 随后在 Gradle 配置阶段失败：远端没有仓库外的 `../keystore.properties`，而当前 `release` build type 在配置 `:app:lintRelease` 时即强制要求正式签名配置。
+- 失败发生在单测/Lint 实际任务前，后续 R8、元数据检查和 artifact 上传均被跳过；不能将该 run 记为 CI 通过。
+- 本地使用仓库外正式签名配置完成了完整 Release 门禁。要让无签名的远端 CI 执行 `lintRelease` 和 `minifyReleaseWithR8`，必须另行决定 CI 与签名配置边界；本轮不擅自放宽正式 Release 签名要求，也不创建临时/Debug 证书冒充成功。
+
 ## APK、签名与配置检查
 
 - Debug APK：`app/build/outputs/apk/debug/CustoMIUIzer-A13-r13.2.4-devin.apk`
@@ -167,6 +175,7 @@ caad0d2 build: make Gradle wrapper executable
 2. MIUI 私有类和字段在不同 ROM 小版本可能变化；本轮保持了 A13 target，但静态编译不能证明运行时解析成功。
 3. K15/K16 涉及帧调度、异步取消和 View 生命周期，应重点检查旧任务是否停止、视觉结果是否与原版一致、异常是否被隔离。
 4. Lint warning 仍存在，但最终报告为 0 error；不应在未区分 MIUI 兼容代码和真实缺陷前批量清理。
+5. 远端 CI 仍受缺少正式签名配置时无法配置 Release 任务的既有边界阻断；修改该边界前需单独审查，不能用假签名隐藏。
 
 推荐按反向依赖顺序回滚：
 
