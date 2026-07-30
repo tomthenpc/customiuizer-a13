@@ -642,6 +642,18 @@ public class ModuleHelper {
     }
 
     private static final CallbackFailureLogger CALLBACK_FAILURE_LOGGER = XposedHelpers::log;
+    private static final ConcurrentHashMap<String, Boolean> loggedCallbackFailures =
+        new ConcurrentHashMap<String, Boolean>();
+
+    private static void logGuardedFailure(
+        String callbackName,
+        Throwable failure,
+        CallbackFailureLogger failureLogger
+    ) {
+        if (loggedCallbackFailures.putIfAbsent(callbackName, Boolean.TRUE) == null) {
+            failureLogger.log(callbackName, failure);
+        }
+    }
 
     /**
      * Named guarded variant for framework callbacks where release logs must identify
@@ -655,7 +667,7 @@ public class ModuleHelper {
         try {
             block.run();
         } catch (Throwable t) {
-            failureLogger.log(callbackName, t);
+            logGuardedFailure(callbackName, t, failureLogger);
         }
     }
 
@@ -683,7 +695,7 @@ public class ModuleHelper {
         try {
             return block.call();
         } catch (Throwable t) {
-            failureLogger.log(callbackName, t);
+            logGuardedFailure(callbackName, t, failureLogger);
             return fallback;
         }
     }

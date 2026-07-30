@@ -100,6 +100,23 @@ class ModuleHelperGuardedTest {
     }
 
     @Test
+    fun repeatedNamedFailuresAreLoggedOnlyOncePerProcess() {
+        var logs = 0
+        val callbackName = "SystemUI.repeatedFailure.${System.nanoTime()}"
+        val logger = ModuleHelper.CallbackFailureLogger { _, _ -> logs++ }
+
+        repeat(3) {
+            ModuleHelper.guarded(
+                callbackName,
+                Runnable { throw IllegalStateException("failure-$it") },
+                logger,
+            )
+        }
+
+        assertEquals(1, logs)
+    }
+
+    @Test
     fun failingPreferenceObserverDoesNotBlockLaterObserver() {
         var firstCalls = 0
         var secondCalls = 0
