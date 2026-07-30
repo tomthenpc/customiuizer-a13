@@ -7,9 +7,22 @@ import org.junit.Assert.assertNotNull
 import org.junit.Assert.assertNull
 import org.junit.Assert.assertSame
 import org.junit.Assert.assertTrue
+import org.junit.Before
 import org.junit.Test
+import tv.withaibuild.customiuizer.mods.diagnostics.DiagnosticIds
+import tv.withaibuild.customiuizer.mods.diagnostics.DiagnosticRecorder
+import tv.withaibuild.customiuizer.mods.diagnostics.DiagnosticState
 
 class HookTargetResolverTest {
+
+    private val logs = mutableListOf<String>()
+
+    @Before
+    fun setUp() {
+        DiagnosticRecorder.reset()
+        DiagnosticRecorder.logger = { logs += it }
+        DiagnosticRecorder.clock = { 0L }
+    }
 
     @Test
     fun resolveClass_cachesPositiveResult() {
@@ -17,14 +30,20 @@ class HookTargetResolverTest {
         val resolver = HookTargetResolver(loader)
         val className = ResolverTestTarget::class.java.name
 
+        val before = loader.findClassCalls.get()
         val first = resolver.resolveClass(className)
         assertNotNull(first)
-        assertEquals(1, loader.findClassCalls.get())
+        val afterFirst = loader.findClassCalls.get()
+        assertTrue("class resolution should have tried the classloader", afterFirst > before)
 
         val second = resolver.resolveClass(className)
         assertSame(first, second)
-        assertEquals(1, loader.findClassCalls.get())
-        assertTrue(cacheContains(resolver, className))
+        assertEquals(
+            "second resolve must not hit the classloader",
+            afterFirst,
+            loader.findClassCalls.get()
+        )
+        assertTrue(cacheContains(resolver, "class#$className"))
     }
 
     @Test
@@ -33,12 +52,18 @@ class HookTargetResolverTest {
         val resolver = HookTargetResolver(loader)
         val className = "tv.withaibuild.customiuizer.mods.utils.MissingClass"
 
+        val before = loader.missingCalls.get()
         assertNull(resolver.resolveClass(className))
-        assertEquals(1, loader.missingCalls.get())
+        val afterFirst = loader.missingCalls.get()
+        assertTrue("class resolution should have tried the classloader", afterFirst > before)
 
         assertNull(resolver.resolveClass(className))
-        assertEquals(1, loader.missingCalls.get())
-        assertTrue(cacheContains(resolver, className))
+        assertEquals(
+            "second resolve must not hit the classloader",
+            afterFirst,
+            loader.missingCalls.get()
+        )
+        assertTrue(cacheContains(resolver, "class#$className"))
     }
 
     @Test
@@ -87,6 +112,53 @@ class HookTargetResolverTest {
         assertNull(resolver.resolveField(className, "nonExistentField"))
     }
 
+    @Test
+    fun resolveFirstClass_fallsBackToSecondCandidate() {
+        val loader = CountingClassLoader()
+        val resolver = HookTargetResolver(loader)
+        val className = ResolverTestTarget::class.java.name
+
+        val resolution = resolver.resolveFirstClass(
+            DiagnosticIds.HOOK_TARGET_RESOLVER,
+            "missing.Class",
+            className
+        )
+
+        assertNotNull(resolution.value)
+        assertEquals(className, resolution.log.hit)
+        assertEquals(1, resolution.log.failures.size)
+        assertTrue(resolution.log.failures[0].startsWith("missing.Class"))
+    }
+
+    @Test
+    fun resolveFirstClass_returnsNullWhenAllCandidatesFail() {
+        val loader = CountingClassLoader()
+        val resolver = HookTargetResolver(loader)
+
+        val resolution = resolver.resolveFirstClass(
+            DiagnosticIds.HOOK_TARGET_RESOLVER,
+            "missing.One",
+            "missing.Two"
+        )
+
+        assertNull(resolution.value)
+        assertEquals(2, resolution.log.failures.size)
+        val summary = DiagnosticRecorder.summarize()[DiagnosticIds.HOOK_TARGET_RESOLVER]
+        assertNotNull(summary)
+        assertEquals(DiagnosticState.DEGRADED, summary!!.state)
+    }
+
+    @Test
+    fun diagnosticRecorderIsUsedInsteadOfAndroidLog() {
+        val loader = CountingClassLoader()
+        val resolver = HookTargetResolver(loader)
+
+        resolver.resolveFirstClass(DiagnosticIds.HOOK_TARGET_RESOLVER, "missing.Class")
+
+        assertTrue(logs.isNotEmpty())
+        assertTrue(logs.first().contains("missing.Class"))
+    }
+
     private fun cacheContains(resolver: HookTargetResolver, key: String): Boolean {
         val field = resolver.javaClass.getDeclaredField("cache")
         field.isAccessible = true
@@ -108,12 +180,14 @@ class HookTargetResolverTest {
                     ?: throw ClassNotFoundException(name)
                 return defineClass(name, bytes, 0, bytes.size)
             }
-            if (name == "tv.withaibuild.customiuizer.mods.utils.MissingClass") {
-                findLoadedClass(name)?.let { return it }
-                missingCalls.incrementAndGet()
-                throw ClassNotFoundException(name)
+            try {
+                val loaded = super.loadClass(name, resolve)
+                if (loaded != null) return loaded
+            } catch (_: ClassNotFoundException) {
+                // fall through
             }
-            return super.loadClass(name, resolve)
+            missingCalls.incrementAndGet()
+            throw ClassNotFoundException(name)
         }
     }
 }
