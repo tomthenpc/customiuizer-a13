@@ -24,6 +24,8 @@ jobs:
         run: |
           python tools/check-invariants.py
           python tools/audit-system-migration.py --baseline-ref backup/r13-k5-before-system-java-removal
+          python tools/audit-architecture.py
+          python tools/audit-prefs.py
 
       - name: Run unit tests
         run: ./gradlew :app:testDebugUnitTest
