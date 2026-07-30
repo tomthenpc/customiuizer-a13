@@ -34,10 +34,11 @@
 | C-14 | AudioVisualizer 单帧调度 | A14 K15 加固 | 31 个 `ValueAnimator` 收口为单调度器，generation latest-wins | `aae21d7` 等 | 无 | 单元测试 | 待实机验证 |
 | C-15 | 锁屏专辑图有界 worker | A14 K16 加固 | `LockScreenAlbumArtController` + `AlbumArtPolicy`、单 worker、按字节缓存 | `eb03775` 等 | A13 锁屏布局与 A14 不同，保留 A13 target | 单元测试 | 待实机验证 |
 | C-16 | 设置 UI 与 A14 对齐 | UI polish | 状态栏/导航栏、About、语言切换、搜索、弹窗样式 | `66f22a7` / `e0e2539` / `12d9173` 链 | A13 资源与 A14 不完全一致 | lint + 构建 | 待实机验证 |
-| C-17 | `StepCounterController` 生命周期 | 本轮（K18 后续） | `StepCounterController.kt` 弱引用、熄屏停止、亮屏恢复、按需注册、后台查询 | `本轮提交` | 无 | 单元测试 + 构建 | 待实机验证 |
-| C-18 | 状态栏秒针 `MiuiStatusBarClockController` 生命周期 | 本轮（K18 后续） | `SystemStatusBarClockAndMoreHooks` 屏幕 on/off 控制、避免重复任务 | `本轮提交` | 无 | 构建 | 待实机验证 |
-| C-19 | `HookUtils` 从 `Helpers` 机械拆分 | 本轮 | `HookUtils.kt` 承载 Hook 进程轻量工具，`Helpers` 不再被 `system_server`/SystemUI/Launcher 加载 | `本轮提交` | A13 `getAppName`/`getAppIcon` 与 A14 归属不同，仍按 A13 调用链处理 | 构建 + lint + 单测 | 待实机验证 |
-| C-20 | 统一 `release-manifest.json` | 本轮 | `docs/release-manifest.json` 记录版本、commit、APK、SHA-256、证书、SDK、ABI、libxposed API | `本轮提交` | 无 | JSON 校验 | 无实机 |
+| C-17 | `StepCounterController` 生命周期 | 本轮（K18 后续） | `StepCounterController.kt` 弱引用、熄屏停止、亮屏恢复、按需注册、后台查询；`StepCounterController.Lifecycle` 可单测 | `cbf2ad3` / `7cf3f1e` | 无 | 单元测试 + 构建 | 待实机验证 |
+| C-18 | 状态栏秒针 `MiuiStatusBarClockController` 生命周期 | 本轮（K18 后续） | `SystemStatusBarClockAndMoreHooks` 屏幕 on/off 控制、避免重复任务；`SecondTickerState` 可单测 | `cbf2ad3` / `7cf3f1e` | 无 | 构建 + 单测 | 待实机验证 |
+| C-19 | `HookUtils` 从 `Helpers` 机械拆分 | 本轮 | `HookUtils.kt` 承载 Hook 进程轻量工具，`Helpers` 不再被 `system_server`/SystemUI/Launcher 加载 | `d70727d` | A13 `getAppName`/`getAppIcon` 与 A14 归属不同，仍按 A13 调用链处理 | 构建 + lint + 单测 | 待实机验证 |
+| C-20 | 统一 `release-manifest.json` | 本轮 | `docs/release-manifest.json` 记录版本、commit、APK、SHA-256、证书、SDK、ABI、libxposed API；区分 build-time / post-release 字段 | `d85c52a` / 本轮 | 无 | JSON 校验 | 无实机 |
+| C-21 | `HookUtils`/`Helpers` 重复实现审计注释 | 本轮 | `Helpers.kt`/`HookUtils.kt` 顶部 KDoc 明确职责边界，防止 hook 代码再次引用 `Helpers` | 本轮 | 无 | lint + 文档审阅 | 无实机 |
 
 ## 不能机械移植的项目（按 ROM 或架构差异）
 
@@ -68,3 +69,4 @@
 ## 更新记录
 
 - `2026-07-30`：新建台账，合并 K11-K18 已发布项、本轮维护项和 A14/A13 差异项。
+- `2026-07-30`：补充 C-17..C-20 关键提交哈希、增加 C-21 审计注释行，同步 release-manifest 元数据。

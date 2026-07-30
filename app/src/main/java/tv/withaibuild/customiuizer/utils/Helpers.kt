@@ -67,6 +67,11 @@ import kotlin.math.abs
 import kotlin.math.max
 import kotlin.math.min
 
+/**
+ * Settings app utilities. Functions also available in [HookUtils] are kept here for
+ * settings-UI compatibility; hook code must use [HookUtils] to avoid running the
+ * Helpers initializer in `system_server`, SystemUI or Launcher.
+ */
 @Suppress("WeakerAccess")
 object Helpers {
 

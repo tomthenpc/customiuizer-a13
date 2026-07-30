@@ -23,6 +23,9 @@ import java.nio.file.Paths
 import java.nio.file.StandardCopyOption
 
 /**
+ * Lightweight leaf utilities for hook processes. This object must remain independent
+ * of [Helpers] and must not initialize settings app caches.
+ *
  * Leaf utilities the hooks need, kept out of [Helpers].
  *
  * Helpers is the settings app's toolbox: it builds an LruCache sized from

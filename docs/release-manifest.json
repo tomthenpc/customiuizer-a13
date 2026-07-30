@@ -13,12 +13,19 @@
   },
   "certificateSha256": "C0EFF2DC4E662717195490DA78B12A984C6F2E6BD38ACF4EDAD14D53E3D22E70",
   "certificateDnNote": "CN=CustoMIUIzer A14; the DN is retained for upgrade compatibility with earlier A13 builds. This APK supports Android 13 / MIUI 14.",
+  "metadata": {
+    "buildTimeFields": ["apkName", "apkSizeBytes", "apkSha256", "buildCommit"],
+    "postReleaseFields": ["lsposedTag", "deviceStatus", "sourceCommit"],
+    "note": "Build-time fields are produced by the CI/Gradle pipeline. Post-release fields are updated when the release tag is published and real-device status is reported."
+  },
   "releases": [
     {
       "versionName": "r13.7.0",
       "versionCode": 124,
       "sourceCommit": "4b386cd",
       "buildCommit": "d578e80",
+      "dataSource": "docs/releases/r13.7.0.md",
+      "verifiedAtBuild": false,
       "lsposedTag": "124-r13.7.0",
       "apkName": "CustoMIUIzer-A13-r13.7.0.apk",
       "apkSizeBytes": 2781130,
@@ -45,6 +52,7 @@
   "draft": {
     "versionName": "r13.7.1",
     "versionCode": 124,
+    "status": "WIP",
     "sourceBranch": "devin/r13.7.1-maintenance-foundation",
     "sourceCommit": null,
     "lsposedTag": null,
@@ -61,7 +69,7 @@
       "统一 release-manifest.json",
       "MainModule / 偏好 Schema / Hook 能力探测 / 诊断体系审计与实施计划"
     ],
-    "note": "长期维护基础建设分支；不修改版本号，不创建 tag 或 Release。"
+    "note": "r13.7.1 维护基础建设分支；不修改版本号，final hash 在 release 阶段设置，不创建 tag 或 Release。"
   },
   "schemaVersion": 1
 }
