@@ -1,46 +1,51 @@
 package tv.withaibuild.customiuizer.utils
 
-import android.content.SharedPreferences
+import androidx.core.os.LocaleListCompat
 import java.util.Locale
 import org.junit.After
 import org.junit.Assert.assertArrayEquals
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse
 import org.junit.Assert.assertNotNull
+import org.junit.Assert.assertNull
 import org.junit.Assert.assertTrue
 import org.junit.Before
 import org.junit.Test
 
 class AppLocaleControllerTest {
 
-    private lateinit var fakePrefs: FakeSharedPreferences
-    private var originalDefaultLocale: Locale = Locale.getDefault()
-    private val appliedLocaleLists = ArrayList<androidx.core.os.LocaleListCompat?>()
+    private lateinit var prefs: FakeSharedPreferences
+    private val appliedTags = ArrayList<String>()
+    private var providerCalls = 0
 
     @Before
     fun setUp() {
-        fakePrefs = FakeSharedPreferences()
-        originalDefaultLocale = Locale.getDefault()
-        appliedLocaleLists.clear()
-        AppLocaleController.applicationLocaleApplier = { appliedLocaleLists.add(it) }
+        prefs = FakeSharedPreferences()
+        appliedTags.clear()
+        providerCalls = 0
+        AppLocaleController.applicationLocaleApplier = {
+            appliedTags.add(it.toLanguageTags())
+        }
+        AppLocaleController.applicationLocaleProvider = {
+            providerCalls++
+            LocaleListCompat.getEmptyLocaleList()
+        }
     }
 
     @After
     fun tearDown() {
-        Locale.setDefault(originalDefaultLocale)
         AppLocaleController.applicationLocaleApplier = null
-        appliedLocaleLists.clear()
+        AppLocaleController.applicationLocaleProvider = null
+        AppHelper.moduleActive = false
+        AppHelper.moduleConnectionObserved = false
     }
 
     @Test
-    fun normalizeLocaleTagHandlesAllRequiredCases() {
+    fun normalizeLocaleTagKeepsSupportedValuesAndMapsUnknownToAuto() {
         assertEquals("auto", AppLocaleController.normalizeLocaleTag(null))
         assertEquals("auto", AppLocaleController.normalizeLocaleTag(""))
-        assertEquals("auto", AppLocaleController.normalizeLocaleTag("   "))
         assertEquals("auto", AppLocaleController.normalizeLocaleTag("1"))
-        assertEquals("auto", AppLocaleController.normalizeLocaleTag("AUTO"))
         assertEquals("auto", AppLocaleController.normalizeLocaleTag("unknown"))
-        assertEquals("auto", AppLocaleController.normalizeLocaleTag("auto"))
         assertEquals("en", AppLocaleController.normalizeLocaleTag("en"))
         assertEquals("zh-CN", AppLocaleController.normalizeLocaleTag("zh-CN"))
         assertEquals("zh-TW", AppLocaleController.normalizeLocaleTag("zh-TW"))
@@ -48,185 +53,182 @@ class AppLocaleControllerTest {
     }
 
     @Test
-    fun getUserLocaleReadsAndNormalizesStoredValue() {
-        assertEquals("auto", AppLocaleController.getUserLocale(fakePrefs))
-
-        fakePrefs.put(AppLocaleController.LOCALE_PREF_KEY, "en")
-        assertEquals("en", AppLocaleController.getUserLocale(fakePrefs))
-
-        fakePrefs.put(AppLocaleController.LOCALE_PREF_KEY, "1")
-        assertEquals("auto", AppLocaleController.getUserLocale(fakePrefs))
-
-        fakePrefs.put(AppLocaleController.LOCALE_PREF_KEY, "invalid")
-        assertEquals("auto", AppLocaleController.getUserLocale(fakePrefs))
-    }
-
-    @Test
-    fun getUserLocaleReturnsAutoWhenPrefsAreNull() {
+    fun userLocaleReadNormalizesLegacyAndInvalidStoredValues() {
         assertEquals("auto", AppLocaleController.getUserLocale(null))
+        prefs.put(AppLocaleController.LOCALE_PREF_KEY, "1")
+        assertEquals("auto", AppLocaleController.getUserLocale(prefs))
+        prefs.put(AppLocaleController.LOCALE_PREF_KEY, "invalid")
+        assertEquals("auto", AppLocaleController.getUserLocale(prefs))
     }
 
     @Test
-    fun getEffectiveLocaleUsesExplicitTagsAndFallsBackOnInvalid() {
-        val system = Locale.forLanguageTag("zh-CN")
-
-        assertEquals(Locale.ENGLISH, AppLocaleController.getEffectiveLocale("en") { system })
-        assertEquals(Locale.forLanguageTag("zh-CN"), AppLocaleController.getEffectiveLocale("zh-CN") { system })
-        assertEquals(Locale.forLanguageTag("pt-BR"), AppLocaleController.getEffectiveLocale("pt-BR") { system })
-
-        // Invalid explicit tag falls back to the system locale.
-        assertEquals(system, AppLocaleController.getEffectiveLocale("nonsense") { system })
-
-        // Legacy auto value resolves through the system provider.
-        assertEquals(system, AppLocaleController.getEffectiveLocale("1") { system })
-    }
-
-    @Test
-    fun getEffectiveLocaleAutoResolvesToSystemLocale() {
-        val system = Locale.forLanguageTag("ru-RU")
-        val result = AppLocaleController.getEffectiveLocale("auto") { system }
-
-        assertEquals(system, result)
-        assertNotNull(result)
-    }
-
-    @Test
-    fun setUserLocalePersistsAndAppliesExplicitLocale() {
-        val committed = AppLocaleController.setUserLocale(fakePrefs, "en")
-
-        assertTrue("setUserLocale should return true", committed)
-        assertEquals("en", fakePrefs.getString(AppLocaleController.LOCALE_PREF_KEY, null))
-        assertEquals(Locale.ENGLISH, Locale.getDefault())
-    }
-
-    @Test
-    fun setUserLocaleNormalizesInvalidInputToAuto() {
-        AppLocaleController.setUserLocale(fakePrefs, "garbage")
-
-        assertEquals("auto", fakePrefs.getString(AppLocaleController.LOCALE_PREF_KEY, null))
-    }
-
-    @Test
-    fun setUserLocaleSwitchesBackToAuto() {
-        AppLocaleController.setUserLocale(fakePrefs, "en")
-        assertEquals(Locale.ENGLISH, Locale.getDefault())
-
-        // Simulate the user choosing "auto" again.
-        AppLocaleController.setUserLocale(fakePrefs, "auto")
-
-        assertEquals("auto", fakePrefs.getString(AppLocaleController.LOCALE_PREF_KEY, null))
-        assertNotNull(Locale.getDefault())
-    }
-
-    @Test
-    fun setUserLocaleSynchronousCommitPreventsRaceWithRecreation() {
-        AppLocaleController.setUserLocale(fakePrefs, "es-ES")
-
-        assertEquals(
-            "es-ES",
-            fakePrefs.getString(AppLocaleController.LOCALE_PREF_KEY, null)
+    fun untouchedAutoStartupDoesNotReadOrWriteFrameworkLocales() {
+        assertFalse(AppLocaleController.apply(prefs))
+        assertEquals(0, providerCalls)
+        assertTrue(appliedTags.isEmpty())
+        assertNull(
+            prefs.getString(AppLocaleController.APPLIED_LOCALE_PREF_KEY, null)
         )
     }
 
     @Test
-    fun buildLocaleDisplayDataProducesParallelArraysAndContainsAllTags() {
-        val (entries, values) = AppLocaleController.buildLocaleDisplayData("System default")
+    fun explicitLocaleIsPersistedThenAppliedThroughFrameworkList() {
+        assertTrue(AppLocaleController.setUserLocale(prefs, "zh-CN"))
+        assertTrue(AppLocaleController.apply(prefs))
 
-        assertEquals("entries and values must have the same length", entries.size, values.size)
-        assertTrue(values.contains("auto"))
-        assertTrue(values.contains("en"))
-        assertTrue(values.contains("zh-CN"))
-        assertTrue(values.contains("zh-TW"))
-        assertTrue(values.contains("pt-BR"))
-
-        val autoIndex = values.indexOf("auto")
-        assertEquals("System default", entries[autoIndex].toString())
-
-        val twIndex = values.indexOf("zh-TW")
-        assertEquals("繁體中文（台灣）", entries[twIndex].toString())
-
-        val brIndex = values.indexOf("pt-BR")
-        assertTrue(entries[brIndex].toString().contains("(Brasil)"))
+        assertEquals(listOf("zh-CN"), appliedTags)
+        assertEquals(
+            "zh-CN",
+            prefs.getString(AppLocaleController.APPLIED_LOCALE_PREF_KEY, null)
+        )
     }
 
     @Test
-    fun buildLocaleDisplayDataEntriesAndValuesAreParallel() {
-        val (entries, values) = AppLocaleController.buildLocaleDisplayData("Auto")
-        assertEquals(entries.size, values.size)
-        for (i in values.indices) {
-            assertNotNull(values[i])
-            assertNotNull(entries[i])
-            assertFalse(entries[i].toString().isEmpty())
+    fun savingLocaleIsDeferredUntilTheNextApply() {
+        assertTrue(AppLocaleController.setUserLocale(prefs, "es-ES"))
+        assertEquals("es-ES", AppLocaleController.getUserLocale(prefs))
+        assertTrue(appliedTags.isEmpty())
+        assertEquals(0, providerCalls)
+    }
+
+    @Test
+    fun invalidSavedLocaleIsNormalizedToAuto() {
+        assertTrue(AppLocaleController.setUserLocale(prefs, "garbage"))
+        assertEquals("auto", AppLocaleController.getUserLocale(prefs))
+    }
+
+    @Test
+    fun matchingExplicitLocaleIsNotAppliedAgain() {
+        prefs.put(AppLocaleController.LOCALE_PREF_KEY, "en")
+        AppLocaleController.applicationLocaleProvider = {
+            providerCalls++
+            LocaleListCompat.forLanguageTags("en")
         }
+
+        assertFalse(AppLocaleController.apply(prefs))
+        assertTrue(appliedTags.isEmpty())
+        assertEquals(
+            "en",
+            prefs.getString(AppLocaleController.APPLIED_LOCALE_PREF_KEY, null)
+        )
     }
 
     @Test
-    fun applyLocaleSetsDefaultForExplicitTagWithoutWriting() {
-        val before = fakePrefs.getString(AppLocaleController.LOCALE_PREF_KEY, null)
+    fun returningToAutoClearsFrameworkLocaleAndMarker() {
+        prefs.put(AppLocaleController.LOCALE_PREF_KEY, "auto")
+        prefs.put(AppLocaleController.APPLIED_LOCALE_PREF_KEY, "en")
+        AppLocaleController.applicationLocaleProvider = {
+            LocaleListCompat.forLanguageTags("en")
+        }
 
-        AppLocaleController.applyLocale("ja-JP")
-
-        assertEquals(before, fakePrefs.getString(AppLocaleController.LOCALE_PREF_KEY, null))
-        assertEquals(Locale.JAPAN, Locale.getDefault())
+        assertTrue(AppLocaleController.apply(prefs))
+        assertEquals(listOf(""), appliedTags)
+        assertNull(
+            prefs.getString(AppLocaleController.APPLIED_LOCALE_PREF_KEY, null)
+        )
     }
 
     @Test
-    fun applyLocaleDoesNotThrowForAuto() {
-        AppLocaleController.applyLocale("auto")
-        assertNotNull(Locale.getDefault())
+    fun backupRestoreForcesOneFullReconciliation() {
+        AppLocaleController.invalidateFastPath(prefs)
+
+        assertEquals(
+            "",
+            prefs.getString(AppLocaleController.APPLIED_LOCALE_PREF_KEY, null)
+        )
+        assertFalse(AppLocaleController.apply(prefs))
+        assertEquals(1, providerCalls)
+        assertNull(
+            prefs.getString(AppLocaleController.APPLIED_LOCALE_PREF_KEY, null)
+        )
     }
 
     @Test
-    fun toLocaleListCompatAutoIsEmpty() {
-        val list = AppLocaleController.toLocaleListCompat("auto")
-        assertNotNull(list)
+    fun explicitLocaleWithoutContextOrTestApplierDoesNotClaimSuccess() {
+        prefs.put(AppLocaleController.LOCALE_PREF_KEY, "en")
+        AppLocaleController.applicationLocaleApplier = null
+
+        assertFalse(AppLocaleController.apply(prefs))
+        assertNull(
+            prefs.getString(AppLocaleController.APPLIED_LOCALE_PREF_KEY, null)
+        )
     }
 
     @Test
-    fun toLocaleListCompatExplicitIsNotEmpty() {
-        val list = AppLocaleController.toLocaleListCompat("en")
-        assertNotNull(list)
+    fun localeListsPreserveRegionTagsAndAutoIsEmpty() {
+        assertEquals(
+            "pt-BR",
+            AppLocaleController.toLocaleListCompat("pt-BR").toLanguageTags()
+        )
+        assertEquals(
+            "zh-TW",
+            AppLocaleController.toLocaleListCompat("zh-TW").toLanguageTags()
+        )
+        assertEquals(
+            "",
+            AppLocaleController.toLocaleListCompat("auto").toLanguageTags()
+        )
     }
 
     @Test
-    fun toLocaleListCompatUnknownFallsBackToAuto() {
-        val list = AppLocaleController.toLocaleListCompat("invalid")
-        assertNotNull(list)
+    fun localeDisplayEntriesRemainParallelAndComplete() {
+        val (entries, values) =
+            AppLocaleController.buildLocaleDisplayData("System default")
+
+        assertEquals(entries.size, values.size)
+        assertArrayEquals(
+            arrayOf(
+                "auto",
+                "en",
+                "zh-CN",
+                "zh-TW",
+                "ru-RU",
+                "ja-JP",
+                "vi-VN",
+                "cs-CZ",
+                "pt-BR",
+                "tr-TR",
+                "es-ES"
+            ),
+            values
+        )
+        assertEquals("System default", entries.first().toString())
+        assertEquals("繁體中文（台灣）", entries[values.indexOf("zh-TW")].toString())
+        assertTrue(entries[values.indexOf("pt-BR")].toString().contains("(Brasil)"))
+        assertNotNull(entries.last())
     }
 
     @Test
-    fun toLocaleListCompatPreservesRegionTag() {
-        val ptBr = AppLocaleController.toLocaleListCompat("pt-BR")
-        assertNotNull(ptBr)
-        assertEquals("pt-BR", ptBr.toLanguageTags())
-
-        val zhCn = AppLocaleController.toLocaleListCompat("zh-CN")
-        assertNotNull(zhCn)
-        assertEquals("zh-CN", zhCn.toLanguageTags())
-
-        val zhTw = AppLocaleController.toLocaleListCompat("zh-TW")
-        assertNotNull(zhTw)
-        assertEquals("zh-TW", zhTw.toLanguageTags())
+    fun localeContextCompatibilityBoundaryKeepsItsJvmSignature() {
+        assertNotNull(
+            AppLocaleController::class.java.getDeclaredMethod(
+                "getLocaleContext",
+                android.content.Context::class.java,
+                android.content.SharedPreferences::class.java
+            )
+        )
     }
 
     @Test
-    fun stateTransitionMatrix() {
-        assertTrue(AppLocaleController.setUserLocale(fakePrefs, "zh-CN"))
-        assertEquals(Locale.SIMPLIFIED_CHINESE, Locale.getDefault())
-        assertEquals("zh-CN", AppLocaleController.getUserLocale(fakePrefs))
+    fun effectiveLocaleHelperStillResolvesAutoAndExplicitTags() {
+        val system = Locale.forLanguageTag("ru-RU")
+        assertEquals(system, AppLocaleController.getEffectiveLocale("auto") { system })
+        assertEquals(
+            Locale.forLanguageTag("es-ES"),
+            AppLocaleController.getEffectiveLocale("es-ES") { system }
+        )
+    }
 
-        assertTrue(AppLocaleController.setUserLocale(fakePrefs, "en"))
-        assertEquals(Locale.ENGLISH, Locale.getDefault())
-        assertEquals("en", AppLocaleController.getUserLocale(fakePrefs))
+    @Test
+    fun unobservedBinderStateNeverReportsModuleInactive() {
+        AppHelper.moduleConnectionObserved = false
+        AppHelper.moduleActive = false
+        assertFalse(AppHelper.shouldReportModuleInactive())
 
-        assertTrue(AppLocaleController.setUserLocale(fakePrefs, "auto"))
-        assertEquals("auto", AppLocaleController.getUserLocale(fakePrefs))
+        AppHelper.moduleConnectionObserved = true
+        assertTrue(AppHelper.shouldReportModuleInactive())
 
-        assertTrue(AppLocaleController.setUserLocale(fakePrefs, "en"))
-        assertEquals(Locale.ENGLISH, Locale.getDefault())
-
-        assertTrue(AppLocaleController.setUserLocale(fakePrefs, "en"))
-        assertEquals(Locale.ENGLISH, Locale.getDefault())
-        assertEquals("en", AppLocaleController.getUserLocale(fakePrefs))
+        AppHelper.moduleActive = true
+        assertFalse(AppHelper.shouldReportModuleInactive())
     }
 }

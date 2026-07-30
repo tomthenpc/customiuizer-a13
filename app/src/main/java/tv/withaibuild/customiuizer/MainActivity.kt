@@ -2,6 +2,7 @@ package tv.withaibuild.customiuizer
 
 import android.Manifest
 import android.annotation.SuppressLint
+import android.content.Context
 import android.content.pm.PackageManager
 import android.os.Bundle
 import android.view.KeyEvent
@@ -20,6 +21,10 @@ class MainActivity : AppCompatActivity() {
 
     private var mainFrag: MainFragment? = null
     private var prefsChanged: android.content.SharedPreferences.OnSharedPreferenceChangeListener? = null
+
+    override fun attachBaseContext(base: Context) {
+        super.attachBaseContext(base)
+    }
 
     @SuppressLint("ApplySharedPref")
     override fun onCreate(savedInstanceState: Bundle?) {

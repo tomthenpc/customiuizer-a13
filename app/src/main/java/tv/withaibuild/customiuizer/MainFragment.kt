@@ -109,8 +109,7 @@ class MainFragment : PreferenceFragmentBase() {
             val act = activity as? AppCompatActivity
             if (
                 isFragmentReady(act) &&
-                AppHelper.moduleConnectionObserved &&
-                !AppHelper.moduleActive
+                AppHelper.shouldReportModuleInactive()
             ) {
                 act?.runOnUiThread { showXposedDialog(act) }
             }

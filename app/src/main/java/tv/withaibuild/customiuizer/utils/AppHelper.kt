@@ -30,6 +30,10 @@ object AppHelper {
     @Volatile
     var moduleConnectionObserved: Boolean = false
 
+    @JvmStatic
+    fun shouldReportModuleInactive(): Boolean =
+        moduleConnectionObserved && !moduleActive
+
     @JvmField
     var remotePrefs: RemotePreferences? = null
 
