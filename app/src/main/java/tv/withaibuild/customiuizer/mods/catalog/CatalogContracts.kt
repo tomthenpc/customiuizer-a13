@@ -1,0 +1,128 @@
+package tv.withaibuild.customiuizer.mods.catalog
+
+import tv.withaibuild.customiuizer.mods.utils.AnyOfRequirement
+import tv.withaibuild.customiuizer.mods.utils.Criticality
+import tv.withaibuild.customiuizer.mods.utils.HookOperation
+import tv.withaibuild.customiuizer.mods.utils.HookTargetContract
+import tv.withaibuild.customiuizer.mods.utils.HookTargetSpec
+import tv.withaibuild.customiuizer.mods.utils.SingleTargetRequirement
+
+/**
+ * Typed target contracts for the first catalog expansion batch.
+ *
+ * Each contract is derived from the real `ModuleHelper` calls in the legacy
+ * installer. They are used by [tv.withaibuild.customiuizer.mods.utils.HookTargetResolver]
+ * for compatibility probing and by [tv.withaibuild.customiuizer.mods.utils.HookInstaller]
+ * for real install evidence.
+ */
+object CatalogContracts {
+
+    private val INT = Int::class.javaPrimitiveType!!
+    private val BOOLEAN = Boolean::class.javaPrimitiveType!!
+
+    val screenDimTime = HookTargetContract(
+        featureId = "screenDimTime",
+        requirements = listOf(
+            SingleTargetRequirement(
+                target = HookTargetSpec(
+                    id = "PowerManagerService.readConfigurationLocked",
+                    operation = HookOperation.EXACT_METHOD,
+                    className = "com.android.server.power.PowerManagerService",
+                    memberName = "readConfigurationLocked",
+                    parameterTypes = emptyList()
+                )
+            ),
+            SingleTargetRequirement(
+                target = HookTargetSpec(
+                    id = "PowerManagerService.setStayOnSettingInternal",
+                    operation = HookOperation.EXACT_METHOD,
+                    className = "com.android.server.power.PowerManagerService",
+                    memberName = "setStayOnSettingInternal",
+                    parameterTypes = listOf(INT)
+                )
+            )
+        )
+    )
+
+    val firstVolumePress = HookTargetContract(
+        featureId = "firstVolumePress",
+        requirements = listOf(
+            SingleTargetRequirement(
+                target = HookTargetSpec(
+                    id = "AudioService.VolumeController.suppressAdjustment",
+                    operation = HookOperation.EXACT_METHOD,
+                    className = "com.android.server.audio.AudioService\$VolumeController",
+                    memberName = "suppressAdjustment",
+                    parameterTypes = listOf(INT, INT, BOOLEAN)
+                )
+            )
+        )
+    )
+
+    val networkIndicatorWifi = HookTargetContract(
+        featureId = "networkIndicatorWifi",
+        requirements = listOf(
+            SingleTargetRequirement(
+                target = HookTargetSpec(
+                    id = "StatusBarWifiView.applyWifiState",
+                    operation = HookOperation.ALL_METHODS_BY_NAME,
+                    className = "com.android.systemui.statusbar.StatusBarWifiView",
+                    memberName = "applyWifiState"
+                )
+            )
+        )
+    )
+
+    val muteVisibleNotifications = HookTargetContract(
+        featureId = "muteVisibleNotifications",
+        requirements = listOf(
+            SingleTargetRequirement(
+                target = HookTargetSpec(
+                    id = "NotificationAlertController.buzzBeepBlink",
+                    operation = HookOperation.ALL_METHODS_BY_NAME,
+                    className = "com.android.systemui.statusbar.notification.policy.NotificationAlertController",
+                    memberName = "buzzBeepBlink"
+                )
+            )
+        )
+    )
+
+    val hideLauncherTitles = HookTargetContract(
+        featureId = "hideLauncherTitles",
+        requirements = listOf(
+            SingleTargetRequirement(
+                target = HookTargetSpec(
+                    id = "ItemIcon.onFinishInflate",
+                    operation = HookOperation.EXACT_METHOD,
+                    className = "com.miui.home.launcher.ItemIcon",
+                    memberName = "onFinishInflate",
+                    parameterTypes = emptyList()
+                )
+            )
+        )
+    )
+
+    val fixAppInfoLaunch = HookTargetContract(
+        featureId = "fixAppInfoLaunch",
+        requirements = listOf(
+            AnyOfRequirement(
+                id = "fixAppInfoLaunch.launcher",
+                criticality = Criticality.REQUIRED,
+                candidates = listOf(
+                    HookTargetSpec(
+                        id = "ShortcutMenuManager.startAppDetailsActivity",
+                        operation = HookOperation.ALL_METHODS_BY_NAME,
+                        className = "com.miui.home.launcher.shortcuts.ShortcutMenuManager",
+                        memberName = "startAppDetailsActivity"
+                    ),
+                    HookTargetSpec(
+                        id = "Utilities.startDetailsActivityForInfo",
+                        operation = HookOperation.ALL_METHODS_BY_NAME,
+                        className = "com.miui.home.launcher.util.Utilities",
+                        memberName = "startDetailsActivityForInfo"
+                    )
+                )
+            )
+        )
+    )
+}

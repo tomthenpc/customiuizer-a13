@@ -21,4 +21,12 @@ object DiagnosticIds {
 
     /** Generic resolver diagnostic, throttled independently of feature IDs. */
     const val HOOK_TARGET_RESOLVER = "HOOK_TARGET_RESOLVER"
+
+    /** Catalog expansion batch 1. */
+    const val SCREEN_DIM_TIME = "SCREEN_DIM_TIME"
+    const val FIRST_VOLUME_PRESS = "FIRST_VOLUME_PRESS"
+    const val NETWORK_INDICATOR_WIFI = "NETWORK_INDICATOR_WIFI"
+    const val MUTE_VISIBLE_NOTIFICATIONS = "MUTE_VISIBLE_NOTIFICATIONS"
+    const val HIDE_LAUNCHER_TITLES = "HIDE_LAUNCHER_TITLES"
+    const val FIX_APP_INFO_LAUNCH = "FIX_APP_INFO_LAUNCH"
 }

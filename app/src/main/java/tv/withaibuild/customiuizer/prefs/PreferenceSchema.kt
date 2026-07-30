@@ -140,6 +140,69 @@ object PreferenceSchema {
             restartTarget = RestartTarget.LAUNCHER_RESTART,
             hotReloadable = false,
             legacyAliases = emptySet()
+        ),
+        // Catalog expansion batch 1: system_server
+        PreferenceEntry(
+            key = "system_dimtime",
+            type = PreferenceType.INT,
+            defaultValue = 0,
+            constraint = PreferenceConstraint.IntRange(min = 0, max = 300000),
+            ownerFeature = "screenDimTime",
+            restartTarget = RestartTarget.REBOOT,
+            hotReloadable = false,
+            legacyAliases = emptySet()
+        ),
+        PreferenceEntry(
+            key = "system_firstpress",
+            type = PreferenceType.BOOLEAN,
+            defaultValue = false,
+            constraint = PreferenceConstraint.BooleanValue(expected = false),
+            ownerFeature = "firstVolumePress",
+            restartTarget = RestartTarget.REBOOT,
+            hotReloadable = false,
+            legacyAliases = emptySet()
+        ),
+        // Catalog expansion batch 1: SystemUI
+        PreferenceEntry(
+            key = "system_networkindicator_wifi",
+            type = PreferenceType.BOOLEAN,
+            defaultValue = false,
+            constraint = PreferenceConstraint.BooleanValue(expected = false),
+            ownerFeature = "networkIndicatorWifi",
+            restartTarget = RestartTarget.SYSTEMUI_RESTART,
+            hotReloadable = false,
+            legacyAliases = emptySet()
+        ),
+        PreferenceEntry(
+            key = "system_mutevisiblenotif",
+            type = PreferenceType.BOOLEAN,
+            defaultValue = false,
+            constraint = PreferenceConstraint.BooleanValue(expected = false),
+            ownerFeature = "muteVisibleNotifications",
+            restartTarget = RestartTarget.SYSTEMUI_RESTART,
+            hotReloadable = false,
+            legacyAliases = emptySet()
+        ),
+        // Catalog expansion batch 1: Launcher
+        PreferenceEntry(
+            key = "launcher_hidetitles",
+            type = PreferenceType.BOOLEAN,
+            defaultValue = false,
+            constraint = PreferenceConstraint.BooleanValue(expected = false),
+            ownerFeature = "hideLauncherTitles",
+            restartTarget = RestartTarget.LAUNCHER_RESTART,
+            hotReloadable = false,
+            legacyAliases = emptySet()
+        ),
+        PreferenceEntry(
+            key = "launcher_fixlaunch",
+            type = PreferenceType.BOOLEAN,
+            defaultValue = false,
+            constraint = PreferenceConstraint.BooleanValue(expected = false),
+            ownerFeature = "fixAppInfoLaunch",
+            restartTarget = RestartTarget.LAUNCHER_RESTART,
+            hotReloadable = false,
+            legacyAliases = emptySet()
         )
     )
 

@@ -8,8 +8,10 @@ import tv.withaibuild.customiuizer.mods.SystemAudioAndVisualAndMoreHooks
 import tv.withaibuild.customiuizer.mods.SystemDisplayAndWindowHooks
 import tv.withaibuild.customiuizer.mods.SystemNotificationMoreHooks
 import tv.withaibuild.customiuizer.mods.SystemStatusBarClockAndMoreHooks
+import tv.withaibuild.customiuizer.mods.SystemStatusBarMoreHooks
 import tv.withaibuild.customiuizer.mods.SystemUIBatteryHooks
 import tv.withaibuild.customiuizer.mods.SystemUIScreenshotHooks
+import tv.withaibuild.customiuizer.mods.LauncherIconHooks
 import tv.withaibuild.customiuizer.mods.LauncherLayoutHooks
 import tv.withaibuild.customiuizer.mods.LauncherSystemHooks
 import tv.withaibuild.customiuizer.mods.diagnostics.DiagnosticIds
@@ -232,6 +234,123 @@ object FeatureCatalog {
             },
             installer = { runtime ->
                 LauncherLayoutHooks.NoWidgetOnlyHook(
+                    runtime.lpparam as PackageReadyParam
+                )
+                InstallOutcome.DISPATCHED
+            },
+            activationRestartTarget = RestartTarget.LAUNCHER_RESTART,
+            configReloadMode = ConfigReloadMode.NONE
+        ),
+        // Catalog expansion batch 1: system_server
+        FeatureSpec(
+            contract = CatalogContracts.screenDimTime,
+            id = "screenDimTime",
+            diagnosticId = DiagnosticIds.SCREEN_DIM_TIME,
+            processTarget = ProcessTarget.SystemServer,
+            preferenceKeys = setOf("system_dimtime"),
+            condition = { prefs ->
+                prefs.getInt("system_dimtime", 0) > 0
+            },
+            compatibilityCheck = { _ -> CompatibilityState.COMPATIBLE },
+            installer = { runtime ->
+                SystemAudioAndVisualAndMoreHooks.ScreenDimTimeHook(
+                    runtime.lpparam as SystemServerStartingParam
+                )
+                InstallOutcome.DISPATCHED
+            },
+            activationRestartTarget = RestartTarget.REBOOT,
+            configReloadMode = ConfigReloadMode.NONE
+        ),
+        FeatureSpec(
+            contract = CatalogContracts.firstVolumePress,
+            id = "firstVolumePress",
+            diagnosticId = DiagnosticIds.FIRST_VOLUME_PRESS,
+            processTarget = ProcessTarget.SystemServer,
+            preferenceKeys = setOf("system_firstpress"),
+            condition = { prefs ->
+                prefs.getBoolean("system_firstpress", false)
+            },
+            compatibilityCheck = { _ -> CompatibilityState.COMPATIBLE },
+            installer = { runtime ->
+                SystemAudioAndVisualAndMoreHooks.FirstVolumePressHook(
+                    runtime.lpparam as SystemServerStartingParam
+                )
+                InstallOutcome.DISPATCHED
+            },
+            activationRestartTarget = RestartTarget.REBOOT,
+            configReloadMode = ConfigReloadMode.NONE
+        ),
+        // Catalog expansion batch 1: SystemUI
+        FeatureSpec(
+            contract = CatalogContracts.networkIndicatorWifi,
+            id = "networkIndicatorWifi",
+            diagnosticId = DiagnosticIds.NETWORK_INDICATOR_WIFI,
+            processTarget = ProcessTarget.SystemUI,
+            preferenceKeys = setOf("system_networkindicator_wifi"),
+            condition = { prefs ->
+                prefs.getBoolean("system_networkindicator_wifi", false)
+            },
+            compatibilityCheck = { _ -> CompatibilityState.COMPATIBLE },
+            installer = { runtime ->
+                SystemStatusBarMoreHooks.NetworkIndicatorWifi(
+                    runtime.lpparam as PackageReadyParam
+                )
+                InstallOutcome.DISPATCHED
+            },
+            activationRestartTarget = RestartTarget.SYSTEMUI_RESTART,
+            configReloadMode = ConfigReloadMode.NONE
+        ),
+        FeatureSpec(
+            contract = CatalogContracts.muteVisibleNotifications,
+            id = "muteVisibleNotifications",
+            diagnosticId = DiagnosticIds.MUTE_VISIBLE_NOTIFICATIONS,
+            processTarget = ProcessTarget.SystemUI,
+            preferenceKeys = setOf("system_mutevisiblenotif"),
+            condition = { prefs ->
+                prefs.getBoolean("system_mutevisiblenotif", false)
+            },
+            compatibilityCheck = { _ -> CompatibilityState.COMPATIBLE },
+            installer = { runtime ->
+                SystemNotificationMoreHooks.MuteVisibleNotificationsHook(
+                    runtime.lpparam as PackageReadyParam
+                )
+                InstallOutcome.DISPATCHED
+            },
+            activationRestartTarget = RestartTarget.SYSTEMUI_RESTART,
+            configReloadMode = ConfigReloadMode.NONE
+        ),
+        // Catalog expansion batch 1: Launcher
+        FeatureSpec(
+            contract = CatalogContracts.hideLauncherTitles,
+            id = "hideLauncherTitles",
+            diagnosticId = DiagnosticIds.HIDE_LAUNCHER_TITLES,
+            processTarget = ProcessTarget.Launcher,
+            preferenceKeys = setOf("launcher_hidetitles"),
+            condition = { prefs ->
+                prefs.getBoolean("launcher_hidetitles", false)
+            },
+            compatibilityCheck = { _ -> CompatibilityState.COMPATIBLE },
+            installer = { runtime ->
+                LauncherIconHooks.HideTitlesHook(
+                    runtime.lpparam as PackageReadyParam
+                )
+                InstallOutcome.DISPATCHED
+            },
+            activationRestartTarget = RestartTarget.LAUNCHER_RESTART,
+            configReloadMode = ConfigReloadMode.NONE
+        ),
+        FeatureSpec(
+            contract = CatalogContracts.fixAppInfoLaunch,
+            id = "fixAppInfoLaunch",
+            diagnosticId = DiagnosticIds.FIX_APP_INFO_LAUNCH,
+            processTarget = ProcessTarget.Launcher,
+            preferenceKeys = setOf("launcher_fixlaunch"),
+            condition = { prefs ->
+                prefs.getBoolean("launcher_fixlaunch", false)
+            },
+            compatibilityCheck = { _ -> CompatibilityState.COMPATIBLE },
+            installer = { runtime ->
+                LauncherSystemHooks.FixAppInfoLaunchHook(
                     runtime.lpparam as PackageReadyParam
                 )
                 InstallOutcome.DISPATCHED
