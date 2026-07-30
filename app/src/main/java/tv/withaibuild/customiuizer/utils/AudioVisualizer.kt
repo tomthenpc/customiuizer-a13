@@ -33,6 +33,26 @@ import java.util.concurrent.ThreadPoolExecutor
 import java.util.concurrent.TimeUnit
 import java.util.concurrent.atomic.AtomicInteger
 
+internal fun audioVisualizerBandBinLimits(bands: FloatArray, fftSize: Int): IntArray {
+    val half = fftSize / 2
+    return IntArray(bands.size) { band ->
+        ((bands[band] * half / 22050f).toInt() + 1)
+            .coerceIn(1, half.coerceAtLeast(1))
+    }
+}
+
+internal fun shouldDisplayAudioVisualizer(
+    playing: Boolean,
+    attached: Boolean,
+    viewVisible: Boolean,
+    windowVisible: Boolean
+): Boolean = playing && attached && viewVisible && windowVisible
+
+internal fun isCurrentAudioVisualizerGeneration(
+    expected: Long,
+    current: Long
+): Boolean = expected == current
+
 class AudioVisualizer @JvmOverloads constructor(
     context: Context,
     attrs: AttributeSet? = null,
@@ -433,12 +453,8 @@ class AudioVisualizer @JvmOverloads constructor(
 
     private fun computeBandBinLimits(fftSize: Int) {
         mFftSize = fftSize
-        val half = fftSize / 2
-        for (band in 0 until mBandsNum) {
-            val limit =
-                ((mBands[band] * half / 22050f).toInt() + 1).coerceAtMost(half)
-            mBandBinLimits[band] = limit.coerceAtLeast(1)
-        }
+        val limits = audioVisualizerBandBinLimits(mBands, fftSize)
+        System.arraycopy(limits, 0, mBandBinLimits, 0, mBandsNum)
     }
 
     private fun updateGlowPaint() {
@@ -583,7 +599,7 @@ class AudioVisualizer @JvmOverloads constructor(
                         candidate == null ||
                         detached ||
                         !mDisplaying ||
-                        generation != visualizerGeneration
+                        !isCurrentAudioVisualizerGeneration(generation, visualizerGeneration)
                     ) {
                         scheduleVisualizerRelease(candidate)
                     } else {
@@ -668,7 +684,7 @@ class AudioVisualizer @JvmOverloads constructor(
                         ModuleHelper.guarded("AudioVisualizer.paletteResult") {
                             if (
                                 !detached &&
-                                generation == paletteGeneration &&
+                                isCurrentAudioVisualizerGeneration(generation, paletteGeneration) &&
                                 mArt === art &&
                                 colorMode == ColorMode.MATCH
                             ) {
@@ -812,7 +828,7 @@ class AudioVisualizer @JvmOverloads constructor(
 
     private fun checkStateChanged() {
         if (detached) return
-        if (mPlaying && viewAttached && viewVisible && windowVisible) {
+        if (shouldDisplayAudioVisualizer(mPlaying, viewAttached, viewVisible, windowVisible)) {
             if (!mDisplaying) {
                 mDisplaying = true
                 scheduleVisualizerLink()
