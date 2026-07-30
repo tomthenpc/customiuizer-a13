@@ -52,7 +52,7 @@ import tv.withaibuild.customiuizer.mods.utils.ModuleHelper
 import tv.withaibuild.customiuizer.mods.utils.ResourceHooks
 import tv.withaibuild.customiuizer.mods.utils.StepCounterController
 import tv.withaibuild.customiuizer.mods.utils.XposedHelpers
-import tv.withaibuild.customiuizer.utils.Helpers
+import tv.withaibuild.customiuizer.utils.HookUtils
 import java.lang.reflect.Method
 import java.util.ArrayList
 import java.util.Locale
@@ -659,7 +659,7 @@ object SystemUIControlCenterHooks {
                             && Math.abs(mTouchX - currentDownX) < 100F) {
                             if (MainModule.mPrefs.getBoolean("system_statusbarcontrols_longpress_vibrate")) {
                                 val ignoreOff = MainModule.mPrefs.getBoolean("system_statusbarcontrols_longpress_vibrate_ignoreoff")
-                                Helpers.performStrongVibration(mContext, ignoreOff)
+                                HookUtils.performStrongVibration(mContext, ignoreOff)
                             }
                             GlobalActions.handleAction(mContext, "system_statusbarcontrols_longpress")
                         }
@@ -1123,15 +1123,15 @@ object SystemUIControlCenterHooks {
                         XposedHelpers.callMethod(constraintSet, "connect", btTileId, 7, bigTileA.id, 7)
                         XposedHelpers.callMethod(constraintSet, "connect", btTileId, 3, bigTileB.id, 3)
                         XposedHelpers.callMethod(constraintSet, "connect", btTileId, 4, 0, 4)
-                        XposedHelpers.callMethod(constraintSet, "setMargin", btTileId, 6, Helpers.dp2px(10f).toInt())
+                        XposedHelpers.callMethod(constraintSet, "setMargin", btTileId, 6, HookUtils.dp2px(10f).toInt())
                         val labelResId = mView.resources.getIdentifier("label_container", "id", "miui.systemui.plugin")
                         bigTileB.findViewById<View>(labelResId)?.visibility = View.GONE
                         btTileView.findViewById<View>(labelResId)?.visibility = View.GONE
                         val iconResId = mView.resources.getIdentifier("status_icon", "id", "miui.systemui.plugin")
                         val layoutParams1 = bigTileB.findViewById<View>(iconResId)?.layoutParams as? LinearLayout.LayoutParams
-                        layoutParams1?.leftMargin = Helpers.dp2px(3f).toInt()
+                        layoutParams1?.leftMargin = HookUtils.dp2px(3f).toInt()
                         val layoutParams2 = btTileView.findViewById<View>(iconResId)?.layoutParams as? LinearLayout.LayoutParams
-                        layoutParams2?.leftMargin = Helpers.dp2px(3f).toInt()
+                        layoutParams2?.leftMargin = HookUtils.dp2px(3f).toInt()
                     } else {
                         XposedHelpers.callMethod(constraintSet, "connect", bigTileB.id, 4, btTileId, 3)
                         XposedHelpers.callMethod(constraintSet, "connect", btTileId, 6, bigTileA.id, 6)
@@ -1145,7 +1145,7 @@ object SystemUIControlCenterHooks {
                 }
                 if (styleId == 3) {
                     val layoutParams = bigTileB.layoutParams as? ViewGroup.MarginLayoutParams
-                    val verticalMargin = Helpers.dp2px(4f).toInt()
+                    val verticalMargin = HookUtils.dp2px(4f).toInt()
                     layoutParams?.topMargin = verticalMargin
                     layoutParams?.bottomMargin = verticalMargin
                 }

@@ -25,7 +25,7 @@ import tv.withaibuild.customiuizer.mods.utils.HookerClassHelper.BeforeHookCallba
 import tv.withaibuild.customiuizer.mods.utils.HookerClassHelper.MethodHook
 import tv.withaibuild.customiuizer.mods.utils.ModuleHelper
 import tv.withaibuild.customiuizer.mods.utils.XposedHelpers
-import tv.withaibuild.customiuizer.utils.Helpers
+import tv.withaibuild.customiuizer.utils.HookUtils
 import java.lang.reflect.Modifier
 import java.util.concurrent.ConcurrentHashMap
 
@@ -54,11 +54,11 @@ object SystemFreeformAndMultiWindowHooks {
     }
 
     fun storeFwAppsInSetting(context: Context) {
-        Settings.Global.putString(context.contentResolver, Helpers.modulePkg + ".fw.apps", serializeFwApps())
+        Settings.Global.putString(context.contentResolver, HookUtils.modulePkg + ".fw.apps", serializeFwApps())
     }
 
     fun restoreFwAppsInSetting(context: Context) {
-        unserializeFwApps(Settings.Global.getString(context.contentResolver, Helpers.modulePkg + ".fw.apps"))
+        unserializeFwApps(Settings.Global.getString(context.contentResolver, HookUtils.modulePkg + ".fw.apps"))
     }
 
     fun getTaskPackageName(thisObject: Any, taskId: Int): String? {

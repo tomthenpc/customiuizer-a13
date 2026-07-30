@@ -20,7 +20,7 @@ import tv.withaibuild.customiuizer.mods.utils.HookerClassHelper.BeforeHookCallba
 import tv.withaibuild.customiuizer.mods.utils.HookerClassHelper.MethodHook
 import tv.withaibuild.customiuizer.mods.utils.ModuleHelper
 import tv.withaibuild.customiuizer.mods.utils.XposedHelpers
-import tv.withaibuild.customiuizer.utils.Helpers
+import tv.withaibuild.customiuizer.utils.HookUtils
 import tv.withaibuild.customiuizer.utils.PrefPair
 import java.io.File
 import java.io.FileOutputStream
@@ -237,7 +237,7 @@ object SystemUINotificationHooks {
                     val inputStream: InputStream
                     val outputStream: FileOutputStream
                     val fileBytes: ByteArray
-                    inputStream = resources.openRawResource(resources.getIdentifier("extended_power_menu", "raw", Helpers.modulePkg))
+                    inputStream = resources.openRawResource(resources.getIdentifier("extended_power_menu", "raw", HookUtils.modulePkg))
                     fileBytes = ByteArray(inputStream.available())
                     inputStream.read(fileBytes)
                     outputStream = FileOutputStream(powermenu)

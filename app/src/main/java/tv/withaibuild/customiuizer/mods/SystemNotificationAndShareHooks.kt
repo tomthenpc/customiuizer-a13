@@ -23,7 +23,7 @@ import tv.withaibuild.customiuizer.mods.utils.HookerClassHelper.BeforeHookCallba
 import tv.withaibuild.customiuizer.mods.utils.HookerClassHelper.MethodHook
 import tv.withaibuild.customiuizer.mods.utils.ModuleHelper
 import tv.withaibuild.customiuizer.mods.utils.XposedHelpers
-import tv.withaibuild.customiuizer.utils.Helpers
+import tv.withaibuild.customiuizer.utils.HookUtils
 
 object SystemNotificationAndShareHooks {
 
@@ -240,8 +240,8 @@ object SystemNotificationAndShareHooks {
                             val mContext = XposedHelpers.getObjectField(param.thisObject, "mContext") as? Context ?: return
                             val ignoreSystem = MainModule.mPrefs.getBoolean("system_qshaptics_ignore")
                             val opt = MainModule.mPrefs.getStringAsInt("system_qshaptics", 1)
-                            if (opt == 2) Helpers.performLightVibration(mContext, ignoreSystem)
-                            else if (opt == 3) Helpers.performStrongVibration(mContext, ignoreSystem)
+                            if (opt == 2) HookUtils.performLightVibration(mContext, ignoreSystem)
+                            else if (opt == 3) HookUtils.performStrongVibration(mContext, ignoreSystem)
                         }
                     })
                     hookedTiles.add(tileClass)

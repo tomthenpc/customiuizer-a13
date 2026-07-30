@@ -16,7 +16,7 @@ import tv.withaibuild.customiuizer.mods.utils.HookerClassHelper.AfterHookCallbac
 import tv.withaibuild.customiuizer.mods.utils.HookerClassHelper.MethodHook
 import tv.withaibuild.customiuizer.mods.utils.ModuleHelper
 import tv.withaibuild.customiuizer.mods.utils.XposedHelpers
-import tv.withaibuild.customiuizer.utils.Helpers
+import tv.withaibuild.customiuizer.utils.HookUtils
 import org.json.JSONObject
 import java.io.File
 import java.io.FileInputStream
@@ -115,7 +115,7 @@ object SystemChargingAndWallpaperHooks {
                         if (!wallpaper.exists()) return@guarded
 
                         val lockWallpaperPath = "/data/system/theme/thirdparty_lock_wallpaper"
-                        Helpers.copyFile(wallpaper.absolutePath, lockWallpaperPath)
+                        HookUtils.copyFile(wallpaper.absolutePath, lockWallpaperPath)
                         val ThemeUtils = XposedHelpers.findClass("miui.content.res.ThemeNativeUtils", lpparam.classLoader)
                         XposedHelpers.callStaticMethod(ThemeUtils, "updateFilePermissionWithThemeContext", lockWallpaperPath)
                         val data = JSONObject()

@@ -19,7 +19,7 @@ import tv.withaibuild.customiuizer.mods.utils.HookerClassHelper.BeforeHookCallba
 import tv.withaibuild.customiuizer.mods.utils.HookerClassHelper.MethodHook
 import tv.withaibuild.customiuizer.mods.utils.ModuleHelper
 import tv.withaibuild.customiuizer.mods.utils.XposedHelpers
-import tv.withaibuild.customiuizer.utils.Helpers
+import tv.withaibuild.customiuizer.utils.HookUtils
 
 @Suppress("UNUSED_PARAMETER")
 object LauncherSystemHooks {
@@ -158,7 +158,7 @@ object LauncherSystemHooks {
         ModuleHelper.findAndHookMethod("com.miui.home.launcher.Launcher", lpparam.classLoader, "launch", "com.miui.home.launcher.ShortcutInfo", View::class.java, object : MethodHook() {
             override fun before(param: BeforeHookCallback) {
                 val act = param.getThisObject() as? Activity ?: return
-                var fwApps = Settings.Global.getString(act.contentResolver, Helpers.modulePkg + ".fw.apps")
+                var fwApps = Settings.Global.getString(act.contentResolver, HookUtils.modulePkg + ".fw.apps")
                 if (fwApps == null) fwApps = ""
                 XposedHelpers.setAdditionalInstanceField(param.getThisObject(), "fwApps", fwApps)
             }
@@ -178,7 +178,7 @@ object LauncherSystemHooks {
                 val pkgName = XposedHelpers.callMethod(param.getThisObject(), "getBasePackageName") as? String ?: return
                 if (fwBlackList.contains(pkgName)) return
                 val taskView = param.getThisObject() as? View ?: return
-                val fwApps = Settings.Global.getString(taskView.context.contentResolver, Helpers.modulePkg + ".fw.apps")
+                val fwApps = Settings.Global.getString(taskView.context.contentResolver, HookUtils.modulePkg + ".fw.apps")
                 if (fwApps != null && fwApps.contains(pkgName)) {
                     param.returnAndSkip(XposedHelpers.callMethod(param.getThisObject(), "getActivityLaunchOptions", taskView))
                 }

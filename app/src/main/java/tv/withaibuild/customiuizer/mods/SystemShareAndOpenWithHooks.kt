@@ -15,7 +15,7 @@ import tv.withaibuild.customiuizer.mods.utils.HookerClassHelper.AfterHookCallbac
 import tv.withaibuild.customiuizer.mods.utils.HookerClassHelper.MethodHook
 import tv.withaibuild.customiuizer.mods.utils.ModuleHelper
 import tv.withaibuild.customiuizer.mods.utils.XposedHelpers
-import tv.withaibuild.customiuizer.utils.Helpers
+import tv.withaibuild.customiuizer.utils.HookUtils
 
 object SystemShareAndOpenWithHooks {
 
@@ -85,16 +85,16 @@ object SystemShareAndOpenWithHooks {
     }
 
     private fun hideMimeType(mimeFlags: Int, mimeType: String?): Boolean {
-        var dataType = Helpers.MimeType.OTHERS
+        var dataType = HookUtils.MimeType.OTHERS
         if (mimeType != null) {
-            if (mimeType.startsWith("image/")) dataType = Helpers.MimeType.IMAGE
-            else if (mimeType.startsWith("audio/")) dataType = Helpers.MimeType.AUDIO
-            else if (mimeType.startsWith("video/")) dataType = Helpers.MimeType.VIDEO
+            if (mimeType.startsWith("image/")) dataType = HookUtils.MimeType.IMAGE
+            else if (mimeType.startsWith("audio/")) dataType = HookUtils.MimeType.AUDIO
+            else if (mimeType.startsWith("video/")) dataType = HookUtils.MimeType.VIDEO
             else if (mimeType.startsWith("text/") ||
                 mimeType.startsWith("application/pdf") ||
                 mimeType.startsWith("application/msword") ||
                 mimeType.startsWith("application/vnd.ms-") ||
-                mimeType.startsWith("application/vnd.openxmlformats-")) dataType = Helpers.MimeType.DOCUMENT
+                mimeType.startsWith("application/vnd.openxmlformats-")) dataType = HookUtils.MimeType.DOCUMENT
             else if (mimeType.startsWith("application/vnd.android.package-archive") ||
                 mimeType.startsWith("application/zip") ||
                 mimeType.startsWith("application/x-zip") ||
@@ -107,8 +107,8 @@ object SystemShareAndOpenWithHooks {
                 mimeType.startsWith("application/x-lz") ||
                 mimeType.startsWith("application/x-compress") ||
                 mimeType.startsWith("application/x-7z") ||
-                mimeType.startsWith("application/java-archive")) dataType = Helpers.MimeType.ARCHIVE
-            else if (mimeType.startsWith("link/")) dataType = Helpers.MimeType.LINK
+                mimeType.startsWith("application/java-archive")) dataType = HookUtils.MimeType.ARCHIVE
+            else if (mimeType.startsWith("link/")) dataType = HookUtils.MimeType.LINK
         }
         return (mimeFlags and dataType) == dataType
     }
@@ -129,11 +129,11 @@ object SystemShareAndOpenWithHooks {
         val mimeFlags0: Int
         val mimeFlags999: Int
         if (dynamic) {
-            mimeFlags0 = MainModule.mPrefs.getInt(key + "_" + pkgName + "|0", Helpers.MimeType.ALL)
-            mimeFlags999 = MainModule.mPrefs.getInt(key + "_" + pkgName + "|999", Helpers.MimeType.ALL)
+            mimeFlags0 = MainModule.mPrefs.getInt(key + "_" + pkgName + "|0", HookUtils.MimeType.ALL)
+            mimeFlags999 = MainModule.mPrefs.getInt(key + "_" + pkgName + "|999", HookUtils.MimeType.ALL)
         } else {
-            mimeFlags0 = MainModule.mPrefs.getInt(key + "_" + pkgName + "|0", Helpers.MimeType.ALL)
-            mimeFlags999 = MainModule.mPrefs.getInt(key + "_" + pkgName + "|999", Helpers.MimeType.ALL)
+            mimeFlags0 = MainModule.mPrefs.getInt(key + "_" + pkgName + "|0", HookUtils.MimeType.ALL)
+            mimeFlags999 = MainModule.mPrefs.getInt(key + "_" + pkgName + "|999", HookUtils.MimeType.ALL)
         }
         val removeOriginal = (selectedApps.contains(pkgName) || selectedApps.contains(pkgName + "|0")) && hideMimeType(mimeFlags0, mimeType)
         val removeDual = selectedApps.contains(pkgName + "|999") && hideMimeType(mimeFlags999, mimeType)

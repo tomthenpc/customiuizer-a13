@@ -19,7 +19,7 @@ import tv.withaibuild.customiuizer.mods.utils.HookerClassHelper.MethodHook
 import tv.withaibuild.customiuizer.mods.utils.ModuleHelper
 import tv.withaibuild.customiuizer.mods.utils.ResourceHooks
 import tv.withaibuild.customiuizer.mods.utils.XposedHelpers
-import tv.withaibuild.customiuizer.utils.Helpers
+import tv.withaibuild.customiuizer.utils.HookUtils
 
 object SystemStatusBarMoreHooks {
 
@@ -96,7 +96,7 @@ object SystemStatusBarMoreHooks {
                 null
             } ?: ModuleHelper.getNextMIUIAlarmTime(mContext)
             var finalNextTime = nextTime
-            if (finalNextTime == 0L) finalNextTime = Helpers.getNextStockAlarmTime(mContext)
+            if (finalNextTime == 0L) finalNextTime = HookUtils.getNextStockAlarmTime(mContext)
 
             var diffMSec = finalNextTime - nowTime
             if (diffMSec < 0) diffMSec += 7 * 24 * 60 * 60 * 1000

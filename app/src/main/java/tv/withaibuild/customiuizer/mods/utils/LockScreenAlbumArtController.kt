@@ -21,7 +21,7 @@ import android.util.LruCache
 import android.view.View
 import android.view.WindowManager
 import tv.withaibuild.customiuizer.mods.GlobalActions
-import tv.withaibuild.customiuizer.utils.Helpers
+import tv.withaibuild.customiuizer.utils.HookUtils
 import java.lang.ref.WeakReference
 import java.util.concurrent.ArrayBlockingQueue
 import java.util.concurrent.Future
@@ -387,7 +387,7 @@ object LockScreenAlbumArtController {
         if (!isCurrent(generation)) return null
 
         val blurred =
-            if (blur > 0) Helpers.fastBlur(downsampled, blur + 1) ?: downsampled else downsampled
+            if (blur > 0) HookUtils.fastBlur(downsampled, blur + 1) ?: downsampled else downsampled
         if (!isCurrent(generation)) return null
 
         val processed = drawAlbumArt(

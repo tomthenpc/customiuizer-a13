@@ -22,6 +22,7 @@ import tv.withaibuild.customiuizer.mods.utils.HookerClassHelper.BeforeHookCallba
 import tv.withaibuild.customiuizer.mods.utils.HookerClassHelper.MethodHook
 import tv.withaibuild.customiuizer.mods.utils.ModuleHelper
 import tv.withaibuild.customiuizer.mods.utils.XposedHelpers
+import tv.withaibuild.customiuizer.utils.HookUtils
 
 object SystemLockScreenMoreHooks {
 
@@ -159,7 +160,7 @@ object SystemLockScreenMoreHooks {
         val wifiManager = mContext.getSystemService(Context.WIFI_SERVICE) as? WifiManager ?: return false
         if (!wifiManager.isWifiEnabled) return false
         val trustedNetworks = MainModule.mPrefs.getStringSet("system_noscreenlock_wifi")
-        return tv.withaibuild.customiuizer.utils.Helpers.containsStringPair(trustedNetworks, wifiManager.connectionInfo?.bssid)
+        return HookUtils.containsStringPair(trustedNetworks, wifiManager.connectionInfo?.bssid)
     }
 
     @SuppressLint("MissingPermission")
@@ -178,7 +179,7 @@ object SystemLockScreenMoreHooks {
                 val mDevice = XposedHelpers.getObjectField(device, "mDevice") as? BluetoothDevice ?: continue
                 if (mDevice.bondState == BluetoothDevice.BOND_BONDED &&
                     XposedHelpers.callMethod(device, "isConnected") as? Boolean == true &&
-                    tv.withaibuild.customiuizer.utils.Helpers.containsStringPair(trustedDevices, mDevice.address)
+                    HookUtils.containsStringPair(trustedDevices, mDevice.address)
                 ) return true
             }
         } catch (t: Throwable) {
@@ -406,7 +407,7 @@ object SystemLockScreenMoreHooks {
                                 if (mDevice != null) deviceList.add(mDevice)
                             }
                             updateIntent.putParcelableArrayListExtra("device_list", deviceList)
-                            updateIntent.setPackage(tv.withaibuild.customiuizer.utils.Helpers.modulePkg)
+                            updateIntent.setPackage(HookUtils.modulePkg)
                             mContext.sendBroadcast(updateIntent)
                         }
                     }

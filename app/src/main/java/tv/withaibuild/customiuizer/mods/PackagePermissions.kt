@@ -7,7 +7,7 @@ import io.github.libxposed.api.XposedModuleInterface.SystemServerStartingParam
 import tv.withaibuild.customiuizer.mods.utils.HookerClassHelper.MethodHook
 import tv.withaibuild.customiuizer.mods.utils.ModuleHelper
 import tv.withaibuild.customiuizer.mods.utils.XposedHelpers
-import tv.withaibuild.customiuizer.utils.Helpers
+import tv.withaibuild.customiuizer.utils.HookUtils
 import java.util.concurrent.ConcurrentHashMap
 
 object PackagePermissions {
@@ -16,7 +16,7 @@ object PackagePermissions {
 
     @JvmStatic
     fun hook(lpparam: SystemServerStartingParam) {
-        systemPackages.add(Helpers.modulePkg)
+        systemPackages.add(HookUtils.modulePkg)
 
         ModuleHelper.hookAllMethods(
             "com.android.server.pm.permission.PermissionManagerServiceImpl",

@@ -32,7 +32,7 @@ import tv.withaibuild.customiuizer.mods.utils.ModuleHelper
 import tv.withaibuild.customiuizer.mods.utils.ResourceHooks
 import tv.withaibuild.customiuizer.mods.utils.StepCounterController
 import tv.withaibuild.customiuizer.mods.utils.XposedHelpers
-import tv.withaibuild.customiuizer.utils.Helpers
+import tv.withaibuild.customiuizer.utils.HookUtils
 import tv.withaibuild.customiuizer.utils.PrefMap
 import java.lang.ref.WeakReference
 import java.util.ArrayList
@@ -408,18 +408,18 @@ object SystemUIStatusBarHooks {
             iconTextView.typeface = Typeface.DEFAULT_BOLD
         }
         var leftMargin = MainModule.mPrefs.getInt("system_statusbar_${subKey}_leftmargin", 8)
-        leftMargin = Helpers.dp2px(leftMargin * 0.5f).toInt()
+        leftMargin = HookUtils.dp2px(leftMargin * 0.5f).toInt()
         var rightMargin = MainModule.mPrefs.getInt("system_statusbar_${subKey}_rightmargin", 8)
-        rightMargin = Helpers.dp2px(rightMargin * 0.5f).toInt()
+        rightMargin = HookUtils.dp2px(rightMargin * 0.5f).toInt()
         var topMargin = 0
         val verticalOffset = MainModule.mPrefs.getInt("system_statusbar_${subKey}_verticaloffset", 8)
         if (verticalOffset != 8) {
-            topMargin = Helpers.dp2px((verticalOffset - 8) * 0.5f).toInt()
+            topMargin = HookUtils.dp2px((verticalOffset - 8) * 0.5f).toInt()
         }
         iconTextView.setPaddingRelative(leftMargin, topMargin, rightMargin, 0)
         val fixedWidth = MainModule.mPrefs.getInt("system_statusbar_${subKey}_fixedcontent_width", 10)
         if (fixedWidth > 10) {
-            lp.width = Helpers.dp2px(fixedWidth.toFloat()).toInt()
+            lp.width = HookUtils.dp2px(fixedWidth.toFloat()).toInt()
         }
         iconTextView.layoutParams = lp
 
@@ -678,7 +678,7 @@ object SystemUIStatusBarHooks {
                                     val stylePart = if (selectedIconStyle.isNotEmpty()) "_$selectedIconStyle" else ""
                                     val colorPart = if (colorMode.isNotEmpty()) "_$colorMode" else ""
                                     val dualIconResName = "statusbar_signal_${slot}_${lvl}${colorPart}${stylePart}"
-                                    val iconResId = modRes.getIdentifier(dualIconResName, "drawable", Helpers.modulePkg)
+                                    val iconResId = modRes.getIdentifier(dualIconResName, "drawable", HookUtils.modulePkg)
                                     dualSignalResMap[dualIconResName] = MainModule.resHooks.addResource(dualIconResName, iconResId)
                                 }
                             }
@@ -1204,13 +1204,13 @@ object SystemUIStatusBarHooks {
         }
 
         var leftMargin = MainModule.mPrefs.getInt("system_netspeed_leftmargin", 0)
-        leftMargin = Helpers.dp2px(leftMargin * 0.5f).toInt()
+        leftMargin = HookUtils.dp2px(leftMargin * 0.5f).toInt()
         var rightMargin = MainModule.mPrefs.getInt("system_netspeed_rightmargin", 0)
-        rightMargin = Helpers.dp2px(rightMargin * 0.5f).toInt()
+        rightMargin = HookUtils.dp2px(rightMargin * 0.5f).toInt()
         var topMargin = 0
         val verticalOffset = MainModule.mPrefs.getInt("system_netspeed_verticaloffset", 8)
         if (verticalOffset != 8) {
-            topMargin = Helpers.dp2px((verticalOffset - 8) * 0.5f).toInt()
+            topMargin = HookUtils.dp2px((verticalOffset - 8) * 0.5f).toInt()
         }
         iconTextView.setPaddingRelative(leftMargin, topMargin, rightMargin, 0)
 
@@ -1317,9 +1317,9 @@ object SystemUIStatusBarHooks {
         val horizHook = object : MethodHook() {
             override fun before(param: BeforeHookCallback) {
                 val leftMargin = MainModule.mPrefs.getInt("system_statusbar_horizmargin_left", 16)
-                val marginLeft = Helpers.dp2px(leftMargin.toFloat())
+                val marginLeft = HookUtils.dp2px(leftMargin.toFloat())
                 val rightMargin = MainModule.mPrefs.getInt("system_statusbar_horizmargin_right", 16)
-                val marginRight = Helpers.dp2px(rightMargin.toFloat())
+                val marginRight = HookUtils.dp2px(rightMargin.toFloat())
                 param.returnAndSkip(android.util.Pair(marginLeft.toInt(), marginRight.toInt()))
             }
         }

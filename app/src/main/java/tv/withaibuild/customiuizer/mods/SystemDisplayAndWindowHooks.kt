@@ -7,7 +7,7 @@ import android.os.Handler
 import android.view.animation.AlphaAnimation
 import android.view.animation.Animation
 import android.view.animation.Interpolator
-import tv.withaibuild.customiuizer.utils.Helpers
+import tv.withaibuild.customiuizer.utils.HookUtils
 import io.github.libxposed.api.XposedModuleInterface.PackageReadyParam
 import io.github.libxposed.api.XposedModuleInterface.SystemServerStartingParam
 import tv.withaibuild.customiuizer.MainModule
@@ -243,8 +243,8 @@ object SystemDisplayAndWindowHooks {
         val minPct = MainModule.mPrefs.getInt("system_autobrightness_min", 25)
         val maxPct = MainModule.mPrefs.getInt("system_autobrightness_max", 75)
 
-        val min = Helpers.convertGammaToLinearFloat(minPct / 100f * backlightMaxLevel, backlightMaxLevel, mMinimumBacklight, mMaximumBacklight)
-        val max = Helpers.convertGammaToLinearFloat(maxPct / 100f * backlightMaxLevel, backlightMaxLevel, mMinimumBacklight, mMaximumBacklight)
+        val min = HookUtils.convertGammaToLinearFloat(minPct / 100f * backlightMaxLevel, backlightMaxLevel, mMinimumBacklight, mMaximumBacklight)
+        val max = HookUtils.convertGammaToLinearFloat(maxPct / 100f * backlightMaxLevel, backlightMaxLevel, mMinimumBacklight, mMaximumBacklight)
 
         if (limitmin && v < min) v = min
         if (limitmax && v > max) v = max

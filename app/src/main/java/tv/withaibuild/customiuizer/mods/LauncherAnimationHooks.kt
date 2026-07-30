@@ -13,7 +13,7 @@ import tv.withaibuild.customiuizer.mods.utils.HookerClassHelper.BeforeHookCallba
 import tv.withaibuild.customiuizer.mods.utils.HookerClassHelper.MethodHook
 import tv.withaibuild.customiuizer.mods.utils.ModuleHelper
 import tv.withaibuild.customiuizer.mods.utils.XposedHelpers
-import tv.withaibuild.customiuizer.utils.Helpers
+import tv.withaibuild.customiuizer.utils.HookUtils
 
 @Suppress("UNUSED_PARAMETER")
 object LauncherAnimationHooks {
@@ -26,7 +26,7 @@ object LauncherAnimationHooks {
     fun FixAnimHook(lpparam: PackageReadyParam) {
         ModuleHelper.hookAllMethods("com.miui.home.launcher.animate.SpringAnimator", lpparam.classLoader, "getSpringForce", object : MethodHook() {
             override fun before(param: BeforeHookCallback) {
-                var scale = Helpers.getAnimationScale(2)
+                var scale = HookUtils.getAnimationScale(2)
                 if (scale == 1.0f) return
                 if (scale == 0f) scale = 0.01f
                 param.getArgs()[2] = scaleStiffness(param.getArgs()[2] as? Float ?: 0f, scale)
@@ -35,7 +35,7 @@ object LauncherAnimationHooks {
 
         val hook = object : MethodHook() {
             override fun before(param: BeforeHookCallback) {
-                var scale = Helpers.getAnimationScale(2)
+                var scale = HookUtils.getAnimationScale(2)
                 if (scale == 1.0f) return
                 if (scale == 0f) scale = 0.01f
                 XposedHelpers.setFloatField(param.getThisObject(), "mCenterXStiffness", scaleStiffness(XposedHelpers.getFloatField(param.getThisObject(), "mCenterXStiffness"), scale))

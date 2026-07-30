@@ -56,7 +56,7 @@ import tv.withaibuild.customiuizer.mods.utils.XposedHelpers.findClass
 import tv.withaibuild.customiuizer.mods.utils.XposedHelpers.findClassIfExists
 import tv.withaibuild.customiuizer.mods.utils.XposedHelpers.findMethodExact
 import java.lang.System.currentTimeMillis
-import tv.withaibuild.customiuizer.utils.Helpers
+import tv.withaibuild.customiuizer.utils.HookUtils
 
 @Suppress("WeakerAccess")
 object GlobalActions {
@@ -675,7 +675,7 @@ object GlobalActions {
                 val header = XposedHelpers.newInstance(headerCls)
                 XposedHelpers.setLongField(header, "id", 666)
                 val intent = Intent()
-                intent.setClassName(Helpers.modulePkg, "tv.withaibuild.customiuizer.MainActivity")
+                intent.setClassName(HookUtils.modulePkg, "tv.withaibuild.customiuizer.MainActivity")
                 intent.putExtra("from.settings", true)
                 XposedHelpers.setObjectField(header, "intent", intent)
                 XposedHelpers.setIntField(header, "iconRes", settingsIconResId)
@@ -730,7 +730,7 @@ object GlobalActions {
                         val newPkg = mTopActivity.packageName
                         if (newPkg != pkgName) {
                             pkgName = newPkg
-                            Settings.Global.putString(mContext.contentResolver, Helpers.modulePkg + ".foreground.package", pkgName)
+                            Settings.Global.putString(mContext.contentResolver, HookUtils.modulePkg + ".foreground.package", pkgName)
                         }
                     }
                 })
@@ -742,7 +742,7 @@ object GlobalActions {
                             if (fullScreen != isFullScreen) {
                                 mBgHandler.post {
                                     ModuleHelper.guarded("GlobalActions.foregroundFullscreenWriter") {
-                                        Settings.Global.putInt(mContext.contentResolver, Helpers.modulePkg + ".foreground.fullscreen", if (fullScreen) 1 else 0)
+                                        Settings.Global.putInt(mContext.contentResolver, HookUtils.modulePkg + ".foreground.fullscreen", if (fullScreen) 1 else 0)
                                     }
                                 }
                             }
@@ -1049,6 +1049,6 @@ object GlobalActions {
         am.dispatchMediaKeyEvent(KeyEvent(KeyEvent.ACTION_UP, keyCode))
 
         if (vibrate && MainModule.mPrefs.getBoolean("controls_volumemedia_vibrate", true))
-            Helpers.performStrongVibration(mContext, MainModule.mPrefs.getBoolean("controls_volumemedia_vibrate_ignore"))
+            HookUtils.performStrongVibration(mContext, MainModule.mPrefs.getBoolean("controls_volumemedia_vibrate_ignore"))
     }
 }

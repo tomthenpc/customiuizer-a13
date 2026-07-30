@@ -15,7 +15,7 @@ import tv.withaibuild.customiuizer.mods.utils.HookerClassHelper.BeforeHookCallba
 import tv.withaibuild.customiuizer.mods.utils.HookerClassHelper.MethodHook
 import tv.withaibuild.customiuizer.mods.utils.ModuleHelper
 import tv.withaibuild.customiuizer.mods.utils.XposedHelpers
-import tv.withaibuild.customiuizer.utils.Helpers
+import tv.withaibuild.customiuizer.utils.HookUtils
 
 @Suppress("UNUSED_PARAMETER")
 object LauncherLayoutHooks {
@@ -219,7 +219,7 @@ object LauncherLayoutHooks {
         val opt = MainModule.mPrefs.getInt("launcher_dock_topmargin", 0)
         ModuleHelper.findAndHookMethod("com.miui.home.launcher.DeviceConfig", lpparam.classLoader, "calcHotSeatsMarginTop", Context::class.java, Boolean::class.javaPrimitiveType, object : MethodHook() {
             override fun before(param: BeforeHookCallback) {
-                param.returnAndSkip(Math.round(Helpers.dp2px(opt.toFloat())))
+                param.returnAndSkip(Math.round(HookUtils.dp2px(opt.toFloat())))
             }
         })
     }
@@ -229,7 +229,7 @@ object LauncherLayoutHooks {
         val opt = MainModule.mPrefs.getInt("launcher_dock_bottommargin", 0)
         ModuleHelper.findAndHookMethod("com.miui.home.launcher.DeviceConfig", lpparam.classLoader, "calcHotSeatsMarginBottom", Context::class.java, Boolean::class.javaPrimitiveType, Boolean::class.javaPrimitiveType, object : MethodHook() {
             override fun before(param: BeforeHookCallback) {
-                param.returnAndSkip(Math.round(Helpers.dp2px(opt.toFloat())))
+                param.returnAndSkip(Math.round(HookUtils.dp2px(opt.toFloat())))
             }
         })
     }
@@ -239,7 +239,7 @@ object LauncherLayoutHooks {
         val opt = MainModule.mPrefs.getInt("launcher_topmargin", 0) - 21
         val hook = object : MethodHook() {
             override fun before(param: BeforeHookCallback) {
-                param.returnAndSkip(Math.round(Helpers.dp2px(opt.toFloat())))
+                param.returnAndSkip(Math.round(HookUtils.dp2px(opt.toFloat())))
             }
         }
 
@@ -258,7 +258,7 @@ object LauncherLayoutHooks {
             override fun before(param: BeforeHookCallback) {
                 val resKey = param.getArgs()[1] as? String ?: return
                 if ("slide_bar_margin_top" == resKey) {
-                    param.returnAndSkip(Math.round(Helpers.dp2px(opt.toFloat())))
+                    param.returnAndSkip(Math.round(HookUtils.dp2px(opt.toFloat())))
                 }
             }
         })

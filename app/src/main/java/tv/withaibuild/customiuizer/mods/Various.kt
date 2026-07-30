@@ -61,7 +61,7 @@ import tv.withaibuild.customiuizer.mods.utils.HookerClassHelper.BeforeHookCallba
 import tv.withaibuild.customiuizer.mods.utils.HookerClassHelper.MethodHook
 import tv.withaibuild.customiuizer.mods.utils.ModuleHelper
 import tv.withaibuild.customiuizer.mods.utils.XposedHelpers
-import tv.withaibuild.customiuizer.utils.Helpers
+import tv.withaibuild.customiuizer.utils.HookUtils
 import java.lang.ref.WeakReference
 import java.lang.reflect.Field
 import java.lang.reflect.Method
@@ -611,7 +611,7 @@ object Various {
                 gridView?.numColumns = 4
                 val params = gridView?.layoutParams as? LinearLayout.LayoutParams
                 if (params != null) {
-                    params.rightMargin = Helpers.dp2px(16f).toInt()
+                    params.rightMargin = HookUtils.dp2px(16f).toInt()
                     params.leftMargin = params.rightMargin
                     gridView.layoutParams = params
                 }
@@ -884,14 +884,14 @@ object Various {
                 if ((param.result as? Boolean != true) || param.args[0]?.toString() != "INCOMING") return
                 val mContext = XposedHelpers.getObjectField(param.thisObject, "mContext") as? Context ?: return
                 if (MainModule.mPrefs.getStringAsInt("various_showcallui", 0) == 3) {
-                    val topPackage = Settings.Global.getString(mContext.contentResolver, Helpers.modulePkg + ".foreground.package")
+                    val topPackage = Settings.Global.getString(mContext.contentResolver, HookUtils.modulePkg + ".foreground.package")
                     if (topPackage != null && topPackage != "com.miui.home") {
                         return
                     }
                 }
 
                 if (MainModule.mPrefs.getStringAsInt("various_showcallui", 0) == 1) {
-                    val fullScreen = Settings.Global.getInt(mContext.contentResolver, Helpers.modulePkg + ".foreground.fullscreen", 0)
+                    val fullScreen = Settings.Global.getInt(mContext.contentResolver, HookUtils.modulePkg + ".foreground.fullscreen", 0)
                     if (fullScreen == 1) return
                 }
 

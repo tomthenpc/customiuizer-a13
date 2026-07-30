@@ -57,7 +57,7 @@ import tv.withaibuild.customiuizer.mods.utils.HookerClassHelper.BeforeHookCallba
 import tv.withaibuild.customiuizer.mods.utils.HookerClassHelper.MethodHook
 import tv.withaibuild.customiuizer.mods.utils.ModuleHelper
 import tv.withaibuild.customiuizer.mods.utils.XposedHelpers
-import tv.withaibuild.customiuizer.utils.Helpers
+import tv.withaibuild.customiuizer.utils.HookUtils
 import java.io.ByteArrayOutputStream
 import java.io.File
 import java.lang.reflect.InvocationHandler
@@ -333,7 +333,7 @@ object SystemAudioAndVisualAndMoreHooks {
 
             var timestamp = ModuleHelper.getNextMIUIAlarmTime(mContext)
             if (timestamp == 0L && MainModule.mPrefs.getBoolean("system_lsalarm_all"))
-                timestamp = Helpers.getNextStockAlarmTime(mContext)
+                timestamp = HookUtils.getNextStockAlarmTime(mContext)
             if (timestamp == 0L) return
 
             val alarmStr = StringBuilder()
@@ -559,7 +559,7 @@ object SystemAudioAndVisualAndMoreHooks {
 
         val mKeyguardBottomArea = XposedHelpers.getObjectField(param.thisObject, "mBottomAreaView") as? ViewGroup ?: return
         val mIndicationArea = XposedHelpers.getObjectField(mKeyguardBottomArea, "mIndicationArea") as? ViewGroup ?: return
-        if (!Helpers.isReallyVisible(mIndicationArea)) return
+        if (!HookUtils.isReallyVisible(mIndicationArea)) return
 
         val coord = IntArray(2)
         mIndicationArea.getLocationOnScreen(coord)

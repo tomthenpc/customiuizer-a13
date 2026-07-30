@@ -1,7 +1,7 @@
 package tv.withaibuild.customiuizer.mods.utils;
 
 import static tv.withaibuild.customiuizer.mods.utils.XposedHelpers.log;
-import static tv.withaibuild.customiuizer.utils.Helpers.getAppName;
+import static tv.withaibuild.customiuizer.utils.HookUtils.getAppName;
 
 import android.annotation.SuppressLint;
 import android.app.Application;
@@ -38,7 +38,7 @@ import tv.withaibuild.customiuizer.R;
 import tv.withaibuild.customiuizer.mods.GlobalActions;
 import tv.withaibuild.customiuizer.mods.utils.HookerClassHelper.CustomMethodUnhooker;
 import tv.withaibuild.customiuizer.mods.utils.HookerClassHelper.MethodHook;
-import tv.withaibuild.customiuizer.utils.Helpers;
+import tv.withaibuild.customiuizer.utils.HookUtils;
 
 
 public class ModuleHelper {
@@ -558,7 +558,7 @@ public class ModuleHelper {
 
     public static synchronized Context getModuleContext(Context context, Configuration config) throws Throwable {
         if (mModuleContext == null) {
-            mModuleContext = context.createPackageContext(Helpers.modulePkg, Context.CONTEXT_IGNORE_SECURITY).createDeviceProtectedStorageContext();
+            mModuleContext = context.createPackageContext(HookUtils.modulePkg, Context.CONTEXT_IGNORE_SECURITY).createDeviceProtectedStorageContext();
         }
         return config == null ? mModuleContext : mModuleContext.createConfigurationContext(config);
     }
@@ -574,9 +574,9 @@ public class ModuleHelper {
             int action = MainModule.mPrefs.getInt(key + "_action", 1);
             Context modCtx = getModuleContext(context);
             if (action == 8)
-                return Helpers.getAppIcon(modCtx, MainModule.mPrefs.getString(key + "_app", ""));
+                return HookUtils.getAppIcon(modCtx, MainModule.mPrefs.getString(key + "_app", ""));
             else if (action == 20)
-                return Helpers.getAppIcon(modCtx, MainModule.mPrefs.getString(key + "_activity", ""), true);
+                return HookUtils.getAppIcon(modCtx, MainModule.mPrefs.getString(key + "_activity", ""), true);
             else
                 return null;
         } catch (Throwable t) {
