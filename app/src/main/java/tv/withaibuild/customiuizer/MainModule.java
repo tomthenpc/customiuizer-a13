@@ -280,8 +280,8 @@ public class MainModule extends XposedModule {
         if (mPrefs.getBoolean("controls_fingerprintwake")) Controls.NoFingerprintWakeHook(lpparam);
         if (mPrefs.getBoolean("various_disableapp")) Various.AppsDisableServiceHook(lpparam);
         if (mPrefs.getBoolean("system_disableanynotif")) SystemNotificationMoreHooks.DisableAnyNotificationBlockHook(lpparam);
-        if (mPrefs.getStringAsInt("system_allrotations2", 1) > 1) SystemAudioAndVisualAndMoreHooks.AllRotationsHook(lpparam);
-        if (mPrefs.getStringAsInt("system_nolightuponcharges", 1) > 1) SystemDisplayAndWindowHooks.NoLightUpOnChargeHook(lpparam);
+        if (mPrefs.getStringAsInt("system_allrotations2", 1) > 1) FeatureCatalog.installById("allRotations", serverRuntime);
+        if (mPrefs.getStringAsInt("system_nolightuponcharges", 1) > 1) FeatureCatalog.installById("noLightUpOnCharge", serverRuntime);
         if (mPrefs.getStringAsInt("system_autogroupnotif", 1) > 1) SystemNotificationAndShareHooks.AutoGroupNotificationsHook(lpparam);
         if (mPrefs.getStringAsInt("system_vibration", 1) > 1) SystemNotificationMoreHooks.SelectiveVibrationHook(lpparam);
         if (mPrefs.getStringAsInt("system_blocktoasts", 1) > 1) SystemStatusBarAndClockHooks.SelectiveToastsHook(lpparam);
@@ -513,8 +513,8 @@ public class MainModule extends XposedModule {
             if (mPrefs.getBoolean("system_hideqs")) SystemAudioAndVisualAndMoreHooks.HideQSHook(lpparam);
             if (mPrefs.getBoolean("system_lsalarm")) SystemAudioAndVisualAndMoreHooks.LockScreenAlarmHook(lpparam);
             if (mPrefs.getBoolean("system_statusbarcontrols")) SystemUIControlCenterHooks.StatusBarGesturesHook(lpparam);
-            if (mPrefs.getBoolean("system_nonetspeedseparator")) SystemUIStatusBarHooks.NoNetworkSpeedSeparatorHook(lpparam);
-            if (mPrefs.getBoolean("system_statusbaricons_clock")) SystemUIStatusBarHooks.HideIconsClockHook(lpparam);
+            if (mPrefs.getBoolean("system_nonetspeedseparator")) FeatureCatalog.installById("noNetworkSpeedSeparator", systemuiRuntime);
+            if (mPrefs.getBoolean("system_statusbaricons_clock")) FeatureCatalog.installById("hideIconsClock", systemuiRuntime);
             if (mPrefs.getBoolean("system_detailednetspeed_fakedualrow")
                 || (!mPrefs.getBoolean("system_detailednetspeed")
                     && (mPrefs.getBoolean("system_detailednetspeed_secunit")
@@ -797,7 +797,7 @@ public class MainModule extends XposedModule {
         if (mPrefs.getBoolean("launcher_fixlaunch")) FeatureCatalog.installById("fixAppInfoLaunch", launcherRuntime);
         FeatureCatalog.installById("noWidgetOnly", launcherRuntime);
         if (mPrefs.getBoolean("launcher_sensorportrait")) LauncherAnimationHooks.ReverseLauncherPortraitHook(lpparam);
-        if (mPrefs.getBoolean("launcher_unlockhotseat")) LauncherLayoutHooks.MaxHotseatIconsCountHook(lpparam);
+        if (mPrefs.getBoolean("launcher_unlockhotseat")) FeatureCatalog.installById("maxHotseatIconsCount", launcherRuntime);
         if (mPrefs.getStringAsInt("launcher_closefolders", 1) > 1) { LauncherFolderHooks.CloseFolderOnLaunchHook(lpparam); closeOnLaunch = true; }
         if ("com.miui.home".equals(lpparam.getPackageName())) {
             if (mPrefs.getInt("system_recents_blur", 100) < 100) LauncherAnimationHooks.RecentsBlurRatioHook(lpparam);
@@ -815,7 +815,7 @@ public class MainModule extends XposedModule {
                 || mPrefs.getInt("launcher_spread_action", 1) != 1) LauncherFolderHooks.PrivacyFolderHook(lpparam);
             if (mPrefs.getBoolean("system_hidefromrecents")) LauncherSystemHooks.HideFromRecentsHook(lpparam);
             if (mPrefs.getInt("launcher_folderblur_opacity", 0) > 0) LauncherFolderHooks.FolderBlurHook(lpparam);
-            if (mPrefs.getBoolean("launcher_nounlockanim")) LauncherAnimationHooks.NoUnlockAnimationHook(lpparam);
+            if (mPrefs.getBoolean("launcher_nounlockanim")) FeatureCatalog.installById("noUnlockAnimation", launcherRuntime);
             if (mPrefs.getBoolean("launcher_nozoomanim")) LauncherAnimationHooks.NoZoomAnimationHook(lpparam);
             if (mPrefs.getBoolean("launcher_oldlaunchanim")) LauncherAnimationHooks.UseOldLaunchAnimationHook(lpparam);
             if (mPrefs.getBoolean("launcher_closedrawer")) { LauncherSystemHooks.CloseDrawerOnLaunchHook(lpparam); closeOnLaunch = true; }

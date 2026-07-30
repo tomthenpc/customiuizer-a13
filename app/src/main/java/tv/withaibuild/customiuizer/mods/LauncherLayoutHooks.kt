@@ -296,8 +296,8 @@ object LauncherLayoutHooks {
 
     @JvmStatic
     fun MaxHotseatIconsCountHook(lpparam: PackageReadyParam) {
-        val methodName = if (lpparam.packageName == "com.mi.android.globallauncher") "getHotseatCount" else "getHotseatMaxCount"
-        ModuleHelper.findAndHookMethod("com.miui.home.launcher.DeviceConfig", lpparam.classLoader, methodName, HookerClassHelper.returnConstant(666))
+        ModuleHelper.findAndHookMethodSilently("com.miui.home.launcher.DeviceConfig", lpparam.classLoader, "getHotseatCount", HookerClassHelper.returnConstant(666))
+        ModuleHelper.findAndHookMethodSilently("com.miui.home.launcher.DeviceConfig", lpparam.classLoader, "getHotseatMaxCount", HookerClassHelper.returnConstant(666))
     }
 
     @JvmStatic
