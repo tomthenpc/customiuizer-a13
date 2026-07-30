@@ -20,7 +20,7 @@ from pathlib import Path
 
 REPO_ROOT = Path(__file__).resolve().parent.parent
 MAIN_MODULE = REPO_ROOT / "app" / "src" / "main" / "java" / "tv" / "withaibuild" / "customiuizer" / "MainModule.java"
-BASELINE_REF = "origin/devin/r13.8-install-evidence-correctness"
+BASELINE_REF = "origin/devin/r13.8-catalog-expansion-batch-1"
 
 
 def extract_catalog_tokens(text: str) -> list[str]:
@@ -40,6 +40,12 @@ def extract_catalog_tokens(text: str) -> list[str]:
         "muteVisibleNotifications",
         "hideLauncherTitles",
         "fixAppInfoLaunch",
+        "hideProximityWarning",
+        "clearAllTasks",
+        "hideDismissView",
+        "hideLockScreenHint",
+        "folderColumns",
+        "titleTopMargin",
     }
     direct_to_id = {
         "PackagePermissions.hook": "packagePermissions",
@@ -56,6 +62,12 @@ def extract_catalog_tokens(text: str) -> list[str]:
         "SystemNotificationMoreHooks.MuteVisibleNotificationsHook": "muteVisibleNotifications",
         "LauncherIconHooks.HideTitlesHook": "hideLauncherTitles",
         "LauncherSystemHooks.FixAppInfoLaunchHook": "fixAppInfoLaunch",
+        "SystemDisplayAndWindowHooks.HideProximityWarningHook": "hideProximityWarning",
+        "SystemAudioAndVisualAndMoreHooks.ClearAllTasksHook": "clearAllTasks",
+        "SystemUINotificationHooks.HideDismissViewHook": "hideDismissView",
+        "SystemLockScreenMoreHooks.HideLockScreenHintHook": "hideLockScreenHint",
+        "LauncherFolderHooks.FolderColumnsHook": "folderColumns",
+        "LauncherIconHooks.TitleTopMarginHook": "titleTopMargin",
     }
 
     tokens = []
@@ -105,6 +117,12 @@ def main() -> int:
         "muteVisibleNotifications",
         "hideLauncherTitles",
         "fixAppInfoLaunch",
+        "hideProximityWarning",
+        "clearAllTasks",
+        "hideDismissView",
+        "hideLockScreenHint",
+        "folderColumns",
+        "titleTopMargin",
     }
 
     if set(baseline_tokens) != catalog_feature_ids:
