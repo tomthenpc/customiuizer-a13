@@ -76,10 +76,6 @@ object LauncherFolderHooks {
             ModuleHelper.findAndHookMethod("com.miui.home.launcher.Launcher", lpparam.classLoader, "registerBroadcastReceivers", object : MethodHook() {
                 override fun after(param: AfterHookCallback) {
                     val act = param.getThisObject() as? Activity ?: return
-                    val oldReceiver = XposedHelpers.getAdditionalInstanceField(act, "secretCodeReceiver") as? BroadcastReceiver
-                    if (oldReceiver != null) {
-                        try { act.unregisterReceiver(oldReceiver) } catch (_: Throwable) {}
-                    }
                     val intentFilter = IntentFilter()
                     intentFilter.addAction("android.telephony.action.SECRET_CODE")
                     intentFilter.addDataAuthority("233233", null)
@@ -98,8 +94,13 @@ object LauncherFolderHooks {
                             }
                         }
                     }
-                    act.registerReceiver(secretCodeReceiver, intentFilter, Context.RECEIVER_NOT_EXPORTED)
-                    XposedHelpers.setAdditionalInstanceField(act, "secretCodeReceiver", secretCodeReceiver)
+                    ModuleHelper.registerModuleReceiver(
+                        act,
+                        "launcher.secretCodeReceiver",
+                        secretCodeReceiver,
+                        intentFilter,
+                        Context.RECEIVER_NOT_EXPORTED
+                    )
                 }
             })
         }

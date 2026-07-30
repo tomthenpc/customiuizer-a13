@@ -119,13 +119,6 @@ object SystemStatusBarMoreHooks {
                 XposedHelpers.setAdditionalInstanceField(thisObject, "mNextAlarmTime", ModuleHelper.getNextMIUIAlarmTime(mContext))
                 val resolver = mContext.contentResolver
 
-                val oldObserver = XposedHelpers.getAdditionalInstanceField(thisObject, "alarmObserver") as? ContentObserver
-                if (oldObserver != null) resolver.unregisterContentObserver(oldObserver)
-                val oldReceiver = XposedHelpers.getAdditionalInstanceField(thisObject, "alarmReceiver") as? BroadcastReceiver
-                if (oldReceiver != null) {
-                    try { mContext.unregisterReceiver(oldReceiver) } catch (ignored: Throwable) {}
-                }
-
                 val alarmObserver = object : ContentObserver(Handler(mContext.mainLooper)) {
                     override fun onChange(selfChange: Boolean) {
                         ModuleHelper.guarded {
@@ -136,7 +129,14 @@ object SystemStatusBarMoreHooks {
                     }
                 }
                 resolver.registerContentObserver(Settings.System.getUriFor("next_alarm_clock_formatted"), false, alarmObserver)
-                XposedHelpers.setAdditionalInstanceField(thisObject, "alarmObserver", alarmObserver)
+                ModuleHelper.replaceModuleRegistration(
+                    "systemui.alarmObserver",
+                    Runnable {
+                        ModuleHelper.guarded("SystemStatusBarMoreHooks.unregisterAlarmObserver") {
+                            resolver.unregisterContentObserver(alarmObserver)
+                        }
+                    }
+                )
 
                 val filter = IntentFilter().apply {
                     addAction("android.intent.action.TIME_TICK")
@@ -151,8 +151,13 @@ object SystemStatusBarMoreHooks {
                         }
                     }
                 }
-                mContext.registerReceiver(alarmReceiver, filter, Context.RECEIVER_NOT_EXPORTED)
-                XposedHelpers.setAdditionalInstanceField(thisObject, "alarmReceiver", alarmReceiver)
+                ModuleHelper.registerModuleReceiver(
+                    mContext,
+                    "systemui.alarmReceiver",
+                    alarmReceiver,
+                    filter,
+                    Context.RECEIVER_NOT_EXPORTED
+                )
             }
         })
 

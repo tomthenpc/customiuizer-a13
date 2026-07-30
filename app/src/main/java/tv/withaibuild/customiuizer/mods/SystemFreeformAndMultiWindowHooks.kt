@@ -142,10 +142,6 @@ object SystemFreeformAndMultiWindowHooks {
             override fun after(param: AfterHookCallback) {
                 val service = param.thisObject
                 val mContext = XposedHelpers.getObjectField(service, "mContext") as? Context ?: return
-                val oldReceiver = XposedHelpers.getAdditionalInstanceField(service, "freeFormReceiver") as? android.content.BroadcastReceiver
-                if (oldReceiver != null) {
-                    try { mContext.unregisterReceiver(oldReceiver) } catch (ignored: Throwable) {}
-                }
                 val intentFilter = IntentFilter()
                 intentFilter.addAction(GlobalActions.ACTION_PREFIX + "SetFreeFormPackage")
                 val mReceiver = object : android.content.BroadcastReceiver() {
@@ -159,8 +155,13 @@ object SystemFreeformAndMultiWindowHooks {
                         }
                     }
                 }
-                mContext.registerReceiver(mReceiver, intentFilter, Context.RECEIVER_EXPORTED)
-                XposedHelpers.setAdditionalInstanceField(service, "freeFormReceiver", mReceiver)
+                ModuleHelper.registerModuleReceiver(
+                    mContext,
+                    "system.freeFormPackageReceiver",
+                    mReceiver,
+                    intentFilter,
+                    Context.RECEIVER_EXPORTED
+                )
             }
         })
 
@@ -322,10 +323,6 @@ object SystemFreeformAndMultiWindowHooks {
                 val MiuiMultiWindowAdapter = XposedHelpers.findClass("android.util.MiuiMultiWindowAdapter", lpparam.classLoader)
                 val blackList = XposedHelpers.getStaticObjectField(MiuiMultiWindowAdapter, "FREEFORM_BLACK_LIST") as? MutableList<String> ?: return
                 blackList.clear()
-                val oldReceiver = XposedHelpers.getAdditionalInstanceField(service, "freeformFullscreenReceiver") as? android.content.BroadcastReceiver
-                if (oldReceiver != null) {
-                    try { mContext.unregisterReceiver(oldReceiver) } catch (ignored: Throwable) {}
-                }
                 val freeformReceiver = object : android.content.BroadcastReceiver() {
                     override fun onReceive(context: Context, intent: Intent) {
                         ModuleHelper.guarded {
@@ -336,8 +333,13 @@ object SystemFreeformAndMultiWindowHooks {
                         }
                     }
                 }
-                mContext.registerReceiver(freeformReceiver, IntentFilter("miui.intent.action_launch_fullscreen_from_freeform"), Context.RECEIVER_EXPORTED)
-                XposedHelpers.setAdditionalInstanceField(service, "freeformFullscreenReceiver", freeformReceiver)
+                ModuleHelper.registerModuleReceiver(
+                    mContext,
+                    "system.freeFormFullscreenReceiver",
+                    freeformReceiver,
+                    IntentFilter("miui.intent.action_launch_fullscreen_from_freeform"),
+                    Context.RECEIVER_EXPORTED
+                )
             }
         })
 

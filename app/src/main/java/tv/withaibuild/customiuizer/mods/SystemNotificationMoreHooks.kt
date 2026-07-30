@@ -186,7 +186,7 @@ object SystemNotificationMoreHooks {
         ModuleHelper.findAndHookMethod("com.android.server.vibrator.VibratorManagerService", lpparam.classLoader, "systemReady", object : MethodHook() {
             override fun after(param: AfterHookCallback) {
                 XposedHelpers.setAdditionalInstanceField(param.thisObject, "mVibrationMode", MainModule.mPrefs.getString("system_vibration", "1").toInt())
-                ModuleHelper.observePreferenceChange(object : ModuleHelper.PreferenceObserver {
+                ModuleHelper.observePreferenceChange("system.vibrationMode", param.thisObject, object : ModuleHelper.PreferenceObserver {
                     override fun onChange(key: String) {
                         if (key.endsWith("system_vibration")) {
                             XposedHelpers.setAdditionalInstanceField(param.thisObject, "mVibrationMode", MainModule.mPrefs.getStringAsInt("system_vibration", 1))
@@ -195,7 +195,7 @@ object SystemNotificationMoreHooks {
                 })
 
                 XposedHelpers.setAdditionalInstanceField(param.thisObject, "mVibrationApps", MainModule.mPrefs.getStringSet("system_vibration_apps"))
-                ModuleHelper.observePreferenceChange(object : ModuleHelper.PreferenceObserver {
+                ModuleHelper.observePreferenceChange("system.vibrationApps", param.thisObject, object : ModuleHelper.PreferenceObserver {
                     override fun onChange(key: String) {
                         if (key.contains("system_vibration_apps")) {
                             XposedHelpers.setAdditionalInstanceField(param.thisObject, "mVibrationApps", MainModule.mPrefs.getStringSet("system_vibration_apps"))
@@ -490,7 +490,7 @@ object SystemNotificationMoreHooks {
             override fun after(param: AfterHookCallback) {
                 val scale = MainModule.mPrefs.getInt("system_other_wallpaper_scale", 6) / 10.0f
                 XposedHelpers.setObjectField(param.thisObject, "mMaxWallpaperScale", scale)
-                ModuleHelper.observePreferenceChange(object : ModuleHelper.PreferenceObserver {
+                ModuleHelper.observePreferenceChange("system.wallpaperScale", param.thisObject, object : ModuleHelper.PreferenceObserver {
                     override fun onChange(key: String) {
                         if (key.contains("system_other_wallpaper_scale")) {
                             val value = MainModule.mPrefs.getInt("system_other_wallpaper_scale", 6)

@@ -808,10 +808,6 @@ object GlobalActions {
                 intentFilter.addAction(ACTION_PREFIX + "ForceClose")
                 intentFilter.addAction(ACTION_PREFIX + "SaveLastMusicPausedTime")
                 val thisObject = param.getThisObject()
-                val oldWindowReceiver = XposedHelpers.getAdditionalInstanceField(thisObject, "globalActionsWindowReceiver") as? BroadcastReceiver
-                if (oldWindowReceiver != null) {
-                    try { mContext.unregisterReceiver(oldWindowReceiver) } catch (_: Throwable) {}
-                }
                 val superCls = thisObject.javaClass.superclass ?: return
                 val windowReceiver = object : BroadcastReceiver() {
                     override fun onReceive(context: Context, intent: Intent) {
@@ -851,8 +847,13 @@ object GlobalActions {
                         }
                     }
                 }
-                mContext.registerReceiver(windowReceiver, intentFilter, Context.RECEIVER_EXPORTED)
-                XposedHelpers.setAdditionalInstanceField(thisObject, "globalActionsWindowReceiver", windowReceiver)
+                ModuleHelper.registerModuleReceiver(
+                    mContext,
+                    "system.globalActionsWindowReceiver",
+                    windowReceiver,
+                    intentFilter,
+                    Context.RECEIVER_EXPORTED
+                )
             }
         })
     }

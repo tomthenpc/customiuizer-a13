@@ -63,6 +63,32 @@ class BatteryIndicator @JvmOverloads constructor(
     private var mLimited = false
     private var mTintColor = Color.argb(153, 0, 0, 0)
     private var mStatusBar: Any? = null
+    private var callbacksEnabled = false
+
+    private val preferenceObserver = ModuleHelper.PreferenceObserver { key ->
+        if (!mTesting && key != null && key.contains("pref_key_system_batteryindicator")) {
+            Handler(Looper.getMainLooper()).post {
+                ModuleHelper.guarded("BatteryIndicator.preferenceUpdate") {
+                    updateParameters()
+                    update()
+                }
+            }
+        }
+    }
+
+    private val testReceiver = object : BroadcastReceiver() {
+        override fun onReceive(context: Context, intent: Intent) {
+            ModuleHelper.guarded("BatteryIndicator.testReceiver") {
+                if ("miui.intent.TAKE_SCREENSHOT" == intent.action) {
+                    val finished = intent.getBooleanExtra("IsFinished", true)
+                    updateScreenShotState(!finished)
+                } else {
+                    removeCallbacks(step)
+                    startTest()
+                }
+            }
+        }
+    }
 
     enum class ColorMode {
         DUMMY, DISCRETE, GRADUAL, RAINBOW
@@ -87,43 +113,37 @@ class BatteryIndicator @JvmOverloads constructor(
         }
 
         updateParameters()
-        ModuleHelper.observePreferenceChange(object : ModuleHelper.PreferenceObserver {
-            override fun onChange(key: String?) {
-                try {
-                    if (!mTesting && key != null && key.contains("pref_key_system_batteryindicator")) {
-                        Handler(Looper.getMainLooper()).post {
-                            updateParameters()
-                            update()
-                        }
-                    }
-                } catch (t: Throwable) {
-                    XposedHelpers.log(t)
-                }
-            }
-        })
+        callbacksEnabled = true
+        registerCallbacks()
+    }
 
+    private fun registerCallbacks() {
+        ModuleHelper.observePreferenceChange("systemui.batteryIndicator", this, preferenceObserver)
         val intentFilter = IntentFilter()
         intentFilter.addAction("tv.withaibuild.customiuizer.mods.BatteryIndicatorTest")
         if (MainModule.mPrefs.getBoolean("system_hidestatusbar_whenscreenshot")) {
             intentFilter.addAction("miui.intent.TAKE_SCREENSHOT")
         }
-        context.registerReceiver(
-            object : BroadcastReceiver() {
-                override fun onReceive(context: Context, intent: Intent) {
-                    ModuleHelper.guarded("BatteryIndicator.testReceiver") {
-                        if ("miui.intent.TAKE_SCREENSHOT" == intent.action) {
-                            val finished = intent.getBooleanExtra("IsFinished", true)
-                            updateScreenShotState(!finished)
-                        } else {
-                            removeCallbacks(step)
-                            startTest()
-                        }
-                    }
-                }
-            },
+        ModuleHelper.registerOwnedReceiver(
+            context,
+            this,
+            "systemui.batteryIndicatorReceiver",
+            testReceiver,
             intentFilter,
             Context.RECEIVER_EXPORTED
         )
+    }
+
+    override fun onAttachedToWindow() {
+        super.onAttachedToWindow()
+        if (callbacksEnabled) registerCallbacks()
+    }
+
+    override fun onDetachedFromWindow() {
+        ModuleHelper.removePreferenceObserver("systemui.batteryIndicator", this)
+        ModuleHelper.unregisterOwnedReceiver("systemui.batteryIndicatorReceiver", this)
+        removeCallbacks(step)
+        super.onDetachedFromWindow()
     }
 
     private val step = StepRunnable()

@@ -113,10 +113,6 @@ object LauncherSystemHooks {
             override fun after(param: AfterHookCallback) {
                 val recents = param.getThisObject() ?: return
                 val mContext = XposedHelpers.callMethod(recents, "getContext") as? Context ?: return
-                val oldReceiver = XposedHelpers.getAdditionalInstanceField(recents, "dismissRecentsReceiver") as? BroadcastReceiver
-                if (oldReceiver != null) {
-                    try { mContext.unregisterReceiver(oldReceiver) } catch (_: Throwable) {}
-                }
                 val dismissRecentsReceiver = object : BroadcastReceiver() {
                     override fun onReceive(context: Context, intent: Intent) {
                         try {
@@ -129,8 +125,13 @@ object LauncherSystemHooks {
                         }
                     }
                 }
-                mContext.registerReceiver(dismissRecentsReceiver, IntentFilter(GlobalActions.ACTION_PREFIX + "dismissRecentsWhenFreeWindowOpen"), Context.RECEIVER_EXPORTED)
-                XposedHelpers.setAdditionalInstanceField(recents, "dismissRecentsReceiver", dismissRecentsReceiver)
+                ModuleHelper.registerModuleReceiver(
+                    mContext,
+                    "launcher.dismissRecentsReceiver",
+                    dismissRecentsReceiver,
+                    IntentFilter(GlobalActions.ACTION_PREFIX + "dismissRecentsWhenFreeWindowOpen"),
+                    Context.RECEIVER_EXPORTED
+                )
             }
         })
 

@@ -29,10 +29,6 @@ object SystemSettingsMoreHooks {
             override fun after(param: AfterHookCallback) {
                 val service = param.thisObject
                 val mContext = XposedHelpers.getObjectField(service, "mContext") as? Context ?: return
-                val oldReceiver = XposedHelpers.getAdditionalInstanceField(service, "usbStateReceiver") as? BroadcastReceiver
-                if (oldReceiver != null) {
-                    try { mContext.unregisterReceiver(oldReceiver) } catch (ignored: Throwable) {}
-                }
                 val usbStateReceiver = object : BroadcastReceiver() {
                     override fun onReceive(context: Context, intent: Intent) {
                         try {
@@ -56,8 +52,13 @@ object SystemSettingsMoreHooks {
                         }
                     }
                 }
-                mContext.registerReceiver(usbStateReceiver, IntentFilter("android.hardware.usb.action.USB_STATE"), Context.RECEIVER_NOT_EXPORTED)
-                XposedHelpers.setAdditionalInstanceField(service, "usbStateReceiver", usbStateReceiver)
+                ModuleHelper.registerModuleReceiver(
+                    mContext,
+                    "system.usbStateReceiver",
+                    usbStateReceiver,
+                    IntentFilter("android.hardware.usb.action.USB_STATE"),
+                    Context.RECEIVER_NOT_EXPORTED
+                )
             }
         })
 

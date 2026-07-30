@@ -5,8 +5,10 @@ import static tv.withaibuild.customiuizer.utils.Helpers.getAppName;
 
 import android.annotation.SuppressLint;
 import android.app.Application;
+import android.content.BroadcastReceiver;
 import android.content.Context;
 import android.content.Intent;
+import android.content.IntentFilter;
 import android.content.res.Configuration;
 import android.content.res.Resources;
 import android.graphics.drawable.Drawable;
@@ -20,12 +22,15 @@ import android.text.format.DateFormat;
 import androidx.annotation.Nullable;
 
 import java.lang.reflect.Method;
+import java.lang.ref.WeakReference;
 import java.text.SimpleDateFormat;
 import java.util.Calendar;
-import java.util.HashSet;
 import java.util.Locale;
 import java.util.TimeZone;
 import java.util.concurrent.Callable;
+import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.CopyOnWriteArrayList;
+import java.util.concurrent.CopyOnWriteArraySet;
 
 import io.github.libxposed.api.XposedModuleInterface;
 import tv.withaibuild.customiuizer.MainModule;
@@ -44,7 +49,24 @@ public class ModuleHelper {
     @SuppressLint("StaticFieldLeak")
     public static Context mModuleContext = null;
 
-    static HashSet<PreferenceObserver> prefObservers = new HashSet<PreferenceObserver>();
+    static CopyOnWriteArraySet<PreferenceObserver> prefObservers = new CopyOnWriteArraySet<PreferenceObserver>();
+    private static final ConcurrentHashMap<String, PreferenceObserver> keyedPrefObservers =
+        new ConcurrentHashMap<String, PreferenceObserver>();
+
+    private static class OwnedPreferenceObserver {
+        final String key;
+        final WeakReference<Object> ownerRef;
+        final WeakReference<PreferenceObserver> observerRef;
+
+        OwnedPreferenceObserver(String key, Object owner, PreferenceObserver observer) {
+            this.key = key;
+            this.ownerRef = new WeakReference<Object>(owner);
+            this.observerRef = new WeakReference<PreferenceObserver>(observer);
+        }
+    }
+
+    private static final CopyOnWriteArrayList<OwnedPreferenceObserver> ownedPrefObservers =
+        new CopyOnWriteArrayList<OwnedPreferenceObserver>();
 
     private static Class<?> sActivityThreadClass;
     private static Method sCurrentApplicationMethod;
@@ -306,16 +328,184 @@ public class ModuleHelper {
     }
 
     public static void observePreferenceChange(PreferenceObserver prefObserver) {
-        prefObservers.add(prefObserver);
+        if (prefObserver != null) prefObservers.add(prefObserver);
+    }
+
+    public static void observePreferenceChange(String key, PreferenceObserver prefObserver) {
+        if (prefObserver == null) {
+            keyedPrefObservers.remove(key);
+        } else {
+            keyedPrefObservers.put(key, prefObserver);
+        }
+    }
+
+    public static void observePreferenceChange(String key, Object owner, PreferenceObserver prefObserver) {
+        if (owner == null) {
+            observePreferenceChange(key, prefObserver);
+            return;
+        }
+        dropOwnedObserver(key, owner);
+        if (prefObserver != null)
+            ownedPrefObservers.add(new OwnedPreferenceObserver(key, owner, prefObserver));
+    }
+
+    public static void removePreferenceObserver(String key, Object owner) {
+        if (owner == null) {
+            keyedPrefObservers.remove(key);
+            return;
+        }
+        dropOwnedObserver(key, owner);
+    }
+
+    private static void dropOwnedObserver(@Nullable String key, @Nullable Object owner) {
+        ownedPrefObservers.removeIf(registration -> {
+            Object registrationOwner = registration.ownerRef.get();
+            PreferenceObserver observer = registration.observerRef.get();
+            if (registrationOwner == null || observer == null) return true;
+            return registrationOwner == owner && registration.key.equals(key);
+        });
     }
 
     public static void handlePreferenceChanged(@Nullable String key) {
-        for (PreferenceObserver prefObserver:prefObservers) {
+        for (PreferenceObserver prefObserver : prefObservers) {
             try {
                 prefObserver.onChange(key);
             } catch (Throwable t) {
                 log(t);
             }
+        }
+        for (PreferenceObserver prefObserver : keyedPrefObservers.values()) {
+            try {
+                prefObserver.onChange(key);
+            } catch (Throwable t) {
+                log(t);
+            }
+        }
+        boolean sawCleared = false;
+        for (OwnedPreferenceObserver registration : ownedPrefObservers) {
+            PreferenceObserver prefObserver = registration.observerRef.get();
+            if (registration.ownerRef.get() == null || prefObserver == null) {
+                sawCleared = true;
+                continue;
+            }
+            try {
+                prefObserver.onChange(key);
+            } catch (Throwable t) {
+                log(t);
+            }
+        }
+        if (sawCleared) dropOwnedObserver(null, null);
+    }
+
+    private static class ReceiverRegistration {
+        final Context context;
+        final BroadcastReceiver receiver;
+
+        ReceiverRegistration(Context context, BroadcastReceiver receiver) {
+            Context applicationContext = context.getApplicationContext();
+            this.context = applicationContext != null ? applicationContext : context;
+            this.receiver = receiver;
+        }
+    }
+
+    private static final ConcurrentHashMap<String, ReceiverRegistration> moduleReceivers =
+        new ConcurrentHashMap<String, ReceiverRegistration>();
+
+    public static boolean registerModuleReceiver(
+        Context context,
+        String key,
+        BroadcastReceiver receiver,
+        IntentFilter filter,
+        int flags
+    ) {
+        unregisterModuleReceiver(key);
+        Context registrationContext = context.getApplicationContext();
+        if (registrationContext == null) registrationContext = context;
+        try {
+            registrationContext.registerReceiver(receiver, filter, flags);
+            moduleReceivers.put(key, new ReceiverRegistration(registrationContext, receiver));
+            return true;
+        } catch (Throwable t) {
+            log(key, t);
+            return false;
+        }
+    }
+
+    public static void unregisterModuleReceiver(String key) {
+        ReceiverRegistration previous = moduleReceivers.remove(key);
+        if (previous != null) releaseReceiver(previous);
+    }
+
+    private static class OwnedReceiverRegistration extends ReceiverRegistration {
+        final WeakReference<Object> ownerRef;
+
+        OwnedReceiverRegistration(Context context, Object owner, BroadcastReceiver receiver) {
+            super(context, receiver);
+            this.ownerRef = new WeakReference<Object>(owner);
+        }
+    }
+
+    private static final ConcurrentHashMap<String, CopyOnWriteArrayList<OwnedReceiverRegistration>> ownedReceivers =
+        new ConcurrentHashMap<String, CopyOnWriteArrayList<OwnedReceiverRegistration>>();
+
+    public static boolean registerOwnedReceiver(
+        Context context,
+        Object owner,
+        String key,
+        BroadcastReceiver receiver,
+        IntentFilter filter,
+        int flags
+    ) {
+        CopyOnWriteArrayList<OwnedReceiverRegistration> registrations =
+            ownedReceivers.computeIfAbsent(key, ignored -> new CopyOnWriteArrayList<OwnedReceiverRegistration>());
+        registrations.removeIf(registration -> {
+            Object registrationOwner = registration.ownerRef.get();
+            if (registrationOwner != null && registrationOwner != owner) return false;
+            releaseReceiver(registration);
+            return true;
+        });
+        Context registrationContext = context.getApplicationContext();
+        if (registrationContext == null) registrationContext = context;
+        try {
+            registrationContext.registerReceiver(receiver, filter, flags);
+            registrations.add(new OwnedReceiverRegistration(registrationContext, owner, receiver));
+            return true;
+        } catch (Throwable t) {
+            log(key, t);
+            return false;
+        }
+    }
+
+    public static void unregisterOwnedReceiver(String key, Object owner) {
+        CopyOnWriteArrayList<OwnedReceiverRegistration> registrations = ownedReceivers.get(key);
+        if (registrations == null) return;
+        registrations.removeIf(registration -> {
+            Object registrationOwner = registration.ownerRef.get();
+            if (registrationOwner != null && registrationOwner != owner) return false;
+            releaseReceiver(registration);
+            return true;
+        });
+        if (registrations.isEmpty()) ownedReceivers.remove(key, registrations);
+    }
+
+    private static final ConcurrentHashMap<String, Runnable> moduleRegistrations =
+        new ConcurrentHashMap<String, Runnable>();
+
+    public static void replaceModuleRegistration(String key, Runnable cleanup) {
+        Runnable previous = moduleRegistrations.put(key, cleanup);
+        if (previous != null) guarded("ModuleHelper.replaceRegistration:" + key, previous);
+    }
+
+    public static void clearModuleRegistration(String key) {
+        Runnable previous = moduleRegistrations.remove(key);
+        if (previous != null) guarded("ModuleHelper.clearRegistration:" + key, previous);
+    }
+
+    private static void releaseReceiver(ReceiverRegistration registration) {
+        try {
+            registration.context.unregisterReceiver(registration.receiver);
+        } catch (Throwable ignored) {
+            // The old Context may already have torn down the registration.
         }
     }
 

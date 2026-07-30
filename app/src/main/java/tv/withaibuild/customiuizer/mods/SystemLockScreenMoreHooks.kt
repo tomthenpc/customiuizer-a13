@@ -229,10 +229,6 @@ object SystemLockScreenMoreHooks {
             override fun after(param: AfterHookCallback) {
                 val controller = param.thisObject
                 val mContext = XposedHelpers.callMethod(controller, "getContext") as? Context ?: return
-                val oldReceiver = XposedHelpers.getAdditionalInstanceField(controller, "strongAuthReceiver") as? BroadcastReceiver
-                if (oldReceiver != null) {
-                    try { mContext.unregisterReceiver(oldReceiver) } catch (ignored: Throwable) {}
-                }
                 val strongAuthReceiver = object : BroadcastReceiver() {
                     override fun onReceive(context: Context, intent: Intent) {
                         try {
@@ -243,8 +239,13 @@ object SystemLockScreenMoreHooks {
                         }
                     }
                 }
-                mContext.registerReceiver(strongAuthReceiver, IntentFilter(GlobalActions.ACTION_PREFIX + "UnlockStrongAuth"), Context.RECEIVER_NOT_EXPORTED)
-                XposedHelpers.setAdditionalInstanceField(controller, "strongAuthReceiver", strongAuthReceiver)
+                ModuleHelper.registerModuleReceiver(
+                    mContext,
+                    "systemui.strongAuthReceiver",
+                    strongAuthReceiver,
+                    IntentFilter(GlobalActions.ACTION_PREFIX + "UnlockStrongAuth"),
+                    Context.RECEIVER_NOT_EXPORTED
+                )
             }
         })
 
@@ -270,10 +271,6 @@ object SystemLockScreenMoreHooks {
             override fun after(param: AfterHookCallback) {
                 val mediator = param.thisObject
                 val mContext = XposedHelpers.getObjectField(mediator, "mContext") as? Context ?: return
-                val oldReceiver = XposedHelpers.getAdditionalInstanceField(mediator, "smartLockReceiver") as? BroadcastReceiver
-                if (oldReceiver != null) {
-                    try { mContext.unregisterReceiver(oldReceiver) } catch (ignored: Throwable) {}
-                }
                 val filter = IntentFilter()
                 filter.addAction(WifiManager.NETWORK_STATE_CHANGED_ACTION)
                 filter.addAction(GlobalActions.ACTION_PREFIX + "UnlockSetForced")
@@ -328,8 +325,13 @@ object SystemLockScreenMoreHooks {
                         }
                     }
                 }
-                mContext.registerReceiver(smartLockReceiver, filter, Context.RECEIVER_EXPORTED)
-                XposedHelpers.setAdditionalInstanceField(mediator, "smartLockReceiver", smartLockReceiver)
+                ModuleHelper.registerModuleReceiver(
+                    mContext,
+                    "systemui.smartLockReceiver",
+                    smartLockReceiver,
+                    filter,
+                    Context.RECEIVER_EXPORTED
+                )
             }
         })
 
@@ -393,10 +395,6 @@ object SystemLockScreenMoreHooks {
             override fun after(param: AfterHookCallback) {
                 val controller = param.thisObject
                 val mContext = param.args[0] as? Context ?: return
-                val oldReceiver = XposedHelpers.getAdditionalInstanceField(controller, "fetchCachedDevicesReceiver") as? BroadcastReceiver
-                if (oldReceiver != null) {
-                    try { mContext.unregisterReceiver(oldReceiver) } catch (ignored: Throwable) {}
-                }
                 val fetchCachedDevicesReceiver = object : BroadcastReceiver() {
                     override fun onReceive(context: Context, intent: Intent) {
                         ModuleHelper.guarded {
@@ -413,8 +411,13 @@ object SystemLockScreenMoreHooks {
                         }
                     }
                 }
-                mContext.registerReceiver(fetchCachedDevicesReceiver, IntentFilter(GlobalActions.ACTION_PREFIX + "FetchCachedDevices"), Context.RECEIVER_EXPORTED)
-                XposedHelpers.setAdditionalInstanceField(controller, "fetchCachedDevicesReceiver", fetchCachedDevicesReceiver)
+                ModuleHelper.registerModuleReceiver(
+                    mContext,
+                    "systemui.fetchCachedDevicesReceiver",
+                    fetchCachedDevicesReceiver,
+                    IntentFilter(GlobalActions.ACTION_PREFIX + "FetchCachedDevices"),
+                    Context.RECEIVER_EXPORTED
+                )
             }
         })
 

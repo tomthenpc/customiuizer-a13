@@ -22,10 +22,6 @@ object SystemUIScreenshotHooks {
             override fun after(param: AfterHookCallback) {
                 val organizer = param.getThisObject() ?: return
                 val mContext = XposedHelpers.getObjectField(organizer, "mContext") as? Context ?: return
-                val oldReceiver = XposedHelpers.getAdditionalInstanceField(organizer, "pipScreenshotReceiver") as? BroadcastReceiver
-                if (oldReceiver != null) {
-                    try { mContext.unregisterReceiver(oldReceiver) } catch (_: Throwable) {}
-                }
                 val intentFilter = IntentFilter("miui.intent.TAKE_SCREENSHOT")
                 val pipScreenshotReceiver = object : BroadcastReceiver() {
                     override fun onReceive(context: Context, intent: Intent) {
@@ -44,8 +40,13 @@ object SystemUIScreenshotHooks {
                         }
                     }
                 }
-                mContext.registerReceiver(pipScreenshotReceiver, intentFilter, Context.RECEIVER_EXPORTED)
-                XposedHelpers.setAdditionalInstanceField(organizer, "pipScreenshotReceiver", pipScreenshotReceiver)
+                ModuleHelper.registerModuleReceiver(
+                    mContext,
+                    "systemui.pipScreenshotReceiver",
+                    pipScreenshotReceiver,
+                    intentFilter,
+                    Context.RECEIVER_EXPORTED
+                )
             }
         })
     }
@@ -55,10 +56,6 @@ object SystemUIScreenshotHooks {
         ModuleHelper.findAndHookMethod("com.android.systemui.statusbar.phone.MiuiCollapsedStatusBarFragment", lpparam.classLoader, "initMiuiViewsOnViewCreated", View::class.java, object : MethodHook() {
             override fun after(param: AfterHookCallback) {
                 val view = param.getArgs()[0] as? View ?: return
-                val oldBr = XposedHelpers.getAdditionalInstanceField(view, "hideStatusBarScreenshotReceiver") as? BroadcastReceiver
-                if (oldBr != null) {
-                    try { view.context.unregisterReceiver(oldBr) } catch (_: Throwable) {}
-                }
                 val br = object : BroadcastReceiver() {
                     override fun onReceive(context: Context, intent: Intent) {
                         ModuleHelper.guarded("SystemUIScreenshotHooks.statusBarReceiver") {
@@ -69,8 +66,13 @@ object SystemUIScreenshotHooks {
                         }
                     }
                 }
-                view.context.registerReceiver(br, IntentFilter("miui.intent.TAKE_SCREENSHOT"), Context.RECEIVER_EXPORTED)
-                XposedHelpers.setAdditionalInstanceField(view, "hideStatusBarScreenshotReceiver", br)
+                ModuleHelper.registerModuleReceiver(
+                    view.context,
+                    "systemui.statusBarScreenshotReceiver",
+                    br,
+                    IntentFilter("miui.intent.TAKE_SCREENSHOT"),
+                    Context.RECEIVER_EXPORTED
+                )
             }
         })
     }
@@ -81,10 +83,6 @@ object SystemUIScreenshotHooks {
             var visibleState = 0
             override fun after(param: AfterHookCallback) {
                 val view = XposedHelpers.callMethod(param.getThisObject(), "getView") as? View ?: return
-                val oldBr = XposedHelpers.getAdditionalInstanceField(param.getThisObject(), "hideNavBarScreenshotReceiver") as? BroadcastReceiver
-                if (oldBr != null) {
-                    try { view.context.unregisterReceiver(oldBr) } catch (_: Throwable) {}
-                }
                 val br = object : BroadcastReceiver() {
                     override fun onReceive(context: Context, intent: Intent) {
                         ModuleHelper.guarded("SystemUIScreenshotHooks.navigationBarReceiver") {
@@ -96,8 +94,13 @@ object SystemUIScreenshotHooks {
                         }
                     }
                 }
-                view.context.registerReceiver(br, IntentFilter("miui.intent.TAKE_SCREENSHOT"), Context.RECEIVER_EXPORTED)
-                XposedHelpers.setAdditionalInstanceField(param.getThisObject(), "hideNavBarScreenshotReceiver", br)
+                ModuleHelper.registerModuleReceiver(
+                    view.context,
+                    "systemui.navigationBarScreenshotReceiver",
+                    br,
+                    IntentFilter("miui.intent.TAKE_SCREENSHOT"),
+                    Context.RECEIVER_EXPORTED
+                )
             }
         }
         ModuleHelper.findAndHookMethod("com.android.systemui.navigationbar.NavigationBar", lpparam.classLoader, "onInit", hideNavHook)

@@ -36,10 +36,6 @@ object SystemStatusBarClockAndMoreHooks {
                 val clockController = param.thisObject
                 initSecondTimer(clockController)
                 val mContext = XposedHelpers.getObjectField(clockController, "mContext") as? Context ?: return
-                val oldReceiver = XposedHelpers.getAdditionalInstanceField(clockController, "mUpdateTimeReceiver") as? BroadcastReceiver
-                if (oldReceiver != null) {
-                    try { mContext.unregisterReceiver(oldReceiver) } catch (ignored: Throwable) {}
-                }
                 val timeSetIntent = IntentFilter()
                 timeSetIntent.addAction("android.intent.action.TIME_SET")
                 val mUpdateTimeReceiver = object : BroadcastReceiver() {
@@ -49,8 +45,13 @@ object SystemStatusBarClockAndMoreHooks {
                         }
                     }
                 }
-                mContext.registerReceiver(mUpdateTimeReceiver, timeSetIntent, Context.RECEIVER_NOT_EXPORTED)
-                XposedHelpers.setAdditionalInstanceField(clockController, "mUpdateTimeReceiver", mUpdateTimeReceiver)
+                ModuleHelper.registerModuleReceiver(
+                    mContext,
+                    "systemui.clockTimeSetReceiver",
+                    mUpdateTimeReceiver,
+                    timeSetIntent,
+                    Context.RECEIVER_NOT_EXPORTED
+                )
             }
         }
         if (ccClockTweak || statusbarClockTweak) {

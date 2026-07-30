@@ -91,19 +91,27 @@ object SystemUIMonitorAndTileHooks {
                 if (tileName == "custom_5G") {
                     val mContext = XposedHelpers.getObjectField(param.getThisObject(), "mContext") as? Context ?: return
                     if (mListening) {
+                        val tile = param.getThisObject()
+                        val resolver = mContext.contentResolver
                         val contentObserver = object : ContentObserver(Handler(mContext.mainLooper)) {
                             override fun onChange(selfChange: Boolean) {
                                 ModuleHelper.guarded {
-                                    XposedHelpers.callMethod(param.getThisObject(), "refreshState")
+                                    XposedHelpers.callMethod(tile, "refreshState")
                                 }
                             }
                         }
-                        mContext.contentResolver.registerContentObserver(Settings.Global.getUriFor("fiveg_user_enable"), false, contentObserver)
-                        mContext.contentResolver.registerContentObserver(Settings.Global.getUriFor("dual_nr_enabled"), false, contentObserver)
-                        XposedHelpers.setAdditionalInstanceField(param.getThisObject(), "tileListener", contentObserver)
+                        resolver.registerContentObserver(Settings.Global.getUriFor("fiveg_user_enable"), false, contentObserver)
+                        resolver.registerContentObserver(Settings.Global.getUriFor("dual_nr_enabled"), false, contentObserver)
+                        ModuleHelper.replaceModuleRegistration(
+                            "systemui.custom5gObserver",
+                            Runnable {
+                                ModuleHelper.guarded("SystemUIMonitorAndTileHooks.unregister5gObserver") {
+                                    resolver.unregisterContentObserver(contentObserver)
+                                }
+                            }
+                        )
                     } else {
-                        val contentObserver = XposedHelpers.getAdditionalInstanceField(param.getThisObject(), "tileListener") as? ContentObserver
-                        if (contentObserver != null) mContext.contentResolver.unregisterContentObserver(contentObserver)
+                        ModuleHelper.clearModuleRegistration("systemui.custom5gObserver")
                     }
                 } else if (tileName == "custom_FPS") {
                     if (mListening) {

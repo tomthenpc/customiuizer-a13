@@ -210,7 +210,7 @@ object SystemUIControlCenterHooks {
             override fun before(param: BeforeHookCallback) {
                 blurCollapsed = MainModule.mPrefs.getInt("system_volumeblur_collapsed", 0) / 100f
                 blurExpanded = MainModule.mPrefs.getInt("system_volumeblur_expanded", 0) / 100f
-                ModuleHelper.observePreferenceChange(object : ModuleHelper.PreferenceObserver {
+                ModuleHelper.observePreferenceChange("systemui.volumeBlur", object : ModuleHelper.PreferenceObserver {
                     override fun onChange(key: String) {
                         try {
                             if (key == "system_volumeblur_collapsed") blurCollapsed = MainModule.mPrefs.getInt(key, 0) / 100f

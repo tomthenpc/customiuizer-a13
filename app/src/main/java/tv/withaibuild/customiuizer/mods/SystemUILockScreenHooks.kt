@@ -143,10 +143,6 @@ object SystemUILockScreenHooks {
                     view.alpha = 1.0f
 
                     val mContext = view.context
-                    val oldReceiver = XposedHelpers.getAdditionalInstanceField(panel, "albumArtReceiver") as? BroadcastReceiver
-                    if (oldReceiver != null) {
-                        try { mContext.unregisterReceiver(oldReceiver) } catch (_: Throwable) {}
-                    }
                     val intentFilter = IntentFilter(GlobalActions.EVENT_PREFIX + "UPDATE_LS_ALBUM_ART")
                     val albumArtReceiver = object : BroadcastReceiver() {
                         override fun onReceive(context: Context, intent: Intent) {
@@ -161,8 +157,13 @@ object SystemUILockScreenHooks {
                             }
                         }
                     }
-                    mContext.registerReceiver(albumArtReceiver, intentFilter, Context.RECEIVER_NOT_EXPORTED)
-                    XposedHelpers.setAdditionalInstanceField(panel, "albumArtReceiver", albumArtReceiver)
+                    ModuleHelper.registerModuleReceiver(
+                        mContext,
+                        "systemui.albumArtReceiver",
+                        albumArtReceiver,
+                        intentFilter,
+                        Context.RECEIVER_NOT_EXPORTED
+                    )
                 }
             }
         })
@@ -581,10 +582,6 @@ object SystemUILockScreenHooks {
         val hook = object : MethodHook() {
             override fun after(param: AfterHookCallback) {
                 val mContext = XposedHelpers.getObjectField(param.getThisObject(), "mContext") as? Context ?: return
-                val oldReceiver = XposedHelpers.getAdditionalInstanceField(param.getThisObject(), "mAfterUnlockReceiver") as? BroadcastReceiver
-                if (oldReceiver != null) {
-                    try { mContext.unregisterReceiver(oldReceiver) } catch (_: Throwable) {}
-                }
                 val mAfterUnlockReceiver = object : BroadcastReceiver() {
                     @Suppress("UNCHECKED_CAST")
                     override fun onReceive(context: Context, intent: Intent) {
@@ -629,8 +626,13 @@ object SystemUILockScreenHooks {
                         }
                     }
                 }
-                mContext.registerReceiver(mAfterUnlockReceiver, IntentFilter(GlobalActions.ACTION_PREFIX + "HandleQSTileClick"), Context.RECEIVER_EXPORTED)
-                XposedHelpers.setAdditionalInstanceField(param.getThisObject(), "mAfterUnlockReceiver", mAfterUnlockReceiver)
+                ModuleHelper.registerModuleReceiver(
+                    mContext,
+                    "systemui.afterUnlockReceiver",
+                    mAfterUnlockReceiver,
+                    IntentFilter(GlobalActions.ACTION_PREFIX + "HandleQSTileClick"),
+                    Context.RECEIVER_EXPORTED
+                )
             }
         }
 

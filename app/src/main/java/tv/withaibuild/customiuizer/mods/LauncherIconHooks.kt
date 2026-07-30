@@ -39,7 +39,7 @@ object LauncherIconHooks {
     fun RenameShortcutsHook(lpparam: PackageReadyParam) {
         ModuleHelper.findAndHookMethod("com.miui.home.launcher.Launcher", lpparam.classLoader, "onCreate", android.os.Bundle::class.java, object : MethodHook() {
             override fun after(param: AfterHookCallback) {
-                ModuleHelper.observePreferenceChange { key ->
+                ModuleHelper.observePreferenceChange("launcher.renameShortcuts", param.getThisObject()) { key ->
                     try {
                         if (!key.contains("pref_key_launcher_renameapps_list")) return@observePreferenceChange
                         val newTitle = MainModule.mPrefs.getString(key, "")
