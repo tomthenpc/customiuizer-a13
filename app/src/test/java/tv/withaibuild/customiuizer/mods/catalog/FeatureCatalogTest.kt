@@ -15,6 +15,8 @@ import tv.withaibuild.customiuizer.mods.diagnostics.DiagnosticRecorder
 import tv.withaibuild.customiuizer.mods.diagnostics.EnabledState
 import tv.withaibuild.customiuizer.mods.diagnostics.InstallOutcome
 import tv.withaibuild.customiuizer.mods.diagnostics.ReasonCode
+import tv.withaibuild.customiuizer.mods.utils.XposedHelpers
+import tv.withaibuild.customiuizer.utils.FakeXposedInterface
 import tv.withaibuild.customiuizer.utils.PrefMap
 import java.lang.reflect.Proxy
 
@@ -28,6 +30,7 @@ class FeatureCatalogTest {
         logMessages.clear()
         DiagnosticRecorder.clock = { 0L }
         DiagnosticRecorder.logger = { logMessages += it }
+        XposedHelpers.moduleInst = FakeXposedInterface.create()
     }
 
     private fun runtime(
@@ -67,20 +70,20 @@ class FeatureCatalogTest {
     }
 
     @Test
-    fun requestedCompatibleAndDispatchedAreLoggedOnTransition() {
+    fun requestedCompatibleAndInstalledAreLoggedOnTransition() {
         val server = runtime("android")
 
         assertTrue(FeatureCatalog.installById("packagePermissions", server))
 
         val logStates = logMessages.map { extractState(it) }
-        assertEquals(listOf("REQUESTED", "COMPATIBLE", "DISPATCHED"), logStates)
+        assertEquals(listOf("REQUESTED", "COMPATIBLE", "INSTALLED"), logStates)
 
         val snapshot = DiagnosticRecorder.summarize()[DiagnosticIds.PACKAGE_PERMISSIONS]
-        assertEquals(InstallOutcome.DISPATCHED, snapshot!!.installation)
+        assertEquals(InstallOutcome.INSTALLED, snapshot!!.installation)
     }
 
     @Test
-    fun primaryCompatibilityIsRecordedAndDispatched() {
+    fun primaryCompatibilityIsRecordedAndInstalled() {
         val prefs = PrefMap<String, Any?>()
         prefs["pref_key_system_batteryindicator"] = true
         val systemui = runtime("com.android.systemui", prefs)
@@ -89,13 +92,13 @@ class FeatureCatalogTest {
 
         val snapshot = DiagnosticRecorder.summarize()[DiagnosticIds.BATTERY_INDICATOR]
         assertEquals(CompatibilityState.COMPATIBLE, snapshot!!.compatibility)
-        assertEquals(InstallOutcome.DISPATCHED, snapshot.installation)
+        assertEquals(InstallOutcome.INSTALLED, snapshot.installation)
         assertTrue(logMessages.any { it.contains("PRIMARY_TARGET_FOUND") })
-        assertFalse(logMessages.any { it.contains("INSTALLED") })
+        assertTrue(logMessages.any { it.contains("INSTALLED") })
     }
 
     @Test
-    fun fallbackCompatibilityRecordsDegradedThenDispatched() {
+    fun primaryCompatibilityRecordsInstalledForStatusBarClockTweak() {
         val prefs = PrefMap<String, Any?>()
         prefs["pref_key_system_statusbar_clocktweak"] = true
         val systemui = runtime("com.android.systemui", prefs)
@@ -103,16 +106,21 @@ class FeatureCatalogTest {
         assertTrue(FeatureCatalog.installById("statusBarClockTweak", systemui))
 
         val snapshot = DiagnosticRecorder.summarize()[DiagnosticIds.STATUSBAR_CLOCK_TWEAK]
-        assertEquals(CompatibilityState.DEGRADED, snapshot!!.compatibility)
-        assertEquals(InstallOutcome.DISPATCHED, snapshot.installation)
-        assertTrue(logMessages.any { it.contains("FALLBACK_TARGET_FOUND") })
+        assertEquals(CompatibilityState.COMPATIBLE, snapshot!!.compatibility)
+        assertEquals(InstallOutcome.INSTALLED, snapshot.installation)
+        assertTrue(logMessages.any { it.contains("PRIMARY_TARGET_FOUND") })
     }
 
     @Test
     fun incompatibleSkipsInstallerAndRecordsFailed() {
         val prefs = PrefMap<String, Any?>()
         prefs["pref_key_system_autobrightness"] = true
-        val server = runtime("android", prefs)
+
+        @Suppress("UNCHECKED_CAST")
+        MainModule.mPrefs = prefs as PrefMap<String, Any>
+        val classLoader = ClassLoader.getSystemClassLoader().parent
+        val lpparam = newSystemServerParam(classLoader)
+        val server = FeatureCatalog.createRuntime("android", lpparam, classLoader, prefs)
 
         assertFalse(FeatureCatalog.installById("autoBrightnessRange", server))
 
@@ -175,11 +183,11 @@ class FeatureCatalogTest {
         assertTrue(FeatureCatalog.installById("packagePermissions", goodServer))
 
         assertEquals(InstallOutcome.FAILED, DiagnosticRecorder.summarize()[DiagnosticIds.MUFFLED_VIBRATION]!!.installation)
-        assertEquals(InstallOutcome.DISPATCHED, DiagnosticRecorder.summarize()[DiagnosticIds.PACKAGE_PERMISSIONS]!!.installation)
+        assertEquals(InstallOutcome.INSTALLED, DiagnosticRecorder.summarize()[DiagnosticIds.PACKAGE_PERMISSIONS]!!.installation)
     }
 
     @Test
-    fun launcherCanaryAreCompatibleAndDispatched() {
+    fun launcherCanaryAreCompatibleAndInstalled() {
         val prefs = PrefMap<String, Any?>()
         prefs["pref_key_launcher_noclockhide"] = true
         prefs["pref_key_launcher_nowidgetonly"] = true
@@ -190,7 +198,7 @@ class FeatureCatalogTest {
 
         val noClockHide = DiagnosticRecorder.summarize()[DiagnosticIds.NO_CLOCK_HIDE]
         assertEquals(CompatibilityState.COMPATIBLE, noClockHide!!.compatibility)
-        assertEquals(InstallOutcome.DISPATCHED, noClockHide.installation)
+        assertEquals(InstallOutcome.INSTALLED, noClockHide.installation)
     }
 
     @Test

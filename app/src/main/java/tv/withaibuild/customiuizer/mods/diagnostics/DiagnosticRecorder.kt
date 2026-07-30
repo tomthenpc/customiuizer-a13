@@ -41,7 +41,8 @@ object DiagnosticRecorder {
         installation: InstallOutcome? = null,
         reasonCode: ReasonCode,
         detail: String? = null,
-        throwable: Throwable? = null
+        throwable: Throwable? = null,
+        installSummary: InstallSummary? = null
     ) {
         val now = clock()
         val prev = snapshots[id]
@@ -54,7 +55,8 @@ object DiagnosticRecorder {
             detail = detail,
             count = (prev?.count ?: 0L) + 1,
             firstSeenMs = prev?.firstSeenMs ?: now,
-            lastSeenMs = now
+            lastSeenMs = now,
+            installSummary = installSummary ?: prev?.installSummary
         )
         snapshots[id] = snapshot
 
@@ -77,6 +79,12 @@ object DiagnosticRecorder {
                 if (snapshot.enabled != null) append(" enabled=").append(snapshot.enabled.name)
                 if (snapshot.compatibility != null) append(" compat=").append(snapshot.compatibility.name)
                 if (snapshot.installation != null) append(" install=").append(snapshot.installation.name)
+                val summary = snapshot.installSummary
+                if (summary != null) {
+                    append(" required=").append(summary.requiredInstalled).append("/").append(summary.requiredTotal)
+                    append(" optional=").append(summary.optionalInstalled).append("/").append(summary.optionalTotal)
+                    if (summary.fallbackUsed) append(" fallback=true")
+                }
                 append(" reason=").append(reasonCode.name)
                 if (!detail.isNullOrEmpty()) append(" detail=").append(detail)
                 if (throwable != null) append(" | ").append(throwableSummary(throwable))

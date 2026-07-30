@@ -1,3 +1,6 @@
 package com.android.systemui.statusbar.phone
 
-class NotificationIconAreaController
+class NotificationIconAreaController {
+    fun setIconsVisibility() {}
+    fun onDarkChanged() {}
+}

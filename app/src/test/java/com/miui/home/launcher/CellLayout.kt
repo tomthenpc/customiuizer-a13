@@ -1,3 +1,5 @@
 package com.miui.home.launcher
 
-class CellLayout
+class CellLayout {
+    fun setScreenType(type: Int) {}
+}

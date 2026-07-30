@@ -39,6 +39,11 @@ import tv.withaibuild.customiuizer.mods.GlobalActions;
 import tv.withaibuild.customiuizer.mods.utils.HookerClassHelper.CustomMethodUnhooker;
 import tv.withaibuild.customiuizer.mods.utils.HookerClassHelper.MethodHook;
 import tv.withaibuild.customiuizer.utils.HookUtils;
+import java.util.Set;
+
+// Reporting hook infrastructure used only by FeatureCatalog canary installers.
+import tv.withaibuild.customiuizer.mods.utils.HookFailureReason;
+import tv.withaibuild.customiuizer.mods.utils.HookInstaller;
 
 
 public class ModuleHelper {
@@ -109,93 +114,210 @@ public class ModuleHelper {
     }
 
     public static CustomMethodUnhooker findAndHookMethod(String className, ClassLoader classLoader, String methodName, Object... parameterTypesAndCallback) {
+        boolean recording = HookInstaller.isRecording();
         try {
-            CustomMethodUnhooker unhooker = XposedHelpers.findAndHookMethod(className, classLoader, methodName, parameterTypesAndCallback);
+            CustomMethodUnhooker unhooker;
+            if (recording) {
+                Class<?> hookClass = HookInstaller.resolveClassIfRecording(className, classLoader);
+                if (hookClass != null) {
+                    unhooker = XposedHelpers.findAndHookMethod(hookClass, methodName, parameterTypesAndCallback);
+                } else {
+                    // Class not in resolver cache; fall back to the legacy path.
+                    unhooker = XposedHelpers.findAndHookMethod(className, classLoader, methodName, parameterTypesAndCallback);
+                }
+            } else {
+                unhooker = XposedHelpers.findAndHookMethod(className, classLoader, methodName, parameterTypesAndCallback);
+            }
+            if (unhooker != null && recording) {
+                HookInstaller.recordInstall(className, methodName, 1);
+            } else if (recording) {
+                HookInstaller.recordFailure(className, methodName, HookFailureReason.MEMBER_NOT_FOUND);
+            }
             return unhooker;
         } catch (Throwable t) {
+            if (recording) {
+                recordHookFailure(className, methodName, t);
+            }
             log("Failed to hook " + methodName + " method in " + className + ": " + t);
             return null;
         }
     }
 
     public static CustomMethodUnhooker findAndHookMethod(Class<?> clazz, String methodName, Object... parameterTypesAndCallback) {
+        boolean recording = HookInstaller.isRecording();
         try {
             CustomMethodUnhooker unhooker = XposedHelpers.findAndHookMethod(clazz, methodName, parameterTypesAndCallback);
+            if (unhooker != null && recording) {
+                HookInstaller.recordInstall(clazz.getName(), methodName, 1);
+            } else if (recording) {
+                HookInstaller.recordFailure(clazz.getName(), methodName, HookFailureReason.MEMBER_NOT_FOUND);
+            }
             return unhooker;
         } catch (Throwable t) {
+            if (recording) {
+                recordHookFailure(clazz.getName(), methodName, t);
+            }
             log("Failed to hook " + methodName + " method in " + clazz.getCanonicalName() + ": " + t);
             return null;
         }
     }
 
+    private static void recordHookFailure(String className, String methodName, Throwable t) {
+        if (t instanceof NoSuchMethodError) {
+            HookInstaller.recordFailure(className, methodName, HookFailureReason.MEMBER_NOT_FOUND);
+        } else if (t instanceof XposedHelpers.ClassNotFoundError || t.getCause() instanceof ClassNotFoundException) {
+            HookInstaller.recordClassFailure(className, HookFailureReason.CLASS_NOT_FOUND);
+        } else {
+            HookInstaller.recordFailure(className, methodName, HookFailureReason.HOOK_FAILED);
+        }
+    }
+
     @SuppressWarnings("UnusedReturnValue")
     public static boolean findAndHookMethodSilently(String className, ClassLoader classLoader, String methodName, Object... parameterTypesAndCallback) {
+        boolean recording = HookInstaller.isRecording();
         try {
-            XposedHelpers.findAndHookMethod(className, classLoader, methodName, parameterTypesAndCallback);
+            if (recording) {
+                Class<?> hookClass = HookInstaller.resolveClassIfRecording(className, classLoader);
+                if (hookClass != null) {
+                    XposedHelpers.findAndHookMethod(hookClass, methodName, parameterTypesAndCallback);
+                } else {
+                    XposedHelpers.findAndHookMethod(className, classLoader, methodName, parameterTypesAndCallback);
+                }
+            } else {
+                XposedHelpers.findAndHookMethod(className, classLoader, methodName, parameterTypesAndCallback);
+            }
+            if (recording) HookInstaller.recordInstall(className, methodName, 1);
             return true;
         } catch (Throwable t) {
+            if (recording) recordHookFailure(className, methodName, t);
             return false;
         }
     }
 
     @SuppressWarnings("UnusedReturnValue")
     public static boolean findAndHookMethodSilently(Class<?> clazz, String methodName, Object... parameterTypesAndCallback) {
+        boolean recording = HookInstaller.isRecording();
         try {
             XposedHelpers.findAndHookMethod(clazz, methodName, parameterTypesAndCallback);
+            if (recording) HookInstaller.recordInstall(clazz.getName(), methodName, 1);
             return true;
         } catch (Throwable t) {
+            if (recording) recordHookFailure(clazz.getName(), methodName, t);
             return false;
         }
     }
 
     public static CustomMethodUnhooker findAndHookConstructor(String className, ClassLoader classLoader, Object... parameterTypesAndCallback) {
+        boolean recording = HookInstaller.isRecording();
         try {
-            CustomMethodUnhooker unhooker = XposedHelpers.findAndHookConstructor(className, classLoader, parameterTypesAndCallback);
+            CustomMethodUnhooker unhooker;
+            if (recording) {
+                Class<?> hookClass = HookInstaller.resolveClassIfRecording(className, classLoader);
+                if (hookClass != null) {
+                    unhooker = XposedHelpers.findAndHookConstructor(hookClass, parameterTypesAndCallback);
+                } else {
+                    unhooker = XposedHelpers.findAndHookConstructor(className, classLoader, parameterTypesAndCallback);
+                }
+            } else {
+                unhooker = XposedHelpers.findAndHookConstructor(className, classLoader, parameterTypesAndCallback);
+            }
+            if (unhooker != null && recording) {
+                HookInstaller.recordInstall(className, null, 1);
+            } else if (recording) {
+                HookInstaller.recordFailure(className, null, HookFailureReason.MEMBER_NOT_FOUND);
+            }
             return unhooker;
         } catch (Throwable t) {
+            if (recording) recordHookFailure(className, null, t);
             log("Failed to hook constructor in " + className + ": " + t);
             return null;
         }
     }
 
     public static void hookAllConstructors(String className, ClassLoader classLoader, MethodHook callback) {
+        boolean recording = HookInstaller.isRecording();
         try {
-            Class<?> hookClass = XposedHelpers.findClassIfExists(className, classLoader);
-            if (hookClass == null || XposedHelpers.hookAllConstructors(hookClass, callback).isEmpty()) {
+            Class<?> hookClass;
+            if (recording) {
+                hookClass = HookInstaller.resolveClassIfRecording(className, classLoader);
+                if (hookClass == null) hookClass = XposedHelpers.findClassIfExists(className, classLoader);
+            } else {
+                hookClass = XposedHelpers.findClassIfExists(className, classLoader);
+            }
+            if (hookClass == null) {
+                if (recording) HookInstaller.recordClassFailure(className, HookFailureReason.CLASS_NOT_FOUND);
                 log("Failed to hook " + className + " constructor (no matching constructor found)");
+                return;
+            }
+            Set<CustomMethodUnhooker> unhooks = XposedHelpers.hookAllConstructors(hookClass, callback);
+            if (unhooks.isEmpty()) {
+                if (recording) HookInstaller.recordFailure(className, null, HookFailureReason.MEMBER_NOT_FOUND);
+                log("Failed to hook " + className + " constructor (no matching constructor found)");
+            } else if (recording) {
+                HookInstaller.recordInstall(className, null, unhooks.size());
             }
         } catch (Throwable t) {
+            if (recording) recordHookFailure(className, null, t);
             log("Failed to hook " + className + " constructor: " + t);
         }
     }
 
     public static void hookAllConstructors(Class<?> hookClass, MethodHook callback) {
+        boolean recording = HookInstaller.isRecording();
         try {
-            if (XposedHelpers.hookAllConstructors(hookClass, callback).isEmpty()) {
+            Set<CustomMethodUnhooker> unhooks = XposedHelpers.hookAllConstructors(hookClass, callback);
+            if (unhooks.isEmpty()) {
+                if (recording) HookInstaller.recordFailure(hookClass.getName(), null, HookFailureReason.MEMBER_NOT_FOUND);
                 log("Failed to hook " + hookClass.getCanonicalName() + " constructor");
+            } else if (recording) {
+                HookInstaller.recordInstall(hookClass.getName(), null, unhooks.size());
             }
         } catch (Throwable t) {
+            if (recording) recordHookFailure(hookClass.getName(), null, t);
             log(t);
         }
     }
 
     public static void hookAllMethods(String className, ClassLoader classLoader, String methodName, MethodHook callback) {
+        boolean recording = HookInstaller.isRecording();
         try {
-            Class<?> hookClass = XposedHelpers.findClassIfExists(className, classLoader);
-            if (hookClass == null || XposedHelpers.hookAllMethods(hookClass, methodName, callback).isEmpty()) {
+            Class<?> hookClass;
+            if (recording) {
+                hookClass = HookInstaller.resolveClassIfRecording(className, classLoader);
+                if (hookClass == null) hookClass = XposedHelpers.findClassIfExists(className, classLoader);
+            } else {
+                hookClass = XposedHelpers.findClassIfExists(className, classLoader);
+            }
+            if (hookClass == null) {
+                if (recording) HookInstaller.recordClassFailure(className, HookFailureReason.CLASS_NOT_FOUND);
                 log("Failed to hook " + methodName + " method in " + className);
+                return;
+            }
+            Set<CustomMethodUnhooker> unhooks = XposedHelpers.hookAllMethods(hookClass, methodName, callback);
+            if (unhooks.isEmpty()) {
+                if (recording) HookInstaller.recordFailure(className, methodName, HookFailureReason.MEMBER_NOT_FOUND);
+                log("Failed to hook " + methodName + " method in " + className);
+            } else if (recording) {
+                HookInstaller.recordInstall(className, methodName, unhooks.size());
             }
         } catch (Throwable t) {
+            if (recording) recordHookFailure(className, methodName, t);
             log(t);
         }
     }
 
     public static void hookAllMethods(Class<?> hookClass, String methodName, MethodHook callback) {
+        boolean recording = HookInstaller.isRecording();
         try {
-            if (XposedHelpers.hookAllMethods(hookClass, methodName, callback).isEmpty()) {
+            Set<CustomMethodUnhooker> unhooks = XposedHelpers.hookAllMethods(hookClass, methodName, callback);
+            if (unhooks.isEmpty()) {
+                if (recording) HookInstaller.recordFailure(hookClass.getName(), methodName, HookFailureReason.MEMBER_NOT_FOUND);
                 log("Failed to hook " + methodName + " method in " + hookClass.getCanonicalName());
+            } else if (recording) {
+                HookInstaller.recordInstall(hookClass.getName(), methodName, unhooks.size());
             }
         } catch (Throwable t) {
+            if (recording) recordHookFailure(hookClass.getName(), methodName, t);
             log(t);
         }
     }
@@ -211,20 +333,47 @@ public class ModuleHelper {
     }
 
     public static boolean hookAllMethodsSilently(String className, ClassLoader classLoader, String methodName, MethodHook callback) {
+        boolean recording = HookInstaller.isRecording();
         try {
-            Class<?> hookClass = XposedHelpers.findClassIfExists(className, classLoader);
-            boolean hooked = hookClass != null && XposedHelpers.hookAllMethods(hookClass, methodName, callback).size() > 0;
+            Class<?> hookClass;
+            if (recording) {
+                hookClass = HookInstaller.resolveClassIfRecording(className, classLoader);
+                if (hookClass == null) hookClass = XposedHelpers.findClassIfExists(className, classLoader);
+            } else {
+                hookClass = XposedHelpers.findClassIfExists(className, classLoader);
+            }
+            if (hookClass == null) {
+                if (recording) HookInstaller.recordClassFailure(className, HookFailureReason.CLASS_NOT_FOUND);
+                return false;
+            }
+            Set<CustomMethodUnhooker> unhooks = XposedHelpers.hookAllMethods(hookClass, methodName, callback);
+            boolean hooked = !unhooks.isEmpty();
+            if (recording) {
+                if (hooked) HookInstaller.recordInstall(className, methodName, unhooks.size());
+                else HookInstaller.recordFailure(className, methodName, HookFailureReason.MEMBER_NOT_FOUND);
+            }
             return hooked;
         } catch (Throwable t) {
+            if (recording) recordHookFailure(className, methodName, t);
             return false;
         }
     }
 
     public static boolean hookAllMethodsSilently(Class<?> hookClass, String methodName, MethodHook callback) {
+        boolean recording = HookInstaller.isRecording();
         try {
-            boolean hooked = hookClass != null && XposedHelpers.hookAllMethods(hookClass, methodName, callback).size() > 0;
+            if (hookClass == null) {
+                return false;
+            }
+            Set<CustomMethodUnhooker> unhooks = XposedHelpers.hookAllMethods(hookClass, methodName, callback);
+            boolean hooked = !unhooks.isEmpty();
+            if (recording) {
+                if (hooked) HookInstaller.recordInstall(hookClass.getName(), methodName, unhooks.size());
+                else HookInstaller.recordFailure(hookClass.getName(), methodName, HookFailureReason.MEMBER_NOT_FOUND);
+            }
             return hooked;
         } catch (Throwable t) {
+            if (recording) recordHookFailure(hookClass.getName(), methodName, t);
             return false;
         }
     }

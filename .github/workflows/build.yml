@@ -27,6 +27,7 @@ jobs:
           python tools/audit-architecture.py
           python tools/audit-prefs.py
           python tools/audit-canary-sequence.py
+          python tools/audit-catalog-contracts.py
 
       - name: Run unit tests
         run: ./gradlew :app:testDebugUnitTest

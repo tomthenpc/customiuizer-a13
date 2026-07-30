@@ -2,6 +2,7 @@ package tv.withaibuild.customiuizer.mods.catalog
 
 import tv.withaibuild.customiuizer.mods.diagnostics.DiagnosticIds
 import tv.withaibuild.customiuizer.mods.diagnostics.InstallOutcome
+import tv.withaibuild.customiuizer.mods.utils.HookTargetContract
 import tv.withaibuild.customiuizer.utils.PrefMap
 
 /**
@@ -26,6 +27,8 @@ enum class ConfigReloadMode { NONE, PARTIAL, FULL }
  * @param compatibilityCheck Probe for the target class/method/field. It should
  *                           return [CompatibilityState] and emit its own
  *                           dimension record through [DiagnosticRecorder].
+ * @param contract Optional typed target contract. When present, [FeatureCatalog]
+ *                 uses it for both compatibility probing and install evidence.
  * @param installer Type-safe installer that returns an [InstallOutcome]. Old
  *                  Unit-style hooks must return [InstallOutcome.DISPATCHED].
  * @param activationRestartTarget The restart required for the feature to take
@@ -33,6 +36,7 @@ enum class ConfigReloadMode { NONE, PARTIAL, FULL }
  * @param configReloadMode Whether the feature can be reconfigured at runtime.
  */
 data class FeatureSpec(
+    val contract: HookTargetContract? = null,
     val id: String,
     val diagnosticId: String,
     val processTarget: ProcessTarget,

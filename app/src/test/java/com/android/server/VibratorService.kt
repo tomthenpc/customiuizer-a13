@@ -1,3 +1,5 @@
 package com.android.server
 
-class VibratorService
+class VibratorService {
+    fun doVibratorOn() {}
+}

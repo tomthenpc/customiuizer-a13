@@ -61,5 +61,6 @@ data class DiagnosticSnapshot(
     val detail: String? = null,
     val count: Long,
     val firstSeenMs: Long,
-    val lastSeenMs: Long
+    val lastSeenMs: Long,
+    val installSummary: InstallSummary? = null
 )

@@ -12,6 +12,8 @@ import tv.withaibuild.customiuizer.mods.catalog.CompatibilityState
 import tv.withaibuild.customiuizer.mods.diagnostics.DiagnosticIds
 import tv.withaibuild.customiuizer.mods.diagnostics.DiagnosticRecorder
 import tv.withaibuild.customiuizer.mods.diagnostics.InstallOutcome
+import tv.withaibuild.customiuizer.mods.utils.XposedHelpers
+import tv.withaibuild.customiuizer.utils.FakeXposedInterface
 import tv.withaibuild.customiuizer.utils.PrefMap
 import java.lang.reflect.Proxy
 
@@ -25,6 +27,7 @@ class StatusBarClockTweakClosedLoopTest {
         logs.clear()
         DiagnosticRecorder.clock = { 0L }
         DiagnosticRecorder.logger = { logs += it }
+        XposedHelpers.moduleInst = FakeXposedInterface.create()
     }
 
     private fun runtime(prefs: PrefMap<String, Any?>): FeatureRuntime {
@@ -47,7 +50,7 @@ class StatusBarClockTweakClosedLoopTest {
     }
 
     @Test
-    fun fullLoop_fallbackRecordsDegradedThenDispatched() {
+    fun fullLoop_primaryTargetsFoundAndInstalled() {
         val prefs = PrefMap<String, Any?>()
         prefs["pref_key_system_statusbar_clocktweak"] = true
 
@@ -57,12 +60,11 @@ class StatusBarClockTweakClosedLoopTest {
 
         val summary = DiagnosticRecorder.summarize()[DiagnosticIds.STATUSBAR_CLOCK_TWEAK]
         assertNotNull(summary)
-        assertEquals(CompatibilityState.DEGRADED, summary!!.compatibility)
-        assertEquals(InstallOutcome.DISPATCHED, summary.installation)
+        assertEquals(CompatibilityState.COMPATIBLE, summary!!.compatibility)
+        assertEquals(InstallOutcome.INSTALLED, summary.installation)
         assertTrue(logs.any { it.contains("REQUESTED") })
-        assertTrue(logs.any { it.contains("FALLBACK_TARGET_FOUND") })
-        assertTrue(logs.any { it.contains("DISPATCHED") })
-        assertFalse(logs.any { it.contains("INSTALLED") })
+        assertTrue(logs.any { it.contains("PRIMARY_TARGET_FOUND") })
+        assertTrue(logs.any { it.contains("INSTALLED") })
     }
 
     @Test

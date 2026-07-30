@@ -16,7 +16,10 @@ import tv.withaibuild.customiuizer.mods.diagnostics.DiagnosticIds
 import tv.withaibuild.customiuizer.mods.diagnostics.DiagnosticRecorder
 import tv.withaibuild.customiuizer.mods.diagnostics.EnabledState
 import tv.withaibuild.customiuizer.mods.diagnostics.InstallOutcome
+import tv.withaibuild.customiuizer.mods.diagnostics.InstallSummary
 import tv.withaibuild.customiuizer.mods.diagnostics.ReasonCode
+import tv.withaibuild.customiuizer.mods.utils.HookInstaller
+import tv.withaibuild.customiuizer.mods.utils.evaluateContract
 import tv.withaibuild.customiuizer.utils.PrefMap
 
 /**
@@ -35,6 +38,7 @@ object FeatureCatalog {
 
     private val features = listOf(
         FeatureSpec(
+            contract = CanaryContracts.packagePermissions,
             id = "packagePermissions",
             diagnosticId = DiagnosticIds.PACKAGE_PERMISSIONS,
             processTarget = ProcessTarget.SystemServer,
@@ -57,6 +61,7 @@ object FeatureCatalog {
             configReloadMode = ConfigReloadMode.NONE
         ),
         FeatureSpec(
+            contract = CanaryContracts.statusBarClockTweak,
             id = "statusBarClockTweak",
             diagnosticId = DiagnosticIds.STATUSBAR_CLOCK_TWEAK,
             processTarget = ProcessTarget.SystemUI,
@@ -90,6 +95,7 @@ object FeatureCatalog {
         ),
         // Canary: system_server
         FeatureSpec(
+            contract = CanaryContracts.autoBrightnessRange,
             id = "autoBrightnessRange",
             diagnosticId = DiagnosticIds.AUTO_BRIGHTNESS_RANGE,
             processTarget = ProcessTarget.SystemServer,
@@ -113,6 +119,7 @@ object FeatureCatalog {
             configReloadMode = ConfigReloadMode.NONE
         ),
         FeatureSpec(
+            contract = CanaryContracts.muffledVibration,
             id = "muffledVibration",
             diagnosticId = DiagnosticIds.MUFFLED_VIBRATION,
             processTarget = ProcessTarget.SystemServer,
@@ -137,6 +144,7 @@ object FeatureCatalog {
         ),
         // Canary: SystemUI
         FeatureSpec(
+            contract = CanaryContracts.noMoreIcon,
             id = "noMoreIcon",
             diagnosticId = DiagnosticIds.NO_MORE_ICON,
             processTarget = ProcessTarget.SystemUI,
@@ -160,6 +168,7 @@ object FeatureCatalog {
             configReloadMode = ConfigReloadMode.NONE
         ),
         FeatureSpec(
+            contract = CanaryContracts.batteryIndicator,
             id = "batteryIndicator",
             diagnosticId = DiagnosticIds.BATTERY_INDICATOR,
             processTarget = ProcessTarget.SystemUI,
@@ -184,6 +193,7 @@ object FeatureCatalog {
         ),
         // Canary: Launcher
         FeatureSpec(
+            contract = CanaryContracts.noClockHide,
             id = "noClockHide",
             diagnosticId = DiagnosticIds.NO_CLOCK_HIDE,
             processTarget = ProcessTarget.Launcher,
@@ -207,6 +217,7 @@ object FeatureCatalog {
             configReloadMode = ConfigReloadMode.NONE
         ),
         FeatureSpec(
+            contract = CanaryContracts.noWidgetOnly,
             id = "noWidgetOnly",
             diagnosticId = DiagnosticIds.NO_WIDGET_ONLY,
             processTarget = ProcessTarget.Launcher,
@@ -279,6 +290,82 @@ object FeatureCatalog {
             reasonCode = ReasonCode.REQUESTED
         )
 
+        val contract = feature.contract
+        return if (contract != null) {
+            installWithContract(feature, runtime, contract)
+        } else {
+            installWithLegacyCheck(feature, runtime)
+        }
+    }
+
+    private fun installWithContract(
+        feature: FeatureSpec,
+        runtime: FeatureRuntime,
+        contract: tv.withaibuild.customiuizer.mods.utils.HookTargetContract
+    ): Boolean {
+        val (compat, compatResult) = runtime.resolver.evaluateContract(contract, feature.diagnosticId)
+
+        DiagnosticRecorder.record(
+            feature.diagnosticId,
+            compatibility = compat,
+            reasonCode = compatResult.reasonCode,
+            detail = compatResult.detail
+        )
+
+        if (compat == CompatibilityState.INCOMPATIBLE) {
+            DiagnosticRecorder.record(
+                feature.diagnosticId,
+                installation = InstallOutcome.FAILED,
+                reasonCode = ReasonCode.TARGET_NOT_FOUND,
+                detail = compatResult.detail
+            )
+            return false
+        }
+
+        HookInstaller.begin(
+            resolver = runtime.resolver,
+            contract = contract,
+            diagnosticId = feature.diagnosticId,
+            classLoader = runtime.classLoader,
+            compatibilityResult = compatResult
+        )
+
+        return try {
+            feature.installer(runtime)
+            val result = HookInstaller.end()
+
+            val summary = InstallSummary(
+                requiredInstalled = result.requiredInstalled,
+                requiredTotal = result.requiredTotal,
+                optionalInstalled = result.optionalInstalled,
+                optionalTotal = result.optionalTotal,
+                fallbackUsed = result.fallbackUsed,
+                installation = result.outcome,
+                reasonCode = result.reasonCode
+            )
+
+            DiagnosticRecorder.record(
+                feature.diagnosticId,
+                installation = result.outcome,
+                reasonCode = result.reasonCode,
+                detail = result.detail,
+                installSummary = summary
+            )
+            result.outcome != InstallOutcome.FAILED
+        } catch (t: Throwable) {
+            HookInstaller.end()
+            DiagnosticRecorder.record(
+                feature.diagnosticId,
+                installation = InstallOutcome.FAILED,
+                reasonCode = ReasonCode.INSTALLER_FAILED,
+                detail = t.javaClass.name,
+                throwable = t
+            )
+            false
+        }
+    }
+
+    private fun installWithLegacyCheck(feature: FeatureSpec, runtime: FeatureRuntime): Boolean {
         val compat = feature.compatibilityCheck(runtime)
 
         return when (compat) {
