@@ -3,6 +3,9 @@ package tv.withaibuild.customiuizer.mods.utils
 import java.util.concurrent.CopyOnWriteArrayList
 import org.junit.After
 import org.junit.Assert.assertEquals
+import org.junit.Assert.assertNotNull
+import org.junit.Assert.assertNull
+import org.junit.Assert.assertSame
 import org.junit.Before
 import org.junit.Test
 
@@ -63,6 +66,35 @@ class ModuleHelperRegistrationTest {
     }
 
     @Test
+    fun ownerAwareCallbackIsRetainedWithoutCapturingOwner() {
+        val owner = Any()
+        var callbackOwner: Any? = null
+        var callbackKey: String? = null
+
+        ModuleHelper.observeOwnedPreferenceChange("owner.callback", owner) { currentOwner, key ->
+            callbackOwner = currentOwner
+            callbackKey = key
+        }
+
+        val registrations = ownedPreferenceRegistrations()
+        val registration = requireNotNull(registrations.single())
+        val callbackField = registration.javaClass.getDeclaredField("callback").apply {
+            isAccessible = true
+        }
+        val observerRefField = registration.javaClass.getDeclaredField("observerRef").apply {
+            isAccessible = true
+        }
+        assertNull(observerRefField.get(registration))
+        assertNotNull(callbackField.get(registration))
+
+        ModuleHelper.handlePreferenceChanged("changed")
+
+        assertSame(owner, callbackOwner)
+        assertEquals("changed", callbackKey)
+        ModuleHelper.removePreferenceObserver("owner.callback", owner)
+    }
+
+    @Test
     fun replacingModuleRegistrationCleansOnlyThePreviousValue() {
         var firstCleanups = 0
         var secondCleanups = 0
@@ -100,5 +132,11 @@ class ModuleHelperRegistrationTest {
             is CopyOnWriteArrayList<*> -> value.clear()
             else -> error("Unsupported registry: $fieldName")
         }
+    }
+
+    private fun ownedPreferenceRegistrations(): List<*> {
+        val field = ModuleHelper::class.java.getDeclaredField("ownedPrefObservers")
+        field.isAccessible = true
+        return (field.get(null) as Collection<*>).toList()
     }
 }
