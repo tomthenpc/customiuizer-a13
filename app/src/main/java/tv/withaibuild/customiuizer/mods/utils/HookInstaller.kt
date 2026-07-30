@@ -175,6 +175,7 @@ private fun List<HookTargetRecord>.toHookInstallResult(
 ): HookInstallResult {
     val groups = contract.allTargets.filter { it.fallbackGroup != null }.groupBy { it.fallbackGroup!! }
     val selectedIds = mutableSetOf<String>()
+    val satisfiedFallbackIds = mutableSetOf<String>()
     val selectedFallbacks = mutableListOf<HookTargetRecord>()
     val recordsBySpec = this.associateBy { it.spec.id }
 
@@ -184,6 +185,7 @@ private fun List<HookTargetRecord>.toHookInstallResult(
         if (firstInstalled != null) {
             val record = recordsBySpec.getValue(firstInstalled.id)
             selectedIds.add(record.spec.id)
+            satisfiedFallbackIds.addAll(targets.map { it.id })
             if (firstInstalled.fallbackOrder > 0) selectedFallbacks.add(record)
         }
     }
@@ -192,7 +194,9 @@ private fun List<HookTargetRecord>.toHookInstallResult(
     }
 
     val selectedRecords = this.filter { it.spec.id in selectedIds }
-    val failedRecords = this.filter { it.spec.id !in selectedIds && !it.installed }
+    val failedRecords = this.filter {
+        it.spec.id !in selectedIds && it.spec.id !in satisfiedFallbackIds && !it.installed
+    }
     val requiredFailures = failedRecords.filter { it.spec.required }
     val optionalFailures = failedRecords.filter { !it.spec.required }
 
