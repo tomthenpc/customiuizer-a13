@@ -1,5 +1,7 @@
 package tv.withaibuild.customiuizer.utils
 
+import java.util.Locale
+
 class ModData {
 
     enum class ModCat {
@@ -15,4 +17,11 @@ class ModData {
     @JvmField var cat: ModCat? = null
     @JvmField var sub: String? = null
     @JvmField var order: Int = 0
+    @JvmField var titleSearchKey: String = ""
+    @JvmField var breadcrumbsSortKey: String = ""
+
+    fun prepareSearchKeys() {
+        titleSearchKey = title.orEmpty().lowercase(Locale.ROOT)
+        breadcrumbsSortKey = breadcrumbs.orEmpty().lowercase(Locale.ROOT)
+    }
 }

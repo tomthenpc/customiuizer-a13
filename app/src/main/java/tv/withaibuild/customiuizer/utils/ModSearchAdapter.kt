@@ -1,6 +1,5 @@
 package tv.withaibuild.customiuizer.utils
 
-import android.annotation.SuppressLint
 import android.content.Context
 import android.text.SpannableString
 import android.text.Spanned
@@ -14,24 +13,14 @@ import android.widget.Filterable
 import android.widget.TextView
 import tv.withaibuild.customiuizer.R
 import java.util.ArrayList
-import java.util.concurrent.CopyOnWriteArrayList
+import java.util.Locale
 
 class ModSearchAdapter(context: Context) : BaseAdapter(), Filterable {
 
-    private val mInflater: LayoutInflater = LayoutInflater.from(context)
-    private val mFilter = ItemFilter()
-    private val modsList = CopyOnWriteArrayList<ModData>()
-    private var filterString: String = ""
-
-    @SuppressLint("WrongConstant")
-    private fun sortList() {
-        modsList.sortWith(
-            compareBy<ModData>(
-                { it.breadcrumbs?.lowercase() ?: "" },
-                { it.title?.lowercase() ?: "" }
-            )
-        )
-    }
+    private val inflater = LayoutInflater.from(context)
+    private val itemFilter = ItemFilter()
+    private var modsList: List<ModData> = emptyList()
+    private var filterString = ""
 
     override fun getCount(): Int = modsList.size
 
@@ -40,15 +29,13 @@ class ModSearchAdapter(context: Context) : BaseAdapter(), Filterable {
     override fun getItemId(position: Int): Long = position.toLong()
 
     override fun getView(position: Int, convertView: View?, parent: ViewGroup?): View {
-        val row = convertView ?: mInflater.inflate(R.layout.pref_item, parent, false)
-
+        val row = convertView ?: inflater.inflate(R.layout.pref_item, parent, false)
         val itemTitle = row.findViewById<TextView>(android.R.id.title)
         val itemSummary = row.findViewById<TextView>(android.R.id.summary)
+        val mod = getItem(position)
+        val title = mod.title.orEmpty()
 
-        val ad = getItem(position)
-        val title = ad.title ?: ""
-
-        val start = title.lowercase().indexOf(filterString)
+        val start = mod.titleSearchKey.indexOf(filterString)
         if (start >= 0) {
             val spannable = SpannableString(title)
             spannable.setSpan(
@@ -61,40 +48,40 @@ class ModSearchAdapter(context: Context) : BaseAdapter(), Filterable {
         } else {
             itemTitle.text = title
         }
-        itemSummary.text = ad.breadcrumbs
-
+        itemSummary.text = mod.breadcrumbs
         return row
     }
 
     private inner class ItemFilter : Filter() {
         override fun performFiltering(constraint: CharSequence?): FilterResults {
-            filterString = constraint?.toString()?.lowercase() ?: ""
-            val nlist = ArrayList<ModData>()
+            val query = constraint?.toString().orEmpty()
+            val querySearchKey = query.lowercase(Locale.ROOT)
+            val newModsOnly = query == Helpers.NEW_MODS_SEARCH_QUERY
+            val source = Helpers.allModsList
+            val matches = ArrayList<ModData>(
+                if (querySearchKey.isEmpty()) source.size else 16
+            )
 
-            for (filterableData in Helpers.allModsList) {
-                if (constraint?.toString() == Helpers.NEW_MODS_SEARCH_QUERY) {
-                    if (Helpers.newMods.contains(filterableData.key)) nlist.add(filterableData)
-                } else if (filterableData.title?.lowercase()?.contains(filterString) == true) {
-                    nlist.add(filterableData)
-                }
+            for (mod in source) {
+                val matchesQuery =
+                    if (newModsOnly) Helpers.newMods.contains(mod.key)
+                    else mod.titleSearchKey.contains(querySearchKey)
+                if (matchesQuery) matches.add(mod)
             }
 
-            val results = FilterResults()
-            results.values = nlist
-            results.count = nlist.size
-            return results
+            return FilterResults().apply {
+                values = matches
+                count = matches.size
+            }
         }
 
         @Suppress("UNCHECKED_CAST")
         override fun publishResults(constraint: CharSequence?, results: FilterResults?) {
-            modsList.clear()
-            if (results != null && results.count > 0 && results.values != null) {
-                modsList.addAll(results.values as ArrayList<ModData>)
-            }
-            sortList()
+            filterString = constraint?.toString()?.lowercase(Locale.ROOT).orEmpty()
+            modsList = results?.values as? ArrayList<ModData> ?: emptyList()
             notifyDataSetChanged()
         }
     }
 
-    override fun getFilter(): Filter = mFilter
+    override fun getFilter(): Filter = itemFilter
 }

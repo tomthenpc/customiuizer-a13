@@ -814,6 +814,7 @@ object Helpers {
                             modData.cat = catPrefKey
                             modData.sub = lastPrefSub
                             modData.order = order
+                            modData.prepareSearchKeys()
                             allModsList.add(modData)
                         }
                     }
@@ -835,6 +836,18 @@ object Helpers {
         parsePrefXml(context, R.xml.prefs_launcher)
         parsePrefXml(context, R.xml.prefs_controls)
         parsePrefXml(context, R.xml.prefs_various)
+        allModsList.sortWith(MOD_DISPLAY_ORDER)
+    }
+
+    @JvmField
+    val MOD_DISPLAY_ORDER = Comparator<ModData> { first, second ->
+        val breadcrumbs =
+            first.breadcrumbsSortKey.compareTo(second.breadcrumbsSortKey)
+        if (breadcrumbs != 0) {
+            breadcrumbs
+        } else {
+            first.titleSearchKey.compareTo(second.titleSearchKey)
+        }
     }
 
     @JvmStatic
