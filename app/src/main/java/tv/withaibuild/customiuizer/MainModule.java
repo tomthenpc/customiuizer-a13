@@ -41,7 +41,13 @@ import tv.withaibuild.customiuizer.mods.SystemShareAndOpenWithHooks;
 import tv.withaibuild.customiuizer.mods.SystemStatusBarAndClockHooks;
 import tv.withaibuild.customiuizer.mods.SystemStatusBarClockAndMoreHooks;
 import tv.withaibuild.customiuizer.mods.SystemStatusBarMoreHooks;
-import tv.withaibuild.customiuizer.mods.SystemUI;
+import tv.withaibuild.customiuizer.mods.SystemUIBatteryHooks;
+import tv.withaibuild.customiuizer.mods.SystemUIControlCenterHooks;
+import tv.withaibuild.customiuizer.mods.SystemUILockScreenHooks;
+import tv.withaibuild.customiuizer.mods.SystemUIMonitorAndTileHooks;
+import tv.withaibuild.customiuizer.mods.SystemUINotificationHooks;
+import tv.withaibuild.customiuizer.mods.SystemUIScreenshotHooks;
+import tv.withaibuild.customiuizer.mods.SystemUIStatusBarHooks;
 import tv.withaibuild.customiuizer.mods.Various;
 import tv.withaibuild.customiuizer.mods.utils.HookerClassHelper.AfterHookCallback;
 import tv.withaibuild.customiuizer.mods.utils.HookerClassHelper.MethodHook;
@@ -353,7 +359,7 @@ public class MainModule extends XposedModule {
             long currentTime = java.lang.System.currentTimeMillis();
             Class<?> NetworkSpeedViewCls = XposedHelpers.findClassIfExists("com.android.systemui.statusbar.views.NetworkSpeedView", lpparam.getClassLoader());
             if (NetworkSpeedViewCls != null) {
-                SystemUI.newStyle = LinearLayout.class.isAssignableFrom(NetworkSpeedViewCls);
+                SystemUIStatusBarHooks.newStyle = LinearLayout.class.isAssignableFrom(NetworkSpeedViewCls);
             }
             ModuleHelper.findAndHookMethod("com.android.systemui.SystemUIApplication", lpparam.getClassLoader(), "onCreate", new MethodHook() {
                 private boolean isHooked = false;
@@ -362,7 +368,7 @@ public class MainModule extends XposedModule {
                     if (!isHooked) {
                         isHooked = true;
                         Context context = (Context) XposedHelpers.callMethod(param.getThisObject(), "getApplicationContext");
-                        SystemUI.setupStatusBar(context);
+                        SystemUIStatusBarHooks.setupStatusBar(context);
                         watchPreferenceChange();
                     }
                 }
@@ -378,29 +384,29 @@ public class MainModule extends XposedModule {
             ) GlobalActions.setupForegroundMonitor(lpparam);
 
             if (mPrefs.getBoolean("system_screenshot_overlay")) {
-                SystemUI.TempHideOverlaySystemUIHook(lpparam);
+                SystemUIScreenshotHooks.TempHideOverlaySystemUIHook(lpparam);
             }
 
             if (
                 mPrefs.getBoolean("system_fivegtile")
                 || mPrefs.getBoolean("system_cc_fpstile")
             ) {
-                SystemUI.AddCustomTileHook(lpparam);
+                SystemUIMonitorAndTileHooks.AddCustomTileHook(lpparam);
             }
 
             if (mPrefs.getBoolean("system_hidestatusbar_whenscreenshot")) {
-                SystemUI.HideStatusBarBeforeScreenshotHook(lpparam);
+                SystemUIScreenshotHooks.HideStatusBarBeforeScreenshotHook(lpparam);
             }
 
-            if (mPrefs.getInt("system_qsgridcolumns", 2) > 2 || mPrefs.getInt("system_qsgridrows", 1) > 1) SystemUI.QSGridRes();
-            if (mPrefs.getInt("system_qqsgridcolumns", 2) > 2) SystemUI.QQSGridRes();
+            if (mPrefs.getInt("system_qsgridcolumns", 2) > 2 || mPrefs.getInt("system_qsgridrows", 1) > 1) SystemUIControlCenterHooks.QSGridRes();
+            if (mPrefs.getInt("system_qqsgridcolumns", 2) > 2) SystemUIControlCenterHooks.QQSGridRes();
             if (mPrefs.getBoolean("system_networkindicator_wifi")) SystemStatusBarMoreHooks.NetworkIndicatorWifi(lpparam);
 
             if (mPrefs.getInt("system_drawer_blur", 100) < 100) SystemDisplayAndWindowHooks.DrawerBlurRatioHook(lpparam);
             if (mPrefs.getInt("system_chargeanimtime", 20) < 20) SystemDisplayAndWindowHooks.ChargeAnimationHook(lpparam);
             if (mPrefs.getInt("system_betterpopups_delay", 0) > 0 && !mPrefs.getBoolean("system_betterpopups_nohide")) SystemNotificationPopupsHooks.BetterPopupsHideDelayHook(lpparam);
-            if (mPrefs.getInt("system_netspeedinterval", 4) != 4) SystemUI.NetSpeedIntervalHook(lpparam);
-            if (mPrefs.getInt("system_qsgridrows", 1) > 1 || mPrefs.getBoolean("system_qsnolabels")) SystemUI.QSGridLabelsHook(lpparam);
+            if (mPrefs.getInt("system_netspeedinterval", 4) != 4) SystemUIStatusBarHooks.NetSpeedIntervalHook(lpparam);
+            if (mPrefs.getInt("system_qsgridrows", 1) > 1 || mPrefs.getBoolean("system_qsnolabels")) SystemUIControlCenterHooks.QSGridLabelsHook(lpparam);
             if (mPrefs.getInt("system_lstimeout", 3) > 3) SystemAudioAndVisualAndMoreHooks.LockScreenTimeoutHook(lpparam);
             if (mPrefs.getInt("controls_fsg_assist_left_action", 1) > 1
                 || mPrefs.getInt("controls_fsg_assist_right_action", 1) > 1
@@ -420,8 +426,8 @@ public class MainModule extends XposedModule {
             if (
                 mPrefs.getBoolean("system_detailednetspeed")
                 && !mPrefs.getBoolean("system_detailednetspeed_fakedualrow")
-            ) SystemUI.DetailedNetSpeedHook(lpparam);
-            if (mPrefs.getBoolean("system_albumartonlock")) SystemUI.LockScreenAlbumArtHook(lpparam);
+            ) SystemUIStatusBarHooks.DetailedNetSpeedHook(lpparam);
+            if (mPrefs.getBoolean("system_albumartonlock")) SystemUILockScreenHooks.LockScreenAlbumArtHook(lpparam);
             if (mPrefs.getStringAsInt("system_expandheadups", 1) > 1) SystemStatusBarClockAndMoreHooks.ExpandHeadsUpHook(lpparam);
             if (mPrefs.getBoolean("system_betterpopups_nohide")) SystemNotificationPopupsHooks.BetterPopupsNoHideHook(lpparam);
             if (mPrefs.getBoolean("system_betterpopups_swipedown")) SystemNotificationPopupsHooks.BetterPopupsSwipeDownHook(lpparam);
@@ -430,10 +436,10 @@ public class MainModule extends XposedModule {
             if (mPrefs.getBoolean("system_notifafterunlock")) SystemNotificationMoreHooks.ShowNotificationsAfterUnlockHook(lpparam);
             if (mPrefs.getBoolean("system_notifrowmenu")) SystemNotificationMoreHooks.NotificationRowMenuHook(lpparam);
             if (mPrefs.getBoolean("system_compactnotif")) SystemNotificationAndShareHooks.CompactNotificationsHook(lpparam);
-            if (mPrefs.getBoolean("system_removedismiss")) SystemUI.HideDismissViewHook(lpparam);
-            if (mPrefs.getBoolean("system_drawer_removeshortcut")) SystemUI.HideNoficationAccessIconHook(lpparam);
+            if (mPrefs.getBoolean("system_removedismiss")) SystemUINotificationHooks.HideDismissViewHook(lpparam);
+            if (mPrefs.getBoolean("system_drawer_removeshortcut")) SystemUINotificationHooks.HideNoficationAccessIconHook(lpparam);
             if (mPrefs.getBoolean("controls_nonavbar")) Controls.HideNavBarHook(lpparam);
-            else if (mPrefs.getBoolean("controls_hidenavbar_whenscreenshot")) SystemUI.HideNavBarBeforeScreenshotHook(lpparam);
+            else if (mPrefs.getBoolean("controls_hidenavbar_whenscreenshot")) SystemUIScreenshotHooks.HideNavBarBeforeScreenshotHook(lpparam);
             if (mPrefs.getBoolean("controls_imebackalticon")) Controls.ImeBackAltIconHook(lpparam);
             if (mPrefs.getBoolean("system_visualizer")) SystemAudioAndVisualAndMoreHooks.AudioVisualizerHook(lpparam);
             if (mPrefs.getBoolean("system_nosilentvibrate")
@@ -451,11 +457,11 @@ public class MainModule extends XposedModule {
                 || (mPrefs.getInt("system_volumedialogdelay_collapsed", 0) > 0 || mPrefs.getInt("system_volumedialogdelay_expanded", 0) > 0)
                 || (mPrefs.getInt("system_volumeblur_collapsed", 0) > 0 || mPrefs.getInt("system_volumeblur_expanded", 0) > 0)
             ) {
-                SystemUI.MIUIVolumeDialogHook(lpparam);
+                SystemUIControlCenterHooks.MIUIVolumeDialogHook(lpparam);
             }
-            if (mPrefs.getBoolean("system_batteryindicator")) SystemUI.BatteryIndicatorHook(lpparam);
+            if (mPrefs.getBoolean("system_batteryindicator")) SystemUIBatteryHooks.BatteryIndicatorHook(lpparam);
             if (mPrefs.getBoolean("system_disableanynotif")) SystemNotificationMoreHooks.DisableAnyNotificationHook(lpparam);
-            if (mPrefs.getBoolean("system_lockscreenshortcuts")) SystemUI.LockScreenShortcutHook(lpparam);
+            if (mPrefs.getBoolean("system_lockscreenshortcuts")) SystemUILockScreenHooks.LockScreenShortcutHook(lpparam);
             if (mPrefs.getBoolean("system_4gtolte")
                 || (mPrefs.getBoolean("system_statusbar_mobiletype_single") &&
                     !mPrefs.getString("system_statusbar_mobile_showname", "").equals(""))
@@ -478,32 +484,32 @@ public class MainModule extends XposedModule {
                 || mPrefs.getBoolean("system_statusbaricons_wifi_mobile_atleft")
                 || mPrefs.getBoolean("system_statusbaricons_swap_wifi_mobile")
             ) {
-                SystemUI.StatusBarIconsPositionAdjustHook(lpparam, moveRight, moveLeft);
+                SystemUIStatusBarHooks.StatusBarIconsPositionAdjustHook(lpparam, moveRight, moveLeft);
             }
             if (mPrefs.getStringAsInt("system_statusbar_clock_position", 1) > 1 && !mPrefs.getBoolean("system_statusbar_dualrows")) {
-                SystemUI.StatusBarClockPositionHook(lpparam);
+                SystemUIStatusBarHooks.StatusBarClockPositionHook(lpparam);
             }
             if (mPrefs.getBoolean("system_statusbar_batterystyle")) {
-                SystemUI.StatusBarStyleBatteryIconHook(lpparam);
+                SystemUIBatteryHooks.StatusBarStyleBatteryIconHook(lpparam);
             }
             if (mPrefs.getBoolean("system_statusbar_batterytempandcurrent")
                 || mPrefs.getBoolean("system_statusbar_showdevicetemperature")
-            ) SystemUI.MonitorDeviceInfoHook(lpparam);
-            if (mPrefs.getBoolean("system_statusbar_topmargin") && mPrefs.getBoolean("system_statusbar_topmargin_unset_lockscreen")) SystemUI.LockScreenTopMarginHook(lpparam);
-            if (mPrefs.getBoolean("system_statusbar_horizmargin")) SystemUI.HorizMarginHook(lpparam);
-            if (mPrefs.getBoolean("system_showpct")) SystemUI.BrightnessPctHook(lpparam);
+            ) SystemUIStatusBarHooks.MonitorDeviceInfoHook(lpparam);
+            if (mPrefs.getBoolean("system_statusbar_topmargin") && mPrefs.getBoolean("system_statusbar_topmargin_unset_lockscreen")) SystemUILockScreenHooks.LockScreenTopMarginHook(lpparam);
+            if (mPrefs.getBoolean("system_statusbar_horizmargin")) SystemUIStatusBarHooks.HorizMarginHook(lpparam);
+            if (mPrefs.getBoolean("system_showpct")) SystemUIControlCenterHooks.BrightnessPctHook(lpparam);
             if (mPrefs.getBoolean("system_hidelsstatusbar")) SystemLockScreenMoreHooks.HideLockScreenStatusBarHook(lpparam);
             if (mPrefs.getBoolean("system_hidelsclock")) SystemLockScreenMoreHooks.HideLockScreenClockHook(lpparam);
-            if (mPrefs.getBoolean("system_ls_force_systemfonts")) SystemUI.ForceClockUseSystemFontsHook(lpparam);
+            if (mPrefs.getBoolean("system_ls_force_systemfonts")) SystemUIStatusBarHooks.ForceClockUseSystemFontsHook(lpparam);
             if (mPrefs.getBoolean("system_hidelshint")) SystemLockScreenMoreHooks.HideLockScreenHintHook(lpparam);
             if (mPrefs.getBoolean("system_allowdirectreply")) SystemAudioAndVisualAndMoreHooks.AllowDirectReplyHook(lpparam);
             if (mPrefs.getBoolean("system_allownotifonkeyguard")) SystemAudioAndVisualAndMoreHooks.AllowAllKeyguardHook(lpparam);
             if (mPrefs.getBoolean("system_allownotiffloat")) SystemAudioAndVisualAndMoreHooks.AllowAllFloatHook(lpparam);
             if (mPrefs.getBoolean("system_hideqs")) SystemAudioAndVisualAndMoreHooks.HideQSHook(lpparam);
             if (mPrefs.getBoolean("system_lsalarm")) SystemAudioAndVisualAndMoreHooks.LockScreenAlarmHook(lpparam);
-            if (mPrefs.getBoolean("system_statusbarcontrols")) SystemUI.StatusBarGesturesHook(lpparam);
-            if (mPrefs.getBoolean("system_nonetspeedseparator")) SystemUI.NoNetworkSpeedSeparatorHook(lpparam);
-            if (mPrefs.getBoolean("system_statusbaricons_clock")) SystemUI.HideIconsClockHook(lpparam);
+            if (mPrefs.getBoolean("system_statusbarcontrols")) SystemUIControlCenterHooks.StatusBarGesturesHook(lpparam);
+            if (mPrefs.getBoolean("system_nonetspeedseparator")) SystemUIStatusBarHooks.NoNetworkSpeedSeparatorHook(lpparam);
+            if (mPrefs.getBoolean("system_statusbaricons_clock")) SystemUIStatusBarHooks.HideIconsClockHook(lpparam);
             if (mPrefs.getBoolean("system_detailednetspeed_fakedualrow")
                 || (!mPrefs.getBoolean("system_detailednetspeed")
                     && (mPrefs.getBoolean("system_detailednetspeed_secunit")
@@ -511,7 +517,7 @@ public class MainModule extends XposedModule {
                         )
                     )
             ) {
-                SystemUI.FormatNetworkSpeedHook(lpparam);
+                SystemUIStatusBarHooks.FormatNetworkSpeedHook(lpparam);
             }
             if (
                 mPrefs.getInt("system_netspeed_fontsize", 13) > 13
@@ -524,13 +530,13 @@ public class MainModule extends XposedModule {
                 || mPrefs.getInt("system_netspeed_rightmargin", 0) > 0
                 || mPrefs.getStringAsInt("system_detailednetspeed_align", 1) > 1
             ) {
-                SystemUI.NetSpeedStyleHook(lpparam);
+                SystemUIStatusBarHooks.NetSpeedStyleHook(lpparam);
             }
             if (mPrefs.getBoolean("system_taptounlock")) SystemAudioAndVisualAndMoreHooks.TapToUnlockHook(lpparam);
             if (mPrefs.getBoolean("system_nosos")) SystemSecurityAndSystemHooks.NoSOSHook(lpparam);
             if (mPrefs.getBoolean("system_morenotif")) SystemNotificationMoreHooks.MoreNotificationsHook(lpparam);
             if (mPrefs.getBoolean("system_charginginfo")) SystemChargingAndWallpaperHooks.ChargingInfoHook(lpparam);
-            if (mPrefs.getBoolean("system_secureqs")) SystemUI.SecureQSTilesHook(lpparam);
+            if (mPrefs.getBoolean("system_secureqs")) SystemUILockScreenHooks.SecureQSTilesHook(lpparam);
             if (mPrefs.getBoolean("system_mutevisiblenotif")) SystemNotificationMoreHooks.MuteVisibleNotificationsHook(lpparam);
             if (mPrefs.getBoolean("system_statusbaricons_battery1")) SystemStatusBarMoreHooks.HideIconsBattery1Hook(lpparam);
             if (mPrefs.getBoolean("system_statusbaricons_battery3")
@@ -544,31 +550,31 @@ public class MainModule extends XposedModule {
                 || mPrefs.getBoolean("system_statusbaricons_sim_nodata")
                 || mPrefs.getBoolean("system_statusbaricons_roaming")
                 || mPrefs.getBoolean("system_statusbaricons_volte")
-            ) SystemUI.HideIconsSignalHook(lpparam);
-            if (mPrefs.getBoolean("system_statusbaricons_vowifi")) SystemUI.HideIconsVoWiFiHook(lpparam);
+            ) SystemUIStatusBarHooks.HideIconsSignalHook(lpparam);
+            if (mPrefs.getBoolean("system_statusbaricons_vowifi")) SystemUIStatusBarHooks.HideIconsVoWiFiHook(lpparam);
             if (!mPrefs.getBoolean("system_statusbaricons_alarm") && mPrefs.getInt("system_statusbaricons_alarmn", 0) > 0) SystemStatusBarMoreHooks.HideIconsSelectiveAlarmHook(lpparam);
             if (!mPrefs.getString("system_shortcut_app", "").equals("")
                 || !mPrefs.getString("system_calendar_app", "").equals("")
-                || !mPrefs.getString("system_clock_app", "").equals("")) SystemUI.ReplaceShortcutAppHook(lpparam);
+                || !mPrefs.getString("system_clock_app", "").equals("")) SystemUINotificationHooks.ReplaceShortcutAppHook(lpparam);
             if (mPrefs.getStringAsInt("system_qshaptics", 1) > 1) SystemNotificationAndShareHooks.QSHapticHook(lpparam);
             if (mPrefs.getBoolean("system_qs_hideoperator")) SystemSettingsAndConnectivityHooks.HideCCOperatorHook(lpparam);
             if (mPrefs.getBoolean("system_cc_hideoperator_delimiter")) SystemSettingsAndConnectivityHooks.HideCCOperatorDelimiterHook(lpparam);
             if (mPrefs.getBoolean("system_cc_show_stepcount")
                 || mPrefs.getBoolean("system_drawer_show_stepcount")
-            ) SystemUI.ShowCCStepCountHook(lpparam);
+            ) SystemUIControlCenterHooks.ShowCCStepCountHook(lpparam);
             if (mPrefs.getBoolean("system_cc_disable_bluetooth_restrict")) SystemSettingsAndConnectivityHooks.DisableBluetoothRestrictHook(lpparam);
             if (mPrefs.getBoolean("system_cc_collapse_after_clicked")) SystemSettingsAndConnectivityHooks.CollapseCCAfterClickHook(lpparam);
-            if (mPrefs.getBoolean("system_cc_switch_qsandnotification")) SystemUI.SwitchCCAndNotificationHook(lpparam);
+            if (mPrefs.getBoolean("system_cc_switch_qsandnotification")) SystemUIControlCenterHooks.SwitchCCAndNotificationHook(lpparam);
             if (mPrefs.getStringAsInt("system_expandnotifs", 1) > 1) SystemStatusBarClockAndMoreHooks.ExpandNotificationsHook(lpparam);
             if (mPrefs.getStringAsInt("system_inactivebrightness", 1) > 1) SystemAudioAndVisualAndMoreHooks.InactiveBrightnessSliderHook(lpparam);
             if (mPrefs.getStringAsInt("system_mobiletypeicon", 1) > 1
                 || mPrefs.getBoolean("system_networkindicator_mobile")
                 || mPrefs.getBoolean("system_statusbar_mobiletype_show_wificonnected")
             ) {
-                SystemUI.HideMobileNetworkIndicatorHook(lpparam);
+                SystemUIStatusBarHooks.HideMobileNetworkIndicatorHook(lpparam);
             }
             if (mPrefs.getStringAsInt("system_statusbaricons_bluetooth", 1) > 1) SystemStatusBarMoreHooks.HideIconsBluetoothHook(lpparam);
-            if (mPrefs.getBoolean("system_epm")) SystemUI.ExtendedPowerMenuHook(lpparam);
+            if (mPrefs.getBoolean("system_epm")) SystemUINotificationHooks.ExtendedPowerMenuHook(lpparam);
 
             boolean hideIconsActive =
                 mPrefs.getBoolean("system_statusbaricons_wifi") ||
@@ -588,47 +594,47 @@ public class MainModule extends XposedModule {
                 mPrefs.getBoolean("system_statusbaricons_btbattery") ||
                 mPrefs.getBoolean("system_statusbaricons_ble_unlock") ||
                 mPrefs.getBoolean("system_statusbaricons_volte");
-            if (hideIconsActive) SystemUI.HideIconsHook(lpparam);
+            if (hideIconsActive) SystemUIStatusBarHooks.HideIconsHook(lpparam);
 
             if (
                 mPrefs.getBoolean("system_statusbaricons_privacy")
                 || mPrefs.getBoolean("system_statusbaricons_mute")
                 || mPrefs.getBoolean("system_statusbaricons_speaker")
                 || mPrefs.getBoolean("system_statusbaricons_record")
-            ) SystemUI.HideIconsFromSystemManager(lpparam);
+            ) SystemUIStatusBarHooks.HideIconsFromSystemManager(lpparam);
             if (mPrefs.getInt("system_messagingstylelines", 0) > 0) SystemFreeformAndMultiWindowHooks.MessagingStyleLinesHook(lpparam);
             if (mPrefs.getBoolean("system_betterpopups_allowfloat")) SystemFreeformAndMultiWindowHooks.BetterPopupsAllowFloatHook(lpparam);
             if (mPrefs.getBoolean("system_betterpopups_autoclose_expanded")) SystemNotificationMoreHooks.AutoDismissExpandedPopupsHook(lpparam);
-            if (mPrefs.getBoolean("system_betterpopups_disablewhenmute")) SystemUI.DisableHeadsUpWhenMuteHook(lpparam);
+            if (mPrefs.getBoolean("system_betterpopups_disablewhenmute")) SystemUINotificationHooks.DisableHeadsUpWhenMuteHook(lpparam);
             if (mPrefs.getBoolean("system_securecontrolcenter")) SystemFreeformAndMultiWindowHooks.SecureControlCenterHook(lpparam);
             if (mPrefs.getBoolean("system_minimalnotifview")) SystemNotificationMoreHooks.MinimalNotificationViewHook(lpparam);
             if (mPrefs.getBoolean("system_notifchannelsettings")) SystemNotificationMoreHooks.NotificationChannelSettingsHook(lpparam);
             if (mPrefs.getStringAsInt("system_maxsbicons", 0) != 0) SystemNotificationMoreHooks.MaxNotificationIconsHook(lpparam);
             if (mPrefs.getBoolean("system_statusbar_mobiletype_single")) {
-                SystemUI.MobileTypeSingleHook(lpparam);
+                SystemUIStatusBarHooks.MobileTypeSingleHook(lpparam);
             }
             if (mPrefs.getBoolean("system_statusbar_dualsimin2rows")) {
-                SystemUI.DualRowSignalHook(lpparam);
+                SystemUIStatusBarHooks.DualRowSignalHook(lpparam);
             }
             if (mPrefs.getBoolean("system_statusbar_dualrows")) {
-                SystemUI.DualRowStatusbarHook(lpparam);
+                SystemUIStatusBarHooks.DualRowStatusbarHook(lpparam);
             }
-            if (mPrefs.getInt("system_ccgridcolumns", 4) > 4 || mPrefs.getInt("system_ccgridrows", 4) != 4) SystemUI.SystemCCGridHook(lpparam);
+            if (mPrefs.getInt("system_ccgridcolumns", 4) > 4 || mPrefs.getInt("system_ccgridrows", 4) != 4) SystemUIControlCenterHooks.SystemCCGridHook(lpparam);
             if (mPrefs.getStringAsInt("system_colorizenotifs", 1) > 1) SystemNotificationAndShareHooks.ColorizeNotificationCardHook(lpparam);
-            if (mPrefs.getBoolean("system_notify_openinfw")) SystemUI.OpenNotifyInFloatingWindowHook(lpparam);
+            if (mPrefs.getBoolean("system_notify_openinfw")) SystemUINotificationHooks.OpenNotifyInFloatingWindowHook(lpparam);
             if (mPrefs.getBoolean("system_fw_noblacklist")) SystemFreeformAndMultiWindowHooks.DisableSideBarSuggestionHook(lpparam);
 
             if (mPrefs.getBoolean("system_notify_openinfw")
                 || mPrefs.getBoolean("system_notifrowmenu")
                 || mPrefs.getBoolean("system_betterpopups_allowfloat")
             ) {
-                SystemUI.FixOpenNotifyInFreeFormHook(lpparam);
+                SystemUINotificationHooks.FixOpenNotifyInFreeFormHook(lpparam);
             }
             if (mPrefs.getBoolean("system_nosafevolume")) {
-                SystemUI.HideSafeVolumeDlgHook(lpparam);
+                SystemUIControlCenterHooks.HideSafeVolumeDlgHook(lpparam);
             }
             if (mPrefs.getBoolean("system_lockscreen_hidezenmode")) {
-                SystemUI.HideLockscreenZenModeHook(lpparam);
+                SystemUILockScreenHooks.HideLockscreenZenModeHook(lpparam);
             }
             if (mPrefs.getBoolean("system_nopassword")) SystemLockScreenHooks.NoPasswordHook(lpparam);
         }

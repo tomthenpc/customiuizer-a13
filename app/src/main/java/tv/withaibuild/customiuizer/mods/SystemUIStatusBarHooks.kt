@@ -44,6 +44,9 @@ import java.util.Properties
 @Suppress("UNUSED_PARAMETER")
 object SystemUIStatusBarHooks {
 
+    @JvmField
+    var newStyle: Boolean = false
+
     private var statusbarTextIconLayoutResId = 0
     private val textIconTagId = ResourceHooks.getFakeResId("text_icon_tag")
     private val viewInitedTag = ResourceHooks.getFakeResId("view_inited_tag")
@@ -54,7 +57,7 @@ object SystemUIStatusBarHooks {
 
     @JvmStatic
     fun setupStatusBar(mContext: Context) {
-        statusbarTextIconLayoutResId = if (SystemUI.newStyle) {
+        statusbarTextIconLayoutResId = if (newStyle) {
             MainModule.resHooks.addResource("statusbar_text_icon", R.layout.statusbar_text_icon_new)
         } else {
             MainModule.resHooks.addResource("statusbar_text_icon", R.layout.statusbar_text_icon)
@@ -320,7 +323,7 @@ object SystemUIStatusBarHooks {
                 override fun after(param: AfterHookCallback) {
                     val mContext = XposedHelpers.callMethod(param.getThisObject(), "getContext") as? Context ?: return
                     val DarkIconDispatcher = XposedHelpers.callStaticMethod(Dependency, "get", DarkIconDispatcherClass)
-                    val baseAnchor = if (SystemUI.newStyle) {
+                    val baseAnchor = if (newStyle) {
                         XposedHelpers.getObjectField(param.getThisObject(), "mClockView") as? View
                     } else {
                         XposedHelpers.getObjectField(param.getThisObject(), "mDripNetworkSpeedSplitter") as? View
@@ -374,7 +377,7 @@ object SystemUIStatusBarHooks {
     }
 
     private fun getIconTextView(iconView: View): TextView {
-        return if (SystemUI.newStyle) {
+        return if (newStyle) {
             XposedHelpers.getObjectField(iconView, "mNetworkSpeedNumberText") as TextView
         } else {
             iconView as TextView
@@ -431,7 +434,7 @@ object SystemUIStatusBarHooks {
     private fun createStatusbarTextIcon(mContext: Context, lp: LinearLayout.LayoutParams, ti: TextIcon): View {
         val iconView = LayoutInflater.from(mContext).inflate(statusbarTextIconLayoutResId, null)
         iconView.setTag(textIconTagId, ti)
-        if (!SystemUI.newStyle) {
+        if (!newStyle) {
             XposedHelpers.setObjectField(iconView, "mVisibilityByDisableInfo", 0)
         } else {
             val mNumber = iconView.findViewWithTag<View>("network_speed_number")
@@ -476,7 +479,7 @@ object SystemUIStatusBarHooks {
             if (icon.iconType != type) return@forEachStatusbarTextIcon
             XposedHelpers.callMethod(view, "setBlocked", !show)
             if (show) {
-                if (SystemUI.newStyle) {
+                if (newStyle) {
                     XposedHelpers.callMethod(view, "setNetworkSpeed", text, "")
                 } else {
                     XposedHelpers.callMethod(view, "setNetworkSpeed", text)
@@ -598,7 +601,7 @@ object SystemUIStatusBarHooks {
                     }
                 }
 
-                if (MainModule.mPrefs.getBoolean("system_statusbar_netspeed_atsecondrow") && !SystemUI.newStyle) {
+                if (MainModule.mPrefs.getBoolean("system_statusbar_netspeed_atsecondrow") && !newStyle) {
                     val mDripNetworkSpeedView = XposedHelpers.getObjectField(param.getThisObject(), "mDripNetworkSpeedView") as? View ?: return
                     leftContainer.removeView(mDripNetworkSpeedView)
                     secondRight.addView(mDripNetworkSpeedView, 0)
@@ -1160,7 +1163,7 @@ object SystemUIStatusBarHooks {
                     val lowLevel = MainModule.mPrefs.getInt("system_detailednetspeed_lowlevel", 1) * 1024
                     val speedVal = param.getArg(1) as? Long ?: 0L
                     if (speedVal < lowLevel) {
-                        if (SystemUI.newStyle) {
+                        if (newStyle) {
                             param.returnAndSkip(arrayOf("", ""))
                         } else {
                             param.returnAndSkip("")
@@ -1171,7 +1174,7 @@ object SystemUIStatusBarHooks {
 
             override fun after(param: AfterHookCallback) {
                 val hideUnit = MainModule.mPrefs.getBoolean("system_detailednetspeed_secunit")
-                if (hideUnit && !SystemUI.newStyle) {
+                if (hideUnit && !newStyle) {
                     var speedText = param.getResult() as? String ?: return
                     speedText = speedText.replaceFirst("B?[/']s".toRegex(), "")
                     param.setResult(speedText)
@@ -1185,7 +1188,7 @@ object SystemUIStatusBarHooks {
         val iconTextView = getIconTextView(meter)
         var fontSize = MainModule.mPrefs.getInt("system_netspeed_fontsize", 13)
         if (dualRow) {
-            if (SystemUI.newStyle) {
+            if (newStyle) {
                 val unitView = XposedHelpers.getObjectField(meter, "mNetworkSpeedUnitText") as? View
                 unitView?.visibility = View.GONE
             }
@@ -1330,7 +1333,7 @@ object SystemUIStatusBarHooks {
         ModuleHelper.findAndHookMethod("com.android.systemui.statusbar.phone.MiuiCollapsedStatusBarFragment", lpparam.classLoader, "showClock", Boolean::class.javaPrimitiveType, object : MethodHook() {
             override fun before(param: BeforeHookCallback) {
                 XposedHelpers.callMethod(param.getThisObject(), "hideClockInternal", 8, false)
-                if (!SystemUI.newStyle) {
+                if (!newStyle) {
                     XposedHelpers.callMethod(param.getThisObject(), "hideNetworkSpeedSplitter", 8, false)
                 }
                 param.returnAndSkip(null)
@@ -1414,7 +1417,7 @@ object SystemUIStatusBarHooks {
             }
         }
         ModuleHelper.findAndHookMethod("com.android.systemui.statusbar.phone.StatusBarIconControllerImpl", lpparam.classLoader, "setIconVisibility", String::class.java, Boolean::class.javaPrimitiveType, iconHook)
-        if (!SystemUI.newStyle) {
+        if (!newStyle) {
             ModuleHelper.findAndHookMethodSilently("com.android.systemui.statusbar.phone.MiuiDripLeftStatusBarIconControllerImpl", lpparam.classLoader, "setIconVisibility", String::class.java, Boolean::class.javaPrimitiveType, iconHook)
         }
     }
@@ -1569,7 +1572,7 @@ object SystemUIStatusBarHooks {
 
                 val tx = if (hideLow && txSpeed < lowLevel) "" else humanReadableByteCount(mContext, txSpeed) + txarrow
                 val rx = if (hideLow && rxSpeed < lowLevel) "" else humanReadableByteCount(mContext, rxSpeed) + rxarrow
-                if (SystemUI.newStyle) {
+                if (newStyle) {
                     param.getArgs()[0] = arrayOf(tx + "\n" + rx, "")
                 } else {
                     param.getArgs()[0] = tx + "\n" + rx
