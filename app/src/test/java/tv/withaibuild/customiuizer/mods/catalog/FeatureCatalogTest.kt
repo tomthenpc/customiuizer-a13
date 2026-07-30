@@ -224,7 +224,13 @@ class FeatureCatalogTest {
             "networkIndicatorWifi",
             "muteVisibleNotifications",
             "hideLauncherTitles",
-            "fixAppInfoLaunch"
+            "fixAppInfoLaunch",
+            "hideProximityWarning",
+            "clearAllTasks",
+            "hideDismissView",
+            "hideLockScreenHint",
+            "folderColumns",
+            "titleTopMargin"
         )
         assertEquals(ids, FeatureCatalog.specs().map { it.id }.toSet())
     }
