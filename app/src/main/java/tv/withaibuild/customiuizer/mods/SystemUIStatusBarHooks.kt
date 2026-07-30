@@ -373,7 +373,7 @@ object SystemUIStatusBarHooks {
             }
         })
 
-        DeviceInfoMonitor.hook(lpparam)
+        DeviceInfoMonitor.hook(lpparam, showBatteryDetail, showDeviceTemp)
     }
 
     private fun getIconTextView(iconView: View): TextView {

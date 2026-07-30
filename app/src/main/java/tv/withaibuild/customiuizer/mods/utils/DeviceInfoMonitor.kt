@@ -128,11 +128,23 @@ object DeviceInfoMonitor {
     private var powerManager: PowerManager? = null
     private var chargeUtilsClass: Class<*>? = null
     private var classLoader: ClassLoader? = null
+    private var fixedShowBatteryDetail = false
+    private var fixedShowDeviceTemp = false
 
     @JvmStatic
-    fun hook(lpparam: PackageReadyParam) {
+    fun hook(
+        lpparam: PackageReadyParam,
+        showBatteryDetail: Boolean,
+        showDeviceTemp: Boolean
+    ) {
         classLoader = lpparam.classLoader
-        snapshot = readSnapshot(MainModule.mPrefs)
+        fixedShowBatteryDetail = showBatteryDetail
+        fixedShowDeviceTemp = showDeviceTemp
+        snapshot = readSnapshot(
+            MainModule.mPrefs,
+            fixedShowBatteryDetail,
+            fixedShowDeviceTemp
+        )
         if (snapshot?.enabled != true) return
 
         resolveChargeUtilsIfNeeded(snapshot!!)
@@ -241,7 +253,11 @@ object DeviceInfoMonitor {
     }
 
     private fun refreshConfiguration() {
-        val current = readSnapshot(MainModule.mPrefs)
+        val current = readSnapshot(
+            MainModule.mPrefs,
+            fixedShowBatteryDetail,
+            fixedShowDeviceTemp
+        )
         snapshot = current
         resolveChargeUtilsIfNeeded(current)
         synchronized(lock) {
@@ -395,12 +411,16 @@ object DeviceInfoMonitor {
     }
 
     @JvmStatic
-    internal fun readSnapshot(prefs: PrefMap<String, Any>): Snapshot {
+    internal fun readSnapshot(
+        prefs: PrefMap<String, Any>,
+        showBatteryDetail: Boolean =
+            prefs.getBoolean("system_statusbar_batterytempandcurrent"),
+        showDeviceTemp: Boolean =
+            prefs.getBoolean("system_statusbar_showdevicetemperature")
+    ): Snapshot {
         return Snapshot(
-            showBatteryDetail =
-                prefs.getBoolean("system_statusbar_batterytempandcurrent"),
-            showDeviceTemp =
-                prefs.getBoolean("system_statusbar_showdevicetemperature"),
+            showBatteryDetail = showBatteryDetail,
+            showDeviceTemp = showDeviceTemp,
             batteryInCharge =
                 prefs.getBoolean("system_statusbar_batterytempandcurrent_incharge"),
             batteryContentOpt =

@@ -82,21 +82,25 @@ class SystemUIStatusBarHooksDeviceMonitorTest {
 
         val snap = DeviceInfoMonitor.readSnapshot(map)
 
-        // Slot placement and style remain fixed, while master toggles join the controller snapshot.
+        // Slot placement and style remain fixed outside the controller snapshot.
         assertEquals(1, snap.batteryContentOpt)
     }
 
     @Test
-    fun snapshotContainsMasterTogglesForTickerShutdown() {
+    fun snapshotUsesHookTimeMasterTogglesWhenProvided() {
         val map = prefs(
-            "system_statusbar_batterytempandcurrent" to true,
+            "system_statusbar_batterytempandcurrent" to false,
             "system_statusbar_showdevicetemperature" to true
         )
 
-        val snap = DeviceInfoMonitor.readSnapshot(map)
+        val snap = DeviceInfoMonitor.readSnapshot(
+            map,
+            showBatteryDetail = true,
+            showDeviceTemp = false
+        )
 
         assertTrue(snap.showBatteryDetail)
-        assertTrue(snap.showDeviceTemp)
+        assertFalse(snap.showDeviceTemp)
         assertTrue(snap.enabled)
     }
 
