@@ -20,48 +20,54 @@ from pathlib import Path
 
 REPO_ROOT = Path(__file__).resolve().parent.parent
 MAIN_MODULE = REPO_ROOT / "app" / "src" / "main" / "java" / "tv" / "withaibuild" / "customiuizer" / "MainModule.java"
-BASELINE_REF = "1ff4fa2"
+BASELINE_REF = "origin/devin/r13.8-install-evidence-correctness"
 
 
-def extract_canary_tokens(text: str) -> list[str]:
-    """Return ordered tokens for canary hook calls and catalog calls."""
-    canary_feature_ids = {
+def extract_catalog_tokens(text: str) -> list[str]:
+    """Return ordered tokens for all catalog feature calls (direct or via catalog)."""
+    catalog_feature_ids = {
+        "packagePermissions",
         "autoBrightnessRange",
         "muffledVibration",
+        "statusBarClockTweak",
         "noMoreIcon",
         "batteryIndicator",
         "noClockHide",
         "noWidgetOnly",
+        "screenDimTime",
+        "firstVolumePress",
+        "networkIndicatorWifi",
+        "muteVisibleNotifications",
+        "hideLauncherTitles",
+        "fixAppInfoLaunch",
     }
     direct_to_id = {
+        "PackagePermissions.hook": "packagePermissions",
+        "SystemStatusBarClockAndMoreHooks.StatusBarClockTweakHook": "statusBarClockTweak",
         "SystemDisplayAndWindowHooks.AutoBrightnessRangeHook": "autoBrightnessRange",
         "SystemAudioAndVisualAndMoreHooks.MuffledVibrationHook": "muffledVibration",
         "SystemNotificationMoreHooks.NoMoreIconHook": "noMoreIcon",
         "SystemUIBatteryHooks.BatteryIndicatorHook": "batteryIndicator",
         "LauncherSystemHooks.NoClockHideHook": "noClockHide",
         "LauncherLayoutHooks.NoWidgetOnlyHook": "noWidgetOnly",
+        "SystemAudioAndVisualAndMoreHooks.ScreenDimTimeHook": "screenDimTime",
+        "SystemAudioAndVisualAndMoreHooks.FirstVolumePressHook": "firstVolumePress",
+        "SystemStatusBarMoreHooks.NetworkIndicatorWifi": "networkIndicatorWifi",
+        "SystemNotificationMoreHooks.MuteVisibleNotificationsHook": "muteVisibleNotifications",
+        "LauncherIconHooks.HideTitlesHook": "hideLauncherTitles",
+        "LauncherSystemHooks.FixAppInfoLaunchHook": "fixAppInfoLaunch",
     }
 
     tokens = []
-    # Direct hook calls that were migrated.
-    for m in re.finditer(
-        r'(?:SystemDisplayAndWindowHooks\.AutoBrightnessRangeHook'
-        r'|SystemAudioAndVisualAndMoreHooks\.MuffledVibrationHook'
-        r'|SystemNotificationMoreHooks\.NoMoreIconHook'
-        r'|SystemUIBatteryHooks\.BatteryIndicatorHook'
-        r'|LauncherSystemHooks\.NoClockHideHook'
-        r'|LauncherLayoutHooks\.NoWidgetOnlyHook)',
-        text
-    ):
-        tokens.append(direct_to_id[m.group(0)])
-
-    # Catalog installById calls.
-    for m in re.finditer(
-        r'FeatureCatalog\.installById\("([^"]+)",\s*\w+Runtime\)',
-        text
-    ):
-        if m.group(1) in canary_feature_ids:
-            tokens.append(m.group(1))
+    # Single pass: match either a direct hook call or a catalog installById call
+    # in the order they appear in MainModule.
+    direct_pattern = "|".join(re.escape(k) for k in direct_to_id)
+    full_pattern = f"({direct_pattern})|FeatureCatalog\\.installById\\(\"([^\"]+)\",\\s*\\w+Runtime\\)"
+    for m in re.finditer(full_pattern, text):
+        if m.group(1):
+            tokens.append(direct_to_id[m.group(1)])
+        elif m.group(2) and m.group(2) in catalog_feature_ids:
+            tokens.append(m.group(2))
     return tokens
 
 
@@ -81,36 +87,42 @@ def main() -> int:
     current_text = MAIN_MODULE.read_text(encoding="utf-8")
     baseline_text = get_baseline_text()
 
-    baseline_tokens = extract_canary_tokens(baseline_text)
-    current_tokens = extract_canary_tokens(current_text)
+    baseline_tokens = extract_catalog_tokens(baseline_text)
+    current_tokens = extract_catalog_tokens(current_text)
 
-    canary_feature_ids = [
+    catalog_feature_ids = {
+        "packagePermissions",
         "autoBrightnessRange",
         "muffledVibration",
+        "statusBarClockTweak",
         "noMoreIcon",
         "batteryIndicator",
         "noClockHide",
         "noWidgetOnly",
-    ]
+        "screenDimTime",
+        "firstVolumePress",
+        "networkIndicatorWifi",
+        "muteVisibleNotifications",
+        "hideLauncherTitles",
+        "fixAppInfoLaunch",
+    }
 
-    expected = canary_feature_ids
-    expected_current = canary_feature_ids
-
-    if baseline_tokens != expected:
-        print("Baseline MainModule does not match expected canary call sequence.")
-        print(f"  expected: {expected}")
-        print(f"  actual:   {baseline_tokens}")
+    if set(baseline_tokens) != catalog_feature_ids:
+        print("Baseline MainModule does not contain the expected catalog feature call set.")
+        print(f"  missing:  {sorted(catalog_feature_ids - set(baseline_tokens))}")
+        print(f"  extra:    {sorted(set(baseline_tokens) - catalog_feature_ids)}")
+        print(f"  tokens:   {baseline_tokens}")
         return 1
 
-    if current_tokens != expected_current:
-        print("Current MainModule canary install-by-id sequence is out of order.")
-        print(f"  expected: {expected_current}")
-        print(f"  actual:   {current_tokens}")
+    if current_tokens != baseline_tokens:
+        print("Current MainModule catalog install-by-id sequence is out of order or incomplete.")
+        print(f"  baseline: {baseline_tokens}")
+        print(f"  current:  {current_tokens}")
         return 1
 
     # Ensure no bulk FeatureCatalog.installForPackage remains and no extra
-    # FeatureCatalog.installById calls were added outside the canary set.
-    extra = set(current_tokens) - set(expected_current)
+    # FeatureCatalog.installById calls were added outside the catalog set.
+    extra = set(current_tokens) - catalog_feature_ids
     if extra:
         print(f"Unexpected FeatureCatalog.installById calls: {sorted(extra)}")
         return 1
@@ -123,7 +135,7 @@ def main() -> int:
         print("FeatureCatalog.installForSystemServer bulk call still exists in MainModule.")
         return 1
 
-    print("Canary hook-sequence audit passed:")
+    print("Catalog hook-sequence audit passed:")
     print(f"  - baseline tokens: {baseline_tokens}")
     print(f"  - current tokens:  {current_tokens}")
     print("  - order preserved, conditions moved to catalog, no bulk-install leftovers")

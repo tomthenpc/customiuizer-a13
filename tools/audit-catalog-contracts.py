@@ -22,7 +22,7 @@ import sys
 from pathlib import Path
 
 REPO_ROOT = Path(__file__).resolve().parent.parent
-CONTRACTS_FILE = (
+CANARY_CONTRACTS_FILE = (
     REPO_ROOT
     / "app"
     / "src"
@@ -34,6 +34,19 @@ CONTRACTS_FILE = (
     / "mods"
     / "catalog"
     / "CanaryContracts.kt"
+)
+BATCH1_CONTRACTS_FILE = (
+    REPO_ROOT
+    / "app"
+    / "src"
+    / "main"
+    / "java"
+    / "tv"
+    / "withaibuild"
+    / "customiuizer"
+    / "mods"
+    / "catalog"
+    / "CatalogContracts.kt"
 )
 CATALOG_FILE = (
     REPO_ROOT
@@ -57,6 +70,12 @@ INSTALLER_FILES = {
     "batteryIndicator": REPO_ROOT / "app" / "src" / "main" / "java" / "tv" / "withaibuild" / "customiuizer" / "mods" / "SystemUIBatteryHooks.kt",
     "noClockHide": REPO_ROOT / "app" / "src" / "main" / "java" / "tv" / "withaibuild" / "customiuizer" / "mods" / "LauncherSystemHooks.kt",
     "noWidgetOnly": REPO_ROOT / "app" / "src" / "main" / "java" / "tv" / "withaibuild" / "customiuizer" / "mods" / "LauncherLayoutHooks.kt",
+    "screenDimTime": REPO_ROOT / "app" / "src" / "main" / "java" / "tv" / "withaibuild" / "customiuizer" / "mods" / "SystemAudioAndVisualAndMoreHooks.kt",
+    "firstVolumePress": REPO_ROOT / "app" / "src" / "main" / "java" / "tv" / "withaibuild" / "customiuizer" / "mods" / "SystemAudioAndVisualAndMoreHooks.kt",
+    "networkIndicatorWifi": REPO_ROOT / "app" / "src" / "main" / "java" / "tv" / "withaibuild" / "customiuizer" / "mods" / "SystemStatusBarMoreHooks.kt",
+    "muteVisibleNotifications": REPO_ROOT / "app" / "src" / "main" / "java" / "tv" / "withaibuild" / "customiuizer" / "mods" / "SystemNotificationMoreHooks.kt",
+    "hideLauncherTitles": REPO_ROOT / "app" / "src" / "main" / "java" / "tv" / "withaibuild" / "customiuizer" / "mods" / "LauncherIconHooks.kt",
+    "fixAppInfoLaunch": REPO_ROOT / "app" / "src" / "main" / "java" / "tv" / "withaibuild" / "customiuizer" / "mods" / "LauncherSystemHooks.kt",
 }
 
 CANARY_IDS = {
@@ -69,6 +88,17 @@ CANARY_IDS = {
     "noClockHide",
     "noWidgetOnly",
 }
+
+BATCH1_IDS = {
+    "screenDimTime",
+    "firstVolumePress",
+    "networkIndicatorWifi",
+    "muteVisibleNotifications",
+    "hideLauncherTitles",
+    "fixAppInfoLaunch",
+}
+
+CATALOG_IDS = CANARY_IDS | BATCH1_IDS
 
 
 # Mapping of legacy operation names to operation types as they appear in source.
@@ -234,7 +264,7 @@ def extract_catalog_contracts(text: str) -> dict[str, str]:
         block = text[start + 1 : end]
 
         idm = re.search(r"id\s*=\s*\"([^\"]+)\"", block)
-        cm = re.search(r"contract\s*=\s*CanaryContracts\.(\w+)", block)
+        cm = re.search(r"contract\s*=\s*(?:Canary|Catalog)Contracts\.(\w+)", block)
         if idm and cm:
             result[idm.group(1)] = cm.group(1)
     return result
@@ -358,7 +388,9 @@ def _find_installer_call(
 
 
 def main() -> int:
-    contracts_text = CONTRACTS_FILE.read_text(encoding="utf-8")
+    canary_text = CANARY_CONTRACTS_FILE.read_text(encoding="utf-8")
+    batch1_text = BATCH1_CONTRACTS_FILE.read_text(encoding="utf-8")
+    contracts_text = canary_text + "\n" + batch1_text
     catalog_text = CATALOG_FILE.read_text(encoding="utf-8")
 
     contracts = extract_contracts(contracts_text)
@@ -366,13 +398,13 @@ def main() -> int:
 
     errors: list[str] = []
 
-    # 1. Exactly 8 canary contracts; no extra contract features.
-    if len(catalog_contracts) != len(CANARY_IDS):
+    # 1. Exactly the expected catalog contract count.
+    if len(catalog_contracts) != len(CATALOG_IDS):
         errors.append(
-            f"FeatureCatalog has {len(catalog_contracts)} canary contracts, expected {len(CANARY_IDS)}"
+            f"FeatureCatalog has {len(catalog_contracts)} contracts, expected {len(CATALOG_IDS)}"
         )
 
-    for feature_id in CANARY_IDS:
+    for feature_id in CATALOG_IDS:
         contract_name = catalog_contracts.get(feature_id)
         if contract_name is None:
             errors.append(f"FeatureCatalog missing contract for {feature_id}")
@@ -380,18 +412,18 @@ def main() -> int:
 
         contract = contracts.get(contract_name)
         if contract is None:
-            errors.append(f"CanaryContracts.{contract_name} referenced by {feature_id} not found")
+            errors.append(f"Contract {contract_name} referenced by {feature_id} not found")
             continue
 
         if contract["feature_id"] != feature_id:
             errors.append(
-                f"CanaryContracts.{contract_name} featureId is {contract['feature_id']!r}, "
+                f"Contract {contract_name} featureId is {contract['feature_id']!r}, "
                 f"expected {feature_id!r}"
             )
 
         requirements = contract["requirements"]
         if not requirements:
-            errors.append(f"CanaryContracts.{contract_name} has no requirements")
+            errors.append(f"Contract {contract_name} has no requirements")
 
         # Old model checks
         if "required =" in contracts_text.split("val $contract_name", 1)[0 if contract_name == list(contracts.keys())[0] else 0:][:500]:
@@ -406,33 +438,33 @@ def main() -> int:
         body = contracts_text[start + 1 : end]
 
         if re.search(r"\brequired\s*=\s*listOf", body):
-            errors.append(f"CanaryContracts.{name} uses old `required = listOf` model")
+            errors.append(f"Contract {name} uses old `required = listOf` model")
         if re.search(r"\boptional\s*=\s*listOf", body):
-            errors.append(f"CanaryContracts.{name} uses old `optional = listOf` model")
+            errors.append(f"Contract {name} uses old `optional = listOf` model")
         if re.search(r"\brequired\s*=\s*(true|false)", body):
-            errors.append(f"CanaryContracts.{name} contains HookTargetSpec.required")
+            errors.append(f"Contract {name} contains HookTargetSpec.required")
         if "fallbackGroup" in body:
-            errors.append(f"CanaryContracts.{name} contains fallbackGroup")
+            errors.append(f"Contract {name} contains fallbackGroup")
         if "fallbackOrder" in body:
-            errors.append(f"CanaryContracts.{name} contains fallbackOrder")
+            errors.append(f"Contract {name} contains fallbackOrder")
 
         requirements = contracts.get(name, {}).get("requirements", [])
         for req in requirements:
             if req["kind"] == "SingleTargetRequirement" and not req["candidates"]:
-                errors.append(f"CanaryContracts.{name} SingleTargetRequirement {req.get('id')} has no target")
+                errors.append(f"Contract {name} SingleTargetRequirement {req.get('id')} has no target")
                 continue
 
             if req["kind"] == "AnyOfRequirement":
                 if not req["candidates"]:
-                    errors.append(f"CanaryContracts.{name} AnyOfRequirement {req.get('id')} is empty")
+                    errors.append(f"Contract {name} AnyOfRequirement {req.get('id')} is empty")
                 ids = [c["id"] for c in req["candidates"]]
                 if len(ids) != len(set(ids)):
                     errors.append(
-                        f"CanaryContracts.{name} AnyOfRequirement {req.get('id')} has duplicate candidate ids"
+                        f"Contract {name} AnyOfRequirement {req.get('id')} has duplicate candidate ids"
                     )
                 if len(ids) == 1:
                     errors.append(
-                        f"CanaryContracts.{name} AnyOfRequirement {req.get('id')} has only one candidate"
+                        f"Contract {name} AnyOfRequirement {req.get('id')} has only one candidate"
                     )
                 # fallback order is implicit in the list; check no non-consecutive ordering is encoded.
 
@@ -440,7 +472,7 @@ def main() -> int:
                 if cand["operation"] in ("EXACT_METHOD", "EXACT_CONSTRUCTOR"):
                     if not cand["parameterTypesExplicit"]:
                         errors.append(
-                            f"CanaryContracts.{name} candidate {cand['id']} is EXACT but missing explicit parameterTypes"
+                            f"Contract {name} candidate {cand['id']} is EXACT but missing explicit parameterTypes"
                         )
 
         # Build a map of (class, member, operation) -> candidate count for mixing check.
@@ -457,7 +489,7 @@ def main() -> int:
         for (cls, mem), ops in member_ops.items():
             if "EXACT_METHOD" in ops and "ALL_METHODS_BY_NAME" in ops:
                 errors.append(
-                    f"CanaryContracts.{name} mixes EXACT_METHOD and ALL_METHODS_BY_NAME for {cls}#{mem}"
+                    f"Contract {name} mixes EXACT_METHOD and ALL_METHODS_BY_NAME for {cls}#{mem}"
                 )
 
     # Cross-check against installer calls.
@@ -483,13 +515,13 @@ def main() -> int:
                 )
                 if op == "":
                     errors.append(
-                        f"CanaryContracts.{contract_name} candidate {cand['id']} "
+                        f"Contract {contract_name} candidate {cand['id']} "
                         f"({cand['operation']}) has no matching call in {installer_file.name}"
                     )
                     continue
                 if op != cand["operation"]:
                     errors.append(
-                        f"CanaryContracts.{contract_name} candidate {cand['id']} "
+                        f"Contract {contract_name} candidate {cand['id']} "
                         f"expects {cand['operation']} but installer uses {op} in {installer_file.name}"
                     )
                     continue
@@ -498,7 +530,7 @@ def main() -> int:
                     actual = _normalize_signature(params)
                     if expected != actual:
                         errors.append(
-                            f"CanaryContracts.{contract_name} candidate {cand['id']} "
+                            f"Contract {contract_name} candidate {cand['id']} "
                             f"signature mismatch: contract {expected} vs installer {actual}"
                         )
 
@@ -527,6 +559,7 @@ def main() -> int:
 
     print("Catalog contract audit passed:")
     print(f"  - {len(CANARY_IDS)} canary contracts defined")
+    print(f"  - {len(BATCH1_IDS)} batch-1 contracts defined")
     print("  - contracts use the new HookRequirement model")
     print("  - no empty or duplicate AnyOfRequirement candidates")
     print("  - EXACT targets have explicit parameterTypes")
