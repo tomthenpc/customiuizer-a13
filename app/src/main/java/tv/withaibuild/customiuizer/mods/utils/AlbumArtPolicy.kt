@@ -64,10 +64,10 @@ internal object AlbumArtPolicy {
 
     fun cacheBudgetBytes(width: Int, height: Int): Int {
         if (width <= 0 || height <= 0) return 0
-        val frameBytes = width.toLong() * height.toLong() * BYTES_PER_PIXEL
-        return (frameBytes * CACHE_BUDGET_FRAMES)
-            .coerceAtMost(Int.MAX_VALUE.toLong())
-            .toInt()
+        val pixels = width.toLong() * height.toLong()
+        val bytesPerBudget = BYTES_PER_PIXEL * CACHE_BUDGET_FRAMES
+        if (pixels > Int.MAX_VALUE.toLong() / bytesPerBudget) return Int.MAX_VALUE
+        return (pixels * bytesPerBudget).toInt()
     }
 
     fun shouldRebuildCache(

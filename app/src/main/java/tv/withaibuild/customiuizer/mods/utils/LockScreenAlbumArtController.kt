@@ -73,8 +73,10 @@ object LockScreenAlbumArtController {
         { runnable ->
             Thread(
                 {
-                    Process.setThreadPriority(Process.THREAD_PRIORITY_BACKGROUND)
-                    runnable.run()
+                    ModuleHelper.guarded("LockScreenAlbumArtController.workerThread") {
+                        Process.setThreadPriority(Process.THREAD_PRIORITY_BACKGROUND)
+                        runnable.run()
+                    }
                 },
                 "Pengeek-LockscreenArtwork"
             )
