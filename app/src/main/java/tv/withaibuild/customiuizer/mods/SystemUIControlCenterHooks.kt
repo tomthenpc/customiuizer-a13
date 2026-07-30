@@ -184,7 +184,7 @@ object SystemUIControlCenterHooks {
             override fun after(param: AfterHookCallback) {
                 val mExpanded = XposedHelpers.getBooleanField(param.getThisObject(), "mExpanded")
                 var blurRatio = blurCollapsed
-                val isVisible = param.getArgs()[0] as? Boolean ?: false
+                val isVisible = param.getArg(0) as? Boolean ?: false
                 if (mExpanded && !isVisible) {
                     blurRatio = blurExpanded
                 }
@@ -249,8 +249,8 @@ object SystemUIControlCenterHooks {
             notifVolumeOffResId = MainModule.resHooks.addResource("ic_miui_volume_notification_mute", R.drawable.ic_miui_volume_notification_mute)
             ModuleHelper.hookAllMethods("com.android.systemui.miui.volume.MiuiVolumeDialogImpl", classLoader, "addColumn", object : MethodHook() {
                 override fun before(param: BeforeHookCallback) {
-                    if (param.getArgs().size != 4) return
-                    val streamType = param.getArgs()[0] as? Int ?: return
+                    if (param.getArgsCount() != 4) return
+                    val streamType = param.getArg(0) as? Int ?: return
                     if (streamType == 4) {
                         XposedHelpers.callMethod(param.getThisObject(), "addColumn", 5, notifVolumeOnResId, notifVolumeOffResId, true, false)
                     }
@@ -425,7 +425,7 @@ object SystemUIControlCenterHooks {
         ModuleHelper.hookAllMethods("com.android.systemui.qs.MiuiTileLayout", lpparam.classLoader, "addTile", object : MethodHook() {
             override fun before(param: BeforeHookCallback) {
                 val viewGroup = param.getThisObject() as? ViewGroup ?: return
-                updateLabelsVisibility(param.getArgs()[0], XposedHelpers.getIntField(param.getThisObject(), "mRows"), viewGroup.resources.configuration.orientation)
+                updateLabelsVisibility(param.getArg(0), XposedHelpers.getIntField(param.getThisObject(), "mRows"), viewGroup.resources.configuration.orientation)
             }
         })
 
@@ -436,7 +436,7 @@ object SystemUIControlCenterHooks {
                 val mPages = XposedHelpers.getObjectField(param.getThisObject(), "mPages") as? ArrayList<Any> ?: return
                 var mRows = 0
                 if (mPages.size > 0) mRows = XposedHelpers.getIntField(mPages[0], "mRows")
-                updateLabelsVisibility(param.getArgs()[0], mRows, viewGroup.resources.configuration.orientation)
+                updateLabelsVisibility(param.getArg(0), mRows, viewGroup.resources.configuration.orientation)
             }
         })
 
@@ -479,7 +479,7 @@ object SystemUIControlCenterHooks {
         val QSController = XposedHelpers.findClassIfExists("miui.systemui.controlcenter.qs.tileview.StandardTileView", pluginLoader) ?: return
         ModuleHelper.hookAllMethods(QSController, "init", object : MethodHook() {
             override fun before(param: BeforeHookCallback) {
-                if (param.getArgs().size != 1) return
+                if (param.getArgsCount() != 1) return
                 val mLabelContainer = XposedHelpers.getObjectField(param.getThisObject(), "labelContainer") as? View ?: return
                 mLabelContainer.visibility = View.GONE
             }
@@ -592,7 +592,7 @@ object SystemUIControlCenterHooks {
                 val clsName = param.getThisObject()?.javaClass?.simpleName ?: ""
                 val isInControlCenter = clsName == "ControlPanelWindowView" || clsName == "ControlCenterWindowViewImpl"
                 if (isInControlCenter) {
-                    if (param.getArgs().size == 2 && param.getArgs()[1] as? Boolean == true) {
+                    if (param.getArgsCount() == 2 && param.getArg(1) as? Boolean == true) {
                         return
                     }
                     val statusBarStateController = XposedHelpers.getObjectField(param.getThisObject(), "statusBarStateController")
@@ -608,7 +608,7 @@ object SystemUIControlCenterHooks {
                 if (sbHeight == -1) {
                     sbHeight = res.getDimensionPixelSize(res.getIdentifier("status_bar_height", "dimen", "android"))
                 }
-                val event = param.getArgs()[0] as? MotionEvent ?: return
+                val event = param.getArg(0) as? MotionEvent ?: return
                 when (event.actionMasked) {
                     MotionEvent.ACTION_DOWN -> {
                         tapStartX = event.x
@@ -808,7 +808,7 @@ object SystemUIControlCenterHooks {
             override fun after(param: AfterHookCallback) {
                 val pctTag = if (mPct?.tag != null) mPct!!.tag as? Int ?: 0 else 0
                 if (pctTag == 0 || mPct == null) return
-                val currentLevel = param.getArgs()[3] as? Int ?: return
+                val currentLevel = param.getArg(3) as? Int ?: return
                 if (BrightnessUtils != null) {
                     val maxLevel = XposedHelpers.getStaticObjectField(BrightnessUtils, "GAMMA_SPACE_MAX") as? Int ?: 1
                     mPct!!.text = ((currentLevel * 100) / maxLevel).toString() + "%"
@@ -839,7 +839,7 @@ object SystemUIControlCenterHooks {
 
             @SuppressLint("SetTextI18n")
             override fun after(param: AfterHookCallback) {
-                val argLevel = param.getArgs()[1] as? Int ?: return
+                val argLevel = param.getArg(1) as? Int ?: return
                 if (nowLevel == argLevel) return
                 val pctTag = if (mPct?.tag != null) mPct!!.tag as? Int ?: 0 else 0
                 if (pctTag != 3 || mPct == null) return
@@ -848,7 +848,7 @@ object SystemUIControlCenterHooks {
                 if (ss == null) return
                 if (XposedHelpers.getIntField(mColumn, "stream") == 10) return
 
-                val fromUser = param.getArgs()[2] as? Boolean ?: false
+                val fromUser = param.getArg(2) as? Boolean ?: false
                 var currentLevel: Int
                 if (fromUser) {
                     currentLevel = argLevel
@@ -863,7 +863,7 @@ object SystemUIControlCenterHooks {
                 if (levelMin > 0 && currentLevel < levelMin * 1000) {
                     currentLevel = levelMin * 1000
                 }
-                val seekBar = param.getArgs()[0] as? SeekBar ?: return
+                val seekBar = param.getArg(0) as? SeekBar ?: return
                 val max = seekBar.max
                 val maxLevel = max / 1000
                 if (currentLevel != 0) {
@@ -997,7 +997,7 @@ object SystemUIControlCenterHooks {
                 if (useCC) {
                     val bar = param.getThisObject() as? FrameLayout ?: return
                     val mControlPanelWindowManager = XposedHelpers.getObjectField(param.getThisObject(), "mControlPanelWindowManager")
-                    val dispatchToControlPanel = XposedHelpers.callMethod(mControlPanelWindowManager, "dispatchToControlPanel", param.getArgs()[0], bar.width) as? Boolean ?: false
+                    val dispatchToControlPanel = XposedHelpers.callMethod(mControlPanelWindowManager, "dispatchToControlPanel", param.getArg(0), bar.width) as? Boolean ?: false
                     XposedHelpers.callMethod(mControlPanelWindowManager, "setTransToControlPanel", dispatchToControlPanel)
                     param.returnAndSkip(dispatchToControlPanel)
                     return
@@ -1011,7 +1011,7 @@ object SystemUIControlCenterHooks {
                 if (added) {
                     val useCC = XposedHelpers.getBooleanField(XposedHelpers.getObjectField(param.getThisObject(), "mControlCenterController"), "useControlCenter")
                     if (useCC) {
-                        val motionEvent = param.getArgs()[0] as? MotionEvent ?: return
+                        val motionEvent = param.getArg(0) as? MotionEvent ?: return
                         if (motionEvent.actionMasked == 0) {
                             XposedHelpers.setObjectField(param.getThisObject(), "mDownX", motionEvent.rawX)
                         }
@@ -1020,7 +1020,7 @@ object SystemUIControlCenterHooks {
                             param.returnAndSkip(false)
                         } else {
                             val mDownX = XposedHelpers.getFloatField(param.getThisObject(), "mDownX")
-                            val width = param.getArgs()[1] as? Float ?: 0f
+                            val width = param.getArg(1) as? Float ?: 0f
                             if (mDownX < width / 2.0f) {
                                 param.returnAndSkip(XposedHelpers.callMethod(controlCenterWindowView, "handleMotionEvent", motionEvent, true))
                             } else {
@@ -1156,14 +1156,14 @@ object SystemUIControlCenterHooks {
             override fun after(param: AfterHookCallback) {
                 val btController = XposedHelpers.getAdditionalInstanceField(param.getThisObject(), "btController")
                 if (btController != null) {
-                    XposedHelpers.callMethod(btController, "setListening", param.getArgs()[0])
+                    XposedHelpers.callMethod(btController, "setListening", param.getArg(0))
                 }
             }
         })
         ModuleHelper.findAndHookMethod("miui.systemui.controlcenter.qs.tileview.BigTileGroupController", pluginLoader, "getRowViews", Int::class.javaPrimitiveType, object : MethodHook() {
             @Suppress("UNCHECKED_CAST")
             override fun after(param: AfterHookCallback) {
-                val row = param.getArgs()[0] as? Int ?: return
+                val row = param.getArg(0) as? Int ?: return
                 val btTileView = XposedHelpers.getAdditionalInstanceField(param.getThisObject(), "btTileView")
                 if (row == 1 && btTileView != null) {
                     (param.getResult() as? ArrayList<Any>)?.add(btTileView)

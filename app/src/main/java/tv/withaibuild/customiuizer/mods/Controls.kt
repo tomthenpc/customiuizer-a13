@@ -152,7 +152,7 @@ object Controls {
             override fun before(param: BeforeHookCallback) {
                 // Power and volkeys are pressed at the same time
                 if (isVolumePressed) return
-                val keyEvent = param.getArgs()[0] as? KeyEvent ?: return
+                val keyEvent = param.getArg(0) as? KeyEvent ?: return
 
                 val keycode = keyEvent.keyCode
                 val action = keyEvent.action
@@ -213,7 +213,7 @@ object Controls {
             override fun before(param: BeforeHookCallback) {
                 // Power and volkeys are pressed at the same time
                 if (isPowerPressed) return
-                val keyEvent = param.getArgs()[0] as? KeyEvent ?: return
+                val keyEvent = param.getArg(0) as? KeyEvent ?: return
 
                 val keycode = keyEvent.keyCode
                 val action = keyEvent.action
@@ -294,7 +294,7 @@ object Controls {
         ModuleHelper.findAndHookMethod("android.inputmethodservice.InputMethodService", lpparam.classLoader, "onKeyDown", Int::class.javaPrimitiveType, KeyEvent::class.java, object : MethodHook() {
             override fun before(param: BeforeHookCallback) {
                 val ims = param.getThisObject() as? InputMethodService ?: return
-                val code = param.getArgs()[0] as? Int ?: return
+                val code = param.getArg(0) as? Int ?: return
                 if ((code == KeyEvent.KEYCODE_VOLUME_UP || code == KeyEvent.KEYCODE_VOLUME_DOWN) && ims.isInputViewShown) {
                     val pkgName = Settings.Global.getString(ims.contentResolver, Helpers.modulePkg + ".foreground.package")
                     val appsSet = MainModule.mPrefs.getStringSet("controls_volumecursor_apps")
@@ -309,7 +309,7 @@ object Controls {
         ModuleHelper.findAndHookMethod("android.inputmethodservice.InputMethodService", lpparam.classLoader, "onKeyUp", Int::class.javaPrimitiveType, KeyEvent::class.java, object : MethodHook() {
             override fun before(param: BeforeHookCallback) {
                 val ims = param.getThisObject() as? InputMethodService ?: return
-                val code = param.getArgs()[0] as? Int ?: return
+                val code = param.getArg(0) as? Int ?: return
                 if ((code == KeyEvent.KEYCODE_VOLUME_UP || code == KeyEvent.KEYCODE_VOLUME_DOWN) && ims.isInputViewShown) {
                     val pkgName = Settings.Global.getString(ims.contentResolver, Helpers.modulePkg + ".foreground.package")
                     val appsSet = MainModule.mPrefs.getStringSet("controls_volumecursor_apps")
@@ -501,7 +501,7 @@ object Controls {
         ModuleHelper.hookAllMethods("com.android.systemui.navigationbar.NavigationBarTransitions", lpparam.classLoader, "applyDarkIntensity", object : MethodHook() {
             override fun after(param: AfterHookCallback) {
                 val navbar = XposedHelpers.getObjectField(param.getThisObject(), "mView") as? FrameLayout ?: return
-                val isDark = (param.getArgs()[0] as? Float ?: 0f) > 0.5f
+                val isDark = (param.getArg(0) as? Float ?: 0f) > 0.5f
                 val hleft = navbar.findViewWithTag<ImageView>("custom_left_horiz")
                 val vleft = navbar.findViewWithTag<ImageView>("custom_left_vert")
                 val hright = navbar.findViewWithTag<ImageView>("custom_right_horiz")
@@ -601,7 +601,7 @@ object Controls {
             override fun before(param: BeforeHookCallback) {
                 if (MainModule.mPrefs.getBoolean("controls_fingerprintskip")) {
                     val mFocusedWindow = XposedHelpers.getObjectField(param.getThisObject(), "mFocusedWindow")
-                    if ((param.getArgs()[1] as? Boolean ?: false) && mFocusedWindow != null) {
+                    if ((param.getArg(1) as? Boolean ?: false) && mFocusedWindow != null) {
                         val ownPkg = XposedHelpers.callMethod(mFocusedWindow, "getOwningPackage") as? String
                         if ("com.android.camera" == ownPkg) return
                     }
@@ -615,7 +615,7 @@ object Controls {
                 val tm = ctx.getSystemService(Context.TELECOM_SERVICE) as? TelecomManager
                 val isInCall = tm?.isInCall ?: false
 
-                val keyEvent = param.getArgs()[0] as? KeyEvent ?: return
+                val keyEvent = param.getArg(0) as? KeyEvent ?: return
                 if (keyEvent.keyCode != KeyEvent.KEYCODE_DPAD_CENTER || keyEvent.action != KeyEvent.ACTION_DOWN) return
 
                 isFingerprintPressed = true
@@ -651,13 +651,13 @@ object Controls {
             override fun after(param: AfterHookCallback) {
                 if (MainModule.mPrefs.getBoolean("controls_fingerprintskip")) {
                     val mFocusedWindow = XposedHelpers.getObjectField(param.getThisObject(), "mFocusedWindow")
-                    if ((param.getArgs()[1] as? Boolean ?: false) && mFocusedWindow != null) {
+                    if ((param.getArg(1) as? Boolean ?: false) && mFocusedWindow != null) {
                         val ownPkg = XposedHelpers.callMethod(mFocusedWindow, "getOwningPackage") as? String
                         if ("com.android.camera" == ownPkg) return
                     }
                 }
 
-                val keyEvent = param.getArgs()[0] as? KeyEvent ?: return
+                val keyEvent = param.getArg(0) as? KeyEvent ?: return
                 if (keyEvent.keyCode != KeyEvent.KEYCODE_DPAD_CENTER || keyEvent.action != KeyEvent.ACTION_UP) return
 
                 val mContext = XposedHelpers.getObjectField(param.getThisObject(), "mContext") as? Context ?: return
@@ -756,7 +756,7 @@ object Controls {
                 if (basePWMContext == null) basePWMContext = XposedHelpers.getObjectField(param.getThisObject(), "mContext") as? Context
                 if (markShortcutTriggered == null) markShortcutTriggered = XposedHelpers.findMethodExact("com.android.server.policy.BaseMiuiPhoneWindowManager", lpparam.classLoader, "markShortcutTriggered")
 
-                val key = param.getArgs()[0] as? Int ?: return
+                val key = param.getArg(0) as? Int ?: return
                 val mHandler = XposedHelpers.getObjectField(param.getThisObject(), "mHandler") as? Handler ?: return
                 if (key == KeyEvent.KEYCODE_BACK && MainModule.mPrefs.getInt("controls_backlong_action", 1) > 1) {
                     mHandler.postDelayed(mBackLongPressAction, ViewConfiguration.getLongPressTimeout().toLong())
@@ -773,7 +773,7 @@ object Controls {
 
         ModuleHelper.hookAllMethods("com.android.server.policy.BaseMiuiPhoneWindowManager", lpparam.classLoader, "removeKeyLongPress", object : MethodHook() {
             override fun before(param: BeforeHookCallback) {
-                val key = param.getArgs()[0] as? Int ?: return
+                val key = param.getArg(0) as? Int ?: return
                 val mHandler = XposedHelpers.getObjectField(param.getThisObject(), "mHandler") as? Handler ?: return
                 when (key) {
                     KeyEvent.KEYCODE_BACK -> mHandler.removeCallbacks(mBackLongPressAction)
@@ -883,14 +883,14 @@ object Controls {
         ModuleHelper.findAndHookMethod("com.android.systemui.statusbar.phone.NavigationModeControllerExt", lpparam.classLoader, "hideNavigationBar", HookerClassHelper.returnConstant(true))
         ModuleHelper.hookAllMethods("com.android.systemui.navigationbar.NavigationBarController", lpparam.classLoader, "createNavigationBar", object : MethodHook() {
             override fun before(param: BeforeHookCallback) {
-                if (param.getArgs().size >= 3) {
+                if (param.getArgsCount() >= 3) {
                     param.returnAndSkip(null)
                 }
             }
         })
         ModuleHelper.findAndHookMethod("com.android.systemui.statusbar.phone.MiuiDockIndicatorService", lpparam.classLoader, "onNavigationModeChanged", Int::class.javaPrimitiveType, object : MethodHook() {
             override fun before(param: BeforeHookCallback) {
-                XposedHelpers.setObjectField(param.getThisObject(), "mNavMode", param.getArgs()[0])
+                XposedHelpers.setObjectField(param.getThisObject(), "mNavMode", param.getArg(0))
                 if (XposedHelpers.getObjectField(param.getThisObject(), "mNavigationBarView") != null) {
                     XposedHelpers.callMethod(param.getThisObject(), "setNavigationBarView", null)
                 } else {
@@ -906,7 +906,7 @@ object Controls {
         ModuleHelper.hookAllMethods("com.android.systemui.statusbar.phone.StatusBar", lpparam.classLoader, "setImeWindowStatus", object : MethodHook() {
             override fun before(param: BeforeHookCallback) {
                 val mNavigationBarView = XposedHelpers.getObjectField(param.getThisObject(), "mNavigationBarView")
-                if (mNavigationBarView != null) XposedHelpers.callMethod(mNavigationBarView, "setNavigationIconHints", param.getArgs()[1], false)
+                if (mNavigationBarView != null) XposedHelpers.callMethod(mNavigationBarView, "setNavigationIconHints", param.getArg(1), false)
             }
         })
     }
@@ -939,7 +939,7 @@ object Controls {
     fun NoFingerprintWakeHook(lpparam: SystemServerStartingParam) {
         ModuleHelper.findAndHookMethod("com.android.server.policy.MiuiPhoneWindowManager", lpparam.classLoader, "processBackFingerprintDpcenterEvent", KeyEvent::class.java, Boolean::class.javaPrimitiveType, object : MethodHook() {
             override fun before(param: BeforeHookCallback) {
-                val isScreenOn = param.getArgs()[1] as? Boolean ?: return
+                val isScreenOn = param.getArg(1) as? Boolean ?: return
                 if (!isScreenOn) param.returnAndSkip(null)
             }
         })
@@ -949,7 +949,7 @@ object Controls {
     fun AssistGestureActionHook(lpparam: PackageReadyParam) {
         ModuleHelper.findAndHookMethod("com.android.systemui.assist.AssistManager", lpparam.classLoader, "startAssist", Bundle::class.java, object : MethodHook() {
             override fun before(param: BeforeHookCallback) {
-                val bundle = param.getArgs()[0] as? Bundle ?: return
+                val bundle = param.getArg(0) as? Bundle ?: return
                 if (bundle.getInt("triggered_by", 0) != 83 || bundle.getInt("invocation_type", 0) != 1) return
                 val mContext = XposedHelpers.getObjectField(param.getThisObject(), "mContext") as? Context ?: return
                 val pos = if (bundle.getInt("inDirection", 0) == 1) "right" else "left"

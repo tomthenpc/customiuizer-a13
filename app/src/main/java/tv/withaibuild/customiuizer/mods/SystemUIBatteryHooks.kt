@@ -48,7 +48,7 @@ object SystemUIBatteryHooks {
             override fun after(param: AfterHookCallback) {
                 val isKeyguardShowing = XposedHelpers.callMethod(param.getThisObject(), "isKeyguardShowing") as? Boolean ?: return
                 val indicator = XposedHelpers.getAdditionalInstanceField(param.getThisObject(), "mBatteryIndicator") as? BatteryIndicator ?: return
-                indicator.onExpandingChanged(!isKeyguardShowing && param.getArgs()[0] as? Boolean ?: false)
+                indicator.onExpandingChanged(!isKeyguardShowing && param.getArg(0) as? Boolean ?: false)
             }
         })
 
@@ -57,7 +57,7 @@ object SystemUIBatteryHooks {
                 val isKeyguardShowing = XposedHelpers.callMethod(param.getThisObject(), "isKeyguardShowing") as? Boolean ?: return
                 if (isKeyguardShowing) {
                     val indicator = XposedHelpers.getAdditionalInstanceField(param.getThisObject(), "mBatteryIndicator") as? BatteryIndicator ?: return
-                    indicator.onExpandingChanged(param.getArgs()[0] as? Boolean ?: false)
+                    indicator.onExpandingChanged(param.getArg(0) as? Boolean ?: false)
                 }
             }
         })
@@ -73,7 +73,7 @@ object SystemUIBatteryHooks {
         ModuleHelper.hookAllMethods("com.android.systemui.statusbar.phone.NotificationIconAreaController", lpparam.classLoader, "onDarkChanged", object : MethodHook() {
             override fun after(param: AfterHookCallback) {
                 val indicator = XposedHelpers.getAdditionalInstanceField(param.getThisObject(), "mBatteryIndicator") as? BatteryIndicator ?: return
-                indicator.onDarkModeChanged(param.getArgs()[1] as? Float ?: 0f, param.getArgs()[2] as? Int ?: 0)
+                indicator.onDarkModeChanged(param.getArg(1) as? Float ?: 0f, param.getArg(2) as? Int ?: 0)
             }
         })
 

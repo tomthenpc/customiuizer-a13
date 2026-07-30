@@ -51,7 +51,7 @@ object SystemUIMonitorAndTileHooks {
         val ResourceIconClass = XposedHelpers.findClass("com.android.systemui.qs.tileimpl.QSTileImpl\$ResourceIcon", lpparam.classLoader)
         ModuleHelper.findAndHookMethod(QSFactoryCls, lpparam.classLoader, "createTileInternal", String::class.java, object : MethodHook() {
             override fun before(param: BeforeHookCallback) {
-                val tileName = param.getArgs()[0] as? String ?: return
+                val tileName = param.getArg(0) as? String ?: return
                 if (tileName.startsWith("custom_")) {
                     val nfcField = "nfcTileProvider"
                     val provider = XposedHelpers.getObjectField(param.getThisObject(), nfcField)
@@ -87,7 +87,7 @@ object SystemUIMonitorAndTileHooks {
         ModuleHelper.findAndHookMethod(NfcTileCls, lpparam.classLoader, "handleSetListening", Boolean::class.javaPrimitiveType, object : MethodHook() {
             override fun before(param: BeforeHookCallback) {
                 val tileName = XposedHelpers.getAdditionalInstanceField(param.getThisObject(), "customName") as? String ?: return
-                val mListening = param.getArgs()[0] as? Boolean ?: return
+                val mListening = param.getArg(0) as? Boolean ?: return
                 if (tileName == "custom_5G") {
                     val mContext = XposedHelpers.getObjectField(param.getThisObject(), "mContext") as? Context ?: return
                     if (mListening) {
@@ -191,7 +191,7 @@ object SystemUIMonitorAndTileHooks {
                     }
                 }
                 if (tileName.startsWith("custom_")) {
-                    val booleanState = param.getArgs()[0]
+                    val booleanState = param.getArg(0)
                     XposedHelpers.setObjectField(booleanState, "value", isEnable)
                     XposedHelpers.setObjectField(booleanState, "state", if (isEnable) 2 else 1)
                     val tileLabel = XposedHelpers.callMethod(param.getThisObject(), "getTileLabel") as? String

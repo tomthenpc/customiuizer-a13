@@ -37,8 +37,8 @@ object LauncherGestureHooks {
                 val key: String?
                 val helperContext = (param.getThisObject() as? ViewGroup)?.context ?: return
                 var numOfFingers = 1
-                if (param.getArgs()[1] != null) numOfFingers = (param.getArgs()[1] as? MotionEvent)?.pointerCount ?: 1
-                when (param.getArgs()[0] as? Int) {
+                if (param.getArg(1) != null) numOfFingers = (param.getArg(1) as? MotionEvent)?.pointerCount ?: 1
+                when (param.getArg(0) as? Int) {
                     11 -> {
                         key = when (numOfFingers) {
                             1 -> "launcher_swipedown"
@@ -129,7 +129,7 @@ object LauncherGestureHooks {
                             mHotSeats.getHitRect(mHotHeatTouchRect)
                         }
                     }
-                    val motionEvent = param.getArgs()[0] as? MotionEvent ?: return
+                    val motionEvent = param.getArg(0) as? MotionEvent ?: return
                     val rect = mHotHeatTouchRect ?: return
                     if (rect.contains(motionEvent.x.toInt(), motionEvent.y.toInt())) {
                         param.setResult(false)
@@ -139,7 +139,7 @@ object LauncherGestureHooks {
         })
         ModuleHelper.findAndHookMethod("com.miui.home.launcher.hotseats.HotSeats", lpparam.classLoader, "dispatchTouchEvent", MotionEvent::class.java, object : MethodHook() {
             override fun before(param: BeforeHookCallback) {
-                val ev = param.getArgs()[0] as? MotionEvent ?: return
+                val ev = param.getArg(0) as? MotionEvent ?: return
                 val hotSeat = param.getThisObject() as? ViewGroup ?: return
                 val helperContext = hotSeat.context ?: return
                 val density = helperContext.resources.displayMetrics.density
@@ -230,7 +230,7 @@ object LauncherGestureHooks {
 
         ModuleHelper.findAndHookMethodSilently("com.miui.launcher.utils.MiuiSettingsUtils", lpparam.classLoader, "getGlobalBoolean", android.content.ContentResolver::class.java, String::class.java, object : MethodHook() {
             override fun after(param: AfterHookCallback) {
-                if (param.getArgs()[1] != "force_fsg_nav_bar") return
+                if (param.getArg(1) != "force_fsg_nav_bar") return
 
                 for (el in Thread.currentThread().stackTrace) {
                     if (el.className == "com.miui.home.recents.BaseRecentsImpl") {
@@ -244,7 +244,7 @@ object LauncherGestureHooks {
 
         ModuleHelper.findAndHookMethod("com.miui.home.recents.GestureStubView", lpparam.classLoader, "onTouchEvent", MotionEvent::class.java, object : MethodHook() {
             override fun before(param: BeforeHookCallback) {
-                val event = param.getArgs()[0] as? MotionEvent ?: return
+                val event = param.getArg(0) as? MotionEvent ?: return
                 if (event.action != MotionEvent.ACTION_DOWN) return
                 val foregroundInfo = miui.process.ProcessManager.getForegroundInfo()
                 if (foregroundInfo != null) {
@@ -311,10 +311,10 @@ object LauncherGestureHooks {
     fun LauncherDoubleTapHook(lpparam: PackageReadyParam) {
         ModuleHelper.hookAllConstructors("com.miui.home.launcher.Workspace", lpparam.classLoader, object : MethodHook() {
             override fun after(param: AfterHookCallback) {
-                if (param.getArgs().size != 3) return
+                if (param.getArgsCount() != 3) return
                 var mDoubleTapControllerEx = XposedHelpers.getAdditionalInstanceField(param.getThisObject(), "mDoubleTapControllerEx")
                 if (mDoubleTapControllerEx != null) return
-                mDoubleTapControllerEx = DoubleTapController(param.getArgs()[0] as? Context ?: return, "launcher_doubletap")
+                mDoubleTapControllerEx = DoubleTapController(param.getArg(0) as? Context ?: return, "launcher_doubletap")
                 XposedHelpers.setAdditionalInstanceField(param.getThisObject(), "mDoubleTapControllerEx", mDoubleTapControllerEx)
             }
         })
@@ -322,7 +322,7 @@ object LauncherGestureHooks {
         ModuleHelper.findAndHookMethod("com.miui.home.launcher.Workspace", lpparam.classLoader, "dispatchTouchEvent", MotionEvent::class.java, object : MethodHook() {
             override fun before(param: BeforeHookCallback) {
                 val mDoubleTapControllerEx = XposedHelpers.getAdditionalInstanceField(param.getThisObject(), "mDoubleTapControllerEx") as? DoubleTapController ?: return
-                if (!mDoubleTapControllerEx.isDoubleTapEvent(param.getArgs()[0] as? MotionEvent ?: return)) return
+                if (!mDoubleTapControllerEx.isDoubleTapEvent(param.getArg(0) as? MotionEvent ?: return)) return
                 val mCurrentScreenIndex = XposedHelpers.getIntField(param.getThisObject(), if (lpparam.packageName == "com.miui.home") "mCurrentScreenIndex" else "mCurrentScreen")
                 val cellLayout = XposedHelpers.callMethod(param.getThisObject(), "getCellLayout", mCurrentScreenIndex)
                 if (XposedHelpers.callMethod(cellLayout, "lastDownOnOccupiedCell") as? Boolean == true) return
@@ -336,7 +336,7 @@ object LauncherGestureHooks {
     fun LauncherPinchHook(lpparam: PackageReadyParam) {
         ModuleHelper.findAndHookMethod("com.miui.home.launcher.Workspace", lpparam.classLoader, "onPinching", Float::class.javaPrimitiveType, object : MethodHook() {
             override fun before(param: BeforeHookCallback) {
-                val dampingScale = XposedHelpers.callMethod(param.getThisObject(), "getDampingScale", param.getArgs()[0]) as? Float ?: 0f
+                val dampingScale = XposedHelpers.callMethod(param.getThisObject(), "getDampingScale", param.getArg(0)) as? Float ?: 0f
                 val screenScaleRatio = XposedHelpers.callMethod(param.getThisObject(), "getScreenScaleRatio") as? Float ?: 0f
                 if (dampingScale < screenScaleRatio)
                     if (MainModule.mPrefs.getInt("launcher_pinch_action", 1) > 1) param.returnAndSkip(false)
@@ -345,7 +345,7 @@ object LauncherGestureHooks {
 
         ModuleHelper.findAndHookMethod("com.miui.home.launcher.Workspace", lpparam.classLoader, "onPinchingEnd", Float::class.javaPrimitiveType, object : MethodHook() {
             override fun before(param: BeforeHookCallback) {
-                val dampingScale = XposedHelpers.callMethod(param.getThisObject(), "getDampingScale", param.getArgs()[0]) as? Float ?: 0f
+                val dampingScale = XposedHelpers.callMethod(param.getThisObject(), "getDampingScale", param.getArg(0)) as? Float ?: 0f
                 val screenScaleRatio = XposedHelpers.callMethod(param.getThisObject(), "getScreenScaleRatio") as? Float ?: 0f
                 if (dampingScale < screenScaleRatio)
                     if (GlobalActions.handleAction((param.getThisObject() as? View)?.context, "launcher_pinch")) {
@@ -359,7 +359,7 @@ object LauncherGestureHooks {
                         XposedHelpers.setObjectField(param.getThisObject(), "mState", stateFollow)
                         if (mState == stateReadyToEdit)
                             XposedHelpers.callMethod(XposedHelpers.getObjectField(param.getThisObject(), "mLauncher"), "changeEditingEntryViewToHotseats")
-                        XposedHelpers.callMethod(param.getThisObject(), "resetCellScreenScale", param.getArgs()[0])
+                        XposedHelpers.callMethod(param.getThisObject(), "resetCellScreenScale", param.getArg(0))
 
                         param.returnAndSkip(null)
                     }
@@ -374,11 +374,11 @@ object LauncherGestureHooks {
         if (fsGestureHelper != null) {
             ModuleHelper.findAndHookMethod(fsGestureHelper, "canTriggerAssistantAction", Float::class.javaPrimitiveType, Float::class.javaPrimitiveType, Int::class.javaPrimitiveType, object : MethodHook() {
                 override fun before(param: BeforeHookCallback) {
-                    val isDisabled = XposedHelpers.callStaticMethod(fsGestureHelper, "isAssistantGestureDisabled", param.getArgs()[2]) as? Boolean ?: true
+                    val isDisabled = XposedHelpers.callStaticMethod(fsGestureHelper, "isAssistantGestureDisabled", param.getArg(2)) as? Boolean ?: true
                     if (!isDisabled) {
                         val mAssistantWidth = XposedHelpers.getIntField(param.getThisObject(), "mAssistantWidth")
-                        val f = param.getArgs()[0] as? Float ?: 0f
-                        val f2 = param.getArgs()[1] as? Float ?: 0f
+                        val f = param.getArg(0) as? Float ?: 0f
+                        val f2 = param.getArg(1) as? Float ?: 0f
                         if (f < mAssistantWidth || f > f2 - mAssistantWidth) {
                             param.returnAndSkip(true)
                             return
@@ -392,7 +392,7 @@ object LauncherGestureHooks {
 
             ModuleHelper.hookAllMethods(fsGestureHelper, "handleTouchEvent", object : MethodHook() {
                 override fun after(param: AfterHookCallback) {
-                    val motionEvent = param.getArgs()[0] as? MotionEvent ?: return
+                    val motionEvent = param.getArg(0) as? MotionEvent ?: return
                     if (motionEvent.action == MotionEvent.ACTION_DOWN) {
                         val mDownX = XposedHelpers.getFloatField(param.getThisObject(), "mDownX")
                         val mAssistantWidth = XposedHelpers.getIntField(param.getThisObject(), "mAssistantWidth")
@@ -403,7 +403,7 @@ object LauncherGestureHooks {
 
             ModuleHelper.findAndHookMethod("com.miui.home.recents.SystemUiProxyWrapper", lpparam.classLoader, "startAssistant", Bundle::class.java, object : MethodHook() {
                 override fun before(param: BeforeHookCallback) {
-                    val bundle = param.getArgs()[0] as? Bundle ?: return
+                    val bundle = param.getArg(0) as? Bundle ?: return
                     bundle.putInt("inDirection", inDirection[0])
                 }
             })
@@ -434,11 +434,11 @@ object LauncherGestureHooks {
         ModuleHelper.findAndHookMethod("com.miui.home.recents.GestureStubView", lpparam.classLoader, "isDisableQuickSwitch", HookerClassHelper.returnConstant(false))
         ModuleHelper.findAndHookMethod("com.miui.home.recents.GestureStubView", lpparam.classLoader, "getNextTask", Context::class.java, Boolean::class.javaPrimitiveType, Int::class.javaPrimitiveType, object : MethodHook() {
             override fun before(param: BeforeHookCallback) {
-                val switchApp = param.getArgs()[1] as? Boolean ?: false
+                val switchApp = param.getArg(1) as? Boolean ?: false
                 if (switchApp) {
-                    val mContext = param.getArgs()[0] as? Context ?: return
+                    val mContext = param.getArg(0) as? Context ?: return
                     val bundle = Bundle()
-                    bundle.putInt("inDirection", param.getArgs()[2] as? Int ?: 0)
+                    bundle.putInt("inDirection", param.getArg(2) as? Int ?: 0)
                     if (GlobalActions.handleAction(mContext, "controls_fsg_swipeandstop", false, bundle)) {
                         val task = XposedHelpers.findClassIfExists("com.android.systemui.shared.recents.model.Task", lpparam.classLoader)
                         param.returnAndSkip(XposedHelpers.newInstance(task))

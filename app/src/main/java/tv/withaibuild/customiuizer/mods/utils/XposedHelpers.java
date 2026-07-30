@@ -67,9 +67,22 @@ public final class XposedHelpers {
     private XposedHelpers() {
     }
 
-    private static final ConcurrentHashMap<MemberCacheKey.Field, Optional<Field>> fieldCache = new ConcurrentHashMap<>();
+    private static final ConcurrentHashMap<Class<?>, ConcurrentHashMap<String, Optional<Field>>> fieldCache = new ConcurrentHashMap<>();
+    private static final ConcurrentHashMap<Class<?>, ConcurrentHashMap<String, Optional<Method>>> noArgMethodCache = new ConcurrentHashMap<>();
     private static final ConcurrentHashMap<MemberCacheKey.Method, Optional<Method>> methodCache = new ConcurrentHashMap<>();
     private static final ConcurrentHashMap<MemberCacheKey.Constructor, Optional<Constructor<?>>> constructorCache = new ConcurrentHashMap<>();
+    private static final Object[] EMPTY_OBJECT_ARRAY = new Object[0];
+    private static final Class<?>[] EMPTY_CLASS_ARRAY = new Class<?>[0];
+
+    private static <T> ConcurrentHashMap<String, Optional<T>> membersOf(
+            ConcurrentHashMap<Class<?>, ConcurrentHashMap<String, Optional<T>>> cache,
+            Class<?> clazz) {
+        ConcurrentHashMap<String, Optional<T>> members = cache.get(clazz);
+        if (members != null) return members;
+        ConcurrentHashMap<String, Optional<T>> created = new ConcurrentHashMap<>();
+        ConcurrentHashMap<String, Optional<T>> raced = cache.putIfAbsent(clazz, created);
+        return raced != null ? raced : created;
+    }
     /**
      * Sentinel value used in additional-field maps because {@link ConcurrentHashMap} does not allow null.
      */
@@ -229,31 +242,6 @@ public final class XposedHelpers {
             }
         }
 
-        static final class Field extends MemberCacheKey {
-            private final Class<?> clazz;
-            private final String name;
-
-            public Field(Class<?> clazz, String name) {
-                super(Objects.hash(clazz, name));
-                this.clazz = clazz;
-                this.name = name;
-            }
-
-            @Override
-            public boolean equals(Object o) {
-                if (this == o) return true;
-                if (!(o instanceof Field)) return false;
-                Field field = (Field) o;
-                return Objects.equals(clazz, field.clazz) && Objects.equals(name, field.name);
-            }
-
-            @NonNull
-            @Override
-            public String toString() {
-                return clazz.getName() + "#" + name;
-            }
-        }
-
         static final class Method extends MemberCacheKey {
             private final Class<?> clazz;
             private final String name;
@@ -360,17 +348,22 @@ public final class XposedHelpers {
      * @throws NoSuchFieldError In case the field was not found.
      */
     public static Field findField(Class<?> clazz, String fieldName) {
-        MemberCacheKey.Field key = new MemberCacheKey.Field(clazz, fieldName);
-
-        return fieldCache.computeIfAbsent(key, k -> {
+        ConcurrentHashMap<String, Optional<Field>> fields = membersOf(fieldCache, clazz);
+        Optional<Field> cached = fields.get(fieldName);
+        if (cached == null) {
             try {
-                Field newField = findFieldRecursiveImpl(k.clazz, k.name);
+                Field newField = findFieldRecursiveImpl(clazz, fieldName);
                 newField.setAccessible(true);
-                return Optional.of(newField);
+                cached = Optional.of(newField);
             } catch (NoSuchFieldException e) {
-                return Optional.empty();
+                cached = Optional.empty();
             }
-        }).orElseThrow(() -> new NoSuchFieldError(key.toString()));
+            Optional<Field> raced = fields.putIfAbsent(fieldName, cached);
+            if (raced != null) cached = raced;
+        }
+        Field field = cached.orElse(null);
+        if (field != null) return field;
+        throw new NoSuchFieldError(clazz.getName() + "#" + fieldName);
     }
 
     /**
@@ -590,6 +583,23 @@ public final class XposedHelpers {
      * @return A reference to the best-matching method.
      * @throws NoSuchMethodError In case no suitable method was found.
      */
+    public static Method findMethodBestMatch(Class<?> clazz, String methodName) {
+        ConcurrentHashMap<String, Optional<Method>> methods = membersOf(noArgMethodCache, clazz);
+        Optional<Method> cached = methods.get(methodName);
+        if (cached == null) {
+            try {
+                cached = Optional.of(findMethodBestMatch(clazz, methodName, EMPTY_CLASS_ARRAY));
+            } catch (NoSuchMethodError e) {
+                cached = Optional.empty();
+            }
+            Optional<Method> raced = methods.putIfAbsent(methodName, cached);
+            if (raced != null) cached = raced;
+        }
+        Method method = cached.orElse(null);
+        if (method != null) return method;
+        return findMethodBestMatch(clazz, methodName, EMPTY_CLASS_ARRAY);
+    }
+
     public static Method findMethodBestMatch(Class<?> clazz, String methodName, Class<?>... parameterTypes) {
         // find the exact matching method first
         try {
@@ -1568,6 +1578,19 @@ public final class XposedHelpers {
      * @throws NoSuchMethodError     In case no suitable method was found.
      * @throws InvocationTargetError In case an exception was thrown by the invoked method.
      */
+    public static Object callMethod(Object obj, String methodName) {
+        try {
+            return findMethodBestMatch(obj.getClass(), methodName).invoke(obj, EMPTY_OBJECT_ARRAY);
+        } catch (IllegalAccessException e) {
+            XposedHelpers.log(e);
+            throw new IllegalAccessError(e.getMessage());
+        } catch (IllegalArgumentException e) {
+            throw e;
+        } catch (InvocationTargetException e) {
+            throw new InvocationTargetError(e.getCause());
+        }
+    }
+
     public static Object callMethod(Object obj, String methodName, Object... args) {
         try {
             return findMethodBestMatch(obj.getClass(), methodName, args).invoke(obj, args);
@@ -1613,6 +1636,19 @@ public final class XposedHelpers {
      * @throws NoSuchMethodError     In case no suitable method was found.
      * @throws InvocationTargetError In case an exception was thrown by the invoked method.
      */
+    public static Object callStaticMethod(Class<?> clazz, String methodName) {
+        try {
+            return findMethodBestMatch(clazz, methodName).invoke(null, EMPTY_OBJECT_ARRAY);
+        } catch (IllegalAccessException e) {
+            XposedHelpers.log(e);
+            throw new IllegalAccessError(e.getMessage());
+        } catch (IllegalArgumentException e) {
+            throw e;
+        } catch (InvocationTargetException e) {
+            throw new InvocationTargetError(e.getCause());
+        }
+    }
+
     public static Object callStaticMethod(Class<?> clazz, String methodName, Object... args) {
         try {
             return findMethodBestMatch(clazz, methodName, args).invoke(null, args);

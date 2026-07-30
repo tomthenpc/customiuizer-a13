@@ -299,8 +299,8 @@ object SystemUIStatusBarHooks {
 
             ModuleHelper.hookAllMethods("com.android.systemui.statusbar.phone.StatusBarIconController\$IconManager", lpparam.classLoader, "addHolder", object : MethodHook() {
                 override fun before(param: BeforeHookCallback) {
-                    if (param.getArgs().size != 4) return
-                    val iconHolder = param.getArgs()[3]
+                    if (param.getArgsCount() != 4) return
+                    val iconHolder = param.getArg(3)
                     val type = XposedHelpers.callMethod(iconHolder, "getType") as Int
                     if (type == 91 || type == 92) {
                         val mContext = XposedHelpers.getObjectField(param.getThisObject(), "mContext") as? Context ?: return
@@ -313,7 +313,7 @@ object SystemUIStatusBarHooks {
                             }
                         }
                         val iconView = createStatusbarTextIcon(mContext, lp, createIcon ?: return)
-                        val i = param.getArgs()[0] as Int
+                        val i = param.getArg(0) as Int
                         val mGroup = XposedHelpers.getObjectField(param.getThisObject(), "mGroup") as? ViewGroup ?: return
                         mGroup.addView(iconView, i)
                         registerStatusbarTextIcon(iconView)
@@ -810,7 +810,7 @@ object SystemUIStatusBarHooks {
                     signalResToLevelMap.put(res.getIdentifier("stat_sys_signal_5", "drawable", lpparam.packageName), 5)
                     signalResToLevelMap.put(res.getIdentifier("stat_sys_signal_null", "drawable", lpparam.packageName), 6)
                 }
-                val iconStates = param.getArgs()[1] as? List<*> ?: return
+                val iconStates = param.getArg(1) as? List<*> ?: return
                 if (iconStates.size == 2) {
                     val mainIconState = iconStates[0]
                     val subIconState = iconStates[1]
@@ -839,7 +839,7 @@ object SystemUIStatusBarHooks {
 
         val stateUpdateHook = object : MethodHook() {
             override fun before(param: BeforeHookCallback) {
-                val mobileIconState = param.getArgs()[0]
+                val mobileIconState = param.getArg(0)
                 val visible = XposedHelpers.getObjectField(mobileIconState, "visible") as? Boolean ?: false
                 val airplane = XposedHelpers.getObjectField(mobileIconState, "airplane") as? Boolean ?: false
                 val level = XposedHelpers.getObjectField(mobileIconState, "strengthId") as? Int ?: 0
@@ -964,7 +964,7 @@ object SystemUIStatusBarHooks {
         if (moveLeft) {
             ModuleHelper.findAndHookMethod("com.android.systemui.statusbar.phone.StatusBarIconControllerImpl", lpparam.classLoader, "setIconVisibility", String::class.java, Boolean::class.javaPrimitiveType, object : MethodHook() {
                 override fun before(param: BeforeHookCallback) {
-                    val slot = param.getArgs()[0] as? String ?: return
+                    val slot = param.getArg(0) as? String ?: return
                     if (
                         ("alarm_clock" == slot && MainModule.mPrefs.getBoolean("system_statusbar_alarm_atleft")) ||
                         ("volume" == slot && MainModule.mPrefs.getBoolean("system_statusbar_sound_atleft")) ||
@@ -980,7 +980,7 @@ object SystemUIStatusBarHooks {
         if (moveRight) {
             ModuleHelper.findAndHookMethodSilently("com.android.systemui.statusbar.phone.MiuiDripLeftStatusBarIconControllerImpl", lpparam.classLoader, "setIconVisibility", String::class.java, Boolean::class.javaPrimitiveType, object : MethodHook() {
                 override fun before(param: BeforeHookCallback) {
-                    val slot = param.getArgs()[0] as? String ?: return
+                    val slot = param.getArg(0) as? String ?: return
                     if (
                         ("alarm_clock" == slot && MainModule.mPrefs.getBoolean("system_statusbar_alarm_atright")) ||
                         ("volume" == slot && MainModule.mPrefs.getBoolean("system_statusbar_sound_atright")) ||
@@ -1027,7 +1027,7 @@ object SystemUIStatusBarHooks {
                     val isRightController = "StatusBarIconControllerImpl" == param.getThisObject().javaClass.simpleName
                     if (isRightController) {
                         if (swapWifiSignal || moveSignalLeft) {
-                            val allStatusIcons = ArrayList(Arrays.asList(*(param.getArgs()[0] as? Array<String> ?: return)))
+                            val allStatusIcons = ArrayList(Arrays.asList(*(param.getArg(0) as? Array<String> ?: return)))
                             allStatusIcons.removeAll(signalRelatedIcons)
                             if (swapWifiSignal) {
                                 for (slotName in signalRelatedIcons) {
@@ -1039,7 +1039,7 @@ object SystemUIStatusBarHooks {
                             param.getArgs()[0] = allStatusIcons.toTypedArray()
                         }
                     } else if (moveSignalLeft || moveLeft) {
-                        val allStatusIcons = ArrayList(Arrays.asList(*(param.getArgs()[0] as? Array<String> ?: return)))
+                        val allStatusIcons = ArrayList(Arrays.asList(*(param.getArg(0) as? Array<String> ?: return)))
                         allStatusIcons.addAll(rightOnly2LeftIcons)
                         dripLeftIcons.addAll(allStatusIcons)
                         if (moveSignalLeft) {
@@ -1070,20 +1070,20 @@ object SystemUIStatusBarHooks {
         if (rightOnly2LeftWithSignal.isNotEmpty() && DripLeftController != null) {
             ModuleHelper.findAndHookMethod("com.android.systemui.statusbar.phone.StatusBarIconControllerImpl", lpparam.classLoader, "setIcon", String::class.java, Int::class.javaPrimitiveType, CharSequence::class.java, object : MethodHook(XposedInterface.PRIORITY_HIGHEST) {
                 override fun before(param: BeforeHookCallback) {
-                    val slot = param.getArgs()[0] as? String ?: return
+                    val slot = param.getArg(0) as? String ?: return
                     if (rightOnly2LeftWithSignal.contains(slot)) {
                         val dripLeftController = XposedHelpers.callStaticMethod(XposedHelpers.findClass("com.android.systemui.Dependency", lpparam.classLoader), "get", DripLeftController)
-                        XposedHelpers.callMethod(dripLeftController, "setIcon", param.getArgs()[0], param.getArgs()[1], param.getArgs()[2])
+                        XposedHelpers.callMethod(dripLeftController, "setIcon", param.getArg(0), param.getArg(1), param.getArg(2))
                         param.returnAndSkip(null)
                     }
                 }
             })
             ModuleHelper.findAndHookMethod("com.android.systemui.statusbar.phone.StatusBarIconControllerImpl", lpparam.classLoader, "setIconVisibility", String::class.java, Boolean::class.javaPrimitiveType, object : MethodHook(XposedInterface.PRIORITY_HIGHEST) {
                 override fun before(param: BeforeHookCallback) {
-                    val slot = param.getArgs()[0] as? String ?: return
+                    val slot = param.getArg(0) as? String ?: return
                     if (rightOnly2LeftWithSignal.contains(slot)) {
                         val dripLeftController = XposedHelpers.callStaticMethod(XposedHelpers.findClass("com.android.systemui.Dependency", lpparam.classLoader), "get", DripLeftController)
-                        XposedHelpers.callMethod(dripLeftController, "setIconVisibility", param.getArgs()[0], param.getArgs()[1])
+                        XposedHelpers.callMethod(dripLeftController, "setIconVisibility", param.getArg(0), param.getArg(1))
                         param.returnAndSkip(null)
                     }
                 }
@@ -1265,7 +1265,7 @@ object SystemUIStatusBarHooks {
                 val hideLow = MainModule.mPrefs.getBoolean("system_detailednetspeed_low")
                 if (hideLow) {
                     val lowLevel = MainModule.mPrefs.getInt("system_detailednetspeed_lowlevel", 1) * 1024
-                    val speedVal = param.getArgs()[1] as? Long ?: 0L
+                    val speedVal = param.getArg(1) as? Long ?: 0L
                     if (speedVal < lowLevel) {
                         if (SystemUI.newStyle) {
                             param.returnAndSkip(arrayOf("", ""))
@@ -1358,7 +1358,7 @@ object SystemUIStatusBarHooks {
     fun MobileTypeSingleHook(lpparam: PackageReadyParam) {
         val singleTypeHook = object : MethodHook(XposedInterface.PRIORITY_HIGHEST) {
             override fun before(param: BeforeHookCallback) {
-                val mobileIconState = param.getArgs()[0]
+                val mobileIconState = param.getArg(0)
                 XposedHelpers.setObjectField(mobileIconState, "showMobileDataTypeSingle", true)
             }
 
@@ -1454,7 +1454,7 @@ object SystemUIStatusBarHooks {
     fun HideIconsSignalHook(lpparam: PackageReadyParam) {
         val beforeUpdate = object : MethodHook() {
             override fun before(param: BeforeHookCallback) {
-                val mobileIconState = param.getArgs()[0]
+                val mobileIconState = param.getArg(0)
                 if (MainModule.mPrefs.getBoolean("system_statusbaricons_signal")) {
                     if (!MainModule.mPrefs.getBoolean("system_statusbaricons_signal_wificonnected") || XposedHelpers.getBooleanField(mobileIconState, "wifiAvailable")) {
                         XposedHelpers.setObjectField(mobileIconState, "visible", false)
@@ -1530,14 +1530,14 @@ object SystemUIStatusBarHooks {
     fun HideIconsFromSystemManager(lpparam: PackageReadyParam) {
         ModuleHelper.findAndHookMethod("com.android.systemui.statusbar.phone.StatusBarIconControllerImpl", lpparam.classLoader, "setIcon", String::class.java, "com.android.internal.statusbar.StatusBarIcon", object : MethodHook() {
             override fun before(param: BeforeHookCallback) {
-                val slotName = param.getArgs()[0] as? String ?: return
+                val slotName = param.getArg(0) as? String ?: return
                 if (
                     ("stealth" == slotName && MainModule.mPrefs.getBoolean("system_statusbaricons_privacy")) ||
                     ("mute" == slotName && MainModule.mPrefs.getBoolean("system_statusbaricons_mute")) ||
                     ("speakerphone" == slotName && MainModule.mPrefs.getBoolean("system_statusbaricons_speaker")) ||
                     ("call_record" == slotName && MainModule.mPrefs.getBoolean("system_statusbaricons_record"))
                 ) {
-                    XposedHelpers.setObjectField(param.getArgs()[1], "visible", false)
+                    XposedHelpers.setObjectField(param.getArg(1), "visible", false)
                 }
             }
         })
@@ -1710,7 +1710,7 @@ object SystemUIStatusBarHooks {
                 val opt = MainModule.mPrefs.getStringAsInt("system_mobiletypeicon", 1)
                 val hideIndicator = MainModule.mPrefs.getBoolean("system_networkindicator_mobile")
                 val mMobileType = XposedHelpers.getObjectField(param.getThisObject(), "mMobileType") as? View ?: return
-                val mobileIconState = param.getArgs()[0]
+                val mobileIconState = param.getArg(0)
                 val dataConnected = XposedHelpers.getObjectField(mobileIconState, "dataConnected") as? Boolean ?: false
                 val wifiAvailable = XposedHelpers.getObjectField(mobileIconState, "wifiAvailable") as? Boolean ?: false
                 if (opt == 3) {
