@@ -52,12 +52,12 @@ object LauncherIconHooks {
                                 XposedHelpers.getObjectField(owner, "mLoadedAppsAndShortcut") as? HashSet<*>
                         }
                         val act = owner as? Activity ?: return@observeOwnedPreferenceChange
-                        mAllLoadedApps?.forEach { shortcut ->
+                        if (mAllLoadedApps != null) for (shortcut in mAllLoadedApps) {
                             val isApp = XposedHelpers.callMethod(shortcut, "isApplicatoin") as? Boolean ?: false
-                            if (!isApp) return@forEach
-                            val pkgName = XposedHelpers.callMethod(shortcut, "getPackageName") as? String ?: return@forEach
-                            val actName = XposedHelpers.callMethod(shortcut, "getClassName") as? String ?: return@forEach
-                            val user = XposedHelpers.getObjectField(shortcut, "user") as? UserHandle ?: return@forEach
+                            if (!isApp) continue
+                            val pkgName = XposedHelpers.callMethod(shortcut, "getPackageName") as? String ?: continue
+                            val actName = XposedHelpers.callMethod(shortcut, "getClassName") as? String ?: continue
+                            val user = XposedHelpers.getObjectField(shortcut, "user") as? UserHandle ?: continue
                             if ("pref_key_launcher_renameapps_list:$pkgName|$actName|${user.hashCode()}" == key) {
                                 val newStr = if (TextUtils.isEmpty(newTitle))
                                     XposedHelpers.getAdditionalInstanceField(shortcut, "mLabelOrig") as? CharSequence
@@ -73,6 +73,7 @@ object LauncherIconHooks {
                                         if (buddyIconView != null) XposedHelpers.callMethod(buddyIconView, "updateInfo", owner, shortcut)
                                     }
                                 }
+                                break
                             }
                         }
                     } catch (t: Throwable) {

@@ -370,6 +370,40 @@ def check_no_regex_split_on_literal(path: Path, text: str) -> list[Finding]:
     return findings
 
 
+def check_launcher_rename_loop_exit(path: Path, text: str) -> list[Finding]:
+    """The migrated shortcut rename loop must stop after its unique key matches.
+
+    Launcher.java used continue for non-app entries and break after updating the
+    matching shortcut. A forEach migration cannot express that non-local break
+    and silently scans and may update later entries.
+    """
+    if rel_posix(path) != "tv/withaibuild/customiuizer/mods/LauncherIconHooks.kt":
+        return []
+    match = re.search(r"\bfun\s+RenameShortcutsHook\s*\(", text)
+    if match is None:
+        return [
+            Finding(
+                "launcher-rename-loop-exit",
+                path,
+                1,
+                "RenameShortcutsHook is missing",
+            )
+        ]
+    body, _ = block_at(text, match.end() - 1)
+    if re.search(r"\bfor\s*\(\s*shortcut\s+in\s+mAllLoadedApps\s*\)", body) and re.search(
+        r"\bbreak\b", body
+    ):
+        return []
+    return [
+        Finding(
+            "launcher-rename-loop-exit",
+            path,
+            line_of(text, match.start()),
+            "preserve Launcher.java continue/break semantics with an explicit for loop",
+        )
+    ]
+
+
 RULES = (
     check_guard_framework_callbacks,
     check_guard_deferred_callbacks,
@@ -379,6 +413,7 @@ RULES = (
     check_no_redundant_arg_marshalling,
     check_no_legacy_xposed,
     check_no_regex_split_on_literal,
+    check_launcher_rename_loop_exit,
 )
 
 
