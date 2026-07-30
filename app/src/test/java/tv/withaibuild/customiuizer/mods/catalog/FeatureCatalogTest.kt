@@ -209,7 +209,7 @@ class FeatureCatalogTest {
     }
 
     @Test
-    fun allCanaryFeaturesAreRegistered() {
+    fun allCatalogFeaturesAreRegistered() {
         val ids = setOf(
             "packagePermissions",
             "statusBarClockTweak",
@@ -218,7 +218,13 @@ class FeatureCatalogTest {
             "noMoreIcon",
             "batteryIndicator",
             "noClockHide",
-            "noWidgetOnly"
+            "noWidgetOnly",
+            "screenDimTime",
+            "firstVolumePress",
+            "networkIndicatorWifi",
+            "muteVisibleNotifications",
+            "hideLauncherTitles",
+            "fixAppInfoLaunch"
         )
         assertEquals(ids, FeatureCatalog.specs().map { it.id }.toSet())
     }
