@@ -211,11 +211,6 @@ object Helpers {
     }
 
     @JvmStatic
-    fun isUPlus(): Boolean {
-        return Build.VERSION.SDK_INT >= 34
-    }
-
-    @JvmStatic
     fun isDeviceEncrypted(context: Context?): Boolean {
         if (context == null) return false
         val policyMgr = context.getSystemService(Context.DEVICE_POLICY_SERVICE) as? DevicePolicyManager ?: return false
