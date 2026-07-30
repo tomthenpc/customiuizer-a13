@@ -4,6 +4,8 @@ import org.junit.Assert.assertEquals
 import org.junit.Assert.assertNotNull
 import org.junit.Assert.assertTrue
 import org.junit.Test
+import tv.withaibuild.customiuizer.mods.catalog.FeatureCatalog
+import tv.withaibuild.customiuizer.mods.catalog.RestartTarget
 
 class PreferenceSchemaTest {
 
@@ -17,12 +19,9 @@ class PreferenceSchemaTest {
     @Test
     fun eachEntryHasNonEmptyMetadata() {
         for (entry in PreferenceSchema.entries) {
-            assertNotNull(entry.key)
             assertTrue("key should not be empty", entry.key.isNotEmpty())
-            assertNotNull(entry.ownerFeature)
             assertTrue("ownerFeature should not be empty", entry.ownerFeature.isNotEmpty())
-            assertNotNull(entry.requiresRestart)
-            assertTrue("requiresRestart should not be empty", entry.requiresRestart.isNotEmpty())
+            assertNotNull(entry.restartTarget)
         }
     }
 
@@ -43,9 +42,45 @@ class PreferenceSchemaTest {
     }
 
     @Test
+    fun ownerFeatureReferencesExistingCatalogFeature() {
+        val catalogIds = FeatureCatalog.specs().map { it.id }.toSet()
+        for (entry in PreferenceSchema.entries) {
+            assertTrue(
+                "${entry.key}: ownerFeature ${entry.ownerFeature} not in catalog",
+                catalogIds.contains(entry.ownerFeature)
+            )
+        }
+    }
+
+    @Test
     fun byKeyMapsEachEntry() {
         for (entry in PreferenceSchema.entries) {
             assertEquals(entry, PreferenceSchema.byKey[entry.key])
+        }
+    }
+
+    @Test
+    fun intConstraintsAreSatisfiedByDefaults() {
+        for (entry in PreferenceSchema.entries) {
+            val constraint = entry.constraint
+            if (constraint is PreferenceConstraint.IntRange && entry.defaultValue is Int) {
+                val value = entry.defaultValue as Int
+                assertTrue(
+                    "${entry.key}: $value not in [${constraint.min}, ${constraint.max}]",
+                    value in constraint.min..constraint.max
+                )
+            }
+        }
+    }
+
+    @Test
+    fun restartTargetIsNotNoneForUiVisibleFeatures() {
+        for (entry in PreferenceSchema.entries) {
+            // All current representative features need at least a SystemUI restart.
+            assertTrue(
+                "${entry.key}: restart target should not be NONE",
+                entry.restartTarget != RestartTarget.NONE
+            )
         }
     }
 }
