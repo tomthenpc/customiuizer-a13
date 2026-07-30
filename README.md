@@ -1,94 +1,91 @@
-# CustoMIUIzer A13
+# 米客 A13
 
-`CustoMIUIzer-A13` is a long-term independently maintained fork of [CustoMIUIzer](https://github.com/MonwF/customiuizer) upstream version `v23.11.26`, targeting MIUI 14 / Android 13 devices.
+[简体中文](README.md) | [English](README_EN.md)
 
-> **Note**: The `customiuizer-a14` branch is used only as an **engineering reference** (Kotlin DSL, version catalog, CI, testing patterns). It is not a source of A13 runtime facts. A13-specific MIUI class names, method signatures, Hook targets, resource IDs, SystemUI / Launcher structure, ROM gating, preference keys, and Manifest components are not copied from A14.
+米客 A13（CustoMIUIzer A13）是面向 MIUI 14 / Android 13 的独立维护版 Xposed 模块，功能语义以 [MonwF/customiuizer v23.11.26](https://github.com/MonwF/customiuizer) 为上游基线。
 
-## Primary Targets
+本仓库保存完整源码、构建配置、工程文档和验证记录。面向 LSPosed 用户的安装与下载说明位于 [Xposed-Modules-Repo/tv.withaibuild.customiuizer.r13](https://github.com/Xposed-Modules-Repo/tv.withaibuild.customiuizer.r13)。
 
-- **Device**: Redmi Note 11T Pro / Pro+ (`xaga`)
-- **System**: MIUI 14 / Android 13 (API 33)
-- **Reference ROMs**: `V14.0.10.0.TLOINXM`, `V14.0.7.0.TLOCNXM`
-- **Application ID**: `tv.withaibuild.customiuizer.r13`
-- **ABI**: `arm64-v8a`
-- **libxposed**: `minApiVersion=101`, `targetApiVersion=102`, `staticScope=false`
-- **Recommended Framework**: LSPosed 2.0 / Vector 2.0
+## r13.7.0
 
-Other MIUI 14 / Android 13 builds may work but are not the primary validation target.
+`r13.7.0` 是 A13 工程追平与稳定性治理后的首个正式版本：
 
-## Relationship to Upstream and A14
+- 将包命名空间统一为 `tv.withaibuild.customiuizer`，保持应用 ID `tv.withaibuild.customiuizer.r13`；
+- 完成 System、SystemUI、Launcher 大文件拆分和 Kotlin 迁移，并用迁移审计固定 Hook 注册顺序、参数与调用次数；
+- 为异步 Receiver、Observer、Listener、Handler 和 Runnable 增加模块异常边界与所有权治理；
+- 修复 RemotePreferences 初始化、监听注册、弱引用清理和 additional instance field 生命周期问题；
+- 优化设备信息监控、应用图标加载、设置搜索、AudioVisualizer 与锁屏专辑图的队列、缓存和失效边界；
+- 保持 libxposed API 101 最低运行基线，并以 API 102 元数据发布。
 
-- **Upstream baseline**: Functionality is anchored to `MonwF/customiuizer v23.11.26`.
-- **A13 independence**: Application ID, signing key, version codes, and build system are isolated from upstream and A14; they cannot be installed over each other.
-- **A14 as engineering reference only**: A14 can inform build tooling, version catalog layout, CI structure, and API 101/102 compatibility approaches, but not A13 ROM facts.
+完整变更见 [CHANGELOG.md](CHANGELOG.md)，英文版见 [CHANGELOG_EN.md](CHANGELOG_EN.md)。
 
-## Build
+## 兼容范围
 
-Requirements: JDK 17, Android SDK (compile SDK 36, build-tools 37.0.1).
+| 项目 | 值 |
+|---|---|
+| 系统 | MIUI 14 / Android 13（API 33） |
+| 主要设备 | Redmi Note 11T Pro / Pro+（`xaga`） |
+| 参考 ROM | `V14.0.10.0.TLOINXM`、`V14.0.7.0.TLOCNXM` |
+| ABI | `arm64-v8a` |
+| 应用 ID | `tv.withaibuild.customiuizer.r13` |
+| libxposed | `minApiVersion=101`、`targetApiVersion=102`、`staticScope=false` |
+| 建议框架 | LSPosed 2.x / Vector 2.x |
+
+其他 MIUI 14 / Android 13 版本可能可用，但不同 ROM 的 SystemUI、Launcher 和系统应用签名可能存在差异。Android 14 及更高版本不在本仓库支持范围内。
+
+## 主要功能
+
+- 状态栏、电池、信号、网速、时钟、日期和温度；
+- 控制中心、音量、亮度、通知和系统动画；
+- 锁屏、充电信息、媒体界面、快捷操作和专辑图；
+- 桌面、最近任务、文件夹、图标、Dock、抽屉和桌面手势；
+- 导航栏、按键、自定义动作、电源菜单、浮窗和 Tasker；
+- 应用权限、安装器、分享、隐藏应用、应用锁及其他 MIUI 行为。
+
+具体功能是否生效取决于设备、MIUI 版本、系统应用版本和启用的作用域。
+
+## 安装
+
+1. 从 [LSPosed 发布仓库](https://github.com/Xposed-Modules-Repo/tv.withaibuild.customiuizer.r13/releases) 下载正式 APK。
+2. 安装 APK，在 LSPosed / Vector 中启用建议作用域。
+3. 打开模块设置一次，并完整重启设备。
+4. 按功能组逐项启用和验证；遇到异常时先关闭对应功能，再导出 LSPosed 日志。
+
+早期使用不同签名的 A13 构建不能直接覆盖安装。若系统提示签名不一致，请先备份设置，再卸载旧版本。
+
+## 构建
+
+需要 JDK 17、Android SDK API 36 和 Build Tools 37.0.1。
 
 ```bash
 ./gradlew :app:assembleDebug
 ./gradlew :app:assembleRelease
 ```
 
-Release / Develop builds require a `../keystore.properties` file pointing to the A13 release keystore (`C:/Users/tv/Documents/buildkey/r13/customiuizer-a13-release.p12`). The build fails explicitly if release signing is missing and never falls back to the Android debug key. Debug builds and regular tests are unaffected.
+Release / Develop 构建必须使用仓库外的 `../keystore.properties` 指向 A13 正式签名。缺失正式签名时，打包任务会明确失败，不会回退到 Debug 证书。
 
-Default output directories:
-
-- Debug: `app/build/outputs/apk/debug/`
-- Release: `app/build/outputs/apk/release/`
-
-> As of `r13.2.0-devin`, the APK output name follows the AGP default `app-<variant>.apk` because AGP 8.7's VariantOutput API does not expose `outputFileName`. This will be restored to `CustoMIUIzer-A13-r13.x.x.apk` once the API is available.
-
-## Verification
-
-Recommended local verification:
+推荐的完整本地门禁：
 
 ```bash
-./gradlew clean :app:test :app:lintRelease :app:assembleDebug :app:assembleRelease
+python tools/check-invariants.py
+python tools/audit-system-migration.py --baseline-ref backup/r13-k5-before-system-java-removal
+./gradlew clean :app:test :app:lintDebug :app:lintRelease :app:assembleDebug :app:assembleRelease
+./gradlew :app:lintVitalRelease --rerun-tasks
 ```
 
-Verification includes:
+Release 构建启用 R8 与资源压缩。正式发布还会校验 zipalign、v2 签名、证书、APK 元数据、Xposed 元数据、Legacy Xposed API 和最终 SHA-256。
 
-- Unit tests (`ModuleMetadataTest` checks `module.prop` / `java_init.list`)
-- `lintRelease`
-- Debug and Release compilation
-- Release R8 + resource shrink
-- zipalign verification
-- `META-INF/xposed/module.prop`: `minApiVersion=101`, `targetApiVersion=102`, `staticScope=false`
-- `META-INF/xposed/java_init.list`: `tv.withaibuild.customiuizer.MainModule`
-- `applicationId = tv.withaibuild.customiuizer.r13`, `minSdk=33`, `targetSdk=34`
-- Release APK signed with v2, certificate CN=`CustoMIUIzer A13`
+## 工程边界
 
-## Installation
+- A13 是独立运行基线；A14 仅用于参考工程方法，不能提供 A13 Hook target 或 ROM 事实。
+- 稳定的 Java/JVM 边界继续保留，Kotlin 覆盖率不是发布条件。
+- 构建、Lint、R8 和签名属于静态验证，不能代替设备与 ROM 行为验证。
+- 当前版本不启用 Legacy Xposed API、Hot Reload、hook ID 或原子 replacement。
 
-1. Uninstall or disable any previous A13 build signed with the old key (the previous signing key is lost; older builds cannot be overwritten).
-2. Install the new APK, enable the default scope in LSPosed / Vector, and reboot.
-3. Open the app and confirm remote preferences can be read/written.
-4. Verify features by functional group: System UI, Launcher, system_server, Security, PowerKeeper, Package installer, Screenshot, InCallUI.
-5. If a feature fails, disable it and capture full framework logs; MIUI class names and signatures can vary between ROM builds.
+## 反馈
 
-## Functionality
+请在本仓库提交 issue，并附上模块版本、设备与 ROM、系统应用版本、LSPosed/Vector 版本、实际作用域、复现步骤和完整日志。包名出现在系统日志中不等于模块因果问题，需要同时提供 Hook 失败、模块栈或崩溃上下文。
 
-The feature set matches upstream `v23.11.26` for the A13 target. Main groups include:
+## 许可证与致谢
 
-- System: lock screen, status bar, control center, clock, charging animation, screenshot, wallpaper
-- Launcher: icons, gestures, dock, drawer
-- Calls and contacts: in-call UI brightness, hidden features
-- Misc: global gestures, scroll-to-top, freeform, Tasker
-- Settings and preference storage
-
-## Roadmap and Known Limitations
-
-- ✅ New A13 long-term signing key established and verified
-- ✅ Build system migrated to Kotlin DSL + version catalog
-- ✅ API 101/102 compatibility metadata
-- ✅ Unit tests, Lint, and CI baseline
-- 🔄 Lifecycle and high-frequency Hook governance (in progress, per functional group)
-- 🔄 Low-risk Kotlin-first migration (launcher Activities migrated, more to follow)
-- ⏳ Restore APK output naming to `CustoMIUIzer-A13-r13.x.x.apk`
-- ⏳ Real-device regression on reference ROMs
-
-## License and Credits
-
-Based on [Mikanoshi](https://github.com/Mikanoshi) and [MonwF](https://github.com/MonwF) CustoMIUIzer. The A13 independent fork is licensed under [GPL-3.0](LICENSE).
+项目基于 [Mikanoshi](https://github.com/Mikanoshi) 与 [MonwF](https://github.com/MonwF) 的 CustoMIUIzer，按 [GPL-3.0](LICENSE) 许可证发布。

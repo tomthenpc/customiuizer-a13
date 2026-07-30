@@ -1,5 +1,43 @@
 # Changelog
 
+## r13.7.0（A13 工程追平正式版）
+
+### 运行稳定性
+
+- 为 Hook 内注册的 `BroadcastReceiver`、`ContentObserver`、Listener、Handler 与 Runnable 建立统一异常边界，单项兼容失败不会逃逸并拖垮宿主进程。
+- 以稳定 owner 和注册 key 管理动态回调，补齐替换、重复注销、宿主销毁与失效弱引用清理。
+- 修复 RemotePreferences 空快照被永久缓存、监听注册状态提前置位和镜像初始化顺序问题。
+- additional instance field 改用弱 identity key，避免长期持有被 Hook 实例。
+- 修正 Launcher 循环迁移的提前退出语义，并限制重复兼容失败日志。
+
+### 性能与生命周期
+
+- Hook 热路径使用 `getArg()` / `chain.args` 读取参数，避免无修改场景的参数数组复制。
+- 设备信息监控按屏幕状态暂停，使用 generation 与有界退避；修复固定槽位配置和数据依赖。
+- 应用图标加载使用有界队列、in-flight 去重、弱 ImageView 等待者和按字节限制的 LRU。
+- 设置搜索预计算索引并以 generation 防止旧结果覆盖；Adapter 改为主线程拥有的替换列表。
+- AudioVisualizer 使用单帧调度与 latest-wins Palette，detach 时释放观察者、帧回调和任务。
+- 锁屏专辑图使用有界单 worker、目标尺寸采样、字节缓存和熄屏/owner 取消，修复来源标识碰撞。
+
+### 工程与兼容
+
+- 源码命名空间统一为 `tv.withaibuild.customiuizer`，应用 ID 保持 `tv.withaibuild.customiuizer.r13`。
+- 完成 System、SystemUI、Launcher 的领域拆分和 Kotlin 迁移；删除兼容 facade 后保留唯一实现。
+- 迁移审计确认 124/124 个 System 基线入口可解析、119 个直接调用点、0 个 facade 残留调用。
+- 保持 MIUI 14 / Android 13、`arm64-v8a`、`minSdk=33`、`targetSdk=34`。
+- 保持 libxposed `minApiVersion=101`、`targetApiVersion=102`、`staticScope=false`，未引入 Legacy Xposed API。
+
+### 验证
+
+- LSPosed 2.1.1（7790）日志采集覆盖模块作用域中的 SystemUI、Launcher 与系统进程；未发现模块因果 crash、ANR、Fatal、Hook/反射失败或异常刷屏。
+- 采集包内的 3 份 ANR 均属于 YouTube `TIME_SET` 广播，17 份 tombstone 属于音频服务、AyuGram 或 `libksud`，无模块类或核心目标进程因果。
+- 单元测试、运行时 invariants、System 迁移审计、三档 Lint、Debug/Release、R8、资源压缩、zipalign 与正式 v2 签名均作为发布门禁执行。
+
+### 验证边界
+
+- 日志与静态门禁不能证明每个功能在所有 MIUI 14 变体上的视觉和行为完全一致。
+- K12 设备监控、K15 AudioVisualizer、K16 锁屏专辑图等功能仍需在不同配置与 ROM 上持续回归；发现单项兼容问题时应关闭对应功能并提交完整日志。
+
 ## r13.2.4-devin（B3-2 Various Kotlin 迁移）
 
 ### 迁移
