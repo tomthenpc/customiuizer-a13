@@ -45,10 +45,17 @@ object SystemStatusBarClockAndMoreHooks {
                         ModuleHelper.guarded("SystemStatusBarClockAndMoreHooks.clockScreenAndTimeReceiver") {
                             val controller = controllerRef.get() ?: return@guarded
                             val controllerContext = XposedHelpers.getObjectField(controller, "mContext") as? Context ?: return@guarded
+                            val state = secondTickerState(controller)
                             when (intent.action) {
-                                Intent.ACTION_SCREEN_OFF -> stopSecondTimer(controller)
+                                Intent.ACTION_SCREEN_OFF -> {
+                                    state.setScreen(false)
+                                    stopSecondTimer(controller)
+                                }
                                 Intent.ACTION_SCREEN_ON,
-                                "android.intent.action.TIME_SET" -> if (isScreenOn(controllerContext)) initSecondTimer(controller)
+                                "android.intent.action.TIME_SET" -> {
+                                    state.setScreen(true)
+                                    if (isScreenOn(controllerContext)) initSecondTimer(controller)
+                                }
                             }
                         }
                     }
@@ -375,23 +382,68 @@ object SystemStatusBarClockAndMoreHooks {
         return pm?.isInteractive ?: true
     }
 
+    /**
+     * Pure per-controller state for the status-bar second ticker. Visible to unit tests
+     * so the screen-on/off, generation and stop/start semantics can be exercised without
+     * a real MiuiStatusBarClockController.
+     */
+    internal class SecondTickerState {
+        var screenOn: Boolean = true
+            private set
+        var running: Boolean = false
+            private set
+        var generation: Long = 0L
+            private set
+
+        fun setScreen(on: Boolean) {
+            screenOn = on
+            if (!on) {
+                running = false
+            }
+        }
+
+        fun start(newGen: Long) {
+            generation = newGen
+            running = true
+        }
+
+        fun stop() {
+            generation = 0L
+            running = false
+        }
+
+        fun shouldRePost(myGen: Long): Boolean = screenOn && running && generation == myGen
+    }
+
+    private fun secondTickerState(clockController: Any): SecondTickerState {
+        var state = XposedHelpers.getAdditionalInstanceField(clockController, "secondTickerState") as? SecondTickerState
+        if (state == null) {
+            state = SecondTickerState()
+            XposedHelpers.setAdditionalInstanceField(clockController, "secondTickerState", state)
+        }
+        return state
+    }
+
     private fun stopSecondTimer(clockController: Any) {
+        val state = secondTickerState(clockController)
         val clockHandler = XposedHelpers.getAdditionalInstanceField(clockController, "clockHandler") as? Handler ?: return
         val clockRunnable = XposedHelpers.getAdditionalInstanceField(clockController, "clockRunnable") as? Runnable ?: return
         clockHandler.removeCallbacks(clockRunnable)
-        XposedHelpers.setAdditionalInstanceField(clockController, "clockGen", 0L)
+        state.stop()
     }
 
     private fun initSecondTimer(clockController: Any) {
         val ccShowSeconds = getCCShowSeconds()
         val finalSbShowSeconds = getShowSeconds()
         val mContext = XposedHelpers.getObjectField(clockController, "mContext") as? Context ?: return
+        val state = secondTickerState(clockController)
         var clockHandler = XposedHelpers.getAdditionalInstanceField(clockController, "clockHandler") as? Handler
         val clockRunnable = XposedHelpers.getAdditionalInstanceField(clockController, "clockRunnable") as? Runnable
         if (clockHandler != null && clockRunnable != null) {
             clockHandler.removeCallbacks(clockRunnable)
         }
         if (!ccShowSeconds && !finalSbShowSeconds) {
+            state.stop()
             return
         }
         if (clockHandler == null) {
@@ -399,25 +451,23 @@ object SystemStatusBarClockAndMoreHooks {
             XposedHelpers.setAdditionalInstanceField(clockController, "clockHandler", clockHandler)
         }
         val newGen = java.lang.System.nanoTime()
-        XposedHelpers.setAdditionalInstanceField(clockController, "clockGen", newGen)
+        state.start(newGen)
         val handler = clockHandler
-        val controller = clockController
         val newRunnable = object : Runnable {
             override fun run() {
                 ModuleHelper.guarded("SystemStatusBarClockAndMoreHooks.secondTicker") {
                     val self = this
-                    val mCalendar = XposedHelpers.getObjectField(controller, "mCalendar")
+                    val mCalendar = XposedHelpers.getObjectField(clockController, "mCalendar")
                     XposedHelpers.callMethod(mCalendar, "setTimeInMillis", java.lang.System.currentTimeMillis())
-                    XposedHelpers.setObjectField(controller, "mIs24", DateFormat.is24HourFormat(mContext))
-                    val mClockListeners = XposedHelpers.getObjectField(controller, "mClockListeners") as? ArrayList<Any> ?: return@guarded
+                    XposedHelpers.setObjectField(clockController, "mIs24", DateFormat.is24HourFormat(mContext))
+                    val mClockListeners = XposedHelpers.getObjectField(clockController, "mClockListeners") as? ArrayList<Any> ?: return@guarded
                     for (clock in mClockListeners) {
                         val showSeconds = XposedHelpers.getAdditionalInstanceField(clock, "showSeconds")
                         if (showSeconds != null) {
                             XposedHelpers.callMethod(clock, "onTimeChange")
                         }
                     }
-                    val currentGen = XposedHelpers.getAdditionalInstanceField(controller, "clockGen") as? Long
-                    if (currentGen == newGen) {
+                    if (state.shouldRePost(newGen)) {
                         handler.postDelayed(self, 1000L)
                     }
                 }

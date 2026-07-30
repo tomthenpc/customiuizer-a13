@@ -13,7 +13,84 @@ import android.widget.TextView
 import java.lang.ref.WeakReference
 import java.util.concurrent.atomic.AtomicBoolean
 
+/**
+ * Owns the Control Center step counter view lifecycle and the background query.
+ *
+ * The controller deliberately splits scheduling policy into the testable
+ * [Lifecycle] class while keeping Android-specific registration and ContentResolver
+ * access in the object. This keeps the scheduling rules unit-testable without a
+ * full SystemUI environment.
+ */
 object StepCounterController {
+
+    /**
+     * Pure scheduling state for the step counter. Visible to unit tests in the same
+     * module so the screen-on/off, view add/remove, and query-at-most-once logic
+     * can be exercised without an Android runtime.
+     */
+    internal class Lifecycle {
+        private val _screenOn = AtomicBoolean(true)
+        private val _hasViews = AtomicBoolean(false)
+        private val _timeTickRegistered = AtomicBoolean(false)
+        private val _isQuerying = AtomicBoolean(false)
+
+        val screenOn: Boolean get() = _screenOn.get()
+        val hasViews: Boolean get() = _hasViews.get()
+        val timeTickRegistered: Boolean get() = _timeTickRegistered.get()
+        val isQuerying: Boolean get() = _isQuerying.get()
+
+        fun onScreenOn() {
+            _screenOn.set(true)
+        }
+
+        fun onScreenOff() {
+            _screenOn.set(false)
+            _timeTickRegistered.set(false)
+        }
+
+        fun setHasViews(value: Boolean) {
+            _hasViews.set(value)
+            if (!value) {
+                _timeTickRegistered.set(false)
+            }
+        }
+
+        /**
+         * Records that the time-tick receiver should be considered registered.
+         * Returns `true` if the state changed; repeated calls are idempotent.
+         */
+        fun registerTimeTick(): Boolean {
+            if (_timeTickRegistered.get()) return true
+            if (!_screenOn.get() || !_hasViews.get()) return false
+            return _timeTickRegistered.compareAndSet(false, true)
+        }
+
+        fun unregisterTimeTick() {
+            _timeTickRegistered.set(false)
+        }
+
+        fun canSchedule(): Boolean = _screenOn.get() && _hasViews.get() && !_isQuerying.get()
+
+        fun tryStartQuery(): Boolean {
+            if (!_screenOn.get() || !_hasViews.get()) return false
+            return _isQuerying.compareAndSet(false, true)
+        }
+
+        fun finishQuery() {
+            _isQuerying.set(false)
+        }
+
+        fun stopQuery() {
+            _isQuerying.set(false)
+        }
+
+        fun reset() {
+            _screenOn.set(true)
+            _hasViews.set(false)
+            _timeTickRegistered.set(false)
+            _isQuerying.set(false)
+        }
+    }
 
     private data class StepViewRef(
         val ref: WeakReference<TextView>,
@@ -26,13 +103,16 @@ object StepCounterController {
     private var uiHandler: Handler? = null
     private var queryThread: HandlerThread? = null
     private var stepsWithGoal: String? = null
-    private val isQuerying = AtomicBoolean(false)
 
-    private var isScreenOn = true
     private var timeTickReceiver: BroadcastReceiver? = null
     private var screenReceiver: BroadcastReceiver? = null
 
-    private val queryRunnable = Runnable { runQuery() }
+    @JvmField
+    internal val lifecycle = Lifecycle()
+
+    private val queryRunnable = Runnable {
+        ModuleHelper.guarded("StepCounterController.queryRunnable") { runQuery() }
+    }
 
     @JvmStatic
     fun updateSteps(context: Context?) {
@@ -51,19 +131,24 @@ object StepCounterController {
         queryHandler = Handler(queryThread!!.looper)
         uiHandler = Handler(Looper.getMainLooper())
 
+        lifecycle.reset()
         val pm = appContext.getSystemService(Context.POWER_SERVICE) as? PowerManager
-        isScreenOn = pm?.isInteractive ?: true
+        if (pm?.isInteractive == true) {
+            lifecycle.onScreenOn()
+        } else {
+            lifecycle.onScreenOff()
+        }
 
         screenReceiver = object : BroadcastReceiver() {
             override fun onReceive(context: Context, intent: Intent) {
                 ModuleHelper.guarded("StepCounterController.screenReceiver") {
                     when (intent.action) {
                         Intent.ACTION_SCREEN_ON -> {
-                            isScreenOn = true
+                            lifecycle.onScreenOn()
                             if (hasLiveViews()) registerTimeTickAndSchedule()
                         }
                         Intent.ACTION_SCREEN_OFF -> {
-                            isScreenOn = false
+                            lifecycle.onScreenOff()
                             stopTimeTick()
                         }
                     }
@@ -94,7 +179,10 @@ object StepCounterController {
             }
         }
         if (!hasLiveViews()) {
+            lifecycle.setHasViews(false)
             stopTimeTick()
+        } else {
+            lifecycle.setHasViews(true)
         }
     }
 
@@ -107,8 +195,11 @@ object StepCounterController {
 
         stepViews.add(StepViewRef(WeakReference(sv), sv.tag as? String))
 
-        if (isScreenOn) {
-            registerTimeTickAndSchedule()
+        if (hasLiveViews()) {
+            lifecycle.setHasViews(true)
+            if (lifecycle.screenOn) {
+                registerTimeTickAndSchedule()
+            }
         }
     }
 
@@ -144,6 +235,7 @@ object StepCounterController {
     private fun registerTimeTickAndSchedule() {
         val ctx = sContext ?: return
         if (!hasLiveViews()) {
+            lifecycle.setHasViews(false)
             stopTimeTick()
             return
         }
@@ -152,7 +244,7 @@ object StepCounterController {
             timeTickReceiver = object : BroadcastReceiver() {
                 override fun onReceive(context: Context, intent: Intent) {
                     ModuleHelper.guarded("StepCounterController.timeTickReceiver") {
-                        if (isScreenOn) scheduleUpdate()
+                        if (lifecycle.screenOn) scheduleUpdate()
                     }
                 }
             }
@@ -164,11 +256,15 @@ object StepCounterController {
                 Context.RECEIVER_NOT_EXPORTED
             )
         }
-        scheduleUpdate()
+
+        if (lifecycle.registerTimeTick()) {
+            scheduleUpdate()
+        }
     }
 
     private fun stopTimeTick() {
         queryHandler?.removeCallbacks(queryRunnable)
+        lifecycle.unregisterTimeTick()
         timeTickReceiver?.let {
             ModuleHelper.unregisterModuleReceiver("StepCounterController.timeTick")
             timeTickReceiver = null
@@ -176,12 +272,13 @@ object StepCounterController {
     }
 
     private fun scheduleUpdate() {
-        if (!isScreenOn || sContext == null) return
+        if (!lifecycle.screenOn || sContext == null) return
         if (!hasLiveViews()) {
+            lifecycle.setHasViews(false)
             stopTimeTick()
             return
         }
-        if (!isQuerying.compareAndSet(false, true)) return
+        if (!lifecycle.tryStartQuery()) return
 
         queryHandler?.removeCallbacks(queryRunnable)
         queryHandler?.post(queryRunnable)
@@ -190,7 +287,7 @@ object StepCounterController {
     private fun runQuery() {
         val context = sContext
         if (context == null) {
-            isQuerying.set(false)
+            lifecycle.finishQuery()
             return
         }
 
@@ -200,7 +297,7 @@ object StepCounterController {
             XposedHelpers.log(t)
             null
         } finally {
-            isQuerying.set(false)
+            lifecycle.finishQuery()
         }
 
         if (newText != null) {
@@ -224,10 +321,14 @@ object StepCounterController {
     }
 
     private fun updateViews(newText: String) {
-        if (!isScreenOn) return
+        if (!lifecycle.screenOn) return
 
         val views = liveViews()
-        if (views.isEmpty()) return
+        if (views.isEmpty()) {
+            lifecycle.setHasViews(false)
+            stopTimeTick()
+            return
+        }
 
         if (newText == stepsWithGoal) return
         stepsWithGoal = newText
