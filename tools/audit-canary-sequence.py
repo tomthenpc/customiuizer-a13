@@ -20,7 +20,7 @@ from pathlib import Path
 
 REPO_ROOT = Path(__file__).resolve().parent.parent
 MAIN_MODULE = REPO_ROOT / "app" / "src" / "main" / "java" / "tv" / "withaibuild" / "customiuizer" / "MainModule.java"
-BASELINE_REF = "origin/devin/r13.8-catalog-expansion-batch-1"
+BASELINE_REF = "origin/devin/r13.8-catalog-expansion-batch-2"
 
 
 def extract_catalog_tokens(text: str) -> list[str]:
@@ -46,6 +46,12 @@ def extract_catalog_tokens(text: str) -> list[str]:
         "hideLockScreenHint",
         "folderColumns",
         "titleTopMargin",
+        "noLightUpOnCharge",
+        "allRotations",
+        "noNetworkSpeedSeparator",
+        "hideIconsClock",
+        "noUnlockAnimation",
+        "maxHotseatIconsCount",
     }
     direct_to_id = {
         "PackagePermissions.hook": "packagePermissions",
@@ -68,6 +74,12 @@ def extract_catalog_tokens(text: str) -> list[str]:
         "SystemLockScreenMoreHooks.HideLockScreenHintHook": "hideLockScreenHint",
         "LauncherFolderHooks.FolderColumnsHook": "folderColumns",
         "LauncherIconHooks.TitleTopMarginHook": "titleTopMargin",
+        "SystemAudioAndVisualAndMoreHooks.AllRotationsHook": "allRotations",
+        "SystemDisplayAndWindowHooks.NoLightUpOnChargeHook": "noLightUpOnCharge",
+        "SystemUIStatusBarHooks.NoNetworkSpeedSeparatorHook": "noNetworkSpeedSeparator",
+        "SystemUIStatusBarHooks.HideIconsClockHook": "hideIconsClock",
+        "LauncherAnimationHooks.NoUnlockAnimationHook": "noUnlockAnimation",
+        "LauncherLayoutHooks.MaxHotseatIconsCountHook": "maxHotseatIconsCount",
     }
 
     tokens = []
@@ -123,6 +135,12 @@ def main() -> int:
         "hideLockScreenHint",
         "folderColumns",
         "titleTopMargin",
+        "noLightUpOnCharge",
+        "allRotations",
+        "noNetworkSpeedSeparator",
+        "hideIconsClock",
+        "noUnlockAnimation",
+        "maxHotseatIconsCount",
     }
 
     if set(baseline_tokens) != catalog_feature_ids:

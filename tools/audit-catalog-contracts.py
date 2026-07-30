@@ -82,6 +82,12 @@ INSTALLER_FILES = {
     "hideLockScreenHint": REPO_ROOT / "app" / "src" / "main" / "java" / "tv" / "withaibuild" / "customiuizer" / "mods" / "SystemLockScreenMoreHooks.kt",
     "folderColumns": REPO_ROOT / "app" / "src" / "main" / "java" / "tv" / "withaibuild" / "customiuizer" / "mods" / "LauncherFolderHooks.kt",
     "titleTopMargin": REPO_ROOT / "app" / "src" / "main" / "java" / "tv" / "withaibuild" / "customiuizer" / "mods" / "LauncherIconHooks.kt",
+    "noLightUpOnCharge": REPO_ROOT / "app" / "src" / "main" / "java" / "tv" / "withaibuild" / "customiuizer" / "mods" / "SystemDisplayAndWindowHooks.kt",
+    "allRotations": REPO_ROOT / "app" / "src" / "main" / "java" / "tv" / "withaibuild" / "customiuizer" / "mods" / "SystemAudioAndVisualAndMoreHooks.kt",
+    "noNetworkSpeedSeparator": REPO_ROOT / "app" / "src" / "main" / "java" / "tv" / "withaibuild" / "customiuizer" / "mods" / "SystemUIStatusBarHooks.kt",
+    "hideIconsClock": REPO_ROOT / "app" / "src" / "main" / "java" / "tv" / "withaibuild" / "customiuizer" / "mods" / "SystemUIStatusBarHooks.kt",
+    "noUnlockAnimation": REPO_ROOT / "app" / "src" / "main" / "java" / "tv" / "withaibuild" / "customiuizer" / "mods" / "LauncherAnimationHooks.kt",
+    "maxHotseatIconsCount": REPO_ROOT / "app" / "src" / "main" / "java" / "tv" / "withaibuild" / "customiuizer" / "mods" / "LauncherLayoutHooks.kt",
 }
 
 CANARY_IDS = {
@@ -113,7 +119,16 @@ BATCH2_IDS = {
     "titleTopMargin",
 }
 
-CATALOG_IDS = CANARY_IDS | BATCH1_IDS | BATCH2_IDS
+BATCH3_IDS = {
+    "noLightUpOnCharge",
+    "allRotations",
+    "noNetworkSpeedSeparator",
+    "hideIconsClock",
+    "noUnlockAnimation",
+    "maxHotseatIconsCount",
+}
+
+CATALOG_IDS = CANARY_IDS | BATCH1_IDS | BATCH2_IDS | BATCH3_IDS
 
 
 # Mapping of legacy operation names to operation types as they appear in source.
@@ -576,6 +591,7 @@ def main() -> int:
     print(f"  - {len(CANARY_IDS)} canary contracts defined")
     print(f"  - {len(BATCH1_IDS)} batch-1 contracts defined")
     print(f"  - {len(BATCH2_IDS)} batch-2 contracts defined")
+    print(f"  - {len(BATCH3_IDS)} batch-3 contracts defined")
     print("  - contracts use the new HookRequirement model")
     print("  - no empty or duplicate AnyOfRequirement candidates")
     print("  - EXACT targets have explicit parameterTypes")
