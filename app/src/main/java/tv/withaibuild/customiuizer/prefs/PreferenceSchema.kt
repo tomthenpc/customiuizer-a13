@@ -203,6 +203,69 @@ object PreferenceSchema {
             restartTarget = RestartTarget.LAUNCHER_RESTART,
             hotReloadable = false,
             legacyAliases = emptySet()
+        ),
+        // Catalog expansion batch 2: system_server
+        PreferenceEntry(
+            key = "system_hideproxywarn",
+            type = PreferenceType.BOOLEAN,
+            defaultValue = false,
+            constraint = PreferenceConstraint.BooleanValue(expected = false),
+            ownerFeature = "hideProximityWarning",
+            restartTarget = RestartTarget.REBOOT,
+            hotReloadable = false,
+            legacyAliases = emptySet()
+        ),
+        PreferenceEntry(
+            key = "system_clearalltasks",
+            type = PreferenceType.BOOLEAN,
+            defaultValue = false,
+            constraint = PreferenceConstraint.BooleanValue(expected = false),
+            ownerFeature = "clearAllTasks",
+            restartTarget = RestartTarget.REBOOT,
+            hotReloadable = false,
+            legacyAliases = emptySet()
+        ),
+        // Catalog expansion batch 2: SystemUI
+        PreferenceEntry(
+            key = "system_removedismiss",
+            type = PreferenceType.BOOLEAN,
+            defaultValue = false,
+            constraint = PreferenceConstraint.BooleanValue(expected = false),
+            ownerFeature = "hideDismissView",
+            restartTarget = RestartTarget.SYSTEMUI_RESTART,
+            hotReloadable = false,
+            legacyAliases = emptySet()
+        ),
+        PreferenceEntry(
+            key = "system_hidelshint",
+            type = PreferenceType.BOOLEAN,
+            defaultValue = false,
+            constraint = PreferenceConstraint.BooleanValue(expected = false),
+            ownerFeature = "hideLockScreenHint",
+            restartTarget = RestartTarget.SYSTEMUI_RESTART,
+            hotReloadable = false,
+            legacyAliases = emptySet()
+        ),
+        // Catalog expansion batch 2: Launcher
+        PreferenceEntry(
+            key = "launcher_folder_cols",
+            type = PreferenceType.INT,
+            defaultValue = 1,
+            constraint = PreferenceConstraint.IntRange(min = 1, max = 10),
+            ownerFeature = "folderColumns",
+            restartTarget = RestartTarget.LAUNCHER_RESTART,
+            hotReloadable = false,
+            legacyAliases = emptySet()
+        ),
+        PreferenceEntry(
+            key = "launcher_titletopmargin",
+            type = PreferenceType.INT,
+            defaultValue = 0,
+            constraint = PreferenceConstraint.IntRange(min = 0, max = 100),
+            ownerFeature = "titleTopMargin",
+            restartTarget = RestartTarget.LAUNCHER_RESTART,
+            hotReloadable = false,
+            legacyAliases = emptySet()
         )
     )
 

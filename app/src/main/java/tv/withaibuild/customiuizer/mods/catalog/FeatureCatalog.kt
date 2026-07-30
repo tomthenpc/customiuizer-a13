@@ -6,11 +6,14 @@ import tv.withaibuild.customiuizer.MainModule
 import tv.withaibuild.customiuizer.mods.PackagePermissions
 import tv.withaibuild.customiuizer.mods.SystemAudioAndVisualAndMoreHooks
 import tv.withaibuild.customiuizer.mods.SystemDisplayAndWindowHooks
+import tv.withaibuild.customiuizer.mods.SystemLockScreenMoreHooks
 import tv.withaibuild.customiuizer.mods.SystemNotificationMoreHooks
 import tv.withaibuild.customiuizer.mods.SystemStatusBarClockAndMoreHooks
 import tv.withaibuild.customiuizer.mods.SystemStatusBarMoreHooks
 import tv.withaibuild.customiuizer.mods.SystemUIBatteryHooks
 import tv.withaibuild.customiuizer.mods.SystemUIScreenshotHooks
+import tv.withaibuild.customiuizer.mods.SystemUINotificationHooks
+import tv.withaibuild.customiuizer.mods.LauncherFolderHooks
 import tv.withaibuild.customiuizer.mods.LauncherIconHooks
 import tv.withaibuild.customiuizer.mods.LauncherLayoutHooks
 import tv.withaibuild.customiuizer.mods.LauncherSystemHooks
@@ -351,6 +354,123 @@ object FeatureCatalog {
             compatibilityCheck = { _ -> CompatibilityState.COMPATIBLE },
             installer = { runtime ->
                 LauncherSystemHooks.FixAppInfoLaunchHook(
+                    runtime.lpparam as PackageReadyParam
+                )
+                InstallOutcome.DISPATCHED
+            },
+            activationRestartTarget = RestartTarget.LAUNCHER_RESTART,
+            configReloadMode = ConfigReloadMode.NONE
+        ),
+        // Catalog expansion batch 2: system_server
+        FeatureSpec(
+            contract = CatalogContracts.hideProximityWarning,
+            id = "hideProximityWarning",
+            diagnosticId = DiagnosticIds.HIDE_PROXIMITY_WARNING,
+            processTarget = ProcessTarget.SystemServer,
+            preferenceKeys = setOf("system_hideproxywarn"),
+            condition = { prefs ->
+                prefs.getBoolean("system_hideproxywarn", false)
+            },
+            compatibilityCheck = { _ -> CompatibilityState.COMPATIBLE },
+            installer = { runtime ->
+                SystemDisplayAndWindowHooks.HideProximityWarningHook(
+                    runtime.lpparam as SystemServerStartingParam
+                )
+                InstallOutcome.DISPATCHED
+            },
+            activationRestartTarget = RestartTarget.REBOOT,
+            configReloadMode = ConfigReloadMode.NONE
+        ),
+        FeatureSpec(
+            contract = CatalogContracts.clearAllTasks,
+            id = "clearAllTasks",
+            diagnosticId = DiagnosticIds.CLEAR_ALL_TASKS,
+            processTarget = ProcessTarget.SystemServer,
+            preferenceKeys = setOf("system_clearalltasks"),
+            condition = { prefs ->
+                prefs.getBoolean("system_clearalltasks", false)
+            },
+            compatibilityCheck = { _ -> CompatibilityState.COMPATIBLE },
+            installer = { runtime ->
+                SystemAudioAndVisualAndMoreHooks.ClearAllTasksHook(
+                    runtime.lpparam as SystemServerStartingParam
+                )
+                InstallOutcome.DISPATCHED
+            },
+            activationRestartTarget = RestartTarget.REBOOT,
+            configReloadMode = ConfigReloadMode.NONE
+        ),
+        // Catalog expansion batch 2: SystemUI
+        FeatureSpec(
+            contract = CatalogContracts.hideDismissView,
+            id = "hideDismissView",
+            diagnosticId = DiagnosticIds.HIDE_DISMISS_VIEW,
+            processTarget = ProcessTarget.SystemUI,
+            preferenceKeys = setOf("system_removedismiss"),
+            condition = { prefs ->
+                prefs.getBoolean("system_removedismiss", false)
+            },
+            compatibilityCheck = { _ -> CompatibilityState.COMPATIBLE },
+            installer = { runtime ->
+                SystemUINotificationHooks.HideDismissViewHook(
+                    runtime.lpparam as PackageReadyParam
+                )
+                InstallOutcome.DISPATCHED
+            },
+            activationRestartTarget = RestartTarget.SYSTEMUI_RESTART,
+            configReloadMode = ConfigReloadMode.NONE
+        ),
+        FeatureSpec(
+            contract = CatalogContracts.hideLockScreenHint,
+            id = "hideLockScreenHint",
+            diagnosticId = DiagnosticIds.HIDE_LOCK_SCREEN_HINT,
+            processTarget = ProcessTarget.SystemUI,
+            preferenceKeys = setOf("system_hidelshint"),
+            condition = { prefs ->
+                prefs.getBoolean("system_hidelshint", false)
+            },
+            compatibilityCheck = { _ -> CompatibilityState.COMPATIBLE },
+            installer = { runtime ->
+                SystemLockScreenMoreHooks.HideLockScreenHintHook(
+                    runtime.lpparam as PackageReadyParam
+                )
+                InstallOutcome.DISPATCHED
+            },
+            activationRestartTarget = RestartTarget.SYSTEMUI_RESTART,
+            configReloadMode = ConfigReloadMode.NONE
+        ),
+        // Catalog expansion batch 2: Launcher
+        FeatureSpec(
+            contract = CatalogContracts.folderColumns,
+            id = "folderColumns",
+            diagnosticId = DiagnosticIds.FOLDER_COLUMNS,
+            processTarget = ProcessTarget.Launcher,
+            preferenceKeys = setOf("launcher_folder_cols"),
+            condition = { prefs ->
+                prefs.getInt("launcher_folder_cols", 1) > 1
+            },
+            compatibilityCheck = { _ -> CompatibilityState.COMPATIBLE },
+            installer = { runtime ->
+                LauncherFolderHooks.FolderColumnsHook(
+                    runtime.lpparam as PackageReadyParam
+                )
+                InstallOutcome.DISPATCHED
+            },
+            activationRestartTarget = RestartTarget.LAUNCHER_RESTART,
+            configReloadMode = ConfigReloadMode.NONE
+        ),
+        FeatureSpec(
+            contract = CatalogContracts.titleTopMargin,
+            id = "titleTopMargin",
+            diagnosticId = DiagnosticIds.TITLE_TOP_MARGIN,
+            processTarget = ProcessTarget.Launcher,
+            preferenceKeys = setOf("launcher_titletopmargin"),
+            condition = { prefs ->
+                prefs.getInt("launcher_titletopmargin", 0) > 0
+            },
+            compatibilityCheck = { _ -> CompatibilityState.COMPATIBLE },
+            installer = { runtime ->
+                LauncherIconHooks.TitleTopMarginHook(
                     runtime.lpparam as PackageReadyParam
                 )
                 InstallOutcome.DISPATCHED

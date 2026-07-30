@@ -125,4 +125,113 @@ object CatalogContracts {
             )
         )
     )
+
+    // Catalog expansion batch 2: system_server
+    val hideProximityWarning = HookTargetContract(
+        featureId = "hideProximityWarning",
+        requirements = listOf(
+            SingleTargetRequirement(
+                target = HookTargetSpec(
+                    id = "MiuiScreenOnProximityLock.showHint",
+                    operation = HookOperation.EXACT_METHOD,
+                    className = "com.android.server.policy.MiuiScreenOnProximityLock",
+                    memberName = "showHint",
+                    parameterTypes = emptyList()
+                )
+            ),
+            SingleTargetRequirement(
+                target = HookTargetSpec(
+                    id = "MiuiScreenOnProximityLock.prepareHintWindow",
+                    operation = HookOperation.EXACT_METHOD,
+                    className = "com.android.server.policy.MiuiScreenOnProximityLock",
+                    memberName = "prepareHintWindow",
+                    parameterTypes = emptyList()
+                )
+            )
+        )
+    )
+
+    val clearAllTasks = HookTargetContract(
+        featureId = "clearAllTasks",
+        requirements = listOf(
+            SingleTargetRequirement(
+                target = HookTargetSpec(
+                    id = "WindowProcessUtils.getPerceptibleRecentAppList",
+                    operation = HookOperation.ALL_METHODS_BY_NAME,
+                    className = "com.android.server.wm.WindowProcessUtils",
+                    memberName = "getPerceptibleRecentAppList"
+                )
+            )
+        )
+    )
+
+    // Catalog expansion batch 2: SystemUI
+    val hideDismissView = HookTargetContract(
+        featureId = "hideDismissView",
+        requirements = listOf(
+            SingleTargetRequirement(
+                target = HookTargetSpec(
+                    id = "MiuiNotificationPanelViewController.updateDismissView",
+                    operation = HookOperation.EXACT_METHOD,
+                    className = "com.android.systemui.statusbar.phone.MiuiNotificationPanelViewController",
+                    memberName = "updateDismissView",
+                    parameterTypes = emptyList()
+                )
+            )
+        )
+    )
+
+    val hideLockScreenHint = HookTargetContract(
+        featureId = "hideLockScreenHint",
+        requirements = listOf(
+            SingleTargetRequirement(
+                target = HookTargetSpec(
+                    id = "KeyguardIndicationRotateTextViewController.hasIndicationsExceptResting",
+                    operation = HookOperation.EXACT_METHOD,
+                    className = "com.android.systemui.keyguard.KeyguardIndicationRotateTextViewController",
+                    memberName = "hasIndicationsExceptResting",
+                    parameterTypes = emptyList()
+                )
+            )
+        )
+    )
+
+    // Catalog expansion batch 2: Launcher
+    val folderColumns = HookTargetContract(
+        featureId = "folderColumns",
+        requirements = listOf(
+            SingleTargetRequirement(
+                target = HookTargetSpec(
+                    id = "Folder.onFinishInflate",
+                    operation = HookOperation.EXACT_METHOD,
+                    className = "com.miui.home.launcher.Folder",
+                    memberName = "onFinishInflate",
+                    parameterTypes = emptyList()
+                )
+            ),
+            SingleTargetRequirement(
+                target = HookTargetSpec(
+                    id = "Folder.onLayout",
+                    operation = HookOperation.ALL_METHODS_BY_NAME,
+                    className = "com.miui.home.launcher.Folder",
+                    memberName = "onLayout"
+                )
+            )
+        )
+    )
+
+    val titleTopMargin = HookTargetContract(
+        featureId = "titleTopMargin",
+        requirements = listOf(
+            SingleTargetRequirement(
+                target = HookTargetSpec(
+                    id = "ItemIcon.onFinishInflate.titleTopMargin",
+                    operation = HookOperation.EXACT_METHOD,
+                    className = "com.miui.home.launcher.ItemIcon",
+                    memberName = "onFinishInflate",
+                    parameterTypes = emptyList()
+                )
+            )
+        )
+    )
 }
