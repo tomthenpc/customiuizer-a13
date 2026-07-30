@@ -1288,6 +1288,84 @@ def brace_depth_at(pos: int, text: str) -> int:
     return depth
 
 
+def audit_direct_system_dispatch(r: Reporter, baseline_methods: list[dict]) -> int:
+    """Audit the post-K17 layout where MainModule calls System*Hooks directly."""
+    hooks_files = sorted(p for p in MODS_DIR.glob("System*Hooks.kt") if not p.name.startswith("SystemUI"))
+    r.add("## K17 direct System dispatch")
+    r.add("- System.kt facade: removed")
+    r.add(f"- System*Hooks files: {len(hooks_files)} (expected: {EXPECTED_HOOKS_COUNT})")
+    if len(hooks_files) != EXPECTED_HOOKS_COUNT:
+        r.fail(f"System*Hooks.kt file count is {len(hooks_files)}, expected {EXPECTED_HOOKS_COUNT}")
+
+    public_hook_methods: list[dict] = []
+    hook_objects: dict[str, set[str]] = {}
+    for hook_file in hooks_files:
+        text = hook_file.read_text(encoding="utf-8")
+        object_name, methods = extract_hook_objects_and_methods(text, hook_file.name)
+        expected_object = hook_file.stem
+        if object_name != expected_object:
+            r.fail(f"{hook_file.name} declares object '{object_name}', expected '{expected_object}'")
+        public = [method for method in methods if not method["private"]]
+        public_hook_methods.extend(public)
+        hook_objects[object_name] = {method["name"] for method in public}
+        r.add(f"  - {hook_file.name}: {len(public)} public/internal entry points")
+
+    if baseline_methods:
+        public_baseline = [method for method in baseline_methods if method["is_public"]]
+        hook_keys = {full_key(method) for method in public_hook_methods}
+        missing = [
+            method for method in public_baseline
+            if full_key(method) not in hook_keys and method["name"] not in INTERNAL_SYSTEM_ALLOWLIST
+        ]
+        r.add(f"- Baseline public static methods: {len(public_baseline)}")
+        r.add(f"- Baseline methods resolved in domain objects: {len(public_baseline) - len(missing)}")
+        for method in missing:
+            key = full_key(method)
+            r.fail(f"Baseline method missing from domain objects: {key[0]}({', '.join(key[1])}): {key[2]}")
+    else:
+        r.warn("No baseline supplied; signature coverage could not be compared")
+
+    if not MAIN_MODULE.exists():
+        r.fail(f"MainModule not found: {MAIN_MODULE}")
+    else:
+        main_text = MAIN_MODULE.read_text(encoding="utf-8")
+        if "import tv.withaibuild.customiuizer.mods.System;" in main_text:
+            r.fail("MainModule still imports the removed System facade")
+
+        facade_calls = []
+        for match in JAVA_CALL_RE.finditer(main_text):
+            if is_in_line_comment(main_text, match.start()):
+                continue
+            name = match.group(1)
+            if name not in JAVA_LANG_SYSTEM_METHODS:
+                facade_calls.append((name, main_text[:match.start()].count("\n") + 1))
+        for name, line in facade_calls:
+            r.fail(f"MainModule still calls System.{name} at line {line}")
+
+        direct_pattern = re.compile(r"\b(System(?!UI)[A-Za-z0-9_]+Hooks)\.([A-Za-z0-9_]+)\s*\(")
+        direct_calls = list(direct_pattern.finditer(main_text))
+        unresolved = []
+        for match in direct_calls:
+            target, method = match.groups()
+            if method not in hook_objects.get(target, set()):
+                unresolved.append((target, method, main_text[:match.start()].count("\n") + 1))
+        r.add(f"- Direct System*Hooks call sites in MainModule: {len(direct_calls)}")
+        r.add(f"- Remaining System facade calls in MainModule: {len(facade_calls)}")
+        for target, method, line in unresolved:
+            r.fail(f"Unresolved direct target {target}.{method} at MainModule.java:{line}")
+
+    r.add("")
+    r.add("## Summary")
+    if r.ok():
+        r.add("PASS: Direct System dispatch audit completed with no blocking issues.")
+    else:
+        r.add(f"FAIL: {len(r.failures)} issue(s) found.")
+        for failure in r.failures:
+            r.add(f"  - {failure}")
+    print(r.text())
+    return 0 if r.ok() else 1
+
+
 def main() -> int:
     parser = argparse.ArgumentParser(description="Audit K5 System.java -> Kotlin migration")
     parser.add_argument(
@@ -1327,9 +1405,7 @@ def main() -> int:
 
     # --- 2. Facade parsing ---
     if not SYSTEM_FACADE.exists():
-        r.fail(f"System.kt facade not found: {SYSTEM_FACADE}")
-        print(r.text())
-        return 1
+        return audit_direct_system_dispatch(r, baseline_methods)
 
     facade_text = SYSTEM_FACADE.read_text(encoding="utf-8")
     facade_methods = extract_facade_methods(facade_text)
