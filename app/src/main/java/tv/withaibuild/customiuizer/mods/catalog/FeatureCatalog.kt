@@ -13,6 +13,8 @@ import tv.withaibuild.customiuizer.mods.SystemStatusBarMoreHooks
 import tv.withaibuild.customiuizer.mods.SystemUIBatteryHooks
 import tv.withaibuild.customiuizer.mods.SystemUIScreenshotHooks
 import tv.withaibuild.customiuizer.mods.SystemUINotificationHooks
+import tv.withaibuild.customiuizer.mods.SystemUIStatusBarHooks
+import tv.withaibuild.customiuizer.mods.LauncherAnimationHooks
 import tv.withaibuild.customiuizer.mods.LauncherFolderHooks
 import tv.withaibuild.customiuizer.mods.LauncherIconHooks
 import tv.withaibuild.customiuizer.mods.LauncherLayoutHooks
@@ -471,6 +473,123 @@ object FeatureCatalog {
             compatibilityCheck = { _ -> CompatibilityState.COMPATIBLE },
             installer = { runtime ->
                 LauncherIconHooks.TitleTopMarginHook(
+                    runtime.lpparam as PackageReadyParam
+                )
+                InstallOutcome.DISPATCHED
+            },
+            activationRestartTarget = RestartTarget.LAUNCHER_RESTART,
+            configReloadMode = ConfigReloadMode.NONE
+        ),
+        // Catalog expansion batch 3: system_server
+        FeatureSpec(
+            contract = CatalogContracts.noLightUpOnCharge,
+            id = "noLightUpOnCharge",
+            diagnosticId = DiagnosticIds.NO_LIGHT_UP_ON_CHARGE,
+            processTarget = ProcessTarget.SystemServer,
+            preferenceKeys = setOf("system_nolightuponcharges"),
+            condition = { prefs ->
+                prefs.getStringAsInt("system_nolightuponcharges", 1) > 1
+            },
+            compatibilityCheck = { _ -> CompatibilityState.COMPATIBLE },
+            installer = { runtime ->
+                SystemDisplayAndWindowHooks.NoLightUpOnChargeHook(
+                    runtime.lpparam as SystemServerStartingParam
+                )
+                InstallOutcome.DISPATCHED
+            },
+            activationRestartTarget = RestartTarget.REBOOT,
+            configReloadMode = ConfigReloadMode.NONE
+        ),
+        FeatureSpec(
+            contract = CatalogContracts.allRotations,
+            id = "allRotations",
+            diagnosticId = DiagnosticIds.ALL_ROTATIONS,
+            processTarget = ProcessTarget.SystemServer,
+            preferenceKeys = setOf("system_allrotations2"),
+            condition = { prefs ->
+                prefs.getStringAsInt("system_allrotations2", 1) > 1
+            },
+            compatibilityCheck = { _ -> CompatibilityState.COMPATIBLE },
+            installer = { runtime ->
+                SystemAudioAndVisualAndMoreHooks.AllRotationsHook(
+                    runtime.lpparam as SystemServerStartingParam
+                )
+                InstallOutcome.DISPATCHED
+            },
+            activationRestartTarget = RestartTarget.REBOOT,
+            configReloadMode = ConfigReloadMode.NONE
+        ),
+        // Catalog expansion batch 3: SystemUI
+        FeatureSpec(
+            contract = CatalogContracts.noNetworkSpeedSeparator,
+            id = "noNetworkSpeedSeparator",
+            diagnosticId = DiagnosticIds.NO_NETWORK_SPEED_SEPARATOR,
+            processTarget = ProcessTarget.SystemUI,
+            preferenceKeys = setOf("system_nonetspeedseparator"),
+            condition = { prefs ->
+                prefs.getBoolean("system_nonetspeedseparator", false)
+            },
+            compatibilityCheck = { _ -> CompatibilityState.COMPATIBLE },
+            installer = { runtime ->
+                SystemUIStatusBarHooks.NoNetworkSpeedSeparatorHook(
+                    runtime.lpparam as PackageReadyParam
+                )
+                InstallOutcome.DISPATCHED
+            },
+            activationRestartTarget = RestartTarget.SYSTEMUI_RESTART,
+            configReloadMode = ConfigReloadMode.NONE
+        ),
+        FeatureSpec(
+            contract = CatalogContracts.hideIconsClock,
+            id = "hideIconsClock",
+            diagnosticId = DiagnosticIds.HIDE_ICONS_CLOCK,
+            processTarget = ProcessTarget.SystemUI,
+            preferenceKeys = setOf("system_statusbaricons_clock"),
+            condition = { prefs ->
+                prefs.getBoolean("system_statusbaricons_clock", false)
+            },
+            compatibilityCheck = { _ -> CompatibilityState.COMPATIBLE },
+            installer = { runtime ->
+                SystemUIStatusBarHooks.HideIconsClockHook(
+                    runtime.lpparam as PackageReadyParam
+                )
+                InstallOutcome.DISPATCHED
+            },
+            activationRestartTarget = RestartTarget.SYSTEMUI_RESTART,
+            configReloadMode = ConfigReloadMode.NONE
+        ),
+        // Catalog expansion batch 3: Launcher
+        FeatureSpec(
+            contract = CatalogContracts.noUnlockAnimation,
+            id = "noUnlockAnimation",
+            diagnosticId = DiagnosticIds.NO_UNLOCK_ANIMATION,
+            processTarget = ProcessTarget.Launcher,
+            preferenceKeys = setOf("launcher_nounlockanim"),
+            condition = { prefs ->
+                prefs.getBoolean("launcher_nounlockanim", false)
+            },
+            compatibilityCheck = { _ -> CompatibilityState.COMPATIBLE },
+            installer = { runtime ->
+                LauncherAnimationHooks.NoUnlockAnimationHook(
+                    runtime.lpparam as PackageReadyParam
+                )
+                InstallOutcome.DISPATCHED
+            },
+            activationRestartTarget = RestartTarget.LAUNCHER_RESTART,
+            configReloadMode = ConfigReloadMode.NONE
+        ),
+        FeatureSpec(
+            contract = CatalogContracts.maxHotseatIconsCount,
+            id = "maxHotseatIconsCount",
+            diagnosticId = DiagnosticIds.MAX_HOTSEAT_ICONS_COUNT,
+            processTarget = ProcessTarget.Launcher,
+            preferenceKeys = setOf("launcher_unlockhotseat"),
+            condition = { prefs ->
+                prefs.getBoolean("launcher_unlockhotseat", false)
+            },
+            compatibilityCheck = { _ -> CompatibilityState.COMPATIBLE },
+            installer = { runtime ->
+                LauncherLayoutHooks.MaxHotseatIconsCountHook(
                     runtime.lpparam as PackageReadyParam
                 )
                 InstallOutcome.DISPATCHED

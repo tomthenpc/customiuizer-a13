@@ -266,6 +266,69 @@ object PreferenceSchema {
             restartTarget = RestartTarget.LAUNCHER_RESTART,
             hotReloadable = false,
             legacyAliases = emptySet()
+        ),
+        // Catalog expansion batch 3: system_server
+        PreferenceEntry(
+            key = "system_nolightuponcharges",
+            type = PreferenceType.STRING,
+            defaultValue = "1",
+            constraint = PreferenceConstraint.None,
+            ownerFeature = "noLightUpOnCharge",
+            restartTarget = RestartTarget.REBOOT,
+            hotReloadable = false,
+            legacyAliases = emptySet()
+        ),
+        PreferenceEntry(
+            key = "system_allrotations2",
+            type = PreferenceType.STRING,
+            defaultValue = "1",
+            constraint = PreferenceConstraint.None,
+            ownerFeature = "allRotations",
+            restartTarget = RestartTarget.REBOOT,
+            hotReloadable = false,
+            legacyAliases = emptySet()
+        ),
+        // Catalog expansion batch 3: SystemUI
+        PreferenceEntry(
+            key = "system_nonetspeedseparator",
+            type = PreferenceType.BOOLEAN,
+            defaultValue = false,
+            constraint = PreferenceConstraint.BooleanValue(expected = false),
+            ownerFeature = "noNetworkSpeedSeparator",
+            restartTarget = RestartTarget.SYSTEMUI_RESTART,
+            hotReloadable = false,
+            legacyAliases = emptySet()
+        ),
+        PreferenceEntry(
+            key = "system_statusbaricons_clock",
+            type = PreferenceType.BOOLEAN,
+            defaultValue = false,
+            constraint = PreferenceConstraint.BooleanValue(expected = false),
+            ownerFeature = "hideIconsClock",
+            restartTarget = RestartTarget.SYSTEMUI_RESTART,
+            hotReloadable = false,
+            legacyAliases = emptySet()
+        ),
+        // Catalog expansion batch 3: Launcher
+        PreferenceEntry(
+            key = "launcher_nounlockanim",
+            type = PreferenceType.BOOLEAN,
+            defaultValue = false,
+            constraint = PreferenceConstraint.BooleanValue(expected = false),
+            ownerFeature = "noUnlockAnimation",
+            restartTarget = RestartTarget.LAUNCHER_RESTART,
+            hotReloadable = false,
+            legacyAliases = emptySet()
+        ),
+        PreferenceEntry(
+            key = "launcher_unlockhotseat",
+            type = PreferenceType.BOOLEAN,
+            defaultValue = false,
+            constraint = PreferenceConstraint.BooleanValue(expected = false),
+            ownerFeature = "maxHotseatIconsCount",
+            restartTarget = RestartTarget.LAUNCHER_RESTART,
+            hotReloadable = false,
+            legacyAliases = emptySet()
         )
     )
 

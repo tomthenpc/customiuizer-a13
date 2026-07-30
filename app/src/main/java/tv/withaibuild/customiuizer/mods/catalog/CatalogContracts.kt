@@ -234,4 +234,114 @@ object CatalogContracts {
             )
         )
     )
+
+    // Catalog expansion batch 3: system_server
+    val noLightUpOnCharge = HookTargetContract(
+        featureId = "noLightUpOnCharge",
+        requirements = listOf(
+            SingleTargetRequirement(
+                target = HookTargetSpec(
+                    id = "PowerManagerService.wakePowerGroupLocked",
+                    operation = HookOperation.ALL_METHODS_BY_NAME,
+                    className = "com.android.server.power.PowerManagerService",
+                    memberName = "wakePowerGroupLocked"
+                )
+            )
+        )
+    )
+
+    val allRotations = HookTargetContract(
+        featureId = "allRotations",
+        requirements = listOf(
+            SingleTargetRequirement(
+                target = HookTargetSpec(
+                    id = "DisplayRotation.<init>",
+                    operation = HookOperation.ALL_CONSTRUCTORS,
+                    className = "com.android.server.wm.DisplayRotation",
+                    memberName = "<init>"
+                )
+            )
+        )
+    )
+
+    // Catalog expansion batch 3: SystemUI
+    val noNetworkSpeedSeparator = HookTargetContract(
+        featureId = "noNetworkSpeedSeparator",
+        requirements = listOf(
+            SingleTargetRequirement(
+                target = HookTargetSpec(
+                    id = "NetworkSpeedSplitter.onClockVisibilityChanged",
+                    operation = HookOperation.EXACT_METHOD,
+                    className = "com.android.systemui.statusbar.views.NetworkSpeedSplitter",
+                    memberName = "onClockVisibilityChanged",
+                    parameterTypes = listOf(INT)
+                )
+            ),
+            SingleTargetRequirement(
+                target = HookTargetSpec(
+                    id = "NetworkSpeedSplitter.onNetworkSpeedVisibilityChanged",
+                    operation = HookOperation.EXACT_METHOD,
+                    className = "com.android.systemui.statusbar.views.NetworkSpeedSplitter",
+                    memberName = "onNetworkSpeedVisibilityChanged",
+                    parameterTypes = listOf(INT)
+                )
+            )
+        )
+    )
+
+    val hideIconsClock = HookTargetContract(
+        featureId = "hideIconsClock",
+        requirements = listOf(
+            SingleTargetRequirement(
+                target = HookTargetSpec(
+                    id = "MiuiCollapsedStatusBarFragment.showClock",
+                    operation = HookOperation.EXACT_METHOD,
+                    className = "com.android.systemui.statusbar.phone.MiuiCollapsedStatusBarFragment",
+                    memberName = "showClock",
+                    parameterTypes = listOf(BOOLEAN)
+                )
+            )
+        )
+    )
+
+    // Catalog expansion batch 3: Launcher
+    val noUnlockAnimation = HookTargetContract(
+        featureId = "noUnlockAnimation",
+        requirements = listOf(
+            SingleTargetRequirement(
+                target = HookTargetSpec(
+                    id = "MiuiSettingsUtils.isSystemAnimationOpen",
+                    operation = HookOperation.ALL_METHODS_BY_NAME,
+                    className = "com.miui.launcher.utils.MiuiSettingsUtils",
+                    memberName = "isSystemAnimationOpen"
+                )
+            )
+        )
+    )
+
+    val maxHotseatIconsCount = HookTargetContract(
+        featureId = "maxHotseatIconsCount",
+        requirements = listOf(
+            AnyOfRequirement(
+                id = "maxHotseatIconsCount.hotseat",
+                criticality = Criticality.REQUIRED,
+                candidates = listOf(
+                    HookTargetSpec(
+                        id = "DeviceConfig.getHotseatCount",
+                        operation = HookOperation.EXACT_METHOD,
+                        className = "com.miui.home.launcher.DeviceConfig",
+                        memberName = "getHotseatCount",
+                        parameterTypes = emptyList()
+                    ),
+                    HookTargetSpec(
+                        id = "DeviceConfig.getHotseatMaxCount",
+                        operation = HookOperation.EXACT_METHOD,
+                        className = "com.miui.home.launcher.DeviceConfig",
+                        memberName = "getHotseatMaxCount",
+                        parameterTypes = emptyList()
+                    )
+                )
+            )
+        )
+    )
 }
