@@ -140,20 +140,6 @@ class CatalogBatch3Test {
     }
 
     @Test
-    fun maxHotseatIconsCount_installed() {
-        val prefs = PrefMap<String, Any?>()
-        prefs["pref_key_launcher_unlockhotseat"] = true
-        val launcher = launcherRuntime(prefs)
-
-        assertTrue(FeatureCatalog.installById("maxHotseatIconsCount", launcher))
-
-        val summary = DiagnosticRecorder.summarize()[DiagnosticIds.MAX_HOTSEAT_ICONS_COUNT]
-        assertNotNull(summary)
-        assertEquals(CompatibilityState.COMPATIBLE, summary!!.compatibility)
-        assertEquals(InstallOutcome.INSTALLED, summary.installation)
-    }
-
-    @Test
     fun hideIconsClock_incompatibleWithSystemClassLoader() {
         val prefs = PrefMap<String, Any?>()
         prefs["pref_key_system_statusbaricons_clock"] = true

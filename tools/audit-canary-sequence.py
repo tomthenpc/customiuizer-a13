@@ -51,7 +51,6 @@ def extract_catalog_tokens(text: str) -> list[str]:
         "noNetworkSpeedSeparator",
         "hideIconsClock",
         "noUnlockAnimation",
-        "maxHotseatIconsCount",
     }
     direct_to_id = {
         "PackagePermissions.hook": "packagePermissions",
@@ -79,7 +78,6 @@ def extract_catalog_tokens(text: str) -> list[str]:
         "SystemUIStatusBarHooks.NoNetworkSpeedSeparatorHook": "noNetworkSpeedSeparator",
         "SystemUIStatusBarHooks.HideIconsClockHook": "hideIconsClock",
         "LauncherAnimationHooks.NoUnlockAnimationHook": "noUnlockAnimation",
-        "LauncherLayoutHooks.MaxHotseatIconsCountHook": "maxHotseatIconsCount",
     }
 
     tokens = []
@@ -140,7 +138,6 @@ def main() -> int:
         "noNetworkSpeedSeparator",
         "hideIconsClock",
         "noUnlockAnimation",
-        "maxHotseatIconsCount",
     }
 
     if set(baseline_tokens) != catalog_feature_ids:

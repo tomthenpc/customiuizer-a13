@@ -319,16 +319,6 @@ object PreferenceSchema {
             restartTarget = RestartTarget.LAUNCHER_RESTART,
             hotReloadable = false,
             legacyAliases = emptySet()
-        ),
-        PreferenceEntry(
-            key = "launcher_unlockhotseat",
-            type = PreferenceType.BOOLEAN,
-            defaultValue = false,
-            constraint = PreferenceConstraint.BooleanValue(expected = false),
-            ownerFeature = "maxHotseatIconsCount",
-            restartTarget = RestartTarget.LAUNCHER_RESTART,
-            hotReloadable = false,
-            legacyAliases = emptySet()
         )
     )
 

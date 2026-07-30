@@ -235,8 +235,7 @@ class FeatureCatalogTest {
             "allRotations",
             "noNetworkSpeedSeparator",
             "hideIconsClock",
-            "noUnlockAnimation",
-            "maxHotseatIconsCount"
+            "noUnlockAnimation"
         )
         assertEquals(ids, FeatureCatalog.specs().map { it.id }.toSet())
     }

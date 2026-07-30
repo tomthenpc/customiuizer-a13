@@ -577,25 +577,6 @@ object FeatureCatalog {
             },
             activationRestartTarget = RestartTarget.LAUNCHER_RESTART,
             configReloadMode = ConfigReloadMode.NONE
-        ),
-        FeatureSpec(
-            contract = CatalogContracts.maxHotseatIconsCount,
-            id = "maxHotseatIconsCount",
-            diagnosticId = DiagnosticIds.MAX_HOTSEAT_ICONS_COUNT,
-            processTarget = ProcessTarget.Launcher,
-            preferenceKeys = setOf("launcher_unlockhotseat"),
-            condition = { prefs ->
-                prefs.getBoolean("launcher_unlockhotseat", false)
-            },
-            compatibilityCheck = { _ -> CompatibilityState.COMPATIBLE },
-            installer = { runtime ->
-                LauncherLayoutHooks.MaxHotseatIconsCountHook(
-                    runtime.lpparam as PackageReadyParam
-                )
-                InstallOutcome.DISPATCHED
-            },
-            activationRestartTarget = RestartTarget.LAUNCHER_RESTART,
-            configReloadMode = ConfigReloadMode.NONE
         )
     )
 

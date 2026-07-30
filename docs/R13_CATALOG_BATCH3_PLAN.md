@@ -110,50 +110,11 @@ This plan audits the next set of low-risk features for migration into
 
 - **featureId**: `hideCCOperatorDelimiter`
 - **MainModule call**: `MainModule.java:566`
-  ```java
-  if (mPrefs.getBoolean("system_cc_hideoperator_delimiter")) SystemSettingsAndConnectivityHooks.HideCCOperatorDelimiterHook(lpparam);
-  ```
-- **ProcessTarget**: `SystemUI`
-- **preferenceKeys**: `system_cc_hideoperator_delimiter`
-- **condition**: `mPrefs.getBoolean("system_cc_hideoperator_delimiter")`
-- **installer**: `SystemSettingsAndConnectivityHooks.HideCCOperatorDelimiterHook(lpparam)`
-- **ModuleHelper calls**:
-  1. `findAndHookMethod("com.android.systemui.statusbar.policy.MiuiCarrierTextController", ..., "fireCarrierTextChanged", String, callback)`
-- **Hook target count**: 1
-- **Requirement model**: `SingleTargetRequirement` (REQUIRED)
-- **AnyOf fallback**: No
-- **activationRestartTarget**: `SYSTEMUI_RESTART`
-- **configReloadMode**: `NONE`
-- **Risk level**: LOW
 - **Selected**: No (SystemUI quota filled)
 
 ### Launcher candidates
 
-#### 6. `maxHotseatIconsCount` — SELECTED
-
-- **featureId**: `maxHotseatIconsCount`
-- **MainModule call**: `MainModule.java:800`
-  ```java
-  if (mPrefs.getBoolean("launcher_unlockhotseat")) LauncherLayoutHooks.MaxHotseatIconsCountHook(lpparam);
-  ```
-- **ProcessTarget**: `Launcher`
-- **preferenceKeys**: `launcher_unlockhotseat`
-- **condition**: `mPrefs.getBoolean("launcher_unlockhotseat")`
-- **installer**: `LauncherLayoutHooks.MaxHotseatIconsCountHook(lpparam)`
-- **ModuleHelper calls**:
-  1. `findAndHookMethodSilently("com.miui.home.launcher.DeviceConfig", ..., "getHotseatCount", returnConstant(666))`
-  2. `findAndHookMethodSilently("com.miui.home.launcher.DeviceConfig", ..., "getHotseatMaxCount", returnConstant(666))`
-- **Hook target count**: 1 (the method that exists on the running launcher variant)
-- **Requirement model**: `AnyOfRequirement` (REQUIRED) with two candidates:
-  - `DeviceConfig.getHotseatCount`
-  - `DeviceConfig.getHotseatMaxCount`
-- **AnyOf fallback**: Yes (package-dependent)
-- **activationRestartTarget**: `LAUNCHER_RESTART`
-- **configReloadMode**: `NONE`
-- **Risk level**: LOW
-- **Selected**: Yes
-
-#### 7. `noUnlockAnimation` — SELECTED
+#### 6. `noUnlockAnimation` — SELECTED
 
 - **featureId**: `noUnlockAnimation`
 - **MainModule call**: `MainModule.java:818`
@@ -174,31 +135,39 @@ This plan audits the next set of low-risk features for migration into
 - **Risk level**: LOW
 - **Selected**: Yes
 
+#### 7. `maxHotseatIconsCount` — WITHDRAWN
+
+- **featureId**: `maxHotseatIconsCount`
+- **MainModule call**: `MainModule.java:800`
+  ```java
+  if (mPrefs.getBoolean("launcher_unlockhotseat")) LauncherLayoutHooks.MaxHotseatIconsCountHook(lpparam);
+  ```
+- **Original behavior**:
+  - `com.mi.android.globallauncher`: hook `DeviceConfig.getHotseatCount`
+  - all other Launcher packages: hook `DeviceConfig.getHotseatMaxCount`
+- **Withdrawal reason**:
+  Static catalog contracts currently cannot express package-specific target
+  applicability without changing the legacy installer behavior.
+  The original installer chooses one method at runtime based on `lpparam.packageName`;
+  the catalog `AnyOfRequirement` model would require both candidates to be installed
+  (or the installer to be rewritten), which would alter the observed runtime behavior.
+  A runtime-applicability model will be designed separately before this feature is
+  re-evaluated.
+- **Final state**: Direct hook call is preserved in `MainModule.java` with the
+  original condition and package-name branch in `MaxHotseatIconsCountHook`.
+  Catalog artifacts (contract, feature spec, diagnostic ID, preference schema
+  owner entry, tests and audit mappings) are removed.
+  The `launcher_unlockhotseat` preference XML is unchanged.
+- **Risk level**: LOW
+- **Selected**: No (withdrawn from catalog migration)
+
 #### 8. `hideLauncherSeekPoints` — NOT SELECTED
 
 - **featureId**: `hideLauncherSeekPoints`
 - **MainModule call**: `MainModule.java:813`
-  ```java
-  if (mPrefs.getBoolean("launcher_hideseekpoints")) LauncherLayoutHooks.HideSeekPointsHook(lpparam);
-  ```
-- **ProcessTarget**: `Launcher`
-- **preferenceKeys**: `launcher_hideseekpoints`
-- **condition**: `mPrefs.getBoolean("launcher_hideseekpoints")`
-- **installer**: `LauncherLayoutHooks.HideSeekPointsHook(lpparam)`
-- **ModuleHelper calls**:
-  1. `findAndHookMethod("com.miui.home.launcher.pageindicators.AllAppsIndicator", ..., "shouldHide", returnConstant(true))`
-  2. `findAndHookMethod("com.miui.home.launcher.pageindicators.AllAppsIndicator", ..., "hideAllAppsArrow", callback)`
-- **Hook target count**: 2
-- **Requirement model**:
-  - `SingleTargetRequirement` (REQUIRED) for `shouldHide`
-  - `SingleTargetRequirement` (REQUIRED) for `hideAllAppsArrow`
-- **AnyOf fallback**: No
-- **activationRestartTarget**: `LAUNCHER_RESTART`
-- **configReloadMode**: `NONE`
-- **Risk level**: LOW
 - **Selected**: No (Launcher quota filled; uses a Handler for animation)
 
-## Selected Batch 3 Features (6 total)
+## Final Selected Batch 3 Features (5 total)
 
 | # | featureId | process | key | risk |
 |---|-----------|---------|-----|------|
@@ -206,16 +175,27 @@ This plan audits the next set of low-risk features for migration into
 | 2 | `allRotations` | system_server | `system_allrotations2` | LOW |
 | 3 | `noNetworkSpeedSeparator` | SystemUI | `system_nonetspeedseparator` | LOW |
 | 4 | `hideIconsClock` | SystemUI | `system_statusbaricons_clock` | LOW |
-| 5 | `maxHotseatIconsCount` | Launcher | `launcher_unlockhotseat` | LOW |
-| 6 | `noUnlockAnimation` | Launcher | `launcher_nounlockanim` | LOW |
+| 5 | `noUnlockAnimation` | Launcher | `launcher_nounlockanim` | LOW |
+
+## Catalog totals after batch 3
+
+- Canary: 8
+- Batch 1: 6
+- Batch 2: 6
+- Batch 3: 5
+- **Total catalog features: 25**
 
 ## Implementation checklist
 
-1. `DiagnosticIds.kt`: add six new diagnostic IDs.
-2. `PreferenceSchema.kt`: add entries for the six preference keys.
+1. `DiagnosticIds.kt`: add 5 new diagnostic IDs.
+2. `PreferenceSchema.kt`: add 5 preference entries (no owner for
+   `launcher_unlockhotseat`; it remains a direct hook preference).
 3. `CatalogContracts.kt`: add `HookTargetContract` for each selected feature.
-4. `FeatureCatalog.kt`: add six `FeatureSpec` entries preserving MainModule call order.
-5. `MainModule.java`: replace direct hook calls with `FeatureCatalog.installById`.
+4. `FeatureCatalog.kt`: add 5 `FeatureSpec` entries preserving MainModule call order.
+5. `MainModule.java`: replace direct hook calls for the 5 selected features with
+   `FeatureCatalog.installById`; preserve the original direct call for
+   `maxHotseatIconsCount`.
 6. Test stubs for the new target classes/methods.
 7. `CatalogBatch3Test.kt` and `FeatureCatalogTest` update.
-8. Audit scripts: extend sequence and contract audits to cover batch-3.
+8. Audit scripts: extend sequence and contract audits to cover batch-3 and add
+   regression checks for the withdrawn `maxHotseatIconsCount`.

@@ -797,7 +797,7 @@ public class MainModule extends XposedModule {
         if (mPrefs.getBoolean("launcher_fixlaunch")) FeatureCatalog.installById("fixAppInfoLaunch", launcherRuntime);
         FeatureCatalog.installById("noWidgetOnly", launcherRuntime);
         if (mPrefs.getBoolean("launcher_sensorportrait")) LauncherAnimationHooks.ReverseLauncherPortraitHook(lpparam);
-        if (mPrefs.getBoolean("launcher_unlockhotseat")) FeatureCatalog.installById("maxHotseatIconsCount", launcherRuntime);
+        if (mPrefs.getBoolean("launcher_unlockhotseat")) LauncherLayoutHooks.MaxHotseatIconsCountHook(lpparam);
         if (mPrefs.getStringAsInt("launcher_closefolders", 1) > 1) { LauncherFolderHooks.CloseFolderOnLaunchHook(lpparam); closeOnLaunch = true; }
         if ("com.miui.home".equals(lpparam.getPackageName())) {
             if (mPrefs.getInt("system_recents_blur", 100) < 100) LauncherAnimationHooks.RecentsBlurRatioHook(lpparam);

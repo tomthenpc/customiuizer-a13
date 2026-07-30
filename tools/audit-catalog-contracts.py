@@ -87,7 +87,6 @@ INSTALLER_FILES = {
     "noNetworkSpeedSeparator": REPO_ROOT / "app" / "src" / "main" / "java" / "tv" / "withaibuild" / "customiuizer" / "mods" / "SystemUIStatusBarHooks.kt",
     "hideIconsClock": REPO_ROOT / "app" / "src" / "main" / "java" / "tv" / "withaibuild" / "customiuizer" / "mods" / "SystemUIStatusBarHooks.kt",
     "noUnlockAnimation": REPO_ROOT / "app" / "src" / "main" / "java" / "tv" / "withaibuild" / "customiuizer" / "mods" / "LauncherAnimationHooks.kt",
-    "maxHotseatIconsCount": REPO_ROOT / "app" / "src" / "main" / "java" / "tv" / "withaibuild" / "customiuizer" / "mods" / "LauncherLayoutHooks.kt",
 }
 
 CANARY_IDS = {
@@ -125,7 +124,6 @@ BATCH3_IDS = {
     "noNetworkSpeedSeparator",
     "hideIconsClock",
     "noUnlockAnimation",
-    "maxHotseatIconsCount",
 }
 
 CATALOG_IDS = CANARY_IDS | BATCH1_IDS | BATCH2_IDS | BATCH3_IDS
@@ -581,6 +579,60 @@ def main() -> int:
     if "get() =" in install_result_text and "selectedRecords()" in install_result_text:
         errors.append("HookInstallResult still contains re-computing getters")
 
+    # Regression checks for withdrawn maxHotseatIconsCount.
+    launcher_layout = (
+        REPO_ROOT
+        / "app"
+        / "src"
+        / "main"
+        / "java"
+        / "tv"
+        / "withaibuild"
+        / "customiuizer"
+        / "mods"
+        / "LauncherLayoutHooks.kt"
+    ).read_text(encoding="utf-8")
+    max_hotseat_match = re.search(
+        r"fun MaxHotseatIconsCountHook\(.*?\) \{(.*?)\n    \}",
+        launcher_layout,
+        re.DOTALL,
+    )
+    if max_hotseat_match:
+        max_hotseat_body = max_hotseat_match.group(1)
+        if max_hotseat_body.count("findAndHookMethod") + max_hotseat_body.count("findAndHookMethodSilently") > 1:
+            errors.append(
+                "MaxHotseatIconsCountHook must use a single findAndHookMethod call for package-specific behavior"
+            )
+
+    main_module = (
+        REPO_ROOT
+        / "app"
+        / "src"
+        / "main"
+        / "java"
+        / "tv"
+        / "withaibuild"
+        / "customiuizer"
+        / "MainModule.java"
+    ).read_text(encoding="utf-8")
+    if 'FeatureCatalog.installById("maxHotseatIconsCount"' in main_module:
+        errors.append("MainModule still calls FeatureCatalog.installById for maxHotseatIconsCount")
+
+    diagnostic_ids = (REPO_ROOT / "app" / "src" / "main" / "java" / "tv" / "withaibuild" / "customiuizer" / "mods" / "diagnostics" / "DiagnosticIds.kt").read_text(encoding="utf-8")
+    if "MAX_HOTSEAT_ICONS_COUNT" in diagnostic_ids:
+        errors.append("DiagnosticIds still contains MAX_HOTSEAT_ICONS_COUNT")
+
+    preference_schema = (REPO_ROOT / "app" / "src" / "main" / "java" / "tv" / "withaibuild" / "customiuizer" / "prefs" / "PreferenceSchema.kt").read_text(encoding="utf-8")
+    if 'ownerFeature = "maxHotseatIconsCount"' in preference_schema:
+        errors.append("PreferenceSchema still owns maxHotseatIconsCount")
+
+    feature_catalog = CATALOG_FILE.read_text(encoding="utf-8")
+    if '"maxHotseatIconsCount"' in feature_catalog:
+        errors.append("FeatureCatalog still references maxHotseatIconsCount")
+
+    if "maxHotseatIconsCount" in contracts_text:
+        errors.append("CatalogContracts still defines maxHotseatIconsCount")
+
     if errors:
         print("Catalog contract audit failed:")
         for e in errors:
@@ -597,6 +649,7 @@ def main() -> int:
     print("  - EXACT targets have explicit parameterTypes")
     print("  - no EXACT/ALL_METHODS mixing for the same member identity")
     print("  - installer call types and signatures match contracts")
+    print("  - withdrawn maxHotseatIconsCount has no catalog artifacts")
     return 0
 
 

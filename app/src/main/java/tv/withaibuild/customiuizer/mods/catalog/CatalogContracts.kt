@@ -318,30 +318,4 @@ object CatalogContracts {
             )
         )
     )
-
-    val maxHotseatIconsCount = HookTargetContract(
-        featureId = "maxHotseatIconsCount",
-        requirements = listOf(
-            AnyOfRequirement(
-                id = "maxHotseatIconsCount.hotseat",
-                criticality = Criticality.REQUIRED,
-                candidates = listOf(
-                    HookTargetSpec(
-                        id = "DeviceConfig.getHotseatCount",
-                        operation = HookOperation.EXACT_METHOD,
-                        className = "com.miui.home.launcher.DeviceConfig",
-                        memberName = "getHotseatCount",
-                        parameterTypes = emptyList()
-                    ),
-                    HookTargetSpec(
-                        id = "DeviceConfig.getHotseatMaxCount",
-                        operation = HookOperation.EXACT_METHOD,
-                        className = "com.miui.home.launcher.DeviceConfig",
-                        memberName = "getHotseatMaxCount",
-                        parameterTypes = emptyList()
-                    )
-                )
-            )
-        )
-    )
 }
