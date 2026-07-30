@@ -1,256 +1,264 @@
 package tv.withaibuild.customiuizer.utils
 
+import android.app.Activity
+import android.app.LocaleManager
 import android.content.Context
+import android.content.ContextWrapper
 import android.content.SharedPreferences
-import android.content.res.Configuration
 import android.content.res.Resources
+import android.os.LocaleList
+import android.os.Process
 import android.util.Log
-import androidx.appcompat.app.AppCompatDelegate
 import androidx.core.os.LocaleListCompat
 import androidx.preference.Preference
 import tv.withaibuild.customiuizer.R
 import tv.withaibuild.customiuizer.prefs.ListPreferenceEx
 import java.util.Locale
 
-/**
- * 应用界面语言单一状态源。
- *
- * 唯一持久化状态是 [LOCALE_PREF_KEY] 的值；其余状态（AppCompat 应用 locale、
- * Context Configuration、[Locale.getDefault()]）均由该值与当前系统 locale 推导而来。
- */
 object AppLocaleController {
 
     const val LOCALE_PREF_KEY = "pref_key_miuizer_locale"
+    const val APPLIED_LOCALE_PREF_KEY = "pref_key_miuizer_locale_applied"
+
+    private const val AUTO = "auto"
+    private const val RECONCILE_MARKER = ""
     private const val LEGACY_AUTO = "1"
     private const val TAG = "AppLocaleController"
 
-    // 显示顺序：auto，然后是支持的明确 locale。
     private val SUPPORTED_LOCALE_TAGS = listOf(
-        "auto", "en", "zh-CN", "zh-TW", "ru-RU", "ja-JP", "vi-VN", "cs-CZ", "pt-BR", "tr-TR", "es-ES"
+        "auto",
+        "en",
+        "zh-CN",
+        "zh-TW",
+        "ru-RU",
+        "ja-JP",
+        "vi-VN",
+        "cs-CZ",
+        "pt-BR",
+        "tr-TR",
+        "es-ES"
     )
 
-    /**
-     * 用于单测和非 Android 环境的缝。
-     * 生产代码保持为 null，使用 [AppCompatDelegate.setApplicationLocales]。
-     */
     @JvmField
     var applicationLocaleApplier: ((LocaleListCompat) -> Unit)? = null
 
-    /**
-     * 规范化用户选择或持久化值。
-     *
-     * 接受：
-     * - null、空、未知值 -> auto
-     * - 旧版 "1" -> auto
-     * - 任何支持的 tag 原样返回
-     */
+    @JvmField
+    var applicationLocaleProvider: (() -> LocaleListCompat)? = null
+
     @JvmStatic
     fun normalizeLocaleTag(tag: String?): String = when {
-        tag == null || tag.isBlank() -> "auto"
-        tag == LEGACY_AUTO -> "auto"
+        tag == null || tag.isBlank() -> AUTO
+        tag == LEGACY_AUTO -> AUTO
         SUPPORTED_LOCALE_TAGS.contains(tag) -> tag
-        tag.equals("auto", ignoreCase = true) -> "auto"
-        else -> "auto"
+        tag.equals(AUTO, ignoreCase = true) -> AUTO
+        else -> AUTO
     }
 
-    /** 从 SharedPreferences 读取规范化后的用户选择。 */
     @JvmStatic
     fun getUserLocale(prefs: SharedPreferences?): String =
-        normalizeLocaleTag(prefs?.getString(LOCALE_PREF_KEY, "auto"))
+        normalizeLocaleTag(prefs?.getString(LOCALE_PREF_KEY, AUTO))
 
-    /**
-     * 同步写入新的用户选择并立即应用。
-     *
-     * 同步 [commit] 保证下一次 Activity/Fragment 重建时读取到同一值。
-     * 语言切换是低频冷路径，阻塞 I/O 可接受。
-     */
     @JvmStatic
     fun setUserLocale(prefs: SharedPreferences, tag: String): Boolean {
         val normalized = normalizeLocaleTag(tag)
         val written = prefs.edit().putString(LOCALE_PREF_KEY, normalized).commit()
-        if (!written) {
-            Log.e(TAG, "setUserLocale commit failed for tag: $normalized")
-            return false
-        }
-        applyLocale(normalized)
-        return true
+        if (!written) Log.e(TAG, "setUserLocale commit failed for tag: $normalized")
+        return written
     }
 
     /**
-     * 仅应用已规范化的 tag，不写入。
+     * Reconciles the persisted choice with Android 13's per-application locale service.
      *
-     * 用于应用启动时，持久化值已经是唯一状态源。
+     * `auto` with no marker is the untouched default and returns before looking up a
+     * service. An explicit tag writes `LocaleManager.applicationLocales`; returning to
+     * `auto` writes an empty list and therefore hands locale ownership back to Android.
      */
     @JvmStatic
-    fun applyLocale(tag: String) {
-        val normalized = normalizeLocaleTag(tag)
-        val effective = getEffectiveLocale(normalized) { getSystemLocale() }
-        Locale.setDefault(effective)
-        applyToAppCompat(normalized, effective)
+    @JvmOverloads
+    fun apply(prefs: SharedPreferences?, context: Context? = null): Boolean {
+        val tag = getUserLocale(prefs)
+        if (tag == AUTO && !hasAppliedLocale(prefs)) return false
+
+        val target = toLocaleListCompat(tag)
+        val current = getCurrentApplicationLocales(context)
+        if (localeListsEqual(current, target)) {
+            syncAppliedMarker(prefs, tag)
+            return false
+        }
+
+        val applier = applicationLocaleApplier
+        val applied = when {
+            applier != null -> {
+                applier(target)
+                true
+            }
+            context != null -> setFrameworkApplicationLocales(context, target)
+            else -> {
+                Log.e(TAG, "apply() without Context cannot update LocaleManager")
+                false
+            }
+        }
+        if (applied) syncAppliedMarker(prefs, tag)
+        return applied
     }
 
-    /**
-     * 根据用户 tag 计算实际生效的 locale。
-     *
-     * auto 解析为当前系统 locale。回调形式允许单元测试注入确定性的系统 locale。
-     */
+    @JvmStatic
+    fun invalidateFastPath(prefs: SharedPreferences?) {
+        prefs?.edit()?.putString(APPLIED_LOCALE_PREF_KEY, RECONCILE_MARKER)?.apply()
+    }
+
+    private fun hasAppliedLocale(prefs: SharedPreferences?): Boolean =
+        prefs?.getString(APPLIED_LOCALE_PREF_KEY, null) != null
+
+    private fun syncAppliedMarker(prefs: SharedPreferences?, tag: String) {
+        prefs ?: return
+        val stored = prefs.getString(APPLIED_LOCALE_PREF_KEY, null)
+        if (tag == AUTO) {
+            if (stored != null) prefs.edit().remove(APPLIED_LOCALE_PREF_KEY).apply()
+        } else if (stored != tag) {
+            prefs.edit().putString(APPLIED_LOCALE_PREF_KEY, tag).apply()
+        }
+    }
+
+    private fun setFrameworkApplicationLocales(
+        context: Context,
+        locales: LocaleListCompat
+    ): Boolean {
+        val manager = context.getSystemService(LocaleManager::class.java)
+        if (manager == null) {
+            Log.e(TAG, "LocaleManager unavailable; locale not applied")
+            return false
+        }
+        return try {
+            manager.applicationLocales = LocaleList.forLanguageTags(locales.toLanguageTags())
+            true
+        } catch (t: Throwable) {
+            Log.e(TAG, "LocaleManager rejected the locale list", t)
+            false
+        }
+    }
+
+    private fun getCurrentApplicationLocales(context: Context?): LocaleListCompat = try {
+        val provider = applicationLocaleProvider
+        when {
+            provider != null -> provider()
+            context != null -> {
+                val manager = context.getSystemService(LocaleManager::class.java)
+                if (manager == null) LocaleListCompat.getEmptyLocaleList()
+                else LocaleListCompat.wrap(manager.applicationLocales)
+            }
+            else -> LocaleListCompat.getEmptyLocaleList()
+        }
+    } catch (t: Throwable) {
+        Log.w(TAG, "Unable to read application locales", t)
+        LocaleListCompat.getEmptyLocaleList()
+    }
+
+    private fun localeListsEqual(first: LocaleListCompat, second: LocaleListCompat): Boolean =
+        first.toLanguageTags() == second.toLanguageTags()
+
+    @JvmStatic
+    fun toLocaleListCompat(tag: String): LocaleListCompat = try {
+        when (val normalized = normalizeLocaleTag(tag)) {
+            AUTO -> LocaleListCompat.getEmptyLocaleList()
+            else -> LocaleListCompat.forLanguageTags(normalized)
+        }
+    } catch (t: Throwable) {
+        Log.w(TAG, "Unable to build application locale list", t)
+        LocaleListCompat.getEmptyLocaleList()
+    }
+
     @JvmStatic
     fun getEffectiveLocale(
         tag: String,
         systemLocaleProvider: () -> Locale = { getSystemLocale() }
     ): Locale = when (normalizeLocaleTag(tag)) {
-        "auto" -> try {
-            systemLocaleProvider()
-        } catch (t: Throwable) {
-            Log.w(TAG, "system locale provider failed: ${t.message}; falling back to JVM default")
-            Locale.getDefault()
-        }
-        else -> try {
-            Locale.forLanguageTag(tag)
-        } catch (t: Throwable) {
-            try {
-                systemLocaleProvider()
-            } catch (_: Throwable) {
-                Locale.getDefault()
-            }
-        }
+        AUTO -> systemLocaleProvider()
+        else -> Locale.forLanguageTag(normalizeLocaleTag(tag))
     }
 
-    /** 映射用户 tag 到 AppCompat 期望的 [LocaleListCompat]。 */
     @JvmStatic
-    fun toLocaleListCompat(tag: String): LocaleListCompat = try {
-        val normalized = normalizeLocaleTag(tag)
-        when (normalized) {
-            "auto" -> LocaleListCompat.getEmptyLocaleList()
-            else -> try {
-                LocaleListCompat.forLanguageTags(normalized)
-            } catch (t: Throwable) {
-                LocaleListCompat.getEmptyLocaleList()
-            }
-        }
-    } catch (t: Throwable) {
-        Log.w(TAG, "toLocaleListCompat failed: ${t.message}")
-        throw t
-    }
-
-    /** 当前系统主 locale。 */
-    @JvmStatic
-    fun getSystemLocale(): Locale = try {
-        val sysLocales = Resources.getSystem().configuration.locales
-        if (sysLocales.isEmpty) Locale.getDefault() else sysLocales[0]
-    } catch (t: Throwable) {
-        Log.w(TAG, "getSystemLocale failed: ${t.message}; falling back to JVM default")
-        Locale.getDefault()
+    fun getSystemLocale(): Locale {
+        val locales = Resources.getSystem().configuration.locales
+        return if (locales.isEmpty) Locale.getDefault() else locales[0]
     }
 
     /**
-     * 返回应用了用户选择语言的 [Context]。
-     *
-     * 这是针对非 AppCompat Context（如 device-protected storage Context）的兜底。
-     * Activity 应依赖 [AppCompatDelegate.setApplicationLocales]。
+     * Compatibility boundary for older callers. Framework application locales already
+     * flow into application contexts, so no Configuration override is created here.
      */
     @JvmStatic
-    fun getLocaleContext(base: Context, prefs: SharedPreferences?): Context {
-        val tag = getUserLocale(prefs)
-        val locale = getEffectiveLocale(tag)
-        Locale.setDefault(locale)
-        val config = Configuration(base.resources.configuration)
-        config.setLocale(locale)
-        return base.createConfigurationContext(config)
-    }
+    fun getLocaleContext(base: Context, prefs: SharedPreferences?): Context = base
 
-    /**
-     * 构造语言选择器 [ListPreference] 需要的平行数组。
-     *
-     * 返回的 [Pair] 为 `(displayEntries, entryValues)`。
-     */
     @JvmStatic
     fun buildLocaleDisplayData(context: Context): Pair<Array<CharSequence>, Array<String>> =
         buildLocaleDisplayData(context.getString(R.string.array_system_default))
 
-    /**
-     * 可测版本。只有 [systemDefaultLabel] 是 Android 依赖值，其余从 [java.util.Locale] 推导。
-     */
     @JvmStatic
     fun buildLocaleDisplayData(systemDefaultLabel: String): Pair<Array<CharSequence>, Array<String>> {
         val displayNames = ArrayList<CharSequence>(SUPPORTED_LOCALE_TAGS.size)
         val values = ArrayList<String>(SUPPORTED_LOCALE_TAGS.size)
         for (tag in SUPPORTED_LOCALE_TAGS) {
             values.add(tag)
-            displayNames.add(when (tag) {
-                "auto" -> systemDefaultLabel
-                "zh-TW" -> "繁體中文（台灣）"
-                else -> buildLanguageDisplayName(tag)
-            })
+            displayNames.add(
+                when (tag) {
+                    AUTO -> systemDefaultLabel
+                    "zh-TW" -> "繁體中文（台灣）"
+                    else -> buildLanguageDisplayName(tag)
+                }
+            )
         }
         return Pair(displayNames.toTypedArray(), values.toTypedArray())
     }
 
     private fun buildLanguageDisplayName(tag: String): String {
-        val loc = Locale.forLanguageTag(tag)
-        val sb = StringBuilder(loc.getDisplayLanguage(loc))
-        if (sb.isNotEmpty()) sb.setCharAt(0, Character.toUpperCase(sb[0]))
-        if (tag == "pt-BR") sb.append(" (Brasil)")
-        return sb.toString()
+        val locale = Locale.forLanguageTag(tag)
+        val result = StringBuilder(locale.getDisplayLanguage(locale))
+        if (result.isNotEmpty()) result.setCharAt(0, Character.toUpperCase(result[0]))
+        if (tag == "pt-BR") result.append(" (Brasil)")
+        return result.toString()
     }
 
-    /**
-     * 将语言 [ListPreferenceEx] 绑定到单一状态源。
-     *
-     * - 在恢复任何值之前先设置稳定的 [entries] 和 [entryValues]。
-     * - 禁用 preference 自身持久化，只有 [setUserLocale] 写入。
-     * - 规范化每次变更并同步应用。
-     * - 若当前持久化值不在支持集合中，防御性回退到 auto。
-     */
     @JvmStatic
     fun setupLocalePreference(pref: ListPreferenceEx?, prefs: SharedPreferences?) {
-        if (pref == null || prefs == null) return
-
-        val (displayEntries, entryValues) = try {
-            buildLocaleDisplayData(pref.context)
-        } catch (t: Throwable) {
-            Log.e(TAG, "Cannot build locale display data", t)
-            return
-        }
-
-        if (displayEntries.size != entryValues.size) {
-            Log.e(TAG, "Locale display data mismatch: entries=${displayEntries.size}, values=${entryValues.size}")
-            return
-        }
-
-        pref.entries = displayEntries
-        pref.entryValues = entryValues
+        if (pref == null) return
         pref.isPersistent = false
+        if (prefs == null) {
+            pref.isEnabled = false
+            return
+        }
 
+        val (entries, values) = buildLocaleDisplayData(pref.context)
+        pref.entries = entries
+        pref.entryValues = values
         val current = getUserLocale(prefs)
-        pref.value = if (entryValues.contains(current)) current else "auto"
+        pref.value = if (values.contains(current)) current else AUTO
 
         pref.onPreferenceChangeListener = Preference.OnPreferenceChangeListener { _, newValue ->
             val tag = normalizeLocaleTag(newValue as? String)
-            if (!entryValues.contains(tag)) {
-                Log.w(TAG, "Rejected unknown locale tag: $newValue")
-                return@OnPreferenceChangeListener false
-            }
-            // 先更新 preference 显示，即使 locale 应用后立即重建 Activity，UI 也保持一致。
+            if (!values.contains(tag)) return@OnPreferenceChangeListener false
+            if (tag == getUserLocale(prefs)) return@OnPreferenceChangeListener true
+            if (!setUserLocale(prefs, tag)) return@OnPreferenceChangeListener false
             pref.value = tag
-            setUserLocale(prefs, tag)
+            findActivity(pref.context)?.let { exitApplicationAfterLocaleSave(it) }
+            false
         }
     }
 
-    private fun applyToAppCompat(tag: String, effective: Locale) {
-        try {
-            val localeList = if (tag == "auto") {
-                LocaleListCompat.getEmptyLocaleList()
-            } else {
-                try {
-                    LocaleListCompat.create(effective)
-                } catch (t: Throwable) {
-                    LocaleListCompat.getEmptyLocaleList()
-                }
-            }
-            (applicationLocaleApplier ?: { AppCompatDelegate.setApplicationLocales(it) })(localeList)
-        } catch (t: Throwable) {
-            Log.w(TAG, "applyToAppCompat skipped: ${t.message}")
+    private fun findActivity(context: Context): Activity? {
+        var current: Context? = context
+        while (current is ContextWrapper) {
+            if (current is Activity) return current
+            val base = current.baseContext
+            if (base === current) return null
+            current = base
         }
+        return current as? Activity
+    }
+
+    @JvmStatic
+    fun exitApplicationAfterLocaleSave(activity: Activity) {
+        activity.finishAffinity()
+        Process.killProcess(Process.myPid())
     }
 }

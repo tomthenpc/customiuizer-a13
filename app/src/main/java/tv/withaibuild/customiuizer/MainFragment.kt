@@ -107,7 +107,11 @@ class MainFragment : PreferenceFragmentBase() {
         mCheckActiveRunnable?.let { mMainHandler?.removeCallbacks(it) }
         val runnable = Runnable {
             val act = activity as? AppCompatActivity
-            if (isFragmentReady(act) && !AppHelper.moduleActive) {
+            if (
+                isFragmentReady(act) &&
+                AppHelper.moduleConnectionObserved &&
+                !AppHelper.moduleActive
+            ) {
                 act?.runOnUiThread { showXposedDialog(act) }
             }
         }

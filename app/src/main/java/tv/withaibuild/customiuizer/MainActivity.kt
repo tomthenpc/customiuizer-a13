@@ -2,7 +2,6 @@ package tv.withaibuild.customiuizer
 
 import android.Manifest
 import android.annotation.SuppressLint
-import android.content.Context
 import android.content.pm.PackageManager
 import android.os.Bundle
 import android.view.KeyEvent
@@ -15,21 +14,12 @@ import androidx.fragment.app.Fragment
 import io.github.libxposed.service.XposedServiceHelper
 import tv.withaibuild.customiuizer.mods.GlobalActions
 import tv.withaibuild.customiuizer.utils.AppHelper
-import tv.withaibuild.customiuizer.utils.AppLocaleController
 import tv.withaibuild.customiuizer.utils.Helpers
 
 class MainActivity : AppCompatActivity() {
 
     private var mainFrag: MainFragment? = null
     private var prefsChanged: android.content.SharedPreferences.OnSharedPreferenceChangeListener? = null
-
-    override fun attachBaseContext(base: Context) {
-        try {
-            super.attachBaseContext(AppLocaleController.getLocaleContext(base, AppHelper.appPrefs))
-        } catch (t: Throwable) {
-            t.printStackTrace()
-        }
-    }
 
     @SuppressLint("ApplySharedPref")
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -38,6 +28,7 @@ class MainActivity : AppCompatActivity() {
 
         val ignoreKeys = hashSetOf(
             "pref_key_miuizer_locale",
+            "pref_key_miuizer_locale_applied",
             "pref_key_miuizer_launchericon",
             "pref_key_miuizer_synced_from_lsposed"
         )
@@ -46,12 +37,14 @@ class MainActivity : AppCompatActivity() {
         if (AppHelper.remotePrefs == null) {
             XposedServiceHelper.registerListener(object : XposedServiceHelper.OnServiceListener {
                 override fun onServiceBind(service: io.github.libxposed.service.XposedService) {
+                    AppHelper.moduleConnectionObserved = true
                     AppHelper.moduleActive = true
                     AppHelper.remotePrefs = service.getRemotePreferences(AppHelper.prefsName + "_remote") as io.github.libxposed.service.RemotePreferences
                     AppHelper.reconcileRemotePreferences(AppHelper.remotePrefs)
                 }
 
                 override fun onServiceDied(service: io.github.libxposed.service.XposedService) {
+                    AppHelper.moduleConnectionObserved = true
                     AppHelper.moduleActive = false
                     AppHelper.remotePrefs = null
                 }

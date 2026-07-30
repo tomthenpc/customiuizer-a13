@@ -20,6 +20,7 @@ import androidx.preference.PreferenceManager
 import tv.withaibuild.customiuizer.mods.GlobalActions
 import tv.withaibuild.customiuizer.subs.WebPage
 import tv.withaibuild.customiuizer.utils.AppHelper
+import tv.withaibuild.customiuizer.utils.AppLocaleController
 import tv.withaibuild.customiuizer.utils.Helpers
 import java.io.ObjectInputStream
 import java.io.ObjectOutputStream
@@ -392,6 +393,7 @@ open class PreferenceFragmentBase : PreferenceFragmentCompat() {
             if (entries != null) {
                 val appPrefs = AppHelper.appPrefs ?: return
                 AppHelper.syncPrefsToAnother(entries, appPrefs, 1, null, false)
+                AppLocaleController.invalidateFastPath(appPrefs)
             }
             AlertDialog.Builder(act)
                 .setTitle(R.string.do_restore)

@@ -25,7 +25,7 @@ class MainApplication : Application() {
 
     override fun onCreate() {
         super.onCreate()
-        AppHelper.appPrefs?.let { AppLocaleController.applyLocale(AppLocaleController.getUserLocale(it)) }
+        AppLocaleController.apply(AppHelper.appPrefs, this)
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
             val nm = getSystemService(Context.NOTIFICATION_SERVICE) as? NotificationManager
             nm?.createNotificationChannel(
