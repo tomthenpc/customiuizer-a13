@@ -1,8 +1,10 @@
-# CustoMIUIzer A13
+# CustoMIUIzer A13 · Kotlin Refactored Edition
 
 [简体中文](README.md) | [English](README_EN.md)
 
-CustoMIUIzer A13 is an independently maintained Xposed module for MIUI 14 / Android 13. Its feature semantics remain anchored to [MonwF/customiuizer v23.11.26](https://github.com/MonwF/customiuizer).
+CustoMIUIzer A13 Kotlin Refactored Edition is an independently maintained Xposed module for MIUI 14 / Android 13. Its feature semantics remain anchored to [MonwF/customiuizer v23.11.26](https://github.com/MonwF/customiuizer).
+
+The current line is primarily refactored in Kotlin while retaining audited, stable Java/JVM boundaries; “Kotlin Refactored Edition” does not mean 100% Kotlin.
 
 This repository contains the complete source, build configuration, engineering documentation, and verification records. User-facing installation and downloads are hosted in [Xposed-Modules-Repo/tv.withaibuild.customiuizer.r13](https://github.com/Xposed-Modules-Repo/tv.withaibuild.customiuizer.r13).
 

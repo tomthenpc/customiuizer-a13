@@ -1,8 +1,10 @@
-# 米客 A13
+# 米客 A13 · Kotlin 重构版
 
 [简体中文](README.md) | [English](README_EN.md)
 
-米客 A13（CustoMIUIzer A13）是面向 MIUI 14 / Android 13 的独立维护版 Xposed 模块，功能语义以 [MonwF/customiuizer v23.11.26](https://github.com/MonwF/customiuizer) 为上游基线。
+米客 A13（CustoMIUIzer A13）Kotlin 重构版是面向 MIUI 14 / Android 13 的独立维护版 Xposed 模块，功能语义以 [MonwF/customiuizer v23.11.26](https://github.com/MonwF/customiuizer) 为上游基线。
+
+当前维护线以 Kotlin 为主体完成工程重构，同时保留经过审计的稳定 Java/JVM 边界；“Kotlin 重构版”不表示 100% Kotlin。
 
 本仓库保存完整源码、构建配置、工程文档和验证记录。面向 LSPosed 用户的安装与下载说明位于 [Xposed-Modules-Repo/tv.withaibuild.customiuizer.r13](https://github.com/Xposed-Modules-Repo/tv.withaibuild.customiuizer.r13)。
 
