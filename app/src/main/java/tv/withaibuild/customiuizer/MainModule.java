@@ -265,12 +265,12 @@ public class MainModule extends XposedModule {
         if (mPrefs.getBoolean("various_alarmcompat")) Various.AlarmCompatServiceHook(lpparam);
         if (mPrefs.getBoolean("system_ignorecalls")) SystemAudioAndVisualAndMoreHooks.NoCallInterruptionHook(lpparam);
         if (mPrefs.getBoolean("system_forceclose")) SystemSecurityAndSystemHooks.ForceCloseHook(lpparam);
-        if (mPrefs.getBoolean("system_hideproxywarn")) SystemDisplayAndWindowHooks.HideProximityWarningHook(lpparam);
+        if (mPrefs.getBoolean("system_hideproxywarn")) FeatureCatalog.installById("hideProximityWarning", serverRuntime);
         if (mPrefs.getBoolean("system_firstpress")) FeatureCatalog.installById("firstVolumePress", serverRuntime);
         if (mPrefs.getBoolean("system_apksign")) SystemSecurityAndSystemHooks.NoSignatureVerifyServiceHook(lpparam);
         if (mPrefs.getBoolean("system_disableintegrity")) SystemSecurityAndSystemHooks.DisableSystemIntegrityHook(lpparam);
         FeatureCatalog.installById("muffledVibration", serverRuntime);
-        if (mPrefs.getBoolean("system_clearalltasks")) SystemAudioAndVisualAndMoreHooks.ClearAllTasksHook(lpparam);
+        if (mPrefs.getBoolean("system_clearalltasks")) FeatureCatalog.installById("clearAllTasks", serverRuntime);
         if (mPrefs.getBoolean("system_nodarkforce")) SystemSecurityAndSystemHooks.NoDarkForceHook(lpparam);
         if (mPrefs.getBoolean("system_fw_sticky")) SystemFreeformAndMultiWindowHooks.StickyFloatingWindowsHook(lpparam);
         if (mPrefs.getBoolean("system_lswallpaper")) SystemChargingAndWallpaperHooks.SetLockscreenWallpaperHook(lpparam);
@@ -441,7 +441,7 @@ public class MainModule extends XposedModule {
             if (mPrefs.getBoolean("system_notifafterunlock")) SystemNotificationMoreHooks.ShowNotificationsAfterUnlockHook(lpparam);
             if (mPrefs.getBoolean("system_notifrowmenu")) SystemNotificationMoreHooks.NotificationRowMenuHook(lpparam);
             if (mPrefs.getBoolean("system_compactnotif")) SystemNotificationAndShareHooks.CompactNotificationsHook(lpparam);
-            if (mPrefs.getBoolean("system_removedismiss")) SystemUINotificationHooks.HideDismissViewHook(lpparam);
+            if (mPrefs.getBoolean("system_removedismiss")) FeatureCatalog.installById("hideDismissView", systemuiRuntime);
             if (mPrefs.getBoolean("system_drawer_removeshortcut")) SystemUINotificationHooks.HideNoficationAccessIconHook(lpparam);
             if (mPrefs.getBoolean("controls_nonavbar")) Controls.HideNavBarHook(lpparam);
             else if (mPrefs.getBoolean("controls_hidenavbar_whenscreenshot")) SystemUIScreenshotHooks.HideNavBarBeforeScreenshotHook(lpparam);
@@ -506,7 +506,7 @@ public class MainModule extends XposedModule {
             if (mPrefs.getBoolean("system_hidelsstatusbar")) SystemLockScreenMoreHooks.HideLockScreenStatusBarHook(lpparam);
             if (mPrefs.getBoolean("system_hidelsclock")) SystemLockScreenMoreHooks.HideLockScreenClockHook(lpparam);
             if (mPrefs.getBoolean("system_ls_force_systemfonts")) SystemUIStatusBarHooks.ForceClockUseSystemFontsHook(lpparam);
-            if (mPrefs.getBoolean("system_hidelshint")) SystemLockScreenMoreHooks.HideLockScreenHintHook(lpparam);
+            if (mPrefs.getBoolean("system_hidelshint")) FeatureCatalog.installById("hideLockScreenHint", systemuiRuntime);
             if (mPrefs.getBoolean("system_allowdirectreply")) SystemAudioAndVisualAndMoreHooks.AllowDirectReplyHook(lpparam);
             if (mPrefs.getBoolean("system_allownotifonkeyguard")) SystemAudioAndVisualAndMoreHooks.AllowAllKeyguardHook(lpparam);
             if (mPrefs.getBoolean("system_allownotiffloat")) SystemAudioAndVisualAndMoreHooks.AllowAllFloatHook(lpparam);
@@ -784,10 +784,10 @@ public class MainModule extends XposedModule {
         if (mPrefs.getInt("launcher_shake_action", 1) != 1) LauncherGestureHooks.ShakeHook(lpparam);
         if (mPrefs.getInt("launcher_doubletap_action", 1) != 1) LauncherGestureHooks.LauncherDoubleTapHook(lpparam);
         if (mPrefs.getInt("launcher_pinch_action", 1) != 1) LauncherGestureHooks.LauncherPinchHook(lpparam);
-        if (mPrefs.getInt("launcher_folder_cols", 1) > 1) LauncherFolderHooks.FolderColumnsHook(lpparam);
+        if (mPrefs.getInt("launcher_folder_cols", 1) > 1) FeatureCatalog.installById("folderColumns", launcherRuntime);
         if (mPrefs.getInt("launcher_iconscale", 45) > 45) LauncherIconHooks.IconScaleHook(lpparam);
         if (mPrefs.getInt("launcher_titlefontsize", 5) > 5) LauncherIconHooks.TitleFontSizeHook(lpparam);
-        if (mPrefs.getInt("launcher_titletopmargin", 0) > 0) LauncherIconHooks.TitleTopMarginHook(lpparam);
+        if (mPrefs.getInt("launcher_titletopmargin", 0) > 0) FeatureCatalog.installById("titleTopMargin", launcherRuntime);
         FeatureCatalog.installById("noClockHide", launcherRuntime);
         if (mPrefs.getBoolean("launcher_renameapps")) LauncherIconHooks.RenameShortcutsHook(lpparam);
         if (mPrefs.getBoolean("launcher_darkershadow")) LauncherIconHooks.TitleShadowHook(lpparam);
