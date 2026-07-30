@@ -1,18 +1,17 @@
 package tv.withaibuild.customiuizer.mods.utils
 
-import tv.withaibuild.customiuizer.mods.diagnostics.InstallOutcome
-import tv.withaibuild.customiuizer.mods.diagnostics.ReasonCode
 import java.lang.reflect.Method
 
 /**
  * Thread-local recorder that turns legacy hook calls inside a canary installer
  * into a typed [HookInstallResult].
  *
- * - `begin()` is called by [tv.withaibuild.customiuizer.mods.catalog.FeatureCatalog]
- *   before the legacy installer runs.
- * - `ModuleHelper` wrappers call the `record*` methods only when [isRecording]
+ * - [withSession] is called by [tv.withaibuild.customiuizer.mods.catalog.FeatureCatalog]
+ *   around the legacy installer.
+ * - [ModuleHelper] wrappers call the `record*` methods only when [isRecording]
  *   is true, so non-catalog calls pay only a boolean check.
- * - `end()` returns the final [HookInstallResult] and removes the session.
+ * - The session is removed in `finally` so ThreadLocal is always cleared,
+ *   even when the installer throws.
  *
  * The recorder does not hold Context, ClassLoader, MethodHook callbacks or
  * Throwables. It only keeps stable target ids, resolution/hook booleans and
@@ -26,9 +25,18 @@ object HookInstaller {
         val diagnosticId: String,
         val classLoader: ClassLoader
     ) {
+        private val candidateToRequirement = contract.candidateToRequirement()
         val recordsById: MutableMap<String, HookTargetRecord> =
-            contract.allTargets.associateTo(LinkedHashMap()) { it.id to HookTargetRecord(spec = it) }
-        val installedCount: MutableMap<String, Int> = mutableMapOf()
+            contract.allTargets.associateTo(LinkedHashMap()) {
+                it.id to HookTargetRecord(
+                    spec = it,
+                    requirementId = candidateToRequirement[it.id] ?: "",
+                    resolved = false,
+                    installed = false,
+                    failureReason = null,
+                    installedCount = 0
+                )
+            }
     }
 
     private val session = ThreadLocal<Session?>()
@@ -37,58 +45,65 @@ object HookInstaller {
     fun isRecording(): Boolean = session.get() != null
 
     /**
-     * Start a new install session. Reuses the same [HookTargetResolver] that the
-     * compatibility probe used, so resolved classes are cached.
+     * Run a legacy installer inside a scoped install session.
      *
-     * @param compatibilityResult Optional result from
-     *        [tv.withaibuild.customiuizer.mods.utils.evaluateContract]. Field and
-     *        class targets that were resolved are pre-marked as installed so the
-     *        install phase does not have to repeat reflection for them.
+     * - Nested sessions are rejected with [IllegalStateException].
+     * - The session is bound to the current thread and the supplied ClassLoader.
+     * - The session is removed in `finally`, even on exception.
+     * - The result is produced by [HookEvidenceEvaluator] and is an immutable
+     *   value object.
      */
     @JvmStatic
-    fun begin(
+    fun withSession(
         resolver: HookTargetResolver,
         contract: HookTargetContract,
         diagnosticId: String,
         classLoader: ClassLoader,
-        compatibilityResult: HookInstallResult? = null
-    ) {
-        session.set(Session(resolver, contract, diagnosticId, classLoader))
-        if (compatibilityResult != null) {
-            populateFromCompatibility(compatibilityResult)
+        compatibilityResult: HookInstallResult? = null,
+        block: () -> Unit
+    ): HookInstallResult {
+        if (session.get() != null) {
+            throw IllegalStateException("HookInstaller session already active on this thread")
         }
+        val s = Session(resolver, contract, diagnosticId, classLoader)
+        session.set(s)
+        try {
+            if (compatibilityResult != null) {
+                populateFromCompatibility(compatibilityResult)
+            }
+            block()
+            return finalize(s)
+        } finally {
+            session.remove()
+        }
+    }
+
+    private fun finalize(s: Session): HookInstallResult {
+        val records = s.contract.allTargets.map { spec ->
+            s.recordsById[spec.id] ?: HookTargetRecord(
+                spec = spec,
+                requirementId = s.contract.candidateToRequirement()[spec.id] ?: "",
+                resolved = false,
+                installed = false,
+                failureReason = null,
+                installedCount = 0
+            )
+        }
+        return HookEvidenceEvaluator.evaluate(s.contract, records, HookEvidenceEvaluator.EvidencePhase.INSTALLATION)
     }
 
     private fun populateFromCompatibility(result: HookInstallResult) {
         val s = session.get() ?: return
         for (record in result.records) {
             val sessionRecord = s.recordsById[record.spec.id] ?: continue
-            val isPassive = record.spec.kind == HookTargetKind.CLASS || record.spec.kind == HookTargetKind.FIELD
+            val isPassive = record.spec.operation == HookOperation.CLASS_RESOLUTION ||
+                    record.spec.operation == HookOperation.FIELD_RESOLUTION
             s.recordsById[record.spec.id] = sessionRecord.copy(
                 resolved = record.resolved,
                 installed = if (isPassive) record.resolved else sessionRecord.installed,
                 failureReason = record.failureReason
             )
         }
-    }
-
-    /**
-     * End the current session and return the final install result.
-     *
-     * If no session is active, returns the [HookInstallResult.DISPATCHED] marker.
-     */
-    @JvmStatic
-    fun end(): HookInstallResult {
-        val s = session.get() ?: return HookInstallResult.DISPATCHED
-        session.remove()
-
-        val records = s.contract.allTargets.map { spec ->
-            val base = s.recordsById[spec.id] ?: HookTargetRecord(spec)
-            val count = s.installedCount[spec.id] ?: 0
-            if (count > 0 && base.installed) base.copy(installedCount = count) else base
-        }
-
-        return records.toHookInstallResult(s.contract, s.diagnosticId)
     }
 
     /**
@@ -110,34 +125,50 @@ object HookInstaller {
     @JvmStatic
     fun resolveMethodIfRecording(className: String, methodName: String, parameterTypes: Array<Class<*>>): Method? {
         val s = session.get() ?: return null
-        return if (parameterTypes.isEmpty()) {
-            s.resolver.resolveMethod(className, methodName, diagnosticId = s.diagnosticId)
-        } else {
-            s.resolver.resolveMethod(className, methodName, *parameterTypes, diagnosticId = s.diagnosticId)
-        }
+        return s.resolver.resolveMethod(className, methodName, *parameterTypes, diagnosticId = s.diagnosticId)
     }
 
     /**
-     * Mark all contract targets matching [className] and [memberName] as installed.
+     * Mark a contract candidate as installed.
      *
-     * [count] is used by [hookAllMethods] / [hookAllConstructors] to record how
-     * many overloads/constructors were actually hooked.
+     * [count] is used by [ModuleHelper.hookAllMethods] /
+     * [ModuleHelper.hookAllConstructors] to record how many overloads/constructors
+     * were actually hooked.
+     *
+     * The [operation] and [parameterTypes] are matched against the contract
+     * candidate so exact-method and all-method targets do not impersonate each
+     * other, and same-name overloads do not collide.
      */
     @JvmStatic
-    fun recordInstall(className: String, memberName: String?, count: Int = 1) {
+    fun recordInstall(
+        className: String,
+        memberName: String?,
+        operation: HookOperation,
+        parameterTypes: List<Class<*>>,
+        count: Int = 1
+    ) {
         val s = session.get() ?: return
-        for (record in matchingRecords(s, className, memberName)) {
+        for (record in matchingRecords(s, className, memberName, operation, parameterTypes)) {
             val spec = record.spec
-            s.recordsById[spec.id] = record.copy(installed = true, failureReason = null)
-            if (count > 1) s.installedCount[spec.id] = count
+            s.recordsById[spec.id] = record.copy(
+                installed = true,
+                failureReason = null,
+                installedCount = if (count > 1) count else record.installedCount
+            )
         }
     }
 
     /** Mark a target as failed, but only if it is not already installed. */
     @JvmStatic
-    fun recordFailure(className: String, memberName: String?, reason: HookFailureReason) {
+    fun recordFailure(
+        className: String,
+        memberName: String?,
+        operation: HookOperation,
+        parameterTypes: List<Class<*>>,
+        reason: HookFailureReason
+    ) {
         val s = session.get() ?: return
-        for (record in matchingRecords(s, className, memberName)) {
+        for (record in matchingRecords(s, className, memberName, operation, parameterTypes)) {
             if (!record.installed && record.failureReason == null) {
                 s.recordsById[record.spec.id] = record.copy(failureReason = reason)
             }
@@ -151,88 +182,37 @@ object HookInstaller {
     @JvmStatic
     fun recordClassFailure(className: String, reason: HookFailureReason) {
         val s = session.get() ?: return
-        for (record in s.recordsById.values.filter { it.spec.className == className && !it.installed }) {
-            if (record.failureReason == null) {
-                s.recordsById[record.spec.id] = record.copy(failureReason = reason)
-            }
+        for (record in s.recordsById.values.filter { it.spec.className == className && !it.installed && it.failureReason == null }) {
+            s.recordsById[record.spec.id] = record.copy(failureReason = reason)
         }
     }
 
-    private fun matchingRecords(s: Session, className: String, memberName: String?): List<HookTargetRecord> {
+    private fun matchingRecords(
+        s: Session,
+        className: String,
+        memberName: String?,
+        operation: HookOperation,
+        parameterTypes: List<Class<*>>
+    ): List<HookTargetRecord> {
         return s.recordsById.values.filter {
-            it.spec.className == className && (memberName == null || it.spec.memberName == memberName)
-        }
-    }
-}
-
-/**
- * Compute a [HookInstallResult] from a list of records using the contract and
- * fallback group rules.
- */
-private fun List<HookTargetRecord>.toHookInstallResult(
-    contract: HookTargetContract,
-    diagnosticId: String
-): HookInstallResult {
-    val groups = contract.allTargets.filter { it.fallbackGroup != null }.groupBy { it.fallbackGroup!! }
-    val selectedIds = mutableSetOf<String>()
-    val satisfiedFallbackIds = mutableSetOf<String>()
-    val selectedFallbacks = mutableListOf<HookTargetRecord>()
-    val recordsBySpec = this.associateBy { it.spec.id }
-
-    for ((_, targets) in groups) {
-        val ordered = targets.sortedBy { it.fallbackOrder }
-        val firstInstalled = ordered.firstOrNull { recordsBySpec[it.id]?.installed == true }
-        if (firstInstalled != null) {
-            val record = recordsBySpec.getValue(firstInstalled.id)
-            selectedIds.add(record.spec.id)
-            satisfiedFallbackIds.addAll(targets.map { it.id })
-            if (firstInstalled.fallbackOrder > 0) selectedFallbacks.add(record)
-        }
-    }
-    for (record in this.filter { it.spec.fallbackGroup == null && it.installed }) {
-        selectedIds.add(record.spec.id)
-    }
-
-    val selectedRecords = this.filter { it.spec.id in selectedIds }
-    val failedRecords = this.filter {
-        it.spec.id !in selectedIds && it.spec.id !in satisfiedFallbackIds && !it.installed
-    }
-    val requiredFailures = failedRecords.filter { it.spec.required }
-    val optionalFailures = failedRecords.filter { !it.spec.required }
-
-    val requiredInstalled = selectedRecords.count { it.spec.required }
-    val requiredTotal = this.count { it.spec.required }
-    val optionalInstalled = selectedRecords.count { !it.spec.required }
-    val optionalTotal = this.count { !it.spec.required }
-
-    val outcome = when {
-        requiredFailures.isNotEmpty() -> InstallOutcome.FAILED
-        selectedFallbacks.isNotEmpty() -> InstallOutcome.DEGRADED
-        optionalFailures.isNotEmpty() -> InstallOutcome.DEGRADED
-        selectedIds.isNotEmpty() -> InstallOutcome.INSTALLED
-        else -> InstallOutcome.FAILED
-    }
-
-    val reasonCode = when (outcome) {
-        InstallOutcome.INSTALLED -> ReasonCode.INSTALLER_SUCCEEDED
-        InstallOutcome.DEGRADED -> if (selectedFallbacks.isNotEmpty()) {
-            ReasonCode.FALLBACK_TARGET_FOUND
-        } else {
-            ReasonCode.INSTALLER_SUCCEEDED
-        }
-        InstallOutcome.FAILED -> ReasonCode.INSTALLER_FAILED
-        InstallOutcome.DISPATCHED -> ReasonCode.INSTALLER_DISPATCHED
-    }
-
-    val detail = buildString {
-        append("required $requiredInstalled/$requiredTotal, optional $optionalInstalled/$optionalTotal")
-        if (selectedFallbacks.isNotEmpty()) {
-            append(", fallbacks=${selectedFallbacks.joinToString(",") { it.spec.id }}")
-        }
-        if (requiredFailures.isNotEmpty()) {
-            append(", required_failed=${requiredFailures.joinToString(",") { it.spec.id }}")
+            it.spec.className == className &&
+                    it.spec.operation == operation &&
+                    (memberName == null || it.spec.memberName == memberName) &&
+                    parameterTypesMatch(it.spec, operation, parameterTypes)
         }
     }
 
-    return HookInstallResult(records = this, reasonCode = reasonCode, detail = detail)
+    private fun parameterTypesMatch(
+        spec: HookTargetSpec,
+        operation: HookOperation,
+        parameterTypes: List<Class<*>>
+    ): Boolean {
+        return when (operation) {
+            HookOperation.ALL_METHODS_BY_NAME,
+            HookOperation.ALL_CONSTRUCTORS,
+            HookOperation.CLASS_RESOLUTION,
+            HookOperation.FIELD_RESOLUTION -> true
+            else -> spec.parameterTypes == parameterTypes
+        }
+    }
 }

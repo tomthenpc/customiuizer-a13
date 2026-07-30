@@ -1,16 +1,20 @@
 package tv.withaibuild.customiuizer.mods.catalog
 
+import tv.withaibuild.customiuizer.mods.utils.AnyOfRequirement
+import tv.withaibuild.customiuizer.mods.utils.Criticality
+import tv.withaibuild.customiuizer.mods.utils.HookOperation
 import tv.withaibuild.customiuizer.mods.utils.HookTargetContract
-import tv.withaibuild.customiuizer.mods.utils.HookTargetKind
 import tv.withaibuild.customiuizer.mods.utils.HookTargetSpec
+import tv.withaibuild.customiuizer.mods.utils.SingleTargetRequirement
 
 /**
  * Typed target contracts for the 8 canary features.
  *
  * Each contract is derived from the actual hook calls in the corresponding
  * legacy installer. The contract is used for compatibility probing (via
- * [tv.withaibuild.customiuizer.mods.utils.evaluateContract]) and for real
- * install evidence (via [tv.withaibuild.customiuizer.mods.utils.HookInstaller]).
+ * [tv.withaibuild.customiuizer.mods.utils.HookTargetResolver.evaluateContract])
+ * and for real install evidence (via
+ * [tv.withaibuild.customiuizer.mods.utils.HookInstaller.withSession]).
  */
 object CanaryContracts {
 
@@ -21,228 +25,276 @@ object CanaryContracts {
 
     val packagePermissions = HookTargetContract(
         featureId = "packagePermissions",
-        required = listOf(
-            HookTargetSpec(
-                id = "PermissionManagerServiceImpl.shouldGrantPermissionBySignature",
-                kind = HookTargetKind.METHOD,
-                className = "com.android.server.pm.permission.PermissionManagerServiceImpl",
-                memberName = "shouldGrantPermissionBySignature"
+        requirements = listOf(
+            SingleTargetRequirement(
+                target = HookTargetSpec(
+                    id = "PermissionManagerServiceImpl.shouldGrantPermissionBySignature",
+                    operation = HookOperation.ALL_METHODS_BY_NAME,
+                    className = "com.android.server.pm.permission.PermissionManagerServiceImpl",
+                    memberName = "shouldGrantPermissionBySignature"
+                )
             ),
-            HookTargetSpec(
-                id = "PackageManagerServiceUtils.verifySignatures",
-                kind = HookTargetKind.METHOD,
-                className = "com.android.server.pm.PackageManagerServiceUtils",
-                memberName = "verifySignatures"
+            SingleTargetRequirement(
+                target = HookTargetSpec(
+                    id = "PackageManagerServiceUtils.verifySignatures",
+                    operation = HookOperation.ALL_METHODS_BY_NAME,
+                    className = "com.android.server.pm.PackageManagerServiceUtils",
+                    memberName = "verifySignatures"
+                )
             ),
-            HookTargetSpec(
-                id = "ApplicationInfo.isSystemApp",
-                kind = HookTargetKind.METHOD,
-                className = "android.content.pm.ApplicationInfo",
-                memberName = "isSystemApp"
+            SingleTargetRequirement(
+                target = HookTargetSpec(
+                    id = "ApplicationInfo.isSystemApp",
+                    operation = HookOperation.EXACT_METHOD,
+                    className = "android.content.pm.ApplicationInfo",
+                    memberName = "isSystemApp",
+                    parameterTypes = emptyList()
+                )
             ),
-            HookTargetSpec(
-                id = "ApplicationInfo.isSignedWithPlatformKey",
-                kind = HookTargetKind.METHOD,
-                className = "android.content.pm.ApplicationInfo",
-                memberName = "isSignedWithPlatformKey",
-                required = false
-            )
-        ),
-        optional = listOf(
-            HookTargetSpec(
-                id = "ActivityRecordInjector.canShowWhenLocked",
-                kind = HookTargetKind.METHOD,
-                className = "com.android.server.wm.ActivityRecordInjector",
-                memberName = "canShowWhenLocked",
-                required = false
+            SingleTargetRequirement(
+                target = HookTargetSpec(
+                    id = "ApplicationInfo.isSignedWithPlatformKey",
+                    operation = HookOperation.EXACT_METHOD,
+                    className = "android.content.pm.ApplicationInfo",
+                    memberName = "isSignedWithPlatformKey",
+                    parameterTypes = emptyList()
+                ),
+                criticality = Criticality.OPTIONAL
+            ),
+            SingleTargetRequirement(
+                target = HookTargetSpec(
+                    id = "ActivityRecordInjector.canShowWhenLocked",
+                    operation = HookOperation.ALL_METHODS_BY_NAME,
+                    className = "com.android.server.wm.ActivityRecordInjector",
+                    memberName = "canShowWhenLocked"
+                ),
+                criticality = Criticality.OPTIONAL
             )
         )
     )
 
     val autoBrightnessRange = HookTargetContract(
         featureId = "autoBrightnessRange",
-        required = listOf(
-            HookTargetSpec(
-                id = "AutomaticBrightnessController.clampScreenBrightness",
-                kind = HookTargetKind.METHOD,
-                className = "com.android.server.display.AutomaticBrightnessController",
-                memberName = "clampScreenBrightness",
-                parameterTypes = listOf(FLOAT),
-                required = true,
-                fallbackGroup = "clamp",
-                fallbackOrder = 0
+        requirements = listOf(
+            AnyOfRequirement(
+                id = "clamp",
+                criticality = Criticality.REQUIRED,
+                candidates = listOf(
+                    HookTargetSpec(
+                        id = "AutomaticBrightnessController.clampScreenBrightness",
+                        operation = HookOperation.EXACT_METHOD,
+                        className = "com.android.server.display.AutomaticBrightnessController",
+                        memberName = "clampScreenBrightness",
+                        parameterTypes = listOf(FLOAT)
+                    ),
+                    HookTargetSpec(
+                        id = "DisplayPowerController.clampScreenBrightness",
+                        operation = HookOperation.EXACT_METHOD,
+                        className = "com.android.server.display.DisplayPowerController",
+                        memberName = "clampScreenBrightness",
+                        parameterTypes = listOf(FLOAT)
+                    )
+                )
             ),
-            HookTargetSpec(
-                id = "DisplayPowerController.clampScreenBrightness",
-                kind = HookTargetKind.METHOD,
-                className = "com.android.server.display.DisplayPowerController",
-                memberName = "clampScreenBrightness",
-                parameterTypes = listOf(FLOAT),
-                required = true,
-                fallbackGroup = "clamp",
-                fallbackOrder = 1
-            ),
-            HookTargetSpec(
-                id = "AutomaticBrightnessController.constructors",
-                kind = HookTargetKind.CONSTRUCTOR,
-                className = "com.android.server.display.AutomaticBrightnessController",
-                required = true,
-                fallbackGroup = "constructor",
-                fallbackOrder = 0
-            ),
-            HookTargetSpec(
-                id = "DisplayPowerController.constructors",
-                kind = HookTargetKind.CONSTRUCTOR,
-                className = "com.android.server.display.DisplayPowerController",
-                required = true,
-                fallbackGroup = "constructor",
-                fallbackOrder = 1
+            AnyOfRequirement(
+                id = "constructor",
+                criticality = Criticality.REQUIRED,
+                candidates = listOf(
+                    HookTargetSpec(
+                        id = "AutomaticBrightnessController.constructors",
+                        operation = HookOperation.ALL_CONSTRUCTORS,
+                        className = "com.android.server.display.AutomaticBrightnessController"
+                    ),
+                    HookTargetSpec(
+                        id = "DisplayPowerController.constructors",
+                        operation = HookOperation.ALL_CONSTRUCTORS,
+                        className = "com.android.server.display.DisplayPowerController"
+                    )
+                )
             )
         )
     )
 
     val muffledVibration = HookTargetContract(
         featureId = "muffledVibration",
-        required = listOf(
-            HookTargetSpec(
-                id = "VibratorService.doVibratorOn",
-                kind = HookTargetKind.METHOD,
-                className = "com.android.server.VibratorService",
-                memberName = "doVibratorOn"
+        requirements = listOf(
+            SingleTargetRequirement(
+                target = HookTargetSpec(
+                    id = "VibratorService.doVibratorOn",
+                    operation = HookOperation.ALL_METHODS_BY_NAME,
+                    className = "com.android.server.VibratorService",
+                    memberName = "doVibratorOn"
+                )
             )
         )
     )
 
     val statusBarClockTweak = HookTargetContract(
         featureId = "statusBarClockTweak",
-        required = listOf(
-            HookTargetSpec(
-                id = "MiuiStatusBarClockController.constructors",
-                kind = HookTargetKind.CONSTRUCTOR,
-                className = "com.android.systemui.statusbar.policy.MiuiStatusBarClockController"
+        requirements = listOf(
+            SingleTargetRequirement(
+                target = HookTargetSpec(
+                    id = "MiuiStatusBarClockController.constructors",
+                    operation = HookOperation.ALL_CONSTRUCTORS,
+                    className = "com.android.systemui.statusbar.policy.MiuiStatusBarClockController"
+                )
             ),
-            HookTargetSpec(
-                id = "MiuiStatusBarClockController.fireTimeChange",
-                kind = HookTargetKind.METHOD,
-                className = "com.android.systemui.statusbar.policy.MiuiStatusBarClockController",
-                memberName = "fireTimeChange"
+            SingleTargetRequirement(
+                target = HookTargetSpec(
+                    id = "MiuiStatusBarClockController.fireTimeChange",
+                    operation = HookOperation.EXACT_METHOD,
+                    className = "com.android.systemui.statusbar.policy.MiuiStatusBarClockController",
+                    memberName = "fireTimeChange",
+                    parameterTypes = emptyList()
+                )
             ),
-            HookTargetSpec(
-                id = "MiuiClock.constructors",
-                kind = HookTargetKind.CONSTRUCTOR,
-                className = "com.android.systemui.statusbar.views.MiuiClock"
+            SingleTargetRequirement(
+                target = HookTargetSpec(
+                    id = "MiuiClock.constructors",
+                    operation = HookOperation.ALL_CONSTRUCTORS,
+                    className = "com.android.systemui.statusbar.views.MiuiClock"
+                )
             ),
-            HookTargetSpec(
-                id = "MiuiClock.updateTime",
-                kind = HookTargetKind.METHOD,
-                className = "com.android.systemui.statusbar.views.MiuiClock",
-                memberName = "updateTime"
-            )
-        ),
-        optional = listOf(
-            HookTargetSpec(
-                id = "MiuiClock.setClockVisibility",
-                kind = HookTargetKind.METHOD,
-                className = "com.android.systemui.statusbar.views.MiuiClock",
-                memberName = "setClockVisibility",
-                parameterTypes = listOf(INT),
-                required = false
+            SingleTargetRequirement(
+                target = HookTargetSpec(
+                    id = "MiuiClock.updateTime",
+                    operation = HookOperation.EXACT_METHOD,
+                    className = "com.android.systemui.statusbar.views.MiuiClock",
+                    memberName = "updateTime",
+                    parameterTypes = emptyList()
+                )
             ),
-            HookTargetSpec(
-                id = "MiuiPhoneStatusBarView.onAttachedToWindow",
-                kind = HookTargetKind.METHOD,
-                className = "com.android.systemui.statusbar.phone.MiuiPhoneStatusBarView",
-                memberName = "onAttachedToWindow",
-                required = false
+            SingleTargetRequirement(
+                target = HookTargetSpec(
+                    id = "MiuiClock.setClockVisibility",
+                    operation = HookOperation.EXACT_METHOD,
+                    className = "com.android.systemui.statusbar.views.MiuiClock",
+                    memberName = "setClockVisibility",
+                    parameterTypes = listOf(INT)
+                ),
+                criticality = Criticality.OPTIONAL
+            ),
+            SingleTargetRequirement(
+                target = HookTargetSpec(
+                    id = "MiuiPhoneStatusBarView.onAttachedToWindow",
+                    operation = HookOperation.EXACT_METHOD,
+                    className = "com.android.systemui.statusbar.phone.MiuiPhoneStatusBarView",
+                    memberName = "onAttachedToWindow",
+                    parameterTypes = emptyList()
+                ),
+                criticality = Criticality.OPTIONAL
             )
         )
     )
 
     val noMoreIcon = HookTargetContract(
         featureId = "noMoreIcon",
-        required = listOf(
-            HookTargetSpec(
-                id = "NotificationIconAreaController.setIconsVisibility",
-                kind = HookTargetKind.METHOD,
-                className = "com.android.systemui.statusbar.phone.NotificationIconAreaController",
-                memberName = "setIconsVisibility"
+        requirements = listOf(
+            SingleTargetRequirement(
+                target = HookTargetSpec(
+                    id = "NotificationIconAreaController.setIconsVisibility",
+                    operation = HookOperation.EXACT_METHOD,
+                    className = "com.android.systemui.statusbar.phone.NotificationIconAreaController",
+                    memberName = "setIconsVisibility",
+                    parameterTypes = emptyList()
+                )
             )
         )
     )
 
     val batteryIndicator = HookTargetContract(
         featureId = "batteryIndicator",
-        required = listOf(
-            HookTargetSpec(
-                id = "CentralSurfacesImpl.createAndAddWindows",
-                kind = HookTargetKind.METHOD,
-                className = "com.android.systemui.statusbar.phone.CentralSurfacesImpl",
-                memberName = "createAndAddWindows"
+        requirements = listOf(
+            SingleTargetRequirement(
+                target = HookTargetSpec(
+                    id = "CentralSurfacesImpl.createAndAddWindows",
+                    operation = HookOperation.ALL_METHODS_BY_NAME,
+                    className = "com.android.systemui.statusbar.phone.CentralSurfacesImpl",
+                    memberName = "createAndAddWindows"
+                )
             ),
-            HookTargetSpec(
-                id = "CentralSurfacesImpl.setPanelExpanded",
-                kind = HookTargetKind.METHOD,
-                className = "com.android.systemui.statusbar.phone.CentralSurfacesImpl",
-                memberName = "setPanelExpanded",
-                parameterTypes = listOf(BOOLEAN)
+            SingleTargetRequirement(
+                target = HookTargetSpec(
+                    id = "CentralSurfacesImpl.setPanelExpanded",
+                    operation = HookOperation.EXACT_METHOD,
+                    className = "com.android.systemui.statusbar.phone.CentralSurfacesImpl",
+                    memberName = "setPanelExpanded",
+                    parameterTypes = listOf(BOOLEAN)
+                )
             ),
-            HookTargetSpec(
-                id = "CentralSurfacesImpl.setQsExpanded",
-                kind = HookTargetKind.METHOD,
-                className = "com.android.systemui.statusbar.phone.CentralSurfacesImpl",
-                memberName = "setQsExpanded",
-                parameterTypes = listOf(BOOLEAN)
+            SingleTargetRequirement(
+                target = HookTargetSpec(
+                    id = "CentralSurfacesImpl.setQsExpanded",
+                    operation = HookOperation.EXACT_METHOD,
+                    className = "com.android.systemui.statusbar.phone.CentralSurfacesImpl",
+                    memberName = "setQsExpanded",
+                    parameterTypes = listOf(BOOLEAN)
+                )
             ),
-            HookTargetSpec(
-                id = "CentralSurfacesImpl.updateIsKeyguard",
-                kind = HookTargetKind.METHOD,
-                className = "com.android.systemui.statusbar.phone.CentralSurfacesImpl",
-                memberName = "updateIsKeyguard",
-                parameterTypes = listOf(BOOLEAN)
+            SingleTargetRequirement(
+                target = HookTargetSpec(
+                    id = "CentralSurfacesImpl.updateIsKeyguard",
+                    operation = HookOperation.EXACT_METHOD,
+                    className = "com.android.systemui.statusbar.phone.CentralSurfacesImpl",
+                    memberName = "updateIsKeyguard",
+                    parameterTypes = listOf(BOOLEAN)
+                )
             ),
-            HookTargetSpec(
-                id = "NotificationIconAreaController.onDarkChanged",
-                kind = HookTargetKind.METHOD,
-                className = "com.android.systemui.statusbar.phone.NotificationIconAreaController",
-                memberName = "onDarkChanged"
+            SingleTargetRequirement(
+                target = HookTargetSpec(
+                    id = "NotificationIconAreaController.onDarkChanged",
+                    operation = HookOperation.ALL_METHODS_BY_NAME,
+                    className = "com.android.systemui.statusbar.phone.NotificationIconAreaController",
+                    memberName = "onDarkChanged"
+                )
             ),
-            HookTargetSpec(
-                id = "MiuiBatteryControllerImpl.fireBatteryLevelChanged",
-                kind = HookTargetKind.METHOD,
-                className = "com.android.systemui.statusbar.policy.MiuiBatteryControllerImpl",
-                memberName = "fireBatteryLevelChanged"
+            SingleTargetRequirement(
+                target = HookTargetSpec(
+                    id = "MiuiBatteryControllerImpl.fireBatteryLevelChanged",
+                    operation = HookOperation.EXACT_METHOD,
+                    className = "com.android.systemui.statusbar.policy.MiuiBatteryControllerImpl",
+                    memberName = "fireBatteryLevelChanged",
+                    parameterTypes = emptyList()
+                )
             ),
-            HookTargetSpec(
-                id = "BatteryControllerImpl.firePowerSaveChanged",
-                kind = HookTargetKind.METHOD,
-                className = "com.android.systemui.statusbar.policy.BatteryControllerImpl",
-                memberName = "firePowerSaveChanged"
+            SingleTargetRequirement(
+                target = HookTargetSpec(
+                    id = "BatteryControllerImpl.firePowerSaveChanged",
+                    operation = HookOperation.EXACT_METHOD,
+                    className = "com.android.systemui.statusbar.policy.BatteryControllerImpl",
+                    memberName = "firePowerSaveChanged",
+                    parameterTypes = emptyList()
+                )
             )
         )
     )
 
     val noClockHide = HookTargetContract(
         featureId = "noClockHide",
-        required = listOf(
-            HookTargetSpec(
-                id = "Launcher.updateStatusBarClock",
-                kind = HookTargetKind.METHOD,
-                className = "com.miui.home.launcher.Launcher",
-                memberName = "updateStatusBarClock",
-                parameterTypes = listOf(LONG)
+        requirements = listOf(
+            SingleTargetRequirement(
+                target = HookTargetSpec(
+                    id = "Launcher.updateStatusBarClock",
+                    operation = HookOperation.EXACT_METHOD,
+                    className = "com.miui.home.launcher.Launcher",
+                    memberName = "updateStatusBarClock",
+                    parameterTypes = listOf(LONG)
+                )
             )
         )
     )
 
     val noWidgetOnly = HookTargetContract(
         featureId = "noWidgetOnly",
-        required = listOf(
-            HookTargetSpec(
-                id = "CellLayout.setScreenType",
-                kind = HookTargetKind.METHOD,
-                className = "com.miui.home.launcher.CellLayout",
-                memberName = "setScreenType",
-                parameterTypes = listOf(INT)
+        requirements = listOf(
+            SingleTargetRequirement(
+                target = HookTargetSpec(
+                    id = "CellLayout.setScreenType",
+                    operation = HookOperation.EXACT_METHOD,
+                    className = "com.miui.home.launcher.CellLayout",
+                    memberName = "setScreenType",
+                    parameterTypes = listOf(INT)
+                )
             )
         )
     )

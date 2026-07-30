@@ -19,7 +19,6 @@ import tv.withaibuild.customiuizer.mods.diagnostics.InstallOutcome
 import tv.withaibuild.customiuizer.mods.diagnostics.InstallSummary
 import tv.withaibuild.customiuizer.mods.diagnostics.ReasonCode
 import tv.withaibuild.customiuizer.mods.utils.HookInstaller
-import tv.withaibuild.customiuizer.mods.utils.evaluateContract
 import tv.withaibuild.customiuizer.utils.PrefMap
 
 /**
@@ -322,17 +321,16 @@ object FeatureCatalog {
             return false
         }
 
-        HookInstaller.begin(
-            resolver = runtime.resolver,
-            contract = contract,
-            diagnosticId = feature.diagnosticId,
-            classLoader = runtime.classLoader,
-            compatibilityResult = compatResult
-        )
-
         return try {
-            feature.installer(runtime)
-            val result = HookInstaller.end()
+            val result = HookInstaller.withSession(
+                resolver = runtime.resolver,
+                contract = contract,
+                diagnosticId = feature.diagnosticId,
+                classLoader = runtime.classLoader,
+                compatibilityResult = compatResult
+            ) {
+                feature.installer(runtime)
+            }
 
             val summary = InstallSummary(
                 requiredInstalled = result.requiredInstalled,
@@ -340,20 +338,19 @@ object FeatureCatalog {
                 optionalInstalled = result.optionalInstalled,
                 optionalTotal = result.optionalTotal,
                 fallbackUsed = result.fallbackUsed,
-                installation = result.outcome,
+                installation = result.installation ?: InstallOutcome.FAILED,
                 reasonCode = result.reasonCode
             )
 
             DiagnosticRecorder.record(
                 feature.diagnosticId,
-                installation = result.outcome,
+                installation = result.installation,
                 reasonCode = result.reasonCode,
                 detail = result.detail,
                 installSummary = summary
             )
-            result.outcome != InstallOutcome.FAILED
+            result.installation != InstallOutcome.FAILED
         } catch (t: Throwable) {
-            HookInstaller.end()
             DiagnosticRecorder.record(
                 feature.diagnosticId,
                 installation = InstallOutcome.FAILED,

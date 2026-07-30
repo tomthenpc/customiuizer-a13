@@ -53,6 +53,7 @@ class StatusBarClockTweakClosedLoopTest {
     fun fullLoop_primaryTargetsFoundAndInstalled() {
         val prefs = PrefMap<String, Any?>()
         prefs["pref_key_system_statusbar_clocktweak"] = true
+        prefs["pref_key_system_cc_hidedate"] = true
 
         val systemui = runtime(prefs)
 

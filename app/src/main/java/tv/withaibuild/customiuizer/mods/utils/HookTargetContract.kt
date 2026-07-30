@@ -1,7 +1,45 @@
 package tv.withaibuild.customiuizer.mods.utils
 
-import tv.withaibuild.customiuizer.mods.catalog.CompatibilityState
-import tv.withaibuild.customiuizer.mods.diagnostics.ReasonCode
+/**
+ * Single, typed requirement model for a feature contract.
+ *
+ * Requirements are the only source of truth for:
+ * - criticality (REQUIRED / OPTIONAL);
+ * - fallback ordering (AnyOf candidates are listed primary-first).
+ *
+ * The old duplicate sources ([HookTargetContract.required] / [optional],
+ * [HookTargetSpec.required], [fallbackGroup] / [fallbackOrder]) are deleted.
+ */
+sealed interface HookRequirement {
+    val id: String
+    val criticality: Criticality
+}
+
+/**
+ * A single target that must or may succeed.
+ */
+data class SingleTargetRequirement(
+    val target: HookTargetSpec,
+    override val criticality: Criticality = Criticality.REQUIRED,
+    override val id: String = target.id
+) : HookRequirement
+
+/**
+ * A group of ordered candidates. The first candidate is the primary; later
+ * candidates are fallbacks. The requirement is satisfied when any candidate
+ * succeeds. Satisfaction through a non-primary candidate marks fallback as used.
+ */
+data class AnyOfRequirement(
+    val candidates: List<HookTargetSpec>,
+    override val criticality: Criticality = Criticality.REQUIRED,
+    override val id: String
+) : HookRequirement {
+    init {
+        require(candidates.isNotEmpty()) { "AnyOfRequirement $id must contain at least one candidate" }
+        val ids = candidates.map { it.id }
+        require(ids.distinct().size == ids.size) { "AnyOfRequirement $id has duplicate candidate ids" }
+    }
+}
 
 /**
  * A typed contract that declares every target a feature depends on.
@@ -11,177 +49,28 @@ import tv.withaibuild.customiuizer.mods.diagnostics.ReasonCode
  * - post-install evidence (compare the contract against the actual hooks
  *   installed by [HookInstaller]).
  *
- * [required] targets must all be installed for a feature to be [InstallOutcome.INSTALLED].
- * [optional] targets may fail without failing the feature, but their failure
- * may push the outcome to [InstallOutcome.DEGRADED] if any required target
- * succeeded.
- *
- * Targets that share a non-null [HookTargetSpec.fallbackGroup] are primary/fallback
- * candidates. Only one success is needed inside a group. The earliest target
- * (lowest [HookTargetSpec.fallbackOrder]) that succeeds is selected as the
- * primary; later successes are recorded in [HookInstallResult.selectedFallbacks].
+ * [HookRequirement] is the single source of truth for criticality and fallback
+ * grouping. Counts (required/optional total/installed, fallback used) are
+ * produced by [HookEvidenceEvaluator] and counted by requirement, not by
+ * candidate target count.
  */
 data class HookTargetContract(
     val featureId: String,
-    val required: List<HookTargetSpec> = emptyList(),
-    val optional: List<HookTargetSpec> = emptyList()
+    val requirements: List<HookRequirement> = emptyList()
 ) {
-    val allTargets: List<HookTargetSpec> get() = required + optional
-}
-
-/**
- * Evaluate a contract for compatibility using a [HookTargetResolver].
- *
- * This only resolves targets (no hooks are installed) and populates the
- * resolver cache so the later install phase can reuse the resolved members.
- */
-fun HookTargetResolver.evaluateContract(
-    contract: HookTargetContract,
-    diagnosticId: String
-): Pair<CompatibilityState, HookInstallResult> {
-    val records = mutableListOf<HookTargetRecord>()
-    val requiredFailures = mutableListOf<HookTargetRecord>()
-    val fallbackGroups = contract.allTargets
-        .filter { it.fallbackGroup != null }
-        .groupBy { it.fallbackGroup!! }
-
-    // Helper that resolves a target and produces a record.
-    fun resolve(spec: HookTargetSpec): HookTargetRecord {
-        val record = when (spec.kind) {
-            HookTargetKind.CLASS -> {
-                val clazz = resolveClass(spec.className, diagnosticId)
-                HookTargetRecord(
-                    spec = spec,
-                    resolved = clazz != null,
-                    installed = false,
-                    failureReason = if (clazz == null) HookFailureReason.CLASS_NOT_FOUND else null
-                )
-            }
-            HookTargetKind.METHOD -> {
-                val method = if (spec.parameterTypes.isEmpty() && spec.memberName != null) {
-                    resolveMethod(spec.className, spec.memberName, diagnosticId = diagnosticId)
-                } else if (spec.memberName != null) {
-                    resolveMethod(spec.className, spec.memberName, *spec.parameterTypes.toTypedArray(), diagnosticId = diagnosticId)
-                } else {
-                    null
-                }
-                HookTargetRecord(
-                    spec = spec,
-                    resolved = method != null,
-                    installed = false,
-                    failureReason = if (method == null) {
-                        if (resolveClass(spec.className, diagnosticId) == null) {
-                            HookFailureReason.CLASS_NOT_FOUND
-                        } else {
-                            HookFailureReason.MEMBER_NOT_FOUND
-                        }
-                    } else null
-                )
-            }
-            HookTargetKind.CONSTRUCTOR -> {
-                val ctor = if (spec.parameterTypes.isEmpty()) {
-                    // First declared constructor.
-                    resolveClass(spec.className, diagnosticId)?.declaredConstructors?.firstOrNull()
-                } else {
-                    resolveClass(spec.className, diagnosticId)?.getDeclaredConstructor(*spec.parameterTypes.toTypedArray())
-                }?.apply { isAccessible = true }
-                HookTargetRecord(
-                    spec = spec,
-                    resolved = ctor != null,
-                    installed = false,
-                    failureReason = if (ctor == null) {
-                        if (resolveClass(spec.className, diagnosticId) == null) {
-                            HookFailureReason.CLASS_NOT_FOUND
-                        } else {
-                            HookFailureReason.MEMBER_NOT_FOUND
-                        }
-                    } else null
-                )
-            }
-            HookTargetKind.FIELD -> {
-                val field = if (spec.memberName != null) {
-                    resolveField(spec.className, spec.memberName, diagnosticId)
-                } else null
-                HookTargetRecord(
-                    spec = spec,
-                    resolved = field != null,
-                    installed = false,
-                    failureReason = if (field == null) {
-                        if (resolveClass(spec.className, diagnosticId) == null) {
-                            HookFailureReason.CLASS_NOT_FOUND
-                        } else {
-                            HookFailureReason.MEMBER_NOT_FOUND
-                        }
-                    } else null
-                )
+    val allTargets: List<HookTargetSpec>
+        get() = requirements.flatMap { req ->
+            when (req) {
+                is SingleTargetRequirement -> listOf(req.target)
+                is AnyOfRequirement -> req.candidates
             }
         }
-        records.add(record)
-        return record
-    }
 
-    // Resolve every target. For fallback groups, only one success is needed.
-    val selectedFallbacks = mutableListOf<HookTargetRecord>()
-    for (group in fallbackGroups.values) {
-        val ordered = group.sortedBy { it.fallbackOrder }
-        var installedInGroup = false
-        for (spec in ordered) {
-            val record = resolve(spec)
-            if (record.resolved && !installedInGroup) {
-                if (spec.fallbackOrder!! > 0) {
-                    selectedFallbacks.add(record)
-                }
-                installedInGroup = true
-                // Continue resolving other group members so they appear as
-                // optional failures if they are declared elsewhere, but stop
-                // recording them as selected fallbacks.
-            }
+    fun candidateToRequirement(): Map<String, String> = requirements.flatMap { req ->
+        val ids = when (req) {
+            is SingleTargetRequirement -> listOf(req.target.id)
+            is AnyOfRequirement -> req.candidates.map { it.id }
         }
-    }
-    for (spec in contract.allTargets.filter { it.fallbackGroup == null }) {
-        resolve(spec)
-    }
-
-    // Determine compatibility state and reason code.
-    val compatibility = when {
-        contract.required.all { spec ->
-            val rec = records.first { it.spec.id == spec.id }
-            rec.resolved
-        } -> {
-            if (selectedFallbacks.isNotEmpty()) {
-                CompatibilityState.DEGRADED
-            } else {
-                CompatibilityState.COMPATIBLE
-            }
-        }
-        contract.optional.any { spec ->
-            val rec = records.first { it.spec.id == spec.id }
-            rec.resolved
-        } || selectedFallbacks.isNotEmpty() -> CompatibilityState.DEGRADED
-        else -> CompatibilityState.INCOMPATIBLE
-    }
-
-    val reasonCode = when (compatibility) {
-        CompatibilityState.COMPATIBLE -> ReasonCode.PRIMARY_TARGET_FOUND
-        CompatibilityState.DEGRADED -> if (selectedFallbacks.isNotEmpty()) {
-            ReasonCode.FALLBACK_TARGET_FOUND
-        } else {
-            ReasonCode.PRIMARY_TARGET_FOUND
-        }
-        CompatibilityState.INCOMPATIBLE -> ReasonCode.TARGET_NOT_FOUND
-    }
-
-    return compatibility to HookInstallResult(
-        records = records,
-        reasonCode = reasonCode,
-        detail = when (compatibility) {
-            CompatibilityState.COMPATIBLE -> "all required targets resolved"
-            CompatibilityState.DEGRADED -> if (selectedFallbacks.isNotEmpty()) {
-                "fallback target resolved: ${selectedFallbacks.joinToString(", ") { it.spec.id }}"
-            } else {
-                "some required targets resolved, optional/fallback missing"
-            }
-            CompatibilityState.INCOMPATIBLE -> "required target(s) not found"
-        }
-    )
+        ids.map { it to req.id }
+    }.toMap()
 }
