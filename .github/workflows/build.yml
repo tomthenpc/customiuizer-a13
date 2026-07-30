@@ -2,7 +2,7 @@
 
 on:
   push:
-    branches: [main, "agent/**", "devin/**", "r13/**"]
+    branches: [main, "agent/**", "codex/**", "devin/**", "r13/**"]
   pull_request:
   workflow_dispatch:
 
@@ -20,8 +20,19 @@ jobs:
           java-version: "17"
       - uses: gradle/actions/setup-gradle@v4
 
-      - name: Run unit tests and lint
-        run: ./gradlew :app:test :app:lintRelease
+      - name: Check source invariants and System migration
+        run: |
+          python tools/check-invariants.py
+          python tools/audit-system-migration.py --baseline-ref backup/r13-k5-before-system-java-removal
+
+      - name: Run unit tests
+        run: ./gradlew :app:testDebugUnitTest
+
+      - name: Run debug and release lint
+        run: ./gradlew :app:lintDebug :app:lintRelease
+
+      - name: Run release vital lint independently
+        run: ./gradlew :app:lintVitalRelease --rerun-tasks
 
       - name: Build debug APK and exercise release code path (R8, no signing)
         run: ./gradlew :app:assembleDebug :app:minifyReleaseWithR8

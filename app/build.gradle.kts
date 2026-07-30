@@ -41,14 +41,6 @@ android {
                 storePassword = keystoreProperties.getProperty("storePassword")
                 keyAlias = keystoreProperties.getProperty("keyAlias")
                 keyPassword = keystoreProperties.getProperty("keyPassword")
-            } else {
-                // Missing signing configuration: point to a path that will not be a valid keystore,
-                // so packageRelease / packageDevelop fail at execution time instead of silently
-                // falling back to the Android debug key.
-                storeFile = rootProject.file("../keystore.properties")
-                storePassword = ""
-                keyAlias = ""
-                keyPassword = ""
             }
             enableV1Signing = false
             enableV2Signing = true
@@ -73,16 +65,11 @@ android {
         val releaseSigning = signingConfigs.getByName("v2")
 
         getByName("release") {
-            check(hasReleaseSigning) {
-                "Release signing configuration is missing or incomplete. " +
-                "Ensure ${rootProject.file("../keystore.properties")} exists and defines " +
-                "storeFile, storePassword, keyAlias, and keyPassword."
-            }
             isDebuggable = false
             isMinifyEnabled = true
             isShrinkResources = true
             isCrunchPngs = true
-            signingConfig = releaseSigning
+            if (hasReleaseSigning) signingConfig = releaseSigning
             proguardFiles(
                 getDefaultProguardFile("proguard-android-optimize.txt"),
                 "proguard-rules.pro"
@@ -90,16 +77,11 @@ android {
         }
 
         create("develop") {
-            check(hasReleaseSigning) {
-                "Develop signing configuration is missing or incomplete. " +
-                "Ensure ${rootProject.file("../keystore.properties")} exists and defines " +
-                "storeFile, storePassword, keyAlias, and keyPassword."
-            }
             isDebuggable = false
             isMinifyEnabled = true
             isShrinkResources = true
             isCrunchPngs = true
-            signingConfig = releaseSigning
+            if (hasReleaseSigning) signingConfig = releaseSigning
             proguardFiles(
                 getDefaultProguardFile("proguard-android-optimize.txt"),
                 "proguard-rules.pro"
@@ -157,6 +139,35 @@ android {
     testOptions {
         unitTests {
             isReturnDefaultValues = true
+        }
+    }
+}
+
+val signingRequiredTasks = setOf(
+    "assembleRelease",
+    "bundleRelease",
+    "packageRelease",
+    "packageReleaseBundle",
+    "packageReleaseUniversalApk",
+    "signReleaseBundle",
+    "assembleDevelop",
+    "bundleDevelop",
+    "packageDevelop",
+    "packageDevelopBundle",
+    "packageDevelopUniversalApk",
+    "signDevelopBundle"
+)
+val signingConfigurationPath = keystorePropertiesFile.absolutePath
+
+tasks.configureEach {
+    if (!hasReleaseSigning && name in signingRequiredTasks) {
+        val packagingKind = if (name.contains("Develop")) "develop" else "release"
+        val signingFailureMessage =
+            "Formal $packagingKind packaging requires the repository-external " +
+                "$signingConfigurationPath with storeFile, storePassword, keyAlias, and keyPassword. " +
+                "Unsigned CI verification may run tests, lint, and R8 only."
+        doFirst {
+            throw GradleException(signingFailureMessage)
         }
     }
 }
