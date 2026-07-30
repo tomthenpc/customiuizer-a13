@@ -22,13 +22,13 @@ import io.github.libxposed.api.XposedModuleInterface.PackageReadyParam;
 import io.github.libxposed.api.XposedModuleInterface.SystemServerStartingParam;
 import tv.withaibuild.customiuizer.mods.Controls;
 import tv.withaibuild.customiuizer.mods.GlobalActions;
+import tv.withaibuild.customiuizer.mods.catalog.FeatureCatalog;
 import tv.withaibuild.customiuizer.mods.LauncherAnimationHooks;
 import tv.withaibuild.customiuizer.mods.LauncherFolderHooks;
 import tv.withaibuild.customiuizer.mods.LauncherGestureHooks;
 import tv.withaibuild.customiuizer.mods.LauncherIconHooks;
 import tv.withaibuild.customiuizer.mods.LauncherLayoutHooks;
 import tv.withaibuild.customiuizer.mods.LauncherSystemHooks;
-import tv.withaibuild.customiuizer.mods.PackagePermissions;
 import tv.withaibuild.customiuizer.mods.SystemAudioAndVisualAndMoreHooks;
 import tv.withaibuild.customiuizer.mods.SystemAudioAndVolumeHooks;
 import tv.withaibuild.customiuizer.mods.SystemChargingAndWallpaperHooks;
@@ -223,7 +223,7 @@ public class MainModule extends XposedModule {
     public void onSystemServerStarting(final SystemServerStartingParam lpparam) {
         if (!isSupportedAndroidVersion()) return;
         initPrefs();
-        PackagePermissions.hook(lpparam);
+        FeatureCatalog.installForSystemServer(lpparam);
         if (needGlobalActions()) GlobalActions.setupGlobalActions(lpparam);
 
         if (mPrefs.getBoolean("system_screenshot_overlay")) {
@@ -422,11 +422,7 @@ public class MainModule extends XposedModule {
                     mPrefs.getInt("controls_navbarrightlong_action", 1) > 1) Controls.NavBarButtonsHook(lpparam);
             if (mPrefs.getBoolean("system_scramblepin")) SystemLockScreenHooks.ScramblePINHook(lpparam);
             if (mPrefs.getBoolean("system_dttosleep")) SystemDisplayAndWindowHooks.DoubleTapToSleepHook(lpparam);
-            if (mPrefs.getBoolean("system_statusbar_clocktweak")
-                || mPrefs.getBoolean("system_cc_clocktweak")
-                || mPrefs.getBoolean("system_cc_hidedate")
-                || mPrefs.getString("system_cc_dateformat", "").length() > 0
-            ) SystemStatusBarClockAndMoreHooks.StatusBarClockTweakHook(lpparam);
+            FeatureCatalog.installForPackage(lpparam, "com.android.systemui");
             if (mPrefs.getBoolean("system_noscreenlock_act")) SystemLockScreenMoreHooks.NoScreenLockHook(lpparam);
             if (
                 mPrefs.getBoolean("system_detailednetspeed")
