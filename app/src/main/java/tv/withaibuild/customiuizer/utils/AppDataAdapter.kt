@@ -20,14 +20,10 @@ import java.util.ArrayList
 import java.util.Comparator
 import java.util.Locale
 import java.util.concurrent.CopyOnWriteArrayList
-import java.util.concurrent.LinkedBlockingQueue
-import java.util.concurrent.ThreadPoolExecutor
-import java.util.concurrent.TimeUnit
 
 class AppDataAdapter : BaseAdapter, Filterable {
     private val ctx: Context
     private val mInflater: LayoutInflater
-    private val pool: ThreadPoolExecutor
     private val mFilter = ItemFilter()
     private val originalAppList = ArrayList<AppData>()
     private val filteredAppList = CopyOnWriteArrayList<AppData>()
@@ -45,14 +41,6 @@ class AppDataAdapter : BaseAdapter, Filterable {
         mInflater = LayoutInflater.from(context)
         originalAppList.addAll(arr)
         filteredAppList.addAll(arr)
-        val cpuCount = Runtime.getRuntime().availableProcessors()
-        pool = ThreadPoolExecutor(
-            cpuCount + 1,
-            cpuCount * 2 + 1,
-            2,
-            TimeUnit.SECONDS,
-            LinkedBlockingQueue()
-        )
     }
 
     constructor(
@@ -228,13 +216,13 @@ class AppDataAdapter : BaseAdapter, Filterable {
             container.layoutParams = lp
         } else {
             itemIcon.tag = position
-            val icon = Helpers.memoryCache.get(ad.pkgName + "|" + ad.actName)
+            val icon = Helpers.memoryCache.get(appIconCacheKey(ad))
             if (icon == null) {
                 val dualIcon = arrayOf(ctx.resources.getDrawable(R.drawable.card_icon_default, ctx.theme))
                 val crossfader = android.graphics.drawable.TransitionDrawable(dualIcon)
                 crossfader.isCrossFadeEnabled = true
                 itemIcon.setImageDrawable(crossfader)
-                BitmapCachedLoader(itemIcon, ad, ctx).executeOnExecutor(pool)
+                BitmapCachedLoader(itemIcon, ad, ctx).execute()
             } else {
                 itemIcon.setImageBitmap(icon)
             }

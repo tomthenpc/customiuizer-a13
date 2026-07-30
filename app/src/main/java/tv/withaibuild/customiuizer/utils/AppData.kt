@@ -6,4 +6,5 @@ class AppData {
     @JvmField var actName: String? = null
     @JvmField var enabled: Boolean = false
     @JvmField var user: Int = 0
+    @JvmField var iconKey: String = ""
 }

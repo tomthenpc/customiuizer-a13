@@ -16,16 +16,12 @@ import android.widget.TextView
 import tv.withaibuild.customiuizer.R
 import java.util.ArrayList
 import java.util.concurrent.CopyOnWriteArrayList
-import java.util.concurrent.LinkedBlockingQueue
-import java.util.concurrent.ThreadPoolExecutor
-import java.util.concurrent.TimeUnit
 
 class ResolveInfoAdapter(context: Context, arr: ArrayList<ResolveInfo>) : BaseAdapter(), Filterable {
 
     private val ctx: Context = context
     private val pm: PackageManager = ctx.packageManager
     private val mInflater: LayoutInflater = LayoutInflater.from(context)
-    private val pool: ThreadPoolExecutor
     private val mFilter = ItemFilter()
     private val originalAppList = CopyOnWriteArrayList<ResolveInfo>()
     private val filteredAppList = CopyOnWriteArrayList<ResolveInfo>()
@@ -33,14 +29,6 @@ class ResolveInfoAdapter(context: Context, arr: ArrayList<ResolveInfo>) : BaseAd
     init {
         originalAppList.addAll(arr)
         filteredAppList.addAll(arr)
-        val cpuCount = Runtime.getRuntime().availableProcessors()
-        pool = ThreadPoolExecutor(
-            cpuCount + 1,
-            cpuCount * 2 + 1,
-            2L,
-            TimeUnit.SECONDS,
-            LinkedBlockingQueue()
-        )
     }
 
     override fun getCount(): Int = filteredAppList.size
@@ -68,14 +56,14 @@ class ResolveInfoAdapter(context: Context, arr: ArrayList<ResolveInfo>) : BaseAd
 
         itemTitle.text = ad.label
         itemIsDis.visibility = if (ad.enabled) View.INVISIBLE else View.VISIBLE
-        val icon = Helpers.memoryCache.get(ad.pkgName + "|" + ad.actName)
+        val icon = Helpers.memoryCache.get(appIconCacheKey(ad))
 
         if (icon == null) {
             val dualIcon = arrayOf(ctx.resources.getDrawable(R.drawable.card_icon_default, ctx.theme))
             val crossfader = TransitionDrawable(dualIcon)
             crossfader.isCrossFadeEnabled = true
             itemIcon.setImageDrawable(crossfader)
-            BitmapCachedLoader(itemIcon, ad, ctx).executeOnExecutor(pool)
+            BitmapCachedLoader(itemIcon, ad, ctx).execute()
         } else {
             itemIcon.setImageBitmap(icon)
         }

@@ -18,9 +18,6 @@ import java.util.ArrayList
 import java.util.Comparator
 import java.util.Locale
 import java.util.concurrent.CopyOnWriteArrayList
-import java.util.concurrent.LinkedBlockingQueue
-import java.util.concurrent.ThreadPoolExecutor
-import java.util.concurrent.TimeUnit
 
 class LockedAppAdapter @SuppressLint("WrongConstant") constructor(
     context: Context,
@@ -29,7 +26,6 @@ class LockedAppAdapter @SuppressLint("WrongConstant") constructor(
 
     private val ctx: Context = context
     private val mInflater: LayoutInflater = LayoutInflater.from(context)
-    private val pool: ThreadPoolExecutor
     private val mFilter = ItemFilter()
     private val originalAppList: ArrayList<AppData> = arr
     private val filteredAppList = CopyOnWriteArrayList<AppData>()
@@ -38,15 +34,6 @@ class LockedAppAdapter @SuppressLint("WrongConstant") constructor(
 
     init {
         filteredAppList.addAll(arr)
-        val cpuCount = Runtime.getRuntime().availableProcessors()
-        pool = ThreadPoolExecutor(
-            cpuCount + 1,
-            cpuCount * 2 + 1,
-            2,
-            TimeUnit.SECONDS,
-            LinkedBlockingQueue()
-        )
-
         try {
             mSecurityManager = context.getSystemService("security")
             val sm = mSecurityManager
@@ -133,13 +120,13 @@ class LockedAppAdapter @SuppressLint("WrongConstant") constructor(
         itemIsDis.visibility = if (ad.enabled) View.GONE else View.VISIBLE
         itemIsDual.visibility = if (ad.user != 0) View.VISIBLE else View.GONE
 
-        val icon: Bitmap? = Helpers.memoryCache.get(ad.pkgName + "|" + ad.actName)
+        val icon: Bitmap? = Helpers.memoryCache.get(appIconCacheKey(ad))
         if (icon == null) {
             val dualIcon = arrayOf(ctx.resources.getDrawable(R.drawable.card_icon_default, ctx.theme))
             val crossfader = android.graphics.drawable.TransitionDrawable(dualIcon)
             crossfader.isCrossFadeEnabled = true
             itemIcon.setImageDrawable(crossfader)
-            BitmapCachedLoader(itemIcon, ad, ctx).executeOnExecutor(pool)
+            BitmapCachedLoader(itemIcon, ad, ctx).execute()
         } else {
             itemIcon.setImageBitmap(icon)
         }
