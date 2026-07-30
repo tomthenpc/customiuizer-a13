@@ -2,7 +2,7 @@
 package tv.withaibuild.customiuizer.utils
 
 import android.content.Context
-import android.graphics.Bitmap
+import android.graphics.drawable.TransitionDrawable
 import android.text.TextUtils
 import android.util.TypedValue
 import android.view.LayoutInflater
@@ -19,28 +19,28 @@ import tv.withaibuild.customiuizer.R
 import java.util.ArrayList
 import java.util.Comparator
 import java.util.Locale
-import java.util.concurrent.CopyOnWriteArrayList
 
 class AppDataAdapter : BaseAdapter, Filterable {
     private val ctx: Context
-    private val mInflater: LayoutInflater
-    private val mFilter = ItemFilter()
+    private val inflater: LayoutInflater
+    private val itemFilter = ItemFilter()
     private val originalAppList = ArrayList<AppData>()
-    private val filteredAppList = CopyOnWriteArrayList<AppData>()
+    private var filteredAppList: List<AppData> = emptyList()
     private var key: String? = null
     private var selectedApp: String? = null
     private var bwlist = false
     private var selectedUser = 0
-    private var selectedApps: java.util.LinkedHashSet<String> = java.util.LinkedHashSet()
-    private var selectedAppsBlack: java.util.LinkedHashSet<String> = java.util.LinkedHashSet()
+    private var selectedApps: LinkedHashSet<String> = LinkedHashSet()
+    private var selectedAppsBlack: LinkedHashSet<String> = LinkedHashSet()
     private var aType: Helpers.AppAdapterType = Helpers.AppAdapterType.Default
     private var multiUserSupport = false
 
     constructor(context: Context, arr: ArrayList<AppData>) {
         ctx = context
-        mInflater = LayoutInflater.from(context)
+        inflater = LayoutInflater.from(context)
         originalAppList.addAll(arr)
-        filteredAppList.addAll(arr)
+        prepareRows()
+        replaceFiltered(originalAppList)
     }
 
     constructor(
@@ -61,264 +61,293 @@ class AppDataAdapter : BaseAdapter, Filterable {
         aType = adapterType
         bwlist = isBW
         var removeDual = false
-        val currentKey = key ?: ""
+        val currentKey = key.orEmpty()
         if (aType == Helpers.AppAdapterType.Mutli) {
-            selectedApps = java.util.LinkedHashSet(
+            selectedApps = LinkedHashSet(
                 AppHelper.getStringSetOfAppPrefs(currentKey, emptySet()) ?: emptySet()
             )
-            if (bwlist) selectedAppsBlack = java.util.LinkedHashSet(
-                AppHelper.getStringSetOfAppPrefs(currentKey + "_black", emptySet()) ?: emptySet()
-            )
-            val multiUserMods = ArrayList<String>().apply {
-                add("pref_key_system_cleanshare_apps")
-                add("pref_key_system_cleanopenwith_apps")
+            if (bwlist) {
+                selectedAppsBlack = LinkedHashSet(
+                    AppHelper.getStringSetOfAppPrefs(
+                        currentKey + "_black",
+                        emptySet()
+                    ) ?: emptySet()
+                )
             }
-            multiUserSupport = multiUserMods.contains(currentKey)
+            multiUserSupport =
+                currentKey == "pref_key_system_cleanshare_apps" ||
+                    currentKey == "pref_key_system_cleanopenwith_apps"
             if (multiUserSupport) {
-                val selectedAppsAdd = java.util.HashSet<String>()
-                val iter = selectedApps.iterator()
-                while (iter.hasNext()) {
-                    val item = iter.next()
+                val selectedAppsAdd = HashSet<String>()
+                val iterator = selectedApps.iterator()
+                while (iterator.hasNext()) {
+                    val item = iterator.next()
                     if (!item.contains("|")) {
-                        selectedAppsAdd.add(item + "|0")
-                        iter.remove()
+                        selectedAppsAdd.add("$item|0")
+                        iterator.remove()
                     }
                 }
-                if (selectedAppsAdd.size > 0) selectedApps.addAll(selectedAppsAdd)
+                if (selectedAppsAdd.isNotEmpty()) selectedApps.addAll(selectedAppsAdd)
             } else {
                 removeDual = true
             }
         } else if (aType == Helpers.AppAdapterType.Standalone) {
             selectedApp = AppHelper.getStringOfAppPrefs(currentKey, "")
             selectedUser = AppHelper.getIntOfAppPrefs(currentKey + "_user", 0)
-            val noApp = AppData().apply {
-                pkgName = ""
-                actName = ""
-                label = ctx.resources.getString(R.string.array_default)
-                enabled = true
-            }
-            originalAppList.add(0, noApp)
-            filteredAppList.add(0, noApp)
+            originalAppList.add(
+                0,
+                AppData().apply {
+                    pkgName = ""
+                    actName = ""
+                    label = ctx.resources.getString(R.string.array_default)
+                    enabled = true
+                }
+            )
         } else if (aType == Helpers.AppAdapterType.Default) {
             removeDual = currentKey.contains("pref_key_system_applock_skip_activities")
         }
-        if (removeDual) {
-            originalAppList.removeAll { it.user != 0 }
-            filteredAppList.clear()
-            filteredAppList.addAll(originalAppList)
+        if (removeDual) originalAppList.removeAll { it.user != 0 }
+        prepareRows()
+        replaceFiltered(originalAppList)
+    }
+
+    private fun prepareRows() {
+        val locale = Locale.getDefault()
+        val currentKey = key.orEmpty()
+        for (app in originalAppList) {
+            val packageName = app.pkgName.orEmpty()
+            val activityName = app.actName.orEmpty()
+            app.labelSearchKey = app.label.orEmpty().lowercase(locale)
+            app.activitySearchKey = activityName.lowercase(locale)
+            app.selectionKey = "$packageName|$activityName"
+            app.primaryUserSelectionKey = "$packageName|0"
+            app.userSelectionKey = "$packageName|${app.user}"
+            app.customTitlePrefKey = "$currentKey:${app.selectionKey}|${app.user}"
+            app.activitySummary = activityName.replace(".", ".\u200B")
+            app.iconKey = if (activityName.isEmpty()) packageName else app.selectionKey
         }
-        sortList()
     }
 
     fun updateSelectedApps() {
-        val currentKey = key ?: ""
+        val currentKey = key.orEmpty()
         if (aType == Helpers.AppAdapterType.Mutli) {
-            selectedApps = java.util.LinkedHashSet(
+            selectedApps = LinkedHashSet(
                 AppHelper.getStringSetOfAppPrefs(currentKey, emptySet()) ?: emptySet()
             )
-            if (bwlist) selectedAppsBlack = java.util.LinkedHashSet(
-                AppHelper.getStringSetOfAppPrefs(currentKey + "_black", emptySet()) ?: emptySet()
-            )
+            if (bwlist) {
+                selectedAppsBlack = LinkedHashSet(
+                    AppHelper.getStringSetOfAppPrefs(
+                        currentKey + "_black",
+                        emptySet()
+                    ) ?: emptySet()
+                )
+            }
         } else if (aType == Helpers.AppAdapterType.Standalone) {
             selectedApp = AppHelper.getStringOfAppPrefs(currentKey, "")
             selectedUser = AppHelper.getIntOfAppPrefs(currentKey + "_user", 0)
         }
+        replaceFiltered(filteredAppList)
         notifyDataSetChanged()
     }
 
-    private fun shouldSelect(pkgName: String?, user: Int): Boolean {
-        val name = pkgName ?: ""
-        return (!multiUserSupport && (selectedApps.contains(name) || selectedApps.contains(name + "|0"))) ||
-            (multiUserSupport && selectedApps.contains(name + "|" + user))
-    }
-
-    private fun shouldSelectBW(pkgName: String?): Boolean {
-        return selectedApps.contains(pkgName ?: "") || selectedAppsBlack.contains(pkgName ?: "")
-    }
-
-    private fun sortList() {
-        filteredAppList.sortWith(Comparator { app1, app2 ->
-            when (aType) {
-                Helpers.AppAdapterType.Mutli -> {
-                    if (selectedApps.size == 0 && selectedAppsBlack.size == 0) return@Comparator 0
-                    val app1checked = if (bwlist) shouldSelectBW(app1.pkgName) else shouldSelect(app1.pkgName, app1.user)
-                    val app2checked = if (bwlist) shouldSelectBW(app2.pkgName) else shouldSelect(app2.pkgName, app2.user)
-                    when {
-                        app1checked && app2checked -> 0
-                        app1checked -> -1
-                        app2checked -> 1
-                        else -> 0
-                    }
-                }
-                Helpers.AppAdapterType.Standalone -> {
-                    if (app1.pkgName == "" && app1.actName == "") return@Comparator -1
-                    if (app2.pkgName == "" && app2.actName == "") return@Comparator 1
-                    val app1Key = "${app1.pkgName ?: ""}|${app1.actName ?: ""}"
-                    val app2Key = "${app2.pkgName ?: ""}|${app2.actName ?: ""}"
-                    val app1checked = selectedApp == app1Key && selectedUser == app1.user
-                    val app2checked = selectedApp == app2Key && selectedUser == app2.user
-                    when {
-                        app1checked && app2checked -> 0
-                        app1checked -> -1
-                        app2checked -> 1
-                        else -> 0
-                    }
-                }
-                Helpers.AppAdapterType.Activities -> {
-                    (app1.actName ?: "").lowercase(Locale.getDefault())
-                        .compareTo((app2.actName ?: "").lowercase(Locale.getDefault()))
-                }
-                else -> 0
-            }
-        })
-    }
-
-    override fun getCount(): Int {
-        return filteredAppList.size
-    }
-
-    override fun getItem(position: Int): AppData {
-        return filteredAppList[position]
-    }
-
-    override fun getItemId(position: Int): Long {
-        return position.toLong()
-    }
-
-    override fun getView(position: Int, convertView: View?, parent: ViewGroup): View {
-        val row: View = if (convertView != null) {
-            convertView
+    private fun shouldSelect(app: AppData): Boolean {
+        val packageName = app.pkgName.orEmpty()
+        return if (multiUserSupport) {
+            selectedApps.contains(app.userSelectionKey)
         } else {
-            mInflater.inflate(R.layout.applist_item11, parent, false)
+            selectedApps.contains(packageName) || selectedApps.contains(app.primaryUserSelectionKey)
         }
+    }
 
-        val itemIsDis: ImageView = row.findViewById(R.id.icon_disable)
-        val itemIsDual: ImageView = row.findViewById(R.id.icon_dual)
-        val itemChecked: CheckBox = row.findViewById(android.R.id.checkbox)
-        if (!bwlist && (itemChecked.tag == null || itemChecked.tag as? Boolean != true)) {
-            itemChecked.tag = true
-            Helpers.setMiuiCheckbox(itemChecked)
-        }
-        val itemStateIcon: ImageView = row.findViewById(android.R.id.selectedIcon)
-        val itemTitle: TextView = row.findViewById(android.R.id.title)
-        val itemSummary: TextView = row.findViewById(android.R.id.summary)
-        val itemIcon: ImageView = row.findViewById(android.R.id.icon)
+    private fun shouldSelectBW(app: AppData): Boolean {
+        val packageName = app.pkgName.orEmpty()
+        return selectedApps.contains(packageName) || selectedAppsBlack.contains(packageName)
+    }
 
-        val ad = getItem(position)
-        itemTitle.text = ad.label ?: ""
-        itemIsDis.visibility = if (ad.enabled) View.GONE else View.VISIBLE
+    private fun replaceFiltered(source: Collection<AppData>) {
+        val replacement = ArrayList(source)
+        replacement.sortWith(rowComparator)
+        filteredAppList = replacement
+    }
 
-        if (aType == Helpers.AppAdapterType.Activities) {
-            itemIcon.visibility = View.GONE
-            val container: View = row.findViewById(R.id.container)
-            val lp = container.layoutParams as LinearLayout.LayoutParams
-            lp.leftMargin = 0
-            container.layoutParams = lp
-        } else {
-            itemIcon.tag = position
-            val icon = Helpers.memoryCache.get(appIconCacheKey(ad))
-            if (icon == null) {
-                val dualIcon = arrayOf(ctx.resources.getDrawable(R.drawable.card_icon_default, ctx.theme))
-                val crossfader = android.graphics.drawable.TransitionDrawable(dualIcon)
-                crossfader.isCrossFadeEnabled = true
-                itemIcon.setImageDrawable(crossfader)
-                BitmapCachedLoader(itemIcon, ad, ctx).execute()
-            } else {
-                itemIcon.setImageBitmap(icon)
-            }
-        }
-
-        val currentKey = key ?: ""
+    private val rowComparator = Comparator<AppData> { app1, app2 ->
         when (aType) {
             Helpers.AppAdapterType.Mutli -> {
-                itemSummary.visibility = View.GONE
-                if (bwlist) {
-                    itemStateIcon.visibility = View.VISIBLE
-                    itemStateIcon.setImageResource(
+                if (selectedApps.isEmpty() && selectedAppsBlack.isEmpty()) {
+                    0
+                } else {
+                    val app1checked = if (bwlist) shouldSelectBW(app1) else shouldSelect(app1)
+                    val app2checked = if (bwlist) shouldSelectBW(app2) else shouldSelect(app2)
+                    when {
+                        app1checked && app2checked -> 0
+                        app1checked -> -1
+                        app2checked -> 1
+                        else -> 0
+                    }
+                }
+            }
+            Helpers.AppAdapterType.Standalone -> {
+                when {
+                    app1.pkgName == "" && app1.actName == "" -> -1
+                    app2.pkgName == "" && app2.actName == "" -> 1
+                    else -> {
+                        val app1checked =
+                            selectedApp == app1.selectionKey && selectedUser == app1.user
+                        val app2checked =
+                            selectedApp == app2.selectionKey && selectedUser == app2.user
                         when {
-                            selectedApps.contains(ad.pkgName ?: "") -> R.drawable.icon_action_allow
-                            selectedAppsBlack.contains(ad.pkgName ?: "") -> R.drawable.icon_action_disallow
+                            app1checked && app2checked -> 0
+                            app1checked -> -1
+                            app2checked -> 1
+                            else -> 0
+                        }
+                    }
+                }
+            }
+            Helpers.AppAdapterType.Activities ->
+                app1.activitySearchKey.compareTo(app2.activitySearchKey)
+            else -> 0
+        }
+    }
+
+    override fun getCount(): Int = filteredAppList.size
+
+    override fun getItem(position: Int): AppData = filteredAppList[position]
+
+    override fun getItemId(position: Int): Long = position.toLong()
+
+    override fun getView(position: Int, convertView: View?, parent: ViewGroup): View {
+        val holder = if (convertView == null) {
+            val row = inflater.inflate(R.layout.applist_item11, parent, false)
+            ViewHolder(row).also { row.tag = it }
+        } else {
+            convertView.tag as ViewHolder
+        }
+
+        if (!bwlist && holder.checked.tag != true) {
+            holder.checked.tag = true
+            Helpers.setMiuiCheckbox(holder.checked)
+        }
+
+        val app = getItem(position)
+        holder.title.text = app.label.orEmpty()
+        holder.disableIcon.visibility = if (app.enabled) View.GONE else View.VISIBLE
+
+        if (aType == Helpers.AppAdapterType.Activities) {
+            holder.icon.visibility = View.GONE
+            val params = holder.container.layoutParams as LinearLayout.LayoutParams
+            params.leftMargin = 0
+            holder.container.layoutParams = params
+        } else {
+            holder.icon.tag = app.iconKey
+            val icon = Helpers.memoryCache.get(app.iconKey)
+            if (icon == null) {
+                val placeholder =
+                    arrayOf(ctx.resources.getDrawable(R.drawable.card_icon_default, ctx.theme))
+                val crossfader = TransitionDrawable(placeholder)
+                crossfader.isCrossFadeEnabled = true
+                holder.icon.setImageDrawable(crossfader)
+                BitmapCachedLoader(holder.icon, app, ctx).execute()
+            } else {
+                holder.icon.setImageBitmap(icon)
+            }
+        }
+
+        when (aType) {
+            Helpers.AppAdapterType.Mutli -> {
+                holder.summary.visibility = View.GONE
+                if (bwlist) {
+                    holder.stateIcon.visibility = View.VISIBLE
+                    holder.stateIcon.setImageResource(
+                        when {
+                            selectedApps.contains(app.pkgName.orEmpty()) ->
+                                R.drawable.icon_action_allow
+                            selectedAppsBlack.contains(app.pkgName.orEmpty()) ->
+                                R.drawable.icon_action_disallow
                             else -> R.drawable.icon_action_default
                         }
                     )
                 } else {
-                    itemChecked.visibility = View.VISIBLE
-                    itemChecked.isChecked = shouldSelect(ad.pkgName, ad.user)
+                    holder.checked.visibility = View.VISIBLE
+                    holder.checked.isChecked = shouldSelect(app)
                 }
-                itemIsDual.visibility = if (ad.user != 0) View.VISIBLE else View.GONE
+                holder.dualIcon.visibility = if (app.user != 0) View.VISIBLE else View.GONE
             }
             Helpers.AppAdapterType.CustomTitles -> {
-                itemSummary.text = AppHelper.getStringOfAppPrefs(
-                    currentKey + ":" + ad.pkgName + "|" + ad.actName + "|" + ad.user,
-                    ""
-                )
-                itemSummary.visibility = if (TextUtils.isEmpty(itemSummary.text)) View.GONE else View.VISIBLE
-                itemIsDual.visibility = if (ad.user != 0) View.VISIBLE else View.GONE
+                holder.summary.text =
+                    AppHelper.getStringOfAppPrefs(app.customTitlePrefKey, "")
+                holder.summary.visibility =
+                    if (TextUtils.isEmpty(holder.summary.text)) View.GONE else View.VISIBLE
+                holder.dualIcon.visibility = if (app.user != 0) View.VISIBLE else View.GONE
             }
             Helpers.AppAdapterType.Standalone -> {
-                itemChecked.visibility = View.VISIBLE
-                itemChecked.isChecked =
-                    (selectedApp == "" && ad.pkgName == "" && ad.actName == "") ||
-                        ("${ad.pkgName ?: ""}|${ad.actName ?: ""}" == selectedApp && ad.user == selectedUser)
-                itemIsDual.visibility = if (ad.user != 0) View.VISIBLE else View.GONE
+                holder.checked.visibility = View.VISIBLE
+                holder.checked.isChecked =
+                    (selectedApp == "" && app.pkgName == "" && app.actName == "") ||
+                        (app.selectionKey == selectedApp && app.user == selectedUser)
+                holder.dualIcon.visibility = if (app.user != 0) View.VISIBLE else View.GONE
             }
             Helpers.AppAdapterType.Activities -> {
-                itemSummary.text = (ad.actName ?: "").replace(".", ".\u200B")
-                itemSummary.visibility = if (TextUtils.isEmpty(itemSummary.text)) View.GONE else View.VISIBLE
-                itemSummary.setSingleLine(false)
-                itemSummary.maxLines = Integer.MAX_VALUE
-                itemSummary.setTextSize(TypedValue.COMPLEX_UNIT_SP, 12f)
-                itemIsDual.visibility = if (ad.user != 0) View.VISIBLE else View.GONE
+                holder.summary.text = app.activitySummary
+                holder.summary.visibility =
+                    if (TextUtils.isEmpty(holder.summary.text)) View.GONE else View.VISIBLE
+                holder.summary.setSingleLine(false)
+                holder.summary.maxLines = Integer.MAX_VALUE
+                holder.summary.setTextSize(TypedValue.COMPLEX_UNIT_SP, 12f)
+                holder.dualIcon.visibility = if (app.user != 0) View.VISIBLE else View.GONE
             }
             else -> {
-                itemSummary.visibility = View.GONE
-                itemIsDual.visibility = if (ad.user != 0) View.VISIBLE else View.GONE
+                holder.summary.visibility = View.GONE
+                holder.dualIcon.visibility = if (app.user != 0) View.VISIBLE else View.GONE
             }
         }
 
-        return row
+        return holder.root
+    }
+
+    private class ViewHolder(val root: View) {
+        val disableIcon: ImageView = root.findViewById(R.id.icon_disable)
+        val dualIcon: ImageView = root.findViewById(R.id.icon_dual)
+        val checked: CheckBox = root.findViewById(android.R.id.checkbox)
+        val stateIcon: ImageView = root.findViewById(android.R.id.selectedIcon)
+        val title: TextView = root.findViewById(android.R.id.title)
+        val summary: TextView = root.findViewById(android.R.id.summary)
+        val icon: ImageView = root.findViewById(android.R.id.icon)
+        val container: View = root.findViewById(R.id.container)
     }
 
     private inner class ItemFilter : Filter() {
-        override fun performFiltering(constraint: CharSequence?): Filter.FilterResults {
-            val filterString = constraint?.toString()?.lowercase(Locale.getDefault()) ?: ""
-            val results = Filter.FilterResults()
-
-            val count = originalAppList.size
-            val nlist = ArrayList<AppData>()
-
-            for (i in 0 until count) {
-                val filterableData = originalAppList[i]
-                if (aType == Helpers.AppAdapterType.Activities &&
-                    (filterableData.actName ?: "").lowercase(Locale.getDefault()).contains(filterString)
+        override fun performFiltering(constraint: CharSequence?): FilterResults {
+            val filterString = constraint?.toString()?.lowercase(Locale.getDefault()).orEmpty()
+            val matches = ArrayList<AppData>()
+            for (app in originalAppList) {
+                if (
+                    aType == Helpers.AppAdapterType.Activities &&
+                    app.activitySearchKey.contains(filterString)
                 ) {
-                    nlist.add(filterableData)
+                    matches.add(app)
                 } else if (
                     (aType == Helpers.AppAdapterType.Standalone &&
-                        filterableData.pkgName == "" && filterableData.actName == "") ||
-                    (filterableData.label ?: "").lowercase(Locale.getDefault()).contains(filterString)
+                        app.pkgName == "" &&
+                        app.actName == "") ||
+                    app.labelSearchKey.contains(filterString)
                 ) {
-                    nlist.add(filterableData)
+                    matches.add(app)
                 }
             }
-
-            results.values = nlist
-            results.count = nlist.size
-            return results
+            return FilterResults().apply {
+                values = matches
+                count = matches.size
+            }
         }
 
         @Suppress("UNCHECKED_CAST")
-        override fun publishResults(constraint: CharSequence?, results: Filter.FilterResults?) {
-            filteredAppList.clear()
-            if ((results?.count ?: 0) > 0 && results?.values != null) {
-                filteredAppList.addAll(results.values as? ArrayList<AppData> ?: emptyList())
-            }
-            sortList()
+        override fun publishResults(constraint: CharSequence?, results: FilterResults?) {
+            val matches = results?.values as? ArrayList<AppData> ?: ArrayList()
+            replaceFiltered(matches)
             notifyDataSetChanged()
         }
     }
 
-    override fun getFilter(): Filter {
-        return mFilter
-    }
+    override fun getFilter(): Filter = itemFilter
 }
