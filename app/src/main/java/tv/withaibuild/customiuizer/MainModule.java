@@ -246,7 +246,7 @@ public class MainModule extends XposedModule {
         if (mPrefs.getInt("system_screenanim_duration", 0) > 0) SystemDisplayAndWindowHooks.ScreenAnimHook(lpparam);
         if (mPrefs.getInt("system_volumesteps", 0) > 0) SystemAudioAndVolumeHooks.VolumeStepsHook(lpparam);
         if (mPrefs.getInt("system_applock_timeout", 1) > 1) SystemLockScreenMoreHooks.AppLockTimeoutHook(lpparam);
-        if (mPrefs.getInt("system_dimtime", 0) > 0) SystemAudioAndVisualAndMoreHooks.ScreenDimTimeHook(lpparam);
+        if (mPrefs.getInt("system_dimtime", 0) > 0) FeatureCatalog.installById("screenDimTime", serverRuntime);
         if (mPrefs.getInt("system_toasttime", 0) > 0) SystemAudioAndVisualAndMoreHooks.ToastTimeHook(lpparam);
         if (!mPrefs.getString("system_defaultusb", "none").equals("none")) SystemSettingsMoreHooks.USBConfigHook(lpparam);
         if (mPrefs.getBoolean("system_removesecure")) SystemSecurityAndSystemHooks.RemoveSecureHook(lpparam);
@@ -266,7 +266,7 @@ public class MainModule extends XposedModule {
         if (mPrefs.getBoolean("system_ignorecalls")) SystemAudioAndVisualAndMoreHooks.NoCallInterruptionHook(lpparam);
         if (mPrefs.getBoolean("system_forceclose")) SystemSecurityAndSystemHooks.ForceCloseHook(lpparam);
         if (mPrefs.getBoolean("system_hideproxywarn")) SystemDisplayAndWindowHooks.HideProximityWarningHook(lpparam);
-        if (mPrefs.getBoolean("system_firstpress")) SystemAudioAndVisualAndMoreHooks.FirstVolumePressHook(lpparam);
+        if (mPrefs.getBoolean("system_firstpress")) FeatureCatalog.installById("firstVolumePress", serverRuntime);
         if (mPrefs.getBoolean("system_apksign")) SystemSecurityAndSystemHooks.NoSignatureVerifyServiceHook(lpparam);
         if (mPrefs.getBoolean("system_disableintegrity")) SystemSecurityAndSystemHooks.DisableSystemIntegrityHook(lpparam);
         FeatureCatalog.installById("muffledVibration", serverRuntime);
@@ -409,7 +409,7 @@ public class MainModule extends XposedModule {
 
             if (mPrefs.getInt("system_qsgridcolumns", 2) > 2 || mPrefs.getInt("system_qsgridrows", 1) > 1) SystemUIControlCenterHooks.QSGridRes();
             if (mPrefs.getInt("system_qqsgridcolumns", 2) > 2) SystemUIControlCenterHooks.QQSGridRes();
-            if (mPrefs.getBoolean("system_networkindicator_wifi")) SystemStatusBarMoreHooks.NetworkIndicatorWifi(lpparam);
+            if (mPrefs.getBoolean("system_networkindicator_wifi")) FeatureCatalog.installById("networkIndicatorWifi", systemuiRuntime);
 
             if (mPrefs.getInt("system_drawer_blur", 100) < 100) SystemDisplayAndWindowHooks.DrawerBlurRatioHook(lpparam);
             if (mPrefs.getInt("system_chargeanimtime", 20) < 20) SystemDisplayAndWindowHooks.ChargeAnimationHook(lpparam);
@@ -542,7 +542,7 @@ public class MainModule extends XposedModule {
             if (mPrefs.getBoolean("system_morenotif")) SystemNotificationMoreHooks.MoreNotificationsHook(lpparam);
             if (mPrefs.getBoolean("system_charginginfo")) SystemChargingAndWallpaperHooks.ChargingInfoHook(lpparam);
             if (mPrefs.getBoolean("system_secureqs")) SystemUILockScreenHooks.SecureQSTilesHook(lpparam);
-            if (mPrefs.getBoolean("system_mutevisiblenotif")) SystemNotificationMoreHooks.MuteVisibleNotificationsHook(lpparam);
+            if (mPrefs.getBoolean("system_mutevisiblenotif")) FeatureCatalog.installById("muteVisibleNotifications", systemuiRuntime);
             if (mPrefs.getBoolean("system_statusbaricons_battery1")) SystemStatusBarMoreHooks.HideIconsBattery1Hook(lpparam);
             if (mPrefs.getBoolean("system_statusbaricons_battery3")
                 || mPrefs.getBoolean("system_statusbaricons_battery4")
@@ -793,8 +793,8 @@ public class MainModule extends XposedModule {
         if (mPrefs.getBoolean("launcher_darkershadow")) LauncherIconHooks.TitleShadowHook(lpparam);
         if (mPrefs.getBoolean("controls_nonavbar")) LauncherLayoutHooks.HideNavBarHook(lpparam);
         if (mPrefs.getBoolean("launcher_infinitescroll")) LauncherLayoutHooks.InfiniteScrollHook(lpparam);
-        if (mPrefs.getBoolean("launcher_hidetitles")) LauncherIconHooks.HideTitlesHook(lpparam);
-        if (mPrefs.getBoolean("launcher_fixlaunch")) LauncherSystemHooks.FixAppInfoLaunchHook(lpparam);
+        if (mPrefs.getBoolean("launcher_hidetitles")) FeatureCatalog.installById("hideLauncherTitles", launcherRuntime);
+        if (mPrefs.getBoolean("launcher_fixlaunch")) FeatureCatalog.installById("fixAppInfoLaunch", launcherRuntime);
         FeatureCatalog.installById("noWidgetOnly", launcherRuntime);
         if (mPrefs.getBoolean("launcher_sensorportrait")) LauncherAnimationHooks.ReverseLauncherPortraitHook(lpparam);
         if (mPrefs.getBoolean("launcher_unlockhotseat")) LauncherLayoutHooks.MaxHotseatIconsCountHook(lpparam);
