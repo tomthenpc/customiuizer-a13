@@ -487,13 +487,15 @@ object Various {
                 }
                 val showReceiver = object : BroadcastReceiver() {
                     override fun onReceive(context: Context?, intent: Intent?) {
-                        val bundle = intent?.getBundleExtra("actionInfo")
-                        var pos = originDockLocation
-                        if (bundle != null) {
-                            pos = bundle.getInt("inDirection", 0)
-                            view.context.getSharedPreferences("sp_video_box", 0).edit().putInt("dock_line_location", pos).commit()
+                        ModuleHelper.guarded("Various.sideBarReceiver") {
+                            val bundle = intent?.getBundleExtra("actionInfo")
+                            var pos = originDockLocation
+                            if (bundle != null) {
+                                pos = bundle.getInt("inDirection", 0)
+                                view.context.getSharedPreferences("sp_video_box", 0).edit().putInt("dock_line_location", pos).commit()
+                            }
+                            showSideBar(view, pos)
                         }
-                        showSideBar(view, pos)
                     }
                 }
                 view.context.registerReceiver(showReceiver, IntentFilter(GlobalActions.ACTION_PREFIX + "ShowSideBar"), Context.RECEIVER_EXPORTED)

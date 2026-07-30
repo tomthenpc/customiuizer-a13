@@ -280,49 +280,51 @@ object SystemLockScreenMoreHooks {
                 filter.addAction(GlobalActions.ACTION_PREFIX + "UnlockBTConnection")
                 val smartLockReceiver = object : BroadcastReceiver() {
                     override fun onReceive(context: Context, intent: Intent) {
-                        val action = intent.action ?: return
+                        ModuleHelper.guarded("SystemLockScreenMoreHooks.smartLockReceiver") {
+                            val action = intent.action ?: return@guarded
 
-                        if (action == GlobalActions.ACTION_PREFIX + "UnlockSetForced")
-                            forcedOption = intent.getIntExtra("system_noscreenlock_force", -1)
+                            if (action == GlobalActions.ACTION_PREFIX + "UnlockSetForced")
+                                forcedOption = intent.getIntExtra("system_noscreenlock_force", -1)
 
-                        val isShowing = XposedHelpers.callMethod(mediator, "isShowing") as? Boolean ?: false
-                        if (!isShowing) return
-                        if (!isAuthOnce()) return
+                            val isShowing = XposedHelpers.callMethod(mediator, "isShowing") as? Boolean ?: false
+                            if (!isShowing) return@guarded
+                            if (!isAuthOnce()) return@guarded
 
-                        var isTrusted = false
-                        if (forcedOption == 0) isTrusted = false
-                        else if (forcedOption == 1) isTrusted = true
-                        else if (MainModule.mPrefs.getStringAsInt("system_noscreenlock", 1) == 3) {
-                            if (action == WifiManager.NETWORK_STATE_CHANGED_ACTION) {
-                                val netInfo = intent.getParcelableExtra<NetworkInfo>(WifiManager.EXTRA_NETWORK_INFO)
-                                if (netInfo?.state != NetworkInfo.State.CONNECTED && netInfo?.state != NetworkInfo.State.DISCONNECTED)
-                                    return
-                                if (netInfo.isConnected) isTrusted = isTrustedWiFi(mContext)
-                            } else if (action == GlobalActions.ACTION_PREFIX + "UnlockBTConnection") {
-                                isTrusted = isTrustedBt(lpparam.classLoader)
+                            var isTrusted = false
+                            if (forcedOption == 0) isTrusted = false
+                            else if (forcedOption == 1) isTrusted = true
+                            else if (MainModule.mPrefs.getStringAsInt("system_noscreenlock", 1) == 3) {
+                                if (action == WifiManager.NETWORK_STATE_CHANGED_ACTION) {
+                                    val netInfo = intent.getParcelableExtra<NetworkInfo>(WifiManager.EXTRA_NETWORK_INFO)
+                                    if (netInfo?.state != NetworkInfo.State.CONNECTED && netInfo?.state != NetworkInfo.State.DISCONNECTED)
+                                        return@guarded
+                                    if (netInfo.isConnected) isTrusted = isTrustedWiFi(mContext)
+                                } else if (action == GlobalActions.ACTION_PREFIX + "UnlockBTConnection") {
+                                    isTrusted = isTrustedBt(lpparam.classLoader)
+                                }
                             }
-                        }
 
-                        XposedHelpers.setAdditionalStaticField(mediator, "isScreenLockDisabled", isTrusted)
-                        if (isTrusted) {
-                            val skip = MainModule.mPrefs.getBoolean("system_noscreenlock_skip")
-                            if (skip)
-                                XposedHelpers.callMethod(mediator, "keyguardDone")
-                            else
-                                XposedHelpers.callMethod(mediator, "resetStateLocked")
-                            isUnlockedInnerCall = true
-                            val unlockIntent = Intent(GlobalActions.ACTION_PREFIX + "UnlockStrongAuth")
-                            unlockIntent.setPackage("com.android.systemui")
-                            mContext.sendBroadcast(unlockIntent)
-                        } else try {
-                            val mLockUserManager = XposedHelpers.callStaticMethod(
-                                XposedHelpers.findClass("com.android.systemui.Dependency", lpparam.classLoader),
-                                "get",
-                                XposedHelpers.findClassIfExists("com.android.systemui.statusbar.NotificationLockscreenUserManager", lpparam.classLoader)
-                            )
-                            XposedHelpers.callMethod(mLockUserManager, "updatePublicMode")
-                        } catch (t: Throwable) {
-                            XposedHelpers.log(t)
+                            XposedHelpers.setAdditionalStaticField(mediator, "isScreenLockDisabled", isTrusted)
+                            if (isTrusted) {
+                                val skip = MainModule.mPrefs.getBoolean("system_noscreenlock_skip")
+                                if (skip)
+                                    XposedHelpers.callMethod(mediator, "keyguardDone")
+                                else
+                                    XposedHelpers.callMethod(mediator, "resetStateLocked")
+                                isUnlockedInnerCall = true
+                                val unlockIntent = Intent(GlobalActions.ACTION_PREFIX + "UnlockStrongAuth")
+                                unlockIntent.setPackage("com.android.systemui")
+                                mContext.sendBroadcast(unlockIntent)
+                            } else try {
+                                val mLockUserManager = XposedHelpers.callStaticMethod(
+                                    XposedHelpers.findClass("com.android.systemui.Dependency", lpparam.classLoader),
+                                    "get",
+                                    XposedHelpers.findClassIfExists("com.android.systemui.statusbar.NotificationLockscreenUserManager", lpparam.classLoader)
+                                )
+                                XposedHelpers.callMethod(mLockUserManager, "updatePublicMode")
+                            } catch (t: Throwable) {
+                                XposedHelpers.log(t)
+                            }
                         }
                     }
                 }

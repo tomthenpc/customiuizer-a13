@@ -403,6 +403,29 @@ public class ModuleHelper {
         }
     }
 
+    @FunctionalInterface
+    interface CallbackFailureLogger {
+        void log(String callbackName, Throwable failure);
+    }
+
+    private static final CallbackFailureLogger CALLBACK_FAILURE_LOGGER = XposedHelpers::log;
+
+    /**
+     * Named guarded variant for framework callbacks where release logs must identify
+     * the failing registration without relying on an obfuscated callback class name.
+     */
+    public static void guarded(String callbackName, Runnable block) {
+        guarded(callbackName, block, CALLBACK_FAILURE_LOGGER);
+    }
+
+    static void guarded(String callbackName, Runnable block, CallbackFailureLogger failureLogger) {
+        try {
+            block.run();
+        } catch (Throwable t) {
+            failureLogger.log(callbackName, t);
+        }
+    }
+
     /**
      * Guarded variant that returns a value. The fallback is returned when the body fails
      * so the framework sees a safe, "not consumed" result.
@@ -412,6 +435,22 @@ public class ModuleHelper {
             return block.call();
         } catch (Throwable t) {
             log(t);
+            return fallback;
+        }
+    }
+
+    /**
+     * Named guarded variant for callbacks with an explicit, call-site-specific fallback.
+     */
+    public static <T> T guarded(String callbackName, T fallback, Callable<T> block) {
+        return guarded(callbackName, fallback, block, CALLBACK_FAILURE_LOGGER);
+    }
+
+    static <T> T guarded(String callbackName, T fallback, Callable<T> block, CallbackFailureLogger failureLogger) {
+        try {
+            return block.call();
+        } catch (Throwable t) {
+            failureLogger.log(callbackName, t);
             return fallback;
         }
     }

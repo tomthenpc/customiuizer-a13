@@ -58,7 +58,9 @@ object StepCounterController {
         sContext = context.applicationContext
         sTimeTickReceiver = object : BroadcastReceiver() {
             override fun onReceive(context: Context, intent: Intent) {
-                updateSteps(sContext)
+                ModuleHelper.guarded("StepCounterController.timeTickReceiver") {
+                    updateSteps(sContext)
+                }
             }
         }
         sContext?.registerReceiver(sTimeTickReceiver, IntentFilter("android.intent.action.TIME_TICK"), Context.RECEIVER_NOT_EXPORTED)

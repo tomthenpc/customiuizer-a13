@@ -408,7 +408,8 @@ object SystemUIStatusBarHooks {
                 val looper = param.getArgs()[1] as? Looper ?: Looper.myLooper() ?: return
                 mBgHandler = object : Handler(looper) {
                     override fun handleMessage(message: Message) {
-                        if (message.what == 200021) {
+                        ModuleHelper.guarded("SystemUIStatusBarHooks.deviceMonitorHandler") {
+                            if (message.what != 200021) return@guarded
                             // Refresh one immutable snapshot per tick. The ticker must not hold
                             // a configuration captured at hook time, and must not re-read
                             // individual preferences inside the same pass.
@@ -419,7 +420,7 @@ object SystemUIStatusBarHooks {
                             if (!showBatteryDetail && !showDeviceTemp) {
                                 mBgHandler?.removeMessages(200021)
                                 mBgHandler?.sendEmptyMessageDelayed(200021, 2000)
-                                return
+                                return@guarded
                             }
 
                             var showBatteryInfo = showBatteryDetail

@@ -146,7 +146,9 @@ object SystemStatusBarMoreHooks {
                 }
                 val alarmReceiver = object : BroadcastReceiver() {
                     override fun onReceive(context: Context, intent: Intent) {
-                        updateAlarmVisibility(thisObject, lastState)
+                        ModuleHelper.guarded("SystemStatusBarMoreHooks.alarmReceiver") {
+                            updateAlarmVisibility(thisObject, lastState)
+                        }
                     }
                 }
                 mContext.registerReceiver(alarmReceiver, filter, Context.RECEIVER_NOT_EXPORTED)

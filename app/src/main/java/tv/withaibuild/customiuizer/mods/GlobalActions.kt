@@ -741,7 +741,9 @@ object GlobalActions {
                             val isFullScreen = XposedHelpers.getBooleanField(param.getThisObject(), "mIsFullscreen")
                             if (fullScreen != isFullScreen) {
                                 mBgHandler.post {
-                                    Settings.Global.putInt(mContext.contentResolver, Helpers.modulePkg + ".foreground.fullscreen", if (fullScreen) 1 else 0)
+                                    ModuleHelper.guarded("GlobalActions.foregroundFullscreenWriter") {
+                                        Settings.Global.putInt(mContext.contentResolver, Helpers.modulePkg + ".foreground.fullscreen", if (fullScreen) 1 else 0)
+                                    }
                                 }
                             }
                             fullScreen = isFullScreen
@@ -813,37 +815,39 @@ object GlobalActions {
                 val superCls = thisObject.javaClass.superclass ?: return
                 val windowReceiver = object : BroadcastReceiver() {
                     override fun onReceive(context: Context, intent: Intent) {
-                        val action = intent.action ?: return
+                        ModuleHelper.guarded("GlobalActions.windowReceiver") {
+                            val action = intent.action ?: return@guarded
 
-                        if (action == ACTION_PREFIX + "SimulateMenu") try {
-                            val fRequestShowMenu = XposedHelpers.findField(superCls, "mRequestShowMenu")
-                            fRequestShowMenu.isAccessible = true
-                            fRequestShowMenu.set(thisObject, true)
-                            val markShortcutTriggered = findMethodExact(superCls, "markShortcutTriggered", *emptyArray<Class<*>>())
-                            markShortcutTriggered.isAccessible = true
-                            markShortcutTriggered.invoke(thisObject)
-                            val injectEvent = findMethodExact(superCls, "injectEvent", Int::class.javaPrimitiveType!!)
-                            injectEvent.isAccessible = true
-                            injectEvent.invoke(thisObject, 82)
-                        } catch (t1: Throwable) {
-                            try {
-                                val mHandler = XposedHelpers.getObjectField(thisObject, "mHandler") as? Handler
-                                mHandler?.sendMessageDelayed(mHandler.obtainMessage(1, "show_menu"), ViewConfiguration.getLongPressTimeout().toLong())
-                            } catch (t2: Throwable) {
-                                XposedHelpers.log(t2)
+                            if (action == ACTION_PREFIX + "SimulateMenu") try {
+                                val fRequestShowMenu = XposedHelpers.findField(superCls, "mRequestShowMenu")
+                                fRequestShowMenu.isAccessible = true
+                                fRequestShowMenu.set(thisObject, true)
+                                val markShortcutTriggered = findMethodExact(superCls, "markShortcutTriggered", *emptyArray<Class<*>>())
+                                markShortcutTriggered.isAccessible = true
+                                markShortcutTriggered.invoke(thisObject)
+                                val injectEvent = findMethodExact(superCls, "injectEvent", Int::class.javaPrimitiveType!!)
+                                injectEvent.isAccessible = true
+                                injectEvent.invoke(thisObject, 82)
+                            } catch (t1: Throwable) {
+                                try {
+                                    val mHandler = XposedHelpers.getObjectField(thisObject, "mHandler") as? Handler
+                                    mHandler?.sendMessageDelayed(mHandler.obtainMessage(1, "show_menu"), ViewConfiguration.getLongPressTimeout().toLong())
+                                } catch (t2: Throwable) {
+                                    XposedHelpers.log(t2)
+                                }
                             }
-                        }
 
-                        if (action == ACTION_PREFIX + "ForceClose") try {
-                            val closeApp = findMethodExact(superCls, "closeApp", Boolean::class.javaPrimitiveType!!)
-                            closeApp.isAccessible = true
-                            closeApp.invoke(thisObject, false)
-                        } catch (t: Throwable) {
-                            XposedHelpers.log(t)
-                        }
+                            if (action == ACTION_PREFIX + "ForceClose") try {
+                                val closeApp = findMethodExact(superCls, "closeApp", Boolean::class.javaPrimitiveType!!)
+                                closeApp.isAccessible = true
+                                closeApp.invoke(thisObject, false)
+                            } catch (t: Throwable) {
+                                XposedHelpers.log(t)
+                            }
 
-                        if (action == ACTION_PREFIX + "SaveLastMusicPausedTime") {
-                            Settings.System.putLong(context.contentResolver, "last_music_paused_time", currentTimeMillis())
+                            if (action == ACTION_PREFIX + "SaveLastMusicPausedTime") {
+                                Settings.System.putLong(context.contentResolver, "last_music_paused_time", currentTimeMillis())
+                            }
                         }
                     }
                 }

@@ -150,11 +150,13 @@ object SystemUILockScreenHooks {
                     val intentFilter = IntentFilter(GlobalActions.EVENT_PREFIX + "UPDATE_LS_ALBUM_ART")
                     val albumArtReceiver = object : BroadcastReceiver() {
                         override fun onReceive(context: Context, intent: Intent) {
-                            if (intent.action == GlobalActions.EVENT_PREFIX + "UPDATE_LS_ALBUM_ART") {
-                                try {
-                                    XposedHelpers.callMethod(panel, "updateThemeBackground")
-                                } catch (e: Throwable) {
-                                    XposedHelpers.callMethod(panel, "updateThemeBackgroundVisibility")
+                            ModuleHelper.guarded("SystemUILockScreenHooks.albumArtReceiver") {
+                                if (intent.action == GlobalActions.EVENT_PREFIX + "UPDATE_LS_ALBUM_ART") {
+                                    try {
+                                        XposedHelpers.callMethod(panel, "updateThemeBackground")
+                                    } catch (e: Throwable) {
+                                        XposedHelpers.callMethod(panel, "updateThemeBackgroundVisibility")
+                                    }
                                 }
                             }
                         }

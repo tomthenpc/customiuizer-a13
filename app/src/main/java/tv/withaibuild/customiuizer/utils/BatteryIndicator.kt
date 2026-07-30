@@ -110,12 +110,14 @@ class BatteryIndicator @JvmOverloads constructor(
         context.registerReceiver(
             object : BroadcastReceiver() {
                 override fun onReceive(context: Context, intent: Intent) {
-                    if ("miui.intent.TAKE_SCREENSHOT" == intent.action) {
-                        val finished = intent.getBooleanExtra("IsFinished", true)
-                        updateScreenShotState(!finished)
-                    } else {
-                        removeCallbacks(step)
-                        startTest()
+                    ModuleHelper.guarded("BatteryIndicator.testReceiver") {
+                        if ("miui.intent.TAKE_SCREENSHOT" == intent.action) {
+                            val finished = intent.getBooleanExtra("IsFinished", true)
+                            updateScreenShotState(!finished)
+                        } else {
+                            removeCallbacks(step)
+                            startTest()
+                        }
                     }
                 }
             },

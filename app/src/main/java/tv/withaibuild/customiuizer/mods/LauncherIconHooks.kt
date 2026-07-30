@@ -168,10 +168,12 @@ object LauncherIconHooks {
                             override fun beforeTextChanged(s: CharSequence, start: Int, count: Int, after: Int) {}
                             override fun onTextChanged(s: CharSequence, start: Int, before: Int, count: Int) {}
                             override fun afterTextChanged(s: Editable) {
-                                val maxWidth = mMessage.resources.getDimensionPixelSize(mMessage.resources.getIdentifier("icon_message_max_width", "dimen", lpparam.packageName))
-                                mMessage.measure(View.MeasureSpec.makeMeasureSpec(maxWidth, View.MeasureSpec.AT_MOST), View.MeasureSpec.makeMeasureSpec(maxWidth, View.MeasureSpec.AT_MOST))
-                                mMessage.translationX = -mMessage.measuredWidth * (multx - 1) / 2f
-                                mMessage.translationY = mMessage.measuredHeight * (multx - 1) / 2f
+                                ModuleHelper.guarded("LauncherIconHooks.messageTextWatcher") {
+                                    val maxWidth = mMessage.resources.getDimensionPixelSize(mMessage.resources.getIdentifier("icon_message_max_width", "dimen", lpparam.packageName))
+                                    mMessage.measure(View.MeasureSpec.makeMeasureSpec(maxWidth, View.MeasureSpec.AT_MOST), View.MeasureSpec.makeMeasureSpec(maxWidth, View.MeasureSpec.AT_MOST))
+                                    mMessage.translationX = -mMessage.measuredWidth * (multx - 1) / 2f
+                                    mMessage.translationY = mMessage.measuredHeight * (multx - 1) / 2f
+                                }
                             }
                         })
                 }

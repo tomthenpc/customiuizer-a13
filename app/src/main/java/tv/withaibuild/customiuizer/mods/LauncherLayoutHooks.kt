@@ -74,11 +74,13 @@ object LauncherLayoutHooks {
                 var mHandler = XposedHelpers.getAdditionalInstanceField(workspace, "mHandlerEx") as? android.os.Handler
                 if (mHandler == null) {
                     mHandler = android.os.Handler(mContext.mainLooper) { msg ->
-                        val seekBar = msg.obj as? View
-                        if (seekBar != null) {
-                            seekBar.animate().alpha(0.0f).setDuration(300).withEndAction { ModuleHelper.guarded { seekBar.visibility = View.GONE } }.start()
+                        ModuleHelper.guarded("LauncherLayoutHooks.hideSeekBar", false) {
+                            val seekBar = msg.obj as? View
+                            if (seekBar != null) {
+                                seekBar.animate().alpha(0.0f).setDuration(300).withEndAction { ModuleHelper.guarded { seekBar.visibility = View.GONE } }.start()
+                            }
+                            true
                         }
-                        true
                     }
                     XposedHelpers.setAdditionalInstanceField(workspace, "mHandlerEx", mHandler)
                 }

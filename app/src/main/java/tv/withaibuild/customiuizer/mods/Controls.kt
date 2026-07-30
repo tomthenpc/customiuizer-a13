@@ -124,11 +124,13 @@ object Controls {
 
     private val mScreenOnReceiver = object : BroadcastReceiver() {
         override fun onReceive(context: Context, intent: Intent) {
-            if (isTorchEnabled(context)) setTorch(context, false)
-            if (Helpers.mWakeLock != null && Helpers.mWakeLock?.isHeld == true) Helpers.mWakeLock?.release()
-            if (wasRaise2WakeEnabled) {
-                wasRaise2WakeEnabled = false
-                Settings.System.putInt(context.contentResolver, "pick_up_gesture_wakeup_mode", 1)
+            ModuleHelper.guarded("Controls.screenOnReceiver") {
+                if (isTorchEnabled(context)) setTorch(context, false)
+                if (Helpers.mWakeLock != null && Helpers.mWakeLock?.isHeld == true) Helpers.mWakeLock?.release()
+                if (wasRaise2WakeEnabled) {
+                    wasRaise2WakeEnabled = false
+                    Settings.System.putInt(context.contentResolver, "pick_up_gesture_wakeup_mode", 1)
+                }
             }
         }
     }
@@ -417,12 +419,14 @@ object Controls {
         leftbtn.isClickable = true
         leftbtn.isHapticFeedbackEnabled = true
         leftbtn.setOnClickListener {
-            val ctx = it.context
-            ModuleHelper.guarded { handleNavBarAction(ctx, "controls_navbarleft") }
+            ModuleHelper.guarded("Controls.leftNavigationClick") {
+                handleNavBarAction(it.context, "controls_navbarleft")
+            }
         }
         leftbtn.setOnLongClickListener {
-            val ctx = it.context
-            ModuleHelper.guarded(false) { handleNavBarAction(ctx, "controls_navbarleftlong") }
+            ModuleHelper.guarded("Controls.leftNavigationLongClick", false) {
+                handleNavBarAction(it.context, "controls_navbarleftlong")
+            }
         }
         leftbtn.addView(left)
 
@@ -444,12 +448,14 @@ object Controls {
         rightbtn.isClickable = true
         rightbtn.isHapticFeedbackEnabled = true
         rightbtn.setOnClickListener {
-            val ctx = it.context
-            ModuleHelper.guarded { handleNavBarAction(ctx, "controls_navbarright") }
+            ModuleHelper.guarded("Controls.rightNavigationClick") {
+                handleNavBarAction(it.context, "controls_navbarright")
+            }
         }
         rightbtn.setOnLongClickListener {
-            val ctx = it.context
-            ModuleHelper.guarded(false) { handleNavBarAction(ctx, "controls_navbarrightlong") }
+            ModuleHelper.guarded("Controls.rightNavigationLongClick", false) {
+                handleNavBarAction(it.context, "controls_navbarrightlong")
+            }
         }
         rightbtn.addView(right)
 

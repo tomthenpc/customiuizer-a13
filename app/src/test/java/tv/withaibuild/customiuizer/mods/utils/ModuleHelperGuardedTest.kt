@@ -78,6 +78,28 @@ class ModuleHelperGuardedTest {
     }
 
     @Test
+    fun namedGuardLogsFailureExactlyOnce() {
+        var logs = 0
+        var loggedName: String? = null
+        var loggedFailure: Throwable? = null
+        val failure = IllegalStateException("failure")
+
+        ModuleHelper.guarded(
+            "SystemUI.testCallback",
+            Runnable { throw failure },
+            ModuleHelper.CallbackFailureLogger { callbackName, throwable ->
+                logs++
+                loggedName = callbackName
+                loggedFailure = throwable
+            },
+        )
+
+        assertEquals(1, logs)
+        assertEquals("SystemUI.testCallback", loggedName)
+        assertTrue(loggedFailure === failure)
+    }
+
+    @Test
     fun failingPreferenceObserverDoesNotBlockLaterObserver() {
         var firstCalls = 0
         var secondCalls = 0

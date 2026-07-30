@@ -111,17 +111,18 @@ object SystemChargingAndWallpaperHooks {
                 if (oldWallpaperRunnable != null) wallpaperHandler.removeCallbacks(oldWallpaperRunnable)
 
                 val wallpaperRunnable = Runnable {
-                    if (!wallpaper.exists()) return@Runnable
+                    ModuleHelper.guarded("SystemChargingAndWallpaperHooks.wallpaperWriter") {
+                        if (!wallpaper.exists()) return@guarded
 
-                    val lockWallpaperPath = "/data/system/theme/thirdparty_lock_wallpaper"
-                    Helpers.copyFile(wallpaper.absolutePath, lockWallpaperPath)
-                    val ThemeUtils = XposedHelpers.findClass("miui.content.res.ThemeNativeUtils", lpparam.classLoader)
-                    XposedHelpers.callStaticMethod(ThemeUtils, "updateFilePermissionWithThemeContext", lockWallpaperPath)
-                    val data = JSONObject()
-                    val ex = JSONObject()
-                    try {
-                        val lockWallpaper = File(lockWallpaperPath)
-                        ex
+                        val lockWallpaperPath = "/data/system/theme/thirdparty_lock_wallpaper"
+                        Helpers.copyFile(wallpaper.absolutePath, lockWallpaperPath)
+                        val ThemeUtils = XposedHelpers.findClass("miui.content.res.ThemeNativeUtils", lpparam.classLoader)
+                        XposedHelpers.callStaticMethod(ThemeUtils, "updateFilePermissionWithThemeContext", lockWallpaperPath)
+                        val data = JSONObject()
+                        val ex = JSONObject()
+                        try {
+                            val lockWallpaper = File(lockWallpaperPath)
+                            ex
                             .put("link_type", "0")
                             .put("title_size", "26")
                             .put("item_id", "wallpaper1")
@@ -135,7 +136,7 @@ object SystemChargingAndWallpaperHooks {
                             .put("title_customized", "0")
                             .put("lks_entry_text", "Some wallpaper")
 
-                        data
+                            data
                             .put("authority", "tv.withaibuild.customiuizer.mods.set_lockscreen_wallpaper")
                             .put("content", "Wallpaper set by some app")
                             .put("contentColorValue", 0)
@@ -164,14 +165,15 @@ object SystemChargingAndWallpaperHooks {
                             .put("titleTextSize", -1)
                             .put("totalOfAlbum", -1)
                             .put("wallpaperUri", lockWallpaper.toURI())
-                    } catch (t: Throwable) {
-                        XposedHelpers.log(t)
-                    }
+                        } catch (t: Throwable) {
+                            XposedHelpers.log(t)
+                        }
 
-                    val setIntent = Intent("com.miui.miwallpaper.UPDATE_LOCKSCREEN_WALLPAPER")
-                    setIntent.putExtra("wallpaperInfo", data.toString())
-                    setIntent.putExtra("apply", true)
-                    mContext.sendBroadcast(setIntent)
+                        val setIntent = Intent("com.miui.miwallpaper.UPDATE_LOCKSCREEN_WALLPAPER")
+                        setIntent.putExtra("wallpaperInfo", data.toString())
+                        setIntent.putExtra("apply", true)
+                        mContext.sendBroadcast(setIntent)
+                    }
                 }
                 wallpaperHandler.postDelayed(wallpaperRunnable, 1800)
                 XposedHelpers.setAdditionalInstanceField(thisObject, "mWallpaperRunnable", wallpaperRunnable)

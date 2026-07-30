@@ -61,9 +61,11 @@ object SystemUIScreenshotHooks {
                 }
                 val br = object : BroadcastReceiver() {
                     override fun onReceive(context: Context, intent: Intent) {
-                        if ("miui.intent.TAKE_SCREENSHOT" == intent.action) {
-                            val finished = intent.getBooleanExtra("IsFinished", true)
-                            view.visibility = if (finished) View.VISIBLE else View.INVISIBLE
+                        ModuleHelper.guarded("SystemUIScreenshotHooks.statusBarReceiver") {
+                            if ("miui.intent.TAKE_SCREENSHOT" == intent.action) {
+                                val finished = intent.getBooleanExtra("IsFinished", true)
+                                view.visibility = if (finished) View.VISIBLE else View.INVISIBLE
+                            }
                         }
                     }
                 }
@@ -85,10 +87,12 @@ object SystemUIScreenshotHooks {
                 }
                 val br = object : BroadcastReceiver() {
                     override fun onReceive(context: Context, intent: Intent) {
-                        if ("miui.intent.TAKE_SCREENSHOT" == intent.action) {
-                            val finished = intent.getBooleanExtra("IsFinished", true)
-                            if (!finished) visibleState = view.visibility
-                            view.visibility = if (finished) visibleState else View.INVISIBLE
+                        ModuleHelper.guarded("SystemUIScreenshotHooks.navigationBarReceiver") {
+                            if ("miui.intent.TAKE_SCREENSHOT" == intent.action) {
+                                val finished = intent.getBooleanExtra("IsFinished", true)
+                                if (!finished) visibleState = view.visibility
+                                view.visibility = if (finished) visibleState else View.INVISIBLE
+                            }
                         }
                     }
                 }

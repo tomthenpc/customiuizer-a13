@@ -102,6 +102,13 @@ def line_of(text: str, offset: int) -> int:
     return text.count("\n", 0, offset) + 1
 
 
+def has_outer_exception_boundary(body: str) -> bool:
+    """Whether the callback body immediately enters the shared guard or an explicit try."""
+    content = body[1:-1].lstrip()
+    content = re.sub(r"^[^{}\n]*->\s*", "", content)
+    return content.startswith("ModuleHelper.guarded") or content.startswith("try")
+
+
 # --- rules -----------------------------------------------------------------
 
 CALLBACK_SIGNATURES = (
@@ -109,6 +116,7 @@ CALLBACK_SIGNATURES = (
     r"override fun onReceive\(",
     r"override fun onChange\(",
     r"override fun run\s*\(",
+    r"override fun afterTextChanged\(",
     r"@Override\s+(?:public\s+)?(?:void|boolean|int\b)\s+handleMessage\s*\(",
     r"@Override\s+(?:public\s+)?(?:void|boolean)\s+onReceive\s*\(",
     r"@Override\s+(?:public\s+)?(?:void|boolean)\s+onChange\s*\(",
@@ -128,14 +136,20 @@ def check_guard_framework_callbacks(path: Path, text: str) -> list[Finding]:
     """
     if is_allowed("guard-framework-callbacks", path):
         return []
+    normalized_path = path.as_posix()
+    if "customiuizer/mods/" not in normalized_path and not normalized_path.endswith(
+        "/customiuizer/utils/BatteryIndicator.kt"
+    ):
+        return []
     findings = []
     for signature in CALLBACK_SIGNATURES:
         for match in re.finditer(signature, text):
             body, start = block_at(text, match.end() - 1)
             header = text[match.start() : start]
-            if "guarded" in header or "guarded" in body or "try" in body:
+            if "guarded" in header or has_outer_exception_boundary(body):
                 continue
-            if not REFLECTION.search(body):
+            always_guard = "onReceive" in signature or "handleMessage" in signature or "afterTextChanged" in signature
+            if not always_guard and not REFLECTION.search(body):
                 continue
             if ": ModuleHelper.PreferenceObserver" in text[max(0, match.start() - 400) : match.start()]:
                 continue
@@ -146,7 +160,7 @@ def check_guard_framework_callbacks(path: Path, text: str) -> list[Finding]:
                     "guard-framework-callbacks",
                     path,
                     line_of(text, match.start()),
-                    "callback performs reflection but is not wrapped in ModuleHelper.guarded",
+                    "framework callback is not wrapped in an outer ModuleHelper.guarded/try boundary",
                 )
             )
     return findings
@@ -156,6 +170,7 @@ DEFERRED_CALLBACKS = (
     r"\bRunnable\s*\(?\s*\{",
     r"\b(?:post|postDelayed|postAtTime|postOnAnimation|runOnUiThread)\s*\(\s*\{",
     r"\bThread\s*\(\s*\{",
+    r"\bHandler\s*\([^\n]*\)\s*\{",
     r"\bset(?:On\w+Listener)\s*\{",
     r"\b(?:withEndAction|doOnLayout|addUpdateListener|postFrameCallback)\s*\(?\s*\{",
 )
@@ -176,7 +191,11 @@ def check_guard_deferred_callbacks(path: Path, text: str) -> list[Finding]:
     for pattern in DEFERRED_CALLBACKS:
         for match in re.finditer(pattern, text):
             body, start = block_at(text, match.end() - 1)
-            if "guarded" in body or "try" in body or "runCatching" in body:
+            # object callbacks are checked at their actual override entry by
+            # check_guard_framework_callbacks, not at the enclosing object body.
+            if "override fun" in body:
+                continue
+            if has_outer_exception_boundary(body) or "runCatching" in body:
                 continue
             # An empty lambda cannot throw; it is a deliberate no-op replacement.
             if not body.strip("{} \n\t"):

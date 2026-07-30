@@ -44,7 +44,9 @@ object SystemStatusBarClockAndMoreHooks {
                 timeSetIntent.addAction("android.intent.action.TIME_SET")
                 val mUpdateTimeReceiver = object : BroadcastReceiver() {
                     override fun onReceive(context: Context, intent: Intent) {
-                        initSecondTimer(clockController)
+                        ModuleHelper.guarded("SystemStatusBarClockAndMoreHooks.timeSetReceiver") {
+                            initSecondTimer(clockController)
+                        }
                     }
                 }
                 mContext.registerReceiver(mUpdateTimeReceiver, timeSetIntent, Context.RECEIVER_NOT_EXPORTED)
@@ -370,8 +372,8 @@ object SystemStatusBarClockAndMoreHooks {
             val controller = clockController
             val newRunnable = object : Runnable {
                 override fun run() {
-                    val self = this
-                    ModuleHelper.guarded {
+                    ModuleHelper.guarded("SystemStatusBarClockAndMoreHooks.secondTicker") {
+                        val self = this
                         val mCalendar = XposedHelpers.getObjectField(controller, "mCalendar")
                         XposedHelpers.callMethod(mCalendar, "setTimeInMillis", java.lang.System.currentTimeMillis())
                         XposedHelpers.setObjectField(controller, "mIs24", DateFormat.is24HourFormat(mContext))
