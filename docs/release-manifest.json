@@ -1,0 +1,67 @@
+{
+  "applicationId": "tv.withaibuild.customiuizer.r13",
+  "namespace": "tv.withaibuild.customiuizer",
+  "modulePackage": "tv.withaibuild.customiuizer.r13",
+  "abi": "arm64-v8a",
+  "minSdk": 33,
+  "targetSdk": 34,
+  "compileSdk": 34,
+  "libxposed": {
+    "minApiVersion": 101,
+    "targetApiVersion": 102,
+    "staticScope": false
+  },
+  "certificateSha256": "C0EFF2DC4E662717195490DA78B12A984C6F2E6BD38ACF4EDAD14D53E3D22E70",
+  "certificateDnNote": "CN=CustoMIUIzer A14; the DN is retained for upgrade compatibility with earlier A13 builds. This APK supports Android 13 / MIUI 14.",
+  "releases": [
+    {
+      "versionName": "r13.7.0",
+      "versionCode": 124,
+      "sourceCommit": "4b386cd",
+      "buildCommit": "d578e80",
+      "lsposedTag": "124-r13.7.0",
+      "apkName": "CustoMIUIzer-A13-r13.7.0.apk",
+      "apkSizeBytes": 2781130,
+      "apkSha256": "0A7A07C6A6639DA8890912D6EE145FAB5123F6288D1F98F121AFB1572F75C8A8",
+      "androidVersion": "Android 13 / MIUI 14",
+      "verification": {
+        "runtimeInvariants": { "filesScanned": 117, "violations": 0, "status": "PASS" },
+        "systemMigrationAudit": { "baselineEntries": 124, "directCallSites": 119, "facadeCalls": 0, "status": "PASS" },
+        "unitTests": { "debug": 226, "develop": 226, "release": 226, "total": 678, "failures": 0, "status": "PASS" },
+        "lintDebug": { "errors": 0, "warnings": 521, "status": "PASS" },
+        "lintRelease": { "errors": 0, "warnings": 512, "status": "PASS" },
+        "lintVitalRelease": { "tasks": 23, "status": "PASS" },
+        "assembleDebug": "PASS",
+        "assembleRelease": "PASS",
+        "r8AndResourceShrink": "PASS",
+        "zipalign": "PASS",
+        "apkSignatureSchemeV2": "PASS",
+        "legacyXposedDexScan": "PASS"
+      },
+      "deviceStatus": "待实机验证",
+      "note": "正式稳定版本。包含 K11-K18 优化、Kotlin 迁移完成、生命周期与回调异常边界加固。"
+    }
+  ],
+  "draft": {
+    "versionName": "r13.7.1",
+    "versionCode": 124,
+    "sourceBranch": "devin/r13.7.1-maintenance-foundation",
+    "sourceCommit": null,
+    "lsposedTag": null,
+    "apkName": null,
+    "apkSizeBytes": null,
+    "apkSha256": null,
+    "androidVersion": "Android 13 / MIUI 14",
+    "verification": {},
+    "deviceStatus": "未实机",
+    "plannedItems": [
+      "CROSS_VERSION_PORTING_LEDGER 跨版本台账",
+      "HookUtils 从 Helpers 机械拆分",
+      "StepCounterController 与状态栏秒针生命周期优化",
+      "统一 release-manifest.json",
+      "MainModule / 偏好 Schema / Hook 能力探测 / 诊断体系审计与实施计划"
+    ],
+    "note": "长期维护基础建设分支；不修改版本号，不创建 tag 或 Release。"
+  },
+  "schemaVersion": 1
+}
