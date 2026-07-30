@@ -55,7 +55,7 @@
 
 ## 构建
 
-需要 JDK 17、Android SDK API 36 和 Build Tools 37.0.1。
+需要 JDK 17 和 Android SDK API 36。项目未固定 `buildToolsVersion`，由当前 AGP 与本机 SDK 选择兼容的 Build Tools。
 
 ```bash
 ./gradlew :app:assembleDebug

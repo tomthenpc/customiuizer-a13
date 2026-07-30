@@ -55,7 +55,7 @@ Early A13 builds signed with a different certificate cannot be upgraded in place
 
 ## Building
 
-JDK 17, Android SDK API 36, and Build Tools 37.0.1 are required.
+JDK 17 and Android SDK API 36 are required. The project does not pin `buildToolsVersion`; the current AGP and local SDK select a compatible Build Tools installation.
 
 ```bash
 ./gradlew :app:assembleDebug
