@@ -8,11 +8,7 @@ import android.net.ConnectivityManager
 import android.net.Network
 import android.net.NetworkCapabilities
 import android.net.TrafficStats
-import android.os.Handler
-import android.os.Looper
-import android.os.Message
 import android.telephony.SubscriptionManager
-import android.os.PowerManager
 import android.provider.Settings
 import android.util.SparseIntArray
 import android.util.TypedValue
@@ -31,14 +27,13 @@ import tv.withaibuild.customiuizer.mods.utils.HookerClassHelper
 import tv.withaibuild.customiuizer.mods.utils.HookerClassHelper.AfterHookCallback
 import tv.withaibuild.customiuizer.mods.utils.HookerClassHelper.BeforeHookCallback
 import tv.withaibuild.customiuizer.mods.utils.HookerClassHelper.MethodHook
+import tv.withaibuild.customiuizer.mods.utils.DeviceInfoMonitor
 import tv.withaibuild.customiuizer.mods.utils.ModuleHelper
 import tv.withaibuild.customiuizer.mods.utils.ResourceHooks
 import tv.withaibuild.customiuizer.mods.utils.StepCounterController
 import tv.withaibuild.customiuizer.mods.utils.XposedHelpers
 import tv.withaibuild.customiuizer.utils.Helpers
 import tv.withaibuild.customiuizer.utils.PrefMap
-import java.io.FileInputStream
-import java.io.RandomAccessFile
 import java.lang.ref.WeakReference
 import java.util.ArrayList
 import java.util.Arrays
@@ -260,13 +255,10 @@ object SystemUIStatusBarHooks {
 
     @JvmStatic
     fun MonitorDeviceInfoHook(lpparam: PackageReadyParam) {
-        data class TextIconInfo(var iconShow: Boolean = false, var iconType: Int = 0, var iconText: String = "")
-
         // Fixed settings: master toggles and left/right slot position determine which hooks are
         // installed and where the icon lives. Changing them requires a SystemUI restart.
         val showBatteryDetail = MainModule.mPrefs.getBoolean("system_statusbar_batterytempandcurrent")
         val showDeviceTemp = MainModule.mPrefs.getBoolean("system_statusbar_showdevicetemperature")
-        val ChargeUtilsClass = if (showBatteryDetail) XposedHelpers.findClassIfExists("com.android.keyguard.charge.ChargeUtils", lpparam.classLoader) else null
         val DarkIconDispatcherClass = XposedHelpers.findClass("com.android.systemui.plugins.DarkIconDispatcher", lpparam.classLoader)
         val Dependency = XposedHelpers.findClass("com.android.systemui.Dependency", lpparam.classLoader)
         val StatusBarIconHolder = XposedHelpers.findClass("com.android.systemui.statusbar.phone.StatusBarIconHolder", lpparam.classLoader)
@@ -378,121 +370,7 @@ object SystemUIStatusBarHooks {
             }
         })
 
-        ModuleHelper.hookAllConstructors("com.android.systemui.statusbar.policy.NetworkSpeedController", lpparam.classLoader, object : MethodHook() {
-            private var mBgHandler: Handler? = null
-
-            override fun after(param: AfterHookCallback) {
-                val mContext = param.getArgs()[0] as? Context ?: return
-                // mHandler runs on the main looper and only touches the snapshot-carrying message.
-                val mHandler = object : Handler(Looper.getMainLooper()) {
-                    override fun handleMessage(message: Message) {
-                        try {
-                            if (message.what == 100021) {
-                                val tii = message.obj as? TextIconInfo ?: return
-                                forEachStatusbarTextIcon { tv, ti ->
-                                    if (tii.iconType == ti.iconType) {
-                                        XposedHelpers.callMethod(tv, "setBlocked", !tii.iconShow)
-                                        if (tii.iconShow) {
-                                            if (SystemUI.newStyle) {
-                                                XposedHelpers.callMethod(tv, "setNetworkSpeed", tii.iconText, "")
-                                            } else {
-                                                XposedHelpers.callMethod(tv, "setNetworkSpeed", tii.iconText)
-                                            }
-                                        }
-                                    }
-                                }
-                            }
-                        } catch (t: Throwable) { XposedHelpers.log(t) }
-                    }
-                }
-                val looper = param.getArgs()[1] as? Looper ?: Looper.myLooper() ?: return
-                mBgHandler = object : Handler(looper) {
-                    override fun handleMessage(message: Message) {
-                        ModuleHelper.guarded("SystemUIStatusBarHooks.deviceMonitorHandler") {
-                            if (message.what != 200021) return@guarded
-                            // Refresh one immutable snapshot per tick. The ticker must not hold
-                            // a configuration captured at hook time, and must not re-read
-                            // individual preferences inside the same pass.
-                            val snap = readDeviceMonitorSnapshot(MainModule.mPrefs)
-
-                            // Master toggles are fixed at hook installation; the ticker must not
-                            // dynamically enable an icon that has no slot.
-                            if (!showBatteryDetail && !showDeviceTemp) {
-                                mBgHandler?.removeMessages(200021)
-                                mBgHandler?.sendEmptyMessageDelayed(200021, 2000)
-                                return@guarded
-                            }
-
-                            var showBatteryInfo = showBatteryDetail
-                            if (showBatteryInfo && snap.batteryInCharge && ChargeUtilsClass != null) {
-                                val batteryStatus = ModuleHelper.getStaticObjectFieldSilently(ChargeUtilsClass, "sBatteryStatus")
-                                if (ModuleHelper.NOT_EXIST_SYMBOL.equals(batteryStatus)) {
-                                    showBatteryInfo = false
-                                } else {
-                                    showBatteryInfo = XposedHelpers.callMethod(batteryStatus, "isCharging") as? Boolean ?: false
-                                }
-                            }
-
-                            var batteryInfo = ""
-                            var deviceInfo = ""
-                            val powerMgr = mContext.getSystemService(Context.POWER_SERVICE) as? PowerManager
-                            val isScreenOn = powerMgr?.isInteractive ?: false
-                            if (isScreenOn) {
-                                val resolvedDeviceTempContent =
-                                    if (snap.deviceTempContentOpt in 1..3) snap.deviceTempContentOpt else 1
-                                val needsBatteryTemp = resolvedDeviceTempContent == 1 || resolvedDeviceTempContent == 2
-                                val needsCpuTemp = resolvedDeviceTempContent == 1 || resolvedDeviceTempContent == 3
-
-                                val needBatteryUevent = showBatteryInfo || (showDeviceTemp && needsBatteryTemp)
-                                val needCpu = showDeviceTemp && needsCpuTemp
-
-                                var props: Properties? = null
-                                var batteryTemp: String? = null
-                                var cpuTemp: String? = null
-                                var fis: FileInputStream? = null
-                                var cpuReader: RandomAccessFile? = null
-                                try {
-                                    if (needBatteryUevent) {
-                                        fis = FileInputStream("/sys/class/power_supply/battery/uevent")
-                                        props = Properties()
-                                        props.load(fis)
-                                        batteryTemp = props.getProperty("POWER_SUPPLY_TEMP")
-                                    }
-                                    if (needCpu) {
-                                        cpuReader = RandomAccessFile("/sys/devices/virtual/thermal/thermal_zone0/temp", "r")
-                                        cpuTemp = cpuReader.readLine()
-                                    }
-                                } catch (_: Throwable) {
-                                } finally {
-                                    try {
-                                        fis?.close()
-                                        cpuReader?.close()
-                                    } catch (_: Throwable) {
-                                    }
-                                }
-                                if (showBatteryInfo && props != null) {
-                                    batteryInfo = buildBatteryInfo(snap, props)
-                                }
-                                if (showDeviceTemp) {
-                                    deviceInfo = buildDeviceInfo(snap, batteryTemp, cpuTemp)
-                                }
-                                if (showBatteryDetail) {
-                                    val tii = TextIconInfo(true, 91, batteryInfo)
-                                    mHandler.obtainMessage(100021, tii).sendToTarget()
-                                }
-                                if (showDeviceTemp) {
-                                    val tii = TextIconInfo(true, 92, deviceInfo)
-                                    mHandler.obtainMessage(100021, tii).sendToTarget()
-                                }
-                            }
-                            mBgHandler?.removeMessages(200021)
-                            mBgHandler?.sendEmptyMessageDelayed(200021, 2000)
-                        }
-                    }
-                }
-                mBgHandler?.sendEmptyMessage(200021)
-            }
-        })
+        DeviceInfoMonitor.hook(lpparam)
     }
 
     private fun getIconTextView(iconView: View): TextView {
@@ -589,6 +467,21 @@ object SystemUIStatusBarHooks {
             if (tagData == null) continue
             val ti = tagData as? TextIcon ?: continue
             consumer(iconView, ti)
+        }
+    }
+
+    @JvmStatic
+    internal fun updateDeviceInfoIcon(type: Int, show: Boolean, text: String) {
+        forEachStatusbarTextIcon { view, icon ->
+            if (icon.iconType != type) return@forEachStatusbarTextIcon
+            XposedHelpers.callMethod(view, "setBlocked", !show)
+            if (show) {
+                if (SystemUI.newStyle) {
+                    XposedHelpers.callMethod(view, "setNetworkSpeed", text, "")
+                } else {
+                    XposedHelpers.callMethod(view, "setNetworkSpeed", text)
+                }
+            }
         }
     }
 
