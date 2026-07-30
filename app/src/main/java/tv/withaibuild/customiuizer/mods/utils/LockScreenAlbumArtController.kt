@@ -56,8 +56,10 @@ object LockScreenAlbumArtController {
     private var pendingBlur = 0
     private var pendingRescale = 1
     private var pendingGrayscale = false
+    private var pendingSourceToken = 0L
 
     private val requestGeneration = AtomicLong()
+    private val sourceTokenSequence = AtomicLong()
     private val mainHandler = Handler(Looper.getMainLooper())
     private val workLock = Any()
     private var workFuture: Future<*>? = null
@@ -139,6 +141,10 @@ object LockScreenAlbumArtController {
         val sameSource = previousSource === art
 
         pendingSource = art
+        if (!sameSource) {
+            pendingSourceToken =
+                if (art == null) 0L else sourceTokenSequence.incrementAndGet()
+        }
         pendingBlur = blur
         pendingRescale = rescale
         pendingGrayscale = grayscale
@@ -165,6 +171,7 @@ object LockScreenAlbumArtController {
         requestGeneration.incrementAndGet()
         cancelWork()
         pendingSource = null
+        pendingSourceToken = 0L
         activeKey = null
         cache?.evictAll()
         cacheSignature = null
@@ -263,6 +270,7 @@ object LockScreenAlbumArtController {
             pendingBlur,
             pendingRescale,
             pendingGrayscale,
+            pendingSourceToken,
             target.width,
             target.height
         )
@@ -274,11 +282,12 @@ object LockScreenAlbumArtController {
         blur: Int,
         rescale: Int,
         grayscale: Boolean,
+        sourceToken: Long,
         targetWidth: Int,
         targetHeight: Int
     ) {
         val key = AlbumArtCacheKey(
-            System.identityHashCode(source),
+            sourceToken,
             source.width,
             source.height,
             targetWidth,

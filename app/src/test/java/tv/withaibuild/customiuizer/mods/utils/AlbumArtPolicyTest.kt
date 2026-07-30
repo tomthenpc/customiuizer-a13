@@ -63,9 +63,9 @@ class AlbumArtPolicyTest {
 
     @Test
     fun cacheKeyIncludesSourceSizeAndEveryProcessingParameter() {
-        val key = AlbumArtCacheKey(7, 600, 600, 1_080, 2_400, 8, 2, false)
+        val key = AlbumArtCacheKey(7L, 600, 600, 1_080, 2_400, 8, 2, false)
 
-        assertNotEquals(key, key.copy(sourceId = 8))
+        assertNotEquals(key, key.copy(sourceToken = 8L))
         assertNotEquals(key, key.copy(sourceWidth = 601))
         assertNotEquals(key, key.copy(targetHeight = 2_300))
         assertNotEquals(key, key.copy(blur = 9))

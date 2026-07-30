@@ -5,7 +5,7 @@ import kotlin.math.sqrt
 internal data class AlbumArtSize(val width: Int, val height: Int)
 
 internal data class AlbumArtCacheKey(
-    val sourceId: Int,
+    val sourceToken: Long,
     val sourceWidth: Int,
     val sourceHeight: Int,
     val targetWidth: Int,
