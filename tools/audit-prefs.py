@@ -45,7 +45,7 @@ def extract_xml_keys(text: str) -> list[str]:
 
 
 def extract_code_keys(text: str) -> list[str]:
-    pattern = r'(?:MainModule\.)?mPrefs\.(?:get\w+)\s*\(\s*"([^"]+)"\s*[,)]'
+    pattern = r'(?:MainModule\.)?(?:mPrefs|prefs)\.(?:get\w+)\s*\(\s*"([^"]+)"\s*[,)]'
     return re.findall(pattern, text)
 
 

@@ -23,6 +23,7 @@ import io.github.libxposed.api.XposedModuleInterface.SystemServerStartingParam;
 import tv.withaibuild.customiuizer.mods.Controls;
 import tv.withaibuild.customiuizer.mods.GlobalActions;
 import tv.withaibuild.customiuizer.mods.catalog.FeatureCatalog;
+import tv.withaibuild.customiuizer.mods.catalog.FeatureRuntime;
 import tv.withaibuild.customiuizer.mods.LauncherAnimationHooks;
 import tv.withaibuild.customiuizer.mods.LauncherFolderHooks;
 import tv.withaibuild.customiuizer.mods.LauncherGestureHooks;
@@ -223,7 +224,8 @@ public class MainModule extends XposedModule {
     public void onSystemServerStarting(final SystemServerStartingParam lpparam) {
         if (!isSupportedAndroidVersion()) return;
         initPrefs();
-        FeatureCatalog.installForSystemServer(lpparam);
+        FeatureRuntime serverRuntime = FeatureCatalog.createRuntime("android", lpparam, lpparam.getClassLoader(), mPrefs);
+        FeatureCatalog.installById("packagePermissions", serverRuntime);
         if (needGlobalActions()) GlobalActions.setupGlobalActions(lpparam);
 
         if (mPrefs.getBoolean("system_screenshot_overlay")) {
@@ -256,7 +258,7 @@ public class MainModule extends XposedModule {
         if (mPrefs.getBoolean("system_noducking")) SystemNotificationMoreHooks.NoDuckingHook(lpparam);
         if (mPrefs.getBoolean("system_cleanshare")) SystemShareAndOpenWithHooks.CleanShareMenuServiceHook(lpparam);
         if (mPrefs.getBoolean("system_cleanopenwith")) SystemShareAndOpenWithHooks.CleanOpenWithMenuServiceHook(lpparam);
-        if (mPrefs.getBoolean("system_autobrightness")) SystemDisplayAndWindowHooks.AutoBrightnessRangeHook(lpparam);
+        FeatureCatalog.installById("autoBrightnessRange", serverRuntime);
         if (mPrefs.getBoolean("system_lockscreen_disable_strongauth_72h")) SystemNotificationMoreHooks.Disable72hStrongAuthHook(lpparam);
         if (mPrefs.getBoolean("system_applock")) SystemLockScreenMoreHooks.AppLockHook(lpparam);
         if (mPrefs.getBoolean("system_applock_skip")) SystemLockScreenMoreHooks.SkipAppLockHook(lpparam);
@@ -267,7 +269,7 @@ public class MainModule extends XposedModule {
         if (mPrefs.getBoolean("system_firstpress")) SystemAudioAndVisualAndMoreHooks.FirstVolumePressHook(lpparam);
         if (mPrefs.getBoolean("system_apksign")) SystemSecurityAndSystemHooks.NoSignatureVerifyServiceHook(lpparam);
         if (mPrefs.getBoolean("system_disableintegrity")) SystemSecurityAndSystemHooks.DisableSystemIntegrityHook(lpparam);
-        if (mPrefs.getBoolean("system_vibration_amp")) SystemAudioAndVisualAndMoreHooks.MuffledVibrationHook(lpparam);
+        FeatureCatalog.installById("muffledVibration", serverRuntime);
         if (mPrefs.getBoolean("system_clearalltasks")) SystemAudioAndVisualAndMoreHooks.ClearAllTasksHook(lpparam);
         if (mPrefs.getBoolean("system_nodarkforce")) SystemSecurityAndSystemHooks.NoDarkForceHook(lpparam);
         if (mPrefs.getBoolean("system_fw_sticky")) SystemFreeformAndMultiWindowHooks.StickyFloatingWindowsHook(lpparam);
@@ -384,6 +386,8 @@ public class MainModule extends XposedModule {
                 return;
             }
 
+            FeatureRuntime systemuiRuntime = FeatureCatalog.createRuntime(pkg, lpparam, lpparam.getClassLoader(), mPrefs);
+
             if (mPrefs.getStringAsInt("various_showcallui", 0) > 0
                 || mPrefs.getBoolean("controls_volumecursor")
             ) GlobalActions.setupForegroundMonitor(lpparam);
@@ -422,7 +426,7 @@ public class MainModule extends XposedModule {
                     mPrefs.getInt("controls_navbarrightlong_action", 1) > 1) Controls.NavBarButtonsHook(lpparam);
             if (mPrefs.getBoolean("system_scramblepin")) SystemLockScreenHooks.ScramblePINHook(lpparam);
             if (mPrefs.getBoolean("system_dttosleep")) SystemDisplayAndWindowHooks.DoubleTapToSleepHook(lpparam);
-            FeatureCatalog.installForPackage(lpparam, "com.android.systemui");
+            FeatureCatalog.installById("statusBarClockTweak", systemuiRuntime);
             if (mPrefs.getBoolean("system_noscreenlock_act")) SystemLockScreenMoreHooks.NoScreenLockHook(lpparam);
             if (
                 mPrefs.getBoolean("system_detailednetspeed")
@@ -433,7 +437,7 @@ public class MainModule extends XposedModule {
             if (mPrefs.getBoolean("system_betterpopups_nohide")) SystemNotificationPopupsHooks.BetterPopupsNoHideHook(lpparam);
             if (mPrefs.getBoolean("system_betterpopups_swipedown")) SystemNotificationPopupsHooks.BetterPopupsSwipeDownHook(lpparam);
             if (mPrefs.getBoolean("system_betterpopups_center")) SystemNotificationMoreHooks.BetterPopupsCenteredHook(lpparam);
-            if (mPrefs.getBoolean("system_hidemoreicon")) SystemNotificationMoreHooks.NoMoreIconHook(lpparam);
+            FeatureCatalog.installById("noMoreIcon", systemuiRuntime);
             if (mPrefs.getBoolean("system_notifafterunlock")) SystemNotificationMoreHooks.ShowNotificationsAfterUnlockHook(lpparam);
             if (mPrefs.getBoolean("system_notifrowmenu")) SystemNotificationMoreHooks.NotificationRowMenuHook(lpparam);
             if (mPrefs.getBoolean("system_compactnotif")) SystemNotificationAndShareHooks.CompactNotificationsHook(lpparam);
@@ -460,7 +464,7 @@ public class MainModule extends XposedModule {
             ) {
                 SystemUIControlCenterHooks.MIUIVolumeDialogHook(lpparam);
             }
-            if (mPrefs.getBoolean("system_batteryindicator")) SystemUIBatteryHooks.BatteryIndicatorHook(lpparam);
+            FeatureCatalog.installById("batteryIndicator", systemuiRuntime);
             if (mPrefs.getBoolean("system_disableanynotif")) SystemNotificationMoreHooks.DisableAnyNotificationHook(lpparam);
             if (mPrefs.getBoolean("system_lockscreenshortcuts")) SystemUILockScreenHooks.LockScreenShortcutHook(lpparam);
             if (mPrefs.getBoolean("system_4gtolte")
@@ -770,6 +774,7 @@ public class MainModule extends XposedModule {
 
     private void handleLoadLauncher(final PackageReadyParam lpparam) {
         boolean closeOnLaunch = false;
+        FeatureRuntime launcherRuntime = FeatureCatalog.createRuntime(lpparam.getPackageName(), lpparam, lpparam.getClassLoader(), mPrefs);
         if (mPrefs.getInt("launcher_swipedown_action", 1) != 1 ||
                 mPrefs.getInt("launcher_swipeup_action", 1) != 1 ||
                 mPrefs.getInt("launcher_swipedown2_action", 1) != 1 ||
@@ -783,14 +788,14 @@ public class MainModule extends XposedModule {
         if (mPrefs.getInt("launcher_iconscale", 45) > 45) LauncherIconHooks.IconScaleHook(lpparam);
         if (mPrefs.getInt("launcher_titlefontsize", 5) > 5) LauncherIconHooks.TitleFontSizeHook(lpparam);
         if (mPrefs.getInt("launcher_titletopmargin", 0) > 0) LauncherIconHooks.TitleTopMarginHook(lpparam);
-        if (mPrefs.getBoolean("launcher_noclockhide")) LauncherSystemHooks.NoClockHideHook(lpparam);
+        FeatureCatalog.installById("noClockHide", launcherRuntime);
         if (mPrefs.getBoolean("launcher_renameapps")) LauncherIconHooks.RenameShortcutsHook(lpparam);
         if (mPrefs.getBoolean("launcher_darkershadow")) LauncherIconHooks.TitleShadowHook(lpparam);
         if (mPrefs.getBoolean("controls_nonavbar")) LauncherLayoutHooks.HideNavBarHook(lpparam);
         if (mPrefs.getBoolean("launcher_infinitescroll")) LauncherLayoutHooks.InfiniteScrollHook(lpparam);
         if (mPrefs.getBoolean("launcher_hidetitles")) LauncherIconHooks.HideTitlesHook(lpparam);
         if (mPrefs.getBoolean("launcher_fixlaunch")) LauncherSystemHooks.FixAppInfoLaunchHook(lpparam);
-        if (mPrefs.getBoolean("launcher_nowidgetonly")) LauncherLayoutHooks.NoWidgetOnlyHook(lpparam);
+        FeatureCatalog.installById("noWidgetOnly", launcherRuntime);
         if (mPrefs.getBoolean("launcher_sensorportrait")) LauncherAnimationHooks.ReverseLauncherPortraitHook(lpparam);
         if (mPrefs.getBoolean("launcher_unlockhotseat")) LauncherLayoutHooks.MaxHotseatIconsCountHook(lpparam);
         if (mPrefs.getStringAsInt("launcher_closefolders", 1) > 1) { LauncherFolderHooks.CloseFolderOnLaunchHook(lpparam); closeOnLaunch = true; }

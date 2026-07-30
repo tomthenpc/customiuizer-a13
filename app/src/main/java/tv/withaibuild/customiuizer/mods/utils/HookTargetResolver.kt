@@ -1,8 +1,9 @@
 package tv.withaibuild.customiuizer.mods.utils
 
+import tv.withaibuild.customiuizer.mods.catalog.CompatibilityState
 import tv.withaibuild.customiuizer.mods.diagnostics.DiagnosticIds
 import tv.withaibuild.customiuizer.mods.diagnostics.DiagnosticRecorder
-import tv.withaibuild.customiuizer.mods.diagnostics.DiagnosticState
+import tv.withaibuild.customiuizer.mods.diagnostics.ReasonCode
 import java.lang.reflect.Field
 import java.lang.reflect.Method
 import java.util.concurrent.ConcurrentHashMap
@@ -12,9 +13,13 @@ import java.util.concurrent.ConcurrentHashMap
  *
  * - Class / method / field resolution results (including negative ones) are
  *   cached so hot paths do not repeat reflection.
- * - Failure messages are kept in [ResolutionLog] summaries; only the
- *   [resolveFirstClass] / [resolveFirstMethod] / [resolveFirstField] entry
- *   points emit a single [DiagnosticRecorder] event per feature.
+ * - [resolveFirstClass] / [resolveFirstMethod] / [resolveFirstField] try a list
+ *   of candidates in order and return the first hit. The first candidate
+ *   produces [CompatibilityState.COMPATIBLE], any later candidate produces
+ *   [CompatibilityState.DEGRADED], and total failure produces
+ *   [CompatibilityState.INCOMPATIBLE].
+ * - Resolution results are emitted once per diagnostic id through
+ *   [DiagnosticRecorder] with stable [ReasonCode]s.
  */
 class HookTargetResolver(private val classLoader: ClassLoader) {
 
@@ -159,37 +164,48 @@ class HookTargetResolver(private val classLoader: ClassLoader) {
         val failures = mutableListOf<String>()
         var hit: T? = null
         var hitCandidate: String? = null
+        var hitIndex = -1
 
-        for (candidate in candidates) {
+        for ((index, candidate) in candidates.withIndex()) {
             val result = resolver(candidate)
             if (result != null) {
                 hit = result
                 hitCandidate = candidate
+                hitIndex = index
                 break
             }
-            val reason = lastResolution(diagnosticId)?.failures?.lastOrNull() ?: "not found"
-            failures.add("$candidate: $reason")
+            failures.add("$candidate: not found")
         }
 
         val log = ResolutionLog(kind = kind, hit = hitCandidate, failures = failures)
         resolutionLog[diagnosticId] = log
 
-        if (hit == null) {
-            val summary = "no ${kind} candidate resolved; tried: ${failures.joinToString(", ")}"
-            DiagnosticRecorder.record(
-                diagnosticId,
-                DiagnosticState.DEGRADED,
-                reason = summary
+        val (compatibility, reasonCode, detail) = when {
+            hit == null -> Triple(
+                CompatibilityState.INCOMPATIBLE,
+                ReasonCode.TARGET_NOT_FOUND,
+                "no ${kind} candidate resolved; tried: ${failures.joinToString(", ")}"
             )
-        } else {
-            DiagnosticRecorder.record(
-                diagnosticId,
-                DiagnosticState.COMPATIBLE,
-                reason = "resolved $kind $hitCandidate"
+            hitIndex == 0 -> Triple(
+                CompatibilityState.COMPATIBLE,
+                ReasonCode.PRIMARY_TARGET_FOUND,
+                hitCandidate
+            )
+            else -> Triple(
+                CompatibilityState.DEGRADED,
+                ReasonCode.FALLBACK_TARGET_FOUND,
+                hitCandidate
             )
         }
 
-        return Resolution(hit, log)
+        DiagnosticRecorder.record(
+            id = diagnosticId,
+            compatibility = compatibility,
+            reasonCode = reasonCode,
+            detail = detail
+        )
+
+        return Resolution(hit, log, compatibility)
     }
 
     private fun key(vararg parts: String): String = parts.joinToString("#")
@@ -204,10 +220,12 @@ class HookTargetResolver(private val classLoader: ClassLoader) {
  *
  * @param value the resolved target, or null if no candidate matched.
  * @param log a stable, human-readable summary of the resolution attempt.
+ * @param compatibility the [CompatibilityState] implied by the candidate list.
  */
 data class Resolution<out T : Any>(
     val value: T?,
-    val log: ResolutionLog
+    val log: ResolutionLog,
+    val compatibility: CompatibilityState
 )
 
 /**

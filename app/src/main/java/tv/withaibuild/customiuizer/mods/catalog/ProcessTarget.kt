@@ -3,19 +3,38 @@ package tv.withaibuild.customiuizer.mods.catalog
 /**
  * The OS process where a feature is installed.
  *
- * Using a sealed class instead of a nullable package string makes the
- * system-server vs package distinction explicit and type-safe.
+ * Matching is value-based on the package/process name, so equality checks are
+ * not needed and different instances with the same package compare correctly.
  */
 sealed class ProcessTarget {
-    object SystemServer : ProcessTarget()
-    data class Package(val packageName: String) : ProcessTarget()
-    object SystemUI : ProcessTarget()
-    object Launcher : ProcessTarget()
 
-    fun matches(packageName: String): Boolean = when (this) {
-        is SystemServer -> packageName == "android"
-        is Package -> this.packageName == packageName
-        is SystemUI -> packageName == "com.android.systemui"
-        is Launcher -> packageName == "com.miui.home" || packageName == "com.mi.android.globallauncher"
+    abstract fun matches(processName: String): Boolean
+
+    object SystemServer : ProcessTarget() {
+        override fun matches(processName: String): Boolean =
+            processName == "android" || processName == "system_server"
+    }
+
+    object SystemUI : ProcessTarget() {
+        override fun matches(processName: String): Boolean =
+            processName == "com.android.systemui"
+    }
+
+    /**
+     * The default MIUI launcher package. Modern global builds also use the
+     * `com.miui.home` package name.
+     */
+    object Launcher : ProcessTarget() {
+        override fun matches(processName: String): Boolean =
+            processName == "com.miui.home" ||
+            processName == "com.mi.android.globallauncher"
+    }
+
+    data class Package(val packageName: String) : ProcessTarget() {
+        override fun matches(processName: String): Boolean = processName == packageName
+    }
+
+    object Any : ProcessTarget() {
+        override fun matches(processName: String): Boolean = true
     }
 }

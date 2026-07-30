@@ -4,11 +4,19 @@ import io.github.libxposed.api.XposedModuleInterface.PackageReadyParam
 import io.github.libxposed.api.XposedModuleInterface.SystemServerStartingParam
 import tv.withaibuild.customiuizer.MainModule
 import tv.withaibuild.customiuizer.mods.PackagePermissions
+import tv.withaibuild.customiuizer.mods.SystemAudioAndVisualAndMoreHooks
+import tv.withaibuild.customiuizer.mods.SystemDisplayAndWindowHooks
+import tv.withaibuild.customiuizer.mods.SystemNotificationMoreHooks
 import tv.withaibuild.customiuizer.mods.SystemStatusBarClockAndMoreHooks
+import tv.withaibuild.customiuizer.mods.SystemUIBatteryHooks
+import tv.withaibuild.customiuizer.mods.SystemUIScreenshotHooks
+import tv.withaibuild.customiuizer.mods.LauncherLayoutHooks
+import tv.withaibuild.customiuizer.mods.LauncherSystemHooks
 import tv.withaibuild.customiuizer.mods.diagnostics.DiagnosticIds
 import tv.withaibuild.customiuizer.mods.diagnostics.DiagnosticRecorder
-import tv.withaibuild.customiuizer.mods.diagnostics.DiagnosticState
-import tv.withaibuild.customiuizer.mods.utils.HookTargetResolver
+import tv.withaibuild.customiuizer.mods.diagnostics.EnabledState
+import tv.withaibuild.customiuizer.mods.diagnostics.InstallOutcome
+import tv.withaibuild.customiuizer.mods.diagnostics.ReasonCode
 import tv.withaibuild.customiuizer.utils.PrefMap
 
 /**
@@ -17,8 +25,8 @@ import tv.withaibuild.customiuizer.utils.PrefMap
  * [FeatureCatalog] holds [FeatureSpec] declarations and drives the install
  * lifecycle for each feature:
  *
- *     requested → preference condition → compatibility resolution
- *     → installed / degraded / failed → diagnostic snapshot
+ *     disabled / requested → compatibility resolution
+ *     → dispatched / installed / degraded / failed → diagnostic snapshot
  *
  * [MainModule] preserves the original call order by invoking the catalog at
  * the same positions where the migrated hooks used to be called directly.
@@ -32,17 +40,26 @@ object FeatureCatalog {
             processTarget = ProcessTarget.SystemServer,
             preferenceKeys = emptySet(),
             condition = { true },
-            compatibilityCheck = { CompatibilityState.COMPATIBLE },
-            restartTarget = RestartTarget.REBOOT,
-            hotReloadable = false,
+            compatibilityCheck = { _ ->
+                DiagnosticRecorder.record(
+                    DiagnosticIds.PACKAGE_PERMISSIONS,
+                    compatibility = CompatibilityState.COMPATIBLE,
+                    reasonCode = ReasonCode.PRIMARY_TARGET_FOUND,
+                    detail = "package permissions always checked at system_server startup"
+                )
+                CompatibilityState.COMPATIBLE
+            },
             installer = { runtime ->
                 PackagePermissions.hook(runtime.lpparam as SystemServerStartingParam)
-            }
+                InstallOutcome.DISPATCHED
+            },
+            activationRestartTarget = RestartTarget.REBOOT,
+            configReloadMode = ConfigReloadMode.NONE
         ),
         FeatureSpec(
             id = "statusBarClockTweak",
             diagnosticId = DiagnosticIds.STATUSBAR_CLOCK_TWEAK,
-            processTarget = ProcessTarget.Package("com.android.systemui"),
+            processTarget = ProcessTarget.SystemUI,
             preferenceKeys = setOf(
                 "system_statusbar_clocktweak",
                 "system_cc_clocktweak",
@@ -56,98 +73,251 @@ object FeatureCatalog {
                 prefs.getString("system_cc_dateformat", "").isNotEmpty()
             },
             compatibilityCheck = { runtime ->
-                val resolution = runtime.resolver.resolveFirstClass(
+                runtime.resolver.resolveFirstClass(
                     DiagnosticIds.STATUSBAR_CLOCK_TWEAK,
                     "com.android.systemui.statusbar.policy.MiuiStatusBarClockController",
                     "com.android.systemui.statusbar.policy.StatusBarClockController"
-                )
-                if (resolution.value != null) {
-                    CompatibilityState.COMPATIBLE
-                } else {
-                    CompatibilityState.INCOMPATIBLE
-                }
+                ).compatibility
             },
-            restartTarget = RestartTarget.SYSTEMUI_RESTART,
-            hotReloadable = true,
             installer = { runtime ->
                 SystemStatusBarClockAndMoreHooks.StatusBarClockTweakHook(
                     runtime.lpparam as PackageReadyParam
                 )
-            }
+                InstallOutcome.DISPATCHED
+            },
+            activationRestartTarget = RestartTarget.SYSTEMUI_RESTART,
+            configReloadMode = ConfigReloadMode.PARTIAL
+        ),
+        // Canary: system_server
+        FeatureSpec(
+            id = "autoBrightnessRange",
+            diagnosticId = DiagnosticIds.AUTO_BRIGHTNESS_RANGE,
+            processTarget = ProcessTarget.SystemServer,
+            preferenceKeys = setOf("system_autobrightness"),
+            condition = { prefs ->
+                prefs.getBoolean("system_autobrightness", false)
+            },
+            compatibilityCheck = { runtime ->
+                runtime.resolver.resolveFirstClass(
+                    DiagnosticIds.AUTO_BRIGHTNESS_RANGE,
+                    "com.android.server.display.AutomaticBrightnessController"
+                ).compatibility
+            },
+            installer = { runtime ->
+                SystemDisplayAndWindowHooks.AutoBrightnessRangeHook(
+                    runtime.lpparam as SystemServerStartingParam
+                )
+                InstallOutcome.DISPATCHED
+            },
+            activationRestartTarget = RestartTarget.REBOOT,
+            configReloadMode = ConfigReloadMode.NONE
+        ),
+        FeatureSpec(
+            id = "muffledVibration",
+            diagnosticId = DiagnosticIds.MUFFLED_VIBRATION,
+            processTarget = ProcessTarget.SystemServer,
+            preferenceKeys = setOf("system_vibration_amp"),
+            condition = { prefs ->
+                prefs.getBoolean("system_vibration_amp", false)
+            },
+            compatibilityCheck = { runtime ->
+                runtime.resolver.resolveFirstClass(
+                    DiagnosticIds.MUFFLED_VIBRATION,
+                    "com.android.server.VibratorService"
+                ).compatibility
+            },
+            installer = { runtime ->
+                SystemAudioAndVisualAndMoreHooks.MuffledVibrationHook(
+                    runtime.lpparam as SystemServerStartingParam
+                )
+                InstallOutcome.DISPATCHED
+            },
+            activationRestartTarget = RestartTarget.REBOOT,
+            configReloadMode = ConfigReloadMode.NONE
+        ),
+        // Canary: SystemUI
+        FeatureSpec(
+            id = "noMoreIcon",
+            diagnosticId = DiagnosticIds.NO_MORE_ICON,
+            processTarget = ProcessTarget.SystemUI,
+            preferenceKeys = setOf("system_hidemoreicon"),
+            condition = { prefs ->
+                prefs.getBoolean("system_hidemoreicon", false)
+            },
+            compatibilityCheck = { runtime ->
+                runtime.resolver.resolveFirstClass(
+                    DiagnosticIds.NO_MORE_ICON,
+                    "com.android.systemui.statusbar.phone.NotificationIconAreaController"
+                ).compatibility
+            },
+            installer = { runtime ->
+                SystemNotificationMoreHooks.NoMoreIconHook(
+                    runtime.lpparam as PackageReadyParam
+                )
+                InstallOutcome.DISPATCHED
+            },
+            activationRestartTarget = RestartTarget.SYSTEMUI_RESTART,
+            configReloadMode = ConfigReloadMode.NONE
+        ),
+        FeatureSpec(
+            id = "batteryIndicator",
+            diagnosticId = DiagnosticIds.BATTERY_INDICATOR,
+            processTarget = ProcessTarget.SystemUI,
+            preferenceKeys = setOf("system_batteryindicator"),
+            condition = { prefs ->
+                prefs.getBoolean("system_batteryindicator", false)
+            },
+            compatibilityCheck = { runtime ->
+                runtime.resolver.resolveFirstClass(
+                    DiagnosticIds.BATTERY_INDICATOR,
+                    "com.android.systemui.statusbar.phone.CentralSurfacesImpl"
+                ).compatibility
+            },
+            installer = { runtime ->
+                SystemUIBatteryHooks.BatteryIndicatorHook(
+                    runtime.lpparam as PackageReadyParam
+                )
+                InstallOutcome.DISPATCHED
+            },
+            activationRestartTarget = RestartTarget.SYSTEMUI_RESTART,
+            configReloadMode = ConfigReloadMode.NONE
+        ),
+        // Canary: Launcher
+        FeatureSpec(
+            id = "noClockHide",
+            diagnosticId = DiagnosticIds.NO_CLOCK_HIDE,
+            processTarget = ProcessTarget.Launcher,
+            preferenceKeys = setOf("launcher_noclockhide"),
+            condition = { prefs ->
+                prefs.getBoolean("launcher_noclockhide", false)
+            },
+            compatibilityCheck = { runtime ->
+                runtime.resolver.resolveFirstClass(
+                    DiagnosticIds.NO_CLOCK_HIDE,
+                    "com.miui.home.launcher.Launcher"
+                ).compatibility
+            },
+            installer = { runtime ->
+                LauncherSystemHooks.NoClockHideHook(
+                    runtime.lpparam as PackageReadyParam
+                )
+                InstallOutcome.DISPATCHED
+            },
+            activationRestartTarget = RestartTarget.LAUNCHER_RESTART,
+            configReloadMode = ConfigReloadMode.NONE
+        ),
+        FeatureSpec(
+            id = "noWidgetOnly",
+            diagnosticId = DiagnosticIds.NO_WIDGET_ONLY,
+            processTarget = ProcessTarget.Launcher,
+            preferenceKeys = setOf("launcher_nowidgetonly"),
+            condition = { prefs ->
+                prefs.getBoolean("launcher_nowidgetonly", false)
+            },
+            compatibilityCheck = { runtime ->
+                runtime.resolver.resolveFirstClass(
+                    DiagnosticIds.NO_WIDGET_ONLY,
+                    "com.miui.home.launcher.CellLayout"
+                ).compatibility
+            },
+            installer = { runtime ->
+                LauncherLayoutHooks.NoWidgetOnlyHook(
+                    runtime.lpparam as PackageReadyParam
+                )
+                InstallOutcome.DISPATCHED
+            },
+            activationRestartTarget = RestartTarget.LAUNCHER_RESTART,
+            configReloadMode = ConfigReloadMode.NONE
         )
     )
 
+    private val byId = features.associateBy { it.id }
+
+    /**
+     * Create a [FeatureRuntime] for a host process.
+     *
+     * The runtime and its [HookTargetResolver] are reused for every
+     * [installById] call in the same process.
+     */
     @JvmStatic
-    fun installForSystemServer(lpparam: SystemServerStartingParam) {
-        @Suppress("UNCHECKED_CAST")
-        val prefs = MainModule.mPrefs as PrefMap<String, Any?>
-        val runtime = FeatureRuntime(
-            processName = "android",
-            lpparam = lpparam,
-            classLoader = lpparam.classLoader,
-            resolver = HookTargetResolver(lpparam.classLoader),
-            prefs = prefs
-        )
-        install(runtime, ProcessTarget.SystemServer)
-    }
+    fun createRuntime(
+        processName: String,
+        lpparam: Any,
+        classLoader: ClassLoader,
+        prefs: PrefMap<String, Any?>
+    ): FeatureRuntime = FeatureRuntime(processName, lpparam, classLoader, prefs)
 
+    /**
+     * Install a single feature by its stable [id] using a reusable [runtime].
+     *
+     * - Returns `true` only when the feature is requested, compatible/degraded,
+     *   and the installer returned an outcome (DISPATCHED, INSTALLED or DEGRADED).
+     * - Returns `false` when disabled, incompatible, or the installer threw.
+     * - A thrown installer is recorded as FAILED and does not affect subsequent
+     *   calls to [installById] for other features.
+     */
     @JvmStatic
-    fun installForPackage(lpparam: PackageReadyParam, pkg: String) {
-        @Suppress("UNCHECKED_CAST")
-        val prefs = MainModule.mPrefs as PrefMap<String, Any?>
-        val runtime = FeatureRuntime(
-            processName = pkg,
-            lpparam = lpparam,
-            classLoader = lpparam.classLoader,
-            resolver = HookTargetResolver(lpparam.classLoader),
-            prefs = prefs
-        )
-        install(runtime, ProcessTarget.Package(pkg))
-    }
+    fun installById(featureId: String, runtime: FeatureRuntime): Boolean {
+        val feature = byId[featureId] ?: return false
+        if (!feature.processTarget.matches(runtime.processName)) {
+            return false
+        }
 
-    private fun install(runtime: FeatureRuntime, target: ProcessTarget) {
-        for (feature in features) {
-            if (feature.processTarget != target) continue
-
+        val enabled = if (feature.condition(runtime.prefs)) EnabledState.REQUESTED else EnabledState.DISABLED
+        if (enabled == EnabledState.DISABLED) {
             DiagnosticRecorder.record(
                 feature.diagnosticId,
-                DiagnosticState.REQUESTED,
-                reason = "process=${runtime.processName}"
+                enabled = enabled,
+                reasonCode = ReasonCode.PREFERENCE_DISABLED
             )
+            return false
+        }
 
-            if (!feature.condition(runtime.prefs)) continue
+        DiagnosticRecorder.record(
+            feature.diagnosticId,
+            enabled = enabled,
+            reasonCode = ReasonCode.REQUESTED
+        )
 
-            val compat = feature.compatibilityCheck(runtime)
-            val resolution = runtime.resolver.lastResolution(feature.diagnosticId)
+        val compat = feature.compatibilityCheck(runtime)
 
-            when (compat) {
-                CompatibilityState.COMPATIBLE,
-                CompatibilityState.DEGRADED -> {
-                    try {
-                        feature.installer(runtime)
-                    } catch (t: Throwable) {
-                        DiagnosticRecorder.record(
-                            feature.diagnosticId,
-                            DiagnosticState.FAILED,
-                            reason = "installer threw: ${t.javaClass.name}",
-                            throwable = t
-                        )
-                        continue
-                    }
+        return when (compat) {
+            CompatibilityState.COMPATIBLE,
+            CompatibilityState.DEGRADED -> {
+                try {
+                    val outcome = feature.installer(runtime)
                     DiagnosticRecorder.record(
                         feature.diagnosticId,
-                        DiagnosticState.INSTALLED,
-                        reason = "process=${runtime.processName}"
+                        installation = outcome,
+                        reasonCode = if (outcome == InstallOutcome.INSTALLED) {
+                            ReasonCode.INSTALLER_SUCCEEDED
+                        } else {
+                            ReasonCode.INSTALLER_DISPATCHED
+                        },
+                        detail = if (outcome == InstallOutcome.DISPATCHED) {
+                            "legacy unit installer"
+                        } else null
                     )
-                }
-                CompatibilityState.INCOMPATIBLE -> {
+                    outcome != InstallOutcome.FAILED
+                } catch (t: Throwable) {
                     DiagnosticRecorder.record(
                         feature.diagnosticId,
-                        DiagnosticState.FAILED,
-                        reason = "incompatible: ${resolution?.failures?.joinToString(", ")}"
+                        installation = InstallOutcome.FAILED,
+                        reasonCode = ReasonCode.INSTALLER_FAILED,
+                        detail = t.javaClass.name,
+                        throwable = t
                     )
-                    continue
+                    false
                 }
+            }
+            CompatibilityState.INCOMPATIBLE -> {
+                DiagnosticRecorder.record(
+                    feature.diagnosticId,
+                    installation = InstallOutcome.FAILED,
+                    reasonCode = ReasonCode.TARGET_NOT_FOUND,
+                    detail = runtime.resolver.lastResolution(feature.diagnosticId)?.failures?.joinToString(", ")
+                )
+                false
             }
         }
     }

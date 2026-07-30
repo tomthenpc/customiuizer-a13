@@ -9,9 +9,10 @@ import org.junit.Assert.assertSame
 import org.junit.Assert.assertTrue
 import org.junit.Before
 import org.junit.Test
+import tv.withaibuild.customiuizer.mods.catalog.CompatibilityState
 import tv.withaibuild.customiuizer.mods.diagnostics.DiagnosticIds
 import tv.withaibuild.customiuizer.mods.diagnostics.DiagnosticRecorder
-import tv.withaibuild.customiuizer.mods.diagnostics.DiagnosticState
+import tv.withaibuild.customiuizer.mods.diagnostics.ReasonCode
 
 class HookTargetResolverTest {
 
@@ -113,7 +114,28 @@ class HookTargetResolverTest {
     }
 
     @Test
-    fun resolveFirstClass_fallsBackToSecondCandidate() {
+    fun resolveFirstClass_primaryHitIsCompatible() {
+        val loader = CountingClassLoader()
+        val resolver = HookTargetResolver(loader)
+        val className = ResolverTestTarget::class.java.name
+
+        val resolution = resolver.resolveFirstClass(
+            DiagnosticIds.HOOK_TARGET_RESOLVER,
+            className
+        )
+
+        assertNotNull(resolution.value)
+        assertEquals(CompatibilityState.COMPATIBLE, resolution.compatibility)
+        assertEquals(className, resolution.log.hit)
+        assertEquals(0, resolution.log.failures.size)
+
+        val snapshot = DiagnosticRecorder.summarize()[DiagnosticIds.HOOK_TARGET_RESOLVER]
+        assertEquals(CompatibilityState.COMPATIBLE, snapshot!!.compatibility)
+        assertEquals(ReasonCode.PRIMARY_TARGET_FOUND, snapshot.reasonCode)
+    }
+
+    @Test
+    fun resolveFirstClass_fallsBackToSecondCandidateAndRecordsDegraded() {
         val loader = CountingClassLoader()
         val resolver = HookTargetResolver(loader)
         val className = ResolverTestTarget::class.java.name
@@ -125,9 +147,14 @@ class HookTargetResolverTest {
         )
 
         assertNotNull(resolution.value)
+        assertEquals(CompatibilityState.DEGRADED, resolution.compatibility)
         assertEquals(className, resolution.log.hit)
         assertEquals(1, resolution.log.failures.size)
         assertTrue(resolution.log.failures[0].startsWith("missing.Class"))
+
+        val snapshot = DiagnosticRecorder.summarize()[DiagnosticIds.HOOK_TARGET_RESOLVER]
+        assertEquals(CompatibilityState.DEGRADED, snapshot!!.compatibility)
+        assertEquals(ReasonCode.FALLBACK_TARGET_FOUND, snapshot.reasonCode)
     }
 
     @Test
@@ -142,10 +169,13 @@ class HookTargetResolverTest {
         )
 
         assertNull(resolution.value)
+        assertEquals(CompatibilityState.INCOMPATIBLE, resolution.compatibility)
         assertEquals(2, resolution.log.failures.size)
-        val summary = DiagnosticRecorder.summarize()[DiagnosticIds.HOOK_TARGET_RESOLVER]
-        assertNotNull(summary)
-        assertEquals(DiagnosticState.DEGRADED, summary!!.state)
+
+        val snapshot = DiagnosticRecorder.summarize()[DiagnosticIds.HOOK_TARGET_RESOLVER]
+        assertNotNull(snapshot)
+        assertEquals(CompatibilityState.INCOMPATIBLE, snapshot!!.compatibility)
+        assertEquals(ReasonCode.TARGET_NOT_FOUND, snapshot.reasonCode)
     }
 
     @Test

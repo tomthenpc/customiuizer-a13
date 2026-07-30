@@ -1,25 +1,36 @@
 package tv.withaibuild.customiuizer.mods.catalog
 
+import tv.withaibuild.customiuizer.mods.diagnostics.DiagnosticIds
+import tv.withaibuild.customiuizer.mods.diagnostics.InstallOutcome
 import tv.withaibuild.customiuizer.utils.PrefMap
 
 /**
- * Type-safe, declarative description of one CustoMIUIzer feature.
+ * How a configuration change in a running process can be handled.
  *
- * @param id Stable, machine-readable feature ID. Must match one or more
- *        [tv.withaibuild.customiuizer.prefs.PreferenceEntry.ownerFeature] values.
- * @param diagnosticId Stable diagnostic ID used for telemetry and audit.
- * @param processTarget The OS process this feature installs into.
- * @param preferenceKeys The preference keys that control this feature. They
- *        are used for fast condition checks and schema validation.
- * @param condition Runtime check using the loaded preference map.
- * @param compatibilityCheck One-time probe that determines whether the ROM
- *        targets required by this feature are present.
- * @param restartTarget Smallest restart granularity for this feature.
- * @param hotReloadable Whether live preference changes can take effect without
- *        a restart.
- * @param installer The hook installation lambda. It receives a [FeatureRuntime]
- *        and must cast [FeatureRuntime.lpparam] to the appropriate libxposed
- *        parameter itself.
+ * - NONE: the feature can only take effect after the activation restart.
+ * - PARTIAL: some sub-settings can be changed without a restart.
+ * - FULL: the feature can be fully enabled or disabled at runtime.
+ */
+enum class ConfigReloadMode { NONE, PARTIAL, FULL }
+
+/**
+ * A strongly-typed, auditable feature definition.
+ *
+ * @param id Stable feature id used as the key by [FeatureCatalog.installById].
+ * @param diagnosticId Diagnostic id used for [DiagnosticRecorder] snapshots.
+ * @param processTarget The host process where the feature is installed.
+ * @param preferenceKeys The preference keys that the feature owns; must exist in
+ *                       [PreferenceSchema] and must cover the key checked by
+ *                       [condition].
+ * @param condition Whether the feature is enabled for the current process.
+ * @param compatibilityCheck Probe for the target class/method/field. It should
+ *                           return [CompatibilityState] and emit its own
+ *                           dimension record through [DiagnosticRecorder].
+ * @param installer Type-safe installer that returns an [InstallOutcome]. Old
+ *                  Unit-style hooks must return [InstallOutcome.DISPATCHED].
+ * @param activationRestartTarget The restart required for the feature to take
+ *                                effect for the first time.
+ * @param configReloadMode Whether the feature can be reconfigured at runtime.
  */
 data class FeatureSpec(
     val id: String,
@@ -28,7 +39,7 @@ data class FeatureSpec(
     val preferenceKeys: Set<String>,
     val condition: (PrefMap<String, Any?>) -> Boolean,
     val compatibilityCheck: (FeatureRuntime) -> CompatibilityState,
-    val restartTarget: RestartTarget,
-    val hotReloadable: Boolean,
-    val installer: (FeatureRuntime) -> Unit
+    val installer: (FeatureRuntime) -> InstallOutcome,
+    val activationRestartTarget: RestartTarget,
+    val configReloadMode: ConfigReloadMode
 )

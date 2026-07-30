@@ -6,6 +6,7 @@ import org.junit.Assert.assertNull
 import org.junit.Assert.assertTrue
 import org.junit.Before
 import org.junit.Test
+import tv.withaibuild.customiuizer.mods.catalog.CompatibilityState
 
 class DiagnosticRecorderTest {
 
@@ -22,50 +23,85 @@ class DiagnosticRecorderTest {
     }
 
     @Test
-    fun requestedCompatibleInstalledOnlyLoggedOnStateTransition() {
+    fun disabledDoesNotLogRequested() {
         val id = DiagnosticIds.PACKAGE_PERMISSIONS
 
-        DiagnosticRecorder.record(id, DiagnosticState.REQUESTED, reason = "start")
-        DiagnosticRecorder.record(id, DiagnosticState.REQUESTED, reason = "start2")
-        DiagnosticRecorder.record(id, DiagnosticState.COMPATIBLE, reason = "ok")
-        DiagnosticRecorder.record(id, DiagnosticState.INSTALLED, reason = "done")
-        DiagnosticRecorder.record(id, DiagnosticState.INSTALLED, reason = "done2")
+        DiagnosticRecorder.record(id, enabled = EnabledState.REQUESTED, reasonCode = ReasonCode.REQUESTED)
+        DiagnosticRecorder.record(id, enabled = EnabledState.DISABLED, reasonCode = ReasonCode.PREFERENCE_DISABLED)
+        DiagnosticRecorder.record(id, enabled = EnabledState.DISABLED, reasonCode = ReasonCode.PREFERENCE_DISABLED)
 
-        assertEquals(
-            listOf(
-                "Diagnostic[PACKAGE_PERMISSIONS] REQUESTED: start",
-                "Diagnostic[PACKAGE_PERMISSIONS] COMPATIBLE: ok",
-                "Diagnostic[PACKAGE_PERMISSIONS] INSTALLED: done"
-            ),
-            logMessages
+        assertEquals(2, logMessages.size)
+        assertTrue(logMessages[0].contains("REQUESTED"))
+        assertTrue(logMessages[1].contains("DISABLED"))
+    }
+
+    @Test
+    fun requestedCompatibleDispatchedOnlyLoggedOnTransition() {
+        val id = DiagnosticIds.PACKAGE_PERMISSIONS
+
+        DiagnosticRecorder.record(id, enabled = EnabledState.REQUESTED, reasonCode = ReasonCode.REQUESTED)
+        DiagnosticRecorder.record(id, enabled = EnabledState.REQUESTED, reasonCode = ReasonCode.REQUESTED)
+        DiagnosticRecorder.record(
+            id,
+            compatibility = CompatibilityState.COMPATIBLE,
+            reasonCode = ReasonCode.PRIMARY_TARGET_FOUND
         )
+        DiagnosticRecorder.record(
+            id,
+            installation = InstallOutcome.DISPATCHED,
+            reasonCode = ReasonCode.INSTALLER_DISPATCHED
+        )
+        DiagnosticRecorder.record(
+            id,
+            installation = InstallOutcome.DISPATCHED,
+            reasonCode = ReasonCode.INSTALLER_DISPATCHED
+        )
+
+        assertEquals(3, logMessages.size)
+        assertTrue(logMessages[0].contains("REQUESTED"))
+        assertTrue(logMessages[1].contains("COMPATIBLE"))
+        assertTrue(logMessages[2].contains("DISPATCHED"))
     }
 
     @Test
     fun failedEscalatesFromDegradedImmediatelyAndIsThrottled() {
         val id = DiagnosticIds.STATUSBAR_CLOCK_TWEAK
 
-        // First DEGRADED logs and starts a throttle window.
-        DiagnosticRecorder.record(id, DiagnosticState.DEGRADED, reason = "missing field")
+        DiagnosticRecorder.record(
+            id,
+            compatibility = CompatibilityState.DEGRADED,
+            reasonCode = ReasonCode.FALLBACK_TARGET_FOUND
+        )
         assertEquals(1, logMessages.size)
 
-        // A repeated DEGRADED inside the throttle window is silent.
-        DiagnosticRecorder.record(id, DiagnosticState.DEGRADED, reason = "missing field")
+        DiagnosticRecorder.record(
+            id,
+            compatibility = CompatibilityState.DEGRADED,
+            reasonCode = ReasonCode.FALLBACK_TARGET_FOUND
+        )
         assertEquals(1, logMessages.size)
 
-        // Escalation from DEGRADED to FAILED must log immediately, even though
-        // the DEGRADED throttle window has not elapsed.
-        DiagnosticRecorder.record(id, DiagnosticState.FAILED, reason = "controller missing")
+        DiagnosticRecorder.record(
+            id,
+            installation = InstallOutcome.FAILED,
+            reasonCode = ReasonCode.INSTALLER_FAILED
+        )
         assertEquals(2, logMessages.size)
         assertTrue(logMessages.last().contains("FAILED"))
 
-        // Repeated FAILED inside the new throttle window is silent.
-        DiagnosticRecorder.record(id, DiagnosticState.FAILED, reason = "controller missing")
+        DiagnosticRecorder.record(
+            id,
+            installation = InstallOutcome.FAILED,
+            reasonCode = ReasonCode.INSTALLER_FAILED
+        )
         assertEquals(2, logMessages.size)
 
-        // After the throttle window, the next FAILED logs again.
         now += 120_000L
-        DiagnosticRecorder.record(id, DiagnosticState.FAILED, reason = "controller missing")
+        DiagnosticRecorder.record(
+            id,
+            installation = InstallOutcome.FAILED,
+            reasonCode = ReasonCode.INSTALLER_FAILED
+        )
         assertEquals(3, logMessages.size)
     }
 
@@ -74,37 +110,58 @@ class DiagnosticRecorderTest {
         val id = DiagnosticIds.STEP_COUNTER
 
         repeat(100) {
-            DiagnosticRecorder.record(id, DiagnosticState.FAILED, reason = "boom $it")
+            DiagnosticRecorder.record(
+                id,
+                installation = InstallOutcome.FAILED,
+                reasonCode = ReasonCode.INSTALLER_FAILED
+            )
         }
 
         assertEquals(1, logMessages.size)
         val snapshot = DiagnosticRecorder.summarize()[id]
         assertNotNull(snapshot)
         assertEquals(100L, snapshot!!.count)
-        assertEquals(DiagnosticState.FAILED, snapshot.state)
+        assertEquals(InstallOutcome.FAILED, snapshot.installation)
     }
 
     @Test
-    fun logContainsFeatureIdStateAndStableReason() {
+    fun logContainsFeatureIdStateAndStableReasonCode() {
         val id = DiagnosticIds.DEVICE_INFO_MONITOR
-        DiagnosticRecorder.record(id, DiagnosticState.FAILED, reason = "no sensor")
-        assertEquals("Diagnostic[DEVICE_INFO_MONITOR] FAILED: no sensor", logMessages.single())
+        DiagnosticRecorder.record(
+            id,
+            installation = InstallOutcome.FAILED,
+            reasonCode = ReasonCode.TARGET_NOT_FOUND,
+            detail = "no sensor"
+        )
+        val log = logMessages.single()
+        assertTrue(log.startsWith("Diagnostic[DEVICE_INFO_MONITOR]"))
+        assertTrue(log.contains("FAILED"))
+        assertTrue(log.contains("TARGET_NOT_FOUND"))
+        assertTrue(log.contains("no sensor"))
     }
 
     @Test
-    fun throwableIsNotStoredInSnapshot() {
+    fun snapshotKeepsCompatibilityAndInstallationSeparate() {
         val id = DiagnosticIds.PACKAGE_PERMISSIONS
         val throwable = RuntimeException("secret message")
 
-        DiagnosticRecorder.record(id, DiagnosticState.FAILED, throwable = throwable, reason = "install failed")
+        DiagnosticRecorder.record(
+            id,
+            compatibility = CompatibilityState.DEGRADED,
+            reasonCode = ReasonCode.FALLBACK_TARGET_FOUND
+        )
+        DiagnosticRecorder.record(
+            id,
+            installation = InstallOutcome.DISPATCHED,
+            reasonCode = ReasonCode.INSTALLER_DISPATCHED,
+            throwable = throwable
+        )
 
         val snapshot = DiagnosticRecorder.summarize()[id]
         assertNotNull(snapshot)
-        assertEquals("install failed", snapshot!!.reason)
-        // Snapshot should not contain the throwable message or stack trace.
-        assertTrue(snapshot.reason?.contains("secret message") != true)
-        assertEquals(DiagnosticState.FAILED, snapshot.state)
-        assertEquals(1L, snapshot.count)
+        assertEquals(CompatibilityState.DEGRADED, snapshot!!.compatibility)
+        assertEquals(InstallOutcome.DISPATCHED, snapshot.installation)
+        assertNull(snapshot.detail?.contains("secret message"))
     }
 
     @Test
@@ -112,10 +169,16 @@ class DiagnosticRecorderTest {
         val id = DiagnosticIds.PACKAGE_PERMISSIONS
         val throwable = RuntimeException("secret message")
 
-        DiagnosticRecorder.record(id, DiagnosticState.FAILED, throwable = throwable, reason = "install failed")
+        DiagnosticRecorder.record(
+            id,
+            installation = InstallOutcome.FAILED,
+            reasonCode = ReasonCode.INSTALLER_FAILED,
+            detail = "install failed",
+            throwable = throwable
+        )
 
         val log = logMessages.single()
-        assertTrue(log.startsWith("Diagnostic[PACKAGE_PERMISSIONS] FAILED: install failed"))
+        assertTrue(log.startsWith("Diagnostic[PACKAGE_PERMISSIONS]"))
         assertTrue(log.contains("java.lang.RuntimeException"))
         assertTrue(log.contains("secret message"))
     }
@@ -127,7 +190,7 @@ class DiagnosticRecorderTest {
             called++
             1234L
         }
-        DiagnosticRecorder.record(DiagnosticIds.PACKAGE_PERMISSIONS, DiagnosticState.REQUESTED)
+        DiagnosticRecorder.record(DiagnosticIds.PACKAGE_PERMISSIONS, enabled = EnabledState.REQUESTED, reasonCode = ReasonCode.REQUESTED)
         assertEquals(1, called)
     }
 
@@ -135,28 +198,35 @@ class DiagnosticRecorderTest {
     fun internalLoggerCanBeInjected() {
         val logs = mutableListOf<String>()
         DiagnosticRecorder.logger = { logs += it }
-        DiagnosticRecorder.record(DiagnosticIds.PACKAGE_PERMISSIONS, DiagnosticState.INSTALLED, reason = "ok")
-        assertEquals("Diagnostic[PACKAGE_PERMISSIONS] INSTALLED: ok", logs.single())
+        DiagnosticRecorder.record(
+            DiagnosticIds.PACKAGE_PERMISSIONS,
+            installation = InstallOutcome.INSTALLED,
+            reasonCode = ReasonCode.INSTALLER_SUCCEEDED
+        )
+        assertTrue(logs.single().contains("INSTALLED"))
     }
 
     @Test
-    fun summarizeReturnsExpectedCounts() {
+    fun summarizeReturnsExpectedCountsAndTimestamps() {
         val id1 = DiagnosticIds.DEVICE_INFO_MONITOR
         val id2 = DiagnosticIds.PACKAGE_PERMISSIONS
 
-        DiagnosticRecorder.record(id1, DiagnosticState.REQUESTED)
-        DiagnosticRecorder.record(id1, DiagnosticState.REQUESTED)
-        DiagnosticRecorder.record(id1, DiagnosticState.COMPATIBLE)
+        DiagnosticRecorder.record(id1, enabled = EnabledState.REQUESTED, reasonCode = ReasonCode.REQUESTED)
+        DiagnosticRecorder.record(id1, compatibility = CompatibilityState.COMPATIBLE, reasonCode = ReasonCode.PRIMARY_TARGET_FOUND)
+        DiagnosticRecorder.record(id1, compatibility = CompatibilityState.COMPATIBLE, reasonCode = ReasonCode.PRIMARY_TARGET_FOUND)
 
-        DiagnosticRecorder.record(id2, DiagnosticState.FAILED, reason = "bad")
-        DiagnosticRecorder.record(id2, DiagnosticState.FAILED, reason = "bad2")
+        now += 5000L
+        DiagnosticRecorder.record(id2, installation = InstallOutcome.FAILED, reasonCode = ReasonCode.INSTALLER_FAILED)
+        DiagnosticRecorder.record(id2, installation = InstallOutcome.FAILED, reasonCode = ReasonCode.INSTALLER_FAILED)
 
         val summary = DiagnosticRecorder.summarize()
 
         assertEquals(3L, summary[id1]?.count)
-        assertEquals(DiagnosticState.COMPATIBLE, summary[id1]?.state)
+        assertEquals(CompatibilityState.COMPATIBLE, summary[id1]?.compatibility)
 
         assertEquals(2L, summary[id2]?.count)
-        assertEquals(DiagnosticState.FAILED, summary[id2]?.state)
+        assertEquals(InstallOutcome.FAILED, summary[id2]?.installation)
+        assertEquals(5000L, summary[id2]?.firstSeenMs)
+        assertEquals(now, summary[id2]?.lastSeenMs)
     }
 }

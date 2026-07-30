@@ -7,14 +7,14 @@ import tv.withaibuild.customiuizer.utils.PrefMap
  * Runtime context passed to a [FeatureSpec] condition, compatibility probe and
  * installer.
  *
- * It groups the process name, libxposed parameter, ClassLoader, preference map
- * and a per-runtime [HookTargetResolver] so each feature performs exactly one
- * round of target resolution per install attempt.
+ * A single [FeatureRuntime] is created per host process and reused for every
+ * [FeatureCatalog.installById] call so the [HookTargetResolver] cache is shared
+ * across features in the same process.
  */
 class FeatureRuntime(
     val processName: String,
     val lpparam: Any,
     val classLoader: ClassLoader,
-    val resolver: HookTargetResolver,
-    val prefs: PrefMap<String, Any?>
+    val prefs: PrefMap<String, Any?>,
+    val resolver: HookTargetResolver = HookTargetResolver(classLoader)
 )

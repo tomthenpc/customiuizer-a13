@@ -12,10 +12,11 @@ import tv.withaibuild.customiuizer.mods.catalog.RestartTarget
  *        an instance of [type].
  * @param constraint Type-safe value constraint.
  * @param ownerFeature Stable feature ID from [FeatureCatalog].
- * @param restartTarget The smallest restart granularity needed for changes to
- *        take effect.
+ * @param restartTarget The restart granularity needed for the feature to first
+ *                      take effect (activation restart).
  * @param hotReloadable Whether the feature can react to live preference changes
- *        without a restart.
+ *                      at runtime (config reload mode). `true` maps to
+ *                      [ConfigReloadMode.FULL], `false` to [ConfigReloadMode.NONE].
  * @param legacyAliases Alternative historical keys that resolve to [key].
  */
 data class PreferenceEntry(
@@ -35,12 +36,8 @@ enum class PreferenceType {
 
 object PreferenceSchema {
 
-    /**
-     * Starter schema covering only the keys owned by the two catalog features.
-     * It is intentionally small; the audit scripts classify the remaining
-     * XML/code keys so they can be backfilled feature-by-feature.
-     */
     val entries: List<PreferenceEntry> = listOf(
+        // StatusBarClockTweak
         PreferenceEntry(
             key = "system_statusbar_clocktweak",
             type = PreferenceType.BOOLEAN,
@@ -79,6 +76,69 @@ object PreferenceSchema {
             ownerFeature = "statusBarClockTweak",
             restartTarget = RestartTarget.SYSTEMUI_RESTART,
             hotReloadable = true,
+            legacyAliases = emptySet()
+        ),
+        // Canary: system_server
+        PreferenceEntry(
+            key = "system_autobrightness",
+            type = PreferenceType.BOOLEAN,
+            defaultValue = false,
+            constraint = PreferenceConstraint.BooleanValue(expected = false),
+            ownerFeature = "autoBrightnessRange",
+            restartTarget = RestartTarget.REBOOT,
+            hotReloadable = false,
+            legacyAliases = emptySet()
+        ),
+        PreferenceEntry(
+            key = "system_vibration_amp",
+            type = PreferenceType.BOOLEAN,
+            defaultValue = false,
+            constraint = PreferenceConstraint.BooleanValue(expected = false),
+            ownerFeature = "muffledVibration",
+            restartTarget = RestartTarget.REBOOT,
+            hotReloadable = false,
+            legacyAliases = emptySet()
+        ),
+        // Canary: SystemUI
+        PreferenceEntry(
+            key = "system_hidemoreicon",
+            type = PreferenceType.BOOLEAN,
+            defaultValue = false,
+            constraint = PreferenceConstraint.BooleanValue(expected = false),
+            ownerFeature = "noMoreIcon",
+            restartTarget = RestartTarget.SYSTEMUI_RESTART,
+            hotReloadable = false,
+            legacyAliases = emptySet()
+        ),
+        PreferenceEntry(
+            key = "system_batteryindicator",
+            type = PreferenceType.BOOLEAN,
+            defaultValue = false,
+            constraint = PreferenceConstraint.BooleanValue(expected = false),
+            ownerFeature = "batteryIndicator",
+            restartTarget = RestartTarget.SYSTEMUI_RESTART,
+            hotReloadable = false,
+            legacyAliases = emptySet()
+        ),
+        // Canary: Launcher
+        PreferenceEntry(
+            key = "launcher_noclockhide",
+            type = PreferenceType.BOOLEAN,
+            defaultValue = false,
+            constraint = PreferenceConstraint.BooleanValue(expected = false),
+            ownerFeature = "noClockHide",
+            restartTarget = RestartTarget.LAUNCHER_RESTART,
+            hotReloadable = false,
+            legacyAliases = emptySet()
+        ),
+        PreferenceEntry(
+            key = "launcher_nowidgetonly",
+            type = PreferenceType.BOOLEAN,
+            defaultValue = false,
+            constraint = PreferenceConstraint.BooleanValue(expected = false),
+            ownerFeature = "noWidgetOnly",
+            restartTarget = RestartTarget.LAUNCHER_RESTART,
+            hotReloadable = false,
             legacyAliases = emptySet()
         )
     )

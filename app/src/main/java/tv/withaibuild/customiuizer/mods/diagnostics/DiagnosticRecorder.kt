@@ -1,23 +1,28 @@
 package tv.withaibuild.customiuizer.mods.diagnostics
 
 import android.os.SystemClock
+import tv.withaibuild.customiuizer.mods.catalog.CompatibilityState
 import tv.withaibuild.customiuizer.mods.utils.XposedHelpers
 import java.util.concurrent.ConcurrentHashMap
 
 /**
- * Privacy-safe, throttled diagnostic recorder.
+ * Privacy-safe, throttled, multi-dimensional diagnostic recorder.
  *
- * - Uses a monotonic clock for throttling ([SystemClock.elapsedRealtime] by
- *   default), overridable in tests via [clock].
- * - Logs the stable triple (id, state, reason) rather than full throwables.
- * - FAILED logs immediately on the first occurrence or when severity escalates
- *   from a lower state; it is not blocked by an earlier DEGRADED throttle.
+ * - Uses a monotonic clock ([SystemClock.elapsedRealtime]) by default, overridable
+ *   for tests via [clock].
+ * - Splits state into three dimensions: [EnabledState], [CompatibilityState] and
+ *   [InstallOutcome]. The snapshot never lets an install result overwrite the
+ *   compatibility conclusion.
+ * - Logs a stable feature id, [DiagnosticState] and [ReasonCode]. Dynamic detail
+ *   (class names, etc.) is attached to [DiagnosticSnapshot.detail] but never used
+ *   as the throttling key.
+ * - FAILED logs immediately on first occurrence or when severity escalates from
+ *   a lower state; it is not blocked by an earlier DEGRADED throttle.
  * - REQUESTED / COMPATIBLE / INSTALLED are logged only on state transition.
- * - [logger] and [clock] are `internal` so tests in the same module can inject
- *   them while production code cannot change them from the outside.
  */
 object DiagnosticRecorder {
-    private val entries = ConcurrentHashMap<String, DiagnosticSnapshot>()
+
+    private val snapshots = ConcurrentHashMap<String, DiagnosticSnapshot>()
     private val logThrottler = ConcurrentHashMap<String, Long>()
     private const val THROTTLE_MS = 60_000L
 
@@ -31,84 +36,80 @@ object DiagnosticRecorder {
     @Synchronized
     fun record(
         id: String,
-        state: DiagnosticState,
-        throwable: Throwable? = null,
-        reason: String? = null
+        enabled: EnabledState? = null,
+        compatibility: CompatibilityState? = null,
+        installation: InstallOutcome? = null,
+        reasonCode: ReasonCode,
+        detail: String? = null,
+        throwable: Throwable? = null
     ) {
         val now = clock()
-        val prev = entries[id]
+        val prev = snapshots[id]
+
         val snapshot = DiagnosticSnapshot(
-            state = state,
+            enabled = enabled ?: prev?.enabled,
+            compatibility = compatibility ?: prev?.compatibility,
+            installation = installation ?: prev?.installation,
+            reasonCode = reasonCode,
+            detail = detail,
             count = (prev?.count ?: 0L) + 1,
             firstSeenMs = prev?.firstSeenMs ?: now,
-            lastSeenMs = now,
-            reason = reason
+            lastSeenMs = now
         )
-        entries[id] = snapshot
+        snapshots[id] = snapshot
 
-        val shouldLog = when (state) {
-            DiagnosticState.FAILED -> shouldLogFailed(id, now, prev)
-            DiagnosticState.DEGRADED -> shouldLogDegraded(id, now, prev)
-            else -> prev?.state != state
+        val newState = overallState(snapshot)
+        val prevState = prev?.let { overallState(it) }
+
+        val shouldLog = when {
+            newState == DiagnosticState.FAILED ->
+                prevState != DiagnosticState.FAILED || throttleExpired(id, now)
+            newState == DiagnosticState.DEGRADED ->
+                prevState != DiagnosticState.DEGRADED || throttleExpired(id, now)
+            else ->
+                prevState != newState
         }
 
         if (shouldLog) {
-            val logLine = buildLogLine(id, state, reason, throwable)
+            val logLine = buildString {
+                append("Diagnostic[").append(id).append("] ")
+                append(newState.name)
+                if (snapshot.enabled != null) append(" enabled=").append(snapshot.enabled.name)
+                if (snapshot.compatibility != null) append(" compat=").append(snapshot.compatibility.name)
+                if (snapshot.installation != null) append(" install=").append(snapshot.installation.name)
+                append(" reason=").append(reasonCode.name)
+                if (!detail.isNullOrEmpty()) append(" detail=").append(detail)
+                if (throwable != null) append(" | ").append(throwableSummary(throwable))
+            }
+            logThrottler[id] = now
             val log = logger
-            if (log != null) {
-                log(logLine)
-            } else {
-                XposedHelpers.log(logLine)
-            }
+            if (log != null) log(logLine) else XposedHelpers.log(logLine)
         }
     }
 
-    private fun shouldLogFailed(id: String, now: Long, prev: DiagnosticSnapshot?): Boolean {
-        if (prev == null || prev.state != DiagnosticState.FAILED) {
-            // First FAILED or escalation from a lower severity: log immediately and
-            // reset the throttle for this id.
-            logThrottler[id] = now
-            return true
-        }
-        return maybeThrottle(id, now)
+    private fun throttleExpired(id: String, now: Long): Boolean {
+        val last = logThrottler[id] ?: return true
+        return now - last >= THROTTLE_MS
     }
 
-    private fun shouldLogDegraded(id: String, now: Long, prev: DiagnosticSnapshot?): Boolean {
-        if (prev == null || prev.state != DiagnosticState.DEGRADED) {
-            logThrottler[id] = now
-            return true
-        }
-        return maybeThrottle(id, now)
-    }
+    /** Computes the single overall severity state from the three dimensions. */
+    private fun overallState(snapshot: DiagnosticSnapshot): DiagnosticState {
+        val install = snapshot.installation
+        if (install == InstallOutcome.FAILED) return DiagnosticState.FAILED
+        if (install == InstallOutcome.INSTALLED) return DiagnosticState.INSTALLED
+        if (install == InstallOutcome.DISPATCHED) return DiagnosticState.DISPATCHED
+        if (install == InstallOutcome.DEGRADED) return DiagnosticState.DEGRADED
 
-    private fun maybeThrottle(id: String, now: Long): Boolean {
-        val prevLog = logThrottler[id]
-        return if (prevLog == null) {
-            logThrottler[id] = now
-            true
-        } else if (now - prevLog >= THROTTLE_MS) {
-            logThrottler[id] = now
-            true
-        } else {
-            false
-        }
-    }
+        val compat = snapshot.compatibility
+        if (compat == CompatibilityState.INCOMPATIBLE) return DiagnosticState.INCOMPATIBLE
+        if (compat == CompatibilityState.DEGRADED) return DiagnosticState.DEGRADED
+        if (compat == CompatibilityState.COMPATIBLE) return DiagnosticState.COMPATIBLE
 
-    private fun buildLogLine(
-        id: String,
-        state: DiagnosticState,
-        reason: String?,
-        throwable: Throwable?
-    ): String {
-        return buildString {
-            append("Diagnostic[").append(id).append("] ").append(state.name)
-            if (!reason.isNullOrEmpty()) {
-                append(": ").append(reason)
-            }
-            if (throwable != null) {
-                append(" | ").append(throwableSummary(throwable))
-            }
-        }
+        val enabled = snapshot.enabled
+        if (enabled == EnabledState.REQUESTED) return DiagnosticState.REQUESTED
+        if (enabled == EnabledState.DISABLED) return DiagnosticState.DISABLED
+
+        return DiagnosticState.REQUESTED
     }
 
     /** Returns a desensitized throwable summary: class name only, no stack trace. */
@@ -120,12 +121,12 @@ object DiagnosticRecorder {
 
     @JvmStatic
     @Synchronized
-    fun summarize(): Map<String, DiagnosticSnapshot> = entries.toMap()
+    fun summarize(): Map<String, DiagnosticSnapshot> = snapshots.toMap()
 
     @JvmStatic
     @Synchronized
     fun reset() {
-        entries.clear()
+        snapshots.clear()
         logThrottler.clear()
         logger = null
         clock = { SystemClock.elapsedRealtime() }
