@@ -32,8 +32,8 @@ object DeviceInfoMonitor {
     private const val SCREEN_RECEIVER_KEY = "systemui.deviceInfoMonitorScreenReceiver"
 
     internal data class Snapshot(
-        val showBatteryDetail: Boolean,
-        val showDeviceTemp: Boolean,
+        val showBatteryDetail: Boolean = true,
+        val showDeviceTemp: Boolean = true,
         val batteryInCharge: Boolean,
         val batteryContentOpt: Int,
         val batteryTempDecimal: Boolean,
@@ -125,6 +125,7 @@ object DeviceInfoMonitor {
     private var generation = 0
     private var mainHandler: Handler? = null
     private var backgroundHandler: Handler? = null
+    private var powerManager: PowerManager? = null
     private var chargeUtilsClass: Class<*>? = null
     private var classLoader: ClassLoader? = null
 
@@ -187,12 +188,12 @@ object DeviceInfoMonitor {
                         if (activeGeneration != generation || msg.what != MONITOR_MESSAGE) {
                             return@guarded
                         }
-                        runTick(applicationContext, activeGeneration)
+                        runTick(activeGeneration)
                     }
                 }
             }
 
-            val powerManager =
+            powerManager =
                 applicationContext.getSystemService(Context.POWER_SERVICE) as? PowerManager
             val runImmediately = lifecycle.start(
                 currentSnapshot.enabled,
@@ -265,14 +266,13 @@ object DeviceInfoMonitor {
         )
     }
 
-    private fun runTick(context: Context, activeGeneration: Int) {
+    private fun runTick(activeGeneration: Int) {
         val current = snapshot ?: return
         if (!current.enabled) {
             synchronized(lock) { stopLocked() }
             return
         }
 
-        val powerManager = context.getSystemService(Context.POWER_SERVICE) as? PowerManager
         if (powerManager?.isInteractive == false) {
             synchronized(lock) {
                 if (activeGeneration == generation) {
@@ -386,6 +386,7 @@ object DeviceInfoMonitor {
         ModuleHelper.unregisterModuleReceiver(SCREEN_RECEIVER_KEY)
         backgroundHandler = null
         mainHandler = null
+        powerManager = null
         lifecycle.stop()
         batteryState.show = false
         batteryState.text = ""
