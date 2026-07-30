@@ -38,16 +38,16 @@ object SystemDisplayAndWindowHooks {
                     if (duration == 0) duration = 250
                     mColorFadeOffAnimator.duration = duration.toLong()
                 }
-                ModuleHelper.observePreferenceChange("system.screenAnimation", param.thisObject, object : ModuleHelper.PreferenceObserver {
-                    override fun onChange(key: String) {
-                        if (key.contains("system_screenanim_duration")) {
-                            if (mColorFadeOffAnimator == null) return
-                            var duration = MainModule.mPrefs.getInt("system_screenanim_duration", 0)
-                            if (duration == 0) duration = 250
-                            mColorFadeOffAnimator.duration = duration.toLong()
-                        }
+                ModuleHelper.observeOwnedPreferenceChange("system.screenAnimation", param.thisObject) { owner, key ->
+                    if (key.contains("system_screenanim_duration")) {
+                        val animator =
+                            XposedHelpers.getObjectField(owner, "mColorFadeOffAnimator") as? ObjectAnimator
+                                ?: return@observeOwnedPreferenceChange
+                        var duration = MainModule.mPrefs.getInt("system_screenanim_duration", 0)
+                        if (duration == 0) duration = 250
+                        animator.duration = duration.toLong()
                     }
-                })
+                }
             }
         })
     }
@@ -145,15 +145,15 @@ object SystemDisplayAndWindowHooks {
                 val initBlurRatio = MainModule.mPrefs.getInt("system_drawer_blur", 100)
                 XposedHelpers.setAdditionalInstanceField(notificationShadeDepthController, "mCustomBlurModifier", initBlurRatio)
                 XposedHelpers.setAdditionalInstanceField(mControlPanelWindowManager, "mCustomBlurModifier", initBlurRatio)
-                ModuleHelper.observePreferenceChange("systemui.drawerBlur", param.thisObject, object : ModuleHelper.PreferenceObserver {
-                    override fun onChange(key: String) {
-                        if (key.contains("system_drawer_blur")) {
-                            val opt = MainModule.mPrefs.getInt("system_drawer_blur", 100)
-                            XposedHelpers.setAdditionalInstanceField(notificationShadeDepthController, "mCustomBlurModifier", opt)
-                            XposedHelpers.setAdditionalInstanceField(mControlPanelWindowManager, "mCustomBlurModifier", opt)
-                        }
+                ModuleHelper.observeOwnedPreferenceChange("systemui.drawerBlur", param.thisObject) { owner, key ->
+                    if (key.contains("system_drawer_blur")) {
+                        val opt = MainModule.mPrefs.getInt("system_drawer_blur", 100)
+                        val currentDepthController =
+                            XposedHelpers.getObjectField(owner, "notificationShadeDepthController")
+                        XposedHelpers.setAdditionalInstanceField(currentDepthController, "mCustomBlurModifier", opt)
+                        XposedHelpers.setAdditionalInstanceField(mControlPanelWindowManager, "mCustomBlurModifier", opt)
                     }
-                })
+                }
             }
         })
 

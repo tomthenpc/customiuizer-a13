@@ -39,19 +39,19 @@ object LauncherIconHooks {
     fun RenameShortcutsHook(lpparam: PackageReadyParam) {
         ModuleHelper.findAndHookMethod("com.miui.home.launcher.Launcher", lpparam.classLoader, "onCreate", android.os.Bundle::class.java, object : MethodHook() {
             override fun after(param: AfterHookCallback) {
-                ModuleHelper.observePreferenceChange("launcher.renameShortcuts", param.getThisObject()) { key ->
+                ModuleHelper.observeOwnedPreferenceChange("launcher.renameShortcuts", param.getThisObject()) { owner, key ->
                     try {
-                        if (!key.contains("pref_key_launcher_renameapps_list")) return@observePreferenceChange
+                        if (!key.contains("pref_key_launcher_renameapps_list")) return@observeOwnedPreferenceChange
                         val newTitle = MainModule.mPrefs.getString(key, "")
                         val mAllLoadedApps: HashSet<*>? = when {
-                            XposedHelpers.findFieldIfExists(param.getThisObject().javaClass, "mAllLoadedShortcut") != null ->
-                                XposedHelpers.getObjectField(param.getThisObject(), "mAllLoadedShortcut") as? HashSet<*>
-                            XposedHelpers.findFieldIfExists(param.getThisObject().javaClass, "mAllLoadedApps") != null ->
-                                XposedHelpers.getObjectField(param.getThisObject(), "mAllLoadedApps") as? HashSet<*>
+                            XposedHelpers.findFieldIfExists(owner.javaClass, "mAllLoadedShortcut") != null ->
+                                XposedHelpers.getObjectField(owner, "mAllLoadedShortcut") as? HashSet<*>
+                            XposedHelpers.findFieldIfExists(owner.javaClass, "mAllLoadedApps") != null ->
+                                XposedHelpers.getObjectField(owner, "mAllLoadedApps") as? HashSet<*>
                             else ->
-                                XposedHelpers.getObjectField(param.getThisObject(), "mLoadedAppsAndShortcut") as? HashSet<*>
+                                XposedHelpers.getObjectField(owner, "mLoadedAppsAndShortcut") as? HashSet<*>
                         }
-                        val act = param.getThisObject() as? Activity ?: return@observePreferenceChange
+                        val act = owner as? Activity ?: return@observeOwnedPreferenceChange
                         mAllLoadedApps?.forEach { shortcut ->
                             val isApp = XposedHelpers.callMethod(shortcut, "isApplicatoin") as? Boolean ?: false
                             if (!isApp) return@forEach
@@ -66,11 +66,11 @@ object LauncherIconHooks {
                                 XposedHelpers.setObjectField(shortcut, "mLabel", newStr)
 
                                 act.runOnUiThread {
-                                    if (lpparam.packageName == "com.miui.home") {
+                                    if (act.packageName == "com.miui.home") {
                                         XposedHelpers.callMethod(shortcut, "updateBuddyIconView", act)
                                     } else {
                                         val buddyIconView = XposedHelpers.callMethod(shortcut, "getBuddyIconView")
-                                        if (buddyIconView != null) XposedHelpers.callMethod(buddyIconView, "updateInfo", param.getThisObject(), shortcut)
+                                        if (buddyIconView != null) XposedHelpers.callMethod(buddyIconView, "updateInfo", owner, shortcut)
                                     }
                                 }
                             }

@@ -22,16 +22,14 @@ object SystemNotificationPopupsHooks {
                 if (delay == 0) delay = 5000
                 XposedHelpers.setIntField(param.thisObject, "mMinimumDisplayTime", delay)
                 XposedHelpers.setIntField(param.thisObject, "mHeadsUpNotificationDecay", delay)
-                ModuleHelper.observePreferenceChange("systemui.headsUpDelay", param.thisObject, object : ModuleHelper.PreferenceObserver {
-                    override fun onChange(key: String) {
-                        if (key.contains("system_betterpopups_delay")) {
-                            var delay = MainModule.mPrefs.getInt("system_betterpopups_delay", 0) * 1000
-                            if (delay == 0) delay = 5000
-                            XposedHelpers.setIntField(param.thisObject, "mMinimumDisplayTime", delay)
-                            XposedHelpers.setIntField(param.thisObject, "mHeadsUpNotificationDecay", delay)
-                        }
+                ModuleHelper.observeOwnedPreferenceChange("systemui.headsUpDelay", param.thisObject) { owner, key ->
+                    if (key.contains("system_betterpopups_delay")) {
+                        var updatedDelay = MainModule.mPrefs.getInt("system_betterpopups_delay", 0) * 1000
+                        if (updatedDelay == 0) updatedDelay = 5000
+                        XposedHelpers.setIntField(owner, "mMinimumDisplayTime", updatedDelay)
+                        XposedHelpers.setIntField(owner, "mHeadsUpNotificationDecay", updatedDelay)
                     }
-                })
+                }
             }
         })
     }

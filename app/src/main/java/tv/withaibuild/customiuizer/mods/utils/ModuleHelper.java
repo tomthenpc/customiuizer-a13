@@ -53,15 +53,29 @@ public class ModuleHelper {
     private static final ConcurrentHashMap<String, PreferenceObserver> keyedPrefObservers =
         new ConcurrentHashMap<String, PreferenceObserver>();
 
+    @FunctionalInterface
+    public interface OwnedPreferenceCallback {
+        void onChange(Object owner, String key);
+    }
+
     private static class OwnedPreferenceObserver {
         final String key;
         final WeakReference<Object> ownerRef;
         final WeakReference<PreferenceObserver> observerRef;
+        final OwnedPreferenceCallback callback;
 
         OwnedPreferenceObserver(String key, Object owner, PreferenceObserver observer) {
             this.key = key;
             this.ownerRef = new WeakReference<Object>(owner);
             this.observerRef = new WeakReference<PreferenceObserver>(observer);
+            this.callback = null;
+        }
+
+        OwnedPreferenceObserver(String key, Object owner, OwnedPreferenceCallback callback) {
+            this.key = key;
+            this.ownerRef = new WeakReference<Object>(owner);
+            this.observerRef = null;
+            this.callback = callback;
         }
     }
 
@@ -349,6 +363,22 @@ public class ModuleHelper {
             ownedPrefObservers.add(new OwnedPreferenceObserver(key, owner, prefObserver));
     }
 
+    /**
+     * Registers an owner-aware callback without requiring the owner to retain a separate
+     * observer object. The callback is retained strongly, while the owner is passed in only
+     * after dereferencing its weak reference. Callers must use the supplied owner argument
+     * instead of capturing the owner in the callback closure.
+     */
+    public static void observeOwnedPreferenceChange(
+        String key,
+        Object owner,
+        OwnedPreferenceCallback callback
+    ) {
+        if (owner == null || callback == null) return;
+        dropOwnedObserver(key, owner);
+        ownedPrefObservers.add(new OwnedPreferenceObserver(key, owner, callback));
+    }
+
     public static void removePreferenceObserver(String key, Object owner) {
         if (owner == null) {
             keyedPrefObservers.remove(key);
@@ -360,8 +390,12 @@ public class ModuleHelper {
     private static void dropOwnedObserver(@Nullable String key, @Nullable Object owner) {
         ownedPrefObservers.removeIf(registration -> {
             Object registrationOwner = registration.ownerRef.get();
-            PreferenceObserver observer = registration.observerRef.get();
-            if (registrationOwner == null || observer == null) return true;
+            PreferenceObserver observer =
+                registration.observerRef == null ? null : registration.observerRef.get();
+            if (
+                registrationOwner == null ||
+                (registration.callback == null && observer == null)
+            ) return true;
             return registrationOwner == owner && registration.key.equals(key);
         });
     }
@@ -383,13 +417,22 @@ public class ModuleHelper {
         }
         boolean sawCleared = false;
         for (OwnedPreferenceObserver registration : ownedPrefObservers) {
-            PreferenceObserver prefObserver = registration.observerRef.get();
-            if (registration.ownerRef.get() == null || prefObserver == null) {
+            Object owner = registration.ownerRef.get();
+            PreferenceObserver prefObserver =
+                registration.observerRef == null ? null : registration.observerRef.get();
+            if (
+                owner == null ||
+                (registration.callback == null && prefObserver == null)
+            ) {
                 sawCleared = true;
                 continue;
             }
             try {
-                prefObserver.onChange(key);
+                if (registration.callback != null) {
+                    registration.callback.onChange(owner, key);
+                } else {
+                    prefObserver.onChange(key);
+                }
             } catch (Throwable t) {
                 log(t);
             }
