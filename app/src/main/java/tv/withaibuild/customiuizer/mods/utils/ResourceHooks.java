@@ -31,6 +31,10 @@ public class ResourceHooks {
 	private final MethodHook mReplaceHook = new MethodHook() {
 		@Override
 		public Object intercept(XposedInterface.Chain chain) throws Throwable {
+			// Skip the common case entirely: no fakes or replacements means we do not
+			// need to read arguments, resolve context, or look up resource names.
+			if (fakes.size() == 0 && replacements.isEmpty()) return chain.proceed();
+
 			List<Object> args = chain.getArgs();
 			int resId = (int) args.get(0);
 
