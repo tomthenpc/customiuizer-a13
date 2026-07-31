@@ -452,6 +452,77 @@ def check_xposed_scope() -> list[Finding]:
     return findings
 
 
+EXPECTED_DEFSTYLE = {
+    "CheckBoxPreferenceEx.kt":
+        "androidx.preference.R.attr.switchPreferenceStyle",
+    "DropDownPreferenceEx.kt":
+        "androidx.preference.R.attr.dropdownPreferenceStyle",
+    "EditTextPreferenceEx.kt":
+        "androidx.preference.R.attr.editTextPreferenceStyle",
+    "ListPreferenceEx.kt":
+        "androidx.preference.R.attr.dialogPreferenceStyle",
+    "PreferenceCategoryEx.kt":
+        "androidx.preference.R.attr.preferenceCategoryStyle",
+    "PreferenceEx.kt":
+        "androidx.preference.R.attr.preferenceStyle",
+    "SeekBarPreference.kt":
+        "androidx.preference.R.attr.preferenceStyle",
+}
+
+
+def check_preference_style_attr(
+    path: Path,
+    text: str
+) -> list[Finding]:
+    expected = EXPECTED_DEFSTYLE.get(path.name)
+    if expected is None:
+        return []
+
+    pattern = re.compile(
+        r"defStyleAttr\s*:\s*Int\s*=\s*"
+        r"([A-Za-z0-9_.$]+)"
+    )
+    matches = list(pattern.finditer(text))
+
+    if not matches:
+        return [
+            Finding(
+                "preference-style-attr",
+                path,
+                1,
+                "missing defStyleAttr default; "
+                f"expected {expected}",
+            )
+        ]
+
+    if len(matches) != 1:
+        return [
+            Finding(
+                "preference-style-attr",
+                path,
+                line_of(text, matches[0].start()),
+                "expected exactly one defStyleAttr default, "
+                f"found {len(matches)}",
+            )
+        ]
+
+    match = matches[0]
+    actual = match.group(1)
+
+    if actual != expected:
+        return [
+            Finding(
+                "preference-style-attr",
+                path,
+                line_of(text, match.start()),
+                f"expected defStyleAttr {expected}, "
+                f"got {actual}",
+            )
+        ]
+
+    return []
+
+
 RULES = (
     check_guard_framework_callbacks,
     check_guard_deferred_callbacks,
@@ -462,6 +533,7 @@ RULES = (
     check_no_legacy_xposed,
     check_no_regex_split_on_literal,
     check_launcher_rename_loop_exit,
+    check_preference_style_attr,
 )
 
 
@@ -495,7 +567,7 @@ def main() -> int:
     findings.extend(check_xposed_scope())
 
     if not findings:
-        print(f"check-invariants: {len(files)} files, no scope violations")
+        print(f"check-invariants: {len(files)} files, no violations")
         return 0
 
     by_rule: dict[str, list[Finding]] = {}
