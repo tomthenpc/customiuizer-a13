@@ -52,6 +52,8 @@ object SystemUIStatusBarHooks {
     private var statusbarTextIconLayoutResId = 0
     private val textIconTagId = ResourceHooks.getFakeResId("text_icon_tag")
     private val viewInitedTag = ResourceHooks.getFakeResId("view_inited_tag")
+    private val netSpeedStyleStateTag = ResourceHooks.getFakeResId("net_speed_style_state")
+    private val netSpeedViewHolderTag = ResourceHooks.getFakeResId("net_speed_view_holder")
     private var statusbarIconList: List<String>? = null
     private val mStatusbarTextIcons = ArrayList<WeakReference<View>>()
 
@@ -75,6 +77,13 @@ object SystemUIStatusBarHooks {
     private fun format2(value: Float): String = DF_2DEC.get()!!.format(value)
 
     data class TextIcon(var atRight: Boolean, var iconType: Int)
+
+    /**
+     * Holds the actual number and optional unit TextViews of a NetworkSpeedView
+     * to avoid repeated reflection when the speed text is refreshed.
+     * The holder is stored in the meter view's tag and follows its lifecycle.
+     */
+    private class NetSpeedViewHolder(val numberView: TextView, val unitView: TextView?)
 
     @JvmStatic
     fun setupStatusBar(mContext: Context) {
@@ -1204,6 +1213,56 @@ object SystemUIStatusBarHooks {
         })
     }
 
+    /**
+     * Locates the actual number and (optionally) unit TextViews inside a
+     * NetworkSpeedView, caching the result in the meter view's tag.
+     * No reflection is performed on the hot path once the holder is cached.
+     */
+    private fun findOrCreateNetSpeedTextViews(meter: View): NetSpeedViewHolder? {
+        (meter.getTag(netSpeedViewHolderTag) as? NetSpeedViewHolder)?.let { return it }
+        return try {
+            val numberView: TextView
+            val unitView: TextView?
+            if (newStyle) {
+                numberView = meter.findViewWithTag<View>("network_speed_number") as? TextView
+                    ?: (XposedHelpers.getObjectField(meter, "mNetworkSpeedNumberText") as? TextView)
+                    ?: return null
+                unitView = meter.findViewWithTag<View>("network_speed_unit") as? TextView
+                    ?: (XposedHelpers.getObjectField(meter, "mNetworkSpeedUnitText") as? TextView)
+            } else {
+                numberView = meter as? TextView ?: return null
+                unitView = null
+            }
+            val holder = NetSpeedViewHolder(numberView, unitView)
+            meter.setTag(netSpeedViewHolderTag, holder)
+            holder
+        } catch (t: Throwable) {
+            null
+        }
+    }
+
+    /**
+     * Applies the configured network-speed bold typeface to [textView] without
+     * replacing the MIUI font family or accumulating Bold on repeated calls.
+     */
+    private fun applyNetSpeedTypeface(textView: TextView?) {
+        textView ?: return
+        val state = textView.getTag(netSpeedStyleStateTag) as? NetSpeedTypefaceHelper.State
+            ?: NetSpeedTypefaceHelper.State().also { textView.setTag(netSpeedStyleStateTag, it) }
+        NetSpeedTypefaceHelper.apply(textView, MainModule.mPrefs.getBoolean("system_netspeed_bold"), state)
+    }
+
+    /**
+     * Reapplies the network-speed typeface to both the number and unit text views.
+     * Called after [setNetworkSpeed] to recover boldness if the system reset it.
+     */
+    private fun applyNetSpeedStyleToMeter(meter: View) {
+        if ("slot_text_icon" == meter.tag) return
+        val holder = findOrCreateNetSpeedTextViews(meter) ?: return
+        applyNetSpeedTypeface(holder.numberView)
+        holder.unitView?.let { applyNetSpeedTypeface(it) }
+    }
+
     private fun initNetSpeedStyle(meter: View) {
         val isFirst = !initNetSpeedStyleLogged
         if (isFirst) {
@@ -1211,13 +1270,13 @@ object SystemUIStatusBarHooks {
             XposedHelpers.log("CustoMIUIzer NetSpeed", "initNetSpeedStyle start: meterClass=${meter.javaClass.name}, newStyle=$newStyle, dualRow=${MainModule.mPrefs.getBoolean("system_detailednetspeed") || MainModule.mPrefs.getBoolean("system_detailednetspeed_fakedualrow")}")
         }
         try {
+            val holder = findOrCreateNetSpeedTextViews(meter) ?: return
+            val iconTextView = holder.numberView
             val dualRow = MainModule.mPrefs.getBoolean("system_detailednetspeed") || MainModule.mPrefs.getBoolean("system_detailednetspeed_fakedualrow")
-            val iconTextView = getIconTextView(meter)
             var fontSize = MainModule.mPrefs.getInt("system_netspeed_fontsize", 13)
             if (dualRow) {
                 if (newStyle) {
-                    val unitView = XposedHelpers.getObjectField(meter, "mNetworkSpeedUnitText") as? View
-                    unitView?.visibility = View.GONE
+                    holder.unitView?.visibility = View.GONE
                 }
                 if (fontSize > 23 || fontSize == 13) fontSize = 16
             } else {
@@ -1225,10 +1284,6 @@ object SystemUIStatusBarHooks {
             }
             if (dualRow || fontSize != 13) {
                 iconTextView.setTextSize(TypedValue.COMPLEX_UNIT_DIP, fontSize * 0.5f)
-            }
-            if (MainModule.mPrefs.getBoolean("system_netspeed_bold")) {
-                iconTextView.typeface =
-                    Typeface.create(iconTextView.typeface, Typeface.BOLD)
             }
 
             var leftMargin = MainModule.mPrefs.getInt("system_netspeed_leftmargin", 0)
@@ -1256,6 +1311,10 @@ object SystemUIStatusBarHooks {
                 iconTextView.maxLines = 2
                 iconTextView.setLineSpacing(0f, spacing)
             }
+
+            applyNetSpeedTypeface(iconTextView)
+            holder.unitView?.let { applyNetSpeedTypeface(it) }
+
             if (isFirst) {
                 XposedHelpers.log("CustoMIUIzer NetSpeed", "initNetSpeedStyle completed")
             }
@@ -1279,7 +1338,10 @@ object SystemUIStatusBarHooks {
             netSpeedStyleHookLogged = true
             XposedHelpers.log("CustoMIUIzer NetSpeed", "NetSpeedStyleHook installed, newStyle=$newStyle")
         }
-        ModuleHelper.hookAllConstructors("com.android.systemui.statusbar.views.NetworkSpeedView", lpparam.classLoader, object : MethodHook() {
+        val nsvClass = XposedHelpers.findClassIfExists("com.android.systemui.statusbar.views.NetworkSpeedView", lpparam.classLoader)
+            ?: return
+
+        ModuleHelper.hookAllConstructors(nsvClass, object : MethodHook() {
             override fun after(param: AfterHookCallback) {
                 val meter = param.getThisObject() as? View ?: return
                 if (!netSpeedViewLogged) {
@@ -1298,6 +1360,22 @@ object SystemUIStatusBarHooks {
                     }
                     meter.postDelayed({ ModuleHelper.guarded { initNetSpeedStyle(meter) } }, 200)
                 }
+            }
+        })
+
+        ModuleHelper.hookAllMethodsSilently(nsvClass, "onFinishInflate", object : MethodHook() {
+            override fun after(param: AfterHookCallback) {
+                val meter = param.getThisObject() as? View ?: return
+                if ("slot_text_icon" == meter.tag) return
+                ModuleHelper.guarded { initNetSpeedStyle(meter) }
+            }
+        })
+
+        ModuleHelper.hookAllMethods(nsvClass, "setNetworkSpeed", object : MethodHook() {
+            override fun after(param: AfterHookCallback) {
+                val meter = param.getThisObject() as? View ?: return
+                if ("slot_text_icon" == meter.tag) return
+                applyNetSpeedStyleToMeter(meter)
             }
         })
     }
