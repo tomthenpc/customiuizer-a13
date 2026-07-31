@@ -125,4 +125,21 @@ These were not touched in this round:
 
 ---
 
-*Generated during the `devin/a13-runtime-hardening` continuation session.*
+## A13 0731 closeout
+
+| Item | Status | Evidence |
+|---|---|---|
+| AGENTS.md simplified | COMPLETED | `AGENTS.md` rewritten |
+| ADB/device automation removed | COMPLETED | `tools/k7-device-smoke.ps1` and device smoke docs deleted |
+| `tools/verify.py` | COMPLETED | `verify.py` with `fast`/`full` modes, no APK build |
+| `tools/analyze_lsposed_log.py` | COMPLETED | offline log analyzer + `docs/LSPOSED_LOG_ANALYSIS.md` |
+| CI workflow | COMPLETED | `.github/workflows/build.yml` no longer builds APK |
+| PrefMap atomic snapshot | COMPLETED | `PrefMap.kt` uses `AtomicReference` immutable snapshot, `PrefMapTest` passes |
+| PreferenceBootstrap state | VERIFIED | `PreferenceBootstrapTest` passes |
+| Module/Owned receiver | VERIFIED | `ModuleHelperReceiverTest` passes |
+| FeatureDispatcher typed IDs | VERIFIED | `FeatureCatalogTest` passes |
+| MainModule process split | PARTIAL | not split into per-process installers in this session |
+| ResourceHooks SparseArray | PARTIAL | unresolved/wildcard map remains, resolved ID split pending |
+| Full callback boundary | VERIFIED | `ModuleHelper.guarded` enforced by `check-invariants.py` |
+
+*Updated during the `devin/a13-runtime-hardening` continuation session.*
