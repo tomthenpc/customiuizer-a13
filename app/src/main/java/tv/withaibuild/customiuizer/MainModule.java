@@ -58,6 +58,7 @@ import tv.withaibuild.customiuizer.mods.utils.HookerClassHelper.MethodHook;
 import tv.withaibuild.customiuizer.mods.utils.ModuleHelper;
 import tv.withaibuild.customiuizer.mods.utils.ResourceHooks;
 import tv.withaibuild.customiuizer.mods.utils.XposedHelpers;
+import tv.withaibuild.customiuizer.installers.PackageInstallerRouter;
 import tv.withaibuild.customiuizer.installers.SystemServerInstaller;
 import tv.withaibuild.customiuizer.utils.PrefMap;
 import tv.withaibuild.customiuizer.utils.PreferenceBootstrap;
@@ -556,49 +557,7 @@ public class MainModule extends XposedModule {
             if (mPrefs.getBoolean("various_persist_batteryoptimization")) Various.PersistBatteryOptimizationHook(lpparam);
         }
 
-        if (pkg.equals("com.android.settings")) {
-            if (mPrefs.getStringAsInt("miuizer_settingsiconpos", 1) > 0) {
-                GlobalActions.miuizerSettingsHook(lpparam);
-            }
-            if (mPrefs.getBoolean("system_separatevolume")) {
-                SystemAudioAndVolumeHooks.NotificationVolumeSettingsRes();
-                SystemAudioAndVolumeHooks.NotificationVolumeSettingsHook(lpparam);
-            }
-            if (mPrefs.getBoolean("system_disableanynotif")) {
-                SystemNotificationMoreHooks.DisableAnyNotificationHook(lpparam);
-                SystemNotificationMoreHooks.DisableAnyNotificationBlockHook(lpparam);
-            }
-            if (!mPrefs.getString("system_defaultusb", "none").equals("none")) SystemSettingsMoreHooks.USBConfigSettingsHook(lpparam);
-            if (mPrefs.getBoolean("system_notifimportance")) {
-                SystemNotificationMoreHooks.NotificationImportanceHook(lpparam);
-            }
-            if (mPrefs.getBoolean("system_wifipassword")) {
-                SystemSettingsAndConnectivityHooks.ViewWifiPasswordHook(lpparam);
-            }
-        }
-
-        if (pkg.startsWith("com.google.android.inputmethod")) {
-            if (mPrefs.getInt("various_gboardpadding_port", 0) > 0 || mPrefs.getInt("various_gboardpadding_land", 0) > 0) Various.GboardPaddingHook(lpparam);
-        }
-
-        if (pkg.equals("com.miui.packageinstaller")) {
-//            Legacy MIUI signature hook remains intentionally disabled.
-            if (mPrefs.getBoolean("various_miuiinstaller")) Various.MiuiPackageInstallerHook(lpparam);
-            if (mPrefs.getBoolean("various_installappinfo")) Various.AppInfoDuringMiuiInstallHook(lpparam);
-        }
-
-        if (pkg.equals("com.miui.screenshot")) {
-//            resHooks.setResReplacement(pkg, "array", "config_forbidenLongScreenshot", R.array.config_forbidenLongScreenshot);
-            if (mPrefs.getBoolean("system_screenshot")) SystemAudioAndVisualAndMoreHooks.ScreenshotConfigHook(lpparam);
-            if (mPrefs.getInt("system_screenshot_floattime", 0) > 0) SystemAudioAndVisualAndMoreHooks.ScreenshotFloatTimeHook(lpparam);
-        }
-
-        if (pkg.equals("com.miui.gallery")) {
-            int folder = mPrefs.getStringAsInt("system_gallery_screenshots_path", 1);
-            if (folder > 1) {
-                SystemAudioAndVisualAndMoreHooks.GalleryScreenshotPathHook(lpparam);
-            }
-        }
+        PackageInstallerRouter.install(pkg, lpparam);
 
         final boolean isMIUILauncherPkg = pkg.equals("com.miui.home");
         final boolean isLauncherPkg = isMIUILauncherPkg || pkg.equals("com.mi.android.globallauncher");
