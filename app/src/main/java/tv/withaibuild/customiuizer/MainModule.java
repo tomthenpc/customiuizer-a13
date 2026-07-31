@@ -3,7 +3,6 @@ package tv.withaibuild.customiuizer;
 import android.app.Application;
 import android.content.Context;
 import android.content.SharedPreferences;
-import android.content.SharedPreferences.OnSharedPreferenceChangeListener;
 import android.os.Build;
 import android.provider.Settings;
 import android.widget.LinearLayout;
@@ -61,6 +60,7 @@ import tv.withaibuild.customiuizer.mods.utils.ModuleHelper;
 import tv.withaibuild.customiuizer.mods.utils.ResourceHooks;
 import tv.withaibuild.customiuizer.mods.utils.XposedHelpers;
 import tv.withaibuild.customiuizer.utils.PrefMap;
+import tv.withaibuild.customiuizer.utils.PreferenceBootstrap;
 
 public class MainModule extends XposedModule {
 
@@ -68,13 +68,11 @@ public class MainModule extends XposedModule {
     public static ResourceHooks resHooks = new ResourceHooks();
     String processName;
 
-    SharedPreferences remotePrefs;
-
-    OnSharedPreferenceChangeListener mListener;
-
-    private boolean prefsLoaded;
-    private boolean emptyPrefsReported;
-    private boolean prefsWatcherRegistered;
+    private final PreferenceBootstrap preferenceBootstrap = new PreferenceBootstrap(
+        this::getRemotePreferences,
+        ModuleHelper.prefsName + "_remote",
+        MainModule.mPrefs
+    );
 
     @Override
     public void onModuleLoaded(@NonNull XposedModuleInterface.ModuleLoadedParam param) {
@@ -92,26 +90,11 @@ public class MainModule extends XposedModule {
     }
 
     private SharedPreferences getRemotePrefs() {
-        if (remotePrefs == null) remotePrefs = getRemotePreferences(ModuleHelper.prefsName + "_remote");
-        return remotePrefs;
+        return preferenceBootstrap.resolveRemote();
     }
 
-    private void initPrefs() {
-        if (prefsLoaded) return;
-        initPrefs(getRemotePrefs().getAll());
-    }
-
-    private void initPrefs(Map<String, ?> allPrefs) {
-        if (prefsLoaded) return;
-        if (allPrefs == null || allPrefs.isEmpty()) {
-            if (!emptyPrefsReported) {
-                emptyPrefsReported = true;
-                XposedHelpers.log("Empty preferences!");
-            }
-            return;
-        }
-        mPrefs.putAll(allPrefs);
-        prefsLoaded = true;
+    private PreferenceBootstrap.State initPrefs() {
+        return preferenceBootstrap.start();
     }
 
     private boolean isPrefEnabled(SharedPreferences prefs, String key) {
@@ -177,48 +160,7 @@ public class MainModule extends XposedModule {
     }
 
     private void watchPreferenceChange() {
-        if (prefsWatcherRegistered) return;
-
-        mListener = new SharedPreferences.OnSharedPreferenceChangeListener() {
-            @Override
-            public void onSharedPreferenceChanged(SharedPreferences sharedPreferences, @Nullable String key) {
-                if (key == null) return;
-                Object val;
-                if (sharedPreferences.contains(key)) {
-                    Object oldVal = mPrefs.get(key);
-                    if (oldVal instanceof Boolean) {
-                        val = sharedPreferences.getBoolean(key, false);
-                    } else if (oldVal instanceof Integer) {
-                        val = sharedPreferences.getInt(key, 0);
-                    } else if (oldVal instanceof Long) {
-                        val = sharedPreferences.getLong(key, 0L);
-                    } else if (oldVal instanceof Float) {
-                        val = sharedPreferences.getFloat(key, 0f);
-                    } else if (oldVal instanceof String) {
-                        val = sharedPreferences.getString(key, null);
-                    } else if (oldVal instanceof Set) {
-                        val = sharedPreferences.getStringSet(key, null);
-                    } else {
-                        val = sharedPreferences.getAll().get(key);
-                    }
-                } else {
-                    val = null;
-                }
-                if (val == null) {
-                    mPrefs.remove(key);
-                } else {
-                    mPrefs.put(key, val);
-                }
-                if (!"pref_key_systemui_restart_time".equals(key)) {
-                    ModuleHelper.handlePreferenceChanged(key);
-                }
-            }
-        };
-        if (remotePrefs == null) {
-            remotePrefs = getRemotePreferences(ModuleHelper.prefsName + "_remote");
-        }
-        remotePrefs.registerOnSharedPreferenceChangeListener(mListener);
-        prefsWatcherRegistered = true;
+        preferenceBootstrap.ensureWatcher();
     }
 
     @Override
@@ -317,9 +259,8 @@ public class MainModule extends XposedModule {
         }
 
         SharedPreferences remote = getRemotePrefs();
-        if (!needLoadPrefs(pkg, remote)) return;
-        Map<String, ?> allPrefs = remote.getAll();
-        initPrefs(allPrefs);
+        if (remote == null || !needLoadPrefs(pkg, remote)) return;
+        initPrefs();
 
         if (pkg.equals("android") || pkg.equals("com.android.systemui")) {
             if (mPrefs.getInt("system_statusbarheight", 19) > 19) SystemStatusBarAndClockHooks.StatusBarHeightRes();
