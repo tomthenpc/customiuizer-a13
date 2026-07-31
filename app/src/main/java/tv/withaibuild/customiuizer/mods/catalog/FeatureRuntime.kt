@@ -8,7 +8,7 @@ import tv.withaibuild.customiuizer.utils.PrefMap
  * installer.
  *
  * A single [FeatureRuntime] is created per host process and reused for every
- * [FeatureCatalog.installById] call so the [HookTargetResolver] cache is shared
+ * [FeatureDispatcher.installById] call so the [HookTargetResolver] cache is shared
  * across features in the same process.
  *
  * The [HookTargetResolver] is created lazily: if no catalog feature is requested
@@ -21,5 +21,8 @@ class FeatureRuntime(
     val classLoader: ClassLoader,
     val prefs: PrefMap<String, Any?>
 ) {
-    val resolver: HookTargetResolver by lazy { HookTargetResolver(classLoader) }
+    private val resolverLazy = lazy(LazyThreadSafetyMode.NONE) { HookTargetResolver(classLoader) }
+    val resolver: HookTargetResolver by resolverLazy
+
+    internal fun isResolverInitialized(): Boolean = resolverLazy.isInitialized()
 }

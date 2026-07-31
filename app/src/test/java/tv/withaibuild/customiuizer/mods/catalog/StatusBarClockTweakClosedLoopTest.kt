@@ -46,7 +46,7 @@ class StatusBarClockTweakClosedLoopTest {
                 else -> null
             }
         } as PackageReadyParam
-        return FeatureCatalog.createRuntime("com.android.systemui", lpparam, classLoader, prefs)
+        return FeatureDispatcher.createRuntime("com.android.systemui", lpparam, classLoader, prefs)
     }
 
     @Test
@@ -57,7 +57,7 @@ class StatusBarClockTweakClosedLoopTest {
 
         val systemui = runtime(prefs)
 
-        assertTrue(FeatureCatalog.installById("statusBarClockTweak", systemui))
+        assertTrue(FeatureDispatcher.installById("statusBarClockTweak", systemui))
 
         val summary = DiagnosticRecorder.summarize()[DiagnosticIds.STATUSBAR_CLOCK_TWEAK]
         assertNotNull(summary)
@@ -69,20 +69,15 @@ class StatusBarClockTweakClosedLoopTest {
     }
 
     @Test
-    fun fullLoop_disabledDoesNotRecordRequested() {
+    fun fullLoop_disabledCreatesNoRuntimeState() {
         val prefs = PrefMap<String, Any?>()
 
         val systemui = runtime(prefs)
 
-        assertFalse(FeatureCatalog.installById("statusBarClockTweak", systemui))
+        assertFalse(FeatureDispatcher.installById("statusBarClockTweak", systemui))
 
-        val summary = DiagnosticRecorder.summarize()[DiagnosticIds.STATUSBAR_CLOCK_TWEAK]
-        assertNotNull(summary)
-        assertEquals(tv.withaibuild.customiuizer.mods.diagnostics.EnabledState.DISABLED, summary!!.enabled)
-        assertEquals(null, summary.compatibility)
-        assertEquals(null, summary.installation)
-        assertTrue(logs.any { it.contains("DISABLED") })
-        assertFalse(logs.any { it.contains("REQUESTED") })
+        assertFalse(systemui.isResolverInitialized())
+        assertTrue(DiagnosticRecorder.summarize().isEmpty())
     }
 
     @Test
@@ -105,9 +100,9 @@ class StatusBarClockTweakClosedLoopTest {
                 else -> null
             }
         } as PackageReadyParam
-        val systemui = FeatureCatalog.createRuntime("com.android.systemui", lpparam, classLoader, prefs)
+        val systemui = FeatureDispatcher.createRuntime("com.android.systemui", lpparam, classLoader, prefs)
 
-        assertFalse(FeatureCatalog.installById("statusBarClockTweak", systemui))
+        assertFalse(FeatureDispatcher.installById("statusBarClockTweak", systemui))
 
         val summary = DiagnosticRecorder.summarize()[DiagnosticIds.STATUSBAR_CLOCK_TWEAK]
         assertEquals(CompatibilityState.INCOMPATIBLE, summary!!.compatibility)

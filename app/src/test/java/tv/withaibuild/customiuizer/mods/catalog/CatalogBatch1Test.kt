@@ -11,7 +11,7 @@ import org.junit.Test
 import tv.withaibuild.customiuizer.MainModule
 import tv.withaibuild.customiuizer.mods.diagnostics.DiagnosticIds
 import tv.withaibuild.customiuizer.mods.diagnostics.DiagnosticRecorder
-import tv.withaibuild.customiuizer.mods.diagnostics.EnabledState
+
 import tv.withaibuild.customiuizer.mods.diagnostics.InstallOutcome
 import tv.withaibuild.customiuizer.mods.diagnostics.ReasonCode
 import tv.withaibuild.customiuizer.mods.utils.XposedHelpers
@@ -37,7 +37,7 @@ class CatalogBatch1Test {
         MainModule.mPrefs = prefs as PrefMap<String, Any>
         val classLoader = this.javaClass.classLoader!!
         val lpparam = newSystemServerParam(classLoader)
-        return FeatureCatalog.createRuntime("android", lpparam, classLoader, prefs)
+        return FeatureDispatcher.createRuntime("android", lpparam, classLoader, prefs)
     }
 
     private fun systemuiRuntime(prefs: PrefMap<String, Any?>): FeatureRuntime {
@@ -45,7 +45,7 @@ class CatalogBatch1Test {
         MainModule.mPrefs = prefs as PrefMap<String, Any>
         val classLoader = this.javaClass.classLoader!!
         val lpparam = newPackageReadyParam("com.android.systemui", classLoader)
-        return FeatureCatalog.createRuntime("com.android.systemui", lpparam, classLoader, prefs)
+        return FeatureDispatcher.createRuntime("com.android.systemui", lpparam, classLoader, prefs)
     }
 
     private fun launcherRuntime(
@@ -56,18 +56,17 @@ class CatalogBatch1Test {
         MainModule.mPrefs = prefs as PrefMap<String, Any>
         val classLoader = this.javaClass.classLoader!!
         val lpparam = newPackageReadyParam(packageName, classLoader)
-        return FeatureCatalog.createRuntime(packageName, lpparam, classLoader, prefs)
+        return FeatureDispatcher.createRuntime(packageName, lpparam, classLoader, prefs)
     }
 
     @Test
     fun screenDimTime_disabled() {
         val server = serverRuntime(PrefMap())
 
-        assertFalse(FeatureCatalog.installById("screenDimTime", server))
+        assertFalse(FeatureDispatcher.installById("screenDimTime", server))
 
-        val summary = DiagnosticRecorder.summarize()[DiagnosticIds.SCREEN_DIM_TIME]
-        assertNotNull(summary)
-        assertEquals(EnabledState.DISABLED, summary!!.enabled)
+        assertFalse(server.isResolverInitialized())
+        assertTrue(DiagnosticRecorder.summarize().isEmpty())
     }
 
     @Test
@@ -76,7 +75,7 @@ class CatalogBatch1Test {
         prefs["pref_key_system_dimtime"] = 15000
         val server = serverRuntime(prefs)
 
-        assertTrue(FeatureCatalog.installById("screenDimTime", server))
+        assertTrue(FeatureDispatcher.installById("screenDimTime", server))
 
         val summary = DiagnosticRecorder.summarize()[DiagnosticIds.SCREEN_DIM_TIME]
         assertNotNull(summary)
@@ -90,7 +89,7 @@ class CatalogBatch1Test {
         prefs["pref_key_system_firstpress"] = true
         val server = serverRuntime(prefs)
 
-        assertTrue(FeatureCatalog.installById("firstVolumePress", server))
+        assertTrue(FeatureDispatcher.installById("firstVolumePress", server))
 
         val summary = DiagnosticRecorder.summarize()[DiagnosticIds.FIRST_VOLUME_PRESS]
         assertNotNull(summary)
@@ -104,7 +103,7 @@ class CatalogBatch1Test {
         prefs["pref_key_system_networkindicator_wifi"] = true
         val systemui = systemuiRuntime(prefs)
 
-        assertTrue(FeatureCatalog.installById("networkIndicatorWifi", systemui))
+        assertTrue(FeatureDispatcher.installById("networkIndicatorWifi", systemui))
 
         val summary = DiagnosticRecorder.summarize()[DiagnosticIds.NETWORK_INDICATOR_WIFI]
         assertNotNull(summary)
@@ -118,7 +117,7 @@ class CatalogBatch1Test {
         prefs["pref_key_system_mutevisiblenotif"] = true
         val systemui = systemuiRuntime(prefs)
 
-        assertTrue(FeatureCatalog.installById("muteVisibleNotifications", systemui))
+        assertTrue(FeatureDispatcher.installById("muteVisibleNotifications", systemui))
 
         val summary = DiagnosticRecorder.summarize()[DiagnosticIds.MUTE_VISIBLE_NOTIFICATIONS]
         assertNotNull(summary)
@@ -132,7 +131,7 @@ class CatalogBatch1Test {
         prefs["pref_key_launcher_hidetitles"] = true
         val launcher = launcherRuntime(prefs)
 
-        assertTrue(FeatureCatalog.installById("hideLauncherTitles", launcher))
+        assertTrue(FeatureDispatcher.installById("hideLauncherTitles", launcher))
 
         val summary = DiagnosticRecorder.summarize()[DiagnosticIds.HIDE_LAUNCHER_TITLES]
         assertNotNull(summary)
@@ -146,7 +145,7 @@ class CatalogBatch1Test {
         prefs["pref_key_launcher_fixlaunch"] = true
         val launcher = launcherRuntime(prefs, packageName = "com.miui.home")
 
-        assertTrue(FeatureCatalog.installById("fixAppInfoLaunch", launcher))
+        assertTrue(FeatureDispatcher.installById("fixAppInfoLaunch", launcher))
 
         val summary = DiagnosticRecorder.summarize()[DiagnosticIds.FIX_APP_INFO_LAUNCH]
         assertNotNull(summary)
@@ -161,7 +160,7 @@ class CatalogBatch1Test {
         prefs["pref_key_launcher_fixlaunch"] = true
         val launcher = launcherRuntime(prefs, packageName = "com.mi.android.globallauncher")
 
-        assertTrue(FeatureCatalog.installById("fixAppInfoLaunch", launcher))
+        assertTrue(FeatureDispatcher.installById("fixAppInfoLaunch", launcher))
 
         val summary = DiagnosticRecorder.summarize()[DiagnosticIds.FIX_APP_INFO_LAUNCH]
         assertNotNull(summary)
@@ -179,9 +178,9 @@ class CatalogBatch1Test {
         MainModule.mPrefs = prefs as PrefMap<String, Any>
         val classLoader = ClassLoader.getSystemClassLoader().parent
         val lpparam = newSystemServerParam(classLoader)
-        val server = FeatureCatalog.createRuntime("android", lpparam, classLoader, prefs)
+        val server = FeatureDispatcher.createRuntime("android", lpparam, classLoader, prefs)
 
-        assertFalse(FeatureCatalog.installById("screenDimTime", server))
+        assertFalse(FeatureDispatcher.installById("screenDimTime", server))
 
         val summary = DiagnosticRecorder.summarize()[DiagnosticIds.SCREEN_DIM_TIME]
         assertNotNull(summary)
@@ -208,9 +207,9 @@ class CatalogBatch1Test {
         @Suppress("UNCHECKED_CAST")
         MainModule.mPrefs = prefs as PrefMap<String, Any>
         val classLoader = this.javaClass.classLoader!!
-        val launcher = FeatureCatalog.createRuntime("com.miui.home", throwingLpparam, classLoader, prefs)
+        val launcher = FeatureDispatcher.createRuntime("com.miui.home", throwingLpparam, classLoader, prefs)
 
-        assertFalse(FeatureCatalog.installById("hideLauncherTitles", launcher))
+        assertFalse(FeatureDispatcher.installById("hideLauncherTitles", launcher))
 
         val summary = DiagnosticRecorder.summarize()[DiagnosticIds.HIDE_LAUNCHER_TITLES]
         assertNotNull(summary)

@@ -13,7 +13,7 @@ import org.junit.Test
 import tv.withaibuild.customiuizer.MainModule
 import tv.withaibuild.customiuizer.mods.diagnostics.DiagnosticIds
 import tv.withaibuild.customiuizer.mods.diagnostics.DiagnosticRecorder
-import tv.withaibuild.customiuizer.mods.diagnostics.EnabledState
+
 import tv.withaibuild.customiuizer.mods.diagnostics.InstallOutcome
 import tv.withaibuild.customiuizer.mods.utils.XposedHelpers
 import tv.withaibuild.customiuizer.utils.FakeXposedInterface
@@ -38,7 +38,7 @@ class CatalogBatch2Test {
         MainModule.mPrefs = prefs as PrefMap<String, Any>
         val classLoader = this.javaClass.classLoader!!
         val lpparam = newSystemServerParam(classLoader)
-        return FeatureCatalog.createRuntime("android", lpparam, classLoader, prefs)
+        return FeatureDispatcher.createRuntime("android", lpparam, classLoader, prefs)
     }
 
     private fun systemuiRuntime(prefs: PrefMap<String, Any?>): FeatureRuntime {
@@ -46,7 +46,7 @@ class CatalogBatch2Test {
         MainModule.mPrefs = prefs as PrefMap<String, Any>
         val classLoader = this.javaClass.classLoader!!
         val lpparam = newPackageReadyParam("com.android.systemui", classLoader)
-        return FeatureCatalog.createRuntime("com.android.systemui", lpparam, classLoader, prefs)
+        return FeatureDispatcher.createRuntime("com.android.systemui", lpparam, classLoader, prefs)
     }
 
     private fun launcherRuntime(prefs: PrefMap<String, Any?>): FeatureRuntime {
@@ -54,18 +54,17 @@ class CatalogBatch2Test {
         MainModule.mPrefs = prefs as PrefMap<String, Any>
         val classLoader = this.javaClass.classLoader!!
         val lpparam = newPackageReadyParam("com.miui.home", classLoader)
-        return FeatureCatalog.createRuntime("com.miui.home", lpparam, classLoader, prefs)
+        return FeatureDispatcher.createRuntime("com.miui.home", lpparam, classLoader, prefs)
     }
 
     @Test
     fun hideProximityWarning_disabled() {
         val server = serverRuntime(PrefMap())
 
-        assertFalse(FeatureCatalog.installById("hideProximityWarning", server))
+        assertFalse(FeatureDispatcher.installById("hideProximityWarning", server))
 
-        val summary = DiagnosticRecorder.summarize()[DiagnosticIds.HIDE_PROXIMITY_WARNING]
-        assertNotNull(summary)
-        assertEquals(EnabledState.DISABLED, summary!!.enabled)
+        assertFalse(server.isResolverInitialized())
+        assertTrue(DiagnosticRecorder.summarize().isEmpty())
     }
 
     @Test
@@ -74,7 +73,7 @@ class CatalogBatch2Test {
         prefs["pref_key_system_hideproxywarn"] = true
         val server = serverRuntime(prefs)
 
-        assertTrue(FeatureCatalog.installById("hideProximityWarning", server))
+        assertTrue(FeatureDispatcher.installById("hideProximityWarning", server))
 
         val summary = DiagnosticRecorder.summarize()[DiagnosticIds.HIDE_PROXIMITY_WARNING]
         assertNotNull(summary)
@@ -88,7 +87,7 @@ class CatalogBatch2Test {
         prefs["pref_key_system_clearalltasks"] = true
         val server = serverRuntime(prefs)
 
-        assertTrue(FeatureCatalog.installById("clearAllTasks", server))
+        assertTrue(FeatureDispatcher.installById("clearAllTasks", server))
 
         val summary = DiagnosticRecorder.summarize()[DiagnosticIds.CLEAR_ALL_TASKS]
         assertNotNull(summary)
@@ -102,7 +101,7 @@ class CatalogBatch2Test {
         prefs["pref_key_system_removedismiss"] = true
         val systemui = systemuiRuntime(prefs)
 
-        assertTrue(FeatureCatalog.installById("hideDismissView", systemui))
+        assertTrue(FeatureDispatcher.installById("hideDismissView", systemui))
 
         val summary = DiagnosticRecorder.summarize()[DiagnosticIds.HIDE_DISMISS_VIEW]
         assertNotNull(summary)
@@ -116,7 +115,7 @@ class CatalogBatch2Test {
         prefs["pref_key_system_hidelshint"] = true
         val systemui = systemuiRuntime(prefs)
 
-        assertTrue(FeatureCatalog.installById("hideLockScreenHint", systemui))
+        assertTrue(FeatureDispatcher.installById("hideLockScreenHint", systemui))
 
         val summary = DiagnosticRecorder.summarize()[DiagnosticIds.HIDE_LOCK_SCREEN_HINT]
         assertNotNull(summary)
@@ -130,7 +129,7 @@ class CatalogBatch2Test {
         prefs["pref_key_launcher_folder_cols"] = 4
         val launcher = launcherRuntime(prefs)
 
-        assertTrue(FeatureCatalog.installById("folderColumns", launcher))
+        assertTrue(FeatureDispatcher.installById("folderColumns", launcher))
 
         val summary = DiagnosticRecorder.summarize()[DiagnosticIds.FOLDER_COLUMNS]
         assertNotNull(summary)
@@ -144,7 +143,7 @@ class CatalogBatch2Test {
         prefs["pref_key_launcher_titletopmargin"] = 20
         val launcher = launcherRuntime(prefs)
 
-        assertTrue(FeatureCatalog.installById("titleTopMargin", launcher))
+        assertTrue(FeatureDispatcher.installById("titleTopMargin", launcher))
 
         val summary = DiagnosticRecorder.summarize()[DiagnosticIds.TITLE_TOP_MARGIN]
         assertNotNull(summary)
@@ -161,9 +160,9 @@ class CatalogBatch2Test {
         MainModule.mPrefs = prefs as PrefMap<String, Any>
         val classLoader = ClassLoader.getSystemClassLoader().parent
         val lpparam = newPackageReadyParam("com.miui.home", classLoader)
-        val launcher = FeatureCatalog.createRuntime("com.miui.home", lpparam, classLoader, prefs)
+        val launcher = FeatureDispatcher.createRuntime("com.miui.home", lpparam, classLoader, prefs)
 
-        assertFalse(FeatureCatalog.installById("folderColumns", launcher))
+        assertFalse(FeatureDispatcher.installById("folderColumns", launcher))
 
         val summary = DiagnosticRecorder.summarize()[DiagnosticIds.FOLDER_COLUMNS]
         assertNotNull(summary)

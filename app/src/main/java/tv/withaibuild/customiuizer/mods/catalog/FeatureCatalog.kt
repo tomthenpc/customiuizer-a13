@@ -2,7 +2,6 @@ package tv.withaibuild.customiuizer.mods.catalog
 
 import io.github.libxposed.api.XposedModuleInterface.PackageReadyParam
 import io.github.libxposed.api.XposedModuleInterface.SystemServerStartingParam
-import tv.withaibuild.customiuizer.MainModule
 import tv.withaibuild.customiuizer.mods.PackagePermissions
 import tv.withaibuild.customiuizer.mods.SystemAudioAndVisualAndMoreHooks
 import tv.withaibuild.customiuizer.mods.SystemDisplayAndWindowHooks
@@ -11,7 +10,6 @@ import tv.withaibuild.customiuizer.mods.SystemNotificationMoreHooks
 import tv.withaibuild.customiuizer.mods.SystemStatusBarClockAndMoreHooks
 import tv.withaibuild.customiuizer.mods.SystemStatusBarMoreHooks
 import tv.withaibuild.customiuizer.mods.SystemUIBatteryHooks
-import tv.withaibuild.customiuizer.mods.SystemUIScreenshotHooks
 import tv.withaibuild.customiuizer.mods.SystemUINotificationHooks
 import tv.withaibuild.customiuizer.mods.SystemUIStatusBarHooks
 import tv.withaibuild.customiuizer.mods.LauncherAnimationHooks
@@ -21,28 +19,20 @@ import tv.withaibuild.customiuizer.mods.LauncherLayoutHooks
 import tv.withaibuild.customiuizer.mods.LauncherSystemHooks
 import tv.withaibuild.customiuizer.mods.diagnostics.DiagnosticIds
 import tv.withaibuild.customiuizer.mods.diagnostics.DiagnosticRecorder
-import tv.withaibuild.customiuizer.mods.diagnostics.EnabledState
 import tv.withaibuild.customiuizer.mods.diagnostics.InstallOutcome
-import tv.withaibuild.customiuizer.mods.diagnostics.InstallSummary
 import tv.withaibuild.customiuizer.mods.diagnostics.ReasonCode
-import tv.withaibuild.customiuizer.mods.utils.HookInstaller
-import tv.withaibuild.customiuizer.utils.PrefMap
 
 /**
  * Static, type-safe feature directory.
  *
- * [FeatureCatalog] holds [FeatureSpec] declarations and drives the install
- * lifecycle for each feature:
- *
- *     disabled / requested → compatibility resolution
- *     → dispatched / installed / degraded / failed → diagnostic snapshot
- *
- * [MainModule] preserves the original call order by invoking the catalog at
- * the same positions where the migrated hooks used to be called directly.
+ * [FeatureCatalog] holds [FeatureSpec] declarations for documentation,
+ * schema validation and audit. Runtime dispatch has been split into
+ * [FeatureDispatcher] so the spec list is only built when explicitly
+ * requested.
  */
 object FeatureCatalog {
 
-    private val features by lazy { listOf(
+    private val auditSpecs by lazy(LazyThreadSafetyMode.NONE) { listOf(
         FeatureSpec(
             contract = CanaryContracts.packagePermissions,
             id = "packagePermissions",
@@ -569,174 +559,9 @@ object FeatureCatalog {
         )
     ) }
 
-    private val byId by lazy { features.associateBy { it.id } }
-
-    /**
-     * Create a [FeatureRuntime] for a host process.
-     *
-     * The runtime and its [HookTargetResolver] are reused for every
-     * [installById] call in the same process.
-     */
-    @JvmStatic
-    fun createRuntime(
-        processName: String,
-        lpparam: Any,
-        classLoader: ClassLoader,
-        prefs: PrefMap<String, Any?>
-    ): FeatureRuntime = FeatureRuntime(processName, lpparam, classLoader, prefs)
-
-    /**
-     * Install a single feature by its stable [id] using a reusable [runtime].
-     *
-     * - Returns `true` only when the feature is requested, compatible/degraded,
-     *   and the installer returned an outcome (DISPATCHED, INSTALLED or DEGRADED).
-     * - Returns `false` when disabled, incompatible, or the installer threw.
-     * - A thrown installer is recorded as FAILED and does not affect subsequent
-     *   calls to [installById] for other features.
-     */
-    @JvmStatic
-    fun installById(featureId: String, runtime: FeatureRuntime): Boolean {
-        val feature = byId[featureId] ?: return false
-        if (!feature.processTarget.matches(runtime.processName)) {
-            return false
-        }
-
-        val enabled = if (feature.condition(runtime.prefs)) EnabledState.REQUESTED else EnabledState.DISABLED
-        if (enabled == EnabledState.DISABLED) {
-            DiagnosticRecorder.record(
-                feature.diagnosticId,
-                enabled = enabled,
-                reasonCode = ReasonCode.PREFERENCE_DISABLED
-            )
-            return false
-        }
-
-        DiagnosticRecorder.record(
-            feature.diagnosticId,
-            enabled = enabled,
-            reasonCode = ReasonCode.REQUESTED
-        )
-
-        val contract = feature.contract
-        return if (contract != null) {
-            installWithContract(feature, runtime, contract)
-        } else {
-            installWithLegacyCheck(feature, runtime)
-        }
-    }
-
-    private fun installWithContract(
-        feature: FeatureSpec,
-        runtime: FeatureRuntime,
-        contract: tv.withaibuild.customiuizer.mods.utils.HookTargetContract
-    ): Boolean {
-        val (compat, compatResult) = runtime.resolver.evaluateContract(contract, feature.diagnosticId)
-
-        DiagnosticRecorder.record(
-            feature.diagnosticId,
-            compatibility = compat,
-            reasonCode = compatResult.reasonCode,
-            detail = compatResult.detail
-        )
-
-        if (compat == CompatibilityState.INCOMPATIBLE) {
-            DiagnosticRecorder.record(
-                feature.diagnosticId,
-                installation = InstallOutcome.FAILED,
-                reasonCode = ReasonCode.TARGET_NOT_FOUND,
-                detail = compatResult.detail
-            )
-            return false
-        }
-
-        return try {
-            val result = HookInstaller.withSession(
-                resolver = runtime.resolver,
-                contract = contract,
-                diagnosticId = feature.diagnosticId,
-                classLoader = runtime.classLoader,
-                compatibilityResult = compatResult
-            ) {
-                feature.installer(runtime)
-            }
-
-            val summary = InstallSummary(
-                requiredInstalled = result.requiredInstalled,
-                requiredTotal = result.requiredTotal,
-                optionalInstalled = result.optionalInstalled,
-                optionalTotal = result.optionalTotal,
-                fallbackUsed = result.fallbackUsed,
-                installation = result.installation ?: InstallOutcome.FAILED,
-                reasonCode = result.reasonCode
-            )
-
-            DiagnosticRecorder.record(
-                feature.diagnosticId,
-                installation = result.installation,
-                reasonCode = result.reasonCode,
-                detail = result.detail,
-                installSummary = summary
-            )
-            result.installation != InstallOutcome.FAILED
-        } catch (t: Throwable) {
-            DiagnosticRecorder.record(
-                feature.diagnosticId,
-                installation = InstallOutcome.FAILED,
-                reasonCode = ReasonCode.INSTALLER_FAILED,
-                detail = t.javaClass.name,
-                throwable = t
-            )
-            false
-        }
-    }
-
-    private fun installWithLegacyCheck(feature: FeatureSpec, runtime: FeatureRuntime): Boolean {
-        val compat = feature.compatibilityCheck(runtime)
-
-        return when (compat) {
-            CompatibilityState.COMPATIBLE,
-            CompatibilityState.DEGRADED -> {
-                try {
-                    val outcome = feature.installer(runtime)
-                    DiagnosticRecorder.record(
-                        feature.diagnosticId,
-                        installation = outcome,
-                        reasonCode = if (outcome == InstallOutcome.INSTALLED) {
-                            ReasonCode.INSTALLER_SUCCEEDED
-                        } else {
-                            ReasonCode.INSTALLER_DISPATCHED
-                        },
-                        detail = if (outcome == InstallOutcome.DISPATCHED) {
-                            "legacy unit installer"
-                        } else null
-                    )
-                    outcome != InstallOutcome.FAILED
-                } catch (t: Throwable) {
-                    DiagnosticRecorder.record(
-                        feature.diagnosticId,
-                        installation = InstallOutcome.FAILED,
-                        reasonCode = ReasonCode.INSTALLER_FAILED,
-                        detail = t.javaClass.name,
-                        throwable = t
-                    )
-                    false
-                }
-            }
-            CompatibilityState.INCOMPATIBLE -> {
-                DiagnosticRecorder.record(
-                    feature.diagnosticId,
-                    installation = InstallOutcome.FAILED,
-                    reasonCode = ReasonCode.TARGET_NOT_FOUND,
-                    detail = runtime.resolver.lastResolution(feature.diagnosticId)?.failures?.joinToString(", ")
-                )
-                false
-            }
-        }
-    }
-
     /**
      * Returns a snapshot of the specs for documentation and audit.
      */
     @JvmStatic
-    fun specs(): List<FeatureSpec> = features
+    fun specs(): List<FeatureSpec> = auditSpecs
 }

@@ -11,7 +11,7 @@ import org.junit.Test
 import tv.withaibuild.customiuizer.MainModule
 import tv.withaibuild.customiuizer.mods.diagnostics.DiagnosticIds
 import tv.withaibuild.customiuizer.mods.diagnostics.DiagnosticRecorder
-import tv.withaibuild.customiuizer.mods.diagnostics.EnabledState
+
 import tv.withaibuild.customiuizer.mods.diagnostics.InstallOutcome
 import tv.withaibuild.customiuizer.mods.utils.XposedHelpers
 import tv.withaibuild.customiuizer.utils.FakeXposedInterface
@@ -36,7 +36,7 @@ class CatalogBatch3Test {
         MainModule.mPrefs = prefs as PrefMap<String, Any>
         val classLoader = this.javaClass.classLoader!!
         val lpparam = newSystemServerParam(classLoader)
-        return FeatureCatalog.createRuntime("android", lpparam, classLoader, prefs)
+        return FeatureDispatcher.createRuntime("android", lpparam, classLoader, prefs)
     }
 
     private fun systemuiRuntime(prefs: PrefMap<String, Any?>): FeatureRuntime {
@@ -44,7 +44,7 @@ class CatalogBatch3Test {
         MainModule.mPrefs = prefs as PrefMap<String, Any>
         val classLoader = this.javaClass.classLoader!!
         val lpparam = newPackageReadyParam("com.android.systemui", classLoader)
-        return FeatureCatalog.createRuntime("com.android.systemui", lpparam, classLoader, prefs)
+        return FeatureDispatcher.createRuntime("com.android.systemui", lpparam, classLoader, prefs)
     }
 
     private fun launcherRuntime(
@@ -55,18 +55,17 @@ class CatalogBatch3Test {
         MainModule.mPrefs = prefs as PrefMap<String, Any>
         val classLoader = this.javaClass.classLoader!!
         val lpparam = newPackageReadyParam(packageName, classLoader)
-        return FeatureCatalog.createRuntime(packageName, lpparam, classLoader, prefs)
+        return FeatureDispatcher.createRuntime(packageName, lpparam, classLoader, prefs)
     }
 
     @Test
     fun noLightUpOnCharge_disabled() {
         val server = serverRuntime(PrefMap())
 
-        assertFalse(FeatureCatalog.installById("noLightUpOnCharge", server))
+        assertFalse(FeatureDispatcher.installById("noLightUpOnCharge", server))
 
-        val summary = DiagnosticRecorder.summarize()[DiagnosticIds.NO_LIGHT_UP_ON_CHARGE]
-        assertNotNull(summary)
-        assertEquals(EnabledState.DISABLED, summary!!.enabled)
+        assertFalse(server.isResolverInitialized())
+        assertTrue(DiagnosticRecorder.summarize().isEmpty())
     }
 
     @Test
@@ -75,7 +74,7 @@ class CatalogBatch3Test {
         prefs["pref_key_system_nolightuponcharges"] = "2"
         val server = serverRuntime(prefs)
 
-        assertTrue(FeatureCatalog.installById("noLightUpOnCharge", server))
+        assertTrue(FeatureDispatcher.installById("noLightUpOnCharge", server))
 
         val summary = DiagnosticRecorder.summarize()[DiagnosticIds.NO_LIGHT_UP_ON_CHARGE]
         assertNotNull(summary)
@@ -89,7 +88,7 @@ class CatalogBatch3Test {
         prefs["pref_key_system_allrotations2"] = "2"
         val server = serverRuntime(prefs)
 
-        assertTrue(FeatureCatalog.installById("allRotations", server))
+        assertTrue(FeatureDispatcher.installById("allRotations", server))
 
         val summary = DiagnosticRecorder.summarize()[DiagnosticIds.ALL_ROTATIONS]
         assertNotNull(summary)
@@ -103,7 +102,7 @@ class CatalogBatch3Test {
         prefs["pref_key_system_nonetspeedseparator"] = true
         val systemui = systemuiRuntime(prefs)
 
-        assertTrue(FeatureCatalog.installById("noNetworkSpeedSeparator", systemui))
+        assertTrue(FeatureDispatcher.installById("noNetworkSpeedSeparator", systemui))
 
         val summary = DiagnosticRecorder.summarize()[DiagnosticIds.NO_NETWORK_SPEED_SEPARATOR]
         assertNotNull(summary)
@@ -117,7 +116,7 @@ class CatalogBatch3Test {
         prefs["pref_key_system_statusbaricons_clock"] = true
         val systemui = systemuiRuntime(prefs)
 
-        assertTrue(FeatureCatalog.installById("hideIconsClock", systemui))
+        assertTrue(FeatureDispatcher.installById("hideIconsClock", systemui))
 
         val summary = DiagnosticRecorder.summarize()[DiagnosticIds.HIDE_ICONS_CLOCK]
         assertNotNull(summary)
@@ -131,7 +130,7 @@ class CatalogBatch3Test {
         prefs["pref_key_launcher_nounlockanim"] = true
         val launcher = launcherRuntime(prefs)
 
-        assertTrue(FeatureCatalog.installById("noUnlockAnimation", launcher))
+        assertTrue(FeatureDispatcher.installById("noUnlockAnimation", launcher))
 
         val summary = DiagnosticRecorder.summarize()[DiagnosticIds.NO_UNLOCK_ANIMATION]
         assertNotNull(summary)
@@ -148,9 +147,9 @@ class CatalogBatch3Test {
         MainModule.mPrefs = prefs as PrefMap<String, Any>
         val classLoader = ClassLoader.getSystemClassLoader().parent
         val lpparam = newPackageReadyParam("com.android.systemui", classLoader)
-        val systemui = FeatureCatalog.createRuntime("com.android.systemui", lpparam, classLoader, prefs)
+        val systemui = FeatureDispatcher.createRuntime("com.android.systemui", lpparam, classLoader, prefs)
 
-        assertFalse(FeatureCatalog.installById("hideIconsClock", systemui))
+        assertFalse(FeatureDispatcher.installById("hideIconsClock", systemui))
 
         val summary = DiagnosticRecorder.summarize()[DiagnosticIds.HIDE_ICONS_CLOCK]
         assertNotNull(summary)

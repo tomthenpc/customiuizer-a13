@@ -12,9 +12,7 @@ import tv.withaibuild.customiuizer.MainModule
 import tv.withaibuild.customiuizer.mods.catalog.CompatibilityState
 import tv.withaibuild.customiuizer.mods.diagnostics.DiagnosticIds
 import tv.withaibuild.customiuizer.mods.diagnostics.DiagnosticRecorder
-import tv.withaibuild.customiuizer.mods.diagnostics.EnabledState
 import tv.withaibuild.customiuizer.mods.diagnostics.InstallOutcome
-import tv.withaibuild.customiuizer.mods.diagnostics.ReasonCode
 import tv.withaibuild.customiuizer.mods.utils.XposedHelpers
 import tv.withaibuild.customiuizer.utils.FakeXposedInterface
 import tv.withaibuild.customiuizer.utils.PrefMap
@@ -44,36 +42,41 @@ class FeatureCatalogTest {
             "android" -> newSystemServerParam(classLoader)
             else -> newPackageReadyParam(processName, classLoader)
         }
-        return FeatureCatalog.createRuntime(processName, lpparam, classLoader, prefs)
+        return FeatureDispatcher.createRuntime(processName, lpparam, classLoader, prefs)
     }
 
     @Test
     fun processTargetMatchingUsesMatchesNotIdentity() {
         assertTrue(ProcessTarget.SystemUI.matches("com.android.systemui"))
         val systemui = runtime("com.android.systemui")
-        assertFalse(FeatureCatalog.installById("statusBarClockTweak", systemui))
+        assertFalse(FeatureDispatcher.installById("statusBarClockTweak", systemui))
     }
 
     @Test
-    fun disabledFeatureDoesNotRecordRequested() {
+    fun disabledFeatureCreatesNoRuntimeState() {
         val systemui = runtime("com.android.systemui")
 
-        assertFalse(FeatureCatalog.installById("noMoreIcon", systemui))
+        assertFalse(FeatureDispatcher.installById("batteryIndicator", systemui))
 
-        val snapshot = DiagnosticRecorder.summarize()[DiagnosticIds.NO_MORE_ICON]
-        assertNotNull(snapshot)
-        assertEquals(EnabledState.DISABLED, snapshot!!.enabled)
-        assertEquals(null, snapshot.compatibility)
-        assertEquals(null, snapshot.installation)
-        assertTrue(logMessages.any { it.contains("DISABLED") })
-        assertFalse(logMessages.any { it.contains("REQUESTED") })
+        assertFalse(systemui.isResolverInitialized())
+        assertTrue(DiagnosticRecorder.summarize().isEmpty())
+    }
+
+    @Test
+    fun unknownFeatureCreatesNoRuntimeState() {
+        val systemui = runtime("com.android.systemui")
+
+        assertFalse(FeatureDispatcher.installById("unknown", systemui))
+
+        assertFalse(systemui.isResolverInitialized())
+        assertTrue(DiagnosticRecorder.summarize().isEmpty())
     }
 
     @Test
     fun requestedCompatibleAndInstalledAreLoggedOnTransition() {
         val server = runtime("android")
 
-        assertTrue(FeatureCatalog.installById("packagePermissions", server))
+        assertTrue(FeatureDispatcher.installById("packagePermissions", server))
 
         val logStates = logMessages.map { extractState(it) }
         assertEquals(listOf("REQUESTED", "COMPATIBLE", "INSTALLED"), logStates)
@@ -88,7 +91,7 @@ class FeatureCatalogTest {
         prefs["pref_key_system_batteryindicator"] = true
         val systemui = runtime("com.android.systemui", prefs)
 
-        assertTrue(FeatureCatalog.installById("batteryIndicator", systemui))
+        assertTrue(FeatureDispatcher.installById("batteryIndicator", systemui))
 
         val snapshot = DiagnosticRecorder.summarize()[DiagnosticIds.BATTERY_INDICATOR]
         assertEquals(CompatibilityState.COMPATIBLE, snapshot!!.compatibility)
@@ -104,7 +107,7 @@ class FeatureCatalogTest {
         prefs["pref_key_system_cc_hidedate"] = true
         val systemui = runtime("com.android.systemui", prefs)
 
-        assertTrue(FeatureCatalog.installById("statusBarClockTweak", systemui))
+        assertTrue(FeatureDispatcher.installById("statusBarClockTweak", systemui))
 
         val snapshot = DiagnosticRecorder.summarize()[DiagnosticIds.STATUSBAR_CLOCK_TWEAK]
         assertEquals(CompatibilityState.COMPATIBLE, snapshot!!.compatibility)
@@ -121,9 +124,9 @@ class FeatureCatalogTest {
         MainModule.mPrefs = prefs as PrefMap<String, Any>
         val classLoader = ClassLoader.getSystemClassLoader().parent
         val lpparam = newSystemServerParam(classLoader)
-        val server = FeatureCatalog.createRuntime("android", lpparam, classLoader, prefs)
+        val server = FeatureDispatcher.createRuntime("android", lpparam, classLoader, prefs)
 
-        assertFalse(FeatureCatalog.installById("autoBrightnessRange", server))
+        assertFalse(FeatureDispatcher.installById("autoBrightnessRange", server))
 
         val snapshot = DiagnosticRecorder.summarize()[DiagnosticIds.AUTO_BRIGHTNESS_RANGE]
         assertEquals(CompatibilityState.INCOMPATIBLE, snapshot!!.compatibility)
@@ -150,7 +153,7 @@ class FeatureCatalogTest {
         val classLoader = this.javaClass.classLoader!!
         val server = FeatureRuntime("android", throwingLpparam, classLoader, prefs)
 
-        assertFalse(FeatureCatalog.installById("muffledVibration", server))
+        assertFalse(FeatureDispatcher.installById("muffledVibration", server))
 
         val snapshot = DiagnosticRecorder.summarize()[DiagnosticIds.MUFFLED_VIBRATION]
         assertEquals(CompatibilityState.COMPATIBLE, snapshot!!.compatibility)
@@ -177,11 +180,11 @@ class FeatureCatalogTest {
         MainModule.mPrefs = prefs as PrefMap<String, Any>
         val classLoader = this.javaClass.classLoader!!
         val server = FeatureRuntime("android", throwingLpparam, classLoader, prefs)
-        assertFalse(FeatureCatalog.installById("muffledVibration", server))
+        assertFalse(FeatureDispatcher.installById("muffledVibration", server))
 
         // Second: a fresh, working runtime for packagePermissions must still install.
         val goodServer = runtime("android")
-        assertTrue(FeatureCatalog.installById("packagePermissions", goodServer))
+        assertTrue(FeatureDispatcher.installById("packagePermissions", goodServer))
 
         assertEquals(InstallOutcome.FAILED, DiagnosticRecorder.summarize()[DiagnosticIds.MUFFLED_VIBRATION]!!.installation)
         assertEquals(InstallOutcome.INSTALLED, DiagnosticRecorder.summarize()[DiagnosticIds.PACKAGE_PERMISSIONS]!!.installation)
@@ -194,8 +197,8 @@ class FeatureCatalogTest {
         prefs["pref_key_launcher_nowidgetonly"] = true
         val launcher = runtime("com.miui.home", prefs)
 
-        assertTrue(FeatureCatalog.installById("noClockHide", launcher))
-        assertTrue(FeatureCatalog.installById("noWidgetOnly", launcher))
+        assertTrue(FeatureDispatcher.installById("noClockHide", launcher))
+        assertTrue(FeatureDispatcher.installById("noWidgetOnly", launcher))
 
         val noClockHide = DiagnosticRecorder.summarize()[DiagnosticIds.NO_CLOCK_HIDE]
         assertEquals(CompatibilityState.COMPATIBLE, noClockHide!!.compatibility)
@@ -205,7 +208,7 @@ class FeatureCatalogTest {
     @Test
     fun installByIdReturnsFalseForUnknownFeature() {
         val systemui = runtime("com.android.systemui")
-        assertFalse(FeatureCatalog.installById("unknown", systemui))
+        assertFalse(FeatureDispatcher.installById("unknown", systemui))
     }
 
     @Test
