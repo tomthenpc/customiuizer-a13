@@ -199,10 +199,11 @@ python tools/compare-memory-baseline.py `
 | `System.kt` facade | 代码层面确认 | 17 个 `System*Hooks` 文件已替换 facade |
 | `MainModule` 调用重定向 | 已验证 | `audit-system-migration.py` 119/119 直连调用解析 |
 | 新 `System*.kt` 跨域调用 | 待实机验证 | 需按 `A13_SPLIT_AND_MIGRATION_METHOD.md` 复核 |
-| 测试 | 已验证 | `testDebugUnitTest`、`testDevelopUnitTest`、`testReleaseUnitTest` 通过 |
-| Lint | 已验证 | `lintDebug`、`lintRelease`、`lintVitalRelease` 通过 |
+| 测试 | 已验证 | `gradlew :app:test`（含 debug/develop/release 单元测试）通过 |
+| Lint | 已验证 | `lintDebug`、`lintRelease` 通过；`lintVitalRelease` 当前配置跳过 |
 | R8 / Release | 已验证 | `assembleDebug`、`minifyReleaseWithR8`、`assembleRelease` 通过 |
-| APK 元数据 | 已验证 | `versionName=r13.8.5`，`versionCode=130`，applicationId 正确，v2 签名与 zipalign 通过 |
+| APK 元数据 | 已验证 | `versionName=r13.8.5`，`versionCode=130`，applicationId 正确，v2 签名有效 |
+| 性能优化 | 代码层面确认 | 图标缓存限制、MainApplication 内存回调、Catalog/Resolver 懒加载、热路径 getArg/DecimalFormat/Regex 预编译已落地；PSS 基线/对比需实机测量 |
 | 实机/LSPosed | 待实机验证 | 安装、作用域、日志与功能行为需真机确认 |
 
 ---

@@ -51,14 +51,14 @@
     {
       "versionName": "r13.8.5",
       "versionCode": 130,
-      "sourceCommit": "659dea0",
-      "buildCommit": "e4adc28",
+      "sourceCommit": "0ffa39a",
+      "buildCommit": "0ffa39a",
       "dataSource": "docs/releases/r13.8.5.md",
       "verifiedAtBuild": true,
       "lsposedTag": null,
       "apkName": "CustoMIUIzer-A13-r13.8.5.apk",
-      "apkSizeBytes": 2829786,
-      "apkSha256": "661780EBBB97FB624597E008B45BF7286C35B2643BD508069E06C5B6E1C49FD0",
+      "apkSizeBytes": 2830726,
+      "apkSha256": "98355766E3D13EDBFCBABD0021EFEF574A2427D19EB34A6A2CF07F394A309FE1",
       "androidVersion": "Android 13 / MIUI 14",
       "verification": {
         "runtimeInvariants": { "filesScanned": 136, "violations": 0, "status": "PASS" },
@@ -67,7 +67,7 @@
         "unitTests": { "debug": "PASS", "develop": "PASS", "release": "PASS", "status": "PASS" },
         "lintDebug": { "errors": 0, "warnings": 0, "status": "PASS" },
         "lintRelease": { "errors": 0, "warnings": 0, "status": "PASS" },
-        "lintVitalRelease": { "status": "PASS" },
+        "lintVitalRelease": { "status": "SKIPPED" },
         "assembleDebug": "PASS",
         "assembleRelease": "PASS",
         "r8AndResourceShrink": "PASS",
@@ -76,7 +76,7 @@
         "legacyXposedDexScan": "PASS"
       },
       "deviceStatus": "待实机及 LSPosed 日志验证",
-      "note": "本地签名候选版本。由 release/r13.8.5 分支整合 A13 维护与 Catalog 分支后构建；尚未完成实机和 LSPosed 日志验证，不创建 tag 或 GitHub Release。"
+      "note": "本地签名候选版本。由 release/r13.8.5 分支整合 A13 维护、Catalog 扩展与性能优化后构建；包含内存缓存限制、Catalog/Resolver 懒加载、热路径参数/Regex/String.format 优化。尚未完成实机和 LSPosed 日志验证，不创建 tag 或 GitHub Release。"
     }
   ],
   "draft": {
@@ -84,11 +84,11 @@
     "versionCode": 130,
     "status": "CANDIDATE",
     "sourceBranch": "release/r13.8.5",
-    "sourceCommit": "659dea0",
+    "sourceCommit": "0ffa39a",
     "lsposedTag": null,
     "apkName": "CustoMIUIzer-A13-r13.8.5.apk",
-    "apkSizeBytes": 2829786,
-    "apkSha256": "661780EBBB97FB624597E008B45BF7286C35B2643BD508069E06C5B6E1C49FD0",
+    "apkSizeBytes": 2830726,
+    "apkSha256": "98355766E3D13EDBFCBABD0021EFEF574A2427D19EB34A6A2CF07F394A309FE1",
     "androidVersion": "Android 13 / MIUI 14",
     "verification": {},
     "deviceStatus": "待实机及 LSPosed 日志验证",
