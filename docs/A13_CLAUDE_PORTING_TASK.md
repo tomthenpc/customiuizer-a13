@@ -1,12 +1,12 @@
 # CustoMIUIzer A13：A14 Claude 审计改动适配任务
 
-> 目标仓库：`tomthenpc/customiuizer-a13`  
-> 目标基线分支：`devin/r13.2-kotlin-api102`  
-> 参考仓库：`tomthenpc/customiuizer-a14`  
-> 参考分支：`devin/r14.13-kotlin-refactor`  
-> 参考增量：从 `58b21260400a4bd0f0b505589461d5f735ac36f5` 到参考分支当前 HEAD  
-> 建议目标版本：`r13.2.3-devin`  
-> 适用系统：MIUI 14 / Android 13  
+> 目标仓库：`tomthenpc/customiuizer-a13`
+> 目标基线分支：`devin/r13.2-kotlin-api102`
+> 参考仓库：`tomthenpc/customiuizer-a14`
+> 参考分支：`devin/r14.13-kotlin-refactor`
+> 参考增量：从 `58b21260400a4bd0f0b505589461d5f735ac36f5` 到参考分支当前 HEAD
+> 建议目标版本：`r13.2.3-devin`
+> 适用系统：MIUI 14 / Android 13
 > libxposed 边界：`minApiVersion=101`、`targetApiVersion=102`
 
 ---

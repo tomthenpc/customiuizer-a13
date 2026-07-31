@@ -1,7 +1,7 @@
 # r13.7.1 剩余审计：Broadcast / Reboot / Security Spoofing / A14 误移植
 
-> 审计基线：`devin/r13.7.1-maintenance-foundation@a483120`（最终干净提交）  
-> 审计分支：当前在 `devin/r13.8-maintenance-architecture` 上追加记录  
+> 审计基线：`devin/r13.7.1-maintenance-foundation@a483120`（最终干净提交）
+> 审计分支：当前在 `devin/r13.8-maintenance-architecture` 上追加记录
 > 方法：静态 grep、调用链阅读、与 `customiuizer-a14-forDevin/hardening/a14-lts-foundation` 关键差异对比
 
 ---

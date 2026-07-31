@@ -1,8 +1,8 @@
 # A13 Runtime Hardening Audit
 
-> Branch: `devin/a13-runtime-hardening`  
-> Base: `main` after `r13.8.6`  
-> Final HEAD: `ef61d76f55300ca1ec8494b418e3996c3ba6824c`  
+> Branch: `devin/a13-runtime-hardening`
+> Base: `main` after `r13.8.6`
+> Final HEAD: `e76605d82a6030255e4d54a20ebdc358c7aeee36`
 > Date: 2026-07-31
 
 ## Status words

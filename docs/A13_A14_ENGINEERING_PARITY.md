@@ -1,9 +1,9 @@
 # A13 / A14 工程差距矩阵
 
-> 目标仓库：`tomthenpc/customiuizer-a13`  
-> 开发分支：`devin/r13.2-kotlin-api102`（当前 HEAD 以最终提交为准）  
-> 参考仓库：`tomthenpc/customiuizer-a14`  
-> 参考基线：`main` / `r14.13.5` / `4225d80e95ed9965ab68a09b575aff4046666a5d`  
+> 目标仓库：`tomthenpc/customiuizer-a13`
+> 开发分支：`devin/r13.2-kotlin-api102`（当前 HEAD 以最终提交为准）
+> 参考仓库：`tomthenpc/customiuizer-a14`
+> 参考基线：`main` / `r14.13.5` / `4225d80e95ed9965ab68a09b575aff4046666a5d`
 
 本矩阵只记录 A13 可移植的工程能力差距，不复制 A14 的 Android 14 专属 Hook、包名、资源或 Manifest。
 
