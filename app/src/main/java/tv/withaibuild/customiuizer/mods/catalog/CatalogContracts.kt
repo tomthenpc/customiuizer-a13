@@ -216,6 +216,16 @@ object CatalogContracts {
                     className = "com.miui.home.launcher.Folder",
                     memberName = "onLayout"
                 )
+            ),
+            SingleTargetRequirement(
+                target = HookTargetSpec(
+                    id = "Folder.resetViewsLayoutParams",
+                    operation = HookOperation.EXACT_METHOD,
+                    className = "com.miui.home.launcher.Folder",
+                    memberName = "resetViewsLayoutParams",
+                    parameterTypes = emptyList()
+                ),
+                criticality = Criticality.OPTIONAL
             )
         )
     )

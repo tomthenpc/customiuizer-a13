@@ -6,6 +6,8 @@ import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse
 import org.junit.Assert.assertNotNull
 import org.junit.Assert.assertTrue
+import tv.withaibuild.customiuizer.mods.catalog.CatalogContracts
+import tv.withaibuild.customiuizer.mods.utils.Criticality
 import org.junit.Before
 import org.junit.Test
 import tv.withaibuild.customiuizer.MainModule
@@ -167,6 +169,23 @@ class CatalogBatch2Test {
         assertNotNull(summary)
         assertEquals(CompatibilityState.INCOMPATIBLE, summary!!.compatibility)
         assertEquals(InstallOutcome.FAILED, summary.installation)
+    }
+
+    @Test
+    fun folderColumns_resetViewsLayoutParamsIsOptional() {
+        val requirement = CatalogContracts.folderColumns.requirements
+            .find { it.id == "Folder.resetViewsLayoutParams" }
+        assertNotNull(requirement)
+        assertEquals(Criticality.OPTIONAL, requirement!!.criticality)
+    }
+
+    @Test
+    fun folderColumns_requiredTargetsRemainUnchangedAndMaxHotseatIconsCountNotPresent() {
+        val required = CatalogContracts.folderColumns.requirements.filter { it.criticality == Criticality.REQUIRED }
+        val ids = required.map { it.id }
+        assertTrue(ids.contains("Folder.onFinishInflate"))
+        assertTrue(ids.contains("Folder.onLayout"))
+        assertFalse(ids.contains("maxHotseatIconsCount"))
     }
 
     private fun newSystemServerParam(classLoader: ClassLoader): SystemServerStartingParam {

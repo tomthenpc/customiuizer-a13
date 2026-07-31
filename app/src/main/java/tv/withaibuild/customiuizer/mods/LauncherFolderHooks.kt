@@ -32,40 +32,67 @@ object LauncherFolderHooks {
         })
     }
 
+    private fun applyFolderWidth(folder: Any) {
+        if (!MainModule.mPrefs.getBoolean("launcher_folderwidth")) return
+        val content = XposedHelpers.getObjectField(folder, "mContent") as? View ?: return
+        val lp = content.layoutParams ?: return
+        if (lp.width != ViewGroup.LayoutParams.MATCH_PARENT) {
+            lp.width = ViewGroup.LayoutParams.MATCH_PARENT
+            content.layoutParams = lp
+        }
+    }
+
     @JvmStatic
     fun FolderColumnsHook(lpparam: PackageReadyParam) {
         ModuleHelper.findAndHookMethod("com.miui.home.launcher.Folder", lpparam.classLoader, "onFinishInflate", object : MethodHook() {
             override fun after(param: AfterHookCallback) {
+                val folder = param.getThisObject() ?: return
                 val cols = MainModule.mPrefs.getInt("launcher_folder_cols", 1)
 
-                val mContent = XposedHelpers.getObjectField(param.getThisObject(), "mContent") as? GridView ?: return
-                mContent.numColumns = cols
-
-                if (MainModule.mPrefs.getBoolean("launcher_folderwidth")) {
-                    val lp = mContent.layoutParams
-                    lp.width = ViewGroup.LayoutParams.MATCH_PARENT
-                    mContent.layoutParams = lp
+                val content = XposedHelpers.getObjectField(folder, "mContent")
+                if (content is GridView) {
+                    content.numColumns = cols
                 }
 
+                applyFolderWidth(folder)
+
                 if (cols > 3 && MainModule.mPrefs.getBoolean("launcher_folderspace")) {
-                    val mBackgroundView = XposedHelpers.getObjectField(param.getThisObject(), "mBackgroundView") as? ViewGroup
-                    if (mBackgroundView != null)
-                        mBackgroundView.setPadding(
-                            mBackgroundView.paddingLeft / 3,
-                            mBackgroundView.paddingTop,
-                            mBackgroundView.paddingRight / 3,
-                            mBackgroundView.paddingBottom
-                        )
+                    val mBackgroundView = XposedHelpers.getObjectField(folder, "mBackgroundView") as? ViewGroup
+                    if (mBackgroundView != null) {
+                        val original = XposedHelpers.getAdditionalInstanceField(mBackgroundView, "folderOriginalPadding") as? IntArray
+                        val (left, right) = if (original != null) {
+                            original[0] to original[1]
+                        } else {
+                            val left = mBackgroundView.paddingLeft
+                            val right = mBackgroundView.paddingRight
+                            XposedHelpers.setAdditionalInstanceField(mBackgroundView, "folderOriginalPadding", intArrayOf(left, right))
+                            left to right
+                        }
+                        mBackgroundView.setPadding(left / 3, mBackgroundView.paddingTop, right / 3, mBackgroundView.paddingBottom)
+                    }
                 }
             }
         })
 
         ModuleHelper.hookAllMethods("com.miui.home.launcher.Folder", lpparam.classLoader, "onLayout", object : MethodHook() {
+            override fun before(param: BeforeHookCallback) {
+                applyFolderWidth(param.getThisObject() ?: return)
+            }
+
             override fun after(param: AfterHookCallback) {
                 if (!MainModule.mPrefs.getBoolean("launcher_folderwidth")) return
-                val mContent = XposedHelpers.getObjectField(param.getThisObject(), "mContent") as? GridView ?: return
+                val mContent = XposedHelpers.getObjectField(param.getThisObject(), "mContent")
+                val contentView = if (mContent is View) mContent else null
                 val mFakeIcon = XposedHelpers.getObjectField(param.getThisObject(), "mFakeIcon") as? ImageView ?: return
-                mFakeIcon.layout(mContent.left, mContent.top, mContent.right, mContent.top + mContent.width)
+                if (contentView != null) {
+                    mFakeIcon.layout(contentView.left, contentView.top, contentView.right, contentView.top + contentView.width)
+                }
+            }
+        })
+
+        ModuleHelper.findAndHookMethodSilently("com.miui.home.launcher.Folder", lpparam.classLoader, "resetViewsLayoutParams", object : MethodHook() {
+            override fun after(param: AfterHookCallback) {
+                applyFolderWidth(param.getThisObject() ?: return)
             }
         })
     }
