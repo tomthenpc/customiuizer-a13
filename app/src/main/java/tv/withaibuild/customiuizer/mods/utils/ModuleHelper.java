@@ -639,32 +639,31 @@ public class ModuleHelper {
         final Context registrationContext = context.getApplicationContext() != null
             ? context.getApplicationContext() : context;
 
-        final boolean[] registered = { false };
-        final ReceiverRegistration[] failedRegistration = new ReceiverRegistration[1];
-
         final ReceiverRegistration newRegistration = new ReceiverRegistration(registrationContext, receiver);
 
-        // Ensure that only the winning registration is both in the map and registered with the
-        // framework. If another thread replaces the value under the same key while this thread is
-        // blocked in registerReceiver, the loser unregisters itself and the map keeps the winner.
+        // 1. Atomically remove the previous registration and, under the same key lock,
+        //    register the new receiver. If registration throws, the map entry is null.
         moduleReceivers.compute(key, (k, previous) -> {
             if (previous != null) releaseReceiver(previous);
             try {
                 registrationContext.registerReceiver(receiver, filter, flags);
-                registered[0] = true;
                 return newRegistration;
             } catch (Throwable t) {
                 log(k, t);
-                failedRegistration[0] = newRegistration;
                 return null;
             }
         });
 
-        if (!registered[0] && failedRegistration[0] != null) {
-            releaseReceiver(failedRegistration[0]);
+        // 2. Identity check: after framework registration, verify this exact object is still
+        //    the one tracked in the map. If another operation replaced or removed it, the
+        //    loser unregisters itself so the framework registration is not left untracked.
+        ReceiverRegistration current = moduleReceivers.get(key);
+        if (current == newRegistration) {
+            return true;
         }
 
-        return registered[0];
+        releaseReceiver(newRegistration);
+        return false;
     }
 
     public static void unregisterModuleReceiver(String key) {
@@ -694,8 +693,13 @@ public class ModuleHelper {
     ) {
         final Context registrationContext = context.getApplicationContext() != null
             ? context.getApplicationContext() : context;
-        final boolean[] registered = { false };
 
+        // Build the registration object up-front so the identity check after compute can
+        // compare the exact instance that was (or was not) registered with the framework.
+        final OwnedReceiverRegistration newRegistration =
+            new OwnedReceiverRegistration(registrationContext, owner, receiver);
+
+        // 1. Atomically clean stale/same-owner registrations and register the new one.
         ownedReceivers.compute(key, (k, registrations) -> {
             ArrayList<OwnedReceiverRegistration> list = registrations != null ? registrations
                 : new ArrayList<OwnedReceiverRegistration>();
@@ -711,8 +715,7 @@ public class ModuleHelper {
 
                 try {
                     registrationContext.registerReceiver(receiver, filter, flags);
-                    list.add(new OwnedReceiverRegistration(registrationContext, owner, receiver));
-                    registered[0] = true;
+                    list.add(newRegistration);
                 } catch (Throwable t) {
                     log(k, t);
                 }
@@ -720,7 +723,18 @@ public class ModuleHelper {
             return list.isEmpty() ? null : list;
         });
 
-        return registered[0];
+        // 2. Identity check: the exact registration object must still be in the tracked list.
+        ArrayList<OwnedReceiverRegistration> currentList = ownedReceivers.get(key);
+        if (currentList != null) {
+            synchronized (currentList) {
+                if (currentList.contains(newRegistration)) {
+                    return true;
+                }
+            }
+        }
+
+        releaseReceiver(newRegistration);
+        return false;
     }
 
     public static void unregisterOwnedReceiver(String key, Object owner) {
