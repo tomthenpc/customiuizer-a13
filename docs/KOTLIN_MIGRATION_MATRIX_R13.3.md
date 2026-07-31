@@ -1,0 +1,626 @@
+# A13 Kotlin 迁移风险矩阵（R13.3 基线）
+
+> 本矩阵基于 `devin/r13.3-kotlin-migration` 分支静态分析生成。
+> A14 相关路径仅作为只读工程参考，不代表 A13 采用 A14 包名、Hook target 或代码。
+
+| 文件 | LOC | 所属层 | 所属进程 | 入口 | 静态状态 | 并发 | 动态引用 | A14 对应文件 | 风险 | 建议 | 批次 | 验证要求 |
+| ---- | --- | ------ | -------- | ---- | -------- | ---- | -------- | ------------- | ---- | ---- | ---- | -------- |
+| `app/src/main/java/name/monwf/customiuizer/subs/System.java` | 662 | UI | app/Settings | normal | none | none | none | app/src/main/java/tv/withaibuild/customiuizer/subs/System.kt (Kotlin) | GREEN | 已迁移 | B1-4 已迁移 | 单测 / build / lint / R8 / UI 回归 |
+| `app/src/main/java/name/monwf/customiuizer/utils/SortableListView.java` | 318 | utility | app/Settings | XML inflate | final constants | none | （SortableList 反射访问 mSnapshotShadow） | app/src/main/java/tv/withaibuild/customiuizer/utils/SortableListView.kt (Kotlin) | YELLOW | 已迁移 | B2-1 已迁移 | 单测 / build / lint / R8 / UI 回归 |
+| `app/src/main/java/name/monwf/customiuizer/subs/MultiAction.java` | 314 | UI | app/Settings | normal | none | none | getIdentifier | app/src/main/java/tv/withaibuild/customiuizer/subs/MultiAction.kt (Kotlin) | GREEN | 已迁移 | B1-3 已迁移 | 单测 / build / lint / R8 / UI 回归 |
+| `app/src/main/java/name/monwf/customiuizer/subs/ColorSelector.java` | 168 | UI | app/Settings | normal | none | none | none | app/src/main/java/tv/withaibuild/customiuizer/subs/ColorSelector.kt (Kotlin) | GREEN | 迁移 | B1 | 单测 / build / lint / UI 回归 |
+| `app/src/main/java/name/monwf/customiuizer/subs/ShortcutSelector.java` | 108 | UI | app/Settings | normal | none | none | getIdentifier | app/src/main/java/tv/withaibuild/customiuizer/subs/ShortcutSelector.kt (Kotlin) | GREEN | 已迁移 | B1-2 已迁移 | 单测 / build / lint / R8 |
+| `app/src/main/java/name/monwf/customiuizer/subs/Controls.java` | 98 | UI | app/Settings | normal | none | none | none | app/src/main/java/tv/withaibuild/customiuizer/subs/Controls.kt (Kotlin) | GREEN | 迁移 | B1 | 单测 / build / lint / UI 回归 |
+| `app/src/main/java/name/monwf/customiuizer/subs/Launcher.java` | 97 | UI | app/Settings | normal | none | none | none | app/src/main/java/tv/withaibuild/customiuizer/subs/Launcher.kt (Kotlin) | GREEN | 迁移 | B1 | 单测 / build / lint / UI 回归 |
+| `app/src/main/java/name/monwf/customiuizer/PrefsProvider.java` | 80 | UI/utility | app/Settings | Manifest/XML | final constants | none | none | app/src/main/java/tv/withaibuild/customiuizer/PrefsProvider.kt (Kotlin) | GREEN | 已迁移 | B1-2 已迁移 | 单测 / build / lint / R8 / Provider |
+| `app/src/main/java/name/monwf/customiuizer/subs/CategorySelector.java` | 66 | UI | app/Settings | normal | none | none | none | app/src/main/java/tv/withaibuild/customiuizer/subs/CategorySelector.kt (Kotlin) | GREEN | 迁移 | B1 | 单测 / build / lint / UI 回归 |
+| `app/src/main/java/name/monwf/customiuizer/mods/System.java` | 4857 | Hook | system_server | reflection | process-level mutable | synchronized, Handler, Runnable, postDelayed | findAndHookMethod, hookAllMethods, hookAllConstructors, findClass, XposedHelpers.call | app/src/main/java/tv/withaibuild/customiuizer/mods/System.kt (Kotlin) | YELLOW | 拆分后迁移 | B3/B4 | build / R8 / 实机 / 日志 |
+| `app/src/main/java/name/monwf/customiuizer/mods/SystemUI.kt` | 193 | Hook | SystemUI | reflection | process-level mutable | none | loadClass, findAndHookMethod, hookAllMethods, hookAllConstructors, findMethodExact, findClass, XposedHelpers.call | app/src/main/java/tv/withaibuild/customiuizer/mods/SystemUI.kt (Kotlin) | GREEN | 已迁移 | K4 完成 | build / lint / R8 / 实机 / 日志 |
+| `app/src/main/java/name/monwf/customiuizer/mods/Launcher.java` | 1643 | Hook | Launcher | reflection | low risk mutable | Handler, Thread, Runnable | findAndHookMethod, hookAllMethods, hookAllConstructors, findClass, XposedHelpers.call | app/src/main/java/tv/withaibuild/customiuizer/mods/Launcher.kt (Kotlin) | GREEN | 已迁移 | B3-3 已迁移 | build / R8 / 实机 / 日志 |
+| `app/src/main/java/name/monwf/customiuizer/mods/Various.java` | 1181 | Hook | multi | reflection | process-level mutable | Handler, Thread, Runnable, postDelayed | findAndHookMethod, hookAllMethods, hookAllConstructors, findClass, XposedHelpers.call | app/src/main/java/tv/withaibuild/customiuizer/mods/Various.kt (Kotlin) | YELLOW | 拆分后迁移 | B3/B4 | build / R8 / 实机 / 日志 |
+| `app/src/main/java/name/monwf/customiuizer/utils/Helpers.java` | 1172 | utility | app/Settings | reflection | process-level mutable | none | Class.forName, getDeclaredMethod | app/src/main/java/tv/withaibuild/customiuizer/utils/Helpers.kt (Kotlin) | YELLOW | 补测试后迁移 | B2/B3 | 单测 / build / R8 |
+| `app/src/main/java/name/monwf/customiuizer/mods/Controls.java` | 1027 | Hook | system_server | reflection | process-level mutable | Handler, Runnable, postDelayed | findAndHookMethod, hookAllMethods, findMethodExact, findClass, XposedHelpers.call | app/src/main/java/tv/withaibuild/customiuizer/mods/Controls.kt (Kotlin) | YELLOW | 拆分后迁移 | B3/B4 | build / R8 / 实机 / 日志 |
+| `app/src/main/java/name/monwf/customiuizer/mods/GlobalActions.java` | 1027 | Hook | system_server | reflection | process-level mutable | Handler, Thread, Runnable, postDelayed | getDeclaredMethod, findAndHookMethod, hookAllMethods, hookAllConstructors, findMethodExact, findField, findClass, XposedHelpers.call | app/src/main/java/tv/withaibuild/customiuizer/mods/GlobalActions.kt (Kotlin) | YELLOW | 拆分后迁移 | B3/B4 | build / R8 / 实机 / 日志 |
+| `app/src/main/java/name/monwf/customiuizer/utils/AudioVisualizer.java` | 583 | utility | app/Settings | normal | none | Handler, Runnable, postDelayed | none | app/src/main/java/tv/withaibuild/customiuizer/utils/AudioVisualizer.kt (Kotlin) | YELLOW | 已迁移 | B2-7 已迁移 | 单测 / build / lint / R8 / UI 回归 |
+| `app/src/main/java/name/monwf/customiuizer/PreferenceFragmentBase.java` | 459 | UI | app/Settings | normal | final constants | none | none | app/src/main/java/tv/withaibuild/customiuizer/PreferenceFragmentBase.kt (Kotlin) | YELLOW | 已迁移 | B2-5/6 已迁移 | 单测 / build / lint / R8 / UI 回归 |
+| `app/src/main/java/name/monwf/customiuizer/SubFragment.java` | 416 | UI | app/Settings | normal | none | postDelayed | none | app/src/main/java/tv/withaibuild/customiuizer/SubFragment.kt (Kotlin) | YELLOW | 已迁移 | B2-5/6 已迁移 | 单测 / build / lint / R8 / UI 回归 |
+| `app/src/main/java/name/monwf/customiuizer/utils/BatteryIndicator.java` | 407 | utility | app/Settings | reflection | none | Handler, Runnable | XposedHelpers.call | app/src/main/java/tv/withaibuild/customiuizer/utils/BatteryIndicator.kt (Kotlin) | YELLOW | 补测试后迁移 | B2/B3 | 单测 / build / R8 |
+| `app/src/main/java/name/monwf/customiuizer/MainFragment.java` | 381 | UI | app/Settings | normal | none | Handler, Thread, Runnable, postDelayed | none | app/src/main/java/tv/withaibuild/customiuizer/MainFragment.kt (Kotlin) | YELLOW | 已迁移 | B2-4 已迁移 | 单测 / build / lint / R8 / UI 回归 |
+| `app/src/main/java/name/monwf/customiuizer/utils/AppDataAdapter.java` | 289 | utility | app/Settings | normal | none | Runnable, CopyOnWrite | none | app/src/main/java/tv/withaibuild/customiuizer/utils/AppDataAdapter.kt (Kotlin) | YELLOW | 已迁移 | B2-8 已迁移 | 单测 / build / UI 回归 |
+| `app/src/main/java/name/monwf/customiuizer/subs/WiFiList.java` | 279 | UI | app/Settings | normal | none | Handler, Runnable, postDelayed | none | app/src/main/java/tv/withaibuild/customiuizer/subs/WiFiList.kt (Kotlin) | YELLOW | 已迁移 | B2-8 已迁移 | 单测 / build / UI 回归 |
+| `app/src/main/java/name/monwf/customiuizer/subs/AppSelector.java` | 270 | UI | app/Settings | reflection | none | Thread, Runnable | getDeclaredMethod | app/src/main/java/tv/withaibuild/customiuizer/subs/AppSelector.kt (Kotlin) | YELLOW | 已迁移 | B2-8 已迁移 | 单测 / build / R8 |
+| `app/src/main/java/name/monwf/customiuizer/subs/BTList.java` | 264 | UI | app/Settings | normal | none | Handler, Runnable, postDelayed | none | app/src/main/java/tv/withaibuild/customiuizer/subs/BTList.kt (Kotlin) | YELLOW | 已迁移 | B2-8 已迁移 | 单测 / build / UI 回归 |
+| `app/src/main/java/name/monwf/customiuizer/MainActivity.java` | 225 | UI | app/Settings | Manifest/XML | none | none | none | app/src/main/java/tv/withaibuild/customiuizer/MainActivity.kt (Kotlin) | YELLOW | 已迁移 | B2-4 已迁移 | 单测 / build / lint / R8 / UI 回归 |
+| `app/src/main/java/name/monwf/customiuizer/subs/SortableList.java` | 210 | UI | app/Settings | reflection | none | none | getDeclaredField | app/src/main/java/tv/withaibuild/customiuizer/subs/SortableList.kt (Kotlin) | YELLOW | 已迁移 | B2-2 已迁移 | 单测 / build / lint / R8 / UI 回归 |
+| `app/src/main/java/name/monwf/customiuizer/utils/LockedAppAdapter.java` | 181 | utility | app/Settings | reflection | none | Runnable, CopyOnWrite | getDeclaredMethod | app/src/main/java/tv/withaibuild/customiuizer/utils/LockedAppAdapter.kt (Kotlin) | YELLOW | 已迁移 | B2-9 已迁移 | 单测 / build / R8 |
+| `app/src/main/java/name/monwf/customiuizer/mods/PackagePermissions.java` | 178 | Hook | multi | reflection | low risk mutable | none | findAndHookMethod, hookAllMethods, findClass, XposedHelpers.call | app/src/main/java/tv/withaibuild/customiuizer/mods/PackagePermissions.kt (Kotlin) | YELLOW | 拆分后迁移 | B3/B4 | build / R8 / 实机 / 日志 |
+| `app/src/main/java/name/monwf/customiuizer/utils/PrivacyAppAdapter.java` | 170 | utility | app/Settings | reflection | none | Runnable, CopyOnWrite | getDeclaredMethod | app/src/main/java/tv/withaibuild/customiuizer/utils/PrivacyAppAdapter.kt (Kotlin) | YELLOW | 已迁移 | B2-9 已迁移 | 单测 / build / R8 |
+| `app/src/main/java/name/monwf/customiuizer/SubFragmentWithSearch.java` | 116 | UI | app/Settings | normal | none | none | none | app/src/main/java/tv/withaibuild/customiuizer/SubFragmentWithSearch.kt (Kotlin) | YELLOW | 已迁移 | B2-3 已迁移 | 单测 / build / lint / R8 / UI 回归 |
+| `app/src/main/java/name/monwf/customiuizer/subs/ActivitySelector.java` | 109 | UI | app/Settings | normal | none | Thread, Runnable | none | app/src/main/java/tv/withaibuild/customiuizer/subs/ActivitySelector.kt (Kotlin) | YELLOW | 已迁移 | B2-3 已迁移 | 单测 / build / lint / R8 / UI 回归 |
+| `app/src/main/java/name/monwf/customiuizer/mods/utils/XposedHelpers.java` | 1821 | infrastructure | system_server | reflection | process-level mutable | synchronized, Atomic | getDeclaredMethod, getDeclaredField, findAndHookMethod, hookAllMethods, hookAllConstructors, findMethodExact, findConstructorExact, findField, findClass | app/src/main/java/tv/withaibuild/customiuizer/mods/utils/XposedHelpers.java (Java) | RED | 保留 Java | 保留区 | build / R8 / 实机 |
+| `app/src/main/java/name/monwf/customiuizer/MainModule.java` | 820 | infrastructure | infrastructure/multi | libxposed, reflection | low risk mutable | none | findAndHookMethod, XposedHelpers.call, XposedModule, onPackageReady, onSystemServerStarting, onModuleLoaded | app/src/main/java/tv/withaibuild/customiuizer/MainModule.java (Java) | RED | 保留 Java | 保留区 | build / R8 / 实机 |
+| `app/src/main/java/name/monwf/customiuizer/mods/utils/ModuleHelper.java` | 385 | infrastructure | system_server | reflection | process-level mutable | synchronized | getDeclaredMethod, findAndHookMethod, hookAllMethods, hookAllConstructors, findClass, XposedHelpers.call | app/src/main/java/tv/withaibuild/customiuizer/mods/utils/ModuleHelper.kt (Kotlin) | RED | 保留 Java | 保留区 | build / R8 / 实机 |
+| `app/src/main/java/name/monwf/customiuizer/mods/utils/HookerClassHelper.java` | 241 | infrastructure | system_server | normal | low risk mutable | none | none | app/src/main/java/tv/withaibuild/customiuizer/mods/utils/HookerClassHelper.kt (Kotlin) | RED | 保留 Java | 保留区 | build / R8 / 实机 |
+| `app/src/main/java/name/monwf/customiuizer/mods/utils/ResourceHooks.java` | 194 | infrastructure | system_server | reflection | none | none | findAndHookMethod, XposedHelpers.call | app/src/main/java/tv/withaibuild/customiuizer/mods/utils/ResourceHooks.kt (Kotlin) | RED | 保留 Java | 保留区 | build / R8 / 实机 |
+| `app/src/main/java/org/apache/commons/lang3/reflect/MemberUtilsX.java` | 30 | compatibility | app | normal | none | none | none | app/src/main/java/org/apache/commons/lang3/reflect/MemberUtilsX.java (Java) | RED | 保留 Java | 保留区 | build / 不迁移 |
+
+## 风险统计
+
+- **GREEN**: 0 个文件（B1 全部完成）
+- **YELLOW**: 15 个文件（B2-1/B2-2/B2-3/B2-4/B2-5/B2-6/B2-7 迁移后 `SortableListView`、`SortableList`、`SubFragmentWithSearch`、`ActivitySelector`、`MainActivity`、`MainFragment`、`PreferenceFragmentBase`、`SubFragment`、`AudioVisualizer` 从 YELLOW 移除）
+- **RED**: 6 个文件
+
+## 第一批低风险候选（B1）
+
+筛选条件：GREEN、无动态引用、无复杂并发、可独立测试、规模适中，总计控制在约 300–1000 LOC。
+
+| 顺序 | 文件 | LOC | 批次 | 验证 | 迁移要点 |
+| ---- | ---- | --- | ---- | ---- | -------- |
+| B1-1 | `app/src/main/java/name/monwf/customiuizer/subs/CategorySelector.java` | 66 | B1 | 单测 / build / lint / UI 回归 | 无反射/Hook/线程，迁移后补单测 |
+| B1-2 | `app/src/main/java/name/monwf/customiuizer/PrefsProvider.java` | 80 | B1 | 单测 / build / lint / UI 回归 | 无反射/Hook/线程，迁移后补单测 |
+| B1-3 | `app/src/main/java/name/monwf/customiuizer/subs/Launcher.java` | 97 | B1 | 单测 / build / lint / UI 回归 | 无反射/Hook/线程，迁移后补单测 |
+| B1-4 | `app/src/main/java/name/monwf/customiuizer/subs/Controls.java` | 98 | B1 | 单测 / build / lint / UI 回归 | 无反射/Hook/线程，迁移后补单测 |
+| B1-5 | `app/src/main/java/name/monwf/customiuizer/subs/ShortcutSelector.java` | 108 | B1 | 单测 / build / lint / UI 回归 | 无反射/Hook/线程，迁移后补单测 |
+| B1-6 | `app/src/main/java/name/monwf/customiuizer/subs/ColorSelector.java` | 168 | B1 | 单测 / build / lint / UI 回归 | 无反射/Hook/线程，迁移后补单测 |
+| B1-7 | `app/src/main/java/name/monwf/customiuizer/subs/MultiAction.java` | 314 | B1 | 单测 / build / lint / UI 回归 | 无反射/Hook/线程，迁移后补单测 |
+
+合计：7 个文件，931 LOC。
+
+## B1-1 批次执行结果
+
+本批次从第一批候选中进一步筛选，遵循同层（`subs/` 设置子页面）、同生命周期、无反射/无 Hook/无大型逻辑、可独立验证/回退原则。
+
+### 选取文件
+
+| 顺序 | 原 Java 文件 | Java LOC | Kotlin 文件 | Kotlin LOC | 迁移结论 | 验证 |
+| ---- | ------------ | -------- | ----------- | ---------- | -------- | ---- |
+| B1-1-1 | `app/src/main/java/name/monwf/customiuizer/subs/CategorySelector.java` | 66 | `app/src/main/java/name/monwf/customiuizer/subs/CategorySelector.kt` | 68 | 已迁移 | 单测 / build / lint |
+| B1-1-2 | `app/src/main/java/name/monwf/customiuizer/subs/Controls.java` | 99 | `app/src/main/java/name/monwf/customiuizer/subs/Controls.kt` | 84 | 已迁移 | 单测 / build / lint |
+| B1-1-3 | `app/src/main/java/name/monwf/customiuizer/subs/Launcher.java` | 97 | `app/src/main/java/name/monwf/customiuizer/subs/Launcher.kt` | 85 | 已迁移 | 单测 / build / lint |
+| B1-1-4 | `app/src/main/java/name/monwf/customiuizer/subs/ColorSelector.java` | 168 | `app/src/main/java/name/monwf/customiuizer/subs/ColorSelector.kt` | 138 | 已迁移 | 单测 / build / lint |
+
+小计：删除 Java 433 LOC，新增 Kotlin 375 LOC，新增测试 80 LOC。
+
+### JVM 兼容措施
+
+- package 与 FQCN 保持不变：`name.monwf.customiuizer.subs` 包名及类名未变；
+- 默认无参构造器保持公开，Java 侧 `new CategorySelector()` / `new Controls()` / `new Launcher()` / `new ColorSelector()` 仍可编译；
+- `MainFragment` 的 `catSelector`、`prefLauncher`、`prefControls` 字段类型仍为对应类，无 `@JvmName`/`@JvmStatic` 调整需求；
+- `SubFragment.openColorSelector(...)` 内部 `new ColorSelector()` 仍可用；
+- 重载 `openSubFragment(...)` 调用未改动签名；
+- `onCreate`、`onCreatePreferences`、`onActivityCreated`、`onSaveInstanceState` 方法签名与原 Java 一致；
+- `ColorSelector` 的 `setSelected`/`updateSelColor` 由 package-private 改为 `private`，仅类内使用，反射验证可达；
+- `ColorSelector` 中 `ColorCircle.ColorListener` 因是 Kotlin 接口，迁移为 `object : ColorCircle.ColorListener` 显式实现；
+- 未使用 `!!`，未引入 coroutine/Flow，未改变 Preference key、Hook target、资源名；
+- 所有 `findPreference` 调用改为 `?.` 安全访问，避免原 Java 中找不到 key 时 NPE，行为仅在异常路径变化。
+
+### 测试覆盖
+
+新增 `app/src/test/java/name/monwf/customiuizer/subs/B1MigrationInteropTest.kt`（80 LOC）：
+- 反射验证 4 个 Kotlin 类可默认构造、继承 `SubFragment`、保留 `onCreate`/`onActivityCreated`/`onCreatePreferences`/`onSaveInstanceState` 签名；
+- 验证 `MainFragment` 的 `catSelector`、`prefLauncher`、`prefControls` 字段 FQCN 仍为迁移后的类；
+- 验证 `SubFragment.openColorSelector` 方法在 R8 后仍引用 `ColorSelector`。
+
+### 构建结果
+
+- `./gradlew.bat --no-daemon :app:test`：BUILD SUCCESSFUL，68 tests / 0 failures；
+- `./gradlew.bat --no-daemon :app:lintDebug`：0 errors，520 warnings（与基线一致，无新增）；
+- `./gradlew.bat --no-daemon :app:assembleDebug`：成功；
+- `./gradlew.bat --no-daemon :app:assembleRelease`：成功；
+- `git diff --check`：通过。
+
+### APK / R8 审计
+
+- Release APK：`app/build/outputs/apk/release/CustoMIUIzer-A13-r13.2.3-test1.apk`；
+- applicationId：`tv.withaibuild.customiuizer.r13`（未变）；
+- versionName：`r13.2.3-test1` / versionCode：`121`（未变）；
+- `META-INF/xposed/module.prop`：`minApiVersion=101`、`targetApiVersion=102`、`staticScope=false`（未变）；
+- `META-INF/xposed/scope.list`：scope 内容未变；
+- `META-INF/xposed/java_init.list`：`name.monwf.customiuizer.MainModule`（未变）；
+- R8 mapping 确认 4 个迁移类均保留并被重命名为：`CategorySelector -> M2:`、`ColorSelector -> h3:`、`Controls -> j4:`、`Launcher -> ha:`；
+- 未见 Legacy Xposed API、A14 包名或 Android 14 逻辑混入；
+- 签名证书与基线一致，未重新生成签名文件。
+
+### 尚未实机验证
+
+- 设置主页面点击各分类进入子页面；
+- `ColorSelector` 颜色选择、透明度拖动、十六进制输入、旋转恢复；
+- `Launcher` 与 `Controls` 各 preference 点击响应；
+- 日间/夜间主题、 Toolbar 菜单、返回栈行为；
+- MIUI 14 / Android 13 真机 LSPosed 环境加载无新异常。
+
+## B1-2 批次执行结果
+
+### 选取文件
+
+| 顺序 | 原 Java 文件 | Java LOC | Kotlin 文件 | Kotlin LOC | 迁移结论 | 验证 |
+| ---- | ------------ | -------- | ----------- | ---------- | -------- | ---- |
+| B1-2-1 | `app/src/main/java/name/monwf/customiuizer/PrefsProvider.java` | 81 | `app/src/main/java/name/monwf/customiuizer/PrefsProvider.kt` | 56 | 已迁移 | 单测 / build / lint / Release R8 |
+| B1-2-2 | `app/src/main/java/name/monwf/customiuizer/subs/ShortcutSelector.java` | 109 | `app/src/main/java/name/monwf/customiuizer/subs/ShortcutSelector.kt` | 90 | 已迁移 | 单测 / build / lint / Release R8 |
+
+小计：删除 Java 190 LOC，新增 Kotlin 146 LOC，新增测试 41 LOC。
+
+### 审计调整
+
+- `app/src/main/java/name/monwf/customiuizer/utils/SortableListView.java` 因 `subs/SortableList.java` 通过反射访问其私有字段 `mSnapshotShadow`，且属于自定义 View/拖拽动画，从 B1 移至 **B2**，原 GREEN 调整为 YELLOW，批次改为 `B2`。
+
+### JVM 兼容措施
+
+- `PrefsProvider`：
+  - FQCN 与 package 保持不变；
+  - `public static final String AUTHORITY` 迁移为 `companion object const val AUTHORITY`，Java 侧仍可用 `PrefsProvider.AUTHORITY`；
+  - `ContentProvider` 标准重写方法签名不变；
+  - `openAssetFile` 使用 `getOrNull(1)` 安全取 `pathSegments` 第二段，`when` 替换原 if-else；
+  - Manifest `android:name=".PrefsProvider"` / `authority` 未变，R8 mapping 显示类名未被重命名。
+- `ShortcutSelector`：
+  - package/FQCN 不变；
+  - 公开无参构造器保留；
+  - 继承 `SubFragmentWithSearch`（Java）不变；
+  - `onCreate` / `onActivityCreated` / `onActivityResult` 签名与原 Java 一致；
+  - `targetFragment?.onActivityResult(...)` 替换 `getTargetFragment().onActivityResult(...)`，行为等效；
+  - 未引入 `!!`、coroutine/Flow，未改动 `startActivityForResult` requestCode、Intent extra key。
+
+### 测试覆盖
+
+新增 `app/src/test/java/name/monwf/customiuizer/B1_2_MigrationInteropTest.kt`（41 LOC）：
+- 反射验证 `PrefsProvider` 继承 `ContentProvider`，`AUTHORITY` 为 `public static final` 且值正确；
+- 反射验证 `ShortcutSelector` 可默认构造、继承 `SubFragmentWithSearch`、`onActivityCreated` 与 `onActivityResult` 方法签名保留。
+
+### 构建结果
+
+- `./gradlew.bat --no-daemon :app:test`：BUILD SUCCESSFUL，70 tests / 0 failures（B1-1 68 + B1-2 2）；
+- `./gradlew.bat --no-daemon :app:lintDebug`：0 errors，520 warnings；
+- `./gradlew.bat --no-daemon :app:assembleDebug`：成功；
+- `./gradlew.bat --no-daemon :app:assembleRelease`：成功；
+- `git diff --check`：通过。
+
+### R8 审计
+
+- `PrefsProvider` 在 Release mapping 中保留原名（Manifest 入口）；
+- `ShortcutSelector` 被 R8 重命名为 `ff:`，仍从 `SubFragment.openMultiAction`/`SortableList` 等调用点可达；
+- `module.prop` / `scope.list` / `java_init.list` 未变；
+- 未见 Legacy Xposed API 或 A14 专属代码。
+
+## B1-3 批次执行结果
+
+### 选取文件
+
+| 顺序 | 原 Java 文件 | Java LOC | Kotlin 文件 | Kotlin LOC | 迁移结论 | 验证 |
+| ---- | ------------ | -------- | ----------- | ---------- | -------- | ---- |
+| B1-3-1 | `app/src/main/java/name/monwf/customiuizer/subs/MultiAction.java` | 315 | `app/src/main/java/name/monwf/customiuizer/subs/MultiAction.kt` | 246 | 已迁移 | 单测 / build / lint / R8 / UI 回归 |
+
+新增 `app/src/test/java/name/monwf/customiuizer/subs/B1_3_MigrationInteropTest.kt`（40 LOC）。
+
+### JVM 兼容要点
+
+- package/FQCN 不变；
+- 公开无参构造器保留；
+- 继承 `SubFragment`（Java）不变；
+- `MultiAction.Actions` 枚举保持 6 个值，Java 侧仍可用 `MultiAction.Actions.LAUNCHER`；
+- `onCreate` / `onActivityCreated` / `onActivityResult` / `saveSharedPrefs` / `onDestroy` 签名与原 Java 一致；
+- `AppSelector` / `ShortcutSelector` 目标片段调用通过 `setTargetFragment(this, ...)` 保留，requestCode 不变；
+- `SpinnerExFake.getValue()` / `setValue()` / `addValue()` 等 Kotlin 属性访问保持兼容；
+- 未引入 `!!`、coroutine/Flow，未改动 `Intent` extra key 与 `startActivityForResult` requestCode。
+
+### 构建结果
+
+- `./gradlew.bat --no-daemon :app:test`：BUILD SUCCESSFUL，72 tests / 0 failures；
+- `./gradlew.bat --no-daemon :app:lintDebug`：0 errors；
+- `./gradlew.bat --no-daemon :app:assembleDebug`：成功；
+- `./gradlew.bat --no-daemon :app:assembleRelease`：成功；
+- `git diff --check`：通过。
+
+## B1-4 批次执行结果
+
+### 选取文件
+
+| 顺序 | 原 Java 文件 | Java LOC | Kotlin 文件 | Kotlin LOC | 迁移结论 | 验证 |
+| ---- | ------------ | -------- | ----------- | ---------- | -------- | ---- |
+| B1-4-1 | `app/src/main/java/name/monwf/customiuizer/subs/System.java` | 663 | `app/src/main/java/name/monwf/customiuizer/subs/System.kt` | 485 | 已迁移 | 单测 / build / lint / R8 / UI 回归 |
+
+新增 `app/src/test/java/name/monwf/customiuizer/subs/B1_4_MigrationInteropTest.kt`（46 LOC）。
+
+### JVM 兼容要点
+
+- package/FQCN 不变（`name.monwf.customiuizer.subs.System`）；
+- 公开无参构造器保留；
+- 继承 `SubFragment`（Java）不变；
+- `onCreate` / `onCreatePreferences` / `onActivityCreated` / `onActivityResult` 签名与原 Java 一致；
+- `selectSub()` / `openSubFragment(...)` / `openStandaloneApp(...)` / `openAppsEdit` 等来自 Java `SubFragment` 的调用保持不变；
+- `when (sub)` 替代原 `switch (sub)`，所有分支、调用顺序、Intent extra 与 `requestCode` 不变；
+- `findPreference<T>(...)` 安全调用替代原 Java 强制类型转换，未改变正常路径行为；
+- `Settings.Secure.putInt`、`PackageManager.setComponentEnabledSetting`、`AppHelper.showInputDialog` 等系统调用签名与参数不变；
+- `PrefsProvider.AUTHORITY` 用于 `Uri.parse` 保持不变；
+- 未使用 `!!`、coroutine/Flow。
+
+### 构建结果
+
+- `./gradlew.bat --no-daemon :app:test`：BUILD SUCCESSFUL，74 tests / 0 failures；
+- `./gradlew.bat --no-daemon :app:lintDebug`：0 errors；
+- `./gradlew.bat --no-daemon :app:assembleDebug`：成功；
+- `./gradlew.bat --no-daemon :app:assembleRelease`：成功；
+- `git diff --check`：通过。
+
+### R8 审计
+
+- `MultiAction` 与 `System` 在 Release mapping 中均从调用点可达；
+- `System` 字段 `prefSystem` 在 `MainFragment` 中保留引用；
+- 未见 A14 包名、Hook target、资源名或 Android 14 逻辑混入。
+
+## B1 阶段总结
+
+### 已迁移 B1 文件
+
+| 批次 | 文件 | Java LOC | Kotlin LOC | 测试 |
+| ---- | ---- | -------- | ---------- | ---- |
+| B1-1 | `subs/CategorySelector` | 66 | 68 | B1MigrationInteropTest |
+| B1-1 | `subs/Controls` | 99 | 84 | B1MigrationInteropTest |
+| B1-1 | `subs/Launcher` | 97 | 85 | B1MigrationInteropTest |
+| B1-1 | `subs/ColorSelector` | 168 | 138 | B1MigrationInteropTest |
+| B1-2 | `PrefsProvider` | 81 | 56 | B1_2_MigrationInteropTest |
+| B1-2 | `subs/ShortcutSelector` | 109 | 90 | B1_2_MigrationInteropTest |
+| B1-3 | `subs/MultiAction` | 315 | 246 | B1_3_MigrationInteropTest |
+| B1-4 | `subs/System` | 663 | 485 | B1_4_MigrationInteropTest |
+
+合计：删除 Java 1598 LOC，新增 Kotlin 1252 LOC，新增测试 207 LOC。
+
+### B1 验证结论
+
+- 单元测试：74 tests，0 failures，0 errors；
+- lintDebug：0 errors，基线 warnings 数量稳定；
+- assembleDebug / assembleRelease：成功；
+- Release R8 mapping：B1 迁移类均保持可达，无 Manifest/Xposed 元数据变化；
+- 未发现 A14 包名、Hook target、资源名或 API 版本变化；
+- 真机验证未完成，仍为 B1 阶段遗留项。
+
+## B2-1 批次执行结果
+
+### 选取文件
+
+| 顺序 | 原 Java 文件 | Java LOC | Kotlin 文件 | Kotlin LOC | 迁移结论 | 验证 |
+| ---- | ------------ | -------- | ----------- | ---------- | -------- | ---- |
+| B2-1-1 | `app/src/main/java/name/monwf/customiuizer/utils/SortableListView.java` | 319 | `app/src/main/java/name/monwf/customiuizer/utils/SortableListView.kt` | 260 | 已迁移 | 单测 / build / lint / R8 / UI 回归 |
+
+新增 `app/src/test/java/name/monwf/customiuizer/utils/B2_1_MigrationInteropTest.kt`（60 LOC）。
+
+### JVM 兼容要点
+
+- package/FQCN 不变；
+- 继承 `ListView` 不变；
+- 保持 (Context)、(Context, AttributeSet)、(Context, AttributeSet, Int) 三个公开构造器；
+- `mSnapshotShadow` 字段名保持为 `mSnapshotShadow`，并声明为 `private var`，`SortableList` 仍可通过反射 `getDeclaredField` + `setAccessible(true)` 修改；
+- `OnOrderChangedListener` 接口声明为 `fun interface`，SAM 转换兼容；
+- 所有重写方法（`dispatchDraw`、`onInterceptTouchEvent`、`onSizeChanged`、`onTouchEvent`）签名不变；
+- `getHittenItemPosition`、`createAnimation`、`setItemUpperBound`、`getListenerForStartingSort`、`setOnOrderChangedListener` 方法签名不变；
+- 动画、拖拽、滚动边界算法保持与原 Java 一致；
+- 未使用 `!!`、coroutine/Flow。
+
+### 构建结果
+
+- `./gradlew.bat --no-daemon :app:test`：BUILD SUCCESSFUL，80 tests / 0 failures；
+- `./gradlew.bat --no-daemon :app:lintDebug`：0 errors；
+- `./gradlew.bat --no-daemon :app:assembleDebug`：成功；
+- `./gradlew.bat --no-daemon :app:assembleRelease`：成功；
+- `git diff --check`：通过。
+
+## B2-2 批次执行结果
+
+### 选取文件
+
+| 顺序 | 原 Java 文件 | Java LOC | Kotlin 文件 | Kotlin LOC | 迁移结论 | 验证 |
+| ---- | ------------ | -------- | ----------- | ---------- | -------- | ---- |
+| B2-2-1 | `app/src/main/java/name/monwf/customiuizer/subs/SortableList.java` | 211 | `app/src/main/java/name/monwf/customiuizer/subs/SortableList.kt` | 161 | 已迁移 | 单测 / build / lint / R8 / UI 回归 |
+
+新增 `app/src/test/java/name/monwf/customiuizer/subs/B2_2_MigrationInteropTest.kt`（42 LOC）。
+
+### JVM 兼容要点
+
+- package/FQCN 不变；
+- 公开无参构造器保留；
+- 继承 `SubFragment`（Java）不变；
+- `onCreate` / `onActivityCreated` / `onOptionsItemSelected` / `onPrepareOptionsMenu` / `onActivityResult` 签名与原 Java 一致；
+- 保留对 `SortableListView.mSnapshotShadow` 的反射访问，确保拖拽阴影主题跟随日夜模式；
+- `SortableListView.OnOrderChangedListener` 通过 SAM 转换使用 lambda；
+- `PreferenceAdapter` 与 `SortableListView` 的 Kotlin 调用保持 Java 兼容；
+- `MultiAction.Actions.LOCKSCREEN.ordinal` 访问保持不变；
+- `String.split('|')` 替代原 Java `split("\\|")`，语义一致且无每次 Regex 编译开销；
+- 未使用 `!!`、coroutine/Flow。
+
+### 构建结果
+
+- `./gradlew.bat --no-daemon :app:test`：BUILD SUCCESSFUL，80 tests / 0 failures；
+- `./gradlew.bat --no-daemon :app:lintDebug`：0 errors；
+- `./gradlew.bat --no-daemon :app:assembleDebug`：成功；
+- `./gradlew.bat --no-daemon :app:assembleRelease`：成功；
+- `git diff --check`：通过。
+
+### R8 审计
+
+- `SortableListView` 与 `SortableList` 在 Release mapping 中从调用点（`SubFragment.openActivitiesItemList`、`MainFragment` 等）可达；
+- `mSnapshotShadow` 字段因反射访问被 R8 保留；
+- 未见 A14 包名、Hook target、资源名或 API 版本变化。
+
+## B2-3 批次执行结果
+
+### 选取文件
+
+| 顺序 | 原 Java 文件 | Java LOC | Kotlin 文件 | Kotlin LOC | 迁移结论 | 验证 |
+| ---- | ------------ | -------- | ----------- | ---------- | -------- | ---- |
+| B2-3-1 | `app/src/main/java/name/monwf/customiuizer/SubFragmentWithSearch.java` | 117 | `app/src/main/java/name/monwf/customiuizer/SubFragmentWithSearch.kt` | 97 | 已迁移 | 单测 / build / lint / R8 / UI 回归 |
+| B2-3-2 | `app/src/main/java/name/monwf/customiuizer/subs/ActivitySelector.java` | 110 | `app/src/main/java/name/monwf/customiuizer/subs/ActivitySelector.kt` | 95 | 已迁移 | 单测 / build / lint / R8 / UI 回归 |
+
+新增 `app/src/test/java/name/monwf/customiuizer/B2_3_MigrationInteropTest.kt`（51 LOC）。
+
+### JVM 兼容要点
+
+- `SubFragmentWithSearch`：
+  - package/FQCN 不变；
+  - 继承 `SubFragment`（Java）不变；
+  - `listView` 使用 `@JvmField` 保持公开字段，保证 Java 子类 `AppSelector` 仍可直接访问；
+  - `setActionModeStyle(View)` 与 `applyFilter(String)` 方法签名不变；
+  - `onActivityCreated` 签名与行为不变；
+  - 搜索输入监听、焦点管理、键盘隐藏、列表触摸分发逻辑保持原 Java 行为；
+- `ActivitySelector`：
+  - package/FQCN 不变；
+  - 公开无参构造器保留；
+  - 继承 `SubFragmentWithSearch`（Kotlin）不变；
+  - `onCreate` / `onActivityCreated` 签名不变；
+  - 后台线程解析 `PackageInfo.activities` 逻辑、列表适配器设置、点击/长按返回 `Intent` 行为不变；
+  - `targetFragment` / `targetRequestCode` 调用已加 `@Suppress("DEPRECATION")`；
+  - 未使用 `!!`、coroutine/Flow。
+
+### 构建结果
+
+- `./gradlew.bat --no-daemon :app:test`：BUILD SUCCESSFUL，84 tests / 0 failures；
+- `./gradlew.bat --no-daemon :app:lintDebug`：0 errors；
+- `./gradlew.bat --no-daemon :app:assembleDebug`：成功；
+- `./gradlew.bat --no-daemon :app:assembleRelease`：成功；
+- `git diff --check`：通过。
+
+### R8 审计
+
+- `SubFragmentWithSearch` 与 `ActivitySelector` 在 Release mapping 中从调用点可达；
+- `listView` 字段因 `@JvmField` 保持公开且未被 R8 内联删除；
+- 未见 A14 包名、Hook target、资源名或 API 版本变化。
+
+## B2-4 批次执行结果
+
+### 选取文件
+
+| 顺序 | 原 Java 文件 | Java LOC | Kotlin 文件 | Kotlin LOC | 迁移结论 | 验证 |
+| ---- | ------------ | -------- | ----------- | ---------- | -------- | ---- |
+| B2-4-1 | `app/src/main/java/name/monwf/customiuizer/MainActivity.java` | 226 | `app/src/main/java/name/monwf/customiuizer/MainActivity.kt` | 199 | 已迁移 | 单测 / build / lint / R8 / UI 回归 |
+| B2-4-2 | `app/src/main/java/name/monwf/customiuizer/MainFragment.java` | 382 | `app/src/main/java/name/monwf/customiuizer/MainFragment.kt` | 355 | 已迁移 | 单测 / build / lint / R8 / UI 回归 |
+
+新增 `app/src/test/java/name/monwf/customiuizer/B2_4_MigrationInteropTest.kt`（88 LOC）。
+
+### JVM 兼容要点
+
+- `MainActivity`：
+  - package/FQCN 不变；
+  - 继承 `AppCompatActivity` 不变；
+  - 公开无参构造器保留；
+  - `attachBaseContext` / `onCreate` / `onSaveInstanceState` / `onDestroy` / `onOptionsItemSelected` / `onKeyDown` / `onRequestPermissionsResult` 签名不变；
+  - `SharedPreferences` 同步到 `RemotePreferences` 逻辑保持原 Java 行为；
+  - Xposed service 绑定回调语义不变；
+  - 未使用 `!!`、coroutine/Flow。
+- `MainFragment`：
+  - package/FQCN 不变；
+  - 继承 `PreferenceFragmentBase`（Java）不变；
+  - 公开无参构造器保留；
+  - `prefSystem` / `prefLauncher` / `prefControls` / `prefVarious` / `isSearchFocused` / `inSearchView` / `lastFilter` 使用 `@JvmField` 保持公开字段，保证 Java 反射与直接访问；
+  - `onCreate` / `onCreatePreferences` / `onCreateOptionsMenu` / `fixStubLayout` / `onActivityCreated` / `findMod` / `onSaveInstanceState` / `onDestroyView` / `onPreferenceTreeClick` 签名不变；
+  - 搜索框展开/收起、QueryText 监听、搜索结果点击、键盘隐藏、Activity 恢复状态逻辑保持原 Java 行为；
+  - `MenuItemCompat` / `onActivityCreated` / `targetFragment` / `setTargetFragment` 等已废弃 API 调用已加 `@Suppress("DEPRECATION")`；
+  - 未使用 `!!`、coroutine/Flow。
+
+### 构建结果
+
+- `./gradlew.bat --no-daemon :app:test`：BUILD SUCCESSFUL，89 tests / 0 failures；
+- `./gradlew.bat --no-daemon :app:lintDebug`：0 errors；
+- `./gradlew.bat --no-daemon :app:assembleDebug`：成功；
+- `./gradlew.bat --no-daemon :app:assembleRelease`：成功；
+- `git diff --check`：通过。
+
+### R8 审计
+
+- `MainActivity` / `MainFragment` 在 Release mapping 中从调用点（Manifest、XML、FragmentManager、`PreferenceFragmentBase` 子类）可达；
+- `MainFragment` 中 `prefSystem` 等公开字段因 `@JvmField` 保持可达；
+- 未见 A14 包名、Hook target、资源名或 API 版本变化。
+
+## B2-5/B2-6 批次执行结果
+
+### 选取文件
+
+| 顺序 | 原 Java 文件 | Java LOC | Kotlin 文件 | Kotlin LOC | 迁移结论 | 验证 |
+| ---- | ------------ | -------- | ----------- | ---------- | -------- | ---- |
+| B2-5 | `app/src/main/java/name/monwf/customiuizer/PreferenceFragmentBase.java` | 459 | `app/src/main/java/name/monwf/customiuizer/PreferenceFragmentBase.kt` | 406 | 已迁移 | 单测 / build / lint / R8 / UI 回归 |
+| B2-6 | `app/src/main/java/name/monwf/customiuizer/SubFragment.java` | 416 | `app/src/main/java/name/monwf/customiuizer/SubFragment.kt` | 430 | 已迁移 | 单测 / build / lint / R8 / UI 回归 |
+
+新增 `app/src/test/java/name/monwf/customiuizer/B2_5_6_MigrationInteropTest.kt`（97 LOC）。
+
+### JVM 兼容要点
+
+- `PreferenceFragmentBase`：
+  - package / FQCN / 公开无参构造器保持不变；
+  - 继承 `PreferenceFragmentCompat` 不变；
+  - `PICK_BACKFILE` / `SAVE_BACKFILE` 以 `companion object const val` 保持公开静态常量；
+  - `toolbarMenu` / `activeMenus` / `headLayoutId` / `tailLayoutId` / `isCustomActionBar` / `pageUrl` / `mapKeys` 以 `@JvmField protected` 保持字段访问语义；
+  - `getActionBar` / `onCreateOptionsMenu` / `onOptionsItemSelected` / `onCreate` / `onCreatePreferences` / `onViewCreated` / `openSubFragment` / `backupSettings` / `restoreSettings` / `doRestoreSettings` / `onActivityResult` 签名不变；
+  - `startActivityForResult` / `setHasOptionsMenu` / `onActivityResult` / `onOptionsItemSelected` 等已废弃 API 调用已加 `@Suppress("DEPRECATION")`；
+  - 未使用 `!!`、coroutine/Flow。
+- `SubFragment`：
+  - package / FQCN / 公开无参构造器保持不变；
+  - 继承 `PreferenceFragmentBase`（Kotlin）不变；
+  - `settingsType` / `abType` / `settingTitle` / `padded` / `sub` / `catInfo` / `isStandalone` / `openAppsEdit` 等公开字段使用 `@JvmField` 保持公开字段；
+  - `onCreate` / `onCreatePreferences` / `onCreateView` / `onViewCreated` / `onActivityCreated` / `onStart` / `saveSharedPrefs` / `loadSharedPrefs` / `selectSub` / `finish` / `confirmEdit` 签名不变；
+  - `openColorSelector` 字段保留，原 `openColorSelector(Preference)` 方法重命名为 `doOpenColorSelector(Preference)` 以避免 Kotlin 属性/方法命名冲突，调用点与外部使用只依赖字段；
+  - `setTargetFragment` 已废弃调用已加 `@Suppress("DEPRECATION")`；
+  - 未使用 `!!`、coroutine/Flow。
+
+### 构建结果
+
+- `./gradlew.bat --no-daemon :app:test`：BUILD SUCCESSFUL，94 tests / 0 failures；
+- `./gradlew.bat --no-daemon :app:lintDebug`：0 errors；
+- `./gradlew.bat --no-daemon :app:assembleDebug`：成功；
+- `./gradlew.bat --no-daemon :app:assembleRelease`：成功；
+- `git diff --check`：通过。
+
+### R8 审计
+
+- `PreferenceFragmentBase` / `SubFragment` 在 Release mapping 中从调用点（XML、`MainFragment` / `SubFragmentWithSearch` / `CategorySelector` 等子类）可达；
+- `SubFragment` 中 `openAppsEdit` 等公开 listener 字段因 `@JvmField` 保持可达；
+- 未见 A14 包名、Hook target、资源名或 API 版本变化。
+
+## B2-7 批次执行结果
+
+### 选取文件
+
+| 顺序 | 原 Java 文件 | Java LOC | Kotlin 文件 | Kotlin LOC | 迁移结论 | 验证 |
+| ---- | ------------ | -------- | ----------- | ---------- | -------- | ---- |
+| B2-7 | `app/src/main/java/name/monwf/customiuizer/utils/AudioVisualizer.java` | 583 | `app/src/main/java/name/monwf/customiuizer/utils/AudioVisualizer.kt` | 603 | 已迁移 | 单测 / build / lint / R8 / UI 回归 |
+
+新增 `app/src/test/java/name/monwf/customiuizer/utils/B2_7_MigrationInteropTest.kt`（68 LOC）。
+
+### JVM 兼容要点
+
+- `AudioVisualizer`：
+  - package / FQCN / 公开三参/两参/单参构造器（`Context` / `AttributeSet` / `defStyle`）保持不变；
+  - 继承 `android.view.View` 不变；
+  - 公开枚举 `BarStyle`、`ColorMode`、`RenderType` 保留为 `inner enum class`；
+  - `isScreenOn`、`showOnCustom`、`colorMode`、`barStyle`、`renderType`、`glowLevel`、`customColor`、`showInDrawer`、`showWithControllerOnly` 以 `@JvmField` 保持公开字段；
+  - 公开方法 `setPlaying`、`updateViewState`、`updateScreenOn`、`updateMusicArt`、`setColor`、`setBitmap`、`onDraw`、`onSizeChanged`、`hasOverlappingRendering` 签名不变；
+  - 静态方法 `allZeros(byte[])` 以 `companion object @JvmStatic` 保留；
+  - `PaletteTask`（`AsyncTask`）保持并加 `@Suppress("DEPRECATION", "OVERRIDE_DEPRECATION")`；
+  - 未使用 `!!`、coroutine/Flow，未改动 preference key / Hook target / 资源名。
+
+### 构建结果
+
+- `./gradlew.bat --no-daemon :app:test`：BUILD SUCCESSFUL，98 tests / 0 failures；
+- `./gradlew.bat --no-daemon :app:lintDebug`：0 errors；
+- `./gradlew.bat --no-daemon :app:assembleDebug`：成功；
+- `./gradlew.bat --no-daemon :app:assembleRelease`：成功；
+- `git diff --check`：通过。
+
+### R8 审计
+
+- `AudioVisualizer` 在 Release mapping 中从调用点（`mods/SystemUI`、`mods/System` 等）可达；
+- 公开字段/方法与枚举因 `@JvmField` / 默认可见性保持可达；
+- 未见 A14 包名、Hook target、资源名或 API 版本变化。
+
+## B2-8 批次执行结果
+
+### 迁移文件
+
+- `app/src/main/java/name/monwf/customiuizer/utils/AppDataAdapter.java` → `AppDataAdapter.kt`（289 → 312 LOC）
+- `app/src/main/java/name/monwf/customiuizer/subs/WiFiList.java` → `WiFiList.kt`（279 → 256 LOC）
+- `app/src/main/java/name/monwf/customiuizer/subs/AppSelector.java` → `AppSelector.kt`（270 → 289 LOC）
+- `app/src/main/java/name/monwf/customiuizer/subs/BTList.java` → `BTList.kt`（264 → 230 LOC）
+- 新增 `app/src/test/java/name/monwf/customiuizer/subs/B2_8_MigrationInteropTest.kt`（110 LOC）
+
+### 关键兼容点
+
+- `AppDataAdapter`：公开继承 `BaseAdapter` / `Filterable`；保留三 / 四 / 五参数构造器；`getCount` / `getItem` / `getItemId` / `getView` / `getFilter` / `updateSelectedApps` 签名不变；`ItemFilter` 为私有内部类；继续使用 `ThreadPoolExecutor` 与 `BitmapCachedLoader`；未引入 `!!`/coroutine；避免 `toRegex()` 拆分，使用 `lowercase(Locale)` 与 `removeAll { }`。
+- `WiFiList` / `BTList`：保留公开无参构造器；`SubFragment` 继承不变；`onCreate` / `onActivityCreated` / `onResume` / `onPause` / `onDestroy` 签名不变；`registerReceivers` / `unregisterReceivers` / `updateProgressBar` / `isWiFiReady` / `isLocationServicesEnabled` / `fetchCachedDevices` 公开方法保留；`WiFiAdapter` / `BTAdapter` 内部类保留；使用 `Context.RECEIVER_NOT_EXPORTED` / `RECEIVER_EXPORTED` 注册；避免 `toRegex()` 拆分 BSSID/地址。
+- `AppSelector`：继承 `SubFragmentWithSearch`；保留公开无参构造器；`onCreate` / `onActivityCreated` / `onActivityResult` 签名不变；保留 `setTargetFragment`（已 `@Suppress("DEPRECATION")`）与 `targetRequestCode`；继续使用 `Thread` 加载应用列表；`Helpers.MimeType` 位运算逻辑不变。
+
+### 验证
+
+- `./gradlew.bat --no-daemon :app:test`：BUILD SUCCESSFUL，107 tests / 0 failures；
+- `./gradlew.bat --no-daemon :app:lintDebug`：0 errors；
+- `./gradlew.bat --no-daemon :app:assembleDebug` / `:app:assembleRelease`：成功；
+- `git diff --check`：通过；
+- Release R8 mapping：B2-8 迁移类保持可达，applicationId / version / Xposed 元数据未变。
+
+## B2 阶段总结（截至 B2-8）
+
+### 已迁移 B2 文件
+
+| 批次 | 文件 | Java LOC | Kotlin LOC | 测试 |
+| ---- | ---- | -------- | ---------- | ---- |
+| B2-1 | `utils/SortableListView` | 319 | 260 | B2_1_MigrationInteropTest |
+| B2-2 | `subs/SortableList` | 211 | 161 | B2_2_MigrationInteropTest |
+| B2-3 | `SubFragmentWithSearch` / `subs/ActivitySelector` | 227 | 192 | B2_3_MigrationInteropTest |
+| B2-4 | `MainActivity` / `MainFragment` | 608 | 554 | B2_4_MigrationInteropTest |
+| B2-5 | `PreferenceFragmentBase` | 459 | 406 | B2_5_6_MigrationInteropTest |
+| B2-6 | `SubFragment` | 416 | 430 | B2_5_6_MigrationInteropTest |
+| B2-7 | `utils/AudioVisualizer` | 583 | 603 | B2_7_MigrationInteropTest |
+| B2-8 | `utils/AppDataAdapter` / `subs/WiFiList` / `subs/AppSelector` / `subs/BTList` | 1102 | 1087 | B2_8_MigrationInteropTest |
+| B2-9 | `utils/LockedAppAdapter` / `utils/PrivacyAppAdapter` | 351 | 345 | B2_9_MigrationInteropTest |
+
+合计：删除 Java 4276 LOC，新增 Kotlin 4038 LOC，新增测试 564 LOC。
+
+### 当前 B2 剩余候选
+
+B2 全部迁移完成；下一批进入 B3 Hook 层拆分审计。
+
+### 验证结论
+
+- 单元测试：111 tests，0 failures，0 errors；
+- lintDebug：0 errors；
+- assembleDebug / assembleRelease：成功；
+- Release R8 mapping：B2 迁移类均保持可达；
+- 未引入 A14 包名、Hook target、资源名或 API 版本变化；
+- 真机验证仍未完成。
+
+## B3 Hook 层拆分与迁移计划
+
+### 审计结论
+
+B3 目标为 `mods/` 目录下的 Xposed Hook 中心文件。按静态分析结果：
+
+| 文件 | LOC | 公开 Hook 方法数 | 主要风险 | 批次 |
+| ---- | --- | ---- | ---- | ---- |
+| `mods/PackagePermissions` | 159 | 1 | 低；单一 `hook`，仅 `system_server` | B3-1（已完成） |
+| `mods/Various` | 1 106 | ~22 | 中；跨 AppManager / Security / PowerKeeper / Phone / Settings | B3-2（已完成） |
+| `mods/Launcher` | 1 508 | ~37 | 中；大量手势 / 动画 / 布局 Hook，含 `GestureDetector` 与内部类 | B3-3（已完成） |
+| `mods/SystemUI` | 4 262 | ~45 | 高；状态栏 / QS / 通知 / 锁屏 / 音量，高频绘制路径、静态状态多 | B3-4（需进一步拆分） |
+| `mods/System` | 4 506 | ~75 | 高；`system_server` 核心，电源 / 音量 / 安全 / 通知 / 应用，状态复杂 | B3-5（最后处理） |
+
+### 拆分原则
+
+- 优先迁移边界清晰、调用方少、无高频 UI 绘制的方法；
+- 保持 `MainModule` 现有 `System.xxxHook` / `SystemUI.xxxHook` / `Launcher.xxxHook` / `Various.xxxHook` 调用链不变，必要时通过 `JvmStatic` 暴露同名方法；
+- 不拆分单个 Hook 方法内部逻辑，先按文件整体迁移，降低 `MainModule` 改动风险；
+- 每个迁移文件配对互操作测试；Hook 类因 libxposed 单元测试无法加载时，至少反射验证 `object` / `class` 与入口方法签名；
+- 不迁移 RED 边界文件：`MainModule.java`、`XposedHelpers.java`、`ModuleHelper.java`、`HookerClassHelper.java`、`ResourceHooks.java`。
+
+### B3-1 执行结果
+
+- 迁移文件：`app/src/main/java/name/monwf/customiuizer/mods/PackagePermissions.java` → `PackagePermissions.kt`（159 → 90 LOC）
+- 关键兼容点：
+  - 保持 `public object PackagePermissions` 与 `@JvmStatic fun hook(lpparam: SystemServerStartingParam)`；
+  - `systemPackages` 使用 `ConcurrentHashMap.newKeySet()` 保持线程安全；
+  - `XposedHelpers.getStaticObjectField` 结果通过 `mapNotNull { it as? String }` 安全转换为 `String[]`，消除 unchecked cast 警告；
+  - `MethodHook` 匿名子类替换为 Kotlin `object : MethodHook()`，保持 `intercept` / `chain.proceed` 语义。
+- 测试：新增 `app/src/test/java/name/monwf/customiuizer/mods/B3_1_MigrationInteropTest.kt`（反射验证 Kotlin object 与 `hook` 方法签名）。
+- 验证：`:app:test` 113 tests，0 failures；`:app:lintDebug` 0 errors；`:app:assembleDebug` / `:app:assembleRelease` 成功；`git diff --check` 通过。
+
+### B3-2 执行结果
+
+- 迁移文件：`app/src/main/java/name/monwf/customiuizer/mods/Various.java` → `Various.kt`（1 106 → 1 143 LOC）。
+- 关键兼容点：
+  - 保持 `public object Various` 与全部 `@JvmStatic` 公开 hook 方法，原 `MainModule` 调用链无需修改；
+  - `mLastPackageInfo` 与 `mSupportFragment` 使用 `@JvmField` 暴露为静态字段；
+  - 保留 `MethodHook` 的 `before` / `after` 回调、`BeforeHookCallback` / `AfterHookCallback`、`XposedInterface.Chain`、`XposedHelpers` 反射交互语义；
+  - `java.lang.System.currentTimeMillis()` 显式使用 FQCN 避免与包内 `System` 类冲突；
+  - Java `boolean[] isHooked` 改为 `BooleanArray`；Java `Runnable` 匿名类改为 Kotlin `object : Runnable` 以支持内部 `this` 引用。
+- 测试：新增 `app/src/test/java/name/monwf/customiuizer/mods/B3_2_MigrationInteropTest.kt`（反射验证 Kotlin object、`checkBundle`、`mLastPackageInfo`/`mSupportFragment` 字段及所有公开 hook 方法签名）。
+- 验证：`:app:test` 121 tests，0 failures；`:app:lintDebug` 0 errors；`:app:assembleDebug` / `:app:assembleRelease` 成功；Release R8 mapping 中 `Various` 与 `PackagePermissions` 均未被重命名；`git diff --check` 通过。
+
+### 下一批
+
+- B3-2：`mods/Various.java` → `Various.kt`。
+- B3-3：`mods/Launcher.java` → `Launcher.kt`（已完成）。
+- B3-4 / B3-5：`mods/SystemUI.java` / `mods/System.java` 暂缓，待进一步拆分审计后决定。
+
+## 长期保留的 Java 边界
+
+以下文件在当前阶段标记为 RED，原因已在矩阵中体现：
+
+- `app/src/main/java/name/monwf/customiuizer/mods/utils/XposedHelpers.java`：getDeclaredMethod, getDeclaredField, findAndHookMethod, hookAllMethods, hookAllConstructors, findMethodExact, findConstructorExact, findField, findClass；process-level mutable。
+- `app/src/main/java/name/monwf/customiuizer/MainModule.java`：findAndHookMethod, XposedHelpers.call, XposedModule, onPackageReady, onSystemServerStarting, onModuleLoaded；low risk mutable。
+- `app/src/main/java/name/monwf/customiuizer/mods/utils/ModuleHelper.java`：getDeclaredMethod, findAndHookMethod, hookAllMethods, hookAllConstructors, findClass, XposedHelpers.call；process-level mutable。
+- `app/src/main/java/name/monwf/customiuizer/mods/utils/HookerClassHelper.java`：none；low risk mutable。
+- `app/src/main/java/name/monwf/customiuizer/mods/utils/ResourceHooks.java`：findAndHookMethod, XposedHelpers.call；none。
+- `app/src/main/java/org/apache/commons/lang3/reflect/MemberUtilsX.java`：none；none。
