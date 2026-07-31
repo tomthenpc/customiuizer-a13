@@ -8,7 +8,7 @@ import tv.withaibuild.customiuizer.mods.diagnostics.ReasonCode
 import java.lang.reflect.Constructor
 import java.lang.reflect.Field
 import java.lang.reflect.Method
-import java.util.concurrent.ConcurrentHashMap
+
 
 /**
  * Lightweight, per-[ClassLoader] cache for hook targets.
@@ -25,8 +25,8 @@ import java.util.concurrent.ConcurrentHashMap
  */
 class HookTargetResolver(private val classLoader: ClassLoader) {
 
-    private val cache = ConcurrentHashMap<String, Any?>()
-    private val resolutionLog = ConcurrentHashMap<String, ResolutionLog>()
+    private val cache = HashMap<String, Any?>()
+    private val resolutionLog = HashMap<String, ResolutionLog>()
 
     /** Resolve a class by name, caching the result (including a negative result). */
     fun resolveClass(className: String, diagnosticId: String = DiagnosticIds.HOOK_TARGET_RESOLVER): Class<*>? {
@@ -54,8 +54,7 @@ class HookTargetResolver(private val classLoader: ClassLoader) {
         vararg parameterTypes: Class<*>,
         diagnosticId: String = DiagnosticIds.HOOK_TARGET_RESOLVER
     ): Method? {
-        val paramNames = parameterTypes.map { it.name }.toTypedArray()
-        val k = key("method", className, methodName, *paramNames)
+        val k = methodKey(className, methodName, parameterTypes)
         val cached = cache[k]
         if (cached != null) return if (cached === NULL) null else cached as Method
 
@@ -86,7 +85,11 @@ class HookTargetResolver(private val classLoader: ClassLoader) {
         diagnosticId: String = DiagnosticIds.HOOK_TARGET_RESOLVER
     ): List<Method>? {
         val clazz = resolveClass(className, diagnosticId) ?: return null
-        return clazz.declaredMethods.filter { it.name == methodName }
+        val matches = ArrayList<Method>()
+        for (m in clazz.declaredMethods) {
+            if (m.name == methodName) matches.add(m)
+        }
+        return matches
     }
 
     /**
@@ -98,8 +101,7 @@ class HookTargetResolver(private val classLoader: ClassLoader) {
         vararg parameterTypes: Class<*>,
         diagnosticId: String = DiagnosticIds.HOOK_TARGET_RESOLVER
     ): Constructor<*>? {
-        val paramNames = parameterTypes.map { it.name }.toTypedArray()
-        val k = key("constructor", className, *paramNames)
+        val k = constructorKey(className, parameterTypes)
         val cached = cache[k]
         if (cached != null) return if (cached === NULL) null else cached as Constructor<*>
 
@@ -129,7 +131,11 @@ class HookTargetResolver(private val classLoader: ClassLoader) {
         diagnosticId: String = DiagnosticIds.HOOK_TARGET_RESOLVER
     ): List<Constructor<*>>? {
         val clazz = resolveClass(className, diagnosticId) ?: return null
-        return clazz.declaredConstructors.toList()
+        val ctors = clazz.declaredConstructors
+        if (ctors.isEmpty()) return emptyList()
+        return ArrayList<Constructor<*>>(ctors.size).apply {
+            for (c in ctors) add(c)
+        }
     }
 
     /**
@@ -194,7 +200,7 @@ class HookTargetResolver(private val classLoader: ClassLoader) {
     ): Resolution<Class<*>> = resolveCandidates(
         diagnosticId,
         "class",
-        classNames.toList()
+        classNames.asList()
     ) { className ->
         resolveClass(className, diagnosticId)
     }
@@ -225,7 +231,7 @@ class HookTargetResolver(private val classLoader: ClassLoader) {
     ): Resolution<Field> = resolveCandidates(
         diagnosticId,
         "field",
-        candidateClasses.toList()
+        candidateClasses.asList()
     ) { className ->
         resolveField(className, fieldName, diagnosticId)
     }
@@ -321,12 +327,13 @@ class HookTargetResolver(private val classLoader: ClassLoader) {
         candidates: List<String>,
         resolver: (String) -> T?
     ): Resolution<T> {
-        val failures = mutableListOf<String>()
+        val failures = ArrayList<String>(candidates.size)
         var hit: T? = null
         var hitCandidate: String? = null
         var hitIndex = -1
 
-        for ((index, candidate) in candidates.withIndex()) {
+        var index = 0
+        for (candidate in candidates) {
             val result = resolver(candidate)
             if (result != null) {
                 hit = result
@@ -335,27 +342,27 @@ class HookTargetResolver(private val classLoader: ClassLoader) {
                 break
             }
             failures.add("$candidate: not found")
+            index++
         }
 
         val log = ResolutionLog(kind = kind, hit = hitCandidate, failures = failures)
         resolutionLog[diagnosticId] = log
 
-        val (compatibility, reasonCode, detail) = when {
-            hit == null -> Triple(
-                CompatibilityState.INCOMPATIBLE,
-                ReasonCode.TARGET_NOT_FOUND,
-                "no ${kind} candidate resolved; tried: ${failures.joinToString(", ")}"
-            )
-            hitIndex == 0 -> Triple(
-                CompatibilityState.COMPATIBLE,
-                ReasonCode.PRIMARY_TARGET_FOUND,
-                hitCandidate
-            )
-            else -> Triple(
-                CompatibilityState.DEGRADED,
-                ReasonCode.FALLBACK_TARGET_FOUND,
-                hitCandidate
-            )
+        val compatibility: CompatibilityState
+        val reasonCode: ReasonCode
+        val detail: String?
+        if (hit == null) {
+            compatibility = CompatibilityState.INCOMPATIBLE
+            reasonCode = ReasonCode.TARGET_NOT_FOUND
+            detail = "no ${kind} candidate resolved; tried: ${failures.joinToString(", ")}"
+        } else if (hitIndex == 0) {
+            compatibility = CompatibilityState.COMPATIBLE
+            reasonCode = ReasonCode.PRIMARY_TARGET_FOUND
+            detail = hitCandidate
+        } else {
+            compatibility = CompatibilityState.DEGRADED
+            reasonCode = ReasonCode.FALLBACK_TARGET_FOUND
+            detail = hitCandidate
         }
 
         DiagnosticRecorder.record(
@@ -369,6 +376,24 @@ class HookTargetResolver(private val classLoader: ClassLoader) {
     }
 
     private fun key(vararg parts: String): String = parts.joinToString("#")
+
+    private fun methodKey(className: String, methodName: String, parameterTypes: Array<out Class<*>>): String {
+        return buildString {
+            append("method#").append(className).append('#').append(methodName)
+            for (pt in parameterTypes) {
+                append('#').append(pt.name)
+            }
+        }
+    }
+
+    private fun constructorKey(className: String, parameterTypes: Array<out Class<*>>): String {
+        return buildString {
+            append("constructor#").append(className)
+            for (pt in parameterTypes) {
+                append('#').append(pt.name)
+            }
+        }
+    }
 
     private companion object {
         private val NULL = Any()

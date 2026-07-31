@@ -1,6 +1,6 @@
 package tv.withaibuild.customiuizer.mods.utils
 
-import java.util.concurrent.ConcurrentHashMap
+
 import java.util.concurrent.atomic.AtomicInteger
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertNotNull
@@ -193,7 +193,7 @@ class HookTargetResolverTest {
         val field = resolver.javaClass.getDeclaredField("cache")
         field.isAccessible = true
         @Suppress("UNCHECKED_CAST")
-        val cache = field.get(resolver) as ConcurrentHashMap<String, Any?>
+        val cache = field.get(resolver) as MutableMap<String, Any?>
         return cache.containsKey(key)
     }
 

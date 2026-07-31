@@ -27,15 +27,20 @@ object HookInstaller {
     ) {
         private val candidateToRequirement = contract.candidateToRequirement()
         val recordsById: MutableMap<String, HookTargetRecord> =
-            contract.allTargets.associateTo(LinkedHashMap()) {
-                it.id to HookTargetRecord(
-                    spec = it,
-                    requirementId = candidateToRequirement[it.id] ?: "",
-                    resolved = false,
-                    installed = false,
-                    failureReason = null,
-                    installedCount = 0
-                )
+            HashMap<String, HookTargetRecord>(contract.allTargets.size).apply {
+                for (target in contract.allTargets) {
+                    put(
+                        target.id,
+                        HookTargetRecord(
+                            spec = target,
+                            requirementId = candidateToRequirement[target.id] ?: "",
+                            resolved = false,
+                            installed = false,
+                            failureReason = null,
+                            installedCount = 0
+                        )
+                    )
+                }
             }
     }
 
@@ -79,14 +84,18 @@ object HookInstaller {
     }
 
     private fun finalize(s: Session): HookInstallResult {
-        val records = s.contract.allTargets.map { spec ->
-            s.recordsById[spec.id] ?: HookTargetRecord(
-                spec = spec,
-                requirementId = s.contract.candidateToRequirement()[spec.id] ?: "",
-                resolved = false,
-                installed = false,
-                failureReason = null,
-                installedCount = 0
+        val records = ArrayList<HookTargetRecord>(s.contract.allTargets.size)
+        val requirementMap = s.contract.candidateToRequirement()
+        for (spec in s.contract.allTargets) {
+            records.add(
+                s.recordsById[spec.id] ?: HookTargetRecord(
+                    spec = spec,
+                    requirementId = requirementMap[spec.id] ?: "",
+                    resolved = false,
+                    installed = false,
+                    failureReason = null,
+                    installedCount = 0
+                )
             )
         }
         return HookEvidenceEvaluator.evaluate(s.contract, records, HookEvidenceEvaluator.EvidencePhase.INSTALLATION)
@@ -182,8 +191,10 @@ object HookInstaller {
     @JvmStatic
     fun recordClassFailure(className: String, reason: HookFailureReason) {
         val s = session.get() ?: return
-        for (record in s.recordsById.values.filter { it.spec.className == className && !it.installed && it.failureReason == null }) {
-            s.recordsById[record.spec.id] = record.copy(failureReason = reason)
+        for (record in s.recordsById.values) {
+            if (record.spec.className == className && !record.installed && record.failureReason == null) {
+                s.recordsById[record.spec.id] = record.copy(failureReason = reason)
+            }
         }
     }
 
@@ -194,12 +205,17 @@ object HookInstaller {
         operation: HookOperation,
         parameterTypes: List<Class<*>>
     ): List<HookTargetRecord> {
-        return s.recordsById.values.filter {
-            it.spec.className == className &&
-                    it.spec.operation == operation &&
-                    (memberName == null || it.spec.memberName == memberName) &&
-                    parameterTypesMatch(it.spec, operation, parameterTypes)
+        val result = ArrayList<HookTargetRecord>()
+        for (record in s.recordsById.values) {
+            if (record.spec.className == className &&
+                record.spec.operation == operation &&
+                (memberName == null || record.spec.memberName == memberName) &&
+                parameterTypesMatch(record.spec, operation, parameterTypes)
+            ) {
+                result.add(record)
+            }
         }
+        return result
     }
 
     private fun parameterTypesMatch(
