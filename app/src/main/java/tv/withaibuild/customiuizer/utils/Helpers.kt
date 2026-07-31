@@ -93,13 +93,25 @@ object Helpers {
     @JvmField
     var withinAppContext: Boolean = false
 
+    private val ICON_CACHE_KB =
+        (Runtime.getRuntime().maxMemory() / 1024 / 16)
+            .toInt()
+            .coerceIn(512, 8 * 1024)
+
     @JvmField
-    val memoryCache: LruCache<String, Bitmap> = object : LruCache<String, Bitmap>(
-        (Runtime.getRuntime().maxMemory() / 1024 / 2).toInt()
-    ) {
+    val memoryCache: LruCache<String, Bitmap> = object : LruCache<String, Bitmap>(ICON_CACHE_KB) {
         override fun sizeOf(key: String, icon: Bitmap?): Int {
             return icon?.allocationByteCount?.div(1024) ?: (130 * 130 * 4 / 1024)
         }
+    }
+
+    @JvmStatic
+    fun invalidateAppCaches() {
+        memoryCache.evictAll()
+        installedAppsList = null
+        launchableAppsList = null
+        openWithAppsList = null
+        shareAppsList = null
     }
 
     @JvmField

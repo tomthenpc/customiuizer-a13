@@ -46,24 +46,24 @@ class MainApplication : Application() {
 
     override fun onTrimMemory(level: Int) {
         super.onTrimMemory(level)
-        if (level >= ComponentCallbacks2.TRIM_MEMORY_UI_HIDDEN) {
-            Helpers.memoryCache.evictAll()
-        } else if (level >= ComponentCallbacks2.TRIM_MEMORY_RUNNING_LOW) {
-            Helpers.memoryCache.trimToSize(Helpers.memoryCache.maxSize() / 2)
+        when {
+            level >= ComponentCallbacks2.TRIM_MEMORY_UI_HIDDEN -> {
+                Helpers.invalidateAppCaches()
+            }
+            level >= ComponentCallbacks2.TRIM_MEMORY_RUNNING_LOW -> {
+                Helpers.memoryCache.trimToSize(Helpers.memoryCache.maxSize() / 2)
+            }
         }
     }
 
-    private fun invalidateAppCaches() {
-        Helpers.memoryCache.evictAll()
-        Helpers.installedAppsList = null
-        Helpers.shareAppsList = null
-        Helpers.openWithAppsList = null
-        Helpers.launchableAppsList = null
+    override fun onLowMemory() {
+        super.onLowMemory()
+        Helpers.invalidateAppCaches()
     }
 
     private val packageChangeReceiver = object : BroadcastReceiver() {
         override fun onReceive(context: Context, intent: Intent) {
-            invalidateAppCaches()
+            Helpers.invalidateAppCaches()
         }
     }
 }
