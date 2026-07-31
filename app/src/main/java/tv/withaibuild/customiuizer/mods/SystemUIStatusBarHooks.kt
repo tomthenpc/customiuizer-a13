@@ -1597,7 +1597,6 @@ object SystemUIStatusBarHooks {
 
     @SuppressLint("DefaultLocale")
     private fun humanReadableByteCount(
-        modRes: Resources,
         bytes: Long,
         unitSuffix: String,
         speedChars: CharArray
@@ -1684,15 +1683,36 @@ object SystemUIStatusBarHooks {
         })
 
         ModuleHelper.hookAllMethods(nscCls, "updateText", object : MethodHook() {
+            private var cachedLocale: Locale? = null
+            private var cachedUnitSuffix = ""
+            private var cachedSpeedChars = CharArray(0)
+
+            private fun refreshFormatResources(modRes: Resources) {
+                val locale = modRes.configuration.locales[0]
+
+                if (
+                    locale == cachedLocale &&
+                    cachedSpeedChars.size >= 2
+                ) {
+                    return
+                }
+
+                cachedLocale = locale
+                cachedUnitSuffix = modRes.getString(R.string.Bs)
+                cachedSpeedChars = modRes.getString(R.string.speedunits).toCharArray()
+            }
+
             override fun before(param: BeforeHookCallback) {
                 val mContext = XposedHelpers.getObjectField(param.getThisObject(), "mContext") as? Context ?: return
                 val modRes = ModuleHelper.getModuleRes(mContext)
+                refreshFormatResources(modRes)
+
                 val hideSecUnit = MainModule.mPrefs.getBoolean("system_detailednetspeed_secunit")
                 val hideLow = MainModule.mPrefs.getBoolean("system_detailednetspeed_low")
                 val lowLevel = MainModule.mPrefs.getInt("system_detailednetspeed_lowlevel", 1) * 1024
                 val icons = MainModule.mPrefs.getStringAsInt("system_detailednetspeed_icon", 2)
-                val unitSuffix = if (hideSecUnit) "" else modRes.getString(R.string.Bs)
-                val speedChars = modRes.getString(R.string.speedunits).toCharArray()
+                val unitSuffix = if (hideSecUnit) "" else cachedUnitSuffix
+                val speedChars = cachedSpeedChars
 
                 var txarrow = ""
                 var rxarrow = ""
@@ -1704,8 +1724,8 @@ object SystemUIStatusBarHooks {
                     rxarrow = if (rxSpeed < lowLevel) " ⛉" else " ⛊"
                 }
 
-                val tx = if (hideLow && txSpeed < lowLevel) "" else humanReadableByteCount(modRes, txSpeed, unitSuffix, speedChars) + txarrow
-                val rx = if (hideLow && rxSpeed < lowLevel) "" else humanReadableByteCount(modRes, rxSpeed, unitSuffix, speedChars) + rxarrow
+                val tx = if (hideLow && txSpeed < lowLevel) "" else humanReadableByteCount(txSpeed, unitSuffix, speedChars) + txarrow
+                val rx = if (hideLow && rxSpeed < lowLevel) "" else humanReadableByteCount(rxSpeed, unitSuffix, speedChars) + rxarrow
                 if (newStyle) {
                     param.getArgs()[0] = arrayOf(tx + "\n" + rx, "")
                 } else {
