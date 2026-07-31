@@ -101,6 +101,23 @@ class PrefMap<K : Any, V : Any> : ConcurrentHashMap<K, V>() {
         return super.remove(normalized)
     }
 
+    override fun containsKey(key: K): Boolean {
+        return if (key is String) {
+            super.containsKey(normalizeKey(key) as K)
+        } else {
+            super.containsKey(key)
+        }
+    }
+
+    /**
+     * Replace the map contents with [map] without exposing an intermediate empty state.
+     * New and updated keys are inserted first, then keys no longer present are removed.
+     */
+    fun replaceSnapshot(map: Map<K, V>) {
+        putAll(map)
+        keys.retainAll(map.keys)
+    }
+
     override fun clear() {
         parsedIntCache.clear()
         super.clear()
