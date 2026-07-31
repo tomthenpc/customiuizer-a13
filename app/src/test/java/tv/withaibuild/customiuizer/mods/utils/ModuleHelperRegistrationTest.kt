@@ -34,6 +34,23 @@ class ModuleHelperRegistrationTest {
     }
 
     @Test
+    fun ownedObserverDropsWhenOwnerIsGarbageCollected() {
+        var calls = 0
+
+        val register = {
+            ModuleHelper.observePreferenceChange("gc.owner", Any()) { calls++ }
+        }
+        register()
+        // Force the owner to become unreachable.
+        System.gc()
+
+        ModuleHelper.handlePreferenceChanged("changed")
+
+        // The registration must self-clean when the owner is gone.
+        assertEquals(0, calls)
+    }
+
+    @Test
     fun ownerAndKeyReplaceOnlyTheSameOwnedObserver() {
         val owner = Any()
         var oldCalls = 0

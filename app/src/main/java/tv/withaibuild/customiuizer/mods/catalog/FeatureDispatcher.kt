@@ -25,6 +25,7 @@ import tv.withaibuild.customiuizer.mods.diagnostics.InstallSummary
 import tv.withaibuild.customiuizer.mods.diagnostics.ReasonCode
 import tv.withaibuild.customiuizer.mods.utils.HookInstaller
 import tv.withaibuild.customiuizer.mods.utils.HookTargetContract
+import tv.withaibuild.customiuizer.mods.utils.XposedHelpers
 import tv.withaibuild.customiuizer.utils.PrefMap
 
 /**
@@ -45,33 +46,42 @@ object FeatureDispatcher {
     ): FeatureRuntime = FeatureRuntime(processName, lpparam, classLoader, prefs)
 
     @JvmStatic
-    fun installById(featureId: String, runtime: FeatureRuntime): Boolean = when (featureId) {
-        "packagePermissions" -> installPackagePermissions(runtime)
-        "statusBarClockTweak" -> installStatusBarClockTweak(runtime)
-        "autoBrightnessRange" -> installAutoBrightnessRange(runtime)
-        "muffledVibration" -> installMuffledVibration(runtime)
-        "noMoreIcon" -> installNoMoreIcon(runtime)
-        "batteryIndicator" -> installBatteryIndicator(runtime)
-        "noClockHide" -> installNoClockHide(runtime)
-        "noWidgetOnly" -> installNoWidgetOnly(runtime)
-        "screenDimTime" -> installScreenDimTime(runtime)
-        "firstVolumePress" -> installFirstVolumePress(runtime)
-        "networkIndicatorWifi" -> installNetworkIndicatorWifi(runtime)
-        "muteVisibleNotifications" -> installMuteVisibleNotifications(runtime)
-        "hideLauncherTitles" -> installHideLauncherTitles(runtime)
-        "fixAppInfoLaunch" -> installFixAppInfoLaunch(runtime)
-        "hideProximityWarning" -> installHideProximityWarning(runtime)
-        "clearAllTasks" -> installClearAllTasks(runtime)
-        "hideDismissView" -> installHideDismissView(runtime)
-        "hideLockScreenHint" -> installHideLockScreenHint(runtime)
-        "folderColumns" -> installFolderColumns(runtime)
-        "titleTopMargin" -> installTitleTopMargin(runtime)
-        "noLightUpOnCharge" -> installNoLightUpOnCharge(runtime)
-        "allRotations" -> installAllRotations(runtime)
-        "noNetworkSpeedSeparator" -> installNoNetworkSpeedSeparator(runtime)
-        "hideIconsClock" -> installHideIconsClock(runtime)
-        "noUnlockAnimation" -> installNoUnlockAnimation(runtime)
-        else -> false
+    fun installById(featureId: String, runtime: FeatureRuntime): Boolean {
+        val feature = FeatureId.fromString(featureId)
+        if (feature == null) {
+            XposedHelpers.log("FeatureDispatcher: unknown feature id: " + featureId)
+            return false
+        }
+        return install(feature, runtime)
+    }
+
+    @JvmStatic
+    fun install(feature: FeatureId, runtime: FeatureRuntime): Boolean = when (feature) {
+        FeatureId.PACKAGE_PERMISSIONS -> installPackagePermissions(runtime)
+        FeatureId.STATUS_BAR_CLOCK_TWEAK -> installStatusBarClockTweak(runtime)
+        FeatureId.AUTO_BRIGHTNESS_RANGE -> installAutoBrightnessRange(runtime)
+        FeatureId.MUFFLED_VIBRATION -> installMuffledVibration(runtime)
+        FeatureId.NO_MORE_ICON -> installNoMoreIcon(runtime)
+        FeatureId.BATTERY_INDICATOR -> installBatteryIndicator(runtime)
+        FeatureId.NO_CLOCK_HIDE -> installNoClockHide(runtime)
+        FeatureId.NO_WIDGET_ONLY -> installNoWidgetOnly(runtime)
+        FeatureId.SCREEN_DIM_TIME -> installScreenDimTime(runtime)
+        FeatureId.FIRST_VOLUME_PRESS -> installFirstVolumePress(runtime)
+        FeatureId.NETWORK_INDICATOR_WIFI -> installNetworkIndicatorWifi(runtime)
+        FeatureId.MUTE_VISIBLE_NOTIFICATIONS -> installMuteVisibleNotifications(runtime)
+        FeatureId.HIDE_LAUNCHER_TITLES -> installHideLauncherTitles(runtime)
+        FeatureId.FIX_APP_INFO_LAUNCH -> installFixAppInfoLaunch(runtime)
+        FeatureId.HIDE_PROXIMITY_WARNING -> installHideProximityWarning(runtime)
+        FeatureId.CLEAR_ALL_TASKS -> installClearAllTasks(runtime)
+        FeatureId.HIDE_DISMISS_VIEW -> installHideDismissView(runtime)
+        FeatureId.HIDE_LOCK_SCREEN_HINT -> installHideLockScreenHint(runtime)
+        FeatureId.FOLDER_COLUMNS -> installFolderColumns(runtime)
+        FeatureId.TITLE_TOP_MARGIN -> installTitleTopMargin(runtime)
+        FeatureId.NO_LIGHT_UP_ON_CHARGE -> installNoLightUpOnCharge(runtime)
+        FeatureId.ALL_ROTATIONS -> installAllRotations(runtime)
+        FeatureId.NO_NETWORK_SPEED_SEPARATOR -> installNoNetworkSpeedSeparator(runtime)
+        FeatureId.HIDE_ICONS_CLOCK -> installHideIconsClock(runtime)
+        FeatureId.NO_UNLOCK_ANIMATION -> installNoUnlockAnimation(runtime)
     }
 
     private fun installPackagePermissions(runtime: FeatureRuntime): Boolean {
