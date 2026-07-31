@@ -1,5 +1,27 @@
 # Changelog
 
+## r13.8.5 (A13 branch consolidation and locally-signed candidate)
+
+### Branch consolidation
+
+- Used `fix/r13.8.3-ui-text-inheritance-and-about-wrap` as the candidate baseline; verified it already contains the effective commits from `devin/r13.7.1-maintenance-foundation` through `devin/r13.8-scope-and-stability`, the Catalog expansion batches, install-evidence work, and the `fix/r13.8-ui` semantics;
+- recorded `fix/r13.8-ui-text-inheritance-and-about-wrap` as `patch-equivalent/obsolete` because its about-wrapping and text-style-invariant rules are fully covered by later `r13.8.3` commits; not merged again;
+- all other branches are ancestors or patch-equivalent, requiring no extra merge commits.
+
+### Fixes and cleanup
+
+- Unified the active version as `r13.8.5` in `release-manifest.json`, README, CHANGELOG, build docs, and test docs;
+- Fixed `release-manifest.json` `compileSdk=34` to `36` to match the Gradle configuration;
+- Replaced/updated the stale `r13.7.1` draft and noted the build is a locally-signed candidate pending device/LSPosed validation;
+- Clarified the `certificateDnNote` A14 label is a historical certificate name kept for A13 upgrade compatibility; the signing key was not changed;
+- Updated CI to trigger on `release/**` and pinned the `audit-system-migration.py` baseline to a stable SHA instead of the unresolvable `backup/r13-k5-before-system-java-removal`.
+
+### Verification
+
+- `check-invariants`, `audit-system-migration`, `audit-architecture`, `audit-prefs`, `audit-canary-sequence`, and `audit-catalog-contracts` all pass;
+- `:app:testDebugUnitTest`, `:app:lintDebug`, `:app:lintRelease`, `:app:lintVitalRelease`, `:app:assembleDebug`, and `:app:minifyReleaseWithR8` results will be filled in after the build;
+- `CustoMIUIzer-A13-r13.8.5.apk` is a locally-signed candidate pending real-device and LSPosed log validation.
+
 ## r13.7.0 (A13 engineering-parity formal release)
 
 ### Runtime stability

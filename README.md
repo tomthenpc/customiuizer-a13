@@ -10,6 +10,16 @@
 也不支持 Android 14 及更高版本或其他 MIUI 大版本。面向 LSPosed 用户的安装与下载说明位于
 [Xposed-Modules-Repo/tv.withaibuild.customiuizer.r13](https://github.com/Xposed-Modules-Repo/tv.withaibuild.customiuizer.r13)。
 
+## r13.8.5（本地签名候选版本）
+
+`r13.8.5` 是 A13 分支整合与工程文档统一后的本地签名候选版本：
+
+- 整合 `devin/r13.7.1-maintenance-foundation` 至 `devin/r13.8-scope-and-stability`、`fix/r13.8.3-ui-text-inheritance-and-about-wrap` 等分支的有效提交；
+- 清理版本号、发布清单、构建文档和 CI，将活动版本统一到 `r13.8.5` / `versionCode 130`；
+- 修复 `release-manifest.json` 中 `compileSdk` 与 Gradle 配置不一致、过期 `r13.7.1` draft 等问题；
+- CI 基线审计改用可解析的固定 SHA，支持 `release/**` 分支触发；
+- 仍为**本地签名候选 APK**，需实机和 LSPosed 日志验证，不创建 tag 或 GitHub Release。
+
 ## r13.7.0
 
 `r13.7.0` 是 A13 工程追平与稳定性治理后的首个正式版本：
@@ -72,7 +82,7 @@ Release / Develop 构建必须使用仓库外的 `../keystore.properties` 指向
 
 ```bash
 python tools/check-invariants.py
-python tools/audit-system-migration.py --baseline-ref backup/r13-k5-before-system-java-removal
+python tools/audit-system-migration.py --baseline-ref 8df0c3ded351c4cf2a0401a0a470d00103c2ad76
 ./gradlew clean :app:test :app:lintDebug :app:lintRelease :app:assembleDebug :app:assembleRelease
 ./gradlew :app:lintVitalRelease --rerun-tasks
 ```

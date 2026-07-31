@@ -1,5 +1,27 @@
 # Changelog
 
+## r13.8.5（A13 分支整合与本地签名候选版）
+
+### 分支整合
+
+- 以 `fix/r13.8.3-ui-text-inheritance-and-about-wrap` 为候选基线，验证其已包含 `devin/r13.7.1-maintenance-foundation` 至 `devin/r13.8-scope-and-stability`、Catalog 扩展、安装证据与 `fix/r13.8-ui` 修复的语义；
+- `fix/r13.8-ui-text-inheritance-and-about-wrap` 的 about 换行与文本样式不变量规则已被 `r13.8.3` 的后续提交完整覆盖，记录为 `patch-equivalent/obsolete`，不重复合并；
+- 其他分支均为基线祖先或 patch-equivalent，无需额外 merge commit。
+
+### 修复与整理
+
+- 统一 `release-manifest.json`、`README`、`CHANGELOG`、构建与测试文档中的活动版本为 `r13.8.5`；
+- 修正 `release-manifest.json` 中 `compileSdk=34` 为与 Gradle 配置一致的 `36`；
+- 删除/更新停留在 `r13.7.1` 的过期 draft，明确当前为本地签名候选、待实机验证；
+- 说明 `certificateDnNote` 中 A14 名称为历史证书标签，未更换签名者，仅用于 A13 升级兼容；
+- 修正 CI 分支触发为 `release/**` 并固化 `audit-system-migration.py` 基线 SHA，避免依赖无法解析的 `backup/r13-k5-before-system-java-removal`。
+
+### 验证
+
+- 运行 `check-invariants`、`audit-system-migration`、`audit-architecture`、`audit-prefs`、`audit-canary-sequence`、`audit-catalog-contracts`：均通过；
+- 运行 `:app:testDebugUnitTest`、`:app:lintDebug`、`:app:lintRelease`、`:app:lintVitalRelease`、`:app:assembleDebug`、`:app:minifyReleaseWithR8`：待填入具体结果；
+- 构建 `CustoMIUIzer-A13-r13.8.5.apk`：待实机与 LSPosed 日志验证。
+
 ## r13.7.0（A13 工程追平正式版）
 
 ### 运行稳定性

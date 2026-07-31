@@ -13,6 +13,16 @@ does not support Android 14 or later, or other major MIUI versions. User-facing 
 downloads are hosted in
 [Xposed-Modules-Repo/tv.withaibuild.customiuizer.r13](https://github.com/Xposed-Modules-Repo/tv.withaibuild.customiuizer.r13).
 
+## r13.8.5 (locally-signed candidate)
+
+`r13.8.5` is a locally-signed candidate built after consolidating the A13 maintenance and Catalog branches and unifying release documentation:
+
+- integrates effective commits from `devin/r13.7.1-maintenance-foundation` through `devin/r13.8-scope-and-stability` and `fix/r13.8.3-ui-text-inheritance-and-about-wrap`;
+- cleans up version numbers, the release manifest, build docs, and CI so the active version is `r13.8.5` with `versionCode 130`;
+- fixes `release-manifest.json` `compileSdk` mismatch and the stale `r13.7.1` draft;
+- updates CI to trigger on `release/**` and uses a stable, resolvable baseline SHA for the System migration audit;
+- remains a **locally-signed candidate APK** pending real-device and LSPosed log validation; no tag or GitHub Release is created.
+
 ## r13.7.0
 
 `r13.7.0` is the first formal release after the A13 engineering parity and stability program:
@@ -75,7 +85,7 @@ Recommended local gates:
 
 ```bash
 python tools/check-invariants.py
-python tools/audit-system-migration.py --baseline-ref backup/r13-k5-before-system-java-removal
+python tools/audit-system-migration.py --baseline-ref 8df0c3ded351c4cf2a0401a0a470d00103c2ad76
 ./gradlew clean :app:test :app:lintDebug :app:lintRelease :app:assembleDebug :app:assembleRelease
 ./gradlew :app:lintVitalRelease --rerun-tasks
 ```

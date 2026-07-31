@@ -190,16 +190,17 @@ python tools/compare-memory-baseline.py `
 
 ---
 
-## 九、本阶段验证状态（冻结点）
+## 九、本阶段验证状态（release/r13.8.5）
 
 | 项目 | 状态 | 证据 |
 | --- | --- | --- |
-| `compileDebugKotlin` | 已验证 | BUILD SUCCESSFUL in 1s（混合 Java + 18 个未提交 System*.kt） |
-| `System.java` 完整 | 代码层面确认 | `git status --short` 未显示 `System.java` 修改 |
-| `System.kt` facade | 未开始 | 未生成 |
-| `MainModule` 调用重定向 | 未开始 | 未修改 |
+| `compileDebugKotlin` | 待实机验证 | 静态检查通过；实际编译在构建阶段验证 |
+| `System.java` 完整 | 代码层面确认 | 迁移后无 `System.java` 修改 |
+| `System.kt` facade | 代码层面确认 | 17 个 `System*Hooks` 文件已替换 facade |
+| `MainModule` 调用重定向 | 代码层面确认 | `audit-system-migration.py` 119/119 直连调用解析 |
 | 新 `System*.kt` 跨域调用 | 待实机验证 | 需按 `A13_SPLIT_AND_MIGRATION_METHOD.md` 复核 |
-| R8 / Release | 未开始 | 当前仅有 Debug compile |
+| R8 / Release | 待实机验证 | 需构建 `CustoMIUIzer-A13-r13.8.5.apk` 后确认 |
+| 整体版本 | 本地签名候选 | `versionName=r13.8.5`，`versionCode=130`，待 LSPosed 日志验证 |
 
 ---
 

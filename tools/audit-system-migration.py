@@ -3,7 +3,8 @@
 
 Usage:
     python tools/audit-system-migration.py
-    python tools/audit-system-migration.py --baseline-ref backup/r13-k5-before-system-java-removal
+    python tools/audit-system-migration.py
+    python tools/audit-system-migration.py --baseline-ref 8df0c3ded351c4cf2a0401a0a470d00103c2ad76
 
 Exit code:
     0 if the migration passes the hardened audit
@@ -1370,8 +1371,8 @@ def main() -> int:
     parser = argparse.ArgumentParser(description="Audit K5 System.java -> Kotlin migration")
     parser.add_argument(
         "--baseline-ref",
-        default=None,
-        help="Git ref to old System.java for baseline comparison",
+        default="8df0c3ded351c4cf2a0401a0a470d00103c2ad76",
+        help="Git ref (SHA, branch, or tag) to old System.java for baseline comparison",
     )
     args = parser.parse_args()
 
