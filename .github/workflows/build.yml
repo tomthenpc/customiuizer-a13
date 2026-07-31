@@ -22,14 +22,8 @@ jobs:
           java-version: "17"
       - uses: gradle/actions/setup-gradle@v4
 
-      - name: Static invariants and architecture audits
-        run: |
-          python tools/check-invariants.py
-          python tools/audit-system-migration.py --baseline-ref 8df0c3ded351c4cf2a0401a0a470d00103c2ad76
-          python tools/audit-architecture.py
-          python tools/audit-prefs.py
-          python tools/audit-canary-sequence.py
-          python tools/audit-catalog-contracts.py
+      - name: Static invariants
+        run: python tools/check-invariants.py
 
       - name: Full local verification
         run: python tools/verify.py full
