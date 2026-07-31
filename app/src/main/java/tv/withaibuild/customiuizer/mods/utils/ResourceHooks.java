@@ -6,58 +6,29 @@ import android.util.Pair;
 import android.util.SparseArray;
 import android.util.SparseIntArray;
 
-import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicReference;
 
 import io.github.libxposed.api.XposedInterface;
 import tv.withaibuild.customiuizer.mods.utils.HookerClassHelper.MethodHook;
 
 /**
- * Hot-path resource replacement hooks. All per-call reflection and string
- * lookups are avoided on the resolved cache hit path.
+ * Hot-path resource replacement hooks. Resources getter callbacks are bound to a
+ * fixed integer {@code kind} at install time; no Executable name lookup or string
+ * comparison happens on the hot path.
  *
- * <p>Each hooked {@link Resources} method gets a dedicated {@link TypedMethodHook}
- * that already knows its method name and extra-argument count. The method name
- * is no longer read from {@code chain.getExecutable().getName()} on every call.
- *
- * <p>{@link #applyHooks()} uses an explicit install state machine and a per-method
- * installed set so failures can be retried without double-hooking the same method.
+ * <p>Each kind has a dedicated MethodHook created once and reused for every call.
+ * The per-kind bit in {@link #installedMask} records which Resources methods are
+ * already hooked, so partial failures can be retried without double-hooking.
  */
 public class ResourceHooks {
 
-    /** Install state for the whole hook family. */
     private enum InstallState {
         UNINSTALLED,
         INSTALLING,
         INSTALLED,
-        FAILED_PARTIAL
-    }
-
-    /** Method types we replace. Each instance is created exactly once. */
-    private enum ResourceMethod {
-        INTEGER("getInteger", 0),
-        LAYOUT("getLayout", 0),
-        FRACTION("getFraction", 2),
-        BOOLEAN("getBoolean", 0),
-        DIMENSION("getDimension", 0),
-        DIMENSION_PIXEL_OFFSET("getDimensionPixelOffset", 0),
-        DIMENSION_PIXEL_SIZE("getDimensionPixelSize", 0),
-        TEXT("getText", 0),
-        STRING("getString", 0),
-        DRAWABLE_FOR_DENSITY("getDrawableForDensity", 2),
-        INT_ARRAY("getIntArray", 0),
-        STRING_ARRAY("getStringArray", 0),
-        TEXT_ARRAY("getTextArray", 0),
-        ANIMATION("getAnimation", 0);
-
-        final String name;
-        final int extraArgs;
-
-        ResourceMethod(String name, int extraArgs) {
-            this.name = name;
-            this.extraArgs = extraArgs;
-        }
+        PARTIAL_FAILED
     }
 
     public enum ReplacementType {
@@ -66,12 +37,61 @@ public class ResourceHooks {
         OBJECT
     }
 
-    /** Set once the hook family is live; retries are allowed from FAILED_PARTIAL. */
+    // Fixed method kinds. The index in the parallel arrays is also the bit offset
+    // in installedMask (1 << index).
+    static final int KIND_INTEGER = 0;
+    static final int KIND_LAYOUT = 1;
+    static final int KIND_FRACTION = 2;
+    static final int KIND_BOOLEAN = 3;
+    static final int KIND_DIMENSION = 4;
+    static final int KIND_DIMENSION_PIXEL_OFFSET = 5;
+    static final int KIND_DIMENSION_PIXEL_SIZE = 6;
+    static final int KIND_TEXT = 7;
+    static final int KIND_STRING = 8;
+    static final int KIND_DRAWABLE_FOR_DENSITY = 9;
+    static final int KIND_INT_ARRAY = 10;
+    static final int KIND_STRING_ARRAY = 11;
+    static final int KIND_TEXT_ARRAY = 12;
+    static final int KIND_ANIMATION = 13;
+
+    private static final int KIND_COUNT = 14;
+    private static final int[] KINDS = {
+        KIND_INTEGER, KIND_LAYOUT, KIND_FRACTION, KIND_BOOLEAN,
+        KIND_DIMENSION, KIND_DIMENSION_PIXEL_OFFSET, KIND_DIMENSION_PIXEL_SIZE,
+        KIND_TEXT, KIND_STRING, KIND_DRAWABLE_FOR_DENSITY,
+        KIND_INT_ARRAY, KIND_STRING_ARRAY, KIND_TEXT_ARRAY, KIND_ANIMATION
+    };
+
+    private static final String[] NAMES = {
+        "getInteger",
+        "getLayout",
+        "getFraction",
+        "getBoolean",
+        "getDimension",
+        "getDimensionPixelOffset",
+        "getDimensionPixelSize",
+        "getText",
+        "getString",
+        "getDrawableForDensity",
+        "getIntArray",
+        "getStringArray",
+        "getTextArray",
+        "getAnimation"
+    };
+
+    private static final int[] EXTRA_ARGS = {
+        0, 0, 2, 0,
+        0, 0, 0,
+        0, 0, 2,
+        0, 0, 0, 0
+    };
+
+    private static final int ALL_METHODS_MASK = 0x00003fff; // (1 << 14) - 1
+    private static final int MAX_ACTIVE = 256;
+
     private final AtomicReference<InstallState> installState =
         new AtomicReference<>(InstallState.UNINSTALLED);
-
-    /** Tracks which specific Resources method has already been hooked successfully. */
-    private final Set<String> installedMethods = ConcurrentHashMap.newKeySet();
+    private final AtomicInteger installedMask = new AtomicInteger(0);
 
     private final SparseIntArray fakes = new SparseIntArray();
     private final ConcurrentHashMap<String, Pair<ReplacementType, Object>> unresolved =
@@ -79,62 +99,56 @@ public class ResourceHooks {
     private final AtomicReference<SparseArray<Pair<ReplacementType, Object>>> active =
         new AtomicReference<>(new SparseArray<Pair<ReplacementType, Object>>());
 
-    private static final int MAX_ACTIVE = 256;
-
     public static int getFakeResId(String resourceName) {
         return 0x7e00f000 | (resourceName.hashCode() & 0x00ffffff);
     }
 
     public ResourceHooks() {}
 
-    /** Hook with fixed method metadata; no Executable lookup on the hot path. */
-    private final class TypedMethodHook extends MethodHook {
-        final ResourceMethod method;
+    /**
+     * Hot path entry. The kind is fixed at install time; no runtime Executable
+     * or string lookup is performed here.
+     */
+    private Object interceptResource(int kind, XposedInterface.Chain chain) throws Throwable {
+        // Fastest: no state at all.
+        if (fakes.size() == 0 && unresolved.isEmpty() && active.get().size() == 0)
+            return chain.proceed();
 
-        TypedMethodHook(ResourceMethod method) {
-            this.method = method;
+        int resId = (int) chain.getArg(0);
+
+        int modResId = fakes.get(resId);
+        if (modResId != 0) {
+            Context mContext = ModuleHelper.findContext();
+            if (mContext != null) {
+                Object value = getFakeResource(mContext, kind, modResId, chain);
+                if (value != null) return value;
+            }
         }
 
-        @Override
-        public Object intercept(XposedInterface.Chain chain) throws Throwable {
-            // Skip the common case entirely: no fakes, active cache or replacements.
-            SparseArray<Pair<ReplacementType, Object>> currentActive = active.get();
-            if (fakes.size() == 0 && unresolved.isEmpty() && currentActive.size() == 0)
-                return chain.proceed();
+        if (unresolved.isEmpty() && active.get().size() == 0) return chain.proceed();
 
-            int resId = (int) chain.getArg(0);
+        Object value = getResourceReplacement(resId, (Resources) chain.getThisObject(), kind, chain);
+        if (value == null) return chain.proceed();
 
-            // Fakes table is keyed by the fake resource id.
-            int modResId = fakes.get(resId);
-            if (modResId != 0) {
-                Context mContext = ModuleHelper.findContext();
-                if (mContext != null) {
-                    Object value = getFakeResource(mContext, method, modResId, chain);
-                    if (value != null) return value;
-                }
-            }
-
-            // Active replacements are checked before Context lookup.
-            if (unresolved.isEmpty() && currentActive.size() == 0) return chain.proceed();
-
-            Object value = getResourceReplacement(resId, (Resources) chain.getThisObject(), method, chain);
-            if (value == null) return chain.proceed();
-
-            if (method == ResourceMethod.DIMENSION_PIXEL_OFFSET
-                || method == ResourceMethod.DIMENSION_PIXEL_SIZE) {
-                if (value instanceof Float) value = ((Float) value).intValue();
-            }
-            return value;
+        if (kind == KIND_DIMENSION_PIXEL_OFFSET || kind == KIND_DIMENSION_PIXEL_SIZE) {
+            if (value instanceof Float) value = ((Float) value).intValue();
         }
+        return value;
+    }
+
+    private MethodHook createReplacementHook(final int kind) {
+        return new MethodHook() {
+            @Override
+            public Object intercept(XposedInterface.Chain chain) throws Throwable {
+                return interceptResource(kind, chain);
+            }
+        };
     }
 
     /**
-     * Install all method hooks. The state machine guarantees:
-     * <ul>
-     *   <li>no method is double-hooked;</li>
-     *   <li>a partial failure can be retried on the next call;</li>
-     *   <li>parallel callers block cleanly on the state machine.</li>
-     * </ul>
+     * Install all Resources getter hooks. Each method is tracked by a bit in
+     * {@link #installedMask}. Successful bits stay set; failed bits can be retried
+     * by the next call. No method is ever registered twice.
      */
     private void applyHooks() {
         InstallState current;
@@ -144,32 +158,44 @@ public class ResourceHooks {
             if (installState.compareAndSet(current, InstallState.INSTALLING)) break;
         }
 
-        boolean allOk = true;
         try {
-            for (ResourceMethod method : ResourceMethod.values()) {
-                if (!installedMethods.add(method.name)) continue;
-                Class<?>[] paramTypes = getParamTypes(method);
-                try {
-                    ModuleHelper.findAndHookMethod(Resources.class, method.name, paramTypes, new TypedMethodHook(method));
-                } catch (Throwable t) {
-                    try { XposedHelpers.log(t); } catch (Throwable ignored) {}
-                    installedMethods.remove(method.name);
-                    allOk = false;
+            boolean anyFailed = false;
+            for (int i = 0; i < KIND_COUNT; i++) {
+                final int bit = 1 << i;
+                // Try to claim this bit; if claimed, install and reset bit on failure.
+                while (true) {
+                    int mask = installedMask.get();
+                    if ((mask & bit) != 0) break;
+                    if (!installedMask.compareAndSet(mask, mask | bit)) continue;
+                    try {
+                        ModuleHelper.findAndHookMethod(
+                            Resources.class,
+                            NAMES[i],
+                            getParamTypes(i),
+                            createReplacementHook(KINDS[i])
+                        );
+                    } catch (Throwable t) {
+                        try { XposedHelpers.log(t); } catch (Throwable ignored) {}
+                        installedMask.compareAndSet(mask | bit, mask);
+                        anyFailed = true;
+                    }
+                    break;
                 }
             }
+
+            int finalMask = installedMask.get();
+            installState.set(finalMask == ALL_METHODS_MASK ? InstallState.INSTALLED : InstallState.PARTIAL_FAILED);
         } catch (Throwable t) {
             try { XposedHelpers.log(t); } catch (Throwable ignored) {}
-            allOk = false;
-        } finally {
-            installState.set(allOk ? InstallState.INSTALLED : InstallState.FAILED_PARTIAL);
+            installState.set(InstallState.PARTIAL_FAILED);
         }
     }
 
-    private static Class<?>[] getParamTypes(ResourceMethod method) {
-        switch (method) {
-            case FRACTION:
+    private static Class<?>[] getParamTypes(int index) {
+        switch (KINDS[index]) {
+            case KIND_FRACTION:
                 return new Class<?>[] { int.class, int.class, int.class };
-            case DRAWABLE_FOR_DENSITY:
+            case KIND_DRAWABLE_FOR_DENSITY:
                 return new Class<?>[] { int.class, int.class, Resources.Theme.class };
             default:
                 return new Class<?>[] { int.class };
@@ -183,23 +209,23 @@ public class ResourceHooks {
             fakes.put(fakeResId, resId);
             return fakeResId;
         } catch (Throwable t) {
-            XposedHelpers.log(t);
+            try { XposedHelpers.log(t); } catch (Throwable ignored) {}
             return 0;
         }
     }
 
     private Object getFakeResource(
         Context context,
-        ResourceMethod method,
+        int kind,
         int modResId,
         XposedInterface.Chain chain
     ) {
         try {
             if (context == null || fakes.size() == 0) return null;
             Resources modRes = ModuleHelper.getModuleRes(context);
-            return callModuleResource(modRes, method, modResId, chain);
+            return callModuleResource(modRes, kind, modResId, chain);
         } catch (Throwable t) {
-            XposedHelpers.log(t);
+            try { XposedHelpers.log(t); } catch (Throwable ignored) {}
             return null;
         }
     }
@@ -210,7 +236,7 @@ public class ResourceHooks {
             unresolved.put(pkg + ":" + type + "/" + name, new Pair<>(ReplacementType.ID, replacementResId));
             active.set(new SparseArray<Pair<ReplacementType, Object>>());
         } catch (Throwable t) {
-            XposedHelpers.log(t);
+            try { XposedHelpers.log(t); } catch (Throwable ignored) {}
         }
     }
 
@@ -220,7 +246,7 @@ public class ResourceHooks {
             unresolved.put(pkg + ":" + type + "/" + name, new Pair<>(ReplacementType.DENSITY, replacementResValue));
             active.set(new SparseArray<Pair<ReplacementType, Object>>());
         } catch (Throwable t) {
-            XposedHelpers.log(t);
+            try { XposedHelpers.log(t); } catch (Throwable ignored) {}
         }
     }
 
@@ -230,14 +256,14 @@ public class ResourceHooks {
             unresolved.put(pkg + ":" + type + "/" + name, new Pair<>(ReplacementType.OBJECT, replacementResValue));
             active.set(new SparseArray<Pair<ReplacementType, Object>>());
         } catch (Throwable t) {
-            XposedHelpers.log(t);
+            try { XposedHelpers.log(t); } catch (Throwable ignored) {}
         }
     }
 
     private Object getResourceReplacement(
         int resId,
         Resources res,
-        ResourceMethod method,
+        int kind,
         XposedInterface.Chain chain
     ) {
         if (unresolved.isEmpty()) return null;
@@ -285,32 +311,34 @@ public class ResourceHooks {
             Context mContext = ModuleHelper.findContext();
             if (mContext == null) return null;
             Resources modRes = ModuleHelper.getModuleRes(mContext);
-            return callModuleResource(modRes, method, modResId, chain);
+            return callModuleResource(modRes, kind, modResId, chain);
         } catch (Throwable t) {
-            XposedHelpers.log(t);
+            try { XposedHelpers.log(t); } catch (Throwable ignored) {}
             return null;
         }
     }
 
     private static Object callModuleResource(
         Resources modRes,
-        ResourceMethod method,
+        int kind,
         int modResId,
         XposedInterface.Chain chain
     ) {
+        String method = NAMES[kind];
+        int extra = EXTRA_ARGS[kind];
         try {
-            switch (method.extraArgs) {
+            switch (extra) {
                 case 0:
-                    return XposedHelpers.callMethod(modRes, method.name, modResId);
+                    return XposedHelpers.callMethod(modRes, method, modResId);
                 case 1:
-                    return XposedHelpers.callMethod(modRes, method.name, modResId, chain.getArg(1));
+                    return XposedHelpers.callMethod(modRes, method, modResId, chain.getArg(1));
                 case 2:
-                    return XposedHelpers.callMethod(modRes, method.name, modResId, chain.getArg(1), chain.getArg(2));
+                    return XposedHelpers.callMethod(modRes, method, modResId, chain.getArg(1), chain.getArg(2));
                 default:
                     return null;
             }
         } catch (Throwable t) {
-            XposedHelpers.log(t);
+            try { XposedHelpers.log(t); } catch (Throwable ignored) {}
             return null;
         }
     }
