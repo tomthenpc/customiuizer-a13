@@ -138,7 +138,7 @@ These were not touched in this round:
 | PreferenceBootstrap state | VERIFIED | `PreferenceBootstrapTest` passes |
 | Module/Owned receiver | VERIFIED | `ModuleHelperReceiverTest` passes |
 | FeatureDispatcher typed IDs | VERIFIED | `FeatureCatalogTest` passes |
-| MainModule process split | PARTIAL | not split into per-process installers in this session |
+| MainModule process split | PARTIAL | `SystemServerInstaller` extracted from `onSystemServerStarting`; `onPackageReady` still in `MainModule` |
 | ResourceHooks SparseArray | COMPLETED | `ResourceHooks.java` uses `unresolved` `ConcurrentHashMap` + `active` `SparseArray` copy-on-write, bounded by `MAX_ACTIVE` |
 | Full callback boundary | VERIFIED | `ModuleHelper.guarded` enforced by `check-invariants.py` |
 
