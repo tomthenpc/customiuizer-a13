@@ -2,7 +2,6 @@ package tv.withaibuild.customiuizer.installers;
 
 import io.github.libxposed.api.XposedModuleInterface.PackageReadyParam;
 import tv.withaibuild.customiuizer.MainModule;
-import tv.withaibuild.customiuizer.mods.Controls;
 import tv.withaibuild.customiuizer.mods.GlobalActions;
 import tv.withaibuild.customiuizer.mods.LauncherAnimationHooks;
 import tv.withaibuild.customiuizer.mods.SystemAudioAndVisualAndMoreHooks;
@@ -18,17 +17,6 @@ public final class PackageInstallerRouter {
     private PackageInstallerRouter() {}
 
     public static boolean install(String pkg, PackageReadyParam lpparam) {
-        if (isInputMethod(pkg)) {
-            if (MainModule.mPrefs.getBoolean("controls_volumecursor")) {
-                Controls.VolumeCursorHook(lpparam);
-            }
-            if (MainModule.mPrefs.getBoolean("controls_nonavbar_fix_inputmethod")
-                && MainModule.mPrefs.getBoolean("controls_nonavbar")) {
-                Various.FixInputMethodBottomMarginHook(lpparam);
-            }
-            return true;
-        }
-
         if (pkg.equals("com.miui.miwallpaper")) {
             if (MainModule.mPrefs.getBoolean("launcher_disable_wallpaperscale")) {
                 LauncherAnimationHooks.DisableUnlockWallpaperScale(lpparam);
@@ -112,13 +100,6 @@ public final class PackageInstallerRouter {
             return true;
         }
 
-        if (pkg.startsWith("com.google.android.inputmethod")) {
-            if (MainModule.mPrefs.getInt("various_gboardpadding_port", 0) > 0 || MainModule.mPrefs.getInt("various_gboardpadding_land", 0) > 0) {
-                Various.GboardPaddingHook(lpparam);
-            }
-            return true;
-        }
-
         if (pkg.equals("com.miui.packageinstaller")) {
             if (MainModule.mPrefs.getBoolean("various_miuiinstaller")) Various.MiuiPackageInstallerHook(lpparam);
             if (MainModule.mPrefs.getBoolean("various_installappinfo")) Various.AppInfoDuringMiuiInstallHook(lpparam);
@@ -140,17 +121,5 @@ public final class PackageInstallerRouter {
         }
 
         return false;
-    }
-
-    private static boolean isInputMethod(String pkg) {
-        return pkg.equals("com.baidu.input")
-            || pkg.equals("com.baidu.input_mi")
-            || pkg.equals("com.iflytek.inputmethod")
-            || pkg.equals("com.iflytek.inputmethod.miui")
-            || pkg.equals("com.sohu.inputmethod.sogou")
-            || pkg.equals("com.sohu.inputmethod.sogou.xiaomi")
-            || pkg.startsWith("com.google.android.inputmethod")
-            || pkg.startsWith("com.touchtype.swiftkey")
-            || pkg.startsWith("com.tencent.wetype");
     }
 }

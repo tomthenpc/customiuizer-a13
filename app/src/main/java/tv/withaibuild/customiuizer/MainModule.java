@@ -193,6 +193,31 @@ public class MainModule extends XposedModule {
         if (remote == null || !needLoadPrefs(pkg, remote)) return;
         initPrefs();
 
+        if (pkg.equals("com.baidu.input")
+            || pkg.equals("com.baidu.input_mi")
+            || pkg.equals("com.iflytek.inputmethod")
+            || pkg.equals("com.iflytek.inputmethod.miui")
+            || pkg.equals("com.sohu.inputmethod.sogou")
+            || pkg.equals("com.sohu.inputmethod.sogou.xiaomi")
+            || pkg.startsWith("com.google.android.inputmethod")
+            || pkg.startsWith("com.touchtype.swiftkey")
+            || pkg.startsWith("com.tencent.wetype")
+        ) {
+            if (mPrefs.getBoolean("controls_volumecursor")) Controls.VolumeCursorHook(lpparam);
+            if (mPrefs.getBoolean("controls_nonavbar_fix_inputmethod")
+                && mPrefs.getBoolean("controls_nonavbar")) {
+                Various.FixInputMethodBottomMarginHook(lpparam);
+            }
+            if (pkg.startsWith("com.google.android.inputmethod")) {
+                if (mPrefs.getInt("various_gboardpadding_port", 0) > 0 || mPrefs.getInt("various_gboardpadding_land", 0) > 0) Various.GboardPaddingHook(lpparam);
+            }
+            return;
+        }
+
+        if (mPrefs.getBoolean("various_alarmcompat") && mPrefs.getStringSet("various_alarmcompat_apps").contains(pkg)) {
+            Various.AlarmCompatHook();
+        }
+
         if (PackageInstallerRouter.install(pkg, lpparam)) return;
 
         if (pkg.equals("android") || pkg.equals("com.android.systemui")) {
@@ -200,9 +225,6 @@ public class MainModule extends XposedModule {
         }
 
 
-        if (mPrefs.getBoolean("various_alarmcompat") && mPrefs.getStringSet("various_alarmcompat_apps").contains(pkg)) {
-            Various.AlarmCompatHook();
-        }
 
         final boolean isMIUILauncherPkg = pkg.equals("com.miui.home");
         final boolean isLauncherPkg = isMIUILauncherPkg || pkg.equals("com.mi.android.globallauncher");
