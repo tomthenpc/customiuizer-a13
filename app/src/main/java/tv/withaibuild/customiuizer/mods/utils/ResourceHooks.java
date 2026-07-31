@@ -13,7 +13,7 @@ import io.github.libxposed.api.XposedInterface;
 import tv.withaibuild.customiuizer.mods.utils.HookerClassHelper.MethodHook;
 
 public class ResourceHooks {
-	private boolean hooksApplied = false;
+	private final java.util.concurrent.atomic.AtomicBoolean hooksApplied = new java.util.concurrent.atomic.AtomicBoolean(false);
 
 	public enum ReplacementType {
 		ID,
@@ -36,11 +36,13 @@ public class ResourceHooks {
 	private final MethodHook mReplaceHook = new MethodHook() {
 		@Override
 		public Object intercept(XposedInterface.Chain chain) throws Throwable {
-			// Skip the common case entirely: no fakes or replacements means we do not
+			// Skip the common case entirely: no fakes, active cache or replacements means we do not
 			// need to read arguments, resolve context, or look up resource names.
-			if (fakes.size() == 0 && unresolved.isEmpty()) return chain.proceed();
+			SparseArray<Pair<ReplacementType, Object>> currentActive = active.get();
+			if (fakes.size() == 0 && unresolved.isEmpty() && currentActive.size() == 0) return chain.proceed();
 
 			int resId = (int) chain.getArg(0);
+			String method = chain.getExecutable().getName();
 
 			// Fakes table is keyed by the fake resource id, so we can test for a hit
 			// without invoking findContext() or the costly executable name JNI call.
@@ -48,20 +50,17 @@ public class ResourceHooks {
 			if (modResId != 0) {
 				Context mContext = ModuleHelper.findContext();
 				if (mContext != null) {
-					String method = chain.getExecutable().getName();
 					Object value = getFakeResource(mContext, method, chain);
 					if (value != null) return value;
 				}
 			}
 
-			// Avoid all findContext/name-resolution work when no replacements are registered.
-			if (unresolved.isEmpty()) return chain.proceed();
+			// Active replacements are checked before Context lookup.  This keeps the hot path
+			// for resolved OBJECT/DENSITY/ID replacements lock-free and avoids the cost of
+			// name resolution until the first miss.
+			if (unresolved.isEmpty() && currentActive.size() == 0) return chain.proceed();
 
-			Context mContext = ModuleHelper.findContext();
-			if (mContext == null) return chain.proceed();
-
-			String method = chain.getExecutable().getName();
-			Object value = getResourceReplacement(mContext, (Resources) chain.getThisObject(), method, chain);
+			Object value = getResourceReplacement(resId, (Resources) chain.getThisObject(), method, chain);
 			if (value == null) return chain.proceed();
 			if ("getDimensionPixelOffset".equals(method) || "getDimensionPixelSize".equals(method)) {
 				if (value instanceof Float) value = ((Float) value).intValue();
@@ -73,8 +72,7 @@ public class ResourceHooks {
 	public ResourceHooks() {}
 
 	private void applyHooks() {
-		if (hooksApplied) return;
-		hooksApplied = true;
+		if (!hooksApplied.compareAndSet(false, true)) return;
 		ModuleHelper.findAndHookMethod(Resources.class, "getInteger", int.class, mReplaceHook);
 		ModuleHelper.findAndHookMethod(Resources.class, "getLayout", int.class, mReplaceHook);
 		ModuleHelper.findAndHookMethod(Resources.class, "getFraction", int.class, int.class, int.class, mReplaceHook);
@@ -153,10 +151,9 @@ public class ResourceHooks {
 		}
 	}
 
-	private Object getResourceReplacement(Context context, Resources res, String method, XposedInterface.Chain chain) {
-		if (context == null || unresolved.isEmpty()) return null;
+	private Object getResourceReplacement(int resId, Resources res, String method, XposedInterface.Chain chain) {
+		if (unresolved.isEmpty()) return null;
 
-		int resId = (int) chain.getArg(0);
 		SparseArray<Pair<ReplacementType, Object>> current = active.get();
 		Pair<ReplacementType, Object> replacement = current.get(resId);
 
@@ -196,7 +193,19 @@ public class ResourceHooks {
 			int modResId = (Integer) replacement.second;
 			if (modResId == 0) return null;
 
-			Resources modRes = ModuleHelper.getModuleRes(context);
+			// ID replacements are the only path that needs the module context.
+			Context mContext = ModuleHelper.findContext();
+			if (mContext == null) return null;
+			Resources modRes = ModuleHelper.getModuleRes(mContext);
+			return callModuleResource(modRes, method, modResId, chain);
+		} catch (Throwable t) {
+			XposedHelpers.log(t);
+			return null;
+		}
+	}
+
+	private static Object callModuleResource(Resources modRes, String method, int modResId, XposedInterface.Chain chain) {
+		try {
 			if ("getDrawable".equals(method))
 				return XposedHelpers.callMethod(modRes, method, modResId, chain.getArg(1));
 			else if ("getDrawableForDensity".equals(method) || "getFraction".equals(method))
