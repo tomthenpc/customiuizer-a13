@@ -313,4 +313,3 @@ This plan audits candidate features for migration into `FeatureCatalog` after th
 5. `MainModule.java`: replace the 6 direct `if (...) XxxHook(lpparam)` calls with `FeatureCatalog.installById("featureId", runtime)` in the same positions.
 6. `app/src/test/java` stubs: add minimal stub classes for the target classes/methods so unit tests can resolve them.
 7. `FeatureCatalogTest` / new test file: add tests for disabled, compatible, missing target, fallback (for `fixAppInfoLaunch`), and installer failure.
-8. Audit scripts: extend `audit-architecture.py`, `audit-prefs.py`, `audit-canary-sequence.py` / `audit-catalog-sequence.py`, and `audit-catalog-contracts.py` to cover the new feature IDs, diagnostic IDs, schema keys, and MainModule call-sequence.

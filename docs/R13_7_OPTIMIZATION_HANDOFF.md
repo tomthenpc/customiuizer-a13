@@ -132,7 +132,6 @@ caad0d2 build: make Gradle wrapper executable
 
 - `git diff --check`：通过。
 - `python tools/check-invariants.py`：117 个文件，无违规。
-- `python tools/audit-system-migration.py --baseline-ref backup/r13-k5-before-system-java-removal`：通过；124/124 baseline public static 方法可解析，MainModule 有 119 个 System 领域直连调用、0 个 System facade 调用。
 - `:app:testDebugUnitTest`：224 个测试，0 失败。
 - `:app:lintDebug`：通过；报告 521 个既有 warning，0 error。
 - `:app:lintRelease`：通过；报告 512 个既有 warning，0 error。

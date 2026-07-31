@@ -55,11 +55,9 @@ A13 最新维护分支合并后的正式版本，面向 MIUI 14 / Android 13。�
 - 修正 `release-manifest.json` 中 `compileSdk=34` 为与 Gradle 配置一致的 `36`；
 - 删除/更新停留在 `r13.7.1` 的过期 draft，明确当前为本地签名候选、待实机验证；
 - 说明 `certificateDnNote` 中 A14 名称为历史证书标签，未更换签名者，仅用于 A13 升级兼容；
-- 修正 CI 分支触发为 `release/**` 并固化 `audit-system-migration.py` 基线 SHA，避免依赖无法解析的 `backup/r13-k5-before-system-java-removal`。
 
 ### 验证
 
-- 运行 `check-invariants`（136 文件/0 违规）、`audit-system-migration`（124/124 解析，119/119 直连，0 facade）、`audit-architecture`、`audit-prefs`、`audit-canary-sequence`、`audit-catalog-contracts`：均通过；
 - 运行 `:app:testDebugUnitTest`、`:app:testDevelopUnitTest`、`:app:testReleaseUnitTest`、`:app:lintDebug`、`:app:lintRelease`、`:app:lintVitalRelease`、`:app:assembleDebug`、`:app:minifyReleaseWithR8`、`:app:assembleRelease`：均通过；
 - 构建 `CustoMIUIzer-A13-r13.8.5.apk`：v2 签名、zipalign、APK 元数据、Xposed 元数据、Legacy Xposed DEX 扫描均通过，待实机与 LSPosed 日志验证。
 

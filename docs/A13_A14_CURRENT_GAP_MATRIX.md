@@ -313,7 +313,6 @@ MainModule.java -> System/SystemUI/Launcher facade -> 30 个领域 Hook 文件
 ### 3.16 facade 和 MainModule dispatch
 
 - **分类：** `SAFE_ANDROID13_BACKPORT`
-- **A13 当前文件：** `MainModule.java`、`mods/System.kt`、`mods/SystemUI.kt`、`mods/Launcher.kt`、30 个领域 Hook 文件、`tools/audit-system-migration.py`。
 - **A13 当前实现：** `MainModule` 通过 234 个纯一对一 facade 方法间接进入领域 Hook。facade 不读取偏好、不维护状态、不做兼容路由；它们目前主要是迁移期 ABI/验证边界。
 - **A14 对应文件：** A14 `MainModule.java` 和领域 Hook；A14 `r14.13.7` 已大部分直接分派，只保留仍有真实实现的少量 facade 方法。
 - **A14 解决的问题：** 消除无意义转发层，使注册入口直接指向唯一领域实现，同时保持有序调用序列。
@@ -491,7 +490,6 @@ K10 只改本文档。2026-07-30 在上述冻结基线上执行结果如下：
 |---|---|
 | `git diff --check` | PASS |
 | `python tools\check-invariants.py` | PASS；117 个主源码文件，无违规 |
-| `python tools\audit-system-migration.py --baseline-ref backup/r13-k5-before-system-java-removal` | PASS；124/124 public facade 签名、119/119 `MainModule` 调用、17/17 System 领域文件、Debug/Release APK 与 R8 证据均通过 |
 | `:app:testDebugUnitTest` | PASS；184 tests、0 failures、0 errors、0 skipped |
 | `:app:lintDebug` | PASS |
 | `:app:assembleDebug` | PASS；`CustoMIUIzer-A13-r13.2.4-devin.apk`，11,825,207 bytes，SHA-256 `413d4b519dbe3b3dbfba139c3c37dfde7df7b7b0e3914ae376e93843beccb894` |

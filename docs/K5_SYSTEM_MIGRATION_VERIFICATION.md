@@ -13,7 +13,6 @@
 
 ## 2. 验证工具
 
-- 审计脚本：`tools/audit-system-migration.py`
 - 支持参数：`--baseline-ref <git-ref>`
 - 默认行为：不依赖基线也可运行；提供基线时会与旧 `System.java` 做完整签名对比。
 - 工具校验项：

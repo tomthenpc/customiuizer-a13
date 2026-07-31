@@ -391,7 +391,6 @@ Conclusion: The `fragment_about_head.xml` change is byte-for-byte identical in t
 < a6037c3 feat(catalog): real hook install evidence with typed contracts and diagnostics
 < 92bfaee Harden feature catalog, diagnostics and canary migration, and update tests/audits.
 < 1ff4fa2 chore(cleanup): remove unused Helpers.isUPlus()
-< c42a89e tools(audit): extend audit-prefs and add architecture audit script
 < aab22a7 feat(catalog): type-safe FeatureCatalog and StatusBarClockTweak closed-loop with compatibility probe
 < c5f1176 feat(resolver): strengthen HookTargetResolver with candidate resolution and DiagnosticRecorder logging
 < 82de337 feat(prefs): strengthen PreferenceSchema with type-safe constraints, RestartTarget and ownerFeature validation

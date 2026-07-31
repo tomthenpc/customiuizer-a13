@@ -35,7 +35,6 @@
 ## 本轮已完成（A14 工程对齐 Pre-release 批次）
 
 ### 工程审计与文档
-- 创建 `docs/A13_A14_ENGINEERING_PARITY.md`：Git、构建、签名、API 101/102、生命周期、热路径、Locale、R8 等差距矩阵。
 - 创建 `docs/LSPOSED_FULL_LOG_REVIEW_PROTOCOL.md`：动态日志路径审查协议。
 - 创建 `.devin/ACTIVE_TASK.md`：当前 Pre-release 任务状态。
 

@@ -8,7 +8,6 @@
 - `PrefMap` / `AppHelper` / `MainApplication`：偏好存储、镜像、本地/远程同步。
 - `XposedHelpers` / `ModuleHelper`：反射封装、日志、注册表、异常边界、Hook 目标探测。
 - `app/src/main/res/xml/prefs_*.xml`：偏好 Schema、key 命名、默认值、依赖关系。
-- `docs/A13_CLAUDE_PORTING_TASK.md` 与 `AGENTS.md`：已识别的边界和遗留风险。
 
 ## 审计结论（仅方案，不落地）
 

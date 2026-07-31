@@ -9,7 +9,6 @@
 - 原候选实际变更：65 个路径，4481 行新增、2579 行删除
 - 审查方法：逐提交与合并 diff、迁移前 Java 控制流、生命周期/所有权、异常边界、线程与队列、R8/反射入口、测试与静态门禁交叉检查
 
-`git diff --check 505c97e..31d60ba` 无格式错误。`audit-system-migration.py` 确认旧 `System.java` 的 124/124 个 public static 方法均在 17 个领域对象中解析，`MainModule` 有 119 个直接调用点，残留 System facade 调用为 0。
 
 ## 严重度与修复
 
@@ -141,7 +140,6 @@
 | `app/src/main/java/tv/withaibuild/customiuizer/mods/Launcher.kt` | K17 删除 | 高 | MainModule 改为领域对象直调 | facade 无状态 | 无隐藏异常 | 无 | 无复制实现 | `7c1b146` | 文件不存在，残留调用 0 |
 | `app/src/main/java/tv/withaibuild/customiuizer/mods/System.kt` | K17 删除 | 最高 | 124 个入口机械映射 | facade 无状态 | 无隐藏异常 | 无 | 无复制实现 | `18d74a1` | 文件不存在，审计 124/124 |
 | `app/src/main/java/tv/withaibuild/customiuizer/mods/SystemUI.kt` | K17 删除 | 最高 | 有序调用改接收者，参数不变 | `newStyle` 搬到唯一领域 owner | 无隐藏异常 | 无新线程 | 无重复状态 | `b538d55` | 文件不存在，残留调用 0 |
-| `tools/audit-system-migration.py` | K17 | 中 | 比对旧方法、直接调用与 facade 残留 | 无运行时资源 | 明确失败退出 | 构建机 | 工具局部 | `18d74a1` | 124/124、119、0，PASS |
 | `tools/check-invariants.py` | K11/K18 | 中 | 静态规则不改运行时 | 无 | 违规明确失败 | 构建机 | 工具局部 | `4c6a3e0` | K18 加 Launcher 循环退出门禁 |
 | `gradlew` | 构建 | 高 | 内容不变，仅 executable mode | 无 | CI 可执行 | CI | 仓库工具 | `caad0d2` | mode `100755`，无源码语义变化 |
 | `docs/R13_7_OPTIMIZATION_HANDOFF.md` | 交接 | 低 | 记录阶段顺序 | 记录待实机项 | 区分静态/实机 | 无 | 文档 | `6080fa3`,`31d60ba` | CI 旧阻塞已由 K18 修复，实机边界仍有效 |

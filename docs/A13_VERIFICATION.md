@@ -197,7 +197,6 @@ python tools/compare-memory-baseline.py `
 | `compileDebugKotlin` / `compileReleaseKotlin` | 已验证 | 代码层面成功编译 |
 | `System.java` 完整 | 代码层面确认 | 迁移后无 `System.java` 修改 |
 | `System.kt` facade | 代码层面确认 | 17 个 `System*Hooks` 文件已替换 facade |
-| `MainModule` 调用重定向 | 已验证 | `audit-system-migration.py` 119/119 直连调用解析 |
 | 新 `System*.kt` 跨域调用 | 待实机验证 | 需按 `A13_SPLIT_AND_MIGRATION_METHOD.md` 复核 |
 | 测试 | 已验证 | `gradlew :app:test`（含 debug/develop/release 单元测试）通过 |
 | Lint | 已验证 | `lintDebug`、`lintRelease` 通过；`lintVitalRelease` 当前配置跳过 |

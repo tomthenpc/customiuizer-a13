@@ -2,6 +2,8 @@
 
 本文件是 `devin/a13-runtime-hardening` 分支的本地执行规则。
 
+> 禁止执行 ADB、APK 构建、`assemble`、`package`、`bundle`、`install`、`sign`、`publish`、`officialRelease`、`lintVitalRelease` 或任何实机自动化；只允许 `python tools/verify.py`、`python tools/check-invariants.py`、`python tools/analyze_lsposed_log.py` 及单元测试等静态/本地验证。
+
 ## 项目边界
 
 - Android 13 / MIUI 14

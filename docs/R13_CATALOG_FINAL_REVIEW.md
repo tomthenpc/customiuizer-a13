@@ -94,7 +94,6 @@ ccdac04 docs: plan first catalog expansion batch
 
 ## 4. MainModule 顺序与条件审计
 
-- `audit-canary-sequence.py` 通过。
 - 25 个 catalog feature 的 `FeatureCatalog.installById` 调用顺序与原 direct Hook 顺序一致。
 - 条件由 `FeatureSpec.condition` 承担；`MainModule` 中部分 catalog 调用前仍保留 `if`（如 `screenDimTime`、`firstVolumePress` 等），这是为了向后兼容且与原 `if` 位置一致；`FeatureCatalog.installById` 内部会再次判断 condition。
 - 无 `direct call` 与 `Catalog` 重复执行同一功能。
@@ -102,7 +101,6 @@ ccdac04 docs: plan first catalog expansion batch
 
 ## 5. Contract / Installer 一致性审计
 
-- `audit-catalog-contracts.py` 通过。
 - 每个 contract 的 operation、className、memberName、parameterTypes 与 installer 中实际 `ModuleHelper` 调用一致。
 - `EXACT_METHOD` 与 `ALL_METHODS_BY_NAME` 未混淆。
 - 已撤回 feature 无 catalog 残留。
@@ -140,8 +138,6 @@ fix(catalog): align canary compatibility checks with contracts
 
 **验证**
 
-- `python tools/audit-catalog-contracts.py`：通过
-- `python tools/audit-canary-sequence.py`：通过
 - `./gradlew :app:testDebugUnitTest`：通过
 - 新增/既有单测 `StatusBarClockTweakClosedLoopTest`、`FeatureCatalogTest` 仍期望 `INCOMPATIBLE/FAILED`（目标不存在时）与 `COMPATIBLE/INSTALLED`（测试 stub 全命中时），全部通过。
 
@@ -149,7 +145,6 @@ fix(catalog): align canary compatibility checks with contracts
 
 - 原因：installer 根据 `lpparam.packageName == "com.mi.android.globallauncher"` 选择 `getHotseatCount` 或 `getHotseatMaxCount`。静态 catalog contract 无法表达“package-specific 二选一”而不改变原行为或强行安装两个 hook。
 - 处理：恢复 `MainModule` 直接调用 `LauncherLayoutHooks.MaxHotseatIconsCountHook(lpparam)`，删除 catalog 相关 contract/spec/diagnostic/schema/test/audit 映射。
-- 验证：`tools/audit-catalog-contracts.py` 确认 `maxHotseatIconsCount` 无 catalog 残留。
 
 ### 6.3 待观察：Batch-1 `fixAppInfoLaunch` 的 package-specific 分支
 

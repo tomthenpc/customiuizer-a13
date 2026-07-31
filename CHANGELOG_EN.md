@@ -40,11 +40,9 @@ This release completed APK build, signature, zipalign, package information and X
 - Fixed `release-manifest.json` `compileSdk=34` to `36` to match the Gradle configuration;
 - Replaced/updated the stale `r13.7.1` draft and noted the build is a locally-signed candidate pending device/LSPosed validation;
 - Clarified the `certificateDnNote` A14 label is a historical certificate name kept for A13 upgrade compatibility; the signing key was not changed;
-- Updated CI to trigger on `release/**` and pinned the `audit-system-migration.py` baseline to a stable SHA instead of the unresolvable `backup/r13-k5-before-system-java-removal`.
 
 ### Verification
 
-- `check-invariants` (136 files, 0 violations), `audit-system-migration` (124/124 resolved, 119/119 direct calls, 0 facade), `audit-architecture`, `audit-prefs`, `audit-canary-sequence`, and `audit-catalog-contracts` all pass;
 - `:app:testDebugUnitTest`, `:app:testDevelopUnitTest`, `:app:testReleaseUnitTest`, `:app:lintDebug`, `:app:lintRelease`, `:app:lintVitalRelease`, `:app:assembleDebug`, `:app:minifyReleaseWithR8`, and `:app:assembleRelease` all pass;
 - `CustoMIUIzer-A13-r13.8.5.apk` is a locally-signed candidate; v2 signature, zipalign, APK metadata, Xposed metadata, and Legacy Xposed DEX scan all pass, pending real-device and LSPosed log validation.
 

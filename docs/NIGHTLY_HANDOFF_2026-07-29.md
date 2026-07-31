@@ -48,7 +48,6 @@ docs(k9): finalize verification before main merge
 
 - `git diff --check`：无空白错误。
 - `tools/check-invariants.py`：117 文件，0 违规。
-- `tools/audit-system-migration.py --baseline-ref backup/r13-k5-before-system-java-removal`：PASS，无阻塞问题。
 - `gradlew.bat clean :app:testDebugUnitTest :app:lintDebug :app:lintRelease :app:assembleDebug :app:assembleRelease --stacktrace`：BUILD SUCCESSFUL。
 - `gradlew.bat :app:lintVitalRelease --stacktrace`：任务存在，BUILD SUCCESSFUL。
 
