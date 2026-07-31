@@ -1222,11 +1222,18 @@ object SystemUIStatusBarHooks {
         }
 
         if (dualRow) {
-            val spacing = if (0.5 * fontSize > 8.5f) 0.85f else 0.9f
+            val rowSpacing = MainModule.mPrefs.getInt("system_netspeed_rowspacing", 100)
+            val spacing = resolveNetSpeedLineSpacing(fontSize, rowSpacing)
             iconTextView.setSingleLine(false)
             iconTextView.maxLines = 2
             iconTextView.setLineSpacing(0f, spacing)
         }
+    }
+
+    internal fun resolveNetSpeedLineSpacing(fontSize: Int, adjustmentPercent: Int): Float {
+        val baseSpacing = if (fontSize > 17) 0.85f else 0.90f
+        val adjustment = adjustmentPercent.coerceIn(70, 130)
+        return baseSpacing * adjustment / 100f
     }
 
     @JvmStatic

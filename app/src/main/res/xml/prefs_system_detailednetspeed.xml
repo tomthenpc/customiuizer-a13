@@ -72,6 +72,18 @@
 		miuizer:displayDividerValue="2"
 		miuizer:format="%s dip" />
 
+	<tv.withaibuild.customiuizer.prefs.SeekBarPreference
+		android:key="pref_key_system_netspeed_rowspacing"
+		android:title="@string/system_netspeed_rowspacing_title"
+		android:summary="@string/system_netspeed_rowspacing_summ"
+		android:defaultValue="100"
+		miuizer:minValue="70"
+		miuizer:maxValue="130"
+		miuizer:stepValue="5"
+		miuizer:offtext="@string/array_default"
+		miuizer:displayDividerValue="2"
+		miuizer:format="%s" />
+
 	<tv.withaibuild.customiuizer.prefs.CheckBoxPreferenceEx
 		android:key="pref_key_system_detailednetspeed_secunit"
 		android:title="@string/system_detailednetspeed_secunit_title"
