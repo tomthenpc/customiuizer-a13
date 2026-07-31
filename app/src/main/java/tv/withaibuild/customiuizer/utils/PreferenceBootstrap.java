@@ -293,7 +293,7 @@ public class PreferenceBootstrap {
             Object v = e.getValue();
             if (k != null && v != null) out.put(k, v);
         }
-        return out;
+        return out.asMap();
     }
 
     private void recordFailure(String stage, Throwable t) {

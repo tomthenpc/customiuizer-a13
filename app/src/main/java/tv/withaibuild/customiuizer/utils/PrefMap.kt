@@ -1,21 +1,44 @@
 package tv.withaibuild.customiuizer.utils
 
+import java.util.Collections
 import java.util.concurrent.ConcurrentHashMap
+import java.util.concurrent.atomic.AtomicReference
 
 @Suppress("UNCHECKED_CAST")
-class PrefMap<K : Any, V : Any> : ConcurrentHashMap<K, V>() {
+class PrefMap<K : Any, V : Any> {
 
     private data class CachedInt(val raw: String, val value: Int?)
 
     private val parsedIntCache = ConcurrentHashMap<K, CachedInt>()
+    private val state = AtomicReference<Map<K, V>>(emptyMap())
+
+    /** Return the current immutable snapshot without copying. */
+    fun asMap(): Map<K, V> = state.get()
+
+    /** Expose the snapshot's entry set for Java callers. */
+    fun entrySet(): Set<Map.Entry<K, V>> = state.get().entries
+
+    val size: Int
+        get() = state.get().size
+
+    val keys: Set<K>
+        get() = state.get().keys
+
+    /** Atomically replace the entire snapshot. Readers see only the old or the new map. */
+    fun replaceSnapshot(map: Map<K, V>) {
+        state.set(Collections.unmodifiableMap(HashMap(map)))
+        parsedIntCache.clear()
+    }
 
     fun getObject(key: String, defValue: Any?): Any? {
-        return get(normalizeKey(key) as K) ?: defValue
+        val normalized = normalizeKey(key) as K
+        return state.get()[normalized] ?: defValue
     }
 
     fun getInt(key: String, defValue: Int): Int {
+        val snap = state.get()
         val normalized = normalizeKey(key) as K
-        return when (val value = get(normalized)) {
+        return when (val value = snap[normalized]) {
             null -> defValue
             is Int -> value
             is Number -> value.toInt()
@@ -25,8 +48,9 @@ class PrefMap<K : Any, V : Any> : ConcurrentHashMap<K, V>() {
     }
 
     fun getLong(key: String, defValue: Long): Long {
+        val snap = state.get()
         val normalized = normalizeKey(key) as K
-        return when (val value = get(normalized)) {
+        return when (val value = snap[normalized]) {
             null -> defValue
             is Long -> value
             is Number -> value.toLong()
@@ -36,8 +60,9 @@ class PrefMap<K : Any, V : Any> : ConcurrentHashMap<K, V>() {
     }
 
     fun getString(key: String, defValue: String): String {
+        val snap = state.get()
         val normalized = normalizeKey(key) as K
-        return when (val value = get(normalized)) {
+        return when (val value = snap[normalized]) {
             null -> defValue
             is String -> value
             else -> defValue
@@ -45,8 +70,9 @@ class PrefMap<K : Any, V : Any> : ConcurrentHashMap<K, V>() {
     }
 
     fun getStringAsInt(key: String, defValue: Int): Int {
+        val snap = state.get()
         val normalized = normalizeKey(key) as K
-        val value = get(normalized) ?: return defValue
+        val value = snap[normalized] ?: return defValue
         if (value is Number) return value.toInt()
         if (value !is String) return defValue
 
@@ -59,8 +85,9 @@ class PrefMap<K : Any, V : Any> : ConcurrentHashMap<K, V>() {
     }
 
     fun getStringSet(key: String): Set<String> {
+        val snap = state.get()
         val normalized = normalizeKey(key) as K
-        val value = get(normalized)
+        val value = snap[normalized]
         return when (value) {
             null -> emptySet()
             is Set<*> -> value.filterIsInstance<String>().toSet()
@@ -73,8 +100,9 @@ class PrefMap<K : Any, V : Any> : ConcurrentHashMap<K, V>() {
     }
 
     fun getBoolean(key: String, defValue: Boolean): Boolean {
+        val snap = state.get()
         val normalized = normalizeKey(key) as K
-        return when (val value = get(normalized)) {
+        return when (val value = snap[normalized]) {
             null -> defValue
             is Boolean -> value
             "true", "1" -> true
@@ -83,44 +111,71 @@ class PrefMap<K : Any, V : Any> : ConcurrentHashMap<K, V>() {
         }
     }
 
-    override fun put(key: K, value: V): V? {
+    /** Map-style read. */
+    operator fun get(key: K): V? {
+        return state.get()[key]
+    }
+
+    /** Map-style write. */
+    operator fun set(key: K, value: V) {
+        put(key, value)
+    }
+
+    fun put(key: K, value: V): V? {
         val normalized = normalizeKey(key as String) as K
-        parsedIntCache.remove(normalized)
-        return super.put(normalized, value)
-    }
-
-    override fun putAll(from: Map<out K, V>) {
-        val normalized = from.mapKeys { normalizeKey(it.key as String) as K }
-        for (k in normalized.keys) parsedIntCache.remove(k)
-        super.putAll(normalized)
-    }
-
-    override fun remove(key: K): V? {
-        val normalized = normalizeKey(key as String) as K
-        parsedIntCache.remove(normalized)
-        return super.remove(normalized)
-    }
-
-    override fun containsKey(key: K): Boolean {
-        return if (key is String) {
-            super.containsKey(normalizeKey(key) as K)
-        } else {
-            super.containsKey(key)
+        var old: Map<K, V> = state.get()
+        val next = HashMap(old)
+        next[normalized] = value
+        while (!state.compareAndSet(old, Collections.unmodifiableMap(next))) {
+            old = state.get()
+            next.clear()
+            next.putAll(old)
+            next[normalized] = value
         }
+        parsedIntCache.remove(normalized)
+        return old[normalized]
     }
 
-    /**
-     * Replace the map contents with [map] without exposing an intermediate empty state.
-     * New and updated keys are inserted first, then keys no longer present are removed.
-     */
-    fun replaceSnapshot(map: Map<K, V>) {
-        putAll(map)
-        keys.retainAll(map.keys)
+    fun putAll(from: Map<out K, V>) {
+        val normalized = from.mapKeys { normalizeKey(it.key as String) as K }
+        var old: Map<K, V> = state.get()
+        val next = HashMap(old)
+        next.putAll(normalized)
+        while (!state.compareAndSet(old, Collections.unmodifiableMap(next))) {
+            old = state.get()
+            next.clear()
+            next.putAll(old)
+            next.putAll(normalized)
+        }
+        parsedIntCache.keys.removeAll(normalized.keys)
     }
 
-    override fun clear() {
+    fun remove(key: K): V? {
+        val normalized = normalizeKey(key as String) as K
+        var old: Map<K, V> = state.get()
+        val next = HashMap(old)
+        next.remove(normalized)
+        while (!state.compareAndSet(old, Collections.unmodifiableMap(next))) {
+            old = state.get()
+            next.clear()
+            next.putAll(old)
+            next.remove(normalized)
+        }
+        parsedIntCache.remove(normalized)
+        return old[normalized]
+    }
+
+    fun clear() {
+        state.set(emptyMap())
         parsedIntCache.clear()
-        super.clear()
+    }
+
+    fun containsKey(key: K): Boolean {
+        return if (key is String) {
+            state.get().containsKey(normalizeKey(key) as K)
+        } else {
+            state.get().containsKey(key)
+        }
     }
 
     private fun normalizeKey(key: String): String =
