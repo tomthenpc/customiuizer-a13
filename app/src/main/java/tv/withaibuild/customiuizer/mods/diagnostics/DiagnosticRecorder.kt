@@ -3,7 +3,6 @@ package tv.withaibuild.customiuizer.mods.diagnostics
 import android.os.SystemClock
 import tv.withaibuild.customiuizer.mods.catalog.CompatibilityState
 import tv.withaibuild.customiuizer.mods.utils.XposedHelpers
-import java.util.concurrent.ConcurrentHashMap
 
 /**
  * Privacy-safe, throttled, multi-dimensional diagnostic recorder.
@@ -19,12 +18,20 @@ import java.util.concurrent.ConcurrentHashMap
  * - FAILED logs immediately on first occurrence or when severity escalates from
  *   a lower state; it is not blocked by an earlier DEGRADED throttle.
  * - REQUESTED / COMPATIBLE / INSTALLED are logged only on state transition.
+ * - Retained snapshots and throttle state are bounded so long-lived processes do
+ *   not accumulate unbounded diagnostic maps.
  */
 object DiagnosticRecorder {
 
-    private val snapshots = ConcurrentHashMap<String, DiagnosticSnapshot>()
-    private val logThrottler = ConcurrentHashMap<String, Long>()
+    private const val MAX_SNAPSHOTS = 32
+    private const val MAX_DETAIL_LENGTH = 512
     private const val THROTTLE_MS = 60_000L
+
+    private val snapshots =
+        LinkedHashMap<String, DiagnosticSnapshot>(MAX_SNAPSHOTS, 0.75f, true)
+
+    private val logThrottler =
+        HashMap<String, Long>(MAX_SNAPSHOTS)
 
     /** Injected monotonic clock. Defaults to [SystemClock.elapsedRealtime]. */
     internal var clock: () -> Long = { SystemClock.elapsedRealtime() }
@@ -47,18 +54,21 @@ object DiagnosticRecorder {
         val now = clock()
         val prev = snapshots[id]
 
+        val safeDetail = detail?.take(MAX_DETAIL_LENGTH)
+
         val snapshot = DiagnosticSnapshot(
             enabled = enabled ?: prev?.enabled,
             compatibility = compatibility ?: prev?.compatibility,
             installation = installation ?: prev?.installation,
             reasonCode = reasonCode,
-            detail = detail,
+            detail = safeDetail,
             count = (prev?.count ?: 0L) + 1,
             firstSeenMs = prev?.firstSeenMs ?: now,
             lastSeenMs = now,
             installSummary = installSummary ?: prev?.installSummary
         )
         snapshots[id] = snapshot
+        trimToLimit()
 
         val newState = overallState(snapshot)
         val prevState = prev?.let { overallState(it) }
@@ -86,7 +96,7 @@ object DiagnosticRecorder {
                     if (summary.fallbackUsed) append(" fallback=true")
                 }
                 append(" reason=").append(reasonCode.name)
-                if (!detail.isNullOrEmpty()) append(" detail=").append(detail)
+                if (!safeDetail.isNullOrEmpty()) append(" detail=").append(safeDetail)
                 if (throwable != null) append(" | ").append(throwableSummary(throwable))
             }
             logThrottler[id] = now
@@ -98,6 +108,16 @@ object DiagnosticRecorder {
     private fun throttleExpired(id: String, now: Long): Boolean {
         val last = logThrottler[id] ?: return true
         return now - last >= THROTTLE_MS
+    }
+
+    /** Evict the oldest entries until we are within the hard size bound. */
+    @Synchronized
+    private fun trimToLimit() {
+        while (snapshots.size > MAX_SNAPSHOTS) {
+            val oldestId = snapshots.entries.iterator().next().key
+            snapshots.remove(oldestId)
+            logThrottler.remove(oldestId)
+        }
     }
 
     /** Computes the single overall severity state from the three dimensions. */

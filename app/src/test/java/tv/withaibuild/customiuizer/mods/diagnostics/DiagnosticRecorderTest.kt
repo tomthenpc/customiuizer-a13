@@ -1,6 +1,7 @@
 package tv.withaibuild.customiuizer.mods.diagnostics
 
 import org.junit.Assert.assertEquals
+import org.junit.Assert.assertFalse
 import org.junit.Assert.assertNotNull
 import org.junit.Assert.assertNull
 import org.junit.Assert.assertTrue
@@ -228,5 +229,60 @@ class DiagnosticRecorderTest {
         assertEquals(InstallOutcome.FAILED, summary[id2]?.installation)
         assertEquals(5000L, summary[id2]?.firstSeenMs)
         assertEquals(now, summary[id2]?.lastSeenMs)
+    }
+
+    @Test
+    fun boundsSnapshotsToMaxLimit() {
+        repeat(50) { index ->
+            val id = "feature_$index"
+            DiagnosticRecorder.record(id, installation = InstallOutcome.INSTALLED, reasonCode = ReasonCode.INSTALLER_SUCCEEDED)
+        }
+
+        assertEquals(32, DiagnosticRecorder.summarize().size)
+    }
+
+    @Test
+    fun evictedThrottlerEntriesAreRemovedWithSnapshots() {
+        repeat(33) { index ->
+            val id = "feature_$index"
+            DiagnosticRecorder.record(id, installation = InstallOutcome.FAILED, reasonCode = ReasonCode.INSTALLER_FAILED)
+        }
+
+        val firstId = "feature_0"
+        val summary = DiagnosticRecorder.summarize()
+        assertNull(summary[firstId])
+    }
+
+    @Test
+    fun detailIsTruncatedToMaxLength() {
+        val longDetail = "x".repeat(600)
+        val id = DiagnosticIds.PACKAGE_PERMISSIONS
+
+        DiagnosticRecorder.record(id, installation = InstallOutcome.FAILED, reasonCode = ReasonCode.INSTALLER_FAILED, detail = longDetail)
+
+        val snapshot = DiagnosticRecorder.summarize()[id]
+        assertNotNull(snapshot)
+        assertEquals(512, snapshot!!.detail?.length)
+        assertTrue(snapshot.detail?.startsWith("x".repeat(10)) == true)
+    }
+
+    @Test
+    fun failedLogsImmediatelyDespiteBounds() {
+        val id = DiagnosticIds.PACKAGE_PERMISSIONS
+
+        DiagnosticRecorder.record(id, installation = InstallOutcome.FAILED, reasonCode = ReasonCode.INSTALLER_FAILED)
+        assertEquals(1, logMessages.size)
+        assertTrue(logMessages.single().contains("FAILED"))
+    }
+
+    @Test
+    fun resetClearsAllState() {
+        val id = DiagnosticIds.PACKAGE_PERMISSIONS
+        DiagnosticRecorder.record(id, installation = InstallOutcome.FAILED, reasonCode = ReasonCode.INSTALLER_FAILED)
+        assertFalse(DiagnosticRecorder.summarize().isEmpty())
+
+        DiagnosticRecorder.reset()
+
+        assertTrue(DiagnosticRecorder.summarize().isEmpty())
     }
 }
