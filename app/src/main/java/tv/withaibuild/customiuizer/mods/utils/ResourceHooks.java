@@ -3,10 +3,11 @@ package tv.withaibuild.customiuizer.mods.utils;
 import android.content.Context;
 import android.content.res.Resources;
 import android.util.Pair;
+import android.util.SparseArray;
 import android.util.SparseIntArray;
 
-import java.util.List;
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.atomic.AtomicReference;
 
 import io.github.libxposed.api.XposedInterface;
 import tv.withaibuild.customiuizer.mods.utils.HookerClassHelper.MethodHook;
@@ -21,7 +22,11 @@ public class ResourceHooks {
 	}
 
 	private final SparseIntArray fakes = new SparseIntArray();
-	private final ConcurrentHashMap<String, Pair<ReplacementType, Object>> replacements = new ConcurrentHashMap<String, Pair<ReplacementType, Object>>();
+	private final ConcurrentHashMap<String, Pair<ReplacementType, Object>> unresolved = new ConcurrentHashMap<>();
+	private final AtomicReference<SparseArray<Pair<ReplacementType, Object>>> active =
+		new AtomicReference<>(new SparseArray<Pair<ReplacementType, Object>>());
+
+	private static final int MAX_ACTIVE = 256;
 
 	public static int getFakeResId(String resourceName) {
 		return 0x7e00f000 | (resourceName.hashCode() & 0x00ffffff);
@@ -33,10 +38,9 @@ public class ResourceHooks {
 		public Object intercept(XposedInterface.Chain chain) throws Throwable {
 			// Skip the common case entirely: no fakes or replacements means we do not
 			// need to read arguments, resolve context, or look up resource names.
-			if (fakes.size() == 0 && replacements.isEmpty()) return chain.proceed();
+			if (fakes.size() == 0 && unresolved.isEmpty()) return chain.proceed();
 
-			List<Object> args = chain.getArgs();
-			int resId = (int) args.get(0);
+			int resId = (int) chain.getArg(0);
 
 			// Fakes table is keyed by the fake resource id, so we can test for a hit
 			// without invoking findContext() or the costly executable name JNI call.
@@ -45,22 +49,22 @@ public class ResourceHooks {
 				Context mContext = ModuleHelper.findContext();
 				if (mContext != null) {
 					String method = chain.getExecutable().getName();
-					Object value = getFakeResource(mContext, method, args);
+					Object value = getFakeResource(mContext, method, chain);
 					if (value != null) return value;
 				}
 			}
 
 			// Avoid all findContext/name-resolution work when no replacements are registered.
-			if (replacements.isEmpty()) return chain.proceed();
+			if (unresolved.isEmpty()) return chain.proceed();
 
 			Context mContext = ModuleHelper.findContext();
 			if (mContext == null) return chain.proceed();
 
 			String method = chain.getExecutable().getName();
-			Object value = getResourceReplacement(mContext, (Resources)chain.getThisObject(), method, args);
+			Object value = getResourceReplacement(mContext, (Resources) chain.getThisObject(), method, chain);
 			if (value == null) return chain.proceed();
 			if ("getDimensionPixelOffset".equals(method) || "getDimensionPixelSize".equals(method)) {
-				if (value instanceof Float) value = ((Float)value).intValue();
+				if (value instanceof Float) value = ((Float) value).intValue();
 			}
 			return value;
 		}
@@ -99,21 +103,20 @@ public class ResourceHooks {
 		}
 	}
 
-	private Object getFakeResource(Context context, String method, List<Object> args) {
+	private Object getFakeResource(Context context, String method, XposedInterface.Chain chain) {
 		try {
 			if (context == null || fakes.size() == 0) return null;
-			int modResId = fakes.get((int)args.get(0));
+			int resId = (int) chain.getArg(0);
+			int modResId = fakes.get(resId);
 			if (modResId == 0) return null;
 
-			Object value;
 			Resources modRes = ModuleHelper.getModuleRes(context);
 			if ("getDrawable".equals(method))
-				value = XposedHelpers.callMethod(modRes, method, modResId, args.get(1));
+				return XposedHelpers.callMethod(modRes, method, modResId, chain.getArg(1));
 			else if ("getDrawableForDensity".equals(method) || "getFraction".equals(method))
-				value = XposedHelpers.callMethod(modRes, method, modResId, args.get(1), args.get(2));
+				return XposedHelpers.callMethod(modRes, method, modResId, chain.getArg(1), chain.getArg(2));
 			else
-				value = XposedHelpers.callMethod(modRes, method, modResId);
-			return value;
+				return XposedHelpers.callMethod(modRes, method, modResId);
 		} catch (Throwable t) {
 			XposedHelpers.log(t);
 			return null;
@@ -123,7 +126,8 @@ public class ResourceHooks {
 	public void setResReplacement(String pkg, String type, String name, int replacementResId) {
 		try {
 			applyHooks();
-			replacements.put(pkg + ":" + type + "/" + name, new Pair<>(ReplacementType.ID, replacementResId));
+			unresolved.put(pkg + ":" + type + "/" + name, new Pair<>(ReplacementType.ID, replacementResId));
+			active.set(new SparseArray<Pair<ReplacementType, Object>>());
 		} catch (Throwable t) {
 			XposedHelpers.log(t);
 		}
@@ -132,7 +136,8 @@ public class ResourceHooks {
 	public void setDensityReplacement(String pkg, String type, String name, float replacementResValue) {
 		try {
 			applyHooks();
-			replacements.put(pkg + ":" + type + "/" + name, new Pair<>(ReplacementType.DENSITY, replacementResValue));
+			unresolved.put(pkg + ":" + type + "/" + name, new Pair<>(ReplacementType.DENSITY, replacementResValue));
+			active.set(new SparseArray<Pair<ReplacementType, Object>>());
 		} catch (Throwable t) {
 			XposedHelpers.log(t);
 		}
@@ -141,54 +146,63 @@ public class ResourceHooks {
 	public void setObjectReplacement(String pkg, String type, String name, Object replacementResValue) {
 		try {
 			applyHooks();
-			replacements.put(pkg + ":" + type + "/" + name, new Pair<>(ReplacementType.OBJECT, replacementResValue));
+			unresolved.put(pkg + ":" + type + "/" + name, new Pair<>(ReplacementType.OBJECT, replacementResValue));
+			active.set(new SparseArray<Pair<ReplacementType, Object>>());
 		} catch (Throwable t) {
 			XposedHelpers.log(t);
 		}
 	}
 
-	private Object getResourceReplacement(Context context, Resources res, String method, List<Object> args) {
-		if (context == null || replacements.isEmpty()) return null;
+	private Object getResourceReplacement(Context context, Resources res, String method, XposedInterface.Chain chain) {
+		if (context == null || unresolved.isEmpty()) return null;
 
-		String pkgName = null;
-		String resType = null;
-		String resName = null;
-		try {
-			pkgName = res.getResourcePackageName((int)args.get(0));
-			resType = res.getResourceTypeName((int)args.get(0));
-			resName = res.getResourceEntryName((int)args.get(0));
-		} catch (Throwable ignore) {}
-		if (pkgName == null || resType == null || resName == null) return null;
+		int resId = (int) chain.getArg(0);
+		SparseArray<Pair<ReplacementType, Object>> current = active.get();
+		Pair<ReplacementType, Object> replacement = current.get(resId);
 
-		try {
-			Object value;
+		if (replacement == null) {
+			String pkgName = null;
+			String resType = null;
+			String resName = null;
+			try {
+				pkgName = res.getResourcePackageName(resId);
+				resType = res.getResourceTypeName(resId);
+				resName = res.getResourceEntryName(resId);
+			} catch (Throwable ignore) {}
+			if (pkgName == null || resType == null || resName == null) return null;
+
 			String resFullName = pkgName + ":" + resType + "/" + resName;
-
-			// Reduce map lookups by using a single get() and lazy fallback key.
-			// Use primitive int only for the local variable; the stored ID is still boxed in Pair.second.
-			int modResId = 0;
-			Pair<ReplacementType, Object> replacement = replacements.get(resFullName);
+			replacement = unresolved.get(resFullName);
 			if (replacement == null)
-				replacement = replacements.get("*:" + resType + "/" + resName);
+				replacement = unresolved.get("*:" + resType + "/" + resName);
+			if (replacement == null) return null;
 
-			if (replacement != null) {
-				if (replacement.first == ReplacementType.OBJECT) {return replacement.second;}
-				else if (replacement.first == ReplacementType.DENSITY) {
-					return (Float)replacement.second * res.getDisplayMetrics().density;
-				}
-				else if (replacement.first == ReplacementType.ID) modResId = (Integer)replacement.second;
+			// Copy-on-write to keep the hot path lock-free.
+			while (true) {
+				SparseArray<Pair<ReplacementType, Object>> copy = current.clone();
+				if (copy.size() >= MAX_ACTIVE) copy.removeAt(0);
+				copy.put(resId, replacement);
+				if (active.compareAndSet(current, copy)) break;
+				current = active.get();
+			}
+		}
+
+		try {
+			if (replacement.first == ReplacementType.OBJECT) return replacement.second;
+			else if (replacement.first == ReplacementType.DENSITY) {
+				return (Float) replacement.second * res.getDisplayMetrics().density;
 			}
 
+			int modResId = (Integer) replacement.second;
 			if (modResId == 0) return null;
 
 			Resources modRes = ModuleHelper.getModuleRes(context);
 			if ("getDrawable".equals(method))
-				value = XposedHelpers.callMethod(modRes, method, modResId, args.get(1));
+				return XposedHelpers.callMethod(modRes, method, modResId, chain.getArg(1));
 			else if ("getDrawableForDensity".equals(method) || "getFraction".equals(method))
-				value = XposedHelpers.callMethod(modRes, method, modResId, args.get(1), args.get(2));
+				return XposedHelpers.callMethod(modRes, method, modResId, chain.getArg(1), chain.getArg(2));
 			else
-				value = XposedHelpers.callMethod(modRes, method, modResId);
-			return value;
+				return XposedHelpers.callMethod(modRes, method, modResId);
 		} catch (Throwable t) {
 			XposedHelpers.log(t);
 			return null;
