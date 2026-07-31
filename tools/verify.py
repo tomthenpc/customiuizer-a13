@@ -42,14 +42,22 @@ def log_file(task: str) -> Path:
     return BUILD_LOG_DIR / f"{stamp}-{task}.log"
 
 
+def _safe_print(msg: str) -> None:
+    if hasattr(sys.stdout, "buffer"):
+        encoded = msg.encode(sys.stdout.encoding, errors="replace")
+        sys.stdout.buffer.write(encoded + b"\n")
+    else:
+        print(msg)
+
+
 def print_tail(path: Path, lines: int = 40) -> None:
     try:
         text = path.read_text(encoding="utf-8", errors="replace")
     except OSError as exc:
-        print(f"  could not read log: {exc}")
+        _safe_print(f"  could not read log: {exc}")
         return
     for line in text.splitlines()[-lines:]:
-        print(f"  {line}")
+        _safe_print(f"  {line}")
 
 
 def guard_task(task: str) -> None:
