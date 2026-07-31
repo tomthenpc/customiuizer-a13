@@ -1210,7 +1210,8 @@ object SystemUIStatusBarHooks {
                 iconTextView.setTextSize(TypedValue.COMPLEX_UNIT_DIP, fontSize * 0.5f)
             }
             if (MainModule.mPrefs.getBoolean("system_netspeed_bold")) {
-                iconTextView.typeface = Typeface.DEFAULT_BOLD
+                iconTextView.typeface =
+                    Typeface.create(iconTextView.typeface, Typeface.BOLD)
             }
 
             var leftMargin = MainModule.mPrefs.getInt("system_netspeed_leftmargin", 0)
