@@ -710,8 +710,13 @@ public class ModuleHelper {
         }
     }
 
-    private static final ConcurrentHashMap<String, ArrayList<OwnedReceiverRegistration>> ownedReceivers =
-        new ConcurrentHashMap<String, ArrayList<OwnedReceiverRegistration>>();
+    /** Per-key bucket for owned receivers. The bucket is the unit of locking. */
+    private static class OwnedReceiverBucket {
+        final ArrayList<OwnedReceiverRegistration> registrations = new ArrayList<>();
+    }
+
+    private static final ConcurrentHashMap<String, OwnedReceiverBucket> ownedReceivers =
+        new ConcurrentHashMap<String, OwnedReceiverBucket>();
     private static final ConcurrentHashMap<String, ConcurrentLinkedDeque<OwnedReceiverRegistration>> staleOwnedReceivers =
         new ConcurrentHashMap<String, ConcurrentLinkedDeque<OwnedReceiverRegistration>>();
 
@@ -729,54 +734,65 @@ public class ModuleHelper {
         final OwnedReceiverRegistration newRegistration =
             new OwnedReceiverRegistration(registrationContext, owner, receiver, key);
 
-        ArrayList<OwnedReceiverRegistration> list =
-            ownedReceivers.computeIfAbsent(key, k -> new ArrayList<OwnedReceiverRegistration>());
+        while (true) {
+            final OwnedReceiverBucket bucket =
+                ownedReceivers.computeIfAbsent(key, k -> new OwnedReceiverBucket());
 
-        synchronized (list) {
-            // 1. Try to release any stale receivers to free slots before registering.
-            if (!drainOwnedStale(key)) return false;
+            synchronized (bucket) {
+                // If the bucket we locked is no longer in the map, another thread
+                // removed it; retry with the current (or a new) bucket.
+                if (ownedReceivers.get(key) != bucket) continue;
 
-            try {
-                registrationContext.registerReceiver(receiver, filter, flags);
-            } catch (Throwable t) {
-                log(key, t);
-                newRegistration.state = RegistrationState.REGISTER_FAILED;
+                // Try to release any stale receivers to free slots before registering.
+                if (!drainOwnedStale(key)) return false;
+
+                try {
+                    registrationContext.registerReceiver(receiver, filter, flags);
+                } catch (Throwable t) {
+                    log(key, t);
+                    newRegistration.state = RegistrationState.REGISTER_FAILED;
+                    return false;
+                }
+
+                newRegistration.state = RegistrationState.ACTIVE;
+
+                // Replace stale, dead-owner or same-owner registrations. Keep different owners.
+                for (int i = bucket.registrations.size() - 1; i >= 0; i--) {
+                    OwnedReceiverRegistration r = bucket.registrations.get(i);
+                    Object existingOwner = r.ownerRef.get();
+                    if (existingOwner != null && existingOwner != owner) continue;
+                    releaseReceiver(r);
+                    bucket.registrations.remove(i);
+                }
+                bucket.registrations.add(newRegistration);
+
+                if (bucket.registrations.contains(newRegistration)) {
+                    return true;
+                }
+
+                releaseReceiver(newRegistration);
                 return false;
             }
-
-            newRegistration.state = RegistrationState.ACTIVE;
-
-            // Replace stale, dead-owner or same-owner registrations. Keep different owners.
-            for (int i = list.size() - 1; i >= 0; i--) {
-                OwnedReceiverRegistration r = list.get(i);
-                Object existingOwner = r.ownerRef.get();
-                if (existingOwner != null && existingOwner != owner) continue;
-                releaseReceiver(r);
-                list.remove(i);
-            }
-            list.add(newRegistration);
-
-            if (list.contains(newRegistration)) {
-                return true;
-            }
-
-            releaseReceiver(newRegistration);
-            return false;
         }
     }
 
     public static void unregisterOwnedReceiver(String key, Object owner) {
-        ArrayList<OwnedReceiverRegistration> registrations = ownedReceivers.get(key);
-        if (registrations == null) return;
-        synchronized (registrations) {
-            for (int i = registrations.size() - 1; i >= 0; i--) {
-                OwnedReceiverRegistration r = registrations.get(i);
+        OwnedReceiverBucket bucket = ownedReceivers.get(key);
+        if (bucket == null) return;
+        synchronized (bucket) {
+            // If the bucket is no longer tracked, another thread replaced/removed it.
+            if (ownedReceivers.get(key) != bucket) return;
+
+            for (int i = bucket.registrations.size() - 1; i >= 0; i--) {
+                OwnedReceiverRegistration r = bucket.registrations.get(i);
                 Object registrationOwner = r.ownerRef.get();
                 if (registrationOwner != null && registrationOwner != owner) continue;
                 releaseReceiver(r);
-                registrations.remove(i);
+                bucket.registrations.remove(i);
             }
-            if (registrations.isEmpty()) ownedReceivers.remove(key, registrations);
+            if (bucket.registrations.isEmpty()) {
+                ownedReceivers.remove(key, bucket);
+            }
             drainOwnedStale(key);
         }
     }
@@ -862,7 +878,13 @@ public class ModuleHelper {
                 }
             }
         }
+        // Identity remove: only the exact empty deque we drained is removed,
+        // so a concurrent re-population cannot be lost.
         ConcurrentLinkedDeque<ReceiverRegistration> after = staleModuleReceivers.get(key);
+        if (after != null && after.isEmpty()) {
+            staleModuleReceivers.remove(key, after);
+        }
+        after = staleModuleReceivers.get(key);
         return after == null || after.isEmpty() || after.size() < MAX_STALE_RECEIVERS;
     }
 
@@ -877,7 +899,13 @@ public class ModuleHelper {
                 }
             }
         }
+        // Identity remove: only the exact empty deque we drained is removed,
+        // so a concurrent re-population cannot be lost.
         ConcurrentLinkedDeque<OwnedReceiverRegistration> after = staleOwnedReceivers.get(key);
+        if (after != null && after.isEmpty()) {
+            staleOwnedReceivers.remove(key, after);
+        }
+        after = staleOwnedReceivers.get(key);
         return after == null || after.isEmpty() || after.size() < MAX_STALE_RECEIVERS;
     }
 

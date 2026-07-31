@@ -14,6 +14,24 @@ import java.util.concurrent.atomic.AtomicInteger
 
 class ModuleHelperReceiverTest {
 
+    @org.junit.After
+    fun clearRegistries() {
+        clearCollection("ownedReceivers")
+        clearCollection("staleOwnedReceivers")
+        clearCollection("moduleReceivers")
+        clearCollection("staleModuleReceivers")
+    }
+
+    private fun clearCollection(fieldName: String) {
+        val field = ModuleHelper::class.java.getDeclaredField(fieldName)
+        field.isAccessible = true
+        when (val value = field.get(null)) {
+            is MutableMap<*, *> -> value.clear()
+            is MutableCollection<*> -> value.clear()
+            else -> error("Unsupported registry: $fieldName")
+        }
+    }
+
     private class TrackableContext : Application() {
         val registeredReceivers = ArrayList<Pair<String, BroadcastReceiver>>()
         val unregisteredReceivers = ArrayList<BroadcastReceiver>()
@@ -249,5 +267,70 @@ class ModuleHelperReceiverTest {
 
         assertFalse(ok)
         assertEquals(0, context.registeredReceivers.size)
+    }
+
+    @Test
+    fun ownedReceiver_unregisterRemovesEmptyBucket() {
+        val context = TrackableContext()
+        val owner = Any()
+
+        ModuleHelper.registerOwnedReceiver(
+            context,
+            owner,
+            "detachKey",
+            StubReceiver(),
+            intentFilter("action"),
+            Context.RECEIVER_NOT_EXPORTED
+        )
+        ModuleHelper.unregisterOwnedReceiver("detachKey", owner)
+
+        assertTrue(emptyOwnedBucket("detachKey"))
+        assertEquals(1, context.unregisteredReceivers.size)
+    }
+
+    @Test
+    fun ownedReceiver_concurrentRegisterAndUnregisterIsSafe() {
+        val context = TrackableContext()
+        val owner = Any()
+        val registered = AtomicInteger(0)
+        val unregistered = AtomicInteger(0)
+        val barrier = CountDownLatch(2)
+
+        // Thread A tries to register with a small delay.
+        val t1 = Thread {
+            context.registerDelayMs = 20L
+            val ok = ModuleHelper.registerOwnedReceiver(
+                context,
+                owner,
+                "raceKey",
+                StubReceiver(),
+                intentFilter("action"),
+                Context.RECEIVER_NOT_EXPORTED
+            )
+            if (ok) registered.incrementAndGet()
+            barrier.countDown()
+        }
+
+        // Thread B tries to unregister the same owner/key.
+        val t2 = Thread {
+            Thread.sleep(5L)
+            ModuleHelper.unregisterOwnedReceiver("raceKey", owner)
+            unregistered.incrementAndGet()
+            barrier.countDown()
+        }
+
+        t1.start()
+        t2.start()
+        barrier.await()
+
+        // No leaked framework receiver: whatever was registered is also unregistered.
+        assertEquals(context.registeredReceivers.size, context.unregisteredReceivers.size)
+    }
+
+    private fun emptyOwnedBucket(key: String): Boolean {
+        val field = ModuleHelper::class.java.getDeclaredField("ownedReceivers")
+        field.isAccessible = true
+        val map = field.get(null) as MutableMap<*, *>
+        return !map.containsKey(key)
     }
 }
