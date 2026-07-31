@@ -18,9 +18,9 @@
 
 ### Verification
 
-- `check-invariants`, `audit-system-migration`, `audit-architecture`, `audit-prefs`, `audit-canary-sequence`, and `audit-catalog-contracts` all pass;
-- `:app:testDebugUnitTest`, `:app:lintDebug`, `:app:lintRelease`, `:app:lintVitalRelease`, `:app:assembleDebug`, and `:app:minifyReleaseWithR8` results will be filled in after the build;
-- `CustoMIUIzer-A13-r13.8.5.apk` is a locally-signed candidate pending real-device and LSPosed log validation.
+- `check-invariants` (136 files, 0 violations), `audit-system-migration` (124/124 resolved, 119/119 direct calls, 0 facade), `audit-architecture`, `audit-prefs`, `audit-canary-sequence`, and `audit-catalog-contracts` all pass;
+- `:app:testDebugUnitTest`, `:app:testDevelopUnitTest`, `:app:testReleaseUnitTest`, `:app:lintDebug`, `:app:lintRelease`, `:app:lintVitalRelease`, `:app:assembleDebug`, `:app:minifyReleaseWithR8`, and `:app:assembleRelease` all pass;
+- `CustoMIUIzer-A13-r13.8.5.apk` is a locally-signed candidate; v2 signature, zipalign, APK metadata, Xposed metadata, and Legacy Xposed DEX scan all pass, pending real-device and LSPosed log validation.
 
 ## r13.7.0 (A13 engineering-parity formal release)
 

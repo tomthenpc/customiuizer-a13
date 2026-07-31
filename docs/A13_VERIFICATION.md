@@ -194,13 +194,16 @@ python tools/compare-memory-baseline.py `
 
 | 项目 | 状态 | 证据 |
 | --- | --- | --- |
-| `compileDebugKotlin` | 待实机验证 | 静态检查通过；实际编译在构建阶段验证 |
+| `compileDebugKotlin` / `compileReleaseKotlin` | 已验证 | 代码层面成功编译 |
 | `System.java` 完整 | 代码层面确认 | 迁移后无 `System.java` 修改 |
 | `System.kt` facade | 代码层面确认 | 17 个 `System*Hooks` 文件已替换 facade |
-| `MainModule` 调用重定向 | 代码层面确认 | `audit-system-migration.py` 119/119 直连调用解析 |
+| `MainModule` 调用重定向 | 已验证 | `audit-system-migration.py` 119/119 直连调用解析 |
 | 新 `System*.kt` 跨域调用 | 待实机验证 | 需按 `A13_SPLIT_AND_MIGRATION_METHOD.md` 复核 |
-| R8 / Release | 待实机验证 | 需构建 `CustoMIUIzer-A13-r13.8.5.apk` 后确认 |
-| 整体版本 | 本地签名候选 | `versionName=r13.8.5`，`versionCode=130`，待 LSPosed 日志验证 |
+| 测试 | 已验证 | `testDebugUnitTest`、`testDevelopUnitTest`、`testReleaseUnitTest` 通过 |
+| Lint | 已验证 | `lintDebug`、`lintRelease`、`lintVitalRelease` 通过 |
+| R8 / Release | 已验证 | `assembleDebug`、`minifyReleaseWithR8`、`assembleRelease` 通过 |
+| APK 元数据 | 已验证 | `versionName=r13.8.5`，`versionCode=130`，applicationId 正确，v2 签名与 zipalign 通过 |
+| 实机/LSPosed | 待实机验证 | 安装、作用域、日志与功能行为需真机确认 |
 
 ---
 

@@ -18,9 +18,9 @@
 
 ### 验证
 
-- 运行 `check-invariants`、`audit-system-migration`、`audit-architecture`、`audit-prefs`、`audit-canary-sequence`、`audit-catalog-contracts`：均通过；
-- 运行 `:app:testDebugUnitTest`、`:app:lintDebug`、`:app:lintRelease`、`:app:lintVitalRelease`、`:app:assembleDebug`、`:app:minifyReleaseWithR8`：待填入具体结果；
-- 构建 `CustoMIUIzer-A13-r13.8.5.apk`：待实机与 LSPosed 日志验证。
+- 运行 `check-invariants`（136 文件/0 违规）、`audit-system-migration`（124/124 解析，119/119 直连，0 facade）、`audit-architecture`、`audit-prefs`、`audit-canary-sequence`、`audit-catalog-contracts`：均通过；
+- 运行 `:app:testDebugUnitTest`、`:app:testDevelopUnitTest`、`:app:testReleaseUnitTest`、`:app:lintDebug`、`:app:lintRelease`、`:app:lintVitalRelease`、`:app:assembleDebug`、`:app:minifyReleaseWithR8`、`:app:assembleRelease`：均通过；
+- 构建 `CustoMIUIzer-A13-r13.8.5.apk`：v2 签名、zipalign、APK 元数据、Xposed 元数据、Legacy Xposed DEX 扫描均通过，待实机与 LSPosed 日志验证。
 
 ## r13.7.0（A13 工程追平正式版）
 
