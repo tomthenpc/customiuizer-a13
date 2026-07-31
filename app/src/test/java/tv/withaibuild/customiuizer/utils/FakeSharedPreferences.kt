@@ -5,14 +5,47 @@ import android.content.SharedPreferences
 class FakeSharedPreferences : SharedPreferences {
 
     private val values = HashMap<String, Any?>()
+    private val listeners = ArrayList<SharedPreferences.OnSharedPreferenceChangeListener>()
 
     var commitResult: Boolean = true
 
+    private var getAllException: RuntimeException? = null
+    private var registerException: RuntimeException? = null
+
     fun put(key: String, value: Any?) {
         values[key] = value
+        dispatchChange(key)
     }
 
-    override fun getAll(): Map<String, *> = HashMap(values)
+    fun remove(key: String) {
+        values.remove(key)
+        dispatchChange(key)
+    }
+
+    fun setAll(map: Map<String, Any?>) {
+        val changed = ArrayList<String>(map.keys.size)
+        values.clear()
+        values.putAll(map)
+        changed.addAll(map.keys)
+        for (key in changed) dispatchChange(key)
+    }
+
+    fun setGetAllException(e: RuntimeException?) {
+        getAllException = e
+    }
+
+    fun setRegisterException(e: RuntimeException?) {
+        registerException = e
+    }
+
+    private fun dispatchChange(key: String) {
+        for (l in listeners) l.onSharedPreferenceChanged(this, key)
+    }
+
+    override fun getAll(): Map<String, *> {
+        getAllException?.let { throw it }
+        return HashMap(values)
+    }
 
     override fun getString(key: String, defValue: String?): String? {
         val v = values[key]
@@ -49,9 +82,14 @@ class FakeSharedPreferences : SharedPreferences {
 
     override fun edit(): SharedPreferences.Editor = FakeEditor(values)
 
-    override fun registerOnSharedPreferenceChangeListener(listener: SharedPreferences.OnSharedPreferenceChangeListener) {}
+    override fun registerOnSharedPreferenceChangeListener(listener: SharedPreferences.OnSharedPreferenceChangeListener) {
+        registerException?.let { throw it }
+        if (!listeners.contains(listener)) listeners.add(listener)
+    }
 
-    override fun unregisterOnSharedPreferenceChangeListener(listener: SharedPreferences.OnSharedPreferenceChangeListener) {}
+    override fun unregisterOnSharedPreferenceChangeListener(listener: SharedPreferences.OnSharedPreferenceChangeListener) {
+        listeners.remove(listener)
+    }
 
     inner class FakeEditor(private val values: MutableMap<String, Any?>) : SharedPreferences.Editor {
 

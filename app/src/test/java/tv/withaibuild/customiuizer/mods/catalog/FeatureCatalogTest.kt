@@ -13,6 +13,7 @@ import tv.withaibuild.customiuizer.mods.catalog.CompatibilityState
 import tv.withaibuild.customiuizer.mods.diagnostics.DiagnosticIds
 import tv.withaibuild.customiuizer.mods.diagnostics.DiagnosticRecorder
 import tv.withaibuild.customiuizer.mods.diagnostics.InstallOutcome
+import tv.withaibuild.customiuizer.mods.diagnostics.ReasonCode
 import tv.withaibuild.customiuizer.mods.utils.XposedHelpers
 import tv.withaibuild.customiuizer.utils.FakeXposedInterface
 import tv.withaibuild.customiuizer.utils.PrefMap
@@ -69,7 +70,11 @@ class FeatureCatalogTest {
         assertFalse(FeatureDispatcher.installById("unknown", systemui))
 
         assertFalse(systemui.isResolverInitialized())
-        assertTrue(DiagnosticRecorder.summarize().isEmpty())
+
+        val snapshot = DiagnosticRecorder.summarize()[DiagnosticIds.UNKNOWN_FEATURE_ID]
+        assertNotNull(snapshot)
+        assertEquals(InstallOutcome.FAILED, snapshot!!.installation)
+        assertEquals(ReasonCode.UNKNOWN, snapshot.reasonCode)
     }
 
     @Test
