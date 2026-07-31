@@ -139,7 +139,7 @@ These were not touched in this round:
 | Module/Owned receiver | VERIFIED | `ModuleHelperReceiverTest` passes |
 | FeatureDispatcher typed IDs | VERIFIED | `FeatureCatalogTest` passes |
 | MainModule process split | PARTIAL | not split into per-process installers in this session |
-| ResourceHooks SparseArray | PARTIAL | unresolved/wildcard map remains, resolved ID split pending |
+| ResourceHooks SparseArray | COMPLETED | `ResourceHooks.java` uses `unresolved` `ConcurrentHashMap` + `active` `SparseArray` copy-on-write, bounded by `MAX_ACTIVE` |
 | Full callback boundary | VERIFIED | `ModuleHelper.guarded` enforced by `check-invariants.py` |
 
 *Updated during the `devin/a13-runtime-hardening` continuation session.*

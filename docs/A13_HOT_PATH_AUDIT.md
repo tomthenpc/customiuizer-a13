@@ -10,7 +10,7 @@
 | Network Speed | VERIFIED | `check-invariants.py` no redundant arg marshalling / no regex split on literal |
 | Clock / Battery | VERIFIED | No `getArgsArray` without rewrite, no `String.format` in hot paths |
 | Notification / Launcher Animation | VERIFIED | Callbacks guarded or exempted (PreferenceObserver) |
-| ResourceHooks | PARTIAL | `ConcurrentHashMap` for unresolved/wildcard remains; resolved ID `SparseArray` pending if device traces justify |
+| ResourceHooks | COMPLETED | `unresolved` name map + bounded `active` `SparseArray`, zero-allocation hot path `chain.getArg(i)` |
 | DexKit / reflection | VERIFIED | No reflection in `mods/` callbacks per `check-invariants.py` |
 
 ## Verification
