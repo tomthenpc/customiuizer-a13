@@ -23,7 +23,7 @@ object CanaryContracts {
     private val LONG = Long::class.javaPrimitiveType!!
     private val BOOLEAN = Boolean::class.javaPrimitiveType!!
 
-    val packagePermissions = HookTargetContract(
+    val packagePermissions: HookTargetContract by lazy(kotlin.LazyThreadSafetyMode.NONE) { HookTargetContract(
         featureId = "packagePermissions",
         requirements = listOf(
             SingleTargetRequirement(
@@ -72,8 +72,9 @@ object CanaryContracts {
             )
         )
     )
+    }
 
-    val autoBrightnessRange = HookTargetContract(
+    val autoBrightnessRange: HookTargetContract by lazy(kotlin.LazyThreadSafetyMode.NONE) { HookTargetContract(
         featureId = "autoBrightnessRange",
         requirements = listOf(
             AnyOfRequirement(
@@ -114,8 +115,9 @@ object CanaryContracts {
             )
         )
     )
+    }
 
-    val muffledVibration = HookTargetContract(
+    val muffledVibration: HookTargetContract by lazy(kotlin.LazyThreadSafetyMode.NONE) { HookTargetContract(
         featureId = "muffledVibration",
         requirements = listOf(
             SingleTargetRequirement(
@@ -128,8 +130,9 @@ object CanaryContracts {
             )
         )
     )
+    }
 
-    val statusBarClockTweak = HookTargetContract(
+    val statusBarClockTweak: HookTargetContract by lazy(kotlin.LazyThreadSafetyMode.NONE) { HookTargetContract(
         featureId = "statusBarClockTweak",
         requirements = listOf(
             SingleTargetRequirement(
@@ -186,8 +189,9 @@ object CanaryContracts {
             )
         )
     )
+    }
 
-    val noMoreIcon = HookTargetContract(
+    val noMoreIcon: HookTargetContract by lazy(kotlin.LazyThreadSafetyMode.NONE) { HookTargetContract(
         featureId = "noMoreIcon",
         requirements = listOf(
             SingleTargetRequirement(
@@ -201,8 +205,9 @@ object CanaryContracts {
             )
         )
     )
+    }
 
-    val batteryIndicator = HookTargetContract(
+    val batteryIndicator: HookTargetContract by lazy(kotlin.LazyThreadSafetyMode.NONE) { HookTargetContract(
         featureId = "batteryIndicator",
         requirements = listOf(
             SingleTargetRequirement(
@@ -268,8 +273,9 @@ object CanaryContracts {
             )
         )
     )
+    }
 
-    val noClockHide = HookTargetContract(
+    val noClockHide: HookTargetContract by lazy(kotlin.LazyThreadSafetyMode.NONE) { HookTargetContract(
         featureId = "noClockHide",
         requirements = listOf(
             SingleTargetRequirement(
@@ -283,8 +289,9 @@ object CanaryContracts {
             )
         )
     )
+    }
 
-    val noWidgetOnly = HookTargetContract(
+    val noWidgetOnly: HookTargetContract by lazy(kotlin.LazyThreadSafetyMode.NONE) { HookTargetContract(
         featureId = "noWidgetOnly",
         requirements = listOf(
             SingleTargetRequirement(
@@ -298,4 +305,5 @@ object CanaryContracts {
             )
         )
     )
+    }
 }

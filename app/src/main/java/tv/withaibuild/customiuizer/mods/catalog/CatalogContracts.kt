@@ -20,7 +20,7 @@ object CatalogContracts {
     private val INT = Int::class.javaPrimitiveType!!
     private val BOOLEAN = Boolean::class.javaPrimitiveType!!
 
-    val screenDimTime = HookTargetContract(
+    val screenDimTime: HookTargetContract by lazy(kotlin.LazyThreadSafetyMode.NONE) { HookTargetContract(
         featureId = "screenDimTime",
         requirements = listOf(
             SingleTargetRequirement(
@@ -43,8 +43,9 @@ object CatalogContracts {
             )
         )
     )
+    }
 
-    val firstVolumePress = HookTargetContract(
+    val firstVolumePress: HookTargetContract by lazy(kotlin.LazyThreadSafetyMode.NONE) { HookTargetContract(
         featureId = "firstVolumePress",
         requirements = listOf(
             SingleTargetRequirement(
@@ -58,8 +59,9 @@ object CatalogContracts {
             )
         )
     )
+    }
 
-    val networkIndicatorWifi = HookTargetContract(
+    val networkIndicatorWifi: HookTargetContract by lazy(kotlin.LazyThreadSafetyMode.NONE) { HookTargetContract(
         featureId = "networkIndicatorWifi",
         requirements = listOf(
             SingleTargetRequirement(
@@ -72,8 +74,9 @@ object CatalogContracts {
             )
         )
     )
+    }
 
-    val muteVisibleNotifications = HookTargetContract(
+    val muteVisibleNotifications: HookTargetContract by lazy(kotlin.LazyThreadSafetyMode.NONE) { HookTargetContract(
         featureId = "muteVisibleNotifications",
         requirements = listOf(
             SingleTargetRequirement(
@@ -86,8 +89,9 @@ object CatalogContracts {
             )
         )
     )
+    }
 
-    val hideLauncherTitles = HookTargetContract(
+    val hideLauncherTitles: HookTargetContract by lazy(kotlin.LazyThreadSafetyMode.NONE) { HookTargetContract(
         featureId = "hideLauncherTitles",
         requirements = listOf(
             SingleTargetRequirement(
@@ -101,8 +105,9 @@ object CatalogContracts {
             )
         )
     )
+    }
 
-    val fixAppInfoLaunch = HookTargetContract(
+    val fixAppInfoLaunch: HookTargetContract by lazy(kotlin.LazyThreadSafetyMode.NONE) { HookTargetContract(
         featureId = "fixAppInfoLaunch",
         requirements = listOf(
             AnyOfRequirement(
@@ -125,9 +130,10 @@ object CatalogContracts {
             )
         )
     )
+    }
 
     // Catalog expansion batch 2: system_server
-    val hideProximityWarning = HookTargetContract(
+    val hideProximityWarning: HookTargetContract by lazy(kotlin.LazyThreadSafetyMode.NONE) { HookTargetContract(
         featureId = "hideProximityWarning",
         requirements = listOf(
             SingleTargetRequirement(
@@ -150,8 +156,9 @@ object CatalogContracts {
             )
         )
     )
+    }
 
-    val clearAllTasks = HookTargetContract(
+    val clearAllTasks: HookTargetContract by lazy(kotlin.LazyThreadSafetyMode.NONE) { HookTargetContract(
         featureId = "clearAllTasks",
         requirements = listOf(
             SingleTargetRequirement(
@@ -164,9 +171,10 @@ object CatalogContracts {
             )
         )
     )
+    }
 
     // Catalog expansion batch 2: SystemUI
-    val hideDismissView = HookTargetContract(
+    val hideDismissView: HookTargetContract by lazy(kotlin.LazyThreadSafetyMode.NONE) { HookTargetContract(
         featureId = "hideDismissView",
         requirements = listOf(
             SingleTargetRequirement(
@@ -180,8 +188,9 @@ object CatalogContracts {
             )
         )
     )
+    }
 
-    val hideLockScreenHint = HookTargetContract(
+    val hideLockScreenHint: HookTargetContract by lazy(kotlin.LazyThreadSafetyMode.NONE) { HookTargetContract(
         featureId = "hideLockScreenHint",
         requirements = listOf(
             SingleTargetRequirement(
@@ -195,9 +204,10 @@ object CatalogContracts {
             )
         )
     )
+    }
 
     // Catalog expansion batch 2: Launcher
-    val folderColumns = HookTargetContract(
+    val folderColumns: HookTargetContract by lazy(kotlin.LazyThreadSafetyMode.NONE) { HookTargetContract(
         featureId = "folderColumns",
         requirements = listOf(
             SingleTargetRequirement(
@@ -229,8 +239,9 @@ object CatalogContracts {
             )
         )
     )
+    }
 
-    val titleTopMargin = HookTargetContract(
+    val titleTopMargin: HookTargetContract by lazy(kotlin.LazyThreadSafetyMode.NONE) { HookTargetContract(
         featureId = "titleTopMargin",
         requirements = listOf(
             SingleTargetRequirement(
@@ -244,9 +255,10 @@ object CatalogContracts {
             )
         )
     )
+    }
 
     // Catalog expansion batch 3: system_server
-    val noLightUpOnCharge = HookTargetContract(
+    val noLightUpOnCharge: HookTargetContract by lazy(kotlin.LazyThreadSafetyMode.NONE) { HookTargetContract(
         featureId = "noLightUpOnCharge",
         requirements = listOf(
             SingleTargetRequirement(
@@ -259,8 +271,9 @@ object CatalogContracts {
             )
         )
     )
+    }
 
-    val allRotations = HookTargetContract(
+    val allRotations: HookTargetContract by lazy(kotlin.LazyThreadSafetyMode.NONE) { HookTargetContract(
         featureId = "allRotations",
         requirements = listOf(
             SingleTargetRequirement(
@@ -273,9 +286,10 @@ object CatalogContracts {
             )
         )
     )
+    }
 
     // Catalog expansion batch 3: SystemUI
-    val noNetworkSpeedSeparator = HookTargetContract(
+    val noNetworkSpeedSeparator: HookTargetContract by lazy(kotlin.LazyThreadSafetyMode.NONE) { HookTargetContract(
         featureId = "noNetworkSpeedSeparator",
         requirements = listOf(
             SingleTargetRequirement(
@@ -298,8 +312,9 @@ object CatalogContracts {
             )
         )
     )
+    }
 
-    val hideIconsClock = HookTargetContract(
+    val hideIconsClock: HookTargetContract by lazy(kotlin.LazyThreadSafetyMode.NONE) { HookTargetContract(
         featureId = "hideIconsClock",
         requirements = listOf(
             SingleTargetRequirement(
@@ -313,9 +328,10 @@ object CatalogContracts {
             )
         )
     )
+    }
 
     // Catalog expansion batch 3: Launcher
-    val noUnlockAnimation = HookTargetContract(
+    val noUnlockAnimation: HookTargetContract by lazy(kotlin.LazyThreadSafetyMode.NONE) { HookTargetContract(
         featureId = "noUnlockAnimation",
         requirements = listOf(
             SingleTargetRequirement(
@@ -328,4 +344,5 @@ object CatalogContracts {
             )
         )
     )
+    }
 }
