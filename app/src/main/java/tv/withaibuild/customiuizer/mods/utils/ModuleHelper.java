@@ -31,6 +31,8 @@ import java.util.concurrent.Callable;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.concurrent.CopyOnWriteArraySet;
+import java.util.concurrent.ConcurrentLinkedDeque;
+import java.util.Iterator;
 
 import io.github.libxposed.api.XposedModuleInterface;
 import tv.withaibuild.customiuizer.MainModule;
@@ -615,19 +617,35 @@ public class ModuleHelper {
         if (sawCleared) dropOwnedObserver(null, null);
     }
 
+    private static final int MAX_STALE_RECEIVERS = 3;
+
+    private enum RegistrationState {
+        PENDING_REGISTER,
+        ACTIVE,
+        STALE,
+        RELEASED,
+        REGISTER_FAILED
+    }
+
     private static class ReceiverRegistration {
         final Context context;
         final BroadcastReceiver receiver;
+        final String key;
+        volatile RegistrationState state;
 
-        ReceiverRegistration(Context context, BroadcastReceiver receiver) {
+        ReceiverRegistration(Context context, BroadcastReceiver receiver, String key, RegistrationState state) {
             Context applicationContext = context.getApplicationContext();
             this.context = applicationContext != null ? applicationContext : context;
             this.receiver = receiver;
+            this.key = key;
+            this.state = state;
         }
     }
 
     private static final ConcurrentHashMap<String, ReceiverRegistration> moduleReceivers =
         new ConcurrentHashMap<String, ReceiverRegistration>();
+    private static final ConcurrentHashMap<String, ConcurrentLinkedDeque<ReceiverRegistration>> staleModuleReceivers =
+        new ConcurrentHashMap<String, ConcurrentLinkedDeque<ReceiverRegistration>>();
 
     public static boolean registerModuleReceiver(
         Context context,
@@ -639,49 +657,63 @@ public class ModuleHelper {
         final Context registrationContext = context.getApplicationContext() != null
             ? context.getApplicationContext() : context;
 
-        final ReceiverRegistration newRegistration = new ReceiverRegistration(registrationContext, receiver);
+        final ReceiverRegistration newRegistration =
+            new ReceiverRegistration(registrationContext, receiver, key, RegistrationState.PENDING_REGISTER);
 
-        // 1. Atomically remove the previous registration and, under the same key lock,
-        //    register the new receiver. If registration throws, the map entry is null.
-        moduleReceivers.compute(key, (k, previous) -> {
-            if (previous != null) releaseReceiver(previous);
+        synchronized (moduleReceivers) {
+            // 1. Try to release any stale receivers to free slots before registering.
+            if (!drainModuleStale(key)) return false;
+
+            // 2. Register the new receiver with the framework first.
+            //    The old active receiver stays in the map and keeps working if this fails.
             try {
                 registrationContext.registerReceiver(receiver, filter, flags);
-                return newRegistration;
             } catch (Throwable t) {
-                log(k, t);
-                return null;
+                log(key, t);
+                newRegistration.state = RegistrationState.REGISTER_FAILED;
+                return false;
             }
-        });
 
-        // 2. Identity check: after framework registration, verify this exact object is still
-        //    the one tracked in the map. If another operation replaced or removed it, the
-        //    loser unregisters itself so the framework registration is not left untracked.
-        ReceiverRegistration current = moduleReceivers.get(key);
-        if (current == newRegistration) {
-            return true;
+            // 3. The new receiver is live; make it active and release the previous one.
+            newRegistration.state = RegistrationState.ACTIVE;
+            ReceiverRegistration previous = moduleReceivers.put(key, newRegistration);
+            if (previous != null) {
+                releaseReceiver(previous);
+            }
+
+            // 4. Identity check: another thread may have replaced us.
+            ReceiverRegistration current = moduleReceivers.get(key);
+            if (current == newRegistration) {
+                return true;
+            }
+
+            // We lost the race; clean up our own registration.
+            releaseReceiver(newRegistration);
+            return false;
         }
-
-        releaseReceiver(newRegistration);
-        return false;
     }
 
     public static void unregisterModuleReceiver(String key) {
-        ReceiverRegistration previous = moduleReceivers.remove(key);
-        if (previous != null) releaseReceiver(previous);
+        synchronized (moduleReceivers) {
+            ReceiverRegistration previous = moduleReceivers.remove(key);
+            if (previous != null) releaseReceiver(previous);
+            drainModuleStale(key);
+        }
     }
 
     private static class OwnedReceiverRegistration extends ReceiverRegistration {
         final WeakReference<Object> ownerRef;
 
-        OwnedReceiverRegistration(Context context, Object owner, BroadcastReceiver receiver) {
-            super(context, receiver);
+        OwnedReceiverRegistration(Context context, Object owner, BroadcastReceiver receiver, String key) {
+            super(context, receiver, key, RegistrationState.PENDING_REGISTER);
             this.ownerRef = new WeakReference<Object>(owner);
         }
     }
 
     private static final ConcurrentHashMap<String, ArrayList<OwnedReceiverRegistration>> ownedReceivers =
         new ConcurrentHashMap<String, ArrayList<OwnedReceiverRegistration>>();
+    private static final ConcurrentHashMap<String, ConcurrentLinkedDeque<OwnedReceiverRegistration>> staleOwnedReceivers =
+        new ConcurrentHashMap<String, ConcurrentLinkedDeque<OwnedReceiverRegistration>>();
 
     public static boolean registerOwnedReceiver(
         Context context,
@@ -694,47 +726,43 @@ public class ModuleHelper {
         final Context registrationContext = context.getApplicationContext() != null
             ? context.getApplicationContext() : context;
 
-        // Build the registration object up-front so the identity check after compute can
-        // compare the exact instance that was (or was not) registered with the framework.
         final OwnedReceiverRegistration newRegistration =
-            new OwnedReceiverRegistration(registrationContext, owner, receiver);
+            new OwnedReceiverRegistration(registrationContext, owner, receiver, key);
 
-        // 1. Atomically clean stale/same-owner registrations and register the new one.
-        ownedReceivers.compute(key, (k, registrations) -> {
-            ArrayList<OwnedReceiverRegistration> list = registrations != null ? registrations
-                : new ArrayList<OwnedReceiverRegistration>();
-            synchronized (list) {
-                // Replace stale or same-owner registrations. Keep different owners.
-                for (int i = list.size() - 1; i >= 0; i--) {
-                    OwnedReceiverRegistration r = list.get(i);
-                    Object existingOwner = r.ownerRef.get();
-                    if (existingOwner != null && existingOwner != owner) continue;
-                    releaseReceiver(r);
-                    list.remove(i);
-                }
+        ArrayList<OwnedReceiverRegistration> list =
+            ownedReceivers.computeIfAbsent(key, k -> new ArrayList<OwnedReceiverRegistration>());
 
-                try {
-                    registrationContext.registerReceiver(receiver, filter, flags);
-                    list.add(newRegistration);
-                } catch (Throwable t) {
-                    log(k, t);
-                }
+        synchronized (list) {
+            // 1. Try to release any stale receivers to free slots before registering.
+            if (!drainOwnedStale(key)) return false;
+
+            try {
+                registrationContext.registerReceiver(receiver, filter, flags);
+            } catch (Throwable t) {
+                log(key, t);
+                newRegistration.state = RegistrationState.REGISTER_FAILED;
+                return false;
             }
-            return list.isEmpty() ? null : list;
-        });
 
-        // 2. Identity check: the exact registration object must still be in the tracked list.
-        ArrayList<OwnedReceiverRegistration> currentList = ownedReceivers.get(key);
-        if (currentList != null) {
-            synchronized (currentList) {
-                if (currentList.contains(newRegistration)) {
-                    return true;
-                }
+            newRegistration.state = RegistrationState.ACTIVE;
+
+            // Replace stale, dead-owner or same-owner registrations. Keep different owners.
+            for (int i = list.size() - 1; i >= 0; i--) {
+                OwnedReceiverRegistration r = list.get(i);
+                Object existingOwner = r.ownerRef.get();
+                if (existingOwner != null && existingOwner != owner) continue;
+                releaseReceiver(r);
+                list.remove(i);
             }
+            list.add(newRegistration);
+
+            if (list.contains(newRegistration)) {
+                return true;
+            }
+
+            releaseReceiver(newRegistration);
+            return false;
         }
-
-        releaseReceiver(newRegistration);
-        return false;
     }
 
     public static void unregisterOwnedReceiver(String key, Object owner) {
@@ -748,8 +776,9 @@ public class ModuleHelper {
                 releaseReceiver(r);
                 registrations.remove(i);
             }
+            if (registrations.isEmpty()) ownedReceivers.remove(key, registrations);
+            drainOwnedStale(key);
         }
-        if (registrations.isEmpty()) ownedReceivers.remove(key, registrations);
     }
 
     private static final ConcurrentHashMap<String, Runnable> moduleRegistrations =
@@ -765,12 +794,91 @@ public class ModuleHelper {
         if (previous != null) guarded("ModuleHelper.clearRegistration:" + key, previous);
     }
 
-    private static void releaseReceiver(ReceiverRegistration registration) {
-        try {
-            registration.context.unregisterReceiver(registration.receiver);
-        } catch (Throwable ignored) {
-            // The old Context may already have torn down the registration.
+    private static boolean tryRelease(ReceiverRegistration registration) {
+        if (registration == null) return true;
+        synchronized (registration) {
+            switch (registration.state) {
+                case RELEASED:
+                    return true;
+                case PENDING_REGISTER:
+                case REGISTER_FAILED:
+                    registration.state = RegistrationState.RELEASED;
+                    return true;
+                case ACTIVE:
+                case STALE:
+                    try {
+                        registration.context.unregisterReceiver(registration.receiver);
+                        registration.state = RegistrationState.RELEASED;
+                        return true;
+                    } catch (Throwable t) {
+                        registration.state = RegistrationState.STALE;
+                        return false;
+                    }
+            }
         }
+        return false;
+    }
+
+    private static void releaseReceiver(ReceiverRegistration registration) {
+        if (registration == null) return;
+        synchronized (registration) {
+            switch (registration.state) {
+                case RELEASED:
+                case REGISTER_FAILED:
+                case STALE:
+                    return;
+                case PENDING_REGISTER:
+                    registration.state = RegistrationState.RELEASED;
+                    return;
+                case ACTIVE:
+                    try {
+                        registration.context.unregisterReceiver(registration.receiver);
+                        registration.state = RegistrationState.RELEASED;
+                    } catch (Throwable t) {
+                        registration.state = RegistrationState.STALE;
+                        if (registration instanceof OwnedReceiverRegistration) {
+                            staleOwnedReceivers
+                                .computeIfAbsent(registration.key, k -> new ConcurrentLinkedDeque<OwnedReceiverRegistration>())
+                                .add((OwnedReceiverRegistration) registration);
+                        } else {
+                            staleModuleReceivers
+                                .computeIfAbsent(registration.key, k -> new ConcurrentLinkedDeque<ReceiverRegistration>())
+                                .add(registration);
+                        }
+                    }
+                    return;
+            }
+        }
+    }
+
+    private static boolean drainModuleStale(String key) {
+        ConcurrentLinkedDeque<ReceiverRegistration> stale = staleModuleReceivers.get(key);
+        if (stale != null && !stale.isEmpty()) {
+            Iterator<ReceiverRegistration> it = stale.iterator();
+            while (it.hasNext()) {
+                ReceiverRegistration reg = it.next();
+                if (tryRelease(reg)) {
+                    it.remove();
+                }
+            }
+        }
+        ConcurrentLinkedDeque<ReceiverRegistration> after = staleModuleReceivers.get(key);
+        return after == null || after.isEmpty() || after.size() < MAX_STALE_RECEIVERS;
+    }
+
+    private static boolean drainOwnedStale(String key) {
+        ConcurrentLinkedDeque<OwnedReceiverRegistration> stale = staleOwnedReceivers.get(key);
+        if (stale != null && !stale.isEmpty()) {
+            Iterator<OwnedReceiverRegistration> it = stale.iterator();
+            while (it.hasNext()) {
+                OwnedReceiverRegistration reg = it.next();
+                if (tryRelease(reg)) {
+                    it.remove();
+                }
+            }
+        }
+        ConcurrentLinkedDeque<OwnedReceiverRegistration> after = staleOwnedReceivers.get(key);
+        return after == null || after.isEmpty() || after.size() < MAX_STALE_RECEIVERS;
     }
 
     public static synchronized Context getModuleContext(Context context) throws Throwable {
@@ -853,6 +961,7 @@ public class ModuleHelper {
         try {
             block.run();
         } catch (Throwable t) {
+            if (t instanceof OutOfMemoryError) throw (OutOfMemoryError) t;
             log(t);
         }
     }
@@ -888,6 +997,7 @@ public class ModuleHelper {
         try {
             block.run();
         } catch (Throwable t) {
+            if (t instanceof OutOfMemoryError) throw (OutOfMemoryError) t;
             logGuardedFailure(callbackName, t, failureLogger);
         }
     }
@@ -900,6 +1010,7 @@ public class ModuleHelper {
         try {
             return block.call();
         } catch (Throwable t) {
+            if (t instanceof OutOfMemoryError) throw (OutOfMemoryError) t;
             log(t);
             return fallback;
         }
@@ -916,6 +1027,7 @@ public class ModuleHelper {
         try {
             return block.call();
         } catch (Throwable t) {
+            if (t instanceof OutOfMemoryError) throw (OutOfMemoryError) t;
             logGuardedFailure(callbackName, t, failureLogger);
             return fallback;
         }
