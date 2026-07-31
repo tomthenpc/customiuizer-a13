@@ -42,7 +42,7 @@ import tv.withaibuild.customiuizer.utils.PrefMap
  */
 object FeatureCatalog {
 
-    private val features = listOf(
+    private val features by lazy { listOf(
         FeatureSpec(
             contract = CanaryContracts.packagePermissions,
             id = "packagePermissions",
@@ -567,9 +567,9 @@ object FeatureCatalog {
             activationRestartTarget = RestartTarget.LAUNCHER_RESTART,
             configReloadMode = ConfigReloadMode.NONE
         )
-    )
+    ) }
 
-    private val byId = features.associateBy { it.id }
+    private val byId by lazy { features.associateBy { it.id } }
 
     /**
      * Create a [FeatureRuntime] for a host process.
