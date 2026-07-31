@@ -25,6 +25,8 @@ The LSPosed user download page is at:
 
 `Xposed-Modules-Repo/tv.withaibuild.customiuizer.r13`
 
+> This Releases page only keeps the current formal release. Changelog for older versions has been merged into the current Release and CHANGELOG. Older APKs are no longer available for download; the historical source tags remain.
+
 ## r13.8.6 highlights
 
 * Merged the latest A13 maintenance, Catalog, compatibility diagnostics, scope and UI fixes into `main`;

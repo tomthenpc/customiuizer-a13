@@ -25,6 +25,8 @@
 
 `Xposed-Modules-Repo/tv.withaibuild.customiuizer.r13` 
 
+> Releases 页面仅保留当前正式版。旧版本的变更记录已合并到当前 Release 和 CHANGELOG；旧版 APK 不再提供下载，历史源码 tag 继续保留。
+
 ## r13.8.6 更新重点
 
 * 将 A13 最新维护、Catalog、兼容诊断、作用域与 UI 修复统一合并到 `main`；

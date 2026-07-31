@@ -1,5 +1,7 @@
 # Changelog
 
+> Note: The Releases page only keeps the current formal release. Full changelogs for older versions are preserved in this file. Older APKs are no longer available for download; historical source tags remain.
+
 This file records user-visible changes, compatibility boundaries and verification status for public releases.
 
 ## r13.8.6
