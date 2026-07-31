@@ -39,6 +39,7 @@ import tv.withaibuild.customiuizer.mods.GlobalActions;
 import tv.withaibuild.customiuizer.mods.utils.HookerClassHelper.CustomMethodUnhooker;
 import tv.withaibuild.customiuizer.mods.utils.HookerClassHelper.MethodHook;
 import tv.withaibuild.customiuizer.utils.HookUtils;
+import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Set;
 
@@ -635,17 +636,35 @@ public class ModuleHelper {
         IntentFilter filter,
         int flags
     ) {
-        unregisterModuleReceiver(key);
-        Context registrationContext = context.getApplicationContext();
-        if (registrationContext == null) registrationContext = context;
-        try {
-            registrationContext.registerReceiver(receiver, filter, flags);
-            moduleReceivers.put(key, new ReceiverRegistration(registrationContext, receiver));
-            return true;
-        } catch (Throwable t) {
-            log(key, t);
-            return false;
+        final Context registrationContext = context.getApplicationContext() != null
+            ? context.getApplicationContext() : context;
+
+        final boolean[] registered = { false };
+        final ReceiverRegistration[] failedRegistration = new ReceiverRegistration[1];
+
+        final ReceiverRegistration newRegistration = new ReceiverRegistration(registrationContext, receiver);
+
+        // Ensure that only the winning registration is both in the map and registered with the
+        // framework. If another thread replaces the value under the same key while this thread is
+        // blocked in registerReceiver, the loser unregisters itself and the map keeps the winner.
+        moduleReceivers.compute(key, (k, previous) -> {
+            if (previous != null) releaseReceiver(previous);
+            try {
+                registrationContext.registerReceiver(receiver, filter, flags);
+                registered[0] = true;
+                return newRegistration;
+            } catch (Throwable t) {
+                log(k, t);
+                failedRegistration[0] = newRegistration;
+                return null;
+            }
+        });
+
+        if (!registered[0] && failedRegistration[0] != null) {
+            releaseReceiver(failedRegistration[0]);
         }
+
+        return registered[0];
     }
 
     public static void unregisterModuleReceiver(String key) {
@@ -662,8 +681,8 @@ public class ModuleHelper {
         }
     }
 
-    private static final ConcurrentHashMap<String, CopyOnWriteArrayList<OwnedReceiverRegistration>> ownedReceivers =
-        new ConcurrentHashMap<String, CopyOnWriteArrayList<OwnedReceiverRegistration>>();
+    private static final ConcurrentHashMap<String, ArrayList<OwnedReceiverRegistration>> ownedReceivers =
+        new ConcurrentHashMap<String, ArrayList<OwnedReceiverRegistration>>();
 
     public static boolean registerOwnedReceiver(
         Context context,
@@ -673,35 +692,49 @@ public class ModuleHelper {
         IntentFilter filter,
         int flags
     ) {
-        CopyOnWriteArrayList<OwnedReceiverRegistration> registrations =
-            ownedReceivers.computeIfAbsent(key, ignored -> new CopyOnWriteArrayList<OwnedReceiverRegistration>());
-        registrations.removeIf(registration -> {
-            Object registrationOwner = registration.ownerRef.get();
-            if (registrationOwner != null && registrationOwner != owner) return false;
-            releaseReceiver(registration);
-            return true;
+        final Context registrationContext = context.getApplicationContext() != null
+            ? context.getApplicationContext() : context;
+        final boolean[] registered = { false };
+
+        ownedReceivers.compute(key, (k, registrations) -> {
+            ArrayList<OwnedReceiverRegistration> list = registrations != null ? registrations
+                : new ArrayList<OwnedReceiverRegistration>();
+            synchronized (list) {
+                // Replace stale or same-owner registrations. Keep different owners.
+                for (int i = list.size() - 1; i >= 0; i--) {
+                    OwnedReceiverRegistration r = list.get(i);
+                    Object existingOwner = r.ownerRef.get();
+                    if (existingOwner != null && existingOwner != owner) continue;
+                    releaseReceiver(r);
+                    list.remove(i);
+                }
+
+                try {
+                    registrationContext.registerReceiver(receiver, filter, flags);
+                    list.add(new OwnedReceiverRegistration(registrationContext, owner, receiver));
+                    registered[0] = true;
+                } catch (Throwable t) {
+                    log(k, t);
+                }
+            }
+            return list.isEmpty() ? null : list;
         });
-        Context registrationContext = context.getApplicationContext();
-        if (registrationContext == null) registrationContext = context;
-        try {
-            registrationContext.registerReceiver(receiver, filter, flags);
-            registrations.add(new OwnedReceiverRegistration(registrationContext, owner, receiver));
-            return true;
-        } catch (Throwable t) {
-            log(key, t);
-            return false;
-        }
+
+        return registered[0];
     }
 
     public static void unregisterOwnedReceiver(String key, Object owner) {
-        CopyOnWriteArrayList<OwnedReceiverRegistration> registrations = ownedReceivers.get(key);
+        ArrayList<OwnedReceiverRegistration> registrations = ownedReceivers.get(key);
         if (registrations == null) return;
-        registrations.removeIf(registration -> {
-            Object registrationOwner = registration.ownerRef.get();
-            if (registrationOwner != null && registrationOwner != owner) return false;
-            releaseReceiver(registration);
-            return true;
-        });
+        synchronized (registrations) {
+            for (int i = registrations.size() - 1; i >= 0; i--) {
+                OwnedReceiverRegistration r = registrations.get(i);
+                Object registrationOwner = r.ownerRef.get();
+                if (registrationOwner != null && registrationOwner != owner) continue;
+                releaseReceiver(r);
+                registrations.remove(i);
+            }
+        }
         if (registrations.isEmpty()) ownedReceivers.remove(key, registrations);
     }
 
