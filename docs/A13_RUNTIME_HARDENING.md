@@ -47,6 +47,28 @@
 | Lint | `gradlew :app:lintDebug` | PASS |
 | APK build | intentionally not run | N/A |
 
+## Runtime inventory
+
+Source-level steady-state cost checklist. Each row states the current evidence; items marked `PENDING` are still being audited.
+
+| Component | Trigger frequency | Disabled cost | Enabled cost | Resident objects | Periodic work | Key risk |
+|---|---|---|---|---|---|---|
+| `ResourceHooks` | Very high | Zero if not created | One `TypedMethodHook` per hooked `Resources` method; active `SparseArray` bounded at `MAX_ACTIVE=256`; no `Executable` lookup on hit | `fakes`, `unresolved`, `active` | None | Need `ID` miss to prove Context lookup is cached |
+| `PreferenceBootstrap` | Low | Zero if `initPrefs` not called | One `OnSharedPreferenceChangeListener`; snapshot published once | `snapshot` `PrefMap` | No polling; event driven | Listener `getAll()` may rethrow on remote error; device log needed |
+| `ModuleHelper` module receivers | Cold | Zero | One active `ReceiverRegistration` per key; stale bounded at `MAX_STALE_RECEIVERS=3` | `moduleReceivers`, `staleModuleReceivers` | None; `stale` retried on next registration | Concurrent identity race under per-`moduleReceivers` lock |
+| `ModuleHelper` owned receivers | Cold | Zero | `WeakReference<owner>` + `OwnedReceiverRegistration` | `ownedReceivers`, `staleOwnedReceivers` | None; cleaned on next dispatch if owner GCed | Same key owner replacement before new register success |
+| `FeatureDispatcher` | Process start | Zero if features disabled | One install per enabled `FeatureId` | `FeatureCatalog` singleton | None | Need disabled-feature no-op proof |
+| `StatusBar clock` | Per second | Needs audit | Needs audit | Needs audit | `secondTicker` `Runnable`? | Periodic UI refresh while screen off |
+| `Network speed` | Periodic | Needs audit | Needs audit | Needs audit | `NetworkSpeed` callback | sysfs/network I/O schedule |
+| `DeviceInfoMonitor` | Periodic | Needs audit | Needs audit | Needs audit | Temperature/current tick | Wake/refresh alignment |
+| `Launcher` hooks | High | Needs audit | Needs audit | Needs audit | `launcher` events | Object allocation on every layout pass |
+| `Album art` | Event driven | Needs audit | Needs audit | Needs audit | Media broadcast | Bitmap unbounded / full-screen ARGB |
+| `BatteryIndicator` | Event/periodic | Needs audit | Needs audit | Needs audit | Level/tick | Listener lifecycle |
+| `AudioVisualizer` | Per frame | Needs audit | Needs audit | Needs audit | Visualizer callback | Per-frame allocation |
+| `Diagnostics` | Error events | Zero if no errors | `CopyOnWriteArraySet` / `Map` | diagnostic ids | None | Need explicit capacity bound |
+
+*Items marked `Needs audit` are not yet measured and are tracked in the remaining-risks list below.*
+
 ## Remaining risks
 
 1. **Device validation** — `PreferenceBootstrap` listener protocol and `ResourceHooks` active cache need real LSPosed logs.
