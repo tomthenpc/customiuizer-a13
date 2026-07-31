@@ -51,7 +51,7 @@
     {
       "versionName": "r13.8.5",
       "versionCode": 130,
-      "sourceCommit": "e4adc28",
+      "sourceCommit": "659dea0",
       "buildCommit": "e4adc28",
       "dataSource": "docs/releases/r13.8.5.md",
       "verifiedAtBuild": true,
@@ -84,7 +84,7 @@
     "versionCode": 130,
     "status": "CANDIDATE",
     "sourceBranch": "release/r13.8.5",
-    "sourceCommit": "e4adc28",
+    "sourceCommit": "659dea0",
     "lsposedTag": null,
     "apkName": "CustoMIUIzer-A13-r13.8.5.apk",
     "apkSizeBytes": 2829786,
