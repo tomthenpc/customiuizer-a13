@@ -16,8 +16,8 @@ val hasReleaseSigning = if (keystorePropertiesFile.isFile) {
     false
 }
 
-val lastVersion = 125
-val lastVersionName = "r13.8.0"
+val lastVersion = 126
+val lastVersionName = "r13.8.1"
 val supportedLocales = setOf(
     "ru-rRU",
     "zh-rCN",

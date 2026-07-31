@@ -53,6 +53,10 @@ object SystemUIStatusBarHooks {
     private var statusbarIconList: List<String>? = null
     private val mStatusbarTextIcons = ArrayList<WeakReference<View>>()
 
+    private var netSpeedStyleHookLogged = false
+    private var netSpeedViewLogged = false
+    private var initNetSpeedStyleLogged = false
+
     data class TextIcon(var atRight: Boolean, var iconType: Int)
 
     @JvmStatic
@@ -1184,49 +1188,64 @@ object SystemUIStatusBarHooks {
     }
 
     private fun initNetSpeedStyle(meter: View) {
-        val dualRow = MainModule.mPrefs.getBoolean("system_detailednetspeed") || MainModule.mPrefs.getBoolean("system_detailednetspeed_fakedualrow")
-        val iconTextView = getIconTextView(meter)
-        var fontSize = MainModule.mPrefs.getInt("system_netspeed_fontsize", 13)
-        if (dualRow) {
-            if (newStyle) {
-                val unitView = XposedHelpers.getObjectField(meter, "mNetworkSpeedUnitText") as? View
-                unitView?.visibility = View.GONE
+        val isFirst = !initNetSpeedStyleLogged
+        if (isFirst) {
+            initNetSpeedStyleLogged = true
+            XposedHelpers.log("CustoMIUIzer NetSpeed", "initNetSpeedStyle start: meterClass=${meter.javaClass.name}, newStyle=$newStyle, dualRow=${MainModule.mPrefs.getBoolean("system_detailednetspeed") || MainModule.mPrefs.getBoolean("system_detailednetspeed_fakedualrow")}")
+        }
+        try {
+            val dualRow = MainModule.mPrefs.getBoolean("system_detailednetspeed") || MainModule.mPrefs.getBoolean("system_detailednetspeed_fakedualrow")
+            val iconTextView = getIconTextView(meter)
+            var fontSize = MainModule.mPrefs.getInt("system_netspeed_fontsize", 13)
+            if (dualRow) {
+                if (newStyle) {
+                    val unitView = XposedHelpers.getObjectField(meter, "mNetworkSpeedUnitText") as? View
+                    unitView?.visibility = View.GONE
+                }
+                if (fontSize > 23 || fontSize == 13) fontSize = 16
+            } else {
+                if (fontSize < 20 && fontSize != 13) fontSize = 27
             }
-            if (fontSize > 23 || fontSize == 13) fontSize = 16
-        } else {
-            if (fontSize < 20 && fontSize != 13) fontSize = 27
-        }
-        if (dualRow || fontSize != 13) {
-            iconTextView.setTextSize(TypedValue.COMPLEX_UNIT_DIP, fontSize * 0.5f)
-        }
-        if (MainModule.mPrefs.getBoolean("system_netspeed_bold")) {
-            iconTextView.typeface = Typeface.DEFAULT_BOLD
-        }
+            if (dualRow || fontSize != 13) {
+                iconTextView.setTextSize(TypedValue.COMPLEX_UNIT_DIP, fontSize * 0.5f)
+            }
+            if (MainModule.mPrefs.getBoolean("system_netspeed_bold")) {
+                iconTextView.typeface = Typeface.DEFAULT_BOLD
+            }
 
-        var leftMargin = MainModule.mPrefs.getInt("system_netspeed_leftmargin", 0)
-        leftMargin = HookUtils.dp2px(leftMargin * 0.5f).toInt()
-        var rightMargin = MainModule.mPrefs.getInt("system_netspeed_rightmargin", 0)
-        rightMargin = HookUtils.dp2px(rightMargin * 0.5f).toInt()
-        var topMargin = 0
-        val verticalOffset = MainModule.mPrefs.getInt("system_netspeed_verticaloffset", 8)
-        if (verticalOffset != 8) {
-            topMargin = HookUtils.dp2px((verticalOffset - 8) * 0.5f).toInt()
-        }
-        iconTextView.setPaddingRelative(leftMargin, topMargin, rightMargin, 0)
+            var leftMargin = MainModule.mPrefs.getInt("system_netspeed_leftmargin", 0)
+            leftMargin = HookUtils.dp2px(leftMargin * 0.5f).toInt()
+            var rightMargin = MainModule.mPrefs.getInt("system_netspeed_rightmargin", 0)
+            rightMargin = HookUtils.dp2px(rightMargin * 0.5f).toInt()
+            var topMargin = 0
+            val verticalOffset = MainModule.mPrefs.getInt("system_netspeed_verticaloffset", 8)
+            if (verticalOffset != 8) {
+                topMargin = HookUtils.dp2px((verticalOffset - 8) * 0.5f).toInt()
+            }
+            iconTextView.setPaddingRelative(leftMargin, topMargin, rightMargin, 0)
 
-        val align = MainModule.mPrefs.getStringAsInt("system_detailednetspeed_align", 1)
-        when (align) {
-            2 -> iconTextView.textAlignment = View.TEXT_ALIGNMENT_TEXT_START
-            3 -> iconTextView.textAlignment = View.TEXT_ALIGNMENT_CENTER
-            4 -> iconTextView.textAlignment = View.TEXT_ALIGNMENT_TEXT_END
-        }
+            val align = MainModule.mPrefs.getStringAsInt("system_detailednetspeed_align", 1)
+            when (align) {
+                2 -> iconTextView.textAlignment = View.TEXT_ALIGNMENT_TEXT_START
+                3 -> iconTextView.textAlignment = View.TEXT_ALIGNMENT_CENTER
+                4 -> iconTextView.textAlignment = View.TEXT_ALIGNMENT_TEXT_END
+            }
 
-        if (dualRow) {
-            val rowSpacing = MainModule.mPrefs.getInt("system_netspeed_rowspacing", 100)
-            val spacing = resolveNetSpeedLineSpacing(fontSize, rowSpacing)
-            iconTextView.setSingleLine(false)
-            iconTextView.maxLines = 2
-            iconTextView.setLineSpacing(0f, spacing)
+            if (dualRow) {
+                val rowSpacing = MainModule.mPrefs.getInt("system_netspeed_rowspacing", 100)
+                val spacing = resolveNetSpeedLineSpacing(fontSize, rowSpacing)
+                iconTextView.setSingleLine(false)
+                iconTextView.maxLines = 2
+                iconTextView.setLineSpacing(0f, spacing)
+            }
+            if (isFirst) {
+                XposedHelpers.log("CustoMIUIzer NetSpeed", "initNetSpeedStyle completed")
+            }
+        } catch (t: Throwable) {
+            if (isFirst) {
+                XposedHelpers.log("CustoMIUIzer NetSpeed", "initNetSpeedStyle failed: ${t.javaClass.name}: ${t.message}")
+            }
+            throw t
         }
     }
 
@@ -1238,9 +1257,17 @@ object SystemUIStatusBarHooks {
 
     @JvmStatic
     fun NetSpeedStyleHook(lpparam: PackageReadyParam) {
+        if (!netSpeedStyleHookLogged) {
+            netSpeedStyleHookLogged = true
+            XposedHelpers.log("CustoMIUIzer NetSpeed", "NetSpeedStyleHook installed, newStyle=$newStyle")
+        }
         ModuleHelper.hookAllConstructors("com.android.systemui.statusbar.views.NetworkSpeedView", lpparam.classLoader, object : MethodHook() {
             override fun after(param: AfterHookCallback) {
                 val meter = param.getThisObject() as? View ?: return
+                if (!netSpeedViewLogged) {
+                    netSpeedViewLogged = true
+                    XposedHelpers.log("CustoMIUIzer NetSpeed", "NetworkSpeedView created: class=${meter.javaClass.name}, isTextView=${meter is TextView}, isViewGroup=${meter is ViewGroup}, tag=${meter.tag}, newStyle=$newStyle")
+                }
                 val inited = meter.getTag(viewInitedTag)
                 if (inited == null && "slot_text_icon" != meter.tag) {
                     meter.setTag(viewInitedTag, true)
