@@ -64,6 +64,28 @@ jobs:
           "$aapt2_path" dump badging "$apk" | grep -q "minSdkVersion:'33'"
           "$aapt2_path" dump badging "$apk" | grep -q "targetSdkVersion:'34'"
 
+          scope="$(unzip -p "$apk" META-INF/xposed/scope.list)"
+
+          printf '%s\n' "$scope" | grep -qx 'system'
+          printf '%s\n' "$scope" | grep -qx 'android'
+          printf '%s\n' "$scope" | grep -qx 'com.android.systemui'
+          printf '%s\n' "$scope" | grep -qx 'com.miui.home'
+          printf '%s\n' "$scope" | grep -qx 'com.mi.android.globallauncher'
+
+          if printf '%s\n' "$scope" | grep -qx 'system_server'; then
+              echo "scope.list must use system, not system_server"
+              exit 1
+          fi
+
+          duplicates="$(
+              printf '%s\n' "$scope" |
+              sed '/^[[:space:]]*$/d' |
+              sort |
+              uniq -d
+          )"
+
+          test -z "$duplicates"
+
       - uses: actions/upload-artifact@v4
         with:
           name: CustoMIUIzer_forA13_debug

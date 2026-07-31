@@ -24,6 +24,9 @@ from pathlib import Path
 
 REPO_ROOT = Path(__file__).resolve().parent.parent
 SOURCE_ROOT = REPO_ROOT / "app" / "src" / "main" / "java"
+SCOPE_FILE = REPO_ROOT / "app" / "src" / "main" / "resources" / "META-INF" / "xposed" / "scope.list"
+MAIN_MODULE = SOURCE_ROOT / "tv" / "withaibuild" / "customiuizer" / "MainModule.java"
+REQUIRED_SCOPES = ("system", "android", "com.android.systemui", "com.miui.home", "com.mi.android.globallauncher")
 
 # Files that are allowed to break a rule, with the reason. Keep this list short;
 # every entry is a place where the invariant is enforced rather than consumed.
@@ -404,6 +407,51 @@ def check_launcher_rename_loop_exit(path: Path, text: str) -> list[Finding]:
     ]
 
 
+def check_xposed_scope() -> list[Finding]:
+    """The packaged Xposed scope must contain the LSPosed system scope and must
+    not confuse the process name system_server with the scope name system.
+    """
+    findings: list[Finding] = []
+    if not SCOPE_FILE.is_file():
+        return [Finding("xposed-scope", SCOPE_FILE, 1, "scope.list is missing")]
+
+    lines = [line.strip() for line in SCOPE_FILE.read_text(encoding="utf-8").splitlines()]
+    non_empty = [line for line in lines if line]
+
+    for scope in REQUIRED_SCOPES:
+        if scope not in non_empty:
+            findings.append(
+                Finding("xposed-scope", SCOPE_FILE, 1, f"scope.list is missing required scope '{scope}'")
+            )
+
+    if "system_server" in non_empty:
+        findings.append(
+            Finding("xposed-scope", SCOPE_FILE, 1, "scope.list must use 'system' (scope), not 'system_server' (process)")
+        )
+
+    seen = set()
+    duplicates = set()
+    for line in non_empty:
+        if line in seen:
+            duplicates.add(line)
+        seen.add(line)
+    for dup in sorted(duplicates):
+        findings.append(Finding("xposed-scope", SCOPE_FILE, 1, f"scope.list contains duplicate scope '{dup}'"))
+
+    if MAIN_MODULE.is_file() and "onSystemServerStarting" in MAIN_MODULE.read_text(encoding="utf-8"):
+        if "system" not in non_empty:
+            findings.append(
+                Finding(
+                    "xposed-scope",
+                    SCOPE_FILE,
+                    1,
+                    "MainModule has onSystemServerStarting but scope.list does not include 'system'",
+                )
+            )
+
+    return findings
+
+
 RULES = (
     check_guard_framework_callbacks,
     check_guard_deferred_callbacks,
@@ -444,9 +492,10 @@ def main() -> int:
         text = strip_comments(path.read_text(encoding="utf-8"))
         for rule in RULES:
             findings.extend(rule(path, text))
+    findings.extend(check_xposed_scope())
 
     if not findings:
-        print(f"check-invariants: {len(files)} files, no violations")
+        print(f"check-invariants: {len(files)} files, no scope violations")
         return 0
 
     by_rule: dict[str, list[Finding]] = {}
@@ -454,7 +503,10 @@ def main() -> int:
         by_rule.setdefault(finding.rule, []).append(finding)
 
     for rule, items in sorted(by_rule.items()):
-        doc = next(r for r in RULES if r.__name__.replace("check_", "").replace("_", "-") == rule).__doc__
+        try:
+            doc = next(r for r in RULES if r.__name__.replace("check_", "").replace("_", "-") == rule).__doc__
+        except StopIteration:
+            doc = ""
         print(f"\n=== {rule} ({len(items)}) ===")
         print((doc or "").strip().split("\n\n")[0])
         print()

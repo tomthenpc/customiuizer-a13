@@ -10,6 +10,7 @@ class ProcessTargetTest {
     fun systemServerMatchesAndroidAndSystemServer() {
         assertTrue(ProcessTarget.SystemServer.matches("android"))
         assertTrue(ProcessTarget.SystemServer.matches("system_server"))
+        assertFalse(ProcessTarget.SystemServer.matches("system"))
         assertFalse(ProcessTarget.SystemServer.matches("com.android.systemui"))
     }
 
