@@ -12,7 +12,6 @@ import androidx.annotation.Nullable;
 
 import java.util.ArrayList;
 import java.util.HashSet;
-import java.util.Map;
 import java.util.Set;
 
 import io.github.libxposed.api.XposedModule;
@@ -59,6 +58,7 @@ import tv.withaibuild.customiuizer.mods.utils.HookerClassHelper.MethodHook;
 import tv.withaibuild.customiuizer.mods.utils.ModuleHelper;
 import tv.withaibuild.customiuizer.mods.utils.ResourceHooks;
 import tv.withaibuild.customiuizer.mods.utils.XposedHelpers;
+import tv.withaibuild.customiuizer.installers.SystemServerInstaller;
 import tv.withaibuild.customiuizer.utils.PrefMap;
 import tv.withaibuild.customiuizer.utils.PreferenceBootstrap;
 
@@ -167,79 +167,7 @@ public class MainModule extends XposedModule {
     public void onSystemServerStarting(final SystemServerStartingParam lpparam) {
         if (!isSupportedAndroidVersion()) return;
         initPrefs();
-        FeatureRuntime serverRuntime = FeatureDispatcher.createRuntime("android", lpparam, lpparam.getClassLoader(), mPrefs);
-        FeatureDispatcher.installById("packagePermissions", serverRuntime);
-        if (needGlobalActions()) GlobalActions.setupGlobalActions(lpparam);
-
-        if (mPrefs.getBoolean("system_screenshot_overlay")) {
-            SystemAudioAndVisualAndMoreHooks.TempHideOverlayAppHook(lpparam);
-        }
-
-        if (mPrefs.getBoolean("system_notify_openinfw")
-            || mPrefs.getBoolean("system_fw_forcein_actionsend")
-            || mPrefs.getBoolean("system_betterpopups_allowfloat")
-        ) {
-            SystemFreeformAndMultiWindowHooks.OpenAppInFreeFormHook(lpparam);
-        }
-
-        if (mPrefs.getInt("controls_backlong_action", 1) > 1 ||
-            mPrefs.getInt("controls_homelong_action", 1) > 1 ||
-            mPrefs.getInt("controls_menulong_action", 1) > 1) Controls.NavBarActionsHook(lpparam);
-        if (mPrefs.getInt("controls_powerdt_action", 1) > 1 || mPrefs.getBoolean("controls_volumedowndt_torch")) Controls.PowerDoubleTapActionHook(lpparam);
-        if (mPrefs.getInt("system_screenanim_duration", 0) > 0) SystemDisplayAndWindowHooks.ScreenAnimHook(lpparam);
-        if (mPrefs.getInt("system_volumesteps", 0) > 0) SystemAudioAndVolumeHooks.VolumeStepsHook(lpparam);
-        if (mPrefs.getInt("system_applock_timeout", 1) > 1) SystemLockScreenMoreHooks.AppLockTimeoutHook(lpparam);
-        if (mPrefs.getInt("system_dimtime", 0) > 0) FeatureDispatcher.installById("screenDimTime", serverRuntime);
-        if (mPrefs.getInt("system_toasttime", 0) > 0) SystemAudioAndVisualAndMoreHooks.ToastTimeHook(lpparam);
-        if (!mPrefs.getString("system_defaultusb", "none").equals("none")) SystemSettingsMoreHooks.USBConfigHook(lpparam);
-        if (mPrefs.getBoolean("system_removesecure")) SystemSecurityAndSystemHooks.RemoveSecureHook(lpparam);
-        if (mPrefs.getBoolean("system_remove_startactconfirm")) SystemSecurityAndSystemHooks.RemoveActStartConfirmHook(lpparam);
-        if (mPrefs.getBoolean("system_securelock")) SystemLockScreenHooks.EnhancedSecurityHook(lpparam);
-        if (mPrefs.getBoolean("system_separatevolume")) SystemAudioAndVolumeHooks.NotificationVolumeServiceHook(lpparam);
-        if (mPrefs.getBoolean("system_downgrade")) SystemSecurityAndSystemHooks.NoVersionCheckHook(lpparam);
-        if (mPrefs.getBoolean("system_orientationlock")) SystemNotificationMoreHooks.OrientationLockHook(lpparam);
-        if (mPrefs.getBoolean("system_noducking")) SystemNotificationMoreHooks.NoDuckingHook(lpparam);
-        if (mPrefs.getBoolean("system_cleanshare")) SystemShareAndOpenWithHooks.CleanShareMenuServiceHook(lpparam);
-        if (mPrefs.getBoolean("system_cleanopenwith")) SystemShareAndOpenWithHooks.CleanOpenWithMenuServiceHook(lpparam);
-        FeatureDispatcher.installById("autoBrightnessRange", serverRuntime);
-        if (mPrefs.getBoolean("system_lockscreen_disable_strongauth_72h")) SystemNotificationMoreHooks.Disable72hStrongAuthHook(lpparam);
-        if (mPrefs.getBoolean("system_applock")) SystemLockScreenMoreHooks.AppLockHook(lpparam);
-        if (mPrefs.getBoolean("system_applock_skip")) SystemLockScreenMoreHooks.SkipAppLockHook(lpparam);
-        if (mPrefs.getBoolean("various_alarmcompat")) Various.AlarmCompatServiceHook(lpparam);
-        if (mPrefs.getBoolean("system_ignorecalls")) SystemAudioAndVisualAndMoreHooks.NoCallInterruptionHook(lpparam);
-        if (mPrefs.getBoolean("system_forceclose")) SystemSecurityAndSystemHooks.ForceCloseHook(lpparam);
-        if (mPrefs.getBoolean("system_hideproxywarn")) FeatureDispatcher.installById("hideProximityWarning", serverRuntime);
-        if (mPrefs.getBoolean("system_firstpress")) FeatureDispatcher.installById("firstVolumePress", serverRuntime);
-        if (mPrefs.getBoolean("system_apksign")) SystemSecurityAndSystemHooks.NoSignatureVerifyServiceHook(lpparam);
-        if (mPrefs.getBoolean("system_disableintegrity")) SystemSecurityAndSystemHooks.DisableSystemIntegrityHook(lpparam);
-        FeatureDispatcher.installById("muffledVibration", serverRuntime);
-        if (mPrefs.getBoolean("system_clearalltasks")) FeatureDispatcher.installById("clearAllTasks", serverRuntime);
-        if (mPrefs.getBoolean("system_nodarkforce")) SystemSecurityAndSystemHooks.NoDarkForceHook(lpparam);
-        if (mPrefs.getBoolean("system_fw_sticky")) SystemFreeformAndMultiWindowHooks.StickyFloatingWindowsHook(lpparam);
-        if (mPrefs.getBoolean("system_lswallpaper")) SystemChargingAndWallpaperHooks.SetLockscreenWallpaperHook(lpparam);
-        if (mPrefs.getBoolean("controls_powerflash")) Controls.PowerKeyHook(lpparam);
-        if (mPrefs.getBoolean("controls_fingerprintfailure")) Controls.FingerprintHapticFailureHook(lpparam);
-        if (mPrefs.getBoolean("controls_fingerprintscreen")) Controls.FingerprintScreenOnHook(lpparam);
-        if (mPrefs.getBoolean("controls_fingerprintwake")) Controls.NoFingerprintWakeHook(lpparam);
-        if (mPrefs.getBoolean("various_disableapp")) Various.AppsDisableServiceHook(lpparam);
-        if (mPrefs.getBoolean("system_disableanynotif")) SystemNotificationMoreHooks.DisableAnyNotificationBlockHook(lpparam);
-        if (mPrefs.getStringAsInt("system_allrotations2", 1) > 1) FeatureDispatcher.installById("allRotations", serverRuntime);
-        if (mPrefs.getStringAsInt("system_nolightuponcharges", 1) > 1) FeatureDispatcher.installById("noLightUpOnCharge", serverRuntime);
-        if (mPrefs.getStringAsInt("system_autogroupnotif", 1) > 1) SystemNotificationAndShareHooks.AutoGroupNotificationsHook(lpparam);
-        if (mPrefs.getStringAsInt("system_vibration", 1) > 1) SystemNotificationMoreHooks.SelectiveVibrationHook(lpparam);
-        if (mPrefs.getStringAsInt("system_blocktoasts", 1) > 1) SystemStatusBarAndClockHooks.SelectiveToastsHook(lpparam);
-        if (mPrefs.getStringAsInt("system_rotateanim", 1) > 1) SystemDisplayAndWindowHooks.RotationAnimationHook(lpparam);
-        if (mPrefs.getStringAsInt("controls_fingerprintsuccess", 1) > 1) Controls.FingerprintHapticSuccessHook(lpparam);
-        if (mPrefs.getStringAsInt("controls_volumemedia_up", 0) > 0 ||
-            mPrefs.getStringAsInt("controls_volumemedia_down", 0) > 0) Controls.VolumeMediaButtonsHook(lpparam);
-
-        if (mPrefs.getBoolean("system_fw_splitscreen")) SystemFreeformAndMultiWindowHooks.MultiWindowPlusHook(lpparam);
-        if (mPrefs.getBoolean("system_fw_noblacklist")) SystemFreeformAndMultiWindowHooks.NoFloatingWindowBlacklistHook(lpparam);
-        if (mPrefs.getBoolean("various_disable_access_devicelogs")) {
-            SystemDisplayAndWindowHooks.NoAccessDeviceLogsRequest(lpparam);
-        }
-        if (mPrefs.getInt("system_other_wallpaper_scale", 6) > 6) SystemNotificationMoreHooks.WallpaperScaleLevelHook(lpparam);
-
+        SystemServerInstaller.install(lpparam);
         watchPreferenceChange();
     }
 
@@ -771,20 +699,5 @@ public class MainModule extends XposedModule {
         if (mPrefs.getBoolean("system_resizablewidgets")) LauncherLayoutHooks.ResizableWidgetsHook(lpparam);
     }
 
-    private boolean needGlobalActions() {
-        try {
-            for (Map.Entry<String, ?> entry : mPrefs.entrySet()) {
-                String key = entry.getKey();
-                Object value = entry.getValue();
-                if (key != null && key.endsWith("_action") && value instanceof Integer && (Integer) value > 1) {
-                    return true;
-                }
-            }
-        } catch (Throwable ignored) {}
-        if (mPrefs.getStringAsInt("controls_volumemedia_up", 0) > 0 || mPrefs.getStringAsInt("controls_volumemedia_down", 0) > 0) {
-            return !mPrefs.getStringSet("controls_mediaplayer_apps").isEmpty();
-        }
-        return false;
-    }
 
 }
