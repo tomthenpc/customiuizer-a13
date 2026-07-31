@@ -10,6 +10,7 @@ import android.os.HandlerThread
 import android.os.Looper
 import android.os.PowerManager
 import android.widget.TextView
+import tv.withaibuild.customiuizer.MainModule
 import java.lang.ref.WeakReference
 import java.util.concurrent.atomic.AtomicBoolean
 
@@ -106,6 +107,7 @@ object StepCounterController {
 
     private var timeTickReceiver: BroadcastReceiver? = null
     private var screenReceiver: BroadcastReceiver? = null
+    private var disableObserver: ModuleHelper.PreferenceObserver? = null
 
     @JvmField
     internal val lifecycle = Lifecycle()
@@ -167,6 +169,43 @@ object StepCounterController {
             screenFilter,
             Context.RECEIVER_NOT_EXPORTED
         )
+
+        val observer = ModuleHelper.PreferenceObserver {
+            if (sContext != null && !MainModule.mPrefs.getBoolean("system_cc_show_stepcount")) {
+                destroy()
+            }
+        }
+        disableObserver = observer
+        ModuleHelper.observePreferenceChange("system_cc_show_stepcount", StepCounterController, observer)
+    }
+
+    @JvmStatic
+    fun destroy() {
+        stopTimeTick()
+
+        screenReceiver?.let {
+            ModuleHelper.unregisterModuleReceiver("StepCounterController.screenReceiver")
+            screenReceiver = null
+        }
+
+        queryHandler?.removeCallbacksAndMessages(null)
+        queryHandler = null
+
+        uiHandler?.removeCallbacksAndMessages(null)
+        uiHandler = null
+
+        queryThread?.quitSafely()
+        queryThread = null
+
+        sContext = null
+        stepViews.clear()
+        stepsWithGoal = null
+        lifecycle.reset()
+
+        disableObserver?.let {
+            ModuleHelper.removePreferenceObserver("system_cc_show_stepcount", StepCounterController)
+            disableObserver = null
+        }
     }
 
     @JvmStatic
