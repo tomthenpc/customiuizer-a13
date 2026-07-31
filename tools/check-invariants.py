@@ -20,10 +20,12 @@ import argparse
 import re
 import subprocess
 import sys
+import xml.etree.ElementTree as ET
 from pathlib import Path
 
 REPO_ROOT = Path(__file__).resolve().parent.parent
 SOURCE_ROOT = REPO_ROOT / "app" / "src" / "main" / "java"
+ABOUT_HEAD_FILE = REPO_ROOT / "app" / "src" / "main" / "res" / "layout" / "fragment_about_head.xml"
 SCOPE_FILE = REPO_ROOT / "app" / "src" / "main" / "resources" / "META-INF" / "xposed" / "scope.list"
 MAIN_MODULE = SOURCE_ROOT / "tv" / "withaibuild" / "customiuizer" / "MainModule.java"
 REQUIRED_SCOPES = ("system", "android", "com.android.systemui", "com.miui.home", "com.mi.android.globallauncher")
@@ -470,6 +472,38 @@ EXPECTED_DEFSTYLE = {
 }
 
 
+ABOUT_WRAP_IDS = {"about_maintainer", "about_based_on", "about_version"}
+FORBIDDEN_ABOUT_TEXT_ATTRS = {
+    "ellipsize",
+    "maxLines",
+    "singleLine",
+    "horizontallyScrolling",
+    "autoSizeTextType",
+}
+ANDROID_NS = "http://schemas.android.com/apk/res/android"
+
+
+def _preference_header(text: str) -> re.Match[str] | None:
+    """Return the match for `class X @JvmOverloads constructor(...) : Y(...)`."""
+    return re.search(
+        r"@JvmOverloads\s+constructor\s*\(\s*"
+        r"(?P<params>[\s\S]*?)"
+        r"\)\s*:\s*"
+        r"(?P<super>\w+)\s*\(\s*"
+        r"(?P<super_args>[\s\S]*?)"
+        r"\)",
+        text,
+    )
+
+
+def _super_third_argument(super_args: str) -> tuple[str | None, str | None]:
+    """Return the third super-constructor argument and an optional error."""
+    args = [a.strip() for a in super_args.split(",")]
+    if len(args) < 3:
+        return None, "super constructor call has fewer than 3 arguments; defStyleAttr not passed"
+    return args[2], None
+
+
 def check_preference_style_attr(
     path: Path,
     text: str
@@ -478,46 +512,31 @@ def check_preference_style_attr(
     if expected is None:
         return []
 
-    findings: list[Finding] = []
-
-    # Match the primary @JvmOverloads constructor and the super(...) call
-    # in the class header: class X @JvmOverloads constructor(...) : Y(...)
-    header = re.compile(
-        r"@JvmOverloads\s+constructor\s*\(\s*"
-        r"(?P<params>[\s\S]*?)"
-        r"\)\s*:\s*"
-        r"(?P<super>\w+)\s*\(\s*"
-        r"(?P<super_args>[\s\S]*?)"
-        r"\)"
-    )
-    header_match = header.search(text)
-    if not header_match:
-        findings.append(
+    header = _preference_header(text)
+    if not header:
+        return [
             Finding(
                 "preference-style-attr",
                 path,
                 1,
                 "missing @JvmOverloads constructor(...) : SuperClass(...) header",
             )
-        )
-        return findings
+        ]
 
-    params = header_match.group("params")
-    super_args = header_match.group("super_args")
+    header_line = line_of(text, header.start())
+    params_start = header.start("params")
+    params_end = header.end("params")
+    super_args = header.group("super_args")
 
-    # The parameter list must contain a single default for defStyleAttr.
-    default_pattern = re.compile(
-        r"defStyleAttr\s*:\s*Int\s*=\s*([A-Za-z0-9_.$]+)"
-    )
+    findings: list[Finding] = []
+
+    # One regex scan for all defStyleAttr defaults in the file.
+    default_pattern = re.compile(r"defStyleAttr\s*:\s*Int\s*=\s*([A-Za-z0-9_.$]+)")
     all_defaults = list(default_pattern.finditer(text))
+
     if not all_defaults:
         findings.append(
-            Finding(
-                "preference-style-attr",
-                path,
-                1,
-                "missing defStyleAttr default declaration",
-            )
+            Finding("preference-style-attr", path, 1, "missing defStyleAttr default declaration")
         )
     elif len(all_defaults) > 1:
         findings.append(
@@ -540,13 +559,7 @@ def check_preference_style_attr(
                     f"expected defStyleAttr {expected}, got {actual}",
                 )
             )
-
-    # Confirm the default is declared in the constructor parameters.
-    param_defaults = list(default_pattern.finditer(params))
-    if not all_defaults:
-        pass  # already reported missing
-    elif len(param_defaults) != 1:
-        if not param_defaults:
+        if not (params_start <= match.start() and match.end() <= params_end):
             findings.append(
                 Finding(
                     "preference-style-attr",
@@ -555,37 +568,75 @@ def check_preference_style_attr(
                     "defStyleAttr default not found in constructor parameters",
                 )
             )
-        else:
-            findings.append(
-                Finding(
-                    "preference-style-attr",
-                    path,
-                    line_of(text, param_defaults[0].start()),
-                    "duplicate defStyleAttr default in constructor parameters",
-                )
-            )
 
-    # The parent constructor must pass the defStyleAttr parameter as its
-    # third argument. It must not be a hardcoded 0, another constant, or
-    # omitted.
-    super_arg_list = [a.strip() for a in super_args.split(",")]
-    if len(super_arg_list) < 3:
+    third, err = _super_third_argument(super_args)
+    if err:
+        findings.append(Finding("preference-style-attr", path, header_line, err))
+    elif third != "defStyleAttr":
         findings.append(
             Finding(
                 "preference-style-attr",
                 path,
-                line_of(text, header_match.start()),
-                "super constructor call has fewer than 3 arguments; defStyleAttr not passed",
+                header_line,
+                f"super constructor third argument must be 'defStyleAttr', got '{third}'",
             )
         )
-    elif super_arg_list[2] != "defStyleAttr":
+
+    return findings
+
+
+def check_about_text_wrapping(path: Path, text: str) -> list[Finding]:
+    """About attribution TextViews must wrap and not be truncated."""
+    if path.name != "fragment_about_head.xml":
+        return []
+
+    findings = []
+    try:
+        root = ET.fromstring(text)
+    except ET.ParseError as exc:
+        return [Finding("about-text-wrapping", path, 1, f"XML parse error: {exc}")]
+
+    found: set[str] = set()
+    for elem in root.iter():
+        view_id = elem.attrib.get(f"{{{ANDROID_NS}}}id")
+        if view_id is None:
+            continue
+        for target in ABOUT_WRAP_IDS:
+            if not view_id.endswith(f"/{target}"):
+                continue
+            found.add(target)
+            if elem.attrib.get(f"{{{ANDROID_NS}}}layout_width") != "match_parent":
+                findings.append(
+                    Finding(
+                        "about-text-wrapping",
+                        path,
+                        1,
+                        f"{target} android:layout_width must be match_parent",
+                    )
+                )
+            if elem.attrib.get(f"{{{ANDROID_NS}}}layout_height") != "wrap_content":
+                findings.append(
+                    Finding(
+                        "about-text-wrapping",
+                        path,
+                        1,
+                        f"{target} android:layout_height must be wrap_content",
+                    )
+                )
+            for attr in FORBIDDEN_ABOUT_TEXT_ATTRS:
+                if f"{{{ANDROID_NS}}}{attr}" in elem.attrib:
+                    findings.append(
+                        Finding(
+                            "about-text-wrapping",
+                            path,
+                            1,
+                            f"{target} must not set android:{attr}",
+                        )
+                    )
+
+    for missing in ABOUT_WRAP_IDS - found:
         findings.append(
-            Finding(
-                "preference-style-attr",
-                path,
-                line_of(text, header_match.start()),
-                f"super constructor third argument must be 'defStyleAttr', got '{super_arg_list[2]}'",
-            )
+            Finding("about-text-wrapping", path, 1, f"missing TextView @+id/{missing}")
         )
 
     return findings
@@ -652,6 +703,9 @@ def main() -> int:
             findings.extend(rule(path, text))
     findings.extend(check_xposed_scope())
     findings.extend(check_preference_style_attr_completeness())
+    if ABOUT_HEAD_FILE.is_file():
+        about_text = ABOUT_HEAD_FILE.read_text(encoding="utf-8")
+        findings.extend(check_about_text_wrapping(ABOUT_HEAD_FILE, about_text))
 
     if not findings:
         print(f"check-invariants: {len(files)} files, no violations")
