@@ -153,7 +153,7 @@ object LauncherFolderHooks {
         if (blurUtils != null) {
             ModuleHelper.hookAllMethods(blurUtils, "getLauncherBlur", object : MethodHook() {
                 override fun before(param: BeforeHookCallback) {
-                    val isFolderShowing = XposedHelpers.callMethod(param.getArgs()[0], "isFolderShowing") as? Boolean ?: false
+                    val isFolderShowing = XposedHelpers.callMethod(param.getArg(0), "isFolderShowing") as? Boolean ?: false
                     if (isFolderShowing) {
                         val blurPct = MainModule.mPrefs.getInt("launcher_folderblur_opacity", 0)
                         val blurRatio = blurPct / 100f
@@ -175,7 +175,7 @@ object LauncherFolderHooks {
             ModuleHelper.findAndHookMethod("com.miui.home.launcher.FolderCling", lpparam.classLoader, "close", Boolean::class.javaPrimitiveType, object : MethodHook() {
                 override fun after(param: AfterHookCallback) {
                     val launcher = XposedHelpers.getObjectField(param.getThisObject(), "mLauncher") as? Activity ?: return
-                    XposedHelpers.callStaticMethod(blurUtils, "fastBlur", 0f, launcher.window, param.getArgs()[0])
+                    XposedHelpers.callStaticMethod(blurUtils, "fastBlur", 0f, launcher.window, param.getArg(0))
                 }
             })
 

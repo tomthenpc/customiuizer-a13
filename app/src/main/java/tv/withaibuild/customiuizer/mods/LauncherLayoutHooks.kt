@@ -24,7 +24,7 @@ object LauncherLayoutHooks {
     fun HideNavBarHook(lpparam: PackageReadyParam) {
         ModuleHelper.findAndHookMethod("com.miui.home.launcher.DeviceConfig", lpparam.classLoader, "loadScreenSize", Context::class.java, Resources::class.java, object : MethodHook() {
             override fun before(param: BeforeHookCallback) {
-                android.provider.Settings.Global.putInt((param.getArgs()[0] as? Context)?.contentResolver ?: return, "force_immersive_nav_bar", 1)
+                android.provider.Settings.Global.putInt((param.getArg(0) as? Context)?.contentResolver ?: return, "force_immersive_nav_bar", 1)
             }
         })
         ModuleHelper.findAndHookMethod("com.miui.home.recents.views.RecentsContainer", lpparam.classLoader, "showLandscapeOverviewGestureView", Boolean::class.javaPrimitiveType, HookerClassHelper.DO_NOTHING)
@@ -47,7 +47,7 @@ object LauncherLayoutHooks {
             override fun before(param: BeforeHookCallback) {
                 val mIsInFsMode = XposedHelpers.getBooleanField(param.getThisObject(), "mIsInFsMode")
                 if (!mIsInFsMode) {
-                    val motionEvent = param.getArgs()[0] as? android.view.MotionEvent ?: return
+                    val motionEvent = param.getArg(0) as? android.view.MotionEvent ?: return
                     if (motionEvent.action == 0) {
                         XposedHelpers.setObjectField(param.getThisObject(), "mHideGestureLine", true)
                     }
@@ -107,11 +107,11 @@ object LauncherLayoutHooks {
     fun InfiniteScrollHook(lpparam: PackageReadyParam) {
         ModuleHelper.findAndHookMethod("com.miui.home.launcher.ScreenView", lpparam.classLoader, "getSnapToScreenIndex", Int::class.javaPrimitiveType, Int::class.javaPrimitiveType, Int::class.javaPrimitiveType, object : MethodHook() {
             override fun after(param: AfterHookCallback) {
-                if (param.getArgs()[0] != param.getResult()) return
+                if (param.getArg(0) != param.getResult()) return
                 val screenCount = (XposedHelpers.callMethod(param.getThisObject(), "getScreenCount") as? Int) ?: 0
-                if ((param.getArgs()[2] as? Int ?: 0) == -1 && (param.getArgs()[0] as? Int ?: 0) == 0)
+                if ((param.getArg(2) as? Int ?: 0) == -1 && (param.getArg(0) as? Int ?: 0) == 0)
                     param.setResult(screenCount)
-                else if ((param.getArgs()[2] as? Int ?: 0) == 1 && (param.getArgs()[0] as? Int ?: 0) == screenCount - 1)
+                else if ((param.getArg(2) as? Int ?: 0) == 1 && (param.getArg(0) as? Int ?: 0) == screenCount - 1)
                     param.setResult(0)
             }
         })
@@ -256,7 +256,7 @@ object LauncherLayoutHooks {
         MainModule.resHooks.setDensityReplacement("com.mi.android.globallauncher", "dimen", "slide_bar_margin_top", opt.toFloat())
         ModuleHelper.findAndHookMethod("com.miui.home.launcher.util.DimenUtils1X", lpparam.classLoader, "getDimensionPixelSize", Context::class.java, String::class.java, object : MethodHook() {
             override fun before(param: BeforeHookCallback) {
-                val resKey = param.getArgs()[1] as? String ?: return
+                val resKey = param.getArg(1) as? String ?: return
                 if ("slide_bar_margin_top" == resKey) {
                     param.returnAndSkip(Math.round(HookUtils.dp2px(opt.toFloat())))
                 }
@@ -268,7 +268,7 @@ object LauncherLayoutHooks {
     fun HorizontalWidgetSpacingHook(lpparam: PackageReadyParam) {
         ModuleHelper.hookAllMethods("com.miui.home.launcher.DeviceConfig", lpparam.classLoader, "getMiuiWidgetSizeSpec", object : MethodHook() {
             override fun after(param: AfterHookCallback) {
-                if (param.getArgs().size < 4) return
+                if (param.getArgsCount() < 4) return
                 val spec = param.getResult() as? Long ?: return
                 var width = (spec shr 32).toInt()
                 var height = (spec - ((spec shr 32) shl 32)).toInt()

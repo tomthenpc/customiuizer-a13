@@ -29,7 +29,7 @@ object LauncherAnimationHooks {
                 var scale = HookUtils.getAnimationScale(2)
                 if (scale == 1.0f) return
                 if (scale == 0f) scale = 0.01f
-                param.getArgs()[2] = scaleStiffness(param.getArgs()[2] as? Float ?: 0f, scale)
+                param.getArgs()[2] = scaleStiffness(param.getArg(2) as? Float ?: 0f, scale)
             }
         })
 
@@ -92,11 +92,11 @@ object LauncherAnimationHooks {
 
         ModuleHelper.hookAllMethods(utilsClass, "fastBlurWhenEnterRecents", object : MethodHook() {
             override fun before(param: BeforeHookCallback) {
-                val mIsFromFsGesture = XposedHelpers.getBooleanField(param.getArgs()[1], "mIsFromFsGesture")
+                val mIsFromFsGesture = XposedHelpers.getBooleanField(param.getArg(1), "mIsFromFsGesture")
                 if (!mIsFromFsGesture) {
-                    val launcher = param.getArgs()[0] as? Activity ?: return
+                    val launcher = param.getArg(0) as? Activity ?: return
                     val blurRatio = MainModule.mPrefs.getInt("system_recents_blur", 100) / 100f
-                    XposedHelpers.callStaticMethod(utilsClass, "fastBlur", blurRatio, launcher.window, param.getArgs()[2])
+                    XposedHelpers.callStaticMethod(utilsClass, "fastBlur", blurRatio, launcher.window, param.getArg(2))
                     param.returnAndSkip(null)
                 }
             }
@@ -109,7 +109,7 @@ object LauncherAnimationHooks {
 
         ModuleHelper.hookAllMethods(utilsClass, "fastBlur", object : MethodHook() {
             override fun before(param: BeforeHookCallback) {
-                if (param.getArgs().size == 3) {
+                if (param.getArgsCount() == 3) {
                     if (XposedHelpers.getAdditionalStaticField(utilsClass, "customBlurRatio") != null) {
                         val blurRatio = MainModule.mPrefs.getInt("system_recents_blur", 100) / 100f
                         param.getArgs()[0] = blurRatio

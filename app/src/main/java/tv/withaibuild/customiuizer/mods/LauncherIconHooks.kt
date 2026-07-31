@@ -86,7 +86,7 @@ object LauncherIconHooks {
         ModuleHelper.hookAllConstructors("com.miui.home.launcher.ShortcutInfo", lpparam.classLoader, object : MethodHook() {
             override fun after(param: AfterHookCallback) {
                 XposedHelpers.setAdditionalInstanceField(param.getThisObject(), "mLabelOrig", XposedHelpers.getObjectField(param.getThisObject(), "mLabel"))
-                if (param.getArgs().isNotEmpty()) modifyTitle(param.getThisObject())
+                if (param.getArgsCount() > 0) modifyTitle(param.getThisObject())
             }
         })
 
@@ -100,7 +100,7 @@ object LauncherIconHooks {
 
         ModuleHelper.findAndHookMethodSilently("com.miui.home.launcher.ShortcutInfo", lpparam.classLoader, "setLabelAndUpdateDB", CharSequence::class.java, Context::class.java, object : MethodHook() {
             override fun after(param: AfterHookCallback) {
-                XposedHelpers.setAdditionalInstanceField(param.getThisObject(), "mLabelOrig", param.getArgs()[0])
+                XposedHelpers.setAdditionalInstanceField(param.getThisObject(), "mLabelOrig", param.getArg(0))
                 modifyTitle(param.getThisObject())
             }
         })
@@ -238,7 +238,7 @@ object LauncherIconHooks {
 
         ModuleHelper.hookAllMethods("com.miui.home.launcher.ShortcutIcon", lpparam.classLoader, "fromXml", object : MethodHook() {
             override fun after(param: AfterHookCallback) {
-                val buddyIcon = XposedHelpers.callMethod(param.getArgs()[3], "getBuddyIconView", param.getArgs()[2])
+                val buddyIcon = XposedHelpers.callMethod(param.getArg(3), "getBuddyIconView", param.getArg(2))
                 if (buddyIcon == null) return
                 val mTitle = XposedHelpers.getObjectField(buddyIcon, "mTitle") as? TextView ?: return
                 mTitle.setTextSize(TypedValue.COMPLEX_UNIT_SP, MainModule.mPrefs.getInt("launcher_titlefontsize", 5).toFloat())
@@ -256,7 +256,7 @@ object LauncherIconHooks {
 
             ModuleHelper.hookAllMethods("com.miui.home.launcher.common.Utilities", lpparam.classLoader, "adaptTitleStyleToWallpaper", object : MethodHook() {
                 override fun after(param: AfterHookCallback) {
-                    val mTitle = param.getArgs()[1] as? TextView ?: return
+                    val mTitle = param.getArg(1) as? TextView ?: return
                     if (mTitle.id == mTitle.resources.getIdentifier("icon_title", "id", "com.miui.home"))
                         mTitle.setTextSize(TypedValue.COMPLEX_UNIT_SP, MainModule.mPrefs.getInt("launcher_titlefontsize", 5).toFloat())
                 }

@@ -34,7 +34,7 @@ object LauncherSystemHooks {
         if (lpparam.packageName == "com.mi.android.globallauncher")
             ModuleHelper.hookAllMethods("com.miui.home.launcher.util.Utilities", lpparam.classLoader, "startDetailsActivityForInfo", object : MethodHook() {
                 override fun before(param: BeforeHookCallback) {
-                    val itemInfo = param.getArgs()[0] ?: return
+                    val itemInfo = param.getArg(0) ?: return
                     val component: ComponentName? = try {
                         XposedHelpers.callMethod(itemInfo, "getComponentName") as? ComponentName
                     } catch (_: Throwable) {
@@ -49,8 +49,8 @@ object LauncherSystemHooks {
                         }
                     }
                     if (component == null) return
-                    val context = param.getArgs()[1] as? Context ?: return
-                    val userHandle = XposedHelpers.callMethod(param.getArgs()[0], "getUser") as? UserHandle
+                    val context = param.getArg(1) as? Context ?: return
+                    val userHandle = XposedHelpers.callMethod(param.getArg(0), "getUser") as? UserHandle
                     ModuleHelper.openAppInfo(context, component.packageName, userHandle?.hashCode() ?: 0)
                     param.returnAndSkip(true)
                 }
@@ -58,9 +58,9 @@ object LauncherSystemHooks {
         else
             ModuleHelper.hookAllMethods("com.miui.home.launcher.shortcuts.ShortcutMenuManager", lpparam.classLoader, "startAppDetailsActivity", object : MethodHook() {
                 override fun before(param: BeforeHookCallback) {
-                    val component = XposedHelpers.callMethod(param.getArgs()[0], "getComponentName") as? ComponentName ?: return
-                    val view = param.getArgs()[1] as? View ?: return
-                    val userHandle = XposedHelpers.callMethod(param.getArgs()[0], "getUserHandle") as? UserHandle
+                    val component = XposedHelpers.callMethod(param.getArg(0), "getComponentName") as? ComponentName ?: return
+                    val view = param.getArg(1) as? View ?: return
+                    val userHandle = XposedHelpers.callMethod(param.getArg(0), "getUserHandle") as? UserHandle
                     ModuleHelper.openAppInfo(view.context, component.packageName, userHandle?.hashCode() ?: 0)
                     param.returnAndSkip(null)
                 }
@@ -77,8 +77,8 @@ object LauncherSystemHooks {
         }
         ModuleHelper.findAndHookMethod(activityManagerWrapper, "needRemoveTask", taskInfoCompat, object : MethodHook() {
             override fun after(param: AfterHookCallback) {
-                if (param.getArgs()[0] != null) {
-                    val mainTask = XposedHelpers.getObjectField(param.getArgs()[0], "mMainTaskInfo")
+                if (param.getArg(0) != null) {
+                    val mainTask = XposedHelpers.getObjectField(param.getArg(0), "mMainTaskInfo")
                     if (mainTask != null) {
                         val componentName = XposedHelpers.getObjectField(mainTask, "topActivity") as? ComponentName
                         if (componentName != null) {

@@ -29,6 +29,9 @@ import tv.withaibuild.customiuizer.mods.utils.XposedHelpers
 
 object SystemStatusBarClockAndMoreHooks {
 
+    // Pre-compiled regex for clock format hour replacement (hot path, called each tick).
+    private val CLOCK_HOUR_PATTERN = Regex("h+:")
+
     @JvmStatic
     fun StatusBarClockTweakHook(lpparam: PackageReadyParam) {
         val statusbarClockTweak = MainModule.mPrefs.getBoolean("system_statusbar_clocktweak")
@@ -98,7 +101,7 @@ object SystemStatusBarClockAndMoreHooks {
         ModuleHelper.hookAllConstructors("com.android.systemui.statusbar.views.MiuiClock", lpparam.classLoader, object : MethodHook() {
             override fun after(param: AfterHookCallback) {
                 val clock = param.thisObject as? TextView ?: return
-                if (param.args.size != 3) return
+                if (param.getArgsCount() != 3) return
                 val clockId = clock.resources.getIdentifier("clock", "id", "com.android.systemui")
                 val bigClockId = clock.resources.getIdentifier("big_time", "id", "com.android.systemui")
                 val dateClockId = clock.resources.getIdentifier("date_time", "id", "com.android.systemui")
@@ -150,7 +153,7 @@ object SystemStatusBarClockAndMoreHooks {
                         val fmtResId = mContext.resources.getIdentifier(fmt, "string", "com.android.systemui")
                         var fmtString = mContext.getString(fmtResId)
                         if (showSeconds) {
-                            fmtString = fmtString.replaceFirst(":mm".toRegex(), ":mm:ss")
+                            fmtString = fmtString.replaceFirst(":mm", ":mm:ss")
                         }
                         var hourStr = "h"
                         if (is24) {
@@ -159,7 +162,7 @@ object SystemStatusBarClockAndMoreHooks {
                         if (hourIn2d) {
                             hourStr += hourStr
                         }
-                        timeFmt = fmtString.replaceFirst("h+:".toRegex(), "$hourStr:")
+                        timeFmt = CLOCK_HOUR_PATTERN.replaceFirst(fmtString, "$hourStr:")
                     }
                 }
                 if (timeFmt != null) {
@@ -505,7 +508,7 @@ object SystemStatusBarClockAndMoreHooks {
         ModuleHelper.hookAllMethods("com.android.systemui.statusbar.notification.row.ExpandableNotificationRow", lpparam.classLoader, "setHeadsUp", object : MethodHook() {
             override fun after(param: AfterHookCallback) {
                 val mOnKeyguard = XposedHelpers.callMethod(param.thisObject, "isOnKeyguard") as? Boolean ?: false
-                val showHeadsUp = param.args[0] as? Boolean ?: false
+                val showHeadsUp = param.getArg(0) as? Boolean ?: false
                 if (!mOnKeyguard && showHeadsUp) {
                     val notifyRow = param.thisObject as? View ?: return
                     val notification = XposedHelpers.getObjectField(XposedHelpers.callMethod(param.thisObject, "getEntry"), "mSbn")

@@ -125,8 +125,8 @@ object SystemUINotificationHooks {
     fun OpenNotifyInFloatingWindowHook(lpparam: PackageReadyParam) {
         ModuleHelper.hookAllMethods("com.android.systemui.statusbar.phone.MiuiStatusBarNotificationActivityStarter", lpparam.classLoader, "startNotificationIntent", object : MethodHook() {
             override fun before(param: BeforeHookCallback) {
-                val pendingIntent = param.getArgs()[0] as? PendingIntent ?: return
-                val mSbn = XposedHelpers.getObjectField(param.getArgs()[2], "mSbn") ?: return
+                val pendingIntent = param.getArg(0) as? PendingIntent ?: return
+                val mSbn = XposedHelpers.getObjectField(param.getArg(2), "mSbn") ?: return
                 val pkgName: String = if (XposedHelpers.callMethod(mSbn, "isSubstituteNotification") as? Boolean == true) {
                     XposedHelpers.getObjectField(mSbn, "mPkgName") as? String ?: ""
                 } else {
@@ -160,8 +160,8 @@ object SystemUINotificationHooks {
     fun FixOpenNotifyInFreeFormHook(lpparam: PackageReadyParam) {
         ModuleHelper.findAndHookMethod("com.android.systemui.statusbar.notification.policy.AppMiniWindowManager", lpparam.classLoader, "launchMiniWindowActivity", String::class.java, PendingIntent::class.java, object : MethodHook() {
             override fun before(param: BeforeHookCallback) {
-                val pkgName = param.getArgs()[0] as? String ?: return
-                val pendingIntent = param.getArgs()[1] as? PendingIntent ?: return
+                val pkgName = param.getArg(0) as? String ?: return
+                val pendingIntent = param.getArg(1) as? PendingIntent ?: return
                 val foregroundInfo = ProcessManager.getForegroundInfo()
                 if (foregroundInfo != null) {
                     val topPackage = foregroundInfo.mForegroundPackageName
@@ -202,7 +202,7 @@ object SystemUINotificationHooks {
         var mMuteVisible = false
         val disableHeadsUpHook = object : MethodHook() {
             override fun after(param: AfterHookCallback) {
-                if (param.getArgs().size != 2) return
+                if (param.getArgsCount() != 2) return
                 val canPopup = param.getResult() as? Boolean ?: return
                 if (canPopup && mMuteVisible) {
                     param.setResult(false)
@@ -250,7 +250,7 @@ object SystemUINotificationHooks {
                     } else {
                         ModuleHelper.findAndHookConstructor("com.miui.maml.util.ZipResourceLoader", lpparam.classLoader, String::class.java, object : MethodHook() {
                             override fun before(param: BeforeHookCallback) {
-                                val res = param.getArgs()[0] as? String ?: return
+                                val res = param.getArg(0) as? String ?: return
                                 if ("/system/media/theme/default/powermenu" == res) {
                                     param.getArgs()[0] = powermenu.path
                                 }
@@ -264,7 +264,7 @@ object SystemUINotificationHooks {
         ModuleHelper.findAndHookMethod("com.miui.maml.ScreenElementRoot", lpparam.classLoader, "issueExternCommand", String::class.java, java.lang.Double::class.java, String::class.java, object : MethodHook() {
             @SuppressLint("MissingPermission")
             override fun before(param: BeforeHookCallback) {
-                val cmd = param.getArgs()[0] as? String ?: return
+                val cmd = param.getArg(0) as? String ?: return
                 val scrContext = XposedHelpers.getObjectField(param.getThisObject(), "mContext")
                 val mContext = XposedHelpers.getObjectField(scrContext, "mContext") as? Context ?: return
                 val pm = mContext.getSystemService(Context.POWER_SERVICE) as? PowerManager ?: return
@@ -289,7 +289,7 @@ object SystemUINotificationHooks {
 
                 if (custom) {
                     mSystemExternCommandListener?.let {
-                        XposedHelpers.callMethod(it, "onCommand", param.getArgs()[0], param.getArgs()[1], param.getArgs()[2])
+                        XposedHelpers.callMethod(it, "onCommand", param.getArg(0), param.getArg(1), param.getArg(2))
                     }
                     param.returnAndSkip(null)
                 }
@@ -298,7 +298,7 @@ object SystemUINotificationHooks {
 
         ModuleHelper.findAndHookMethod("com.android.systemui.plugins.PluginEnablerImpl", lpparam.classLoader, "isEnabled", ComponentName::class.java, object : MethodHook() {
             override fun before(param: BeforeHookCallback) {
-                val componentName = param.getArgs()[0] as? ComponentName ?: return
+                val componentName = param.getArg(0) as? ComponentName ?: return
                 if (componentName.className.contains("GlobalActions")) {
                     param.returnAndSkip(false)
                 }

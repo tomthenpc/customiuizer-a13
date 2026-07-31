@@ -87,7 +87,7 @@ object SystemUIControlCenterHooks {
         ModuleHelper.hookAllMethods(pluginLoaderClass, lpparam.classLoader, "getClassLoader", object : MethodHook() {
             private var isHooked = false
             override fun after(param: AfterHookCallback) {
-                val appInfo = param.getArgs()[0] as? ApplicationInfo ?: return
+                val appInfo = param.getArg(0) as? ApplicationInfo ?: return
                 if ("miui.systemui.plugin" == appInfo.packageName && !isHooked) {
                     isHooked = true
                     if (pluginLoader == null) {
@@ -294,7 +294,7 @@ object SystemUIControlCenterHooks {
         ModuleHelper.hookAllMethods(pluginLoaderClass, lpparam.classLoader, "getClassLoader", object : MethodHook() {
             private var isHooked = false
             override fun after(param: AfterHookCallback) {
-                val appInfo = param.getArgs()[0] as? ApplicationInfo ?: return
+                val appInfo = param.getArg(0) as? ApplicationInfo ?: return
                 if ("miui.systemui.plugin" == appInfo.packageName && !isHooked) {
                     isHooked = true
                     if (pluginLoader == null) {
@@ -559,14 +559,14 @@ object SystemUIControlCenterHooks {
 
         ModuleHelper.findAndHookMethod("miui.systemui.dagger.PluginComponentFactory", pluginLoader, "create", Context::class.java, object : MethodHook() {
             override fun before(param: BeforeHookCallback) {
-                val mContext = param.getArgs()[0] as? Context ?: return
+                val mContext = param.getArg(0) as? Context ?: return
                 val enabledTileBackgroundResId = mContext.resources.getIdentifier("qs_background_enabled", "drawable", "miui.systemui.plugin")
                 val enabledTileColorResId = mContext.resources.getIdentifier("qs_enabled_color", "color", "miui.systemui.plugin")
                 val tintColor = mContext.resources.getColor(enabledTileColorResId, null)
                 val modRes = ModuleHelper.getModuleRes(mContext)
                 val imgHook = object : MethodHook() {
                     override fun before(param2: BeforeHookCallback) {
-                        val resId = param2.getArgs()[0] as? Int ?: return
+                        val resId = param2.getArg(0) as? Int ?: return
                         if (resId == enabledTileBackgroundResId && resId != 0) {
                             val enableTile = modRes.getDrawable(R.drawable.ic_qs_tile_bg_enabled, null)
                             enableTile?.setTint(tintColor)
@@ -707,7 +707,7 @@ object SystemUIControlCenterHooks {
         ModuleHelper.hookAllMethods(pluginLoaderClass, lpparam.classLoader, "getClassLoader", object : MethodHook() {
             private var isHooked = false
             override fun after(param: AfterHookCallback) {
-                val appInfo = param.getArgs()[0] as? ApplicationInfo ?: return
+                val appInfo = param.getArg(0) as? ApplicationInfo ?: return
                 if ("miui.systemui.plugin" == appInfo.packageName && !isHooked) {
                     isHooked = true
                     if (pluginLoader == null) {
@@ -1083,14 +1083,14 @@ object SystemUIControlCenterHooks {
         val tileResIds = IntArray(1)
         ModuleHelper.findAndHookMethod("miui.systemui.dagger.PluginComponentFactory", pluginLoader, "create", Context::class.java, Context::class.java, object : MethodHook() {
             override fun after(param: AfterHookCallback) {
-                val pluginContext = param.getArgs()[1] as? Context ?: return
+                val pluginContext = param.getArg(1) as? Context ?: return
                 tileResIds[0] = pluginContext.resources.getIdentifier("big_tile", "layout", "miui.systemui.plugin")
             }
         })
         ModuleHelper.hookAllMethods("miui.systemui.controlcenter.dagger.ControlCenterViewModule", pluginLoader, "createBigTileGroup", object : MethodHook() {
             override fun after(param: AfterHookCallback) {
                 val mView = param.getResult() as? ViewGroup ?: return
-                val li = XposedHelpers.callMethod(param.getArgs()[0], "injectable", param.getArgs()[1]) as? LayoutInflater ?: return
+                val li = XposedHelpers.callMethod(param.getArg(0), "injectable", param.getArg(1)) as? LayoutInflater ?: return
                 val btTileView = li.inflate(tileResIds[0], null)
                 mView.addView(btTileView, 2)
                 btTileView.tag = "big_tile_bt"

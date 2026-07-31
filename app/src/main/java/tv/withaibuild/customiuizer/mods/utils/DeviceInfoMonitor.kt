@@ -11,6 +11,8 @@ import android.os.PowerManager
 import io.github.libxposed.api.XposedModuleInterface.PackageReadyParam
 import java.io.FileInputStream
 import java.io.RandomAccessFile
+import java.text.DecimalFormat
+import java.text.DecimalFormatSymbols
 import java.util.Locale
 import java.util.Properties
 import tv.withaibuild.customiuizer.MainModule
@@ -24,6 +26,16 @@ import tv.withaibuild.customiuizer.utils.PrefMap
  * this controller only owns scheduling, sysfs reads, and delivery of changed text.
  */
 object DeviceInfoMonitor {
+
+    private val DF_1DEC = object : ThreadLocal<DecimalFormat>() {
+        override fun initialValue() = DecimalFormat("0.0", DecimalFormatSymbols.getInstance(Locale.getDefault()))
+    }
+    private val DF_2DEC = object : ThreadLocal<DecimalFormat>() {
+        override fun initialValue() = DecimalFormat("0.00", DecimalFormatSymbols.getInstance(Locale.getDefault()))
+    }
+
+    private fun format1(value: Float): String = DF_1DEC.get()!!.format(value)
+    private fun format2(value: Float): String = DF_2DEC.get()!!.format(value)
 
     private const val MONITOR_MESSAGE = 200021
     private const val UPDATE_MESSAGE = 100021
@@ -475,7 +487,7 @@ object DeviceInfoMonitor {
         if (opt == 1 || opt == 3 || opt == 5) {
             if (current.batteryPositive) rawCurrent = Math.abs(rawCurrent)
             if (Math.abs(rawCurrent) > 999) {
-                currentText = String.format(Locale.getDefault(), "%.2f", rawCurrent / 1_000f)
+                currentText = format2(rawCurrent / 1_000f)
                 currentUnit = "A"
             } else {
                 currentText = rawCurrent.toString()
@@ -490,11 +502,7 @@ object DeviceInfoMonitor {
         if (opt == 2 || opt == 4 || opt == 5) {
             val volts =
                 parseSysfsInt(props.getProperty("POWER_SUPPLY_VOLTAGE_NOW")) / 1_000f / 1_000f
-            watts = String.format(
-                Locale.getDefault(),
-                "%.2f",
-                Math.abs(volts * rawCurrent) / 1_000
-            )
+            watts = format2(Math.abs(volts * rawCurrent) / 1_000f)
         }
 
         val separator = if (current.batterySingleRow) " " else "\n"
@@ -531,32 +539,16 @@ object DeviceInfoMonitor {
         val separator = if (current.deviceTempSingleRow) " " else "\n"
         return when (opt) {
             1 -> {
-                val battery = String.format(
-                    Locale.getDefault(),
-                    "%.1f",
-                    parseSysfsInt(batteryTemp) / 10f
-                )
-                val cpu = String.format(
-                    Locale.getDefault(),
-                    "%.1f",
-                    parseSysfsInt(cpuTemp) / 1_000f
-                )
+                val battery = format1(parseSysfsInt(batteryTemp) / 10f)
+                val cpu = format1(parseSysfsInt(cpuTemp) / 1_000f)
                 if (current.deviceTempReverseOrder) {
                     "$cpu$unit$separator$battery$unit"
                 } else {
                     "$battery$unit$separator$cpu$unit"
                 }
             }
-            2 -> String.format(
-                Locale.getDefault(),
-                "%.1f$unit",
-                parseSysfsInt(batteryTemp) / 10f
-            )
-            else -> String.format(
-                Locale.getDefault(),
-                "%.1f$unit",
-                parseSysfsInt(cpuTemp) / 1_000f
-            )
+            2 -> format1(parseSysfsInt(batteryTemp) / 10f) + unit
+            else -> format1(parseSysfsInt(cpuTemp) / 1_000f) + unit
         }
     }
 }

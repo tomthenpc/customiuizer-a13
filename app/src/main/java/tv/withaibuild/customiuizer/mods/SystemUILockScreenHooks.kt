@@ -60,7 +60,7 @@ object SystemUILockScreenHooks {
         })
         ModuleHelper.findAndHookMethod("com.android.systemui.statusbar.phone.MiuiKeyguardStatusBarView", lpparam.classLoader, "updateViewStatusBarPaddingTop", View::class.java, object : MethodHook() {
             override fun before(param: BeforeHookCallback) {
-                val view = param.getArgs()[0] as? View ?: return
+                val view = param.getArg(0) as? View ?: return
                 view.setPadding(view.paddingLeft, statusBarPaddingTop[0], view.paddingRight, view.paddingBottom)
                 param.returnAndSkip(null)
             }
@@ -276,7 +276,7 @@ object SystemUILockScreenHooks {
             override fun after(param: AfterHookCallback) {
                 val opt = MainModule.mPrefs.getBoolean("system_lockscreenshortcuts_right_image")
                 if (!opt) return
-                val isLeft = param.getArgs()[0] as? Boolean ?: return
+                val isLeft = param.getArg(0) as? Boolean ?: return
                 if (!isLeft) {
                     val mRightAffordanceViewTips = XposedHelpers.getObjectField(param.getThisObject(), "mRightAffordanceViewTips") as? TextView
                     mRightAffordanceViewTips?.text = ModuleHelper.getModuleRes(mRightAffordanceViewTips.context).getString(R.string.system_lockscreenshortcuts_right_image_hint)
@@ -311,7 +311,7 @@ object SystemUILockScreenHooks {
 
             ModuleHelper.findAndHookMethod("com.android.systemui.statusbar.phone.KeyguardBottomAreaView", lpparam.classLoader, "onClick", View::class.java, object : MethodHook() {
                 override fun before(param: BeforeHookCallback) {
-                    val view = param.getArgs()[0] as? View ?: return
+                    val view = param.getArg(0) as? View ?: return
                     val mLeftAffordanceView = XposedHelpers.getObjectField(param.getThisObject(), "mLeftAffordanceView") as? View ?: return
                     if (view == mLeftAffordanceView) {
                         param.returnAndSkip(null)
@@ -450,7 +450,7 @@ object SystemUILockScreenHooks {
             override fun before(param: BeforeHookCallback) {
                 val mCurrentScreen = XposedHelpers.getIntField(param.getThisObject(), "mCurrentScreen")
                 if (mCurrentScreen != 1) return
-                val arg = param.getArgs()[0] as? Float ?: return
+                val arg = param.getArg(0) as? Float ?: return
                 if (arg < 0 && MainModule.mPrefs.getBoolean("system_lockscreenshortcuts_right_off"))
                     param.getArgs()[0] = 0.0f
                 else if (arg > 0 && MainModule.mPrefs.getBoolean("system_lockscreenshortcuts_left_off"))
@@ -462,7 +462,7 @@ object SystemUILockScreenHooks {
             override fun before(param: BeforeHookCallback) {
                 val mCurrentScreen = XposedHelpers.getIntField(param.getThisObject(), "mCurrentScreen")
                 if (mCurrentScreen != 1) return
-                val arg = param.getArgs()[0] as? Float ?: return
+                val arg = param.getArg(0) as? Float ?: return
                 if (arg < 0 && MainModule.mPrefs.getBoolean("system_lockscreenshortcuts_right_off"))
                     param.returnAndSkip(null)
                 else if (arg > 0 && MainModule.mPrefs.getBoolean("system_lockscreenshortcuts_left_off"))
@@ -560,7 +560,7 @@ object SystemUILockScreenHooks {
             override fun after(param: AfterHookCallback) {
                 val tile = param.getResult() ?: return
                 val tileClass = tile.javaClass.canonicalName ?: return
-                val tileName = param.getArgs()[0] as? String ?: return
+                val tileName = param.getArg(0) as? String ?: return
                 var name = tileName
                 if (name.startsWith("intent(")) name = "intent"
                 else if (name.startsWith("custom(")) name = "custom"

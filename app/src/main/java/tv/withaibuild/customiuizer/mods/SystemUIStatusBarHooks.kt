@@ -35,6 +35,8 @@ import tv.withaibuild.customiuizer.mods.utils.XposedHelpers
 import tv.withaibuild.customiuizer.utils.HookUtils
 import tv.withaibuild.customiuizer.utils.PrefMap
 import java.lang.ref.WeakReference
+import java.text.DecimalFormat
+import java.text.DecimalFormatSymbols
 import java.util.ArrayList
 import java.util.Arrays
 import java.util.Iterator
@@ -56,6 +58,21 @@ object SystemUIStatusBarHooks {
     private var netSpeedStyleHookLogged = false
     private var netSpeedViewLogged = false
     private var initNetSpeedStyleLogged = false
+
+    // Pre-compiled regex for net-speed suffix removal (hot path).
+    private val NET_SPEED_SUFFIX_REGEX = Regex("B?[/']s")
+
+    // Thread-local DecimalFormat for status-bar numeric formatting.
+    // Reuses Formatter state and avoids per-call String.format allocations.
+    private val DF_1DEC = object : ThreadLocal<DecimalFormat>() {
+        override fun initialValue() = DecimalFormat("0.0", DecimalFormatSymbols.getInstance(Locale.getDefault()))
+    }
+    private val DF_2DEC = object : ThreadLocal<DecimalFormat>() {
+        override fun initialValue() = DecimalFormat("0.00", DecimalFormatSymbols.getInstance(Locale.getDefault()))
+    }
+
+    private fun format1(value: Float): String = DF_1DEC.get()!!.format(value)
+    private fun format2(value: Float): String = DF_2DEC.get()!!.format(value)
 
     data class TextIcon(var atRight: Boolean, var iconType: Int)
 
@@ -193,7 +210,7 @@ object SystemUIStatusBarHooks {
         if (opt == 1 || opt == 3 || opt == 5) {
             if (snap.batteryPositive) rawCurr = Math.abs(rawCurr)
             if (Math.abs(rawCurr) > 999) {
-                currVal = String.format(Locale.getDefault(), "%.2f", rawCurr / 1000f)
+                currVal = format2(rawCurr / 1000f)
                 preferred = "A"
             } else {
                 currVal = rawCurr.toString()
@@ -208,7 +225,7 @@ object SystemUIStatusBarHooks {
         var simpleWatt = ""
         if (opt == 2 || opt == 4 || opt == 5) {
             val voltVal = parseSysfsInt(props.getProperty("POWER_SUPPLY_VOLTAGE_NOW")) / 1000f / 1000f
-            simpleWatt = String.format(Locale.getDefault(), "%.2f", Math.abs(voltVal * rawCurr) / 1000)
+            simpleWatt = format2(Math.abs(voltVal * rawCurr) / 1000f)
         }
 
         val splitChar = if (snap.batterySingleRow) " " else "\n"
@@ -241,8 +258,8 @@ object SystemUIStatusBarHooks {
         val splitChar = if (snap.deviceTempSingleRow) " " else "\n"
         return when (opt) {
             1 -> {
-                val simpleBatteryTemp = String.format(Locale.getDefault(), "%.1f", parseSysfsInt(batteryTemp) / 10f)
-                val simpleCpuTemp = String.format(Locale.getDefault(), "%.1f", parseSysfsInt(cpuTemp) / 1000f)
+                val simpleBatteryTemp = format1(parseSysfsInt(batteryTemp) / 10f)
+                val simpleCpuTemp = format1(parseSysfsInt(cpuTemp) / 1000f)
                 if (snap.deviceTempReverseOrder) {
                     "$simpleCpuTemp$tempUnit$splitChar$simpleBatteryTemp$tempUnit"
                 } else {
@@ -250,11 +267,11 @@ object SystemUIStatusBarHooks {
                 }
             }
             2 -> {
-                val simpleBatteryTemp = String.format(Locale.getDefault(), "%.1f", parseSysfsInt(batteryTemp) / 10f)
+                val simpleBatteryTemp = format1(parseSysfsInt(batteryTemp) / 10f)
                 "$simpleBatteryTemp$tempUnit"
             }
             else -> {
-                val simpleCpuTemp = String.format(Locale.getDefault(), "%.1f", parseSysfsInt(cpuTemp) / 1000f)
+                val simpleCpuTemp = format1(parseSysfsInt(cpuTemp) / 1000f)
                 "$simpleCpuTemp$tempUnit"
             }
         }
@@ -1180,7 +1197,7 @@ object SystemUIStatusBarHooks {
                 val hideUnit = MainModule.mPrefs.getBoolean("system_detailednetspeed_secunit")
                 if (hideUnit && !newStyle) {
                     var speedText = param.getResult() as? String ?: return
-                    speedText = speedText.replaceFirst("B?[/']s".toRegex(), "")
+                    speedText = NET_SPEED_SUFFIX_REGEX.replaceFirst(speedText, "")
                     param.setResult(speedText)
                 }
             }
@@ -1445,7 +1462,7 @@ object SystemUIStatusBarHooks {
     fun HideIconsHook(lpparam: PackageReadyParam) {
         val iconHook = object : MethodHook() {
             override fun before(param: BeforeHookCallback) {
-                val iconType = param.getArgs()[0] as? String ?: return
+                val iconType = param.getArg(0) as? String ?: return
                 if (checkSlot(iconType)) {
                     param.getArgs()[1] = false
                 }
@@ -1516,7 +1533,8 @@ object SystemUIStatusBarHooks {
                 f /= 1024.0f
             }
             val pre = modRes.getString(R.string.speedunits).toCharArray()[expIndex]
-            (if (f < 100.0f) String.format("%.1f", f) else String.format("%.0f", f)) + String.format("%s$unitSuffix", pre)
+            val formatted = if (f < 100.0f) format1(f) else Math.round(f).toString()
+            formatted + pre + unitSuffix
         } catch (t: Throwable) {
             XposedHelpers.log(t)
             ""
@@ -1527,7 +1545,7 @@ object SystemUIStatusBarHooks {
     fun NetSpeedIntervalHook(lpparam: PackageReadyParam) {
         ModuleHelper.findAndHookMethod("com.android.systemui.statusbar.policy.NetworkSpeedController", lpparam.classLoader, "postUpdateNetworkSpeedDelay", Long::class.javaPrimitiveType, object : MethodHook() {
             override fun before(param: BeforeHookCallback) {
-                val originInterval = param.getArgs()[0] as? Long ?: return
+                val originInterval = param.getArg(0) as? Long ?: return
                 if (originInterval == 4000L) {
                     val newInterval = MainModule.mPrefs.getInt("system_netspeedinterval", 4) * 1000L
                     param.getArgs()[0] = newInterval

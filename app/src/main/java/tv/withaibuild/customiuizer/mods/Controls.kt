@@ -871,7 +871,7 @@ object Controls {
                 val pct = MainModule.mPrefs.getInt("controls_fsg_width", 100)
                 if (pct == 100) return
                 val mGestureStubDefaultSize = XposedHelpers.getIntField(param.getThisObject(), "mGestureStubDefaultSize")
-                val arg = param.getArgs()[0] as? Int ?: return
+                val arg = param.getArg(0) as? Int ?: return
                 if (arg == mGestureStubDefaultSize) return
                 param.getArgs()[0] = Math.round(arg * pct / 100f)
             }
@@ -918,8 +918,8 @@ object Controls {
         val className = "com.miui.server.input.util.ShortCutActionsUtils"
         ModuleHelper.findAndHookMethod(className, lpparam.classLoader, "triggerFunction", String::class.java, String::class.java, Bundle::class.java, Boolean::class.javaPrimitiveType, object : MethodHook() {
             override fun before(param: BeforeHookCallback) {
-                val arg0 = param.getArgs()[0] as? String
-                val arg1 = param.getArgs()[1] as? String
+                val arg0 = param.getArg(0) as? String
+                val arg1 = param.getArg(1) as? String
                 if (dtFromVolumeDown && arg1 == "double_click_volume_down") {
                     param.getArgs()[0] = "turn_on_torch"
                 } else if (!dtFromVolumeDown && doubleTapResons.contains(arg1)) {

@@ -195,7 +195,7 @@ object SystemStatusBarMoreHooks {
     fun DisplayWifiStandardHook(lpparam: PackageReadyParam) {
         ModuleHelper.hookAllMethods("com.android.systemui.statusbar.StatusBarWifiView", lpparam.classLoader, "applyWifiState", object : MethodHook() {
             override fun before(param: BeforeHookCallback) {
-                val wifiState = param.args[0]
+                val wifiState = param.getArg(0)
                 if (wifiState != null) {
                     val opt = MainModule.mPrefs.getStringAsInt("system_statusbaricons_wifistandard", 1)
                     if (opt == 1) return

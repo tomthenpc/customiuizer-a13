@@ -55,7 +55,7 @@ object SystemUIScreenshotHooks {
     fun HideStatusBarBeforeScreenshotHook(lpparam: PackageReadyParam) {
         ModuleHelper.findAndHookMethod("com.android.systemui.statusbar.phone.MiuiCollapsedStatusBarFragment", lpparam.classLoader, "initMiuiViewsOnViewCreated", View::class.java, object : MethodHook() {
             override fun after(param: AfterHookCallback) {
-                val view = param.getArgs()[0] as? View ?: return
+                val view = param.getArg(0) as? View ?: return
                 val br = object : BroadcastReceiver() {
                     override fun onReceive(context: Context, intent: Intent) {
                         ModuleHelper.guarded("SystemUIScreenshotHooks.statusBarReceiver") {

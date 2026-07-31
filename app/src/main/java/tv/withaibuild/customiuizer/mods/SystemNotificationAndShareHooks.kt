@@ -47,8 +47,8 @@ object SystemNotificationAndShareHooks {
 
         ModuleHelper.findAndHookConstructor("android.app.Notification\$Builder", lpparam.classLoader, Context::class.java, Notification::class.java, object : MethodHook() {
             override fun after(param: AfterHookCallback) {
-                if (param.args[1] != null) {
-                    val mN = param.args[1] as? Notification ?: return
+                if (param.getArg(1) != null) {
+                    val mN = param.getArg(1) as? Notification ?: return
                     if (XposedHelpers.getAdditionalInstanceField(mN, "mPrimaryTextColor") != null) {
                         val builder = param.thisObject
                         val mParams = XposedHelpers.getObjectField(builder, "mParams")
@@ -94,7 +94,7 @@ object SystemNotificationAndShareHooks {
 
         ModuleHelper.findAndHookMethod("com.android.systemui.statusbar.notification.row.NotificationBackgroundView", lpparam.classLoader, "setTint", Int::class.javaPrimitiveType, object : MethodHook() {
             override fun before(param: BeforeHookCallback) {
-                if ((param.args[0] as? Int ?: 0) == 0) {
+                if ((param.getArg(0) as? Int ?: 0) == 0) {
                     param.returnAndSkip(null)
                 }
             }
@@ -108,7 +108,7 @@ object SystemNotificationAndShareHooks {
 
         ModuleHelper.hookAllMethods("com.android.systemui.statusbar.notification.row.HybridGroupManager", lpparam.classLoader, "bindFromNotificationWithStyle", object : MethodHook() {
             override fun after(param: AfterHookCallback) {
-                val mN = XposedHelpers.callMethod(param.args[2], "getNotification") as? Notification ?: return
+                val mN = XposedHelpers.callMethod(param.getArg(2), "getNotification") as? Notification ?: return
                 if (XposedHelpers.getAdditionalInstanceField(mN, "mSecondaryTextColor") != null) {
                     val hybridNotificationView = param.result as? LinearLayout ?: return
                     val mTitleView = XposedHelpers.getObjectField(hybridNotificationView, "mTitleView") as? TextView ?: return
@@ -122,12 +122,12 @@ object SystemNotificationAndShareHooks {
         ModuleHelper.hookAllMethods("com.android.systemui.statusbar.notification.row.NotificationContentInflaterInjector", lpparam.classLoader, "handle3thThemeColor", object : MethodHook() {
             private var sAppIconManager: Any? = null
             override fun before(param: BeforeHookCallback) {
-                val builder = param.args[1] as? Notification.Builder ?: return
+                val builder = param.getArg(1) as? Notification.Builder ?: return
                 val mN = XposedHelpers.getObjectField(builder, "mN") as? Notification ?: return
                 if (XposedHelpers.callMethod(mN, "isColorized") as? Boolean == true) return
                 if (XposedHelpers.callMethod(mN, "isMediaNotification") as? Boolean == true) return
                 val applicationInfo = mN.extras.getParcelable<ApplicationInfo>("android.appInfo") ?: return
-                val mContext = param.args[0] as? Context ?: return
+                val mContext = param.getArg(0) as? Context ?: return
                 val pkgName = applicationInfo.packageName
                 val opt = MainModule.mPrefs.getString("system_colorizenotifs", "1").toInt()
                 val isSelected = MainModule.mPrefs.getStringSet("system_colorizenotifs_apps").contains(pkgName)
@@ -179,12 +179,12 @@ object SystemNotificationAndShareHooks {
             private var subTextResId = 0
             override fun after(param: AfterHookCallback) {
                 val baseContent = param.result as? RemoteViews ?: return
-                val mContext = param.args[param.args.size - 1] as? Context ?: return
+                val mContext = param.getArg(param.getArgsCount() - 1) as? Context ?: return
                 if (titleResId == 0) {
                     titleResId = mContext.resources.getIdentifier("title", "id", "com.android.systemui")
                     subTextResId = mContext.resources.getIdentifier("text", "id", "com.android.systemui")
                 }
-                val builder = param.args[0] as? Notification.Builder ?: return
+                val builder = param.getArg(0) as? Notification.Builder ?: return
                 val mN = XposedHelpers.getObjectField(builder, "mN") as? Notification ?: return
                 if (XposedHelpers.callMethod(mN, "isMediaNotification") as? Boolean == true) return
                 val primary = XposedHelpers.getAdditionalInstanceField(mN, "mPrimaryTextColor") as? Int ?: return
@@ -205,7 +205,7 @@ object SystemNotificationAndShareHooks {
     fun CompactNotificationsHook(lpparam: PackageReadyParam) {
         ModuleHelper.hookAllMethods("com.android.systemui.statusbar.notification.row.wrapper.NotificationViewWrapper", lpparam.classLoader, "wrap", object : MethodHook() {
             override fun after(param: AfterHookCallback) {
-                if (param.args.size > 3) return
+                if (param.getArgsCount() > 3) return
                 val res = param.result ?: return
                 val mView = XposedHelpers.getObjectField(res, "mView") as? View ?: return
                 val container = mView.findViewById<FrameLayout>(mView.resources.getIdentifier("actions_container", "id", "android"))
@@ -261,9 +261,9 @@ object SystemNotificationAndShareHooks {
                     return
                 }
                 val mUngroupedNotifications = XposedHelpers.getObjectField(param.thisObject, "mUngroupedNotifications") as? Map<Int, Map<String, LinkedHashSet<String>>> ?: return
-                val obj = mUngroupedNotifications[param.args[0]]
+                val obj = mUngroupedNotifications[param.getArg(0)]
                 if (obj != null) {
-                    val list = obj[param.args[1]]
+                    val list = obj[param.getArg(1)]
                     if (list != null && list.size < opt) param.returnAndSkip(null)
                 }
             }
@@ -271,7 +271,7 @@ object SystemNotificationAndShareHooks {
 
         ModuleHelper.findAndHookMethod("com.android.server.notification.GroupHelper", lpparam.classLoader, "adjustNotificationBundling", List::class.java, Boolean::class.javaPrimitiveType, object : MethodHook() {
             override fun before(param: BeforeHookCallback) {
-                val list = param.args[0] as? List<*>
+                val list = param.getArg(0) as? List<*>
                 val opt = MainModule.mPrefs.getString("system_autogroupnotif", "1").toInt()
                 if (opt == 2 || (list != null && list.size < opt)) param.returnAndSkip(null)
             }

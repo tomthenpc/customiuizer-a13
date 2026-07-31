@@ -663,7 +663,7 @@ object GlobalActions {
         val settingsIconResId = MainModule.resHooks.addResource("ic_miuizer_settings", R.drawable.ic_miuizer_settings)
         ModuleHelper.findAndHookMethod("com.android.settings.MiuiSettings", lpparam.classLoader, "updateHeaderList", List::class.java, object : MethodHook() {
             override fun after(param: AfterHookCallback) {
-                if (param.getArgs()[0] == null) return
+                if (param.getArg(0) == null) return
 
                 val mContext = (param.getThisObject() as? Activity)?.baseContext ?: return
                 val opt = MainModule.mPrefs.getStringAsInt("miuizer_settingsiconpos", 1)
@@ -690,7 +690,7 @@ object GlobalActions {
                 val special = mContext.resources.getIdentifier("other_special_feature_settings", "id", mContext.packageName)
 
                 @Suppress("UNCHECKED_CAST")
-                val headers = param.getArgs()[0] as? MutableList<Any> ?: return
+                val headers = param.getArg(0) as? MutableList<Any> ?: return
                 var position = 0
                 for (head in headers) {
                     position++
@@ -707,9 +707,9 @@ object GlobalActions {
         })
         ModuleHelper.hookAllMethods("com.android.settings.MiuiSettings\$HeaderAdapter", lpparam.classLoader, "setIcon", object : MethodHook() {
             override fun after(param: AfterHookCallback) {
-                val iconRes = XposedHelpers.getIntField(param.getArgs()[1], "iconRes")
+                val iconRes = XposedHelpers.getIntField(param.getArg(1), "iconRes")
                 if (iconRes == settingsIconResId) {
-                    val icon = XposedHelpers.getObjectField(param.getArgs()[0], "icon") as? ImageView
+                    val icon = XposedHelpers.getObjectField(param.getArg(0), "icon") as? ImageView
                     val iconSize = XposedHelpers.getIntField(XposedHelpers.getSurroundingThis(param.getThisObject()), "mNormalIconSize")
                     icon?.layoutParams?.height = iconSize
                 }
@@ -721,7 +721,7 @@ object GlobalActions {
     fun setupForegroundMonitor(lpparam: PackageReadyParam) {
         ModuleHelper.hookAllConstructors("com.android.systemui.statusbar.policy.NetworkSpeedController", lpparam.classLoader, object : MethodHook() {
             override fun after(param: AfterHookCallback) {
-                val mContext = param.getArgs()[0] as? Context ?: return
+                val mContext = param.getArg(0) as? Context ?: return
                 val mBgHandler = XposedHelpers.getObjectField(param.getThisObject(), "mBgHandler") as? Handler ?: return
                 ModuleHelper.hookAllMethods("com.miui.systemui.util.MiuiActivityUtil", lpparam.classLoader, "updateTopActivity", object : MethodHook() {
                     private var pkgName = ""
@@ -759,7 +759,7 @@ object GlobalActions {
         ModuleHelper.hookAllConstructors("com.android.server.accessibility.AccessibilityManagerService", lpparam.classLoader, object : MethodHook() {
             @SuppressLint("UnspecifiedRegisterReceiverFlag")
             override fun after(param: AfterHookCallback) {
-                val mGlobalContext = param.getArgs()[0] as? Context ?: return
+                val mGlobalContext = param.getArg(0) as? Context ?: return
 
                 if (mGlobalReceiverContext != null) {
                     try { mGlobalReceiverContext?.unregisterReceiver(mGlobalReceiver) } catch (_: Throwable) {}
