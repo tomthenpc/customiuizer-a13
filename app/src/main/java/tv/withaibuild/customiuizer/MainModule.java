@@ -80,7 +80,7 @@ public class MainModule extends XposedModule {
     public void onModuleLoaded(@NonNull XposedModuleInterface.ModuleLoadedParam param) {
         processName = param.getProcessName();
         XposedHelpers.moduleInst = this;
-        XposedHelpers.log("CustoMIUIzer-A13: loaded in " + processName);
+        XposedHelpers.log("CustoMIUIzer-A13 " + BuildConfig.VERSION_NAME + ": loaded in " + processName);
     }
 
     private boolean isSupportedAndroidVersion() {
