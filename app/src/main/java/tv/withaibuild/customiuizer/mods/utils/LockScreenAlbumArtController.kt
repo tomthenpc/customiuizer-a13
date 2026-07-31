@@ -105,8 +105,19 @@ object LockScreenAlbumArtController {
 
     @JvmStatic
     fun setMiuiThemeUtilsClass(clazz: Class<*>?) {
+        if (clazz == null) {
+            requestGeneration.incrementAndGet()
+            cancelWork()
+            unregisterScreenReceiver()
+        }
         miuiThemeUtilsClass = clazz
-        if (clazz == null) cancelWork()
+    }
+
+    private fun unregisterScreenReceiver() {
+        if (!screenReceiverRegistered) return
+
+        ModuleHelper.unregisterModuleReceiver(SCREEN_RECEIVER_KEY)
+        screenReceiverRegistered = false
     }
 
     @JvmStatic
@@ -170,6 +181,8 @@ object LockScreenAlbumArtController {
     fun clear(context: Context?, notify: Boolean) {
         requestGeneration.incrementAndGet()
         cancelWork()
+        unregisterScreenReceiver()
+
         pendingSource = null
         pendingSourceToken = 0L
         activeKey = null
