@@ -167,7 +167,10 @@ def _extract_arguments(text: str, start: int) -> str:
 def extract_contracts(text: str) -> dict[str, dict]:
     """Return a map contractName -> contract info."""
     contracts: dict[str, dict] = {}
-    for m in re.finditer(r"val\s+(\w+)\s+=\s+HookTargetContract\(", text):
+    for m in re.finditer(
+        r"val\s+(\w+)(?:\s*:\s*HookTargetContract)?(?:\s+by\s+lazy\([^)]*\)\s*\{\s*)?(?:=\s*)?HookTargetContract\(",
+        text,
+    ):
         name = m.group(1)
         start = m.end() - 1  # point at the opening paren
         end = _find_balanced(text, start)
