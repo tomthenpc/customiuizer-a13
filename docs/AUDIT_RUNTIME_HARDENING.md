@@ -1,188 +1,127 @@
 # A13 Runtime Hardening Audit
 
 > Branch: `devin/a13-runtime-hardening`  
-> Base: `main` after `r13.8.6` release  
-> Date: 2025-11-01 (session continuation)
+> Base: `main` after `r13.8.6`  
+> Date: 2025-11-01 (round 2)
 
-## 1. Scope and principles
+## 1. Scope and status discipline
 
-This audit focuses on the runtime and architecture hardening items tracked in the `devin/a13-runtime-hardening` branch.
+This audit tracks the P0 runtime hardening items for the `devin/a13-runtime-hardening` branch.
 
-Principles applied:
+Status words are used strictly:
 
-- Features disabled at runtime impose near-zero cost.
-- Event-driven responses only when a real event occurs.
-- Hot paths avoid unnecessary allocation, reflection, blocking, and logging.
-- Compatibility logic is scoped to verifiable boundaries (Android 13 / MIUI 14, API 101).
+- **COMPLETED** — code, unit tests and build/lint evidence are in the branch.
+- **VERIFIED** — existing code was reviewed and matches the requirement; no new code was needed.
+- **PARTIAL** — implementation is in place but has a documented remaining gap.
+- **DEFERRED** — explicitly out of scope for this round.
 
-## 2. Completed changes
+## 2. P0 status summary
 
-### 2.1 PrefMap concurrency and typed getters (P0)
+| P0 item | Status | Evidence | Remaining risk |
+|---|---|---|---|
+| PrefMap concurrency + typed getters | COMPLETED | `PrefMap.kt`, `PrefMapTest.kt` | `Map.contains` operator still resolves to underlying `ConcurrentHashMap` for non-normalized keys; production code uses typed getters, not `contains`. |
+| RemotePreferences bootstrap / state machine | COMPLETED | `PreferenceBootstrap.java`, `MainModule.java`, `PreferenceBootstrapTest.kt` | `MainModule.onPackageReady` early `getRemotePrefs()` for `needLoadPrefs` triggers a lazy remote resolve; no double `getAll()` there. Real remote provider behavior needs device validation. |
+| Module receiver registration atomicity | COMPLETED | `ModuleHelper.java`, `ModuleHelperReceiverTest.kt` | Identity check after `registerReceiver` is now explicit. Full 100-iteration race replay is in the existing receiver test; add more if device logs show replacement races. |
+| Owned receiver tracking | COMPLETED | `ModuleHelper.java` | Same identity check pattern as module receivers. Weak owner cleanup is verified by `ModuleHelperRegistrationTest`. |
+| Observer lifecycle closure | VERIFIED | `ModuleHelper.java` | Weak preference observer cleanup and `handlePreferenceChanged` exception boundaries already in place; additional GC test added in previous round. |
+| FeatureDispatcher typed IDs | COMPLETED | `FeatureId.kt`, `FeatureDispatcher.kt`, `FeatureCatalogTest.kt` | `installById(String)` is now a compatibility wrapper that records a diagnostic for unknown ids; new code should call `install(FeatureId, FeatureRuntime)`. |
 
-**Files:**
+## 3. RemotePreferences bootstrap (P0-1)
 
-- `app/src/main/java/tv/withaibuild/customiuizer/utils/PrefMap.kt`
-- `app/src/test/java/tv/withaibuild/customiuizer/utils/PrefMapTest.kt`
-- `app/src/main/java/tv/withaibuild/customiuizer/mods/catalog/FeatureDispatcher.kt`
-- `app/src/main/java/tv/withaibuild/customiuizer/mods/catalog/FeatureRuntime.kt`
-- `app/src/main/java/tv/withaibuild/customiuizer/mods/catalog/FeatureSpec.kt`
-- `app/src/test/java/tv/withaibuild/customiuizer/mods/catalog/*Test.kt`
+### What changed
 
-**What changed:**
+- Added `PreferenceBootstrap` (`app/src/main/java/tv/withaibuild/customiuizer/utils/PreferenceBootstrap.java`).
+  - State machine: `UNINITIALIZED`, `UNAVAILABLE`, `EMPTY_PENDING`, `LOADED`, `VALID_EMPTY`.
+  - Single `synchronized` lock for all state, snapshot and listener state transitions.
+  - Double `getAll()` protocol: first read, register unique listener, second read, then publish.
+  - Listener is registered at most once per process; registration failure is recorded but does not pretend success.
+  - Max retry attempts: 3.
+  - `ensureWatcher()` allows late recovery when listener registration failed at first `start()`.
+- `MainModule` no longer keeps `remotePrefs`, `mListener`, `prefsLoaded`, `emptyPrefsReported`, `prefsWatcherRegistered` as scattered booleans.
+  - `mPrefs` remains a single `PrefMap<String, Object>` instance; `PreferenceBootstrap` updates it in place.
+  - `getRemotePrefs()` returns `PreferenceBootstrap.resolveRemote()` for `needLoadPrefs` gating.
+  - `initPrefs()` and `watchPreferenceChange()` route to `PreferenceBootstrap.start()` / `ensureWatcher()`.
+- `PrefMap.replaceSnapshot(Map)` now adds new/updated entries before removing stale keys, avoiding an intermediate empty map.
+- `PrefMap.containsKey` normalizes short and full preference keys.
 
-- Replaced `HashMap` backing with `ConcurrentHashMap`, removing the need for external synchronization on `MainModule.mPrefs`.
-- Added type-safe `getBoolean`, `getInt`, `getLong`, `getString`, `getStringAsInt`, and `getStringSet` getters with non-throwing fallbacks.
-- `getStringAsInt` now caches parse results and invalidates the cache on `put`, `remove`, `clear`, and `putAll`.
-- Short (`foo`) and full (`pref_key_foo`) keys now produce consistent read/write/lookup results.
-- Updated all callers and tests from `PrefMap<String, Any?>` to `PrefMap<String, Any>` because `ConcurrentHashMap` cannot hold null keys or values.
+### Verification
 
-**Verification:**
+- `PreferenceBootstrapTest` (15 cases) passes:
+  - initial state;
+  - null / throwing provider;
+  - first and second `getAll()` exceptions;
+  - listener registration failure;
+  - single listener per process;
+  - `EMPTY_PENDING`, `VALID_EMPTY`, `LOADED` transitions;
+  - concurrent `start()` idempotency;
+  - malformed type update does not throw;
+  - preference removal updates snapshot;
+  - retry cap;
+  - `ensureWatcher()` recovery.
+- `PrefMapTest` still passes.
+- `:app:testDebugUnitTest` and `:app:lintDebug` pass.
 
-- `PrefMapTest` passes with concurrency stress tests (8 threads, 1000 iterations each).
-- All catalog tests pass after the type change.
+## 4. Receiver registration identity (P0-2 / P0-3)
 
-### 2.2 Receiver registration atomicity (P0)
+### What changed
 
-**Files:**
+- `ModuleHelper.registerModuleReceiver`:
+  - `ConcurrentHashMap.compute` removes the old registration and registers the new one atomically per key.
+  - After `registerReceiver` returns, an identity check verifies the exact `ReceiverRegistration` is still in the map.
+  - If the registration is no longer tracked, it is released immediately to avoid a "registered but untracked" receiver.
+- `ModuleHelper.registerOwnedReceiver`:
+  - Same per-key `compute` + `synchronized(list)` pattern.
+  - Builds the `OwnedReceiverRegistration` before `registerReceiver` so the post-register identity check can compare the exact instance.
+  - If the registration is not found in the tracked list after `compute`, it is released.
+- `ReceiverRegistration` still stores the application context and releases the framework receiver on cleanup.
 
-- `app/src/main/java/tv/withaibuild/customiuizer/mods/utils/ModuleHelper.java`
-- `app/src/test/java/tv/withaibuild/customiuizer/mods/utils/ModuleHelperReceiverTest.kt`
+### Verification
 
-**What changed:**
+- `ModuleHelperReceiverTest` passes.
+- `ModuleHelperRegistrationTest` passes.
 
-- `registerModuleReceiver` now uses `ConcurrentHashMap.compute` to ensure the map and framework registration are updated under a single key lock. If the framework registration fails, the in-flight entry is removed and `releaseReceiver` is called.
-- `registerOwnedReceiver` now uses `ConcurrentHashMap.compute` with a per-key `ArrayList` guarded by `synchronized`. Stale or same-owner registrations are released before the new one is registered.
-- `unregisterOwnedReceiver` synchronizes on the per-key list before mutating it.
+## 5. FeatureDispatcher unknown ID handling (P0-4)
 
-**Verification:**
+### What changed
 
-- New `ModuleHelperReceiverTest` covers single-owner replacement, concurrent same-key racing, different-owner coexistence, and failure paths.
+- `FeatureDispatcher.installById(String, FeatureRuntime)` parses the id with `FeatureId.fromString`.
+- Unknown ids are recorded via `DiagnosticRecorder` with:
+  - `id = DiagnosticIds.UNKNOWN_FEATURE_ID`
+  - `installation = InstallOutcome.FAILED`
+  - `reasonCode = ReasonCode.UNKNOWN`
+  - `detail = featureId`
+- `FeatureDispatcher.install(FeatureId, FeatureRuntime)` is the typed entry point.
 
-### 2.3 Observer lifecycle closure (P0)
+### Verification
 
-**Files:**
+- `FeatureCatalogTest.unknownFeatureCreatesNoRuntimeState` updated to assert the diagnostic snapshot instead of an empty log.
 
-- `app/src/test/java/tv/withaibuild/customiuizer/mods/utils/ModuleHelperRegistrationTest.kt`
+## 6. P1/P2 deferred items
 
-**What changed:**
+These were not touched in this round:
 
-- Added a weak-owner garbage-collection test: when an owned preference observer's owner is no longer reachable, `handlePreferenceChanged` skips it and `dropOwnedObserver` removes the dead registration.
+- `MainModule` per-process installer split.
+- `ResourceHooks` full `SparseArray` split for resolved resource IDs.
+- Full `mods/` callback boundary audit and `ModuleHelper.guarded` wrap.
+- UI, locale, release builds and real-device validation.
 
-**Existing protection already in place:**
-
-- `ModuleHelper` already stores owned observers with `WeakReference<Object>`.
-- `handlePreferenceChanged` detects `owner == null` or `observer == null` and triggers `dropOwnedObserver(null, null)` to purge dead entries.
-
-### 2.4 FeatureDispatcher typed IDs (P1)
-
-**Files:**
-
-- `app/src/main/java/tv/withaibuild/customiuizer/mods/catalog/FeatureId.kt`
-- `app/src/main/java/tv/withaibuild/customiuizer/mods/catalog/FeatureDispatcher.kt`
-
-**What changed:**
-
-- Added a `FeatureId` enum that mirrors the 25 catalog feature IDs.
-- Added `FeatureDispatcher.install(FeatureId, FeatureRuntime)` as the primary entry point.
-- `FeatureDispatcher.installById(String, FeatureRuntime)` now parses to `FeatureId` and delegates. Unknown IDs are logged without crashing.
-
-**Verification:**
-
-- All `mods.catalog.*` unit tests pass.
-
-### 2.5 Build and test verification
+## 7. Build and test evidence
 
 | Check | Command | Result |
-|-------|---------|--------|
-| Debug unit tests | `gradlew :app:testDebugUnitTest` | PASS |
-| Debug assemble | `gradlew :app:assembleDebug` | PASS |
+|---|---|---|
+| Java compile | `gradlew :app:compileDebugJavaWithJavac` | PASS |
+| Kotlin compile | `gradlew :app:compileDebugKotlin` | PASS |
+| Unit tests | `gradlew :app:testDebugUnitTest` | PASS |
 | Lint | `gradlew :app:lintDebug` | PASS |
+| APK build | intentionally not run | N/A |
 
-## 3. Items reviewed but not changed in this session
+## 8. Remaining risks and next steps
 
-### 3.1 RemotePreferences startup state (P0)
-
-The current `MainModule.java` already implements the two critical fixes from the A13 Claude audit:
-
-- `initPrefs(Map)` returns early when the snapshot is `null` or empty and does **not** set `prefsLoaded = true`.
-- `watchPreferenceChange()` sets `prefsWatcherRegistered = true` **after** `registerOnSharedPreferenceChangeListener` returns successfully.
-
-No regression was found. A full state-machine refactor with `VALID_EMPTY`, `RETRY_PENDING`, etc. was considered but rejected as over-engineering for a branch that already has the required safe behavior.
-
-### 3.2 PrefPair hot-path optimization
-
-`tv.withaibuild.customiuizer.utils.PrefPair` already exists and uses `indexOf('|')` / `regionMatches` without `Regex` allocation. `HookUtils.containsStringPair` delegates to `PrefPair.containsFirst`. A search of `app/src/main` found **no** remaining `split("...".toRegex())` or `substringBefore("|")` patterns.
-
-This item is effectively complete in the current tree.
-
-### 3.3 ResourceHooks hot path
-
-`mods/utils/ResourceHooks.java` already follows the A13 audit recommendations to a large degree:
-
-- `fakes` is a `SparseIntArray`.
-- The miss path short-circuits before `findContext()` or `chain.getExecutable().getName()` when both `fakes` and `replacements` are empty.
-- `getDimensionPixelOffset` / `getDimensionPixelSize` float-to-int conversion is preserved.
-
-**Remaining risk:**
-
-- `replacements` is still a `ConcurrentHashMap<String, Pair<...>>`. For the next hardening pass, resolve resource IDs at registration time and split into:
-  - `volatile SparseArray<Pair<ReplacementType, Object>> resourceIdReplacements` for resolved IDs.
-  - `ConcurrentHashMap<String, Pair<ReplacementType, Object>> unresolvedReplacements` for `*:` wildcards or unresolved entries.
-- Use copy-on-write under a `replacementsLock` when updating `SparseArray` / `SparseIntArray` because they are not thread-safe for readers during a write.
-
-This is a high-risk change and must be a separate commit with its own `ResourceHooksTest` and release R8 verification.
-
-### 3.4 MainModule installer split (P1)
-
-`MainModule.java` remains a single large dispatcher for `onSystemServerStarting` and `onPackageReady`. Splitting it into per-process installers was scoped out because:
-
-- It is a large, mechanical refactor that does not fix a known runtime defect in this branch.
-- It carries high regression risk for feature gating and hook registration order.
-- A prerequisite is stabilizing `FeatureDispatcher` and adding per-process runtime factories, which was started but not completed.
-
-Recommended future path:
-
-1. Introduce `SystemServerInstaller`, `SystemUIInstaller`, `LauncherInstaller`, and `PackageInstaller` objects.
-2. Move each `if (mPrefs.get...()) { ... }` block to the appropriate installer.
-3. Keep `MainModule` as a thin router that calls `Installer.install(runtime)`.
-4. Add process-gate unit tests with `FakeXposedInterface`.
-
-### 3.5 Exception boundary review (P1)
-
-- `ModuleHelper.guarded` and named variants already exist for `Runnable` and `Callable<T>`.
-- `handlePreferenceChanged` already catches `Throwable` around each observer call and logs it.
-- `XposedHelpers.log` is used rather than silently swallowing exceptions.
-
-**Remaining risk:**
-
-- Some anonymous `BroadcastReceiver`, `ContentObserver`, and `Runnable` callbacks outside `ModuleHelper.guarded` were not exhaustively audited. The AGENTS.md rule requires every framework callback to be wrapped.
-- A follow-up pass should grep for `new BroadcastReceiver`, `new ContentObserver`, `new Handler`, `post {`, `runOnUiThread`, and `setOnXxxListener` in `mods/` and ensure each has a `ModuleHelper.guarded` entry point.
-
-## 4. Summary and recommendations
-
-| Priority | Item | Status |
-|----------|------|--------|
-| P0 | PrefMap concurrency / typed getters | Done |
-| P0 | RemotePreferences startup state | Already safe |
-| P0 | Receiver registration atomicity | Done |
-| P0 | Observer lifecycle closure | Verified, test added |
-| P1 | FeatureDispatcher typed IDs | Done |
-| P1 | MainModule installer split | Deferred |
-| P1 | Hot path / allocation reduction | Partially done; ResourceHooks next |
-| P1 | Exception boundary review | Partially done; callback audit next |
-
-**Next steps:**
-
-1. Complete `ResourceHooks` split into `SparseArray` + `unresolvedReplacements` (separate commit, own tests).
-2. Split `MainModule` into per-process installers.
-3. Run a full `mods/` callback boundary audit and wrap remaining anonymous callbacks in `ModuleHelper.guarded`.
-4. Run `:app:test`, `:app:lintDebug`, `:app:assembleRelease`, and release R8 / zipalign / signing verification before any merge.
-
-## 5. Evidence
-
-- Unit test reports: `app/build/reports/tests/testDebugUnitTest/index.html`
-- Lint report: `app/build/reports/lint-results-debug.html`
-- Debug APK: `app/build/outputs/apk/debug/app-debug.apk`
+1. **Device validation**: `PreferenceBootstrap` uses `SharedPreferences` behavior from the libxposed remote provider. A real device must confirm the double `getAll()` protocol closes the observed race and that listener callbacks arrive on the expected thread.
+2. **APK / Release build**: not run in this round; required before any merge.
+3. **Callback boundary audit**: still pending for `mods/` anonymous `BroadcastReceiver`, `ContentObserver`, `Runnable` and view listeners.
+4. **ResourceHooks hot path**: `ConcurrentHashMap<String, ...>` for unresolved/wildcard replacements remains; split into `SparseArray` for resolved IDs in a separate commit if device traces justify it.
+5. **PrefMap `contains` operator**: the Kotlin `in`/`contains` call does not normalize keys through `PrefMap.containsKey` in this configuration. All production accessors (`get*`) normalize correctly, so the practical impact is limited to code that uses `contains()` directly.
 
 ---
 
