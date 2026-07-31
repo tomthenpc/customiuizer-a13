@@ -53,10 +53,10 @@ Source-level steady-state cost checklist. Each row states the current evidence; 
 
 | Component | Trigger frequency | Disabled cost | Enabled cost | Resident objects | Periodic work | Key risk |
 |---|---|---|---|---|---|---|
-| `ResourceHooks` | Very high | Zero if not created | One `TypedMethodHook` per hooked `Resources` method; active `SparseArray` bounded at `MAX_ACTIVE=256`; no `Executable` lookup on hit | `fakes`, `unresolved`, `active` | None | Need `ID` miss to prove Context lookup is cached |
+| `ResourceHooks` | Very high | Zero if not created | Fixed `kind` per `Resources` method; no `Executable.getName()`; no method-name string comparison; active `SparseArray` bounded at `MAX_ACTIVE=256`; install bit mask (`14` methods, `0x3fff`) | `fakes`, `unresolved`, `active` | None | ID replacement still needs Module Resources; device log needed |
 | `PreferenceBootstrap` | Low | Zero if `initPrefs` not called | One `OnSharedPreferenceChangeListener`; snapshot published once | `snapshot` `PrefMap` | No polling; event driven | Listener `getAll()` may rethrow on remote error; device log needed |
-| `ModuleHelper` module receivers | Cold | Zero | One active `ReceiverRegistration` per key; stale bounded at `MAX_STALE_RECEIVERS=3` | `moduleReceivers`, `staleModuleReceivers` | None; `stale` retried on next registration | Concurrent identity race under per-`moduleReceivers` lock |
-| `ModuleHelper` owned receivers | Cold | Zero | `WeakReference<owner>` + `OwnedReceiverRegistration` | `ownedReceivers`, `staleOwnedReceivers` | None; cleaned on next dispatch if owner GCed | Same key owner replacement before new register success |
+| `ModuleHelper` module receivers | Cold | Zero | One active `ReceiverRegistration` per key; stale bounded at `MAX_STALE_RECEIVERS=3`; empty stale deque removed by identity | `moduleReceivers`, `staleModuleReceivers` | None; `stale` retried on next registration | Concurrent identity race under per-`moduleReceivers` lock |
+| `ModuleHelper` owned receivers | Cold | Zero | `OwnedReceiverBucket` per key; per-bucket lock; re-check `ownedReceivers.get(key) == bucket` before adding; `WeakReference<owner>` + `OwnedReceiverRegistration` | `ownedReceivers`, `staleOwnedReceivers` | None; cleaned on next dispatch if owner GCed | Detached-bucket race fixed; stale deque identity removal |
 | `FeatureDispatcher` | Process start | Zero if features disabled | One install per enabled `FeatureId` | `FeatureCatalog` singleton | None | Need disabled-feature no-op proof |
 | `StatusBar clock` | Per second | Needs audit | Needs audit | Needs audit | `secondTicker` `Runnable`? | Periodic UI refresh while screen off |
 | `Network speed` | Periodic | Needs audit | Needs audit | Needs audit | `NetworkSpeed` callback | sysfs/network I/O schedule |
@@ -68,6 +68,20 @@ Source-level steady-state cost checklist. Each row states the current evidence; 
 | `Diagnostics` | Error events | Zero if no errors | `CopyOnWriteArraySet` / `Map` | diagnostic ids | None | Need explicit capacity bound |
 
 *Items marked `Needs audit` are not yet measured and are tracked in the remaining-risks list below.*
+
+## P1 extreme-performance closeout
+
+| Item | Status | Evidence | Notes |
+|---|---|---|---|
+| ResourceHooks fixed method kind | COMPLETED | `ResourceHooks.java` uses `int kind`; no `Executable.getName()`; bit-mask install tracking (`installedMask`); `ResourceHooksTest` | OBJECT/DENSITY/ID routing by kind; active hit avoids Context lookup and resource-name parsing |
+| ResourceHooks partial install recovery | COMPLETED | `applyHooks()` `PARTIAL_FAILED` / `INSTALLED` state; `installedMask` CAS per method; `ResourceHooksTest` idempotence + concurrent | Retry only missing bits; no double-hook |
+| Owned receiver detached-bucket race | COMPLETED | `OwnedReceiverBucket`; `synchronized(bucket)`; re-check `ownedReceivers.get(key) == bucket`; identity remove on empty | `ModuleHelperReceiverTest` concurrency test |
+| Stale receiver identity remove | COMPLETED | `drainModuleStale` / `drainOwnedStale` use `stale*.remove(key, deque)` after draining | Prevents leaving empty stale containers |
+| Periodic tasks (clock, network, device info, battery, audio, album art) | PENDING | Not yet audited | `postDelayed` / `Handler` instances need stop-on-screen-off and disabled-zero-start review |
+| High-frequency callback allocations | PENDING | Not yet audited | `Regex`, `String.format`, `StringBuilder`, `ArrayList`, `lambda` in hot paths need pass |
+| Bitmap / large object budgets | PENDING | `AlbumArtPolicy.kt` has `CACHE_BUDGET_FRAMES` | Need in-flight task and View strong-reference audit |
+| Disabled feature zero-cost | VERIFIED_STATIC | `FeatureDispatcher` checks `runtime.prefs` before `installWithContract` | `SystemServerInstaller` / `SystemUiInstaller` / `LauncherInstaller` already gate by process + prefs |
+| Diagnostics bounded | COMPLETED | `DiagnosticRecorder` `MAX_SNAPSHOTS=32`, `MAX_DETAIL_LENGTH=512`, `THROTTLE_MS=60_000` | Already fixed capacity and throttling |
 
 ## Remaining risks
 
