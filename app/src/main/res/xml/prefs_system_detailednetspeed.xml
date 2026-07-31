@@ -81,8 +81,7 @@
 		miuizer:maxValue="130"
 		miuizer:stepValue="5"
 		miuizer:offtext="@string/array_default"
-		miuizer:displayDividerValue="2"
-		miuizer:format="%s" />
+		miuizer:format="%d%%" />
 
 	<tv.withaibuild.customiuizer.prefs.CheckBoxPreferenceEx
 		android:key="pref_key_system_detailednetspeed_secunit"
