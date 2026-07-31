@@ -111,9 +111,10 @@ class PrefMap<K : Any, V : Any> {
         }
     }
 
-    /** Map-style read. */
+    /** Map-style read. Normalizes string keys to the `pref_key_` form. */
     operator fun get(key: K): V? {
-        return state.get()[key]
+        val normalized = if (key is String) normalizeKey(key) as K else key
+        return state.get()[normalized]
     }
 
     /** Map-style write. */
@@ -177,6 +178,9 @@ class PrefMap<K : Any, V : Any> {
             state.get().containsKey(key)
         }
     }
+
+    /** Kotlin `in` operator. Normalizes string keys. */
+    operator fun contains(key: K): Boolean = containsKey(key)
 
     private fun normalizeKey(key: String): String =
         if (key.startsWith("pref_key_")) key else "pref_key_$key"

@@ -235,4 +235,14 @@ class PrefMapTest {
         map.clear()
         assertTrue(map.getStringAsInt("0", -1) == -1)
     }
+
+    @Test
+    fun mapStyleGetAndContainsNormalizeKeys() {
+        map["pref_key_foo"] = "bar"
+        assertEquals("bar", map["foo"])
+        assertEquals("bar", map["pref_key_foo"])
+        assertTrue("foo" in map)
+        assertTrue("pref_key_foo" in map)
+        assertFalse("bar" in map)
+    }
 }
