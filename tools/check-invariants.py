@@ -478,49 +478,135 @@ def check_preference_style_attr(
     if expected is None:
         return []
 
-    pattern = re.compile(
-        r"defStyleAttr\s*:\s*Int\s*=\s*"
-        r"([A-Za-z0-9_.$]+)"
-    )
-    matches = list(pattern.finditer(text))
+    findings: list[Finding] = []
 
-    if not matches:
-        return [
+    # Match the primary @JvmOverloads constructor and the super(...) call
+    # in the class header: class X @JvmOverloads constructor(...) : Y(...)
+    header = re.compile(
+        r"@JvmOverloads\s+constructor\s*\(\s*"
+        r"(?P<params>[\s\S]*?)"
+        r"\)\s*:\s*"
+        r"(?P<super>\w+)\s*\(\s*"
+        r"(?P<super_args>[\s\S]*?)"
+        r"\)"
+    )
+    header_match = header.search(text)
+    if not header_match:
+        findings.append(
             Finding(
                 "preference-style-attr",
                 path,
                 1,
-                "missing defStyleAttr default; "
-                f"expected {expected}",
+                "missing @JvmOverloads constructor(...) : SuperClass(...) header",
             )
-        ]
+        )
+        return findings
 
-    if len(matches) != 1:
-        return [
+    params = header_match.group("params")
+    super_args = header_match.group("super_args")
+
+    # The parameter list must contain a single default for defStyleAttr.
+    default_pattern = re.compile(
+        r"defStyleAttr\s*:\s*Int\s*=\s*([A-Za-z0-9_.$]+)"
+    )
+    all_defaults = list(default_pattern.finditer(text))
+    if not all_defaults:
+        findings.append(
             Finding(
                 "preference-style-attr",
                 path,
-                line_of(text, matches[0].start()),
-                "expected exactly one defStyleAttr default, "
-                f"found {len(matches)}",
+                1,
+                "missing defStyleAttr default declaration",
             )
-        ]
-
-    match = matches[0]
-    actual = match.group(1)
-
-    if actual != expected:
-        return [
+        )
+    elif len(all_defaults) > 1:
+        findings.append(
             Finding(
                 "preference-style-attr",
                 path,
-                line_of(text, match.start()),
-                f"expected defStyleAttr {expected}, "
-                f"got {actual}",
+                line_of(text, all_defaults[0].start()),
+                f"expected exactly one defStyleAttr default, found {len(all_defaults)}",
             )
-        ]
+        )
+    else:
+        match = all_defaults[0]
+        actual = match.group(1)
+        if actual != expected:
+            findings.append(
+                Finding(
+                    "preference-style-attr",
+                    path,
+                    line_of(text, match.start()),
+                    f"expected defStyleAttr {expected}, got {actual}",
+                )
+            )
 
-    return []
+    # Confirm the default is declared in the constructor parameters.
+    param_defaults = list(default_pattern.finditer(params))
+    if not all_defaults:
+        pass  # already reported missing
+    elif len(param_defaults) != 1:
+        if not param_defaults:
+            findings.append(
+                Finding(
+                    "preference-style-attr",
+                    path,
+                    1,
+                    "defStyleAttr default not found in constructor parameters",
+                )
+            )
+        else:
+            findings.append(
+                Finding(
+                    "preference-style-attr",
+                    path,
+                    line_of(text, param_defaults[0].start()),
+                    "duplicate defStyleAttr default in constructor parameters",
+                )
+            )
+
+    # The parent constructor must pass the defStyleAttr parameter as its
+    # third argument. It must not be a hardcoded 0, another constant, or
+    # omitted.
+    super_arg_list = [a.strip() for a in super_args.split(",")]
+    if len(super_arg_list) < 3:
+        findings.append(
+            Finding(
+                "preference-style-attr",
+                path,
+                line_of(text, header_match.start()),
+                "super constructor call has fewer than 3 arguments; defStyleAttr not passed",
+            )
+        )
+    elif super_arg_list[2] != "defStyleAttr":
+        findings.append(
+            Finding(
+                "preference-style-attr",
+                path,
+                line_of(text, header_match.start()),
+                f"super constructor third argument must be 'defStyleAttr', got '{super_arg_list[2]}'",
+            )
+        )
+
+    return findings
+
+
+def check_preference_style_attr_completeness() -> list[Finding]:
+    """Every custom Preference in EXPECTED_DEFSTYLE must exist in the tree."""
+    prefs_dir = SOURCE_ROOT / "tv" / "withaibuild" / "customiuizer" / "prefs"
+    findings = []
+    for filename in EXPECTED_DEFSTYLE:
+        path = prefs_dir / filename
+        if not path.is_file():
+            findings.append(
+                Finding(
+                    "preference-style-attr",
+                    path,
+                    1,
+                    f"expected Preference file {filename} is missing",
+                )
+            )
+    return findings
 
 
 RULES = (
@@ -565,6 +651,7 @@ def main() -> int:
         for rule in RULES:
             findings.extend(rule(path, text))
     findings.extend(check_xposed_scope())
+    findings.extend(check_preference_style_attr_completeness())
 
     if not findings:
         print(f"check-invariants: {len(files)} files, no violations")
