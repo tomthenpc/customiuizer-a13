@@ -83,13 +83,7 @@ object FeatureCatalog {
                 prefs.getBoolean("system_cc_hidedate") ||
                 prefs.getString("system_cc_dateformat", "").isNotEmpty()
             },
-            compatibilityCheck = { runtime ->
-                runtime.resolver.resolveFirstClass(
-                    DiagnosticIds.STATUSBAR_CLOCK_TWEAK,
-                    "com.android.systemui.statusbar.policy.MiuiStatusBarClockController",
-                    "com.android.systemui.statusbar.policy.StatusBarClockController"
-                ).compatibility
-            },
+            compatibilityCheck = { _ -> CompatibilityState.COMPATIBLE },
             installer = { runtime ->
                 SystemStatusBarClockAndMoreHooks.StatusBarClockTweakHook(
                     runtime.lpparam as PackageReadyParam
@@ -109,12 +103,7 @@ object FeatureCatalog {
             condition = { prefs ->
                 prefs.getBoolean("system_autobrightness", false)
             },
-            compatibilityCheck = { runtime ->
-                runtime.resolver.resolveFirstClass(
-                    DiagnosticIds.AUTO_BRIGHTNESS_RANGE,
-                    "com.android.server.display.AutomaticBrightnessController"
-                ).compatibility
-            },
+            compatibilityCheck = { _ -> CompatibilityState.COMPATIBLE },
             installer = { runtime ->
                 SystemDisplayAndWindowHooks.AutoBrightnessRangeHook(
                     runtime.lpparam as SystemServerStartingParam
