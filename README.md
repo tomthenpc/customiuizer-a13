@@ -1,105 +1,107 @@
-# 米客 A13
+# 米客 A13 Kotlin 重构
 
 简体中文 | [English](README_EN.md)
 
 面向 **MIUI 14 / Android 13** 的 CustoMIUIzer Kotlin 重构维护版。
 
-本项目以 [MonwF/customiuizer v23.11.26](https://github.com/MonwF/customiuizer)
-作为 Android 13 功能语义参考，使用独立包名、版本线、签名与现代 libxposed API。
-主体以 Kotlin 完成工程重构，同时保留经过审计的稳定 Java/JVM 边界。它不是上游官方版本，
-也不支持 Android 14 及更高版本或其他 MIUI 大版本。面向 LSPosed 用户的安装与下载说明位于
-[Xposed-Modules-Repo/tv.withaibuild.customiuizer.r13](https://github.com/Xposed-Modules-Repo/tv.withaibuild.customiuizer.r13)。
+本项目以 MonwF/customiuizer v23.11.26 作为 Android 13 功能语义参考，使用独立包名、版本线、签名和现代 libxposed API。项目不是上游官方版本，也不支持 Android 14 及更高版本。
 
-## r13.8.5（本地签名候选版本）
+## 当前版本
 
-`r13.8.5` 是 A13 分支整合与工程文档统一后的本地签名候选版本：
+| 项目           | 值                                          |
+| ------------ | ------------------------------------------ |
+| 版本           | `r13.8.6`                                  |
+| versionCode  | `131`                                      |
+| 系统           | MIUI 14 / Android 13（API 33）               |
+| ABI          | `arm64-v8a`                                |
+| 应用 ID        | `tv.withaibuild.customiuizer.r13`          |
+| libxposed    | `minApiVersion=101`、`targetApiVersion=102` |
+| staticScope  | `false`                                    |
+| APK          | `CustoMIUIzer-A13-r13.8.6.apk`             |
+| APK SHA-256  | `ABF31CE311253AE863F7B2CEB87BF95140EE706EFF39ADA219033552B6FA7287`                           |
+| 签名证书 SHA-256 | `C0EFF2DC4E662717195490DA78B12A984C6F2E6BD38ACF4EDAD14D53E3D22E70`                          |
 
-- 整合 `devin/r13.7.1-maintenance-foundation` 至 `devin/r13.8-scope-and-stability`、`fix/r13.8.3-ui-text-inheritance-and-about-wrap` 等分支的有效提交；
-- 清理版本号、发布清单、构建文档和 CI，将活动版本统一到 `r13.8.5` / `versionCode 130`；
-- 修复 `release-manifest.json` 中 `compileSdk` 与 Gradle 配置不一致、过期 `r13.7.1` draft 等问题；
-- CI 基线审计改用可解析的固定 SHA，支持 `release/**` 分支触发；
-- 仍为**本地签名候选 APK**，需实机和 LSPosed 日志验证，不创建 tag 或 GitHub Release。
+面向 LSPosed 用户的下载页面位于：
 
-## r13.7.0
+`Xposed-Modules-Repo/tv.withaibuild.customiuizer.r13` 
 
-`r13.7.0` 是 A13 工程追平与稳定性治理后的首个正式版本：
+## r13.8.6 更新重点
 
-- 将包命名空间统一为 `tv.withaibuild.customiuizer`，保持应用 ID `tv.withaibuild.customiuizer.r13`；
-- 完成 System、SystemUI、Launcher 大文件拆分和 Kotlin 迁移，并用迁移审计固定 Hook 注册顺序、参数与调用次数；
-- 为异步 Receiver、Observer、Listener、Handler 和 Runnable 增加模块异常边界与所有权治理；
-- 修复 RemotePreferences 初始化、监听注册、弱引用清理和 additional instance field 生命周期问题；
-- 优化设备信息监控、应用图标加载、设置搜索、AudioVisualizer 与锁屏专辑图的队列、缓存和失效边界；
-- 保持 libxposed API 101 最低运行基线，并以 API 102 元数据发布。
+* 将 A13 最新维护、Catalog、兼容诊断、作用域与 UI 修复统一合并到 `main`；
+* 完善功能目录、进程目标、重启要求和 Hook 安装结果记录；
+* 加强 Hook 目标解析、兼容回退、安装证据和异常诊断；
+* 优化 Receiver、Observer、Step Counter、设备监控和锁屏专辑图的生命周期；
+* 减少状态栏、通知、网速、电池、时钟和 Launcher 高频路径中的临时对象与重复计算；
+* 状态栏网速保留系统字体家族，并支持双排网速行距调整；
+* 修复设置文本样式继承与 About 页面文字换行；
+* 统一 README、CHANGELOG、版本元数据和发布流程。
 
-完整变更见 [CHANGELOG.md](CHANGELOG.md)，英文版见 [CHANGELOG_EN.md](CHANGELOG_EN.md)。
+完整变化见 [CHANGELOG.md](CHANGELOG.md)。
 
 ## 兼容范围
 
-| 项目 | 值 |
-|---|---|
-| 系统 | MIUI 14 / Android 13（API 33） |
-| 主要设备 | Redmi Note 11T Pro / Pro+（`xaga`） |
-| 参考 ROM | `V14.0.10.0.TLOINXM`、`V14.0.7.0.TLOCNXM` |
-| ABI | `arm64-v8a` |
-| 应用 ID | `tv.withaibuild.customiuizer.r13` |
-| libxposed | `minApiVersion=101`、`targetApiVersion=102`、`staticScope=false` |
-| 建议框架 | LSPosed 2.x / Vector 2.x |
+| 项目          | 值                                                 |
+| ----------- | ------------------------------------------------- |
+| 系统          | MIUI 14 / Android 13                              |
+| 主要设备        | Redmi Note 11T Pro / Pro+（`xaga`）                 |
+| 参考 ROM      | `V14.0.10.0.TLOINXM`、`V14.0.7.0.TLOCNXM`          |
+| 框架          | 实现 libxposed API 101 或 API 102 的 LSPosed / Vector |
+| Android 14+ | 不支持                                               |
 
-其他 MIUI 14 / Android 13 版本可能可用，但不同 ROM 的 SystemUI、Launcher 和系统应用签名可能存在差异。Android 14 及更高版本不在本仓库支持范围内。
+不同 ROM 的 SystemUI、Launcher 和系统应用实现可能存在差异，部分功能需要针对具体 ROM 适配。
 
-## 主要功能
+## 功能范围
 
-- 状态栏、电池、信号、网速、时钟、日期和温度；
-- 控制中心、音量、亮度、通知和系统动画；
-- 锁屏、充电信息、媒体界面、快捷操作和专辑图；
-- 桌面、最近任务、文件夹、图标、Dock、抽屉和桌面手势；
-- 导航栏、按键、自定义动作、电源菜单、浮窗和 Tasker；
-- 应用权限、安装器、分享、隐藏应用、应用锁及其他 MIUI 行为。
-
-具体功能是否生效取决于设备、MIUI 版本、系统应用版本和启用的作用域。
+* 状态栏、电池、信号、网速、时钟、日期和温度；
+* 控制中心、音量、亮度、通知和系统动画；
+* 锁屏、充电信息、媒体界面、快捷操作和专辑图；
+* Launcher、最近任务、文件夹、图标、Dock 和桌面手势；
+* 导航栏、按键、自定义动作、电源菜单、浮窗和 Tasker；
+* 应用权限、安装器、分享、隐藏应用和应用锁行为。
 
 ## 安装
 
-1. 从 [LSPosed 发布仓库](https://github.com/Xposed-Modules-Repo/tv.withaibuild.customiuizer.r13/releases) 下载正式 APK。
-2. 安装 APK，在 LSPosed / Vector 中启用建议作用域。
-3. 打开模块设置一次，并完整重启设备。
-4. 按功能组逐项启用和验证；遇到异常时先关闭对应功能，再导出 LSPosed 日志。
+1. 从 LSPosed 发布仓库下载正式 APK；
+2. 安装 APK；
+3. 在 LSPosed / Vector 中启用模块并确认建议作用域；
+4. 打开一次模块设置；
+5. 完整重启设备。
 
-早期使用不同签名的 A13 构建不能直接覆盖安装。若系统提示签名不一致，请先备份设置，再卸载旧版本。
+使用不同签名的早期构建不能直接覆盖安装。遇到签名不一致时，请先备份设置，再卸载旧版。
 
 ## 构建
 
-需要 JDK 17 和 Android SDK API 36。项目未固定 `buildToolsVersion`，由当前 AGP 与本机 SDK 选择兼容的 Build Tools。
+需要 JDK 17 和 Android SDK API 36。
 
 ```bash
-./gradlew :app:assembleDebug
 ./gradlew :app:assembleRelease
 ```
 
-Release / Develop 构建必须使用仓库外的 `../keystore.properties` 指向 A13 正式签名。缺失正式签名时，打包任务会明确失败，不会回退到 Debug 证书。
+Release 构建必须使用仓库外的正式签名配置。不得提交 keystore、密码、令牌或本地构建文件。
 
-推荐的完整本地门禁：
+## 验证说明
 
-```bash
-python tools/check-invariants.py
-python tools/audit-system-migration.py --baseline-ref 8df0c3ded351c4cf2a0401a0a470d00103c2ad76
-./gradlew clean :app:test :app:lintDebug :app:lintRelease :app:assembleDebug :app:assembleRelease
-./gradlew :app:lintVitalRelease --rerun-tasks
-```
+`r13.8.6` 已完成正式 Release APK 构建及以下基础检查：
 
-Release 构建启用 R8 与资源压缩。正式发布还会校验 zipalign、v2 签名、证书、APK 元数据、Xposed 元数据、Legacy Xposed API 和最终 SHA-256。
+* APK v2 签名；
+* zipalign；
+* applicationId、versionCode、versionName；
+* libxposed module.prop、scope.list 和 java_init.list；
+* APK SHA-256 与签名证书校验。
 
-## 工程边界
-
-- A13 是独立运行基线；A14 仅用于参考工程方法，不能提供 A13 Hook target 或 ROM 事实。
-- 稳定的 Java/JVM 边界继续保留，Kotlin 覆盖率不是发布条件。
-- 构建、Lint、R8 和签名属于静态验证，不能代替设备与 ROM 行为验证。
-- 当前版本不启用 Legacy Xposed API、Hot Reload、hook ID 或原子 replacement。
+本次发布未执行完整单元测试、Lint、工程 Audit 或全功能实机回归。构建与 APK 校验不能证明所有功能在全部 MIUI 14 ROM 上均可用。
 
 ## 反馈
 
-请在本仓库提交 issue，并附上模块版本、设备与 ROM、系统应用版本、LSPosed/Vector 版本、实际作用域、复现步骤和完整日志。包名出现在系统日志中不等于模块因果问题，需要同时提供 Hook 失败、模块栈或崩溃上下文。
+提交问题时请提供：
+
+* 模块版本与 APK 来源；
+* 设备和 ROM 版本；
+* SystemUI、Launcher 等系统应用版本；
+* LSPosed / Vector 版本；
+* 实际作用域；
+* 复现步骤和完整日志。
 
 ## 许可证与致谢
 
-项目基于 [Mikanoshi](https://github.com/Mikanoshi) 与 [MonwF](https://github.com/MonwF) 的 CustoMIUIzer，按 [GPL-3.0](LICENSE) 许可证发布。
+项目派生自 Mikanoshi/CustoMIUIzer，并参考 MonwF/customiuizer 的 Android 13 工作，依据 GPL-3.0 分发。

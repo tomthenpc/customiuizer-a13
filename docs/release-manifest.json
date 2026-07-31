@@ -20,6 +20,28 @@
   },
   "releases": [
     {
+      "versionName": "r13.8.6",
+      "versionCode": 131,
+      "sourceCommit": "442cc58",
+      "buildCommit": "442cc58",
+      "dataSource": "docs/releases/r13.8.6.md",
+      "verifiedAtBuild": true,
+      "lsposedTag": "131-r13.8.6",
+      "apkName": "CustoMIUIzer-A13-r13.8.6.apk",
+      "apkSizeBytes": 2836582,
+      "apkSha256": "ABF31CE311253AE863F7B2CEB87BF95140EE706EFF39ADA219033552B6FA7287",
+      "androidVersion": "Android 13 / MIUI 14",
+      "verification": {
+        "assembleRelease": "PASS",
+        "zipalign": "PASS",
+        "apkSignatureSchemeV2": "PASS",
+        "apkMetadata": "PASS",
+        "xposedMetadata": "PASS"
+      },
+      "deviceStatus": "待实机验证",
+      "note": "A13 最新维护分支合并后的正式版本。"
+    },
+    {
       "versionName": "r13.7.0",
       "versionCode": 124,
       "sourceCommit": "4b386cd",

@@ -1,5 +1,29 @@
 # Changelog
 
+This file records user-visible changes, compatibility boundaries and verification status for public releases.
+
+## r13.8.6
+
+* Merged the latest A13 maintenance, Catalog, compatibility diagnostics, scope and UI fixes into `main`;
+* Improved the feature catalog, process targets, restart requirements, hook target resolution and installation result diagnostics;
+* Strengthened receiver, observer, step counter, device monitor and lock-screen album art lifecycles;
+* Reduced repeated allocations in hot paths for the status bar, notifications, network speed, battery, clock and Launcher;
+* Preserved the system typeface family for status-bar network speed and added dual-row network speed line spacing adjustment;
+* Fixed settings text style inheritance and About page text wrapping;
+* Unified version metadata, README, CHANGELOG and release process.
+
+### APK
+
+* File: `CustoMIUIzer-A13-r13.8.6.apk`
+* Size: `2836582 bytes`
+* SHA-256: `ABF31CE311253AE863F7B2CEB87BF95140EE706EFF39ADA219033552B6FA7287`
+* Signing certificate SHA-256: `C0EFF2DC4E662717195490DA78B12A984C6F2E6BD38ACF4EDAD14D53E3D22E70`
+* versionCode / versionName: `131 / r13.8.6`
+
+### Verification notes
+
+This release completed APK build, signature, zipalign, package information and Xposed metadata basic checks; the full test suite and full-device functional regression were not executed.
+
 ## r13.8.5 (A13 branch consolidation and locally-signed candidate)
 
 ### Branch consolidation
