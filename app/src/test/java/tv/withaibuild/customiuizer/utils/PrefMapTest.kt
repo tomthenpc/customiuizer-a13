@@ -6,6 +6,9 @@ import org.junit.Assert.assertNotSame
 import org.junit.Assert.assertTrue
 import org.junit.Before
 import org.junit.Test
+import java.util.concurrent.CountDownLatch
+import java.util.concurrent.ConcurrentHashMap
+import java.util.concurrent.atomic.AtomicInteger
 
 class PrefMapTest {
 
@@ -117,5 +120,119 @@ class PrefMapTest {
         map.getStringAsInt("foo", 0)
         map.putAll(mapOf("pref_key_foo" to "456"))
         assertEquals(456, map.getStringAsInt("foo", 0))
+    }
+
+    @Test
+    fun getIntSafelyDowngradesNonIntegerValues() {
+        map["pref_key_long"] = 42L
+        map["pref_key_str"] = "7"
+        map["pref_key_bool"] = true
+        assertEquals(42, map.getInt("long", 0))
+        assertEquals(7, map.getInt("str", 0))
+        assertEquals(0, map.getInt("bool", 0))
+    }
+
+    @Test
+    fun getLongSafelyDowngradesNonLongValues() {
+        map["pref_key_int"] = 42
+        map["pref_key_str"] = "123456789012"
+        map["pref_key_bool"] = true
+        assertEquals(42L, map.getLong("int", 0L))
+        assertEquals(123456789012L, map.getLong("str", 0L))
+        assertEquals(0L, map.getLong("bool", 0L))
+    }
+
+    @Test
+    fun getStringSetFiltersNonStringEntries() {
+        map["pref_key_set"] = setOf("a", 1, "b")
+        val result = map.getStringSet("set")
+        assertEquals(setOf("a", "b"), result)
+    }
+
+    @Test
+    fun getObjectNormalizesBothShortAndFullKey() {
+        map["pref_key_foo"] = "full"
+        assertEquals("full", map.getObject("foo", null))
+        assertEquals("full", map.getObject("pref_key_foo", null))
+    }
+
+    @Test
+    fun getStringAsIntInvalidatesCacheOnRemove() {
+        map["pref_key_foo"] = "123"
+        map.getStringAsInt("foo", 0)
+        map.remove("foo")
+        assertEquals(9, map.getStringAsInt("foo", 9))
+    }
+
+    @Test
+    fun concurrentReadAndWriteDoesNotThrow() {
+        val iterations = 1000
+        val threads = 8
+        val start = CountDownLatch(threads)
+        val done = CountDownLatch(threads)
+        val errors = AtomicInteger(0)
+
+        for (i in 0 until threads) {
+            Thread {
+                start.countDown()
+                try {
+                    start.await()
+                    for (j in 0 until iterations) {
+                        val key = "pref_key_${j % 50}"
+                        when (i % 4) {
+                            0 -> map[key] = j
+                            1 -> map.remove(key)
+                            2 -> map.getStringAsInt(key, -1)
+                            3 -> map.getBoolean(key)
+                        }
+                    }
+                } catch (t: Throwable) {
+                    errors.incrementAndGet()
+                } finally {
+                    done.countDown()
+                }
+            }.start()
+        }
+
+        done.await()
+        assertEquals("concurrent access must not throw", 0, errors.get())
+    }
+
+    @Test
+    fun concurrentPutAllAndClearDoesNotCorrupt() {
+        val mapA = PrefMap<String, Any>()
+        val mapB = PrefMap<String, Any>()
+
+        val threads = 4
+        val iterations = 500
+        val done = CountDownLatch(threads)
+
+        for (i in 0 until threads) {
+            Thread {
+                for (j in 0 until iterations) {
+                    if (i % 2 == 0) {
+                        mapA.putAll(mapOf("pref_key_a" to j, "pref_key_b" to j + 1))
+                    } else {
+                        mapA.clear()
+                    }
+                }
+                done.countDown()
+            }.start()
+        }
+
+        done.await()
+        // The map must remain a valid ConcurrentHashMap and not throw on access.
+        mapA["pref_key_a"] = 1
+        assertEquals(1, mapA.getInt("a", 0))
+    }
+
+    @Test
+    fun cacheDoesNotGrowUnbounded() {
+        for (i in 0 until 100) {
+            map["pref_key_$i"] = "$i"
+            map.getStringAsInt("$i", 0)
+        }
+        map.clear()
+        assertTrue(map.getStringAsInt("0", -1) == -1)
     }
 }

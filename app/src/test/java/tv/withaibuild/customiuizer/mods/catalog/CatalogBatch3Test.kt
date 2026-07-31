@@ -31,7 +31,7 @@ class CatalogBatch3Test {
         XposedHelpers.moduleInst = FakeXposedInterface.create()
     }
 
-    private fun serverRuntime(prefs: PrefMap<String, Any?>): FeatureRuntime {
+    private fun serverRuntime(prefs: PrefMap<String, Any>): FeatureRuntime {
         @Suppress("UNCHECKED_CAST")
         MainModule.mPrefs = prefs as PrefMap<String, Any>
         val classLoader = this.javaClass.classLoader!!
@@ -39,7 +39,7 @@ class CatalogBatch3Test {
         return FeatureDispatcher.createRuntime("android", lpparam, classLoader, prefs)
     }
 
-    private fun systemuiRuntime(prefs: PrefMap<String, Any?>): FeatureRuntime {
+    private fun systemuiRuntime(prefs: PrefMap<String, Any>): FeatureRuntime {
         @Suppress("UNCHECKED_CAST")
         MainModule.mPrefs = prefs as PrefMap<String, Any>
         val classLoader = this.javaClass.classLoader!!
@@ -48,7 +48,7 @@ class CatalogBatch3Test {
     }
 
     private fun launcherRuntime(
-        prefs: PrefMap<String, Any?>,
+        prefs: PrefMap<String, Any>,
         packageName: String = "com.miui.home"
     ): FeatureRuntime {
         @Suppress("UNCHECKED_CAST")
@@ -70,7 +70,7 @@ class CatalogBatch3Test {
 
     @Test
     fun noLightUpOnCharge_installed() {
-        val prefs = PrefMap<String, Any?>()
+        val prefs = PrefMap<String, Any>()
         prefs["pref_key_system_nolightuponcharges"] = "2"
         val server = serverRuntime(prefs)
 
@@ -84,7 +84,7 @@ class CatalogBatch3Test {
 
     @Test
     fun allRotations_installed() {
-        val prefs = PrefMap<String, Any?>()
+        val prefs = PrefMap<String, Any>()
         prefs["pref_key_system_allrotations2"] = "2"
         val server = serverRuntime(prefs)
 
@@ -98,7 +98,7 @@ class CatalogBatch3Test {
 
     @Test
     fun noNetworkSpeedSeparator_installed() {
-        val prefs = PrefMap<String, Any?>()
+        val prefs = PrefMap<String, Any>()
         prefs["pref_key_system_nonetspeedseparator"] = true
         val systemui = systemuiRuntime(prefs)
 
@@ -112,7 +112,7 @@ class CatalogBatch3Test {
 
     @Test
     fun hideIconsClock_installed() {
-        val prefs = PrefMap<String, Any?>()
+        val prefs = PrefMap<String, Any>()
         prefs["pref_key_system_statusbaricons_clock"] = true
         val systemui = systemuiRuntime(prefs)
 
@@ -126,7 +126,7 @@ class CatalogBatch3Test {
 
     @Test
     fun noUnlockAnimation_installed() {
-        val prefs = PrefMap<String, Any?>()
+        val prefs = PrefMap<String, Any>()
         prefs["pref_key_launcher_nounlockanim"] = true
         val launcher = launcherRuntime(prefs)
 
@@ -140,7 +140,7 @@ class CatalogBatch3Test {
 
     @Test
     fun hideIconsClock_incompatibleWithSystemClassLoader() {
-        val prefs = PrefMap<String, Any?>()
+        val prefs = PrefMap<String, Any>()
         prefs["pref_key_system_statusbaricons_clock"] = true
 
         @Suppress("UNCHECKED_CAST")

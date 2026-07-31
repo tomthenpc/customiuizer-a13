@@ -33,7 +33,7 @@ class CatalogBatch2Test {
         XposedHelpers.moduleInst = FakeXposedInterface.create()
     }
 
-    private fun serverRuntime(prefs: PrefMap<String, Any?>): FeatureRuntime {
+    private fun serverRuntime(prefs: PrefMap<String, Any>): FeatureRuntime {
         @Suppress("UNCHECKED_CAST")
         MainModule.mPrefs = prefs as PrefMap<String, Any>
         val classLoader = this.javaClass.classLoader!!
@@ -41,7 +41,7 @@ class CatalogBatch2Test {
         return FeatureDispatcher.createRuntime("android", lpparam, classLoader, prefs)
     }
 
-    private fun systemuiRuntime(prefs: PrefMap<String, Any?>): FeatureRuntime {
+    private fun systemuiRuntime(prefs: PrefMap<String, Any>): FeatureRuntime {
         @Suppress("UNCHECKED_CAST")
         MainModule.mPrefs = prefs as PrefMap<String, Any>
         val classLoader = this.javaClass.classLoader!!
@@ -49,7 +49,7 @@ class CatalogBatch2Test {
         return FeatureDispatcher.createRuntime("com.android.systemui", lpparam, classLoader, prefs)
     }
 
-    private fun launcherRuntime(prefs: PrefMap<String, Any?>): FeatureRuntime {
+    private fun launcherRuntime(prefs: PrefMap<String, Any>): FeatureRuntime {
         @Suppress("UNCHECKED_CAST")
         MainModule.mPrefs = prefs as PrefMap<String, Any>
         val classLoader = this.javaClass.classLoader!!
@@ -69,7 +69,7 @@ class CatalogBatch2Test {
 
     @Test
     fun hideProximityWarning_installed() {
-        val prefs = PrefMap<String, Any?>()
+        val prefs = PrefMap<String, Any>()
         prefs["pref_key_system_hideproxywarn"] = true
         val server = serverRuntime(prefs)
 
@@ -83,7 +83,7 @@ class CatalogBatch2Test {
 
     @Test
     fun clearAllTasks_installed() {
-        val prefs = PrefMap<String, Any?>()
+        val prefs = PrefMap<String, Any>()
         prefs["pref_key_system_clearalltasks"] = true
         val server = serverRuntime(prefs)
 
@@ -97,7 +97,7 @@ class CatalogBatch2Test {
 
     @Test
     fun hideDismissView_installed() {
-        val prefs = PrefMap<String, Any?>()
+        val prefs = PrefMap<String, Any>()
         prefs["pref_key_system_removedismiss"] = true
         val systemui = systemuiRuntime(prefs)
 
@@ -111,7 +111,7 @@ class CatalogBatch2Test {
 
     @Test
     fun hideLockScreenHint_installed() {
-        val prefs = PrefMap<String, Any?>()
+        val prefs = PrefMap<String, Any>()
         prefs["pref_key_system_hidelshint"] = true
         val systemui = systemuiRuntime(prefs)
 
@@ -125,7 +125,7 @@ class CatalogBatch2Test {
 
     @Test
     fun folderColumns_installed() {
-        val prefs = PrefMap<String, Any?>()
+        val prefs = PrefMap<String, Any>()
         prefs["pref_key_launcher_folder_cols"] = 4
         val launcher = launcherRuntime(prefs)
 
@@ -139,7 +139,7 @@ class CatalogBatch2Test {
 
     @Test
     fun titleTopMargin_installed() {
-        val prefs = PrefMap<String, Any?>()
+        val prefs = PrefMap<String, Any>()
         prefs["pref_key_launcher_titletopmargin"] = 20
         val launcher = launcherRuntime(prefs)
 
@@ -153,7 +153,7 @@ class CatalogBatch2Test {
 
     @Test
     fun folderColumns_incompatibleWithSystemClassLoader() {
-        val prefs = PrefMap<String, Any?>()
+        val prefs = PrefMap<String, Any>()
         prefs["pref_key_launcher_folder_cols"] = 4
 
         @Suppress("UNCHECKED_CAST")

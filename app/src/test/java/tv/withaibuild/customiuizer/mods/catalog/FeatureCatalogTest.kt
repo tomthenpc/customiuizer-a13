@@ -33,7 +33,7 @@ class FeatureCatalogTest {
 
     private fun runtime(
         processName: String,
-        prefs: PrefMap<String, Any?> = PrefMap()
+        prefs: PrefMap<String, Any> = PrefMap()
     ): FeatureRuntime {
         @Suppress("UNCHECKED_CAST")
         MainModule.mPrefs = prefs as PrefMap<String, Any>
@@ -87,7 +87,7 @@ class FeatureCatalogTest {
 
     @Test
     fun primaryCompatibilityIsRecordedAndInstalled() {
-        val prefs = PrefMap<String, Any?>()
+        val prefs = PrefMap<String, Any>()
         prefs["pref_key_system_batteryindicator"] = true
         val systemui = runtime("com.android.systemui", prefs)
 
@@ -102,7 +102,7 @@ class FeatureCatalogTest {
 
     @Test
     fun primaryCompatibilityRecordsInstalledForStatusBarClockTweak() {
-        val prefs = PrefMap<String, Any?>()
+        val prefs = PrefMap<String, Any>()
         prefs["pref_key_system_statusbar_clocktweak"] = true
         prefs["pref_key_system_cc_hidedate"] = true
         val systemui = runtime("com.android.systemui", prefs)
@@ -117,7 +117,7 @@ class FeatureCatalogTest {
 
     @Test
     fun incompatibleSkipsInstallerAndRecordsFailed() {
-        val prefs = PrefMap<String, Any?>()
+        val prefs = PrefMap<String, Any>()
         prefs["pref_key_system_autobrightness"] = true
 
         @Suppress("UNCHECKED_CAST")
@@ -135,7 +135,7 @@ class FeatureCatalogTest {
 
     @Test
     fun installerExceptionIsRecordedAsFailedAndDoesNotEscape() {
-        val prefs = PrefMap<String, Any?>()
+        val prefs = PrefMap<String, Any>()
         prefs["pref_key_system_vibration_amp"] = true
 
         val throwingLpparam = Proxy.newProxyInstance(
@@ -163,7 +163,7 @@ class FeatureCatalogTest {
 
     @Test
     fun failedFeatureDoesNotBlockSubsequentInstallByIdCalls() {
-        val prefs = PrefMap<String, Any?>()
+        val prefs = PrefMap<String, Any>()
         prefs["pref_key_system_vibration_amp"] = true
 
         // First: a failing runtime for muffledVibration.
@@ -192,7 +192,7 @@ class FeatureCatalogTest {
 
     @Test
     fun launcherCanaryAreCompatibleAndInstalled() {
-        val prefs = PrefMap<String, Any?>()
+        val prefs = PrefMap<String, Any>()
         prefs["pref_key_launcher_noclockhide"] = true
         prefs["pref_key_launcher_nowidgetonly"] = true
         val launcher = runtime("com.miui.home", prefs)

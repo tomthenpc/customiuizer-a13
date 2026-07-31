@@ -19,7 +19,7 @@ class FeatureRuntime(
     val processName: String,
     val lpparam: Any,
     val classLoader: ClassLoader,
-    val prefs: PrefMap<String, Any?>
+    val prefs: PrefMap<String, Any>
 ) {
     private val resolverLazy = lazy(LazyThreadSafetyMode.NONE) { HookTargetResolver(classLoader) }
     val resolver: HookTargetResolver by resolverLazy

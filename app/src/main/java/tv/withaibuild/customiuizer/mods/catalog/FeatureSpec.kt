@@ -41,7 +41,7 @@ data class FeatureSpec(
     val diagnosticId: String,
     val processTarget: ProcessTarget,
     val preferenceKeys: Set<String>,
-    val condition: (PrefMap<String, Any?>) -> Boolean,
+    val condition: (PrefMap<String, Any>) -> Boolean,
     val compatibilityCheck: (FeatureRuntime) -> CompatibilityState,
     val installer: (FeatureRuntime) -> InstallOutcome,
     val activationRestartTarget: RestartTarget,

@@ -30,7 +30,7 @@ class StatusBarClockTweakClosedLoopTest {
         XposedHelpers.moduleInst = FakeXposedInterface.create()
     }
 
-    private fun runtime(prefs: PrefMap<String, Any?>): FeatureRuntime {
+    private fun runtime(prefs: PrefMap<String, Any>): FeatureRuntime {
         @Suppress("UNCHECKED_CAST")
         MainModule.mPrefs = prefs as PrefMap<String, Any>
         val classLoader = this.javaClass.classLoader!!
@@ -51,7 +51,7 @@ class StatusBarClockTweakClosedLoopTest {
 
     @Test
     fun fullLoop_primaryTargetsFoundAndInstalled() {
-        val prefs = PrefMap<String, Any?>()
+        val prefs = PrefMap<String, Any>()
         prefs["pref_key_system_statusbar_clocktweak"] = true
         prefs["pref_key_system_cc_hidedate"] = true
 
@@ -70,7 +70,7 @@ class StatusBarClockTweakClosedLoopTest {
 
     @Test
     fun fullLoop_disabledCreatesNoRuntimeState() {
-        val prefs = PrefMap<String, Any?>()
+        val prefs = PrefMap<String, Any>()
 
         val systemui = runtime(prefs)
 
@@ -82,7 +82,7 @@ class StatusBarClockTweakClosedLoopTest {
 
     @Test
     fun fullLoop_incompatibleSkipsInstaller() {
-        val prefs = PrefMap<String, Any?>()
+        val prefs = PrefMap<String, Any>()
         prefs["pref_key_system_statusbar_clocktweak"] = true
 
         val classLoader = ClassLoader.getSystemClassLoader().parent

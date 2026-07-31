@@ -32,7 +32,7 @@ class CatalogBatch1Test {
         XposedHelpers.moduleInst = FakeXposedInterface.create()
     }
 
-    private fun serverRuntime(prefs: PrefMap<String, Any?>): FeatureRuntime {
+    private fun serverRuntime(prefs: PrefMap<String, Any>): FeatureRuntime {
         @Suppress("UNCHECKED_CAST")
         MainModule.mPrefs = prefs as PrefMap<String, Any>
         val classLoader = this.javaClass.classLoader!!
@@ -40,7 +40,7 @@ class CatalogBatch1Test {
         return FeatureDispatcher.createRuntime("android", lpparam, classLoader, prefs)
     }
 
-    private fun systemuiRuntime(prefs: PrefMap<String, Any?>): FeatureRuntime {
+    private fun systemuiRuntime(prefs: PrefMap<String, Any>): FeatureRuntime {
         @Suppress("UNCHECKED_CAST")
         MainModule.mPrefs = prefs as PrefMap<String, Any>
         val classLoader = this.javaClass.classLoader!!
@@ -49,7 +49,7 @@ class CatalogBatch1Test {
     }
 
     private fun launcherRuntime(
-        prefs: PrefMap<String, Any?>,
+        prefs: PrefMap<String, Any>,
         packageName: String = "com.miui.home"
     ): FeatureRuntime {
         @Suppress("UNCHECKED_CAST")
@@ -71,7 +71,7 @@ class CatalogBatch1Test {
 
     @Test
     fun screenDimTime_installed() {
-        val prefs = PrefMap<String, Any?>()
+        val prefs = PrefMap<String, Any>()
         prefs["pref_key_system_dimtime"] = 15000
         val server = serverRuntime(prefs)
 
@@ -85,7 +85,7 @@ class CatalogBatch1Test {
 
     @Test
     fun firstVolumePress_installed() {
-        val prefs = PrefMap<String, Any?>()
+        val prefs = PrefMap<String, Any>()
         prefs["pref_key_system_firstpress"] = true
         val server = serverRuntime(prefs)
 
@@ -99,7 +99,7 @@ class CatalogBatch1Test {
 
     @Test
     fun networkIndicatorWifi_installed() {
-        val prefs = PrefMap<String, Any?>()
+        val prefs = PrefMap<String, Any>()
         prefs["pref_key_system_networkindicator_wifi"] = true
         val systemui = systemuiRuntime(prefs)
 
@@ -113,7 +113,7 @@ class CatalogBatch1Test {
 
     @Test
     fun muteVisibleNotifications_installed() {
-        val prefs = PrefMap<String, Any?>()
+        val prefs = PrefMap<String, Any>()
         prefs["pref_key_system_mutevisiblenotif"] = true
         val systemui = systemuiRuntime(prefs)
 
@@ -127,7 +127,7 @@ class CatalogBatch1Test {
 
     @Test
     fun hideLauncherTitles_installed() {
-        val prefs = PrefMap<String, Any?>()
+        val prefs = PrefMap<String, Any>()
         prefs["pref_key_launcher_hidetitles"] = true
         val launcher = launcherRuntime(prefs)
 
@@ -141,7 +141,7 @@ class CatalogBatch1Test {
 
     @Test
     fun fixAppInfoLaunch_primaryInstalled() {
-        val prefs = PrefMap<String, Any?>()
+        val prefs = PrefMap<String, Any>()
         prefs["pref_key_launcher_fixlaunch"] = true
         val launcher = launcherRuntime(prefs, packageName = "com.miui.home")
 
@@ -156,7 +156,7 @@ class CatalogBatch1Test {
 
     @Test
     fun fixAppInfoLaunch_fallbackInstalled() {
-        val prefs = PrefMap<String, Any?>()
+        val prefs = PrefMap<String, Any>()
         prefs["pref_key_launcher_fixlaunch"] = true
         val launcher = launcherRuntime(prefs, packageName = "com.mi.android.globallauncher")
 
@@ -171,7 +171,7 @@ class CatalogBatch1Test {
 
     @Test
     fun screenDimTime_incompatibleWithSystemClassLoader() {
-        val prefs = PrefMap<String, Any?>()
+        val prefs = PrefMap<String, Any>()
         prefs["pref_key_system_dimtime"] = 15000
 
         @Suppress("UNCHECKED_CAST")
@@ -190,7 +190,7 @@ class CatalogBatch1Test {
 
     @Test
     fun installerExceptionIsRecordedAsFailed() {
-        val prefs = PrefMap<String, Any?>()
+        val prefs = PrefMap<String, Any>()
         prefs["pref_key_launcher_hidetitles"] = true
 
         val throwingLpparam = Proxy.newProxyInstance(

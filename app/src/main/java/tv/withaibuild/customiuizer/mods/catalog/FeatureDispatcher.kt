@@ -41,7 +41,7 @@ object FeatureDispatcher {
         processName: String,
         lpparam: Any,
         classLoader: ClassLoader,
-        prefs: PrefMap<String, Any?>
+        prefs: PrefMap<String, Any>
     ): FeatureRuntime = FeatureRuntime(processName, lpparam, classLoader, prefs)
 
     @JvmStatic
