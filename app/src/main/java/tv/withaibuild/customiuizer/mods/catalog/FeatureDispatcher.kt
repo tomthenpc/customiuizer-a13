@@ -49,7 +49,12 @@ object FeatureDispatcher {
     fun installById(featureId: String, runtime: FeatureRuntime): Boolean {
         val feature = FeatureId.fromString(featureId)
         if (feature == null) {
-            XposedHelpers.log("FeatureDispatcher: unknown feature id: " + featureId)
+            DiagnosticRecorder.record(
+                id = DiagnosticIds.UNKNOWN_FEATURE_ID,
+                installation = InstallOutcome.FAILED,
+                reasonCode = ReasonCode.UNKNOWN,
+                detail = featureId
+            )
             return false
         }
         return install(feature, runtime)

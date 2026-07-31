@@ -22,6 +22,9 @@ object DiagnosticIds {
     /** Generic resolver diagnostic, throttled independently of feature IDs. */
     const val HOOK_TARGET_RESOLVER = "HOOK_TARGET_RESOLVER"
 
+    /** Catalog request for an unknown or malformed feature id. */
+    const val UNKNOWN_FEATURE_ID = "UNKNOWN_FEATURE_ID"
+
     /** Catalog expansion batch 1. */
     const val SCREEN_DIM_TIME = "SCREEN_DIM_TIME"
     const val FIRST_VOLUME_PRESS = "FIRST_VOLUME_PRESS"
