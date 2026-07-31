@@ -101,25 +101,26 @@ class AppSelector : SubFragmentWithSearch() {
                     val selectedApps = java.util.LinkedHashSet(
                         AppHelper.getStringSetOfAppPrefs(key, emptySet()) ?: emptySet()
                     )
+                    var selectedAppsBlack: java.util.LinkedHashSet<String>? = null
                     if (bwlist) {
-                        val selectedAppsBlack = java.util.LinkedHashSet(
+                        selectedAppsBlack = java.util.LinkedHashSet(
                             AppHelper.getStringSetOfAppPrefs(key + "_black", emptySet()) ?: emptySet()
                         )
+                        val pkg = app.pkgName.orEmpty()
                         when {
-                            selectedApps.contains(app.pkgName) -> {
-                                selectedApps.remove(app.pkgName)
-                                selectedAppsBlack.add(app.pkgName)
+                            selectedApps.contains(pkg) -> {
+                                selectedApps.remove(pkg)
+                                selectedAppsBlack?.add(pkg)
                             }
-                            selectedAppsBlack.contains(app.pkgName) -> {
-                                selectedApps.remove(app.pkgName)
-                                selectedAppsBlack.remove(app.pkgName)
+                            (selectedAppsBlack?.contains(pkg) ?: false) -> {
+                                selectedApps.remove(pkg)
+                                selectedAppsBlack?.remove(pkg)
                             }
                             else -> {
-                                selectedApps.add(app.pkgName)
-                                selectedAppsBlack.remove(app.pkgName)
+                                selectedApps.add(pkg)
+                                selectedAppsBlack?.remove(pkg)
                             }
                         }
-                        AppHelper.appPrefs?.edit()?.putStringSet(key + "_black", selectedAppsBlack)?.apply()
                     } else if (selectedApps.contains(if (share || openwith) "${app.pkgName}|${app.user}" else app.pkgName)) {
                         selectedApps.remove(if (share || openwith) "${app.pkgName}|${app.user}" else app.pkgName)
                     } else {
@@ -152,8 +153,14 @@ class AppSelector : SubFragmentWithSearch() {
                             builder.show()
                         }
                     }
-                    AppHelper.appPrefs?.edit()?.putStringSet(key, selectedApps)?.apply()
-                    (parent.adapter as? AppDataAdapter)?.updateSelectedApps()
+
+                    val adapter = parent.adapter as? AppDataAdapter
+                    val editor = AppHelper.appPrefs?.edit()
+                    if (bwlist) {
+                        editor?.putStringSet(key + "_black", selectedAppsBlack ?: emptySet())
+                    }
+                    editor?.putStringSet(key, selectedApps)?.apply()
+                    adapter?.updateSelectedApps(selectedApps, selectedAppsBlack)
                 } else if (isActivity) {
                     val app = (parent.adapter as? AppDataAdapter)?.getItem(position) ?: return@OnItemClickListener
                     val args2 = Bundle().apply {

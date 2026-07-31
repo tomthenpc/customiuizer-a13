@@ -150,6 +150,17 @@ class AppDataAdapter : BaseAdapter, Filterable {
         notifyDataSetChanged()
     }
 
+    fun updateSelectedApps(apps: Set<String>, blackApps: Set<String>? = null) {
+        if (aType == Helpers.AppAdapterType.Mutli) {
+            selectedApps = LinkedHashSet(apps)
+            if (bwlist && blackApps != null) {
+                selectedAppsBlack = LinkedHashSet(blackApps)
+            }
+            replaceFiltered(filteredAppList)
+            notifyDataSetChanged()
+        }
+    }
+
     private fun shouldSelect(app: AppData): Boolean {
         val packageName = app.pkgName.orEmpty()
         return if (multiUserSupport) {
