@@ -11,7 +11,6 @@ import org.junit.Test
 import java.util.concurrent.CountDownLatch
 import java.util.concurrent.CyclicBarrier
 import java.util.concurrent.TimeUnit
-import java.util.concurrent.atomic.AtomicInteger
 
 class PreferenceBootstrapTest {
 
@@ -65,17 +64,28 @@ class PreferenceBootstrapTest {
         assertEquals("first_getAll", bootstrap.lastFailureStage)
     }
 
-    // 5. Listener registration throws -> EMPTY_PENDING for empty first snapshot.
+    // 5. Listener registration fails with non-empty second snapshot -> SNAPSHOT_PENDING_LISTENER, not LOADED.
     @Test
-    fun listenerRegistrationFailureWithEmptyFirstStaysEmptyPending() {
+    fun listenerRegistrationFailureWithNonEmptyStaysSnapshotPendingListener() {
+        fake.set(mapOf("pref_key_foo" to true, "pref_key_bar" to 42))
         fake.setRegisterException(RuntimeException("register"))
         val bootstrap = bootstrap()
-        assertEquals(PreferenceBootstrap.State.EMPTY_PENDING, bootstrap.start())
+        assertEquals(PreferenceBootstrap.State.SNAPSHOT_PENDING_LISTENER, bootstrap.start())
+        assertFalse(bootstrap.isLoaded)
         assertFalse(bootstrap.isWatcherRegistered)
         assertEquals("register_listener", bootstrap.lastFailureStage)
     }
 
-    // 6. Listener can only be successfully registered once.
+    // 6. Listener registration fails with empty second snapshot -> SNAPSHOT_PENDING_LISTENER.
+    @Test
+    fun listenerRegistrationFailureWithEmptyStaysSnapshotPendingListener() {
+        fake.setRegisterException(RuntimeException("register"))
+        val bootstrap = bootstrap()
+        assertEquals(PreferenceBootstrap.State.SNAPSHOT_PENDING_LISTENER, bootstrap.start())
+        assertFalse(bootstrap.isLoaded)
+    }
+
+    // 7. Listener can only be successfully registered once.
     @Test
     fun listenerRegisteredAtMostOnce() {
         fake.set(mapOf("k1" to true))
@@ -83,7 +93,6 @@ class PreferenceBootstrapTest {
         assertEquals(PreferenceBootstrap.State.LOADED, bootstrap.start())
         assertTrue(bootstrap.isWatcherRegistered)
 
-        val count = AtomicInteger(0)
         val listenerField = PreferenceBootstrap::class.java.getDeclaredField("listener")
         listenerField.isAccessible = true
         val firstListener = listenerField.get(bootstrap)
@@ -94,16 +103,16 @@ class PreferenceBootstrapTest {
         assertEquals(firstListener, listenerField.get(bootstrap))
     }
 
-    // 7. First empty, listener not registered -> EMPTY_PENDING.
+    // 8. First empty, listener not registered -> SNAPSHOT_PENDING_LISTENER.
     @Test
-    fun emptyFirstSnapshotWithoutListenerIsEmptyPending() {
+    fun emptyFirstSnapshotWithoutListenerIsSnapshotPendingListener() {
         fake.setRegisterException(RuntimeException("register"))
         val bootstrap = bootstrap()
-        assertEquals(PreferenceBootstrap.State.EMPTY_PENDING, bootstrap.start())
+        assertEquals(PreferenceBootstrap.State.SNAPSHOT_PENDING_LISTENER, bootstrap.start())
         assertEquals(0, snapshot.size)
     }
 
-    // 8. Listener registered, second still empty -> VALID_EMPTY.
+    // 9. Listener registered, second still empty -> VALID_EMPTY.
     @Test
     fun listenerSuccessSecondEmptyIsValidEmpty() {
         val bootstrap = bootstrap()
@@ -113,7 +122,7 @@ class PreferenceBootstrapTest {
         assertEquals(1, bootstrap.emptyConfirmations)
     }
 
-    // 9. Second non-empty -> LOADED.
+    // 10. Second non-empty -> LOADED.
     @Test
     fun nonEmptySecondSnapshotIsLoaded() {
         fake.set(mapOf("pref_key_foo" to true, "pref_key_bar" to 42))
@@ -123,26 +132,17 @@ class PreferenceBootstrapTest {
         assertEquals(42, bootstrap.snapshot.getInt("bar", 0))
     }
 
-    // 10. Race window: preference changes between first and second getAll() are captured.
+    // 11. Race window: preference changes between first and second getAll() are captured.
     @Test
     fun changeBetweenFirstAndSecondGetAllIsCaptured() {
         fake.set(mapOf("pref_key_foo" to "old"))
-        // After the first getAll and during listener registration, the value changes.
-        val bootstrap = object : PreferenceBootstrap({ fake }, "test", snapshot) {
-            override fun start(): PreferenceBootstrap.State {
-                // Hook: inject a change immediately after the first getAll.
-                // This is exercised by the double-read design, not by overriding.
-                return super.start()
-            }
-        }
-
-        // We simulate by changing the fake before start; the second getAll should see the new value.
         fake.set(mapOf("pref_key_foo" to "new"))
+        val bootstrap = bootstrap()
         assertEquals(PreferenceBootstrap.State.LOADED, bootstrap.start())
         assertEquals("new", bootstrap.snapshot.getString("foo", ""))
     }
 
-    // 11. Concurrent bootstrap calls do not register multiple listeners.
+    // 12. Concurrent bootstrap calls do not register multiple listeners.
     @Test
     fun concurrentStartIsIdempotent() {
         fake.set(mapOf("pref_key_foo" to true))
@@ -161,13 +161,12 @@ class PreferenceBootstrapTest {
         }
 
         assertTrue(done.await(5, TimeUnit.SECONDS))
-        // All calls must agree on the final loaded state.
         assertTrue(states.all { it == PreferenceBootstrap.State.LOADED })
         assertTrue(bootstrap.isWatcherRegistered)
         assertEquals(1, bootstrap.attempts)
     }
 
-    // 12. Listener update with malformed type does not throw.
+    // 13. Listener update with malformed type does not throw.
     @Test
     fun malformedListenerUpdateDoesNotThrow() {
         fake.set(mapOf("pref_key_foo" to 42))
@@ -181,7 +180,22 @@ class PreferenceBootstrapTest {
         assertEquals("now string", snapshot.getString("foo", ""))
     }
 
-    // 13. Preference removal updates the snapshot.
+    // 14. Listener getAll() throwing is guarded and does not propagate.
+    @Test
+    fun listenerGetAllExceptionDoesNotPropagate() {
+        fake.set(mapOf("pref_key_foo" to true))
+        val bootstrap = bootstrap()
+        bootstrap.start()
+
+        fake.setGetAllException(RuntimeException("listener_getAll"))
+        fake.set(mapOf("pref_key_foo" to false))
+        fake.change("pref_key_foo", false)
+
+        // Snapshot must not have been corrupted or updated with a stale value.
+        assertTrue(snapshot.getBoolean("foo", false))
+    }
+
+    // 15. Preference removal updates the snapshot.
     @Test
     fun preferenceRemovalUpdatesSnapshot() {
         fake.set(mapOf("pref_key_foo" to true, "pref_key_bar" to 1))
@@ -195,7 +209,33 @@ class PreferenceBootstrapTest {
         assertEquals("bar should remain; keys=${snapshot.keys}", 1, snapshot.getInt("bar", 0))
     }
 
-    // 14. Attempts are capped and repeated failures stop.
+    // 16. Removing the last key transitions to VALID_EMPTY.
+    @Test
+    fun removingLastKeyTransitionsToValidEmpty() {
+        fake.set(mapOf("pref_key_foo" to true))
+        val bootstrap = bootstrap()
+        bootstrap.start()
+
+        fake.set(emptyMap())
+        fake.remove("pref_key_foo")
+
+        assertEquals(PreferenceBootstrap.State.VALID_EMPTY, bootstrap.state)
+    }
+
+    // 17. Adding the first key transitions to LOADED.
+    @Test
+    fun addingFirstKeyTransitionsToLoaded() {
+        val bootstrap = bootstrap()
+        bootstrap.start()
+        assertEquals(PreferenceBootstrap.State.VALID_EMPTY, bootstrap.state)
+
+        fake.set(mapOf("pref_key_foo" to true))
+        fake.put("pref_key_foo", true)
+
+        assertEquals(PreferenceBootstrap.State.LOADED, bootstrap.state)
+    }
+
+    // 18. Attempts are capped and repeated failures stop.
     @Test
     fun attemptsAreCapped() {
         fake.setGetAllException(RuntimeException("broken"))
@@ -207,12 +247,12 @@ class PreferenceBootstrapTest {
         assertEquals(3, bootstrap.attempts)
     }
 
-    // 15. ensureWatcher can recover from a listener failure.
+    // 19. ensureWatcher can recover from a listener failure and publish a stable snapshot.
     @Test
     fun ensureWatcherRecovers() {
         fake.setRegisterException(RuntimeException("register"))
         val bootstrap = bootstrap()
-        assertEquals(PreferenceBootstrap.State.EMPTY_PENDING, bootstrap.start())
+        assertEquals(PreferenceBootstrap.State.SNAPSHOT_PENDING_LISTENER, bootstrap.start())
         assertFalse(bootstrap.isWatcherRegistered)
 
         fake.setRegisterException(null)
@@ -220,13 +260,31 @@ class PreferenceBootstrapTest {
         assertTrue(bootstrap.isWatcherRegistered)
     }
 
-    // Helper: set map on fake.
-    private fun FakeSharedPreferences.set(values: Map<String, Any?>) {
-        this.setAll(values)
+    // 20. Type change from Int to String is safe.
+    @Test
+    fun typeChangeFromIntToStringIsSafe() {
+        fake.set(mapOf("pref_key_foo" to 42))
+        val bootstrap = bootstrap()
+        bootstrap.start()
+        assertEquals(42, snapshot.getInt("foo", 0))
+
+        fake.set(mapOf("pref_key_foo" to "string"))
+        fake.change("pref_key_foo", "string")
+
+        assertEquals("string", snapshot.getString("foo", ""))
     }
 
-    private fun FakeSharedPreferences.change(key: String, value: Any?) {
-        if (value == null) this.remove(key)
-        else this.put(key, value)
+    // 21. Type change from String to Boolean is safe.
+    @Test
+    fun typeChangeFromStringToBooleanIsSafe() {
+        fake.set(mapOf("pref_key_foo" to "yes"))
+        val bootstrap = bootstrap()
+        bootstrap.start()
+        assertEquals("yes", snapshot.getString("foo", ""))
+
+        fake.set(mapOf("pref_key_foo" to true))
+        fake.change("pref_key_foo", true)
+
+        assertTrue(snapshot.getBoolean("foo", false))
     }
 }

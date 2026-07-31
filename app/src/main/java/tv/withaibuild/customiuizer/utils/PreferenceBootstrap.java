@@ -15,12 +15,18 @@ import tv.withaibuild.customiuizer.mods.utils.XposedHelpers;
  *
  * Enforces a single Preference Listener per process, double-read stable
  * snapshot publication, and explicit failure recovery without sleeping.
+ *
+ * <p>A snapshot is only considered stable when the listener has been registered
+ * successfully and the second full {@link SharedPreferences#getAll()} has been
+ * published. Listener registration failure prevents entry into any Ready state.
  */
 public class PreferenceBootstrap {
 
     public enum State {
         UNINITIALIZED,
         UNAVAILABLE,
+        /** A first snapshot exists but the listener has not yet been registered. */
+        SNAPSHOT_PENDING_LISTENER,
         EMPTY_PENDING,
         LOADED,
         VALID_EMPTY
@@ -104,13 +110,16 @@ public class PreferenceBootstrap {
                 return state;
             }
 
-            // 3. Register the unique listener.
-            // The same process must have at most one live listener.
-            if (!watcherRegistered) {
-                ensureListenerLocked();
+            // 3. Register the unique listener. The same process must have at most one live listener.
+            boolean listenerOk = watcherRegistered || ensureListenerLocked();
+
+            // 4. Without a live listener we cannot publish a stable snapshot.
+            if (!listenerOk) {
+                state = State.SNAPSHOT_PENDING_LISTENER;
+                return state;
             }
 
-            // 4. Second getAll() after listener is registered.
+            // 5. Second getAll() after listener is registered.
             Map<String, ?> second;
             try {
                 second = prefs.getAll();
@@ -125,18 +134,14 @@ public class PreferenceBootstrap {
                 return state;
             }
 
-            // 5. Publish the stable second snapshot.
+            // 6. Publish the stable second snapshot before marking Ready.
             publishSnapshot(second);
 
             if (!second.isEmpty()) {
                 state = State.LOADED;
             } else {
-                if (watcherRegistered) {
-                    state = State.VALID_EMPTY;
-                    emptyConfirmations++;
-                } else {
-                    state = State.EMPTY_PENDING;
-                }
+                state = State.VALID_EMPTY;
+                emptyConfirmations++;
             }
 
             return state;
@@ -155,9 +160,7 @@ public class PreferenceBootstrap {
                 return start();
             }
 
-            ensureListenerLocked();
-
-            if (!watcherRegistered) {
+            if (!ensureListenerLocked()) {
                 // Listener still failed. Keep current state, do not downgrade
                 // a previously loaded snapshot just because updates are missing.
                 return state;
@@ -176,13 +179,7 @@ public class PreferenceBootstrap {
             }
 
             publishSnapshot(current);
-
-            if (!current.isEmpty()) {
-                state = State.LOADED;
-            } else {
-                state = State.VALID_EMPTY;
-                emptyConfirmations++;
-            }
+            state = current.isEmpty() ? State.VALID_EMPTY : State.LOADED;
             return state;
         }
     }
@@ -225,22 +222,25 @@ public class PreferenceBootstrap {
         synchronized (lock) { return lastError; }
     }
 
-    private void ensureListenerLocked() {
-        if (watcherRegistered || remote == null) return;
+    private boolean ensureListenerLocked() {
+        if (watcherRegistered || remote == null) return false;
 
         OnSharedPreferenceChangeListener l = createListener();
         try {
             remote.registerOnSharedPreferenceChangeListener(l);
             this.listener = l;
             this.watcherRegistered = true;
+            return true;
         } catch (Throwable t) {
             recordFailure("register_listener", t);
             // Do not pretend the listener is registered.
+            return false;
         }
     }
 
     private OnSharedPreferenceChangeListener createListener() {
-        return (sharedPreferences, key) -> onPreferenceChanged(sharedPreferences, key);
+        return (sharedPreferences, key) ->
+            ModuleHelper.guarded("PreferenceBootstrap.onPreferenceChanged", () -> onPreferenceChanged(sharedPreferences, key));
     }
 
     private void onPreferenceChanged(SharedPreferences sharedPreferences, String key) {
@@ -250,26 +250,32 @@ public class PreferenceBootstrap {
         // ConcurrentHashMap, but we hold the bootstrap lock so that a full
         // replaceSnapshot cannot interleave with a listener update and lose a key.
         synchronized (lock) {
-            if (state != State.LOADED && state != State.VALID_EMPTY && state != State.EMPTY_PENDING) {
+            if (state != State.LOADED && state != State.VALID_EMPTY && state != State.SNAPSHOT_PENDING_LISTENER) {
                 // Snapshot is not yet published. Drop the update; the next
                 // stable publish will read the current remote state.
                 return;
             }
 
+            // Read the raw value once via getAll() instead of typed getters.
+            // This keeps malformed or changed-type values from crashing the update path.
             Object val;
-            if (sharedPreferences.contains(key)) {
-                // Read the raw value through getAll() once. This avoids mismatched
-                // type-specific getters when a key changes type between updates, and
-                // prevents a single malformed preference from crashing the update path.
-                val = sharedPreferences.getAll().get(key);
-            } else {
-                val = null;
+            try {
+                Map<String, ?> all = sharedPreferences.getAll();
+                val = all != null ? all.get(key) : null;
+            } catch (Throwable t) {
+                recordFailure("listener_getAll", t);
+                return;
             }
 
             if (val == null) {
                 snapshot.remove(key);
             } else {
                 snapshot.put(key, val);
+            }
+
+            // Synchronize the published state with the actual snapshot.
+            if (watcherRegistered) {
+                state = snapshot.getSize() == 0 ? State.VALID_EMPTY : State.LOADED;
             }
         }
 

@@ -22,12 +22,20 @@ class FakeSharedPreferences : SharedPreferences {
         dispatchChange(key)
     }
 
+    fun set(map: Map<String, Any?>) {
+        setAll(map)
+    }
+
     fun setAll(map: Map<String, Any?>) {
         val changed = ArrayList<String>(map.keys.size)
         values.clear()
         values.putAll(map)
         changed.addAll(map.keys)
         for (key in changed) dispatchChange(key)
+    }
+
+    fun change(key: String, value: Any?) {
+        if (value == null) remove(key) else put(key, value)
     }
 
     fun setGetAllException(e: RuntimeException?) {
