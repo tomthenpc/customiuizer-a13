@@ -689,6 +689,33 @@ def check_preference_style_attr_completeness() -> list[Finding]:
     return findings
 
 
+def check_main_module_architecture(path: Path, text: str) -> list[Finding]:
+    """MainModule must only route by ProcessScope and must not embed business logic."""
+    if path != MAIN_MODULE:
+        return []
+    findings = []
+    for match in re.finditer(r"\bmPrefs\.get", text):
+        findings.append(
+            Finding(
+                "main-module-architecture",
+                path,
+                line_of(text, match.start()),
+                "MainModule reads mPrefs directly; route by ProcessScope instead",
+            )
+        )
+    for name in ("FeatureDispatcher", "FeatureRuntime", "findAndHookMethod"):
+        for match in re.finditer(rf"\b{name}\b", text):
+            findings.append(
+                Finding(
+                    "main-module-architecture",
+                    path,
+                    line_of(text, match.start()),
+                    f"MainModule references {name}; move to installer or registry",
+                )
+            )
+    return findings
+
+
 RULES = (
     check_guard_framework_callbacks,
     check_guard_deferred_callbacks,
@@ -701,6 +728,7 @@ RULES = (
     check_installer_oom_boundary,
     check_launcher_rename_loop_exit,
     check_preference_style_attr,
+    check_main_module_architecture,
 )
 
 
