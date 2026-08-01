@@ -171,10 +171,9 @@ public class ResourceHooks {
                         ModuleHelper.findAndHookMethod(
                             Resources.class,
                             NAMES[i],
-                            getParamTypes(i),
-                            createReplacementHook(KINDS[i])
+                            buildHookArgs(i, createReplacementHook(KINDS[i]))
                         );
-                    } catch (Throwable t) {
+                    } catch (OutOfMemoryError oom) { throw oom; } catch (Throwable t) {
                         try { XposedHelpers.log(t); } catch (Throwable ignored) {}
                         installedMask.compareAndSet(mask | bit, mask);
                         anyFailed = true;
@@ -185,13 +184,13 @@ public class ResourceHooks {
 
             int finalMask = installedMask.get();
             installState.set(finalMask == ALL_METHODS_MASK ? InstallState.INSTALLED : InstallState.PARTIAL_FAILED);
-        } catch (Throwable t) {
+        } catch (OutOfMemoryError oom) { throw oom; } catch (Throwable t) {
             try { XposedHelpers.log(t); } catch (Throwable ignored) {}
             installState.set(InstallState.PARTIAL_FAILED);
         }
     }
 
-    private static Class<?>[] getParamTypes(int index) {
+    Class<?>[] getParamTypes(int index) {
         switch (KINDS[index]) {
             case KIND_FRACTION:
                 return new Class<?>[] { int.class, int.class, int.class };
@@ -202,13 +201,21 @@ public class ResourceHooks {
         }
     }
 
+    Object[] buildHookArgs(int index, MethodHook callback) {
+        Class<?>[] paramTypes = getParamTypes(index);
+        Object[] hookArgs = new Object[paramTypes.length + 1];
+        System.arraycopy(paramTypes, 0, hookArgs, 0, paramTypes.length);
+        hookArgs[paramTypes.length] = callback;
+        return hookArgs;
+    }
+
     public int addResource(String resName, int resId) {
         try {
             applyHooks();
             int fakeResId = getFakeResId(resName);
             fakes.put(fakeResId, resId);
             return fakeResId;
-        } catch (Throwable t) {
+        } catch (OutOfMemoryError oom) { throw oom; } catch (Throwable t) {
             try { XposedHelpers.log(t); } catch (Throwable ignored) {}
             return 0;
         }
@@ -224,7 +231,7 @@ public class ResourceHooks {
             if (context == null || fakes.size() == 0) return null;
             Resources modRes = ModuleHelper.getModuleRes(context);
             return callModuleResource(modRes, kind, modResId, chain);
-        } catch (Throwable t) {
+        } catch (OutOfMemoryError oom) { throw oom; } catch (Throwable t) {
             try { XposedHelpers.log(t); } catch (Throwable ignored) {}
             return null;
         }
@@ -235,7 +242,7 @@ public class ResourceHooks {
             applyHooks();
             unresolved.put(pkg + ":" + type + "/" + name, new Pair<>(ReplacementType.ID, replacementResId));
             active.set(new SparseArray<Pair<ReplacementType, Object>>());
-        } catch (Throwable t) {
+        } catch (OutOfMemoryError oom) { throw oom; } catch (Throwable t) {
             try { XposedHelpers.log(t); } catch (Throwable ignored) {}
         }
     }
@@ -245,7 +252,7 @@ public class ResourceHooks {
             applyHooks();
             unresolved.put(pkg + ":" + type + "/" + name, new Pair<>(ReplacementType.DENSITY, replacementResValue));
             active.set(new SparseArray<Pair<ReplacementType, Object>>());
-        } catch (Throwable t) {
+        } catch (OutOfMemoryError oom) { throw oom; } catch (Throwable t) {
             try { XposedHelpers.log(t); } catch (Throwable ignored) {}
         }
     }
@@ -255,7 +262,7 @@ public class ResourceHooks {
             applyHooks();
             unresolved.put(pkg + ":" + type + "/" + name, new Pair<>(ReplacementType.OBJECT, replacementResValue));
             active.set(new SparseArray<Pair<ReplacementType, Object>>());
-        } catch (Throwable t) {
+        } catch (OutOfMemoryError oom) { throw oom; } catch (Throwable t) {
             try { XposedHelpers.log(t); } catch (Throwable ignored) {}
         }
     }
@@ -312,7 +319,7 @@ public class ResourceHooks {
             if (mContext == null) return null;
             Resources modRes = ModuleHelper.getModuleRes(mContext);
             return callModuleResource(modRes, kind, modResId, chain);
-        } catch (Throwable t) {
+        } catch (OutOfMemoryError oom) { throw oom; } catch (Throwable t) {
             try { XposedHelpers.log(t); } catch (Throwable ignored) {}
             return null;
         }
@@ -337,7 +344,7 @@ public class ResourceHooks {
                 default:
                     return null;
             }
-        } catch (Throwable t) {
+        } catch (OutOfMemoryError oom) { throw oom; } catch (Throwable t) {
             try { XposedHelpers.log(t); } catch (Throwable ignored) {}
             return null;
         }
