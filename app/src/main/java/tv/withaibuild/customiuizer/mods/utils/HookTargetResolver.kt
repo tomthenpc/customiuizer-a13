@@ -23,23 +23,33 @@ import java.lang.reflect.Method
  * - Resolution results are emitted once per diagnostic id through
  *   [DiagnosticRecorder] with stable [ReasonCode]s.
  */
-class HookTargetResolver(private val classLoader: ClassLoader) {
+open class HookTargetResolver(private val classLoader: ClassLoader) {
 
-    private val cache = HashMap<String, Any?>()
+    /**
+     * Hard upper bound on cached reflection results. The fixed canary catalog has < 80 keys,
+     * so the cache only evicts when an unexpected dynamic source exceeds this limit.
+     */
+    private companion object {
+        private const val MAX_CACHE_ENTRIES = 128
+        private val NULL = Any()
+    }
+
+    private val cache = HashMap<String, Any?>(MAX_CACHE_ENTRIES)
     private val resolutionLog = HashMap<String, ResolutionLog>()
 
     /** Resolve a class by name, caching the result (including a negative result). */
-    fun resolveClass(className: String, diagnosticId: String = DiagnosticIds.HOOK_TARGET_RESOLVER): Class<*>? {
+    open fun resolveClass(className: String, diagnosticId: String = DiagnosticIds.HOOK_TARGET_RESOLVER): Class<*>? {
         val k = key("class", className)
         val cached = cache[k]
         if (cached != null) return if (cached === NULL) null else cached as Class<*>
 
         return try {
             val clazz = XposedHelpers.findClassIfExists(className, classLoader)
-            if (clazz == null) cache[k] = NULL else cache[k] = clazz
+            if (clazz == null) cacheNull(k) else cacheResult(k, clazz)
             clazz
         } catch (t: Throwable) {
-            cache[k] = NULL
+            rethrowIfFatal(t)
+            cacheNull(k)
             null
         }
     }
@@ -48,7 +58,7 @@ class HookTargetResolver(private val classLoader: ClassLoader) {
      * Resolve a declared method by name and parameter types.
      * Returns null on any failure (no throw) and caches the negative result.
      */
-    fun resolveMethod(
+    open fun resolveMethod(
         className: String,
         methodName: String,
         vararg parameterTypes: Class<*>,
@@ -60,17 +70,18 @@ class HookTargetResolver(private val classLoader: ClassLoader) {
 
         val clazz = resolveClass(className, diagnosticId)
         if (clazz == null) {
-            cache[k] = NULL
+            cacheNull(k)
             return null
         }
 
         return try {
             val method = clazz.getDeclaredMethod(methodName, *parameterTypes)
             method.isAccessible = true
-            cache[k] = method
+            cacheResult(k, method)
             method
         } catch (t: Throwable) {
-            cache[k] = NULL
+            rethrowIfFatal(t)
+            cacheNull(k)
             null
         }
     }
@@ -79,24 +90,29 @@ class HookTargetResolver(private val classLoader: ClassLoader) {
      * Resolve all declared methods with the given name, regardless of signature.
      * Returns null when the class itself cannot be found.
      */
-    fun resolveAllMethods(
+    open fun resolveAllMethods(
         className: String,
         methodName: String,
         diagnosticId: String = DiagnosticIds.HOOK_TARGET_RESOLVER
     ): List<Method>? {
         val clazz = resolveClass(className, diagnosticId) ?: return null
-        val matches = ArrayList<Method>()
-        for (m in clazz.declaredMethods) {
-            if (m.name == methodName) matches.add(m)
+        return try {
+            val matches = ArrayList<Method>()
+            for (m in clazz.declaredMethods) {
+                if (m.name == methodName) matches.add(m)
+            }
+            matches
+        } catch (t: Throwable) {
+            rethrowIfFatal(t)
+            null
         }
-        return matches
     }
 
     /**
      * Resolve a declared constructor by parameter types.
      * Returns null on any failure (no throw) and caches the negative result.
      */
-    fun resolveConstructor(
+    open fun resolveConstructor(
         className: String,
         vararg parameterTypes: Class<*>,
         diagnosticId: String = DiagnosticIds.HOOK_TARGET_RESOLVER
@@ -107,17 +123,18 @@ class HookTargetResolver(private val classLoader: ClassLoader) {
 
         val clazz = resolveClass(className, diagnosticId)
         if (clazz == null) {
-            cache[k] = NULL
+            cacheNull(k)
             return null
         }
 
         return try {
             val ctor = clazz.getDeclaredConstructor(*parameterTypes)
             ctor.isAccessible = true
-            cache[k] = ctor
+            cacheResult(k, ctor)
             ctor
         } catch (t: Throwable) {
-            cache[k] = NULL
+            rethrowIfFatal(t)
+            cacheNull(k)
             null
         }
     }
@@ -126,15 +143,19 @@ class HookTargetResolver(private val classLoader: ClassLoader) {
      * Resolve all declared constructors of a class.
      * Returns null when the class itself cannot be found.
      */
-    fun resolveAllConstructors(
+    open fun resolveAllConstructors(
         className: String,
         diagnosticId: String = DiagnosticIds.HOOK_TARGET_RESOLVER
     ): List<Constructor<*>>? {
         val clazz = resolveClass(className, diagnosticId) ?: return null
-        val ctors = clazz.declaredConstructors
-        if (ctors.isEmpty()) return emptyList()
-        return ArrayList<Constructor<*>>(ctors.size).apply {
-            for (c in ctors) add(c)
+        return try {
+            val ctors = clazz.declaredConstructors
+            if (ctors.isEmpty()) emptyList() else ArrayList<Constructor<*>>(ctors.size).apply {
+                for (c in ctors) add(c)
+            }
+        } catch (t: Throwable) {
+            rethrowIfFatal(t)
+            null
         }
     }
 
@@ -142,7 +163,7 @@ class HookTargetResolver(private val classLoader: ClassLoader) {
      * Resolve a declared field by name.
      * Returns null on any failure (no throw) and caches the negative result.
      */
-    fun resolveField(
+    open fun resolveField(
         className: String,
         fieldName: String,
         diagnosticId: String = DiagnosticIds.HOOK_TARGET_RESOLVER
@@ -153,17 +174,18 @@ class HookTargetResolver(private val classLoader: ClassLoader) {
 
         val clazz = resolveClass(className, diagnosticId)
         if (clazz == null) {
-            cache[k] = NULL
+            cacheNull(k)
             return null
         }
 
         return try {
             val field = clazz.getDeclaredField(fieldName)
             field.isAccessible = true
-            cache[k] = field
+            cacheResult(k, field)
             field
         } catch (t: Throwable) {
-            cache[k] = NULL
+            rethrowIfFatal(t)
+            cacheNull(k)
             null
         }
     }
@@ -171,21 +193,50 @@ class HookTargetResolver(private val classLoader: ClassLoader) {
     /**
      * Evaluate a contract for compatibility using this resolver.
      *
-     * Resolves every candidate target and then produces a single, immutable
-     * [HookInstallResult] through [HookEvidenceEvaluator]. The returned result
-     * uses the compatibility evidence (resolved == true) and is passed to
-     * [HookInstaller.withSession] to seed the install pass.
+     * Evaluates each [FeatureTargetVariant] in fixed priority order. The first
+     * variant whose required targets all resolve is selected; subsequent
+     * variants are not resolved (primary-complete stops evaluation). If a
+     * selected variant is missing optional targets, it is considered
+     * [CompatibilityState.DEGRADED].
+     *
+     * The returned [HookInstallResult] contains only the selected variant's
+     * records and is passed to [HookInstaller.withSession] to seed the install
+     * pass.
      */
     fun evaluateContract(
         contract: HookTargetContract,
         diagnosticId: String
     ): Pair<CompatibilityState, HookInstallResult> {
-        val reqToCand = contract.candidateToRequirement()
-        val records = contract.allTargets.map { spec ->
+        var lastResult: HookInstallResult? = null
+
+        for (variant in contract.variants) {
+            val records = resolveVariant(variant, diagnosticId)
+            val result = HookEvidenceEvaluator.evaluate(
+                variant,
+                records,
+                HookEvidenceEvaluator.EvidencePhase.COMPATIBILITY
+            )
+            lastResult = result
+            if (result.compatibility != CompatibilityState.INCOMPATIBLE) {
+                return result.compatibility!! to result
+            }
+        }
+
+        val incompat = lastResult!!
+        return CompatibilityState.INCOMPATIBLE to incompat.copy(
+            reasonCode = ReasonCode.TARGET_NOT_FOUND,
+            detail = "no selectable variant for ${contract.featureId}"
+        )
+    }
+
+    private fun resolveVariant(
+        variant: FeatureTargetVariant,
+        diagnosticId: String
+    ): List<HookTargetRecord> {
+        val reqToCand = variant.candidateToRequirement()
+        return variant.allTargets.map { spec ->
             resolveCandidate(spec, reqToCand[spec.id] ?: "", diagnosticId)
         }
-        val result = HookEvidenceEvaluator.evaluate(contract, records, HookEvidenceEvaluator.EvidencePhase.COMPATIBILITY)
-        return result.compatibility!! to result
     }
 
     /**
@@ -395,8 +446,37 @@ class HookTargetResolver(private val classLoader: ClassLoader) {
         }
     }
 
-    private companion object {
-        private val NULL = Any()
+    private fun cacheResult(k: String, v: Any) {
+        if (cache.size < MAX_CACHE_ENTRIES || cache.containsKey(k)) {
+            cache[k] = v
+        }
+    }
+
+    private fun cacheNull(k: String) {
+        if (cache.size < MAX_CACHE_ENTRIES || cache.containsKey(k)) {
+            cache[k] = NULL
+        }
+    }
+
+    private fun rethrowIfFatal(t: Throwable) {
+        val fatal = findFatalCause(t)
+        if (fatal != null) throw fatal
+    }
+
+    private fun findFatalCause(t: Throwable): OutOfMemoryError? {
+        if (t is OutOfMemoryError) return t
+        val cause = t.cause
+        if (cause is OutOfMemoryError) return cause
+        if (t is java.lang.reflect.InvocationTargetException) {
+            val target = t.targetException
+            if (target is OutOfMemoryError) return target
+            if (target?.cause is OutOfMemoryError) return target.cause as OutOfMemoryError
+        }
+        if (t is java.lang.ExceptionInInitializerError) {
+            val initEx = t.exception
+            if (initEx is OutOfMemoryError) return initEx
+        }
+        return null
     }
 }
 
@@ -416,6 +496,12 @@ object HookEvidenceEvaluator {
         contract: HookTargetContract,
         records: List<HookTargetRecord>,
         phase: EvidencePhase
+    ): HookInstallResult = evaluate(contract.variants.first(), records, phase)
+
+    fun evaluate(
+        variant: FeatureTargetVariant,
+        records: List<HookTargetRecord>,
+        phase: EvidencePhase
     ): HookInstallResult {
         val recordsById = records.associateBy { it.spec.id }
         val requiredFailures = mutableListOf<HookTargetRecord>()
@@ -427,7 +513,7 @@ object HookEvidenceEvaluator {
         var fallbackUsed = false
         val fallbackUsedIds = mutableListOf<String>()
 
-        for (req in contract.requirements) {
+        for (req in variant.requirements) {
             val isRequired = req.criticality == Criticality.REQUIRED
             if (isRequired) requiredTotal++ else optionalTotal++
 
@@ -491,7 +577,7 @@ object HookEvidenceEvaluator {
         }
 
         val detail = buildString {
-            append("required $requiredInstalled/$requiredTotal, optional $optionalInstalled/$optionalTotal")
+            append("variant=${variant.id} required $requiredInstalled/$requiredTotal, optional $optionalInstalled/$optionalTotal")
             if (fallbackUsed) {
                 append(", fallbacks=").append(fallbackUsedIds.joinToString(","))
             }
@@ -515,7 +601,8 @@ object HookEvidenceEvaluator {
             requiredFailures = requiredFailures,
             optionalFailures = optionalFailures,
             reasonCode = reasonCode,
-            detail = detail
+            detail = detail,
+            selectedVariant = variant
         )
     }
 

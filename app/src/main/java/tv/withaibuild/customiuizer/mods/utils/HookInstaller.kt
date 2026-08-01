@@ -22,13 +22,14 @@ object HookInstaller {
     private class Session(
         val resolver: HookTargetResolver,
         val contract: HookTargetContract,
+        val selectedVariant: FeatureTargetVariant,
         val diagnosticId: String,
         val classLoader: ClassLoader
     ) {
-        private val candidateToRequirement = contract.candidateToRequirement()
+        private val candidateToRequirement = selectedVariant.candidateToRequirement()
         val recordsById: MutableMap<String, HookTargetRecord> =
-            HashMap<String, HookTargetRecord>(contract.allTargets.size).apply {
-                for (target in contract.allTargets) {
+            HashMap<String, HookTargetRecord>(selectedVariant.allTargets.size).apply {
+                for (target in selectedVariant.allTargets) {
                     put(
                         target.id,
                         HookTargetRecord(
@@ -70,7 +71,8 @@ object HookInstaller {
         if (session.get() != null) {
             throw IllegalStateException("HookInstaller session already active on this thread")
         }
-        val s = Session(resolver, contract, diagnosticId, classLoader)
+        val selected = compatibilityResult?.selectedVariant ?: contract.variants.single()
+        val s = Session(resolver, contract, selected, diagnosticId, classLoader)
         session.set(s)
         try {
             if (compatibilityResult != null) {
@@ -84,9 +86,9 @@ object HookInstaller {
     }
 
     private fun finalize(s: Session): HookInstallResult {
-        val records = ArrayList<HookTargetRecord>(s.contract.allTargets.size)
-        val requirementMap = s.contract.candidateToRequirement()
-        for (spec in s.contract.allTargets) {
+        val records = ArrayList<HookTargetRecord>(s.selectedVariant.allTargets.size)
+        val requirementMap = s.selectedVariant.candidateToRequirement()
+        for (spec in s.selectedVariant.allTargets) {
             records.add(
                 s.recordsById[spec.id] ?: HookTargetRecord(
                     spec = spec,
@@ -98,7 +100,7 @@ object HookInstaller {
                 )
             )
         }
-        return HookEvidenceEvaluator.evaluate(s.contract, records, HookEvidenceEvaluator.EvidencePhase.INSTALLATION)
+        return HookEvidenceEvaluator.evaluate(s.selectedVariant, records, HookEvidenceEvaluator.EvidencePhase.INSTALLATION)
     }
 
     private fun populateFromCompatibility(result: HookInstallResult) {

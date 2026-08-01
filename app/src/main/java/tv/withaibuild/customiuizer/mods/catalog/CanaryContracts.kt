@@ -2,6 +2,7 @@ package tv.withaibuild.customiuizer.mods.catalog
 
 import tv.withaibuild.customiuizer.mods.utils.AnyOfRequirement
 import tv.withaibuild.customiuizer.mods.utils.Criticality
+import tv.withaibuild.customiuizer.mods.utils.FeatureTargetVariant
 import tv.withaibuild.customiuizer.mods.utils.HookOperation
 import tv.withaibuild.customiuizer.mods.utils.HookTargetContract
 import tv.withaibuild.customiuizer.mods.utils.HookTargetSpec
@@ -74,46 +75,53 @@ object CanaryContracts {
     )
     }
 
-    val autoBrightnessRange: HookTargetContract by lazy(kotlin.LazyThreadSafetyMode.NONE) { HookTargetContract(
-        featureId = "autoBrightnessRange",
+    private val autoBrightnessAbcVariant = FeatureTargetVariant(
+        id = "automatic_brightness_controller",
         requirements = listOf(
-            AnyOfRequirement(
-                id = "clamp",
-                criticality = Criticality.REQUIRED,
-                candidates = listOf(
-                    HookTargetSpec(
-                        id = "AutomaticBrightnessController.clampScreenBrightness",
-                        operation = HookOperation.EXACT_METHOD,
-                        className = "com.android.server.display.AutomaticBrightnessController",
-                        memberName = "clampScreenBrightness",
-                        parameterTypes = listOf(FLOAT)
-                    ),
-                    HookTargetSpec(
-                        id = "DisplayPowerController.clampScreenBrightness",
-                        operation = HookOperation.EXACT_METHOD,
-                        className = "com.android.server.display.DisplayPowerController",
-                        memberName = "clampScreenBrightness",
-                        parameterTypes = listOf(FLOAT)
-                    )
+            SingleTargetRequirement(
+                target = HookTargetSpec(
+                    id = "AutomaticBrightnessController.clampScreenBrightness",
+                    operation = HookOperation.EXACT_METHOD,
+                    className = "com.android.server.display.AutomaticBrightnessController",
+                    memberName = "clampScreenBrightness",
+                    parameterTypes = listOf(FLOAT)
                 )
             ),
-            AnyOfRequirement(
-                id = "constructor",
-                criticality = Criticality.REQUIRED,
-                candidates = listOf(
-                    HookTargetSpec(
-                        id = "AutomaticBrightnessController.constructors",
-                        operation = HookOperation.ALL_CONSTRUCTORS,
-                        className = "com.android.server.display.AutomaticBrightnessController"
-                    ),
-                    HookTargetSpec(
-                        id = "DisplayPowerController.constructors",
-                        operation = HookOperation.ALL_CONSTRUCTORS,
-                        className = "com.android.server.display.DisplayPowerController"
-                    )
+            SingleTargetRequirement(
+                target = HookTargetSpec(
+                    id = "AutomaticBrightnessController.constructors",
+                    operation = HookOperation.ALL_CONSTRUCTORS,
+                    className = "com.android.server.display.AutomaticBrightnessController"
                 )
             )
         )
+    )
+
+    private val autoBrightnessDpcVariant = FeatureTargetVariant(
+        id = "display_power_controller",
+        requirements = listOf(
+            SingleTargetRequirement(
+                target = HookTargetSpec(
+                    id = "DisplayPowerController.clampScreenBrightness",
+                    operation = HookOperation.EXACT_METHOD,
+                    className = "com.android.server.display.DisplayPowerController",
+                    memberName = "clampScreenBrightness",
+                    parameterTypes = listOf(FLOAT)
+                )
+            ),
+            SingleTargetRequirement(
+                target = HookTargetSpec(
+                    id = "DisplayPowerController.constructors",
+                    operation = HookOperation.ALL_CONSTRUCTORS,
+                    className = "com.android.server.display.DisplayPowerController"
+                )
+            )
+        )
+    )
+
+    val autoBrightnessRange: HookTargetContract by lazy(kotlin.LazyThreadSafetyMode.NONE) { HookTargetContract(
+        featureId = "autoBrightnessRange",
+        variants = listOf(autoBrightnessAbcVariant, autoBrightnessDpcVariant)
     )
     }
 

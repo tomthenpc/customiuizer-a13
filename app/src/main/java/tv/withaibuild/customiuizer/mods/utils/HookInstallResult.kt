@@ -90,7 +90,9 @@ data class HookInstallResult(
     val requiredFailures: List<HookTargetRecord> = emptyList(),
     val optionalFailures: List<HookTargetRecord> = emptyList(),
     val reasonCode: ReasonCode = ReasonCode.UNKNOWN,
-    val detail: String? = null
+    val detail: String? = null,
+    val selectedVariant: FeatureTargetVariant? = null,
+    val selectedVariantId: String? = selectedVariant?.id
 ) {
     companion object {
         /** Convenience constant for unrecorded legacy Unit installers. */
