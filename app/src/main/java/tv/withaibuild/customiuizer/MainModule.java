@@ -4,14 +4,9 @@ import android.app.Application;
 import android.content.Context;
 import android.content.SharedPreferences;
 import android.os.Build;
-import android.provider.Settings;
-import android.widget.LinearLayout;
 
 import androidx.annotation.NonNull;
-import androidx.annotation.Nullable;
 
-import java.util.ArrayList;
-import java.util.HashSet;
 import java.util.Set;
 
 import io.github.libxposed.api.XposedModule;
@@ -19,33 +14,8 @@ import io.github.libxposed.api.XposedModuleInterface;
 import io.github.libxposed.api.XposedModuleInterface.PackageReadyParam;
 import io.github.libxposed.api.XposedModuleInterface.SystemServerStartingParam;
 import tv.withaibuild.customiuizer.mods.Controls;
-import tv.withaibuild.customiuizer.mods.GlobalActions;
-import tv.withaibuild.customiuizer.mods.catalog.FeatureDispatcher;
-import tv.withaibuild.customiuizer.mods.catalog.FeatureRuntime;
 import tv.withaibuild.customiuizer.mods.SystemAudioAndVisualAndMoreHooks;
-import tv.withaibuild.customiuizer.mods.SystemAudioAndVolumeHooks;
-import tv.withaibuild.customiuizer.mods.SystemChargingAndWallpaperHooks;
-import tv.withaibuild.customiuizer.mods.SystemDisplayAndWindowHooks;
-import tv.withaibuild.customiuizer.mods.SystemFreeformAndMultiWindowHooks;
-import tv.withaibuild.customiuizer.mods.SystemLockScreenHooks;
-import tv.withaibuild.customiuizer.mods.SystemLockScreenMoreHooks;
-import tv.withaibuild.customiuizer.mods.SystemNotificationAndShareHooks;
-import tv.withaibuild.customiuizer.mods.SystemNotificationMoreHooks;
-import tv.withaibuild.customiuizer.mods.SystemNotificationPopupsHooks;
-import tv.withaibuild.customiuizer.mods.SystemSecurityAndSystemHooks;
-import tv.withaibuild.customiuizer.mods.SystemSettingsAndConnectivityHooks;
-import tv.withaibuild.customiuizer.mods.SystemSettingsMoreHooks;
-import tv.withaibuild.customiuizer.mods.SystemShareAndOpenWithHooks;
 import tv.withaibuild.customiuizer.mods.SystemStatusBarAndClockHooks;
-import tv.withaibuild.customiuizer.mods.SystemStatusBarClockAndMoreHooks;
-import tv.withaibuild.customiuizer.mods.SystemStatusBarMoreHooks;
-import tv.withaibuild.customiuizer.mods.SystemUIBatteryHooks;
-import tv.withaibuild.customiuizer.mods.SystemUIControlCenterHooks;
-import tv.withaibuild.customiuizer.mods.SystemUILockScreenHooks;
-import tv.withaibuild.customiuizer.mods.SystemUIMonitorAndTileHooks;
-import tv.withaibuild.customiuizer.mods.SystemUINotificationHooks;
-import tv.withaibuild.customiuizer.mods.SystemUIScreenshotHooks;
-import tv.withaibuild.customiuizer.mods.SystemUIStatusBarHooks;
 import tv.withaibuild.customiuizer.mods.Various;
 import tv.withaibuild.customiuizer.mods.utils.HookerClassHelper.AfterHookCallback;
 import tv.withaibuild.customiuizer.mods.utils.HookerClassHelper.MethodHook;
@@ -57,6 +27,9 @@ import tv.withaibuild.customiuizer.mods.utils.XposedHelpers;
 import tv.withaibuild.customiuizer.installers.InputMethodInstaller;
 import tv.withaibuild.customiuizer.installers.LauncherInstaller;
 import tv.withaibuild.customiuizer.installers.PackageInstallerRouter;
+import tv.withaibuild.customiuizer.installers.PowerKeeperInstaller;
+import tv.withaibuild.customiuizer.installers.SecurityCenterInstaller;
+import tv.withaibuild.customiuizer.installers.SettingsInstaller;
 import tv.withaibuild.customiuizer.installers.SystemUiInstaller;
 import tv.withaibuild.customiuizer.installers.SystemServerInstaller;
 import tv.withaibuild.customiuizer.utils.PrefMap;
@@ -176,6 +149,21 @@ public class MainModule extends XposedModule {
 
         if (mPrefs.getBoolean("various_alarmcompat") && mPrefs.getStringSet("various_alarmcompat_apps").contains(pkg)) {
             Various.AlarmCompatHook();
+        }
+
+        if (scope == ProcessScope.SETTINGS_MAIN) {
+            SettingsInstaller.install(lpparam);
+            return;
+        }
+
+        if (scope == ProcessScope.SECURITY_CENTER_MAIN) {
+            SecurityCenterInstaller.install(lpparam);
+            return;
+        }
+
+        if (scope == ProcessScope.POWER_KEEPER) {
+            PowerKeeperInstaller.install(lpparam);
+            return;
         }
 
         if (PackageInstallerRouter.install(pkg, lpparam)) return;

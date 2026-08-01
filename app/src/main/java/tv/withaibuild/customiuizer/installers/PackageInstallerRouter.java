@@ -2,14 +2,9 @@ package tv.withaibuild.customiuizer.installers;
 
 import io.github.libxposed.api.XposedModuleInterface.PackageReadyParam;
 import tv.withaibuild.customiuizer.MainModule;
-import tv.withaibuild.customiuizer.mods.GlobalActions;
 import tv.withaibuild.customiuizer.mods.LauncherAnimationHooks;
 import tv.withaibuild.customiuizer.mods.SystemAudioAndVisualAndMoreHooks;
-import tv.withaibuild.customiuizer.mods.SystemAudioAndVolumeHooks;
 import tv.withaibuild.customiuizer.mods.SystemFreeformAndMultiWindowHooks;
-import tv.withaibuild.customiuizer.mods.SystemNotificationMoreHooks;
-import tv.withaibuild.customiuizer.mods.SystemSettingsAndConnectivityHooks;
-import tv.withaibuild.customiuizer.mods.SystemSettingsMoreHooks;
 import tv.withaibuild.customiuizer.mods.Various;
 
 public final class PackageInstallerRouter {
@@ -20,30 +15,6 @@ public final class PackageInstallerRouter {
         if (pkg.equals("com.miui.miwallpaper")) {
             if (MainModule.mPrefs.getBoolean("launcher_disable_wallpaperscale")) {
                 LauncherAnimationHooks.DisableUnlockWallpaperScale(lpparam);
-            }
-            return true;
-        }
-
-        if (pkg.equals("com.android.settings")) {
-            if (MainModule.mPrefs.getStringAsInt("miuizer_settingsiconpos", 1) > 0) {
-                GlobalActions.miuizerSettingsHook(lpparam);
-            }
-            if (MainModule.mPrefs.getBoolean("system_separatevolume")) {
-                SystemAudioAndVolumeHooks.NotificationVolumeSettingsRes();
-                SystemAudioAndVolumeHooks.NotificationVolumeSettingsHook(lpparam);
-            }
-            if (MainModule.mPrefs.getBoolean("system_disableanynotif")) {
-                SystemNotificationMoreHooks.DisableAnyNotificationHook(lpparam);
-                SystemNotificationMoreHooks.DisableAnyNotificationBlockHook(lpparam);
-            }
-            if (!"none".equals(MainModule.mPrefs.getString("system_defaultusb", "none"))) {
-                SystemSettingsMoreHooks.USBConfigSettingsHook(lpparam);
-            }
-            if (MainModule.mPrefs.getBoolean("system_notifimportance")) {
-                SystemNotificationMoreHooks.NotificationImportanceHook(lpparam);
-            }
-            if (MainModule.mPrefs.getBoolean("system_wifipassword")) {
-                SystemSettingsAndConnectivityHooks.ViewWifiPasswordHook(lpparam);
             }
             return true;
         }
@@ -65,38 +36,6 @@ public final class PackageInstallerRouter {
             if (MainModule.mPrefs.getBoolean("various_answerinheadup")) {
                 Various.AnswerCallInHeadUpHook(lpparam);
             }
-            return true;
-        }
-
-        if (pkg.equals("com.miui.securitycenter")) {
-            if (MainModule.mPrefs.getBoolean("various_appdetails")) Various.AppInfoHook(lpparam);
-            if (MainModule.mPrefs.getBoolean("various_disableapp")) Various.AppsDisableHook(lpparam);
-            if (MainModule.mPrefs.getBoolean("various_restrictapp")) Various.AppsRestrictHook(lpparam);
-            if (MainModule.mPrefs.getBoolean("system_applock_scramblepin")) SystemAudioAndVisualAndMoreHooks.ScrambleAppLockPINHook(lpparam);
-            if (MainModule.mPrefs.getStringAsInt("various_appsort", 1) > 1) Various.AppsDefaultSortHook(lpparam);
-            if (MainModule.mPrefs.getStringAsInt("various_skip", 0) > 0) Various.AppsDefaultSortHook(lpparam);
-            if (MainModule.mPrefs.getBoolean("various_skip_interceptperm")) Various.InterceptPermHook(lpparam);
-            if (MainModule.mPrefs.getBoolean("various_replace_defaultopen_with_openbydefault")) Various.OpenByDefaultHook(lpparam);
-            if (MainModule.mPrefs.getBoolean("various_skip_securityscan")) Various.SkipSecurityScanHook(lpparam);
-            if (MainModule.mPrefs.getBoolean("various_show_battery_temperature")) Various.ShowTempInBatteryHook(lpparam);
-            if (MainModule.mPrefs.getBoolean("various_enable_sc_ai_clipboard_location")) Various.UnlockClipboardAndLocationHook(lpparam);
-            if (MainModule.mPrefs.getBoolean("various_disable_freeform_suggest_blacklist")) SystemFreeformAndMultiWindowHooks.DisableSideBarSuggestionHook(lpparam);
-            if (MainModule.mPrefs.getBoolean("various_disable_dock_suggest")) Various.DisableDockSuggestHook(lpparam);
-            if (MainModule.mPrefs.getBoolean("various_enable_expand_sidebar")) {
-                Various.AddSideBarExpandReceiverHook(lpparam);
-            }
-            if (MainModule.mPrefs.getBoolean("system_hidelowbatwarn")) {
-                Various.NoLowBatteryWarningHook();
-            }
-            if (MainModule.mPrefs.getBoolean("various_privacyapps_column_nums4")) {
-                Various.PrivacyAppsLayoutHook(lpparam);
-            }
-            return true;
-        }
-
-        if (pkg.equals("com.miui.powerkeeper")) {
-            if (MainModule.mPrefs.getBoolean("various_restrictapp")) Various.AppsRestrictPowerHook(lpparam);
-            if (MainModule.mPrefs.getBoolean("various_persist_batteryoptimization")) Various.PersistBatteryOptimizationHook(lpparam);
             return true;
         }
 

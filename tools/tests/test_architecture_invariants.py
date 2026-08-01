@@ -56,6 +56,26 @@ class ArchitectureInvariantTest(unittest.TestCase):
         self.assertIn("HorizontalSpacingRes", text)
         self.assertIn("DisableLauncherLogHook", text)
 
+    def test_main_module_delegates_settings_security_power_to_installers(self):
+        text = MAIN.read_text(encoding="utf-8")
+        self.assertIn("SettingsInstaller.install(lpparam);", text)
+        self.assertIn("SecurityCenterInstaller.install(lpparam);", text)
+        self.assertIn("PowerKeeperInstaller.install(lpparam);", text)
+        # The old central router must not be called for those packages anymore.
+        # The body of MainModule should not contain Settings/Security/Power hook class calls directly.
+        for cls in ("SystemSettingsMoreHooks", "SystemNotificationMoreHooks"):
+            self.assertNotIn(cls, text, f"MainModule still directly references {cls}")
+
+    def test_settings_installer_contains_real_hooks(self):
+        text = (REPO / "app" / "src" / "main" / "java" / "tv" / "withaibuild" / "customiuizer" / "installers" / "SettingsInstaller.java").read_text(encoding="utf-8")
+        self.assertIn("miuizerSettingsHook", text)
+        self.assertIn("USBConfigSettingsHook", text)
+
+    def test_security_center_installer_contains_real_hooks(self):
+        text = (REPO / "app" / "src" / "main" / "java" / "tv" / "withaibuild" / "customiuizer" / "installers" / "SecurityCenterInstaller.java").read_text(encoding="utf-8")
+        self.assertIn("AppInfoHook", text)
+        self.assertIn("SkipSecurityScanHook", text)
+
     def test_process_scope_is_single_source(self):
         text = read("tv/withaibuild/customiuizer/mods/utils/ProcessScope.kt")
         self.assertIn("enum class ProcessScope", text)
