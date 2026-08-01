@@ -56,6 +56,7 @@ import tv.withaibuild.customiuizer.mods.Various;
 import tv.withaibuild.customiuizer.mods.utils.HookerClassHelper.AfterHookCallback;
 import tv.withaibuild.customiuizer.mods.utils.HookerClassHelper.MethodHook;
 import tv.withaibuild.customiuizer.mods.utils.ModuleHelper;
+import tv.withaibuild.customiuizer.mods.utils.ProcessScope;
 import tv.withaibuild.customiuizer.mods.utils.ProcessScopes;
 import tv.withaibuild.customiuizer.mods.utils.ResourceHooks;
 import tv.withaibuild.customiuizer.mods.utils.XposedHelpers;
@@ -129,31 +130,7 @@ public class MainModule extends XposedModule {
     }
 
     private boolean needLoadPrefs(String pkg, SharedPreferences prefs) {
-        if ("android".equals(pkg)
-            || "com.android.systemui".equals(pkg)
-            || "com.miui.home".equals(pkg)
-            || "com.mi.android.globallauncher".equals(pkg)
-            || "com.miui.miwallpaper".equals(pkg)
-            || "com.lbe.security.miui".equals(pkg)
-            || "com.android.incallui".equals(pkg)
-            || "com.miui.securitycenter".equals(pkg)
-            || "com.miui.powerkeeper".equals(pkg)
-            || "com.android.settings".equals(pkg)
-            || "com.miui.packageinstaller".equals(pkg)
-            || "com.miui.screenshot".equals(pkg)
-            || "com.miui.gallery".equals(pkg)
-        ) return true;
-
-        if (pkg.startsWith("com.google.android.inputmethod")) return true;
-
-        if ("com.baidu.input".equals(pkg)
-            || "com.baidu.input_mi".equals(pkg)
-            || "com.iflytek.inputmethod".equals(pkg)
-            || "com.iflytek.inputmethod.miui".equals(pkg)
-            || "com.sohu.inputmethod.sogou".equals(pkg)
-            || "com.sohu.inputmethod.sogou.xiaomi".equals(pkg)
-            || pkg.startsWith("com.touchtype.swiftkey")
-            || pkg.startsWith("com.tencent.wetype")) return true;
+        if (ProcessScopes.isKnownPackage(pkg)) return true;
 
         if (isPrefEnabled(prefs, "pref_key_various_alarmcompat")
                 && isInPrefSet(prefs, "pref_key_various_alarmcompat_apps", pkg)) return true;
@@ -188,6 +165,7 @@ public class MainModule extends XposedModule {
         if (!lpparam.isFirstPackage()) return;
 
         String pkg = lpparam.getPackageName();
+        ProcessScope scope = ProcessScopes.resolve(pkg, processName);
         if (ProcessScopes.isRejected(pkg, processName)) {
             return;
         }
@@ -196,16 +174,7 @@ public class MainModule extends XposedModule {
         if (remote == null || !needLoadPrefs(pkg, remote)) return;
         initPrefs();
 
-        if (pkg.equals("com.baidu.input")
-            || pkg.equals("com.baidu.input_mi")
-            || pkg.equals("com.iflytek.inputmethod")
-            || pkg.equals("com.iflytek.inputmethod.miui")
-            || pkg.equals("com.sohu.inputmethod.sogou")
-            || pkg.equals("com.sohu.inputmethod.sogou.xiaomi")
-            || pkg.startsWith("com.google.android.inputmethod")
-            || pkg.startsWith("com.touchtype.swiftkey")
-            || pkg.startsWith("com.tencent.wetype")
-        ) {
+        if (scope == ProcessScope.INPUT_METHOD) {
             if (mPrefs.getBoolean("controls_volumecursor")) Controls.VolumeCursorHook(lpparam);
             if (mPrefs.getBoolean("controls_nonavbar_fix_inputmethod")
                 && mPrefs.getBoolean("controls_nonavbar")) {
@@ -223,14 +192,13 @@ public class MainModule extends XposedModule {
 
         if (PackageInstallerRouter.install(pkg, lpparam)) return;
 
-        if (pkg.equals("android") || pkg.equals("com.android.systemui")) {
+        if (scope == ProcessScope.SYSTEM_UI) {
             SystemUiInstaller.install(lpparam, this::watchPreferenceChange);
         }
 
 
 
-        final boolean isMIUILauncherPkg = pkg.equals("com.miui.home");
-        final boolean isLauncherPkg = isMIUILauncherPkg || pkg.equals("com.mi.android.globallauncher");
+        final boolean isLauncherPkg = scope == ProcessScope.LAUNCHER;
 
         if (isLauncherPkg) {
             if (mPrefs.getInt("launcher_horizmargin", 0) > 0) LauncherLayoutHooks.HorizontalSpacingRes();
