@@ -111,7 +111,9 @@ public final class SystemServerInstaller {
                     return true;
                 }
             }
-        } catch (Throwable ignored) {}
+        } catch (Throwable t) {
+            if (t instanceof OutOfMemoryError) throw (OutOfMemoryError) t;
+        }
         if (MainModule.mPrefs.getStringAsInt("controls_volumemedia_up", 0) > 0 || MainModule.mPrefs.getStringAsInt("controls_volumemedia_down", 0) > 0) {
             return !MainModule.mPrefs.getStringSet("controls_mediaplayer_apps").isEmpty();
         }

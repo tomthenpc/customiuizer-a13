@@ -375,6 +375,35 @@ def check_no_regex_split_on_literal(path: Path, text: str) -> list[Finding]:
     return findings
 
 
+def check_installer_oom_boundary(path: Path, text: str) -> list[Finding]:
+    """Installer Throwable fallbacks must never hide an OutOfMemoryError.
+
+    Installers run at process initialization. Treating OOM as a disabled feature
+    or a compatibility miss can leave a partially initialized system process and
+    records the wrong root cause. Ordinary ROM/reflection failures may still be
+    isolated, but each Throwable catch must explicitly rethrow OOM.
+    """
+    if "/customiuizer/installers/" not in path.as_posix():
+        return []
+    findings = []
+    pattern = re.compile(
+        r"catch\s*\(\s*(?:Throwable\s+\w+|\w+\s*:\s*Throwable)\s*\)"
+    )
+    for match in pattern.finditer(text):
+        body, _ = block_at(text, match.end())
+        if "OutOfMemoryError" in body and re.search(r"\bthrow\b", body):
+            continue
+        findings.append(
+            Finding(
+                "installer-oom-boundary",
+                path,
+                line_of(text, match.start()),
+                "Throwable catch must explicitly rethrow OutOfMemoryError",
+            )
+        )
+    return findings
+
+
 def check_launcher_rename_loop_exit(path: Path, text: str) -> list[Finding]:
     """The migrated shortcut rename loop must stop after its unique key matches.
 
@@ -669,6 +698,7 @@ RULES = (
     check_no_redundant_arg_marshalling,
     check_no_legacy_xposed,
     check_no_regex_split_on_literal,
+    check_installer_oom_boundary,
     check_launcher_rename_loop_exit,
     check_preference_style_attr,
 )

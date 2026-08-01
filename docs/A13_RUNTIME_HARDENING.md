@@ -98,6 +98,7 @@ Source-level steady-state cost checklist. Each row states the current evidence; 
 | Disabled feature zero-cost | VERIFIED_STATIC | `FeatureDispatcher` checks `runtime.prefs` before `installWithContract` | `SystemServerInstaller` / `SystemUiInstaller` / `LauncherInstaller` already gate by process + prefs |
 | Diagnostics bounded | COMPLETED | `DiagnosticRecorder` `MAX_SNAPSHOTS=32`, `MAX_DETAIL_LENGTH=512`, `THROTTLE_MS=60_000` | Already fixed capacity and throttling |
 | Shared OOM boundary | VERIFIED_STATIC | `ModuleHelper` hook, reflection fallback, context discovery, action lookup, receiver and preference-observer catch paths all rethrow `OutOfMemoryError`; observer propagation covered by `ModuleHelperGuardedTest` | Ordinary ROM/reflection failures remain isolated; OOM is never converted into a missing-member sentinel or ignored callback |
+| Installer OOM boundary | VERIFIED_STATIC | `SystemServerInstaller.needGlobalActions` rethrows OOM; `check-invariants.py` rejects every Java/Kotlin installer `catch (Throwable)` without an explicit OOM rethrow | Prevents partial initialization from being misreported as a disabled feature or compatibility miss |
 
 ## Periodic-work inventory (P1-B)
 
