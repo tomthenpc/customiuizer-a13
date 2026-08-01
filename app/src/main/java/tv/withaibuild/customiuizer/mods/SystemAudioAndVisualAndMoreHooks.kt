@@ -168,7 +168,12 @@ object SystemAudioAndVisualAndMoreHooks {
                     try {
                         XposedHelpers.callMethod(param.thisObject, "setSpringBackEnable", false)
                     } catch (t: Throwable) {
-                        try { XposedHelpers.setBooleanField(param.thisObject, "mSpringBackEnable", false) } catch (ignore: Throwable) {}
+                        if (t is OutOfMemoryError) throw t
+                        try {
+                            XposedHelpers.setBooleanField(param.thisObject, "mSpringBackEnable", false)
+                        } catch (fallback: Throwable) {
+                            if (fallback is OutOfMemoryError) throw fallback
+                        }
                     }
                 }
             })
@@ -183,7 +188,12 @@ object SystemAudioAndVisualAndMoreHooks {
                     try {
                         XposedHelpers.callMethod(param.thisObject, "setSpringEnabled", false)
                     } catch (t: Throwable) {
-                        try { XposedHelpers.setBooleanField(param.thisObject, "mSpringEnabled", false) } catch (ignore: Throwable) {}
+                        if (t is OutOfMemoryError) throw t
+                        try {
+                            XposedHelpers.setBooleanField(param.thisObject, "mSpringEnabled", false)
+                        } catch (fallback: Throwable) {
+                            if (fallback is OutOfMemoryError) throw fallback
+                        }
                     }
                 }
             })
@@ -275,6 +285,7 @@ object SystemAudioAndVisualAndMoreHooks {
                     isRingtone = XposedHelpers.callMethod(mCurrentVibration, "isRingtone") as? Boolean ?: false
                     isNotification = XposedHelpers.callMethod(mCurrentVibration, "isNotification") as? Boolean ?: false
                 } catch (t: Throwable) {
+                    if (t is OutOfMemoryError) throw t
                     val mUsageHint = XposedHelpers.getIntField(mCurrentVibration, "mUsageHint")
                     isRingtone = mUsageHint == 6
                     isNotification = mUsageHint == 5 || mUsageHint == 7 || mUsageHint == 8 || mUsageHint == 9
@@ -302,7 +313,8 @@ object SystemAudioAndVisualAndMoreHooks {
 
                 val mSupportsAmplitudeControl = try {
                     XposedHelpers.getBooleanField(param.thisObject, "mSupportsAmplitudeControl")
-                } catch (ignored: Throwable) {
+                } catch (t: Throwable) {
+                    if (t is OutOfMemoryError) throw t
                     false
                 }
 
@@ -322,10 +334,22 @@ object SystemAudioAndVisualAndMoreHooks {
             var mCurrentDate: TextView? = null
             var mCurrentDateLarge: TextView? = null
             if (isSingle) {
-                try { mCurrentDate = XposedHelpers.getObjectField(thisObject, "mCurrentDate") as? TextView } catch (ignore: Throwable) {}
-                try { mCurrentDateLarge = XposedHelpers.getObjectField(thisObject, "mCurrentDateLarge") as? TextView } catch (ignore: Throwable) {}
+                try {
+                    mCurrentDate = XposedHelpers.getObjectField(thisObject, "mCurrentDate") as? TextView
+                } catch (t: Throwable) {
+                    if (t is OutOfMemoryError) throw t
+                }
+                try {
+                    mCurrentDateLarge = XposedHelpers.getObjectField(thisObject, "mCurrentDateLarge") as? TextView
+                } catch (t: Throwable) {
+                    if (t is OutOfMemoryError) throw t
+                }
             } else {
-                try { mCurrentDate = XposedHelpers.getObjectField(thisObject, "mLocalDate") as? TextView } catch (ignore: Throwable) {}
+                try {
+                    mCurrentDate = XposedHelpers.getObjectField(thisObject, "mLocalDate") as? TextView
+                } catch (t: Throwable) {
+                    if (t is OutOfMemoryError) throw t
+                }
             }
             if (mCurrentDate == null && mCurrentDateLarge == null) return
 
@@ -370,6 +394,7 @@ object SystemAudioAndVisualAndMoreHooks {
                 mCurrentDateLarge.append(span)
             }
         } catch (t: Throwable) {
+            if (t is OutOfMemoryError) throw t
             XposedHelpers.log(t)
         }
     }
@@ -541,6 +566,7 @@ object SystemAudioAndVisualAndMoreHooks {
                         lp.bottomMargin = 0
                         sliderView.layoutParams = lp
                     } catch (t: Throwable) {
+                        if (t is OutOfMemoryError) throw t
                         XposedHelpers.log(t)
                     }
                 }
@@ -578,6 +604,7 @@ object SystemAudioAndVisualAndMoreHooks {
 
             XposedHelpers.callMethod(statusBarKeyguardViewManager, "showGenericBouncer", true)
         } catch (t: Throwable) {
+            if (t is OutOfMemoryError) throw t
             XposedHelpers.log(t)
         }
     }
@@ -635,7 +662,8 @@ object SystemAudioAndVisualAndMoreHooks {
             override fun after(param: AfterHookCallback) {
                 val mIsShowLongScreenShotGuide = try {
                     XposedHelpers.getBooleanField(param.thisObject, "mIsShowLongScreenShotGuide")
-                } catch (ignore: Throwable) {
+                } catch (t: Throwable) {
+                    if (t is OutOfMemoryError) throw t
                     false
                 }
                 if (mIsShowLongScreenShotGuide) return

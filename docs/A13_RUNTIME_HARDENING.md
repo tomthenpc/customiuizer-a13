@@ -103,6 +103,7 @@ Source-level steady-state cost checklist. Each row states the current evidence; 
 | Installer OOM boundary | VERIFIED_STATIC | `SystemServerInstaller.needGlobalActions` rethrows OOM; `check-invariants.py` rejects every Java/Kotlin installer `catch (Throwable)` without an explicit OOM rethrow | Prevents partial initialization from being misreported as a disabled feature or compatibility miss |
 | Hook callback OOM boundary | VERIFIED_STATIC | `HookerClassHelper.MethodHook` rethrows OOM from before/after callbacks and from the hooked host method before an after hook can replace it; `HookerClassHelperTest` covers ordinary failure isolation and all three OOM paths | Normal callback failures remain isolated; non-OOM host throw/result replacement semantics are unchanged |
 | GlobalActions / reflection OOM boundary | VERIFIED_STATIC | Action receiver, delayed input, panel fallback, receiver replacement and broadcast helpers rethrow OOM; `XposedHelpers` unwraps the original OOM from instance/static/constructor reflection; covered by `GlobalActionsFastRebootTest` and `XposedHelpersOomTest` | Ordinary action/reflection failures retain their existing fallback or false/unhandled result |
+| Audio/visual shared hooks OOM boundary | VERIFIED_STATIC | Overscroll method/field fallback, vibration compatibility, alarm date variants, volume slider, keyguard and screenshot-state fallbacks rethrow OOM | Existing MIUI member fallback order and ordinary failure isolation are unchanged |
 
 ## Periodic-work inventory (P1-B)
 
