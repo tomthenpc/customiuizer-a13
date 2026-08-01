@@ -1,10 +1,12 @@
 package tv.withaibuild.customiuizer.mods
 
+import android.content.Intent
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse
 import org.junit.Assert.assertThrows
 import org.junit.Assert.assertTrue
 import org.junit.Test
+import tv.withaibuild.customiuizer.mods.SystemStatusBarClockAndMoreHooks.ClockLifecycleAction
 import tv.withaibuild.customiuizer.mods.SystemStatusBarClockAndMoreHooks.ClockRunnable
 import tv.withaibuild.customiuizer.mods.SystemStatusBarClockAndMoreHooks.SecondTickerState
 import tv.withaibuild.customiuizer.mods.SystemStatusBarClockAndMoreHooks.TickerScheduler
@@ -371,6 +373,60 @@ class SystemStatusBarClockAndMoreHooksTest {
 
         assertEquals(0, scheduler.pendingCount())
         assertFalse(state.callbackPending)
+    }
+
+    @Test
+    fun clockLifecycle_timeChangedWhenScreenOnStarts() {
+        assertEquals(ClockLifecycleAction.START_OR_RESTART,
+            SystemStatusBarClockAndMoreHooks.decideClockLifecycleAction(Intent.ACTION_TIME_CHANGED, true))
+    }
+
+    @Test
+    fun clockLifecycle_timeChangedWhenScreenOffStops() {
+        assertEquals(ClockLifecycleAction.STOP,
+            SystemStatusBarClockAndMoreHooks.decideClockLifecycleAction(Intent.ACTION_TIME_CHANGED, false))
+    }
+
+    @Test
+    fun clockLifecycle_timeZoneChangedWhenScreenOnStarts() {
+        assertEquals(ClockLifecycleAction.START_OR_RESTART,
+            SystemStatusBarClockAndMoreHooks.decideClockLifecycleAction(Intent.ACTION_TIMEZONE_CHANGED, true))
+    }
+
+    @Test
+    fun clockLifecycle_timeZoneChangedWhenScreenOffStops() {
+        assertEquals(ClockLifecycleAction.STOP,
+            SystemStatusBarClockAndMoreHooks.decideClockLifecycleAction(Intent.ACTION_TIMEZONE_CHANGED, false))
+    }
+
+    @Test
+    fun clockLifecycle_screenOnWhenScreenOnStarts() {
+        assertEquals(ClockLifecycleAction.START_OR_RESTART,
+            SystemStatusBarClockAndMoreHooks.decideClockLifecycleAction(Intent.ACTION_SCREEN_ON, true))
+    }
+
+    @Test
+    fun clockLifecycle_screenOffAlwaysStops() {
+        assertEquals(ClockLifecycleAction.STOP,
+            SystemStatusBarClockAndMoreHooks.decideClockLifecycleAction(Intent.ACTION_SCREEN_OFF, true))
+        assertEquals(ClockLifecycleAction.STOP,
+            SystemStatusBarClockAndMoreHooks.decideClockLifecycleAction(Intent.ACTION_SCREEN_OFF, false))
+    }
+
+    @Test
+    fun clockLifecycle_unknownActionIgnored() {
+        assertEquals(ClockLifecycleAction.IGNORE,
+            SystemStatusBarClockAndMoreHooks.decideClockLifecycleAction(Intent.ACTION_BATTERY_CHANGED, true))
+    }
+
+    @Test
+    fun clockLifecycle_generationStrictlyIncreasing() {
+        val state = SecondTickerState()
+        state.start(1L)
+        val gen1 = state.generation
+        state.start(2L)
+        val gen2 = state.generation
+        assertTrue(gen1 < gen2)
     }
 
     @Test

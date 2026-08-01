@@ -41,7 +41,8 @@ object SystemStatusBarClockAndMoreHooks {
             override fun after(param: AfterHookCallback) {
                 val clockController = param.thisObject
                 val mContext = XposedHelpers.getObjectField(clockController, "mContext") as? Context ?: return
-                if (isScreenOn(mContext)) startOrRestartSecondTicker(clockController)
+                val state = secondTickerState(clockController)
+                state.setScreen(isScreenOn(mContext))
 
                 val controllerRef = WeakReference(clockController)
                 val screenAndTimeReceiver = object : BroadcastReceiver() {
@@ -50,29 +51,29 @@ object SystemStatusBarClockAndMoreHooks {
                             val controller = controllerRef.get() ?: return@guarded
                             val controllerContext = XposedHelpers.getObjectField(controller, "mContext") as? Context ?: return@guarded
                             val state = secondTickerState(controller)
-                            when (intent.action) {
-                                Intent.ACTION_SCREEN_OFF -> {
-                                    state.setScreen(false)
-                                    stopSecondTimer(controller)
-                                }
-                                Intent.ACTION_SCREEN_ON,
-                                Intent.ACTION_TIMEZONE_CHANGED,
-                                "android.intent.action.TIME_SET" -> {
+                            val action = decideClockLifecycleAction(intent.action, isScreenOn(controllerContext))
+                            when (action) {
+                                ClockLifecycleAction.START_OR_RESTART -> {
                                     state.setScreen(true)
-                                    if (isScreenOn(controllerContext)) startOrRestartSecondTicker(controller)
+                                    applyClockLifecycleAction(controller, controllerContext, action)
                                 }
+                                ClockLifecycleAction.STOP -> {
+                                    state.setScreen(false)
+                                    applyClockLifecycleAction(controller, controllerContext, action)
+                                }
+                                ClockLifecycleAction.IGNORE -> {}
                             }
                         }
                     }
                 }
 
                 val filter = IntentFilter().apply {
-                    addAction("android.intent.action.TIME_SET")
+                    addAction(Intent.ACTION_TIME_CHANGED)
                     addAction(Intent.ACTION_TIMEZONE_CHANGED)
                     addAction(Intent.ACTION_SCREEN_ON)
                     addAction(Intent.ACTION_SCREEN_OFF)
                 }
-                ModuleHelper.registerOwnedReceiver(
+                val registered = ModuleHelper.registerOwnedReceiver(
                     mContext,
                     clockController,
                     "systemui.clockScreenAndTimeReceiver",
@@ -80,6 +81,13 @@ object SystemStatusBarClockAndMoreHooks {
                     filter,
                     Context.RECEIVER_NOT_EXPORTED
                 )
+                if (!registered) {
+                    secondTickerState(clockController).stop()
+                    stopSecondTimer(clockController)
+                    XposedHelpers.log("SystemStatusBarClockAndMoreHooks", "Screen/time receiver registration failed; clock ticker stopped.")
+                } else if (isScreenOn(mContext)) {
+                    startOrRestartSecondTicker(clockController)
+                }
             }
         }
         if (ccClockTweak || statusbarClockTweak) {
@@ -383,9 +391,35 @@ object SystemStatusBarClockAndMoreHooks {
         return customFormat.contains("ss")
     }
 
+    internal enum class ClockLifecycleAction {
+        START_OR_RESTART,
+        STOP,
+        IGNORE
+    }
+
     private fun isScreenOn(context: Context): Boolean {
         val pm = context.getSystemService(Context.POWER_SERVICE) as? PowerManager
         return pm?.isInteractive ?: true
+    }
+
+    internal fun decideClockLifecycleAction(action: String?, isScreenOn: Boolean): ClockLifecycleAction {
+        return when (action) {
+            Intent.ACTION_SCREEN_OFF -> ClockLifecycleAction.STOP
+            Intent.ACTION_SCREEN_ON,
+            Intent.ACTION_TIME_CHANGED,
+            Intent.ACTION_TIMEZONE_CHANGED -> {
+                if (isScreenOn) ClockLifecycleAction.START_OR_RESTART else ClockLifecycleAction.STOP
+            }
+            else -> ClockLifecycleAction.IGNORE
+        }
+    }
+
+    internal fun applyClockLifecycleAction(controller: Any, context: Context, action: ClockLifecycleAction) {
+        when (action) {
+            ClockLifecycleAction.START_OR_RESTART -> startOrRestartSecondTicker(controller)
+            ClockLifecycleAction.STOP -> stopSecondTimer(controller)
+            ClockLifecycleAction.IGNORE -> {}
+        }
     }
 
     /**
