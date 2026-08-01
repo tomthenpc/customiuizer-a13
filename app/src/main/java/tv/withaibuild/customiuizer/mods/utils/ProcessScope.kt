@@ -12,17 +12,17 @@ enum class ProcessScope {
     SYSTEM_UI,
     SYSTEM_UI_PLUGIN,
     LAUNCHER,
-    SETTINGS,
+    SETTINGS_MAIN,
     SETTINGS_REMOTE,
-    SECURITY_CENTER,
+    SECURITY_CENTER_MAIN,
     SECURITY_CENTER_REMOTE,
     SECURITY_CENTER_BOOTAWARE,
     POWER_KEEPER,
-    NETWORK_STACK,
+    WALLPAPER,
     INPUT_METHOD,
-    LOCATION_FUSED,
+    NETWORK_STACK,
     GENERIC_APP,
-    UNKNOWN
+    UNSUPPORTED
 }
 
 object ProcessScopes {
@@ -37,7 +37,7 @@ object ProcessScopes {
     private const val PKG_PACKAGE_INSTALLER = "com.miui.packageinstaller"
 
     private val KNOWN_PACKAGES: Set<String> = setOf(
-        "android",
+        PKG_ANDROID,
         PKG_SYSTEM_UI,
         PKG_HOME,
         PKG_GLOBAL_LAUNCHER,
@@ -77,15 +77,16 @@ object ProcessScopes {
     fun resolve(packageName: String, processName: String): ProcessScope = when (packageName) {
         PKG_SYSTEM_UI -> if (isMainProcess(packageName, processName)) ProcessScope.SYSTEM_UI else ProcessScope.SYSTEM_UI_PLUGIN
         PKG_HOME, PKG_GLOBAL_LAUNCHER -> ProcessScope.LAUNCHER
-        PKG_SETTINGS -> if (isMainProcess(packageName, processName)) ProcessScope.SETTINGS else ProcessScope.SETTINGS_REMOTE
+        PKG_SETTINGS -> if (isMainProcess(packageName, processName)) ProcessScope.SETTINGS_MAIN else ProcessScope.SETTINGS_REMOTE
         PKG_SECURITY_CENTER -> when {
             isBootawareProcess(processName) -> ProcessScope.SECURITY_CENTER_BOOTAWARE
             !isMainProcess(packageName, processName) -> ProcessScope.SECURITY_CENTER_REMOTE
-            else -> ProcessScope.SECURITY_CENTER
+            else -> ProcessScope.SECURITY_CENTER_MAIN
         }
         PKG_POWER_KEEPER -> ProcessScope.POWER_KEEPER
         PKG_PACKAGE_INSTALLER -> ProcessScope.GENERIC_APP
-        "com.android.location.fused" -> ProcessScope.LOCATION_FUSED
+        "com.miui.miwallpaper" -> ProcessScope.WALLPAPER
+        "com.android.location.fused" -> ProcessScope.UNSUPPORTED
         else -> when {
             packageName.startsWith("com.android.networkstack") -> ProcessScope.NETWORK_STACK
             packageName.startsWith("com.google.android.inputmethod")
@@ -101,24 +102,15 @@ object ProcessScopes {
         }
     }
 
-    /**
-     * `bootaware` has been observed both as `com.miui.securitycenter:bootaware`
-     * and as `com.miui.securitycenter.bootaware`. Accept both unambiguously.
-     */
     private fun isBootawareProcess(processName: String): Boolean =
         processName.endsWith(".bootaware") || processName.endsWith(":bootaware")
 
-    /**
-     * Processes that must never load prefs or install hooks. This is the
-     * explicit deny-list; everything else falls through to the normal allow flow.
-     */
     @JvmStatic
     fun isRejected(packageName: String, processName: String): Boolean = when (resolve(packageName, processName)) {
         ProcessScope.SETTINGS_REMOTE,
         ProcessScope.SECURITY_CENTER_BOOTAWARE,
-        ProcessScope.LOCATION_FUSED,
-        ProcessScope.NETWORK_STACK,
-        ProcessScope.UNKNOWN -> true
+        ProcessScope.UNSUPPORTED,
+        ProcessScope.NETWORK_STACK -> true
         else -> false
     }
 

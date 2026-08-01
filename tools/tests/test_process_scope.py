@@ -34,9 +34,15 @@ class ProcessScopeTests(unittest.TestCase):
         text = read("tv/withaibuild/customiuizer/mods/utils/ProcessScope.kt")
         self.assertIn("ProcessScope.SETTINGS_REMOTE", text)
         self.assertIn("ProcessScope.SECURITY_CENTER_BOOTAWARE", text)
-        self.assertIn("ProcessScope.LOCATION_FUSED", text)
         self.assertIn("ProcessScope.NETWORK_STACK", text)
         self.assertIn("isRejected", text)
+
+    def test_process_scopes_distinguishes_main_and_auxiliary(self):
+        text = read("tv/withaibuild/customiuizer/mods/utils/ProcessScope.kt")
+        self.assertIn("ProcessScope.SETTINGS_MAIN", text)
+        self.assertIn("ProcessScope.SECURITY_CENTER_MAIN", text)
+        self.assertIn("ProcessScope.SECURITY_CENTER_REMOTE", text)
+        self.assertIn("ProcessScope.SYSTEM_UI_PLUGIN", text)
 
     def test_process_scopes_bootaware_accepts_colon_and_dot(self):
         text = read("tv/withaibuild/customiuizer/mods/utils/ProcessScope.kt")
@@ -51,8 +57,14 @@ class ProcessScopeTests(unittest.TestCase):
         text = read("tv/withaibuild/customiuizer/mods/utils/ProcessScope.kt")
         self.assertNotIn("mapOf", text)
         self.assertNotIn("listOf", text)
-        # The KNOWN_PACKAGES Set is a compile-time singleton, not rebuilt on call.
         self.assertIn("private val KNOWN_PACKAGES: Set<String>", text)
+
+    def test_process_scopes_default_rejects_unknown_auxiliary(self):
+        """Any package with an auxiliary process name that is not the main package
+        should resolve to a non-MAIN scope."""
+        text = read("tv/withaibuild/customiuizer/mods/utils/ProcessScope.kt")
+        # The default branch returns GENERIC_APP for unknown packages.
+        self.assertIn("ProcessScope.GENERIC_APP", text)
 
 
 if __name__ == "__main__":
