@@ -5,6 +5,7 @@ import org.junit.Assert.assertFalse
 import org.junit.Assert.assertNotEquals
 import org.junit.Assert.assertNotNull
 import org.junit.Assert.assertNull
+import org.junit.Assert.assertSame
 import org.junit.Assert.assertTrue
 import org.junit.Test
 
@@ -127,28 +128,27 @@ class StepCounterLifecycleTest {
     }
 
     @Test
-    fun screenOnRestoresScheduleAndRegisterTimeTickOnce() {
+    fun screenOffBumpsGeneration() {
         val lifecycle = StepCounterController.Lifecycle()
         lifecycle.setHasViews(true)
-        lifecycle.onScreenOff()
-
-        assertFalse(lifecycle.registerTimeTick())
-
         lifecycle.onScreenOn()
 
-        assertTrue(lifecycle.registerTimeTick())
-        assertTrue(lifecycle.canSchedule())
-        assertTrue(lifecycle.registerTimeTick())
-        assertTrue(lifecycle.timeTickRegistered)
+        val t1 = lifecycle.tryStartQuery()!!
+        val before = lifecycle.generation
+        lifecycle.onScreenOff()
+        lifecycle.onScreenOn()
+
+        assertEquals(before + 1, lifecycle.generation)
+        assertFalse(lifecycle.isCurrent(t1))
     }
 
     @Test
-    fun removeAllViewsStopsTimeTickAndSchedule() {
+    fun removeAllViewsStopsSchedulingAndInvalidatesTicket() {
         val lifecycle = StepCounterController.Lifecycle()
         lifecycle.setHasViews(true)
         lifecycle.onScreenOn()
         lifecycle.registerTimeTick()
-        lifecycle.tryStartQuery()
+        val t1 = lifecycle.tryStartQuery()!!
 
         lifecycle.setHasViews(false)
 
@@ -156,6 +156,7 @@ class StepCounterLifecycleTest {
         assertFalse(lifecycle.timeTickRegistered)
         assertFalse(lifecycle.canSchedule())
         assertNull(lifecycle.tryStartQuery())
+        assertFalse(lifecycle.isCurrent(t1))
     }
 
     @Test
@@ -173,7 +174,7 @@ class StepCounterLifecycleTest {
     }
 
     @Test
-    fun generationBumpsOnResetAndBump() {
+    fun resetBumpsGenerationOnlyOnce() {
         val lifecycle = StepCounterController.Lifecycle()
         val gen1 = lifecycle.generation
 
@@ -203,30 +204,70 @@ class StepCounterLifecycleTest {
     }
 
     @Test
-    fun queryIdStrictlyIncreasing() {
+    fun queryIdsRemainMonotonicAcrossResets() {
+        val lifecycle = StepCounterController.Lifecycle()
+        lifecycle.setHasViews(true)
+        lifecycle.onScreenOn()
+
+        var lastQueryId = 0L
+        repeat(50) {
+            lifecycle.reset()
+            lifecycle.setHasViews(true)
+            lifecycle.onScreenOn()
+            val t = lifecycle.tryStartQuery()
+            if (t != null) {
+                assertTrue(t.queryId > lastQueryId)
+                lastQueryId = t.queryId
+                lifecycle.finishQuery(t)
+            }
+        }
+    }
+
+    @Test
+    fun consumeResultOnlyOwnTicket() {
         val lifecycle = StepCounterController.Lifecycle()
         lifecycle.setHasViews(true)
         lifecycle.onScreenOn()
 
         val t1 = lifecycle.tryStartQuery()!!
         lifecycle.finishQuery(t1)
-        val t2 = lifecycle.tryStartQuery()!!
+        assertTrue(lifecycle.isCurrent(t1))
 
-        assertTrue(t2.queryId > t1.queryId)
+        assertTrue(lifecycle.consumeResult(t1))
+        assertFalse(lifecycle.isCurrent(t1))
+
+        assertFalse(lifecycle.consumeResult(t1))
     }
 
     @Test
-    fun invalidateDoesNotResetGeneration() {
+    fun consumeResultDoesNotAffectNewTicket() {
         val lifecycle = StepCounterController.Lifecycle()
         lifecycle.setHasViews(true)
         lifecycle.onScreenOn()
 
         val t1 = lifecycle.tryStartQuery()!!
-        val gen = lifecycle.generation
+        lifecycle.finishQuery(t1)
+        lifecycle.consumeResult(t1)
+
+        val t2 = lifecycle.tryStartQuery()!!
+        assertTrue(lifecycle.isCurrent(t2))
+
+        assertFalse(lifecycle.consumeResult(t1))
+        assertTrue(lifecycle.isCurrent(t2))
+    }
+
+    @Test
+    fun invalidateBumpsGeneration() {
+        val lifecycle = StepCounterController.Lifecycle()
+        lifecycle.setHasViews(true)
+        lifecycle.onScreenOn()
+
+        val t1 = lifecycle.tryStartQuery()!!
+        val before = lifecycle.generation
         lifecycle.invalidate()
 
+        assertEquals(before + 1, lifecycle.generation)
         assertFalse(lifecycle.isCurrent(t1))
-        assertEquals(gen, lifecycle.generation)
     }
 
     @Test
@@ -244,22 +285,18 @@ class StepCounterLifecycleTest {
     }
 
     @Test
-    fun manyInitDestroyDoNotGrowQueryIds() {
+    fun tryStartQueryIsAtomicAgainstInvalidate() {
         val lifecycle = StepCounterController.Lifecycle()
         lifecycle.setHasViews(true)
         lifecycle.onScreenOn()
 
-        var lastQueryId = 0L
-        repeat(50) {
-            lifecycle.reset()
-            lifecycle.setHasViews(true)
-            lifecycle.onScreenOn()
-            val t = lifecycle.tryStartQuery()
-            if (t != null) {
-                assertTrue(t.queryId > lastQueryId)
-                lastQueryId = t.queryId
-                lifecycle.finishQuery(t)
-            }
-        }
+        // Invalidate and then start; the start sees the new generation.
+        val t1 = lifecycle.tryStartQuery()!!
+        lifecycle.invalidate()
+        val t2 = lifecycle.tryStartQuery()!!
+
+        assertTrue(t2.queryId > t1.queryId)
+        assertFalse(lifecycle.isCurrent(t1))
+        assertTrue(lifecycle.isCurrent(t2))
     }
 }
