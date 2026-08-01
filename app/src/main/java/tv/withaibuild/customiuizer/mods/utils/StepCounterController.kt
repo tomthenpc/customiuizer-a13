@@ -38,6 +38,7 @@ object StepCounterController {
         private val _generation = java.util.concurrent.atomic.AtomicLong(0L)
         private val _nextQueryId = java.util.concurrent.atomic.AtomicLong(0L)
         private val _activeTicket = java.util.concurrent.atomic.AtomicReference<QueryTicket?>(null)
+        private val _lastValidQueryId = java.util.concurrent.atomic.AtomicLong(0L)
 
         val screenOn: Boolean get() = _screenOn.get()
         val hasViews: Boolean get() = _hasViews.get()
@@ -52,14 +53,14 @@ object StepCounterController {
         fun onScreenOff() {
             _screenOn.set(false)
             _timeTickRegistered.set(false)
-            _activeTicket.set(null)
+            invalidate()
         }
 
         fun setHasViews(value: Boolean) {
             _hasViews.set(value)
             if (!value) {
                 _timeTickRegistered.set(false)
-                _activeTicket.set(null)
+                invalidate()
             }
         }
 
@@ -82,15 +83,22 @@ object StepCounterController {
         fun tryStartQuery(): QueryTicket? {
             if (!_screenOn.get() || !_hasViews.get()) return null
             val ticket = QueryTicket(_generation.get(), _nextQueryId.incrementAndGet())
-            if (_activeTicket.compareAndSet(null, ticket)) return ticket
+            if (_activeTicket.compareAndSet(null, ticket)) {
+                _lastValidQueryId.set(ticket.queryId)
+                return ticket
+            }
             return null
         }
 
         fun finishQuery(ticket: QueryTicket): Boolean = _activeTicket.compareAndSet(ticket, null)
 
         fun isCurrent(ticket: QueryTicket): Boolean {
-            val active = _activeTicket.get()
-            return active === ticket && active.generation == _generation.get()
+            return ticket.queryId == _lastValidQueryId.get() && ticket.generation == _generation.get()
+        }
+
+        fun invalidate() {
+            _activeTicket.set(null)
+            _lastValidQueryId.set(0L)
         }
 
         fun bumpGeneration(): Long = _generation.incrementAndGet()
@@ -101,7 +109,7 @@ object StepCounterController {
             _screenOn.set(true)
             _hasViews.set(false)
             _timeTickRegistered.set(false)
-            _activeTicket.set(null)
+            invalidate()
             _generation.incrementAndGet()
         }
     }
@@ -368,7 +376,7 @@ object StepCounterController {
             return
         }
 
-        val newText = try {
+        val newText: String? = try {
             querySteps(capturedContext)
         } catch (t: Throwable) {
             if (t is OutOfMemoryError) throw t
@@ -380,10 +388,13 @@ object StepCounterController {
         }
 
         if (newText != null && lifecycle.isCurrent(ticket) && lifecycle.screenOn) {
-            uiHandler?.post {
+            val posted = uiHandler?.post {
                 ModuleHelper.guarded("StepCounterController.updateViews") {
-                    if (lifecycle.isCurrent(ticket)) updateViews(newText)
+                    if (lifecycle.isCurrent(ticket) && lifecycle.screenOn && hasLiveViews()) updateViews(newText)
                 }
+            } ?: false
+            if (!posted) {
+                XposedHelpers.log("StepCounterController", "UI post rejected for ticket ${ticket.queryId}; result dropped.")
             }
         }
     }

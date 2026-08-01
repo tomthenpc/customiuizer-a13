@@ -61,7 +61,26 @@ class StepCounterLifecycleTest {
         assertTrue(finished)
         assertFalse(lifecycle.isQuerying)
         assertTrue(lifecycle.canSchedule())
+        // finishQuery releases the active slot but the result remains valid for the
+        // current lifecycle until a new query starts or the lifecycle is invalidated.
+        assertTrue(lifecycle.isCurrent(t1))
+    }
+
+    @Test
+    fun finishQueryReleasesSlotButResultRemainsValidUntilNextQuery() {
+        val lifecycle = StepCounterController.Lifecycle()
+        lifecycle.setHasViews(true)
+        lifecycle.onScreenOn()
+
+        val t1 = lifecycle.tryStartQuery()!!
+        lifecycle.finishQuery(t1)
+
+        assertTrue(lifecycle.isCurrent(t1))
+
+        val t2 = lifecycle.tryStartQuery()!!
+        assertTrue(t2.queryId > t1.queryId)
         assertFalse(lifecycle.isCurrent(t1))
+        assertTrue(lifecycle.isCurrent(t2))
     }
 
     @Test
@@ -194,5 +213,53 @@ class StepCounterLifecycleTest {
         val t2 = lifecycle.tryStartQuery()!!
 
         assertTrue(t2.queryId > t1.queryId)
+    }
+
+    @Test
+    fun invalidateDoesNotResetGeneration() {
+        val lifecycle = StepCounterController.Lifecycle()
+        lifecycle.setHasViews(true)
+        lifecycle.onScreenOn()
+
+        val t1 = lifecycle.tryStartQuery()!!
+        val gen = lifecycle.generation
+        lifecycle.invalidate()
+
+        assertFalse(lifecycle.isCurrent(t1))
+        assertEquals(gen, lifecycle.generation)
+    }
+
+    @Test
+    fun completedQueryResultInvalidatedAfterScreenOff() {
+        val lifecycle = StepCounterController.Lifecycle()
+        lifecycle.setHasViews(true)
+        lifecycle.onScreenOn()
+
+        val t1 = lifecycle.tryStartQuery()!!
+        lifecycle.finishQuery(t1)
+        assertTrue(lifecycle.isCurrent(t1))
+
+        lifecycle.onScreenOff()
+        assertFalse(lifecycle.isCurrent(t1))
+    }
+
+    @Test
+    fun manyInitDestroyDoNotGrowQueryIds() {
+        val lifecycle = StepCounterController.Lifecycle()
+        lifecycle.setHasViews(true)
+        lifecycle.onScreenOn()
+
+        var lastQueryId = 0L
+        repeat(50) {
+            lifecycle.reset()
+            lifecycle.setHasViews(true)
+            lifecycle.onScreenOn()
+            val t = lifecycle.tryStartQuery()
+            if (t != null) {
+                assertTrue(t.queryId > lastQueryId)
+                lastQueryId = t.queryId
+                lifecycle.finishQuery(t)
+            }
+        }
     }
 }

@@ -147,7 +147,7 @@ The module does not add a periodic network-speed updater. The ROM still drives t
 |---|---|---|
 | P0-1 Clock timezone / generation / mContext | COMPLETED | `TIMEZONE_CHANGED` / `TIME_CHANGED` consult real screen state; `ClockLifecycleAction`; receiver registration failure stops ticker |
 | P0-2 Network speed per-controller / one-sample | COMPLETED | per-controller `NetSpeedRuntimeState` via `AdditionalInstanceField`; one `getTrafficBytes` per tick; no `Pair`; locale/pref cache and strict style one-shot still pending |
-| P0-3 StepCounter query token / lifecycle | COMPLETED | `QueryTicket(generation, queryId)`; identity `finishQuery(ticket)`; captured context; receiver registration rollback; OOM rethrow |
+| P0-3 StepCounter query token / lifecycle | PENDING_RETEST | `QueryTicket(generation, queryId)`; `finishQuery` now separates slot release from result validity; `Lifecycle.invalidate()` added for screen off / no View / reinit; UI post result checked; regression tests added |
 | P0-4 DeviceInfo lifecycle | NOT_STARTED | dedicated I/O thread and stale generation pending |
 | P1-1 BatteryIndicator lifecycle | NOT_STARTED | pending |
 | P1-2 AudioVisualizer scheduling | NOT_STARTED | pending |
