@@ -192,8 +192,7 @@ object CanaryContracts {
                     className = "com.android.systemui.statusbar.phone.MiuiPhoneStatusBarView",
                     memberName = "onAttachedToWindow",
                     parameterTypes = emptyList()
-                ),
-                criticality = Criticality.OPTIONAL
+                )
             )
         )
     )
