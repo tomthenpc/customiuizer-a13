@@ -104,12 +104,25 @@ object DiagnosticRecorder {
             if (log != null) {
                 try {
                     log(logLine)
+                } catch (oom: OutOfMemoryError) {
+                    throw oom
                 } catch (t: Throwable) {
-                    if (t is OutOfMemoryError) throw t
-                    XposedHelpers.log("Diagnostic logger failed: ${t.message}")
+                    try {
+                        XposedHelpers.log("Diagnostic logger failed: ${t.message}")
+                    } catch (oom: OutOfMemoryError) {
+                        throw oom
+                    } catch (_: Throwable) {
+                        // fallback logger must not block the installation path
+                    }
                 }
             } else {
-                XposedHelpers.log(logLine)
+                try {
+                    XposedHelpers.log(logLine)
+                } catch (oom: OutOfMemoryError) {
+                    throw oom
+                } catch (_: Throwable) {
+                    // logger failure must not block the installation path
+                }
             }
         }
     }
