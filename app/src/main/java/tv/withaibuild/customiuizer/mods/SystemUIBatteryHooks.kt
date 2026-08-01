@@ -4,6 +4,7 @@ import android.content.Context
 import android.content.res.Resources
 import android.graphics.Typeface
 import android.util.TypedValue
+import android.view.View
 import android.view.ViewGroup
 import android.widget.LinearLayout
 import android.widget.TextView
@@ -29,9 +30,14 @@ object SystemUIBatteryHooks {
                 val sbWindowController = XposedHelpers.getObjectField(param.getThisObject(), "mStatusBarWindowController")
                 val mStatusBarWindow = XposedHelpers.getObjectField(sbWindowController, "mStatusBarWindowView") as? ViewGroup ?: return
 
+                val existing = XposedHelpers.getAdditionalInstanceField(param.getThisObject(), "mBatteryIndicator") as? View
+                if (existing != null && existing.parent == mStatusBarWindow) {
+                    mStatusBarWindow.removeView(existing)
+                }
                 val indicator = BatteryIndicator(mContext)
                 val panel = mStatusBarWindow.findViewById<ViewGroup>(mContext.resources.getIdentifier("notification_panel", "id", lpparam.packageName))
-                mStatusBarWindow.addView(indicator, panel?.let { mStatusBarWindow.indexOfChild(it) + 1 } ?: maxOf(mStatusBarWindow.childCount - 1, 2))
+                val insertIndex = (panel?.let { mStatusBarWindow.indexOfChild(it) + 1 } ?: maxOf(mStatusBarWindow.childCount - 1, 2)).coerceIn(0, mStatusBarWindow.childCount)
+                mStatusBarWindow.addView(indicator, insertIndex)
                 indicator.setAdjustViewBounds(false)
                 indicator.init(param.getThisObject())
                 XposedHelpers.setAdditionalInstanceField(param.getThisObject(), "mBatteryIndicator", indicator)

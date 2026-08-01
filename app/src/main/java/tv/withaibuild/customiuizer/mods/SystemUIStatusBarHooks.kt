@@ -338,7 +338,7 @@ object SystemUIStatusBarHooks {
                         val iconView = createStatusbarTextIcon(mContext, lp, createIcon ?: return)
                         val i = param.getArg(0) as Int
                         val mGroup = XposedHelpers.getObjectField(param.getThisObject(), "mGroup") as? ViewGroup ?: return
-                        mGroup.addView(iconView, i)
+                        mGroup.addView(iconView, i.coerceIn(0, mGroup.childCount))
                         registerStatusbarTextIcon(iconView)
                         param.returnAndSkip(iconView)
                     }
@@ -362,7 +362,8 @@ object SystemUIStatusBarHooks {
                     for (ti in textIcons) {
                         if (!ti.atRight) {
                             val iconView = createStatusbarTextIcon(mContext, lp, ti)
-                            leftIconsContainer.addView(iconView, bvIndex + 1)
+                            val insertIdx = (bvIndex + 1).coerceIn(0, leftIconsContainer.childCount)
+                            leftIconsContainer.addView(iconView, insertIdx)
                             registerStatusbarTextIcon(iconView)
                             XposedHelpers.callMethod(DarkIconDispatcher, "addDarkReceiver", iconView)
                         }
