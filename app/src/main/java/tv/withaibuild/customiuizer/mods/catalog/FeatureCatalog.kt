@@ -19,8 +19,8 @@ import tv.withaibuild.customiuizer.mods.LauncherLayoutHooks
 import tv.withaibuild.customiuizer.mods.LauncherSystemHooks
 import tv.withaibuild.customiuizer.mods.diagnostics.DiagnosticIds
 import tv.withaibuild.customiuizer.mods.diagnostics.DiagnosticRecorder
-import tv.withaibuild.customiuizer.mods.diagnostics.InstallOutcome
 import tv.withaibuild.customiuizer.mods.diagnostics.ReasonCode
+import tv.withaibuild.customiuizer.mods.utils.FeatureInstallResult
 
 /**
  * Static, type-safe feature directory.
@@ -51,7 +51,7 @@ object FeatureCatalog {
             },
             installer = { runtime ->
                 PackagePermissions.hook(runtime.lpparam as SystemServerStartingParam)
-                InstallOutcome.DISPATCHED
+                FeatureInstallResult.Installed
             },
             activationRestartTarget = RestartTarget.REBOOT,
             configReloadMode = ConfigReloadMode.NONE
@@ -78,7 +78,7 @@ object FeatureCatalog {
                 SystemStatusBarClockAndMoreHooks.StatusBarClockTweakHook(
                     runtime.lpparam as PackageReadyParam
                 )
-                InstallOutcome.DISPATCHED
+                FeatureInstallResult.Installed
             },
             activationRestartTarget = RestartTarget.SYSTEMUI_RESTART,
             configReloadMode = ConfigReloadMode.PARTIAL
@@ -98,7 +98,7 @@ object FeatureCatalog {
                 SystemDisplayAndWindowHooks.AutoBrightnessRangeHook(
                     runtime.lpparam as SystemServerStartingParam
                 )
-                InstallOutcome.DISPATCHED
+                FeatureInstallResult.Installed
             },
             activationRestartTarget = RestartTarget.REBOOT,
             configReloadMode = ConfigReloadMode.NONE
@@ -122,7 +122,7 @@ object FeatureCatalog {
                 SystemAudioAndVisualAndMoreHooks.MuffledVibrationHook(
                     runtime.lpparam as SystemServerStartingParam
                 )
-                InstallOutcome.DISPATCHED
+                FeatureInstallResult.Installed
             },
             activationRestartTarget = RestartTarget.REBOOT,
             configReloadMode = ConfigReloadMode.NONE
@@ -147,7 +147,7 @@ object FeatureCatalog {
                 SystemNotificationMoreHooks.NoMoreIconHook(
                     runtime.lpparam as PackageReadyParam
                 )
-                InstallOutcome.DISPATCHED
+                FeatureInstallResult.Installed
             },
             activationRestartTarget = RestartTarget.SYSTEMUI_RESTART,
             configReloadMode = ConfigReloadMode.NONE
@@ -171,7 +171,7 @@ object FeatureCatalog {
                 SystemUIBatteryHooks.BatteryIndicatorHook(
                     runtime.lpparam as PackageReadyParam
                 )
-                InstallOutcome.DISPATCHED
+                FeatureInstallResult.Installed
             },
             activationRestartTarget = RestartTarget.SYSTEMUI_RESTART,
             configReloadMode = ConfigReloadMode.NONE
@@ -196,7 +196,7 @@ object FeatureCatalog {
                 LauncherSystemHooks.NoClockHideHook(
                     runtime.lpparam as PackageReadyParam
                 )
-                InstallOutcome.DISPATCHED
+                FeatureInstallResult.Installed
             },
             activationRestartTarget = RestartTarget.LAUNCHER_RESTART,
             configReloadMode = ConfigReloadMode.NONE
@@ -220,7 +220,7 @@ object FeatureCatalog {
                 LauncherLayoutHooks.NoWidgetOnlyHook(
                     runtime.lpparam as PackageReadyParam
                 )
-                InstallOutcome.DISPATCHED
+                FeatureInstallResult.Installed
             },
             activationRestartTarget = RestartTarget.LAUNCHER_RESTART,
             configReloadMode = ConfigReloadMode.NONE
@@ -240,7 +240,7 @@ object FeatureCatalog {
                 SystemAudioAndVisualAndMoreHooks.ScreenDimTimeHook(
                     runtime.lpparam as SystemServerStartingParam
                 )
-                InstallOutcome.DISPATCHED
+                FeatureInstallResult.Installed
             },
             activationRestartTarget = RestartTarget.REBOOT,
             configReloadMode = ConfigReloadMode.NONE
@@ -259,7 +259,7 @@ object FeatureCatalog {
                 SystemAudioAndVisualAndMoreHooks.FirstVolumePressHook(
                     runtime.lpparam as SystemServerStartingParam
                 )
-                InstallOutcome.DISPATCHED
+                FeatureInstallResult.Installed
             },
             activationRestartTarget = RestartTarget.REBOOT,
             configReloadMode = ConfigReloadMode.NONE
@@ -279,7 +279,7 @@ object FeatureCatalog {
                 SystemStatusBarMoreHooks.NetworkIndicatorWifi(
                     runtime.lpparam as PackageReadyParam
                 )
-                InstallOutcome.DISPATCHED
+                FeatureInstallResult.Installed
             },
             activationRestartTarget = RestartTarget.SYSTEMUI_RESTART,
             configReloadMode = ConfigReloadMode.NONE
@@ -298,7 +298,7 @@ object FeatureCatalog {
                 SystemNotificationMoreHooks.MuteVisibleNotificationsHook(
                     runtime.lpparam as PackageReadyParam
                 )
-                InstallOutcome.DISPATCHED
+                FeatureInstallResult.Installed
             },
             activationRestartTarget = RestartTarget.SYSTEMUI_RESTART,
             configReloadMode = ConfigReloadMode.NONE
@@ -318,7 +318,7 @@ object FeatureCatalog {
                 LauncherIconHooks.HideTitlesHook(
                     runtime.lpparam as PackageReadyParam
                 )
-                InstallOutcome.DISPATCHED
+                FeatureInstallResult.Installed
             },
             activationRestartTarget = RestartTarget.LAUNCHER_RESTART,
             configReloadMode = ConfigReloadMode.NONE
@@ -337,7 +337,7 @@ object FeatureCatalog {
                 LauncherSystemHooks.FixAppInfoLaunchHook(
                     runtime.lpparam as PackageReadyParam
                 )
-                InstallOutcome.DISPATCHED
+                FeatureInstallResult.Installed
             },
             activationRestartTarget = RestartTarget.LAUNCHER_RESTART,
             configReloadMode = ConfigReloadMode.NONE
@@ -357,7 +357,7 @@ object FeatureCatalog {
                 SystemDisplayAndWindowHooks.HideProximityWarningHook(
                     runtime.lpparam as SystemServerStartingParam
                 )
-                InstallOutcome.DISPATCHED
+                FeatureInstallResult.Installed
             },
             activationRestartTarget = RestartTarget.REBOOT,
             configReloadMode = ConfigReloadMode.NONE
@@ -376,7 +376,7 @@ object FeatureCatalog {
                 SystemAudioAndVisualAndMoreHooks.ClearAllTasksHook(
                     runtime.lpparam as SystemServerStartingParam
                 )
-                InstallOutcome.DISPATCHED
+                FeatureInstallResult.Installed
             },
             activationRestartTarget = RestartTarget.REBOOT,
             configReloadMode = ConfigReloadMode.NONE
@@ -396,7 +396,7 @@ object FeatureCatalog {
                 SystemUINotificationHooks.HideDismissViewHook(
                     runtime.lpparam as PackageReadyParam
                 )
-                InstallOutcome.DISPATCHED
+                FeatureInstallResult.Installed
             },
             activationRestartTarget = RestartTarget.SYSTEMUI_RESTART,
             configReloadMode = ConfigReloadMode.NONE
@@ -415,7 +415,7 @@ object FeatureCatalog {
                 SystemLockScreenMoreHooks.HideLockScreenHintHook(
                     runtime.lpparam as PackageReadyParam
                 )
-                InstallOutcome.DISPATCHED
+                FeatureInstallResult.Installed
             },
             activationRestartTarget = RestartTarget.SYSTEMUI_RESTART,
             configReloadMode = ConfigReloadMode.NONE
@@ -435,7 +435,7 @@ object FeatureCatalog {
                 LauncherFolderHooks.FolderColumnsHook(
                     runtime.lpparam as PackageReadyParam
                 )
-                InstallOutcome.DISPATCHED
+                FeatureInstallResult.Installed
             },
             activationRestartTarget = RestartTarget.LAUNCHER_RESTART,
             configReloadMode = ConfigReloadMode.NONE
@@ -454,7 +454,7 @@ object FeatureCatalog {
                 LauncherIconHooks.TitleTopMarginHook(
                     runtime.lpparam as PackageReadyParam
                 )
-                InstallOutcome.DISPATCHED
+                FeatureInstallResult.Installed
             },
             activationRestartTarget = RestartTarget.LAUNCHER_RESTART,
             configReloadMode = ConfigReloadMode.NONE
@@ -474,7 +474,7 @@ object FeatureCatalog {
                 SystemDisplayAndWindowHooks.NoLightUpOnChargeHook(
                     runtime.lpparam as SystemServerStartingParam
                 )
-                InstallOutcome.DISPATCHED
+                FeatureInstallResult.Installed
             },
             activationRestartTarget = RestartTarget.REBOOT,
             configReloadMode = ConfigReloadMode.NONE
@@ -493,7 +493,7 @@ object FeatureCatalog {
                 SystemAudioAndVisualAndMoreHooks.AllRotationsHook(
                     runtime.lpparam as SystemServerStartingParam
                 )
-                InstallOutcome.DISPATCHED
+                FeatureInstallResult.Installed
             },
             activationRestartTarget = RestartTarget.REBOOT,
             configReloadMode = ConfigReloadMode.NONE
@@ -513,7 +513,7 @@ object FeatureCatalog {
                 SystemUIStatusBarHooks.NoNetworkSpeedSeparatorHook(
                     runtime.lpparam as PackageReadyParam
                 )
-                InstallOutcome.DISPATCHED
+                FeatureInstallResult.Installed
             },
             activationRestartTarget = RestartTarget.SYSTEMUI_RESTART,
             configReloadMode = ConfigReloadMode.NONE
@@ -532,7 +532,7 @@ object FeatureCatalog {
                 SystemUIStatusBarHooks.HideIconsClockHook(
                     runtime.lpparam as PackageReadyParam
                 )
-                InstallOutcome.DISPATCHED
+                FeatureInstallResult.Installed
             },
             activationRestartTarget = RestartTarget.SYSTEMUI_RESTART,
             configReloadMode = ConfigReloadMode.NONE
@@ -552,7 +552,7 @@ object FeatureCatalog {
                 LauncherAnimationHooks.NoUnlockAnimationHook(
                     runtime.lpparam as PackageReadyParam
                 )
-                InstallOutcome.DISPATCHED
+                FeatureInstallResult.Installed
             },
             activationRestartTarget = RestartTarget.LAUNCHER_RESTART,
             configReloadMode = ConfigReloadMode.NONE
