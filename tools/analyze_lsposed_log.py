@@ -428,6 +428,38 @@ def markdown_summary(profile: LogProfile) -> str:
     return "\n".join(lines)
 
 
+def json_summary(profile: LogProfile) -> dict:
+    return {
+        "a13_marker": profile.a13_marker,
+        "module_version": profile.module_version,
+        "processes": sorted(profile.processes),
+        "first_time": profile.first_time,
+        "last_time": profile.last_time,
+        "p0": p0_count(profile),
+        "p1": p1_count(profile),
+        "counters": {
+            "hook_diagnostics": profile.hook_diagnostics,
+            "preference_empty": profile.preference_empty,
+            "receiver_fail": profile.receiver_fail,
+            "stale_receiver": profile.stale_receiver,
+            "class_not_found": profile.class_not_found,
+            "no_such_method": profile.no_such_method,
+            "no_such_field": profile.no_such_field,
+            "invocation_target": profile.invocation_target,
+            "dexkit": profile.dexkit,
+            "hook_failed": profile.hook_failed,
+            "crashes": len(profile.crashes),
+        },
+        "rom_environments": profile.rom_environment,
+        "rom_environment_overflow": profile.rom_environment_overflow,
+        "hyperos_fallback": profile.hyperos_fallback,
+        "hyperos_target_not_found": profile.hyperos_target_not_found,
+        "fingerprints": dict(profile.top_fingerprints),
+        "crashes": profile.crashes,
+        "source_classes": sorted(profile.source_classes)[:100],
+    }
+
+
 def main() -> int:
     parser = argparse.ArgumentParser(description="A13 offline LSPosed log analyzer")
     parser.add_argument("inputs", nargs="+", help="log files, directories, or zip files")
@@ -450,35 +482,7 @@ def main() -> int:
         else:
             out = out_dir / "summary.json"
             out.write_text(
-                json.dumps(
-                    {
-                        "a13_marker": profile.a13_marker,
-                        "module_version": profile.module_version,
-                        "processes": sorted(profile.processes),
-                        "first_time": profile.first_time,
-                        "last_time": profile.last_time,
-                        "p0": p0_count(profile),
-                        "p1": p1_count(profile),
-                        "counters": {
-                            "hook_diagnostics": profile.hook_diagnostics,
-                            "preference_empty": profile.preference_empty,
-                            "receiver_fail": profile.receiver_fail,
-                            "stale_receiver": profile.stale_receiver,
-                            "class_not_found": profile.class_not_found,
-                            "no_such_method": profile.no_such_method,
-                            "no_such_field": profile.no_such_field,
-                            "invocation_target": profile.invocation_target,
-                            "dexkit": profile.dexkit,
-                            "hook_failed": profile.hook_failed,
-                            "crashes": len(profile.crashes),
-                        },
-                        "fingerprints": dict(profile.top_fingerprints),
-                        "crashes": profile.crashes,
-                        "source_classes": sorted(profile.source_classes)[:100],
-                    },
-                    ensure_ascii=False,
-                    indent=2,
-                ),
+                json.dumps(json_summary(profile), ensure_ascii=False, indent=2),
                 encoding="utf-8",
             )
             print(f"[analyze] wrote {out}")

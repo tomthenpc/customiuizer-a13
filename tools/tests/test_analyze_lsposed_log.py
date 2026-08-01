@@ -105,6 +105,26 @@ class RomEnvironmentParsingTest(unittest.TestCase):
         self.assertIn("## ROM Environments", summary)
         self.assertIn("None", summary)
 
+    def test_json_summary_includes_rom_diagnostics(self) -> None:
+        profile = analyze.LogProfile()
+        profile.bump_kind("Diagnostic[rom.environment] COMPATIBLE compat=COMPATIBLE reason=ROM_PROFILE_DETECTED detail=MIUI14_A13")
+        profile.bump_kind("Diagnostic[rom.environment] DEGRADED compat=DEGRADED reason=ROM_PROFILE_UNKNOWN detail=UNKNOWN_A13")
+        payload = analyze.json_summary(profile)
+        self.assertEqual(2, len(payload["rom_environments"]))
+        self.assertEqual("COMPATIBLE", payload["rom_environments"][0]["state"])
+        self.assertEqual("DEGRADED", payload["rom_environments"][1]["compatibility"])
+        self.assertEqual(0, payload["rom_environment_overflow"])
+        self.assertEqual(0, payload["hyperos_fallback"])
+        self.assertEqual(0, payload["hyperos_target_not_found"])
+
+    def test_json_summary_overflow(self) -> None:
+        profile = analyze.LogProfile()
+        for i in range(40):
+            profile.bump_kind(f"Diagnostic[rom.environment] COMPATIBLE compat=COMPATIBLE reason=ROM_PROFILE_DETECTED detail=profile={i}")
+        payload = analyze.json_summary(profile)
+        self.assertEqual(32, len(payload["rom_environments"]))
+        self.assertEqual(8, payload["rom_environment_overflow"])
+
 
 if __name__ == "__main__":
     unittest.main()
