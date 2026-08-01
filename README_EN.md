@@ -1,109 +1,52 @@
-# CustoMIUIzer A13 Kotlin Refactor
+# CustoMIUIzer A13
 
 [简体中文](README.md) | English
 
-A Kotlin-refactored, independently maintained CustoMIUIzer build for **MIUI 14 / Android 13**.
+CustoMIUIzer A13 is an Android 13 system UI and interaction customization module for MIUI and HyperOS. It maintains the historical CustoMIUIzer feature semantics with an independent package, release line, and modern libxposed API.
 
-This project uses MonwF/customiuizer v23.11.26 as the Android 13 functional reference, with an independent package name, release line, signing identity and modern libxposed API. It is not an official upstream release and does not support Android 14 or later.
+## Core features
 
-## Current version
-
-| Item | Value |
-|---|---|
-| Version | `r13.8.6` |
-| versionCode | `131` |
-| System | MIUI 14 / Android 13 (API 33) |
-| ABI | `arm64-v8a` |
-| Application ID | `tv.withaibuild.customiuizer.r13` |
-| libxposed | `minApiVersion=101`, `targetApiVersion=102` |
-| staticScope | `false` |
-| APK | `CustoMIUIzer-A13-r13.8.6.apk` |
-| APK SHA-256 | `ABF31CE311253AE863F7B2CEB87BF95140EE706EFF39ADA219033552B6FA7287` |
-| Signing certificate SHA-256 | `C0EFF2DC4E662717195490DA78B12A984C6F2E6BD38ACF4EDAD14D53E3D22E70` |
-
-The LSPosed user download page is at:
-
-`Xposed-Modules-Repo/tv.withaibuild.customiuizer.r13`
-
-> This Releases page only keeps the current formal release. Changelog for older versions has been merged into the current Release and CHANGELOG. Older APKs are no longer available for download; the historical source tags remain.
-
-## r13.8.6 highlights
-
-* Merged the latest A13 maintenance, Catalog, compatibility diagnostics, scope and UI fixes into `main`;
-* Completed the feature catalog, process targets, restart requirements and hook installation result recording;
-* Strengthened hook target resolution, compatibility fallback, installation evidence and exception diagnostics;
-* Optimized lifecycles for receivers, observers, step counter, device monitor and lock-screen album art;
-* Reduced temporary objects and repeated computation in hot paths for status bar, notifications, network speed, battery, clock and Launcher;
-* Preserved the system typeface family for status-bar network speed and added dual-row network speed line spacing adjustment;
-* Fixed settings text style inheritance and About page text wrapping;
-* Unified README, CHANGELOG, version metadata and release process.
-
-See [CHANGELOG_EN.md](CHANGELOG_EN.md) for full changes.
+- Status bar: clock, date, temperature, network speed, battery, signal, and icon layout;
+- System UI: control center, notifications, volume, brightness, lock screen, media, and charging information;
+- Launcher: icons, folders, Dock, recents, gestures, and animations;
+- System behavior: navigation keys, button actions, power menu, floating windows, installer, sharing, and app permissions.
 
 ## Compatibility
 
-| Item | Value |
-|---|---|
-| System | MIUI 14 / Android 13 |
-| Primary device | Redmi Note 11T Pro / Pro+ (`xaga`) |
-| Reference ROMs | `V14.0.10.0.TLOINXM`, `V14.0.7.0.TLOCNXM` |
-| Framework | LSPosed / Vector implementing libxposed API 101 or 102 |
-| Android 14+ | Not supported |
+- MIUI 14 / Android 13: primary compatibility target;
+- HyperOS 1 / Android 13: formal compatibility target, guarded by Contract/Resolver capability checks without assuming MIUI 14 internals;
+- ABI: `arm64-v8a`;
+- applicationId: `tv.withaibuild.customiuizer.r13`;
+- libxposed: `minApiVersion=101`, `targetApiVersion=102`;
+- Android 14 and later are outside this project's scope.
 
-Different ROM implementations of SystemUI, Launcher and system apps may vary; some features may need ROM-specific adaptation.
+The known device baseline is Redmi Note 11T Pro (`xaga`), MIUI `V14.0.10.0.TLOINXM`, and LSPosed 2.1.1. HyperOS 1 / Android 13 candidates must pass capability checks and still require detailed LSPosed-log validation; static verification is not a complete on-device regression.
 
-## Feature areas
+## Build and verification
 
-* Status bar, battery, signal, network speed, clock, date and temperature;
-* Control center, volume, brightness, notifications and system animations;
-* Lock screen, charging info, media UI, shortcuts and album art;
-* Launcher, recents, folders, icons, Dock and launcher gestures;
-* Navigation bar, buttons, custom actions, power menu, freeform and Tasker;
-* App permissions, installer, sharing, hidden apps and app lock behavior.
+JDK 17, Android SDK, and Python 3 are required. Run the regular development gates with:
 
-## Installation
+```bash
+python tools/verify.py full
+python -m compileall tools
+python -m unittest discover -s tools/tests -p "test_*.py"
+```
 
-1. Download the formal APK from the LSPosed distribution repository;
-2. Install the APK;
-3. Enable the module in LSPosed / Vector and confirm the recommended scope;
-4. Open the module settings once;
-5. Fully reboot the device.
-
-Early builds signed with a different certificate cannot be upgraded in place. If a signature mismatch appears, back up your settings and uninstall the old build first.
-
-## Building
-
-JDK 17 and Android SDK API 36 are required.
+Formal Release builds use an external A13-specific signing configuration:
 
 ```bash
 ./gradlew :app:assembleRelease
 ```
 
-Release builds must use the repository-external formal signing configuration. Do not commit keystores, passwords, tokens or local build artifacts.
+Never commit keystores, passwords, tokens, APKs, or local signing configuration.
 
-## Verification notes
+## Source and development
 
-`r13.8.6` has completed a formal Release APK build and the following basic checks:
+- Source: <https://github.com/tomthenpc/customiuizer-a13>
+- User downloads: <https://github.com/Xposed-Modules-Repo/tv.withaibuild.customiuizer.r13/releases>
+- Current release: `r13.9.1` (versionCode `132`)
+- Development rules: disabled features create no background work; hot Hooks avoid repeated reflection, blocking, and temporary allocations; receivers and observers are idempotent and releasable; ordinary failures are isolated while `OutOfMemoryError` is rethrown.
 
-* APK v2 signature;
-* zipalign;
-* applicationId, versionCode, versionName;
-* libxposed module.prop, scope.list and java_init.list;
-* APK SHA-256 and signing certificate verification.
+Compatibility reports should include device, ROM, SystemUI/Launcher versions, framework version, actual scope, reproduction steps, and complete LSPosed logs.
 
-This release did not run the full unit test suite, Lint, engineering audit or full-device functional regression. Build and APK verification do not prove that all features work on every MIUI 14 ROM.
-
-## Feedback
-
-When submitting an issue, please provide:
-
-* Module version and APK source;
-* Device and ROM version;
-* System app versions such as SystemUI and Launcher;
-* LSPosed / Vector version;
-* Actual scope;
-* Reproduction steps and complete logs.
-
-## License and credits
-
-The project is derived from Mikanoshi/CustoMIUIzer and references MonwF/customiuizer's Android 13 work, distributed under GPL-3.0.
+Distributed under GPL-3.0. Derived from Mikanoshi/CustoMIUIzer and informed by MonwF/customiuizer's Android 13 work.

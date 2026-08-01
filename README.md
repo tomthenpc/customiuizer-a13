@@ -1,109 +1,52 @@
-# 米客 A13 Kotlin 重构
+# CustoMIUIzer A13（米客 A13）
 
 简体中文 | [English](README_EN.md)
 
-面向 **MIUI 14 / Android 13** 的 CustoMIUIzer Kotlin 重构维护版。
+CustoMIUIzer A13 是面向 Android 13 的 MIUI / HyperOS 系统界面与交互定制模块，基于 CustoMIUIzer 历史功能语义持续维护，采用独立包名、版本线和 libxposed API。
 
-本项目以 MonwF/customiuizer v23.11.26 作为 Android 13 功能语义参考，使用独立包名、版本线、签名和现代 libxposed API。项目不是上游官方版本，也不支持 Android 14 及更高版本。
+## 核心功能
 
-## 当前版本
-
-| 项目           | 值                                          |
-| ------------ | ------------------------------------------ |
-| 版本           | `r13.8.6`                                  |
-| versionCode  | `131`                                      |
-| 系统           | MIUI 14 / Android 13（API 33）               |
-| ABI          | `arm64-v8a`                                |
-| 应用 ID        | `tv.withaibuild.customiuizer.r13`          |
-| libxposed    | `minApiVersion=101`、`targetApiVersion=102` |
-| staticScope  | `false`                                    |
-| APK          | `CustoMIUIzer-A13-r13.8.6.apk`             |
-| APK SHA-256  | `ABF31CE311253AE863F7B2CEB87BF95140EE706EFF39ADA219033552B6FA7287`                           |
-| 签名证书 SHA-256 | `C0EFF2DC4E662717195490DA78B12A984C6F2E6BD38ACF4EDAD14D53E3D22E70`                          |
-
-面向 LSPosed 用户的下载页面位于：
-
-`Xposed-Modules-Repo/tv.withaibuild.customiuizer.r13` 
-
-> Releases 页面仅保留当前正式版。旧版本的变更记录已合并到当前 Release 和 CHANGELOG；旧版 APK 不再提供下载，历史源码 tag 继续保留。
-
-## r13.8.6 更新重点
-
-* 将 A13 最新维护、Catalog、兼容诊断、作用域与 UI 修复统一合并到 `main`；
-* 完善功能目录、进程目标、重启要求和 Hook 安装结果记录；
-* 加强 Hook 目标解析、兼容回退、安装证据和异常诊断；
-* 优化 Receiver、Observer、Step Counter、设备监控和锁屏专辑图的生命周期；
-* 减少状态栏、通知、网速、电池、时钟和 Launcher 高频路径中的临时对象与重复计算；
-* 状态栏网速保留系统字体家族，并支持双排网速行距调整；
-* 修复设置文本样式继承与 About 页面文字换行；
-* 统一 README、CHANGELOG、版本元数据和发布流程。
-
-完整变化见 [CHANGELOG.md](CHANGELOG.md)。
+- 状态栏：时钟、日期、温度、网速、电池、信号与图标布局；
+- 系统界面：控制中心、通知、音量、亮度、锁屏、媒体与充电信息；
+- 桌面：图标、文件夹、Dock、最近任务、手势与动画；
+- 系统行为：导航键、按键动作、电源菜单、浮窗、安装器、分享和应用权限。
 
 ## 兼容范围
 
-| 项目          | 值                                                 |
-| ----------- | ------------------------------------------------- |
-| 系统          | MIUI 14 / Android 13                              |
-| 主要设备        | Redmi Note 11T Pro / Pro+（`xaga`）                 |
-| 参考 ROM      | `V14.0.10.0.TLOINXM`、`V14.0.7.0.TLOCNXM`          |
-| 框架          | 实现 libxposed API 101 或 API 102 的 LSPosed / Vector |
-| Android 14+ | 不支持                                               |
+- MIUI 14 / Android 13：主要兼容目标；
+- HyperOS 1 / Android 13：正式兼容目标，使用独立 Contract/Resolver 能力探测，不假设 ROM 内部结构与 MIUI 14 相同；
+- ABI：`arm64-v8a`；
+- applicationId：`tv.withaibuild.customiuizer.r13`；
+- libxposed：`minApiVersion=101`、`targetApiVersion=102`；
+- Android 14 及以上不属于本项目范围。
 
-不同 ROM 的 SystemUI、Launcher 和系统应用实现可能存在差异，部分功能需要针对具体 ROM 适配。
+已知实机基线为 Redmi Note 11T Pro（`xaga`）、MIUI `V14.0.10.0.TLOINXM`、LSPosed 2.1.1。HyperOS 1 / Android 13 的候选目标必须通过能力探测并继续以 LSPosed 详细日志验证；静态验证不等同于全功能实机回归。
 
-## 功能范围
+## 构建与验证
 
-* 状态栏、电池、信号、网速、时钟、日期和温度；
-* 控制中心、音量、亮度、通知和系统动画；
-* 锁屏、充电信息、媒体界面、快捷操作和专辑图；
-* Launcher、最近任务、文件夹、图标、Dock 和桌面手势；
-* 导航栏、按键、自定义动作、电源菜单、浮窗和 Tasker；
-* 应用权限、安装器、分享、隐藏应用和应用锁行为。
+需要 JDK 17、Android SDK 和 Python 3。常规开发验证：
 
-## 安装
+```bash
+python tools/verify.py full
+python -m compileall tools
+python -m unittest discover -s tools/tests -p "test_*.py"
+```
 
-1. 从 LSPosed 发布仓库下载正式 APK；
-2. 安装 APK；
-3. 在 LSPosed / Vector 中启用模块并确认建议作用域；
-4. 打开一次模块设置；
-5. 完整重启设备。
-
-使用不同签名的早期构建不能直接覆盖安装。遇到签名不一致时，请先备份设置，再卸载旧版。
-
-## 构建
-
-需要 JDK 17 和 Android SDK API 36。
+正式 Release 构建使用仓库外的 A13 专用签名配置：
 
 ```bash
 ./gradlew :app:assembleRelease
 ```
 
-Release 构建必须使用仓库外的正式签名配置。不得提交 keystore、密码、令牌或本地构建文件。
+不得提交 keystore、密码、令牌、APK 或本地签名配置。
 
-## 验证说明
+## 源码与开发
 
-`r13.8.6` 已完成正式 Release APK 构建及以下基础检查：
+- 源码仓库：<https://github.com/tomthenpc/customiuizer-a13>
+- 用户下载：<https://github.com/Xposed-Modules-Repo/tv.withaibuild.customiuizer.r13/releases>
+- 当前正式版：`r13.9.1`（versionCode `132`）
+- 开发约束：关闭功能零后台成本；高频 Hook 不重复反射、不阻塞并减少临时分配；Receiver/Observer 必须幂等且可清理；普通异常隔离，`OutOfMemoryError` 必须继续抛出。
 
-* APK v2 签名；
-* zipalign；
-* applicationId、versionCode、versionName；
-* libxposed module.prop、scope.list 和 java_init.list；
-* APK SHA-256 与签名证书校验。
+提交兼容问题时，请附设备、ROM、SystemUI/Launcher 版本、框架版本、实际作用域、复现步骤和完整 LSPosed 日志。
 
-本次发布未执行完整单元测试、Lint、工程 Audit 或全功能实机回归。构建与 APK 校验不能证明所有功能在全部 MIUI 14 ROM 上均可用。
-
-## 反馈
-
-提交问题时请提供：
-
-* 模块版本与 APK 来源；
-* 设备和 ROM 版本；
-* SystemUI、Launcher 等系统应用版本；
-* LSPosed / Vector 版本；
-* 实际作用域；
-* 复现步骤和完整日志。
-
-## 许可证与致谢
-
-项目派生自 Mikanoshi/CustoMIUIzer，并参考 MonwF/customiuizer 的 Android 13 工作，依据 GPL-3.0 分发。
+本项目依据 GPL-3.0 分发，派生自 Mikanoshi/CustoMIUIzer，并参考 MonwF/customiuizer 的 Android 13 实现。
