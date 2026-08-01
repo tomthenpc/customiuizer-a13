@@ -189,12 +189,13 @@ class AppSelector : SubFragmentWithSearch() {
                         val setPrivacyApp = mSecurityManager::class.java.getDeclaredMethod("setPrivacyApp", String::class.java, Int::class.javaPrimitiveType, java.lang.Boolean.TYPE)
                         setPrivacyApp.isAccessible = true
                         setPrivacyApp.invoke(mSecurityManager, app.pkgName, app.user, !(isPrivacyApp.invoke(mSecurityManager, app.pkgName, app.user) as? Boolean ?: false))
-                        (parent.adapter as? PrivacyAppAdapter)?.notifyDataSetChanged()
+                        (parent.adapter as? PrivacyAppAdapter)?.refresh(app)
                         activity?.contentResolver?.notifyChange(
                             Uri.parse("content://com.miui.securitycenter.provider/update_privacyapps_icon"),
                             null
                         )
                     } catch (t: Throwable) {
+                        if (t is OutOfMemoryError) throw t
                         t.printStackTrace()
                     }
                 } else if (applock) {
@@ -217,8 +218,9 @@ class AppSelector : SubFragmentWithSearch() {
                         setApplicationAccessControlEnabledForUser.isAccessible = true
                         val currentEnabled = getApplicationAccessControlEnabledAsUser.invoke(mSecurityManager, app.pkgName, app.user) as? Boolean ?: false
                         setApplicationAccessControlEnabledForUser.invoke(mSecurityManager, app.pkgName, !currentEnabled, app.user)
-                        (parent.adapter as? LockedAppAdapter)?.notifyDataSetChanged()
+                        (parent.adapter as? LockedAppAdapter)?.refresh(app)
                     } catch (t: Throwable) {
+                        if (t is OutOfMemoryError) throw t
                         t.printStackTrace()
                     }
                 } else if (customTitles) {

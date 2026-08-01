@@ -17,7 +17,6 @@ import java.lang.reflect.Method
 import java.util.ArrayList
 import java.util.Comparator
 import java.util.Locale
-import java.util.concurrent.CopyOnWriteArrayList
 
 class PrivacyAppAdapter @SuppressLint("WrongConstant") constructor(
     context: Context,
@@ -28,12 +27,14 @@ class PrivacyAppAdapter @SuppressLint("WrongConstant") constructor(
     private val mInflater: LayoutInflater = LayoutInflater.from(context)
     private val mFilter = ItemFilter()
     private val originalAppList: ArrayList<AppData> = arr
-    private val filteredAppList = CopyOnWriteArrayList<AppData>()
+    private var filteredAppList: List<AppData> = emptyList()
+    private val checkedApps = HashSet<String>()
+    private val searchLocale = Locale.getDefault()
     private var mSecurityManager: Any? = null
     private var isPrivacyApp: Method? = null
 
     init {
-        filteredAppList.addAll(arr)
+        prepareRows()
         try {
             mSecurityManager = context.getSystemService("security")
             val sm = mSecurityManager
@@ -47,40 +48,54 @@ class PrivacyAppAdapter @SuppressLint("WrongConstant") constructor(
                 isPrivacyApp = method
             }
         } catch (t: Throwable) {
+            if (t is OutOfMemoryError) throw t
             t.printStackTrace()
         }
 
-        sortList()
+        for (app in originalAppList) {
+            if (readChecked(app)) checkedApps.add(app.userSelectionKey)
+        }
+        replaceFiltered(originalAppList)
     }
 
-    private fun sortList() {
-        filteredAppList.sortWith(Comparator { app1, app2 ->
-            try {
-                val sm = mSecurityManager
-                val method = isPrivacyApp
-                if (sm == null || method == null) return@Comparator 0
+    private fun prepareRows() {
+        for (app in originalAppList) {
+            val packageName = app.pkgName.orEmpty()
+            app.labelSearchKey = app.label.orEmpty().lowercase(searchLocale)
+            app.userSelectionKey = "$packageName|${app.user}"
+            app.iconKey = appIconCacheKey(app)
+        }
+    }
 
-                val app1checked = method.invoke(
-                    sm,
-                    app1.pkgName ?: "",
-                    app1.user
-                ) as? Boolean ?: false
-                val app2checked = method.invoke(
-                    sm,
-                    app2.pkgName ?: "",
-                    app2.user
-                ) as? Boolean ?: false
+    private fun readChecked(app: AppData): Boolean {
+        val sm = mSecurityManager ?: return false
+        val method = isPrivacyApp ?: return false
+        return try {
+            method.invoke(sm, app.pkgName.orEmpty(), app.user) as? Boolean ?: false
+        } catch (t: Throwable) {
+            if (t is OutOfMemoryError) throw t
+            false
+        }
+    }
 
-                when {
-                    app1checked && app2checked -> 0
-                    app1checked -> -1
-                    app2checked -> 1
-                    else -> 0
-                }
-            } catch (t: Throwable) {
-                0
+    fun refresh(app: AppData) {
+        if (readChecked(app)) checkedApps.add(app.userSelectionKey)
+        else checkedApps.remove(app.userSelectionKey)
+        notifyDataSetChanged()
+    }
+
+    private fun replaceFiltered(source: Collection<AppData>) {
+        val replacement = ArrayList(source)
+        replacement.sortWith(Comparator { app1, app2 ->
+            val app1checked = checkedApps.contains(app1.userSelectionKey)
+            val app2checked = checkedApps.contains(app2.userSelectionKey)
+            when {
+                app1checked == app2checked -> 0
+                app1checked -> -1
+                else -> 1
             }
         })
+        filteredAppList = replacement
     }
 
     override fun getCount(): Int {
@@ -96,79 +111,62 @@ class PrivacyAppAdapter @SuppressLint("WrongConstant") constructor(
     }
 
     override fun getView(position: Int, convertView: View?, parent: ViewGroup): View {
-        val row: View = if (convertView != null) {
-            convertView
-        } else {
-            mInflater.inflate(R.layout.applist_item11, parent, false)
-        }
-
-        val itemIsDis: ImageView = row.findViewById(R.id.icon_disable)
-        val itemIsDual: ImageView = row.findViewById(R.id.icon_dual)
-        val itemChecked: CheckBox = row.findViewById(android.R.id.checkbox)
-        Helpers.setMiuiCheckbox(itemChecked)
-        val itemTitle: TextView = row.findViewById(android.R.id.title)
-        val itemIcon: ImageView = row.findViewById(android.R.id.icon)
-
-        val ad = getItem(position)
-        itemIcon.tag = position
-        itemTitle.text = ad.label ?: ""
-        itemIsDis.visibility = if (ad.enabled) View.GONE else View.VISIBLE
-        itemIsDual.visibility = if (ad.user != 0) View.VISIBLE else View.GONE
-
-        val icon: Bitmap? = Helpers.memoryCache.get(appIconCacheKey(ad))
-        if (icon == null) {
-            val dualIcon = arrayOf(ctx.resources.getDrawable(R.drawable.card_icon_default, ctx.theme))
-            val crossfader = android.graphics.drawable.TransitionDrawable(dualIcon)
-            crossfader.isCrossFadeEnabled = true
-            itemIcon.setImageDrawable(crossfader)
-            BitmapCachedLoader(itemIcon, ad, ctx).execute()
-        } else {
-            itemIcon.setImageBitmap(icon)
-        }
-
-        try {
-            val sm = mSecurityManager
-            val method = isPrivacyApp
-            itemChecked.visibility = View.VISIBLE
-            itemChecked.isChecked = if (sm != null && method != null) {
-                method.invoke(sm, ad.pkgName ?: "", ad.user) as? Boolean ?: false
-            } else {
-                false
+        val holder = if (convertView == null) {
+            val row = mInflater.inflate(R.layout.applist_item11, parent, false)
+            ViewHolder(row).also {
+                Helpers.setMiuiCheckbox(it.checked)
+                row.tag = it
             }
-        } catch (t: Throwable) {
-            itemChecked.visibility = View.GONE
+        } else {
+            convertView.tag as ViewHolder
         }
 
-        return row
+        val app = getItem(position)
+        holder.icon.tag = app.iconKey
+        holder.title.text = app.label.orEmpty()
+        holder.disableIcon.visibility = if (app.enabled) View.GONE else View.VISIBLE
+        holder.dualIcon.visibility = if (app.user != 0) View.VISIBLE else View.GONE
+
+        val icon: Bitmap? = Helpers.memoryCache.get(app.iconKey)
+        if (icon == null) {
+            val placeholder = arrayOf(ctx.resources.getDrawable(R.drawable.card_icon_default, ctx.theme))
+            val crossfader = android.graphics.drawable.TransitionDrawable(placeholder)
+            crossfader.isCrossFadeEnabled = true
+            holder.icon.setImageDrawable(crossfader)
+            BitmapCachedLoader(holder.icon, app, ctx).execute()
+        } else {
+            holder.icon.setImageBitmap(icon)
+        }
+
+        holder.checked.visibility = View.VISIBLE
+        holder.checked.isChecked = checkedApps.contains(app.userSelectionKey)
+        return holder.root
+    }
+
+    private class ViewHolder(val root: View) {
+        val disableIcon: ImageView = root.findViewById(R.id.icon_disable)
+        val dualIcon: ImageView = root.findViewById(R.id.icon_dual)
+        val checked: CheckBox = root.findViewById(android.R.id.checkbox)
+        val title: TextView = root.findViewById(android.R.id.title)
+        val icon: ImageView = root.findViewById(android.R.id.icon)
     }
 
     private inner class ItemFilter : Filter() {
         override fun performFiltering(constraint: CharSequence?): Filter.FilterResults {
-            val filterString = constraint?.toString()?.lowercase(Locale.getDefault()) ?: ""
-            val results = Filter.FilterResults()
-
-            val count = originalAppList.size
-            val nlist = ArrayList<AppData>()
-
-            for (i in 0 until count) {
-                val filterableData = originalAppList[i]
-                if ((filterableData.label ?: "").lowercase(Locale.getDefault()).contains(filterString)) {
-                    nlist.add(filterableData)
-                }
+            val filterString = constraint?.toString()?.lowercase(searchLocale).orEmpty()
+            val nlist = ArrayList<AppData>(if (filterString.isEmpty()) originalAppList.size else 16)
+            for (app in originalAppList) {
+                if (app.labelSearchKey.contains(filterString)) nlist.add(app)
             }
-
-            results.values = nlist
-            results.count = nlist.size
-            return results
+            return Filter.FilterResults().apply {
+                values = nlist
+                count = nlist.size
+            }
         }
 
         @Suppress("UNCHECKED_CAST")
         override fun publishResults(constraint: CharSequence?, results: Filter.FilterResults?) {
-            filteredAppList.clear()
-            if ((results?.count ?: 0) > 0 && results?.values != null) {
-                filteredAppList.addAll(results.values as? ArrayList<AppData> ?: emptyList())
-            }
-            sortList()
+            replaceFiltered(results?.values as? ArrayList<AppData> ?: emptyList())
             notifyDataSetChanged()
         }
     }

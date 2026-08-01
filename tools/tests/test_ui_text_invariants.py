@@ -230,6 +230,14 @@ class InteractionPerformanceInvariant(unittest.TestCase):
         ):
             self.assertIn(statement, source)
 
+    def test_security_lists_use_stable_icon_identity(self) -> None:
+        utils_dir = REPO_ROOT / "app/src/main/java/tv/withaibuild/customiuizer/utils"
+        for name in ("PrivacyAppAdapter.kt", "LockedAppAdapter.kt"):
+            source = (utils_dir / name).read_text(encoding="utf-8")
+            self.assertNotIn("CopyOnWriteArrayList", source, name)
+            self.assertNotIn(".tag = position", source, name)
+            self.assertIn("holder.icon.tag = app.iconKey", source, name)
+            self.assertIn("app.labelSearchKey.contains(filterString)", source, name)
     def test_sub_search_releases_watcher_and_adapter(self) -> None:
         source = (REPO_ROOT / "app/src/main/java/tv/withaibuild/customiuizer/SubFragmentWithSearch.kt").read_text(encoding="utf-8")
         for statement in (

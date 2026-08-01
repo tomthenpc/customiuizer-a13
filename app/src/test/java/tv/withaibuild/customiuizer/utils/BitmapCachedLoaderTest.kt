@@ -60,4 +60,15 @@ class BitmapCachedLoaderTest {
         assertTrue(List::class.java.isAssignableFrom(filteredList.type))
         assertFalse(CopyOnWriteArrayList::class.java.isAssignableFrom(filteredList.type))
     }
-}
+
+    @Test
+    fun securityAdaptersUseReusableHoldersAndOwnedReplacementLists() {
+        for (adapterClass in listOf(LockedAppAdapter::class.java, PrivacyAppAdapter::class.java)) {
+            assertTrue(adapterClass.declaredClasses.any { it.simpleName == "ViewHolder" })
+
+            val filteredList = adapterClass.getDeclaredField("filteredAppList")
+            assertTrue(List::class.java.isAssignableFrom(filteredList.type))
+            assertFalse(CopyOnWriteArrayList::class.java.isAssignableFrom(filteredList.type))
+            adapterClass.getDeclaredMethod("refresh", AppData::class.java)
+        }
+    }}
