@@ -29,17 +29,20 @@ object StepCounterController {
      * module so the screen-on/off, view add/remove, and query-at-most-once logic
      * can be exercised without an Android runtime.
      */
+    internal class QueryTicket(val generation: Long, val queryId: Long)
+
     internal class Lifecycle {
         private val _screenOn = AtomicBoolean(true)
         private val _hasViews = AtomicBoolean(false)
         private val _timeTickRegistered = AtomicBoolean(false)
-        private val _isQuerying = AtomicBoolean(false)
         private val _generation = java.util.concurrent.atomic.AtomicLong(0L)
+        private val _nextQueryId = java.util.concurrent.atomic.AtomicLong(0L)
+        private val _activeTicket = java.util.concurrent.atomic.AtomicReference<QueryTicket?>(null)
 
         val screenOn: Boolean get() = _screenOn.get()
         val hasViews: Boolean get() = _hasViews.get()
         val timeTickRegistered: Boolean get() = _timeTickRegistered.get()
-        val isQuerying: Boolean get() = _isQuerying.get()
+        val isQuerying: Boolean get() = _activeTicket.get() != null
         val generation: Long get() = _generation.get()
 
         fun onScreenOn() {
@@ -49,12 +52,14 @@ object StepCounterController {
         fun onScreenOff() {
             _screenOn.set(false)
             _timeTickRegistered.set(false)
+            _activeTicket.set(null)
         }
 
         fun setHasViews(value: Boolean) {
             _hasViews.set(value)
             if (!value) {
                 _timeTickRegistered.set(false)
+                _activeTicket.set(null)
             }
         }
 
@@ -72,19 +77,20 @@ object StepCounterController {
             _timeTickRegistered.set(false)
         }
 
-        fun canSchedule(): Boolean = _screenOn.get() && _hasViews.get() && !_isQuerying.get()
+        fun canSchedule(): Boolean = _screenOn.get() && _hasViews.get() && _activeTicket.get() == null
 
-        fun tryStartQuery(): Boolean {
-            if (!_screenOn.get() || !_hasViews.get()) return false
-            return _isQuerying.compareAndSet(false, true)
+        fun tryStartQuery(): QueryTicket? {
+            if (!_screenOn.get() || !_hasViews.get()) return null
+            val ticket = QueryTicket(_generation.get(), _nextQueryId.incrementAndGet())
+            if (_activeTicket.compareAndSet(null, ticket)) return ticket
+            return null
         }
 
-        fun finishQuery() {
-            _isQuerying.set(false)
-        }
+        fun finishQuery(ticket: QueryTicket): Boolean = _activeTicket.compareAndSet(ticket, null)
 
-        fun stopQuery() {
-            _isQuerying.set(false)
+        fun isCurrent(ticket: QueryTicket): Boolean {
+            val active = _activeTicket.get()
+            return active === ticket && active.generation == _generation.get()
         }
 
         fun bumpGeneration(): Long = _generation.incrementAndGet()
@@ -95,7 +101,7 @@ object StepCounterController {
             _screenOn.set(true)
             _hasViews.set(false)
             _timeTickRegistered.set(false)
-            _isQuerying.set(false)
+            _activeTicket.set(null)
             _generation.incrementAndGet()
         }
     }
@@ -115,16 +121,10 @@ object StepCounterController {
     private var timeTickReceiver: BroadcastReceiver? = null
     private var screenReceiver: BroadcastReceiver? = null
     private var disableObserver: ModuleHelper.PreferenceObserver? = null
+    private var pendingQueryRunnable: Runnable? = null
 
     @JvmField
     internal val lifecycle = Lifecycle()
-
-    private val queryRunnable = Runnable {
-        ModuleHelper.guarded("StepCounterController.queryRunnable") {
-            val startGen = lifecycle.generation
-            runQuery(startGen)
-        }
-    }
 
     @JvmStatic
     fun updateSteps(context: Context?) {
@@ -172,13 +172,18 @@ object StepCounterController {
             addAction(Intent.ACTION_SCREEN_ON)
             addAction(Intent.ACTION_SCREEN_OFF)
         }
-        ModuleHelper.registerModuleReceiver(
+        val registered = ModuleHelper.registerModuleReceiver(
             appContext,
             "StepCounterController.screenReceiver",
             screenReceiver!!,
             screenFilter,
             Context.RECEIVER_NOT_EXPORTED
         )
+        if (!registered) {
+            screenReceiver = null
+            lifecycle.onScreenOff()
+            XposedHelpers.log("StepCounterController", "Screen receiver registration failed.")
+        }
 
         val observer = ModuleHelper.PreferenceObserver {
             if (sContext != null && !MainModule.mPrefs.getBoolean("system_cc_show_stepcount")) {
@@ -297,13 +302,19 @@ object StepCounterController {
                     }
                 }
             }
-            ModuleHelper.registerModuleReceiver(
+            val registered = ModuleHelper.registerModuleReceiver(
                 ctx,
                 "StepCounterController.timeTick",
                 timeTickReceiver!!,
                 IntentFilter(Intent.ACTION_TIME_TICK),
                 Context.RECEIVER_NOT_EXPORTED
             )
+            if (!registered) {
+                timeTickReceiver = null
+                lifecycle.unregisterTimeTick()
+                XposedHelpers.log("StepCounterController", "TIME_TICK receiver registration failed.")
+                return
+            }
         }
 
         if (lifecycle.registerTimeTick()) {
@@ -312,7 +323,8 @@ object StepCounterController {
     }
 
     private fun stopTimeTick() {
-        queryHandler?.removeCallbacks(queryRunnable)
+        pendingQueryRunnable?.let { queryHandler?.removeCallbacks(it) }
+        pendingQueryRunnable = null
         lifecycle.unregisterTimeTick()
         timeTickReceiver?.let {
             ModuleHelper.unregisterModuleReceiver("StepCounterController.timeTick")
@@ -327,42 +339,50 @@ object StepCounterController {
             stopTimeTick()
             return
         }
-        if (!lifecycle.tryStartQuery()) return
+        val capturedContext = sContext!!
+        val ticket = lifecycle.tryStartQuery() ?: return
 
-        queryHandler?.removeCallbacks(queryRunnable)
+        pendingQueryRunnable?.let { queryHandler?.removeCallbacks(it) }
+        val runnable = Runnable {
+            ModuleHelper.guarded("StepCounterController.queryRunnable") {
+                runQuery(ticket, capturedContext)
+            }
+        }
+        pendingQueryRunnable = runnable
         val posted = try {
-            queryHandler?.post(queryRunnable) ?: false
+            queryHandler?.post(runnable) ?: false
         } catch (t: Throwable) {
             if (t is OutOfMemoryError) throw t
             XposedHelpers.log(t)
             false
         }
         if (!posted) {
-            lifecycle.finishQuery()
+            pendingQueryRunnable = null
+            lifecycle.finishQuery(ticket)
         }
     }
 
-    private fun runQuery(startGen: Long) {
-        val context = sContext
-        if (context == null || !lifecycle.isCurrent(startGen)) {
-            lifecycle.finishQuery()
+    private fun runQuery(ticket: QueryTicket, capturedContext: Context) {
+        if (!lifecycle.isCurrent(ticket) || !hasLiveViews()) {
+            lifecycle.finishQuery(ticket)
             return
         }
 
         val newText = try {
-            querySteps(context)
+            querySteps(capturedContext)
         } catch (t: Throwable) {
             if (t is OutOfMemoryError) throw t
             XposedHelpers.log(t)
             null
         } finally {
-            lifecycle.finishQuery()
+            lifecycle.finishQuery(ticket)
+            pendingQueryRunnable = null
         }
 
-        if (newText != null && lifecycle.isCurrent(startGen)) {
+        if (newText != null && lifecycle.isCurrent(ticket) && lifecycle.screenOn) {
             uiHandler?.post {
                 ModuleHelper.guarded("StepCounterController.updateViews") {
-                    if (lifecycle.isCurrent(startGen)) updateViews(newText)
+                    if (lifecycle.isCurrent(ticket)) updateViews(newText)
                 }
             }
         }

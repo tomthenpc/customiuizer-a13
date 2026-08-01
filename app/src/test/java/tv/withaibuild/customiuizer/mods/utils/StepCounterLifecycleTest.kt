@@ -3,6 +3,8 @@ package tv.withaibuild.customiuizer.mods.utils
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse
 import org.junit.Assert.assertNotEquals
+import org.junit.Assert.assertNotNull
+import org.junit.Assert.assertNull
 import org.junit.Assert.assertTrue
 import org.junit.Test
 
@@ -38,33 +40,71 @@ class StepCounterLifecycleTest {
         lifecycle.setHasViews(true)
         lifecycle.onScreenOn()
 
-        assertTrue(lifecycle.tryStartQuery())
-        assertFalse(lifecycle.tryStartQuery())
-        assertFalse(lifecycle.tryStartQuery())
-
-        lifecycle.finishQuery()
-        assertTrue(lifecycle.tryStartQuery())
+        val t1 = lifecycle.tryStartQuery()
+        assertNotNull(t1)
+        assertNull(lifecycle.tryStartQuery())
+        assertNull(lifecycle.tryStartQuery())
     }
 
     @Test
-    fun screenOffStopsSchedulingAndUnregistersTimeTick() {
+    fun startQueryReturnsTicketWithIdentity() {
+        val lifecycle = StepCounterController.Lifecycle()
+        lifecycle.setHasViews(true)
+        lifecycle.onScreenOn()
+
+        val t1 = lifecycle.tryStartQuery()!!
+        assertTrue(lifecycle.isCurrent(t1))
+        assertTrue(lifecycle.isQuerying)
+        assertFalse(lifecycle.canSchedule())
+
+        val finished = lifecycle.finishQuery(t1)
+        assertTrue(finished)
+        assertFalse(lifecycle.isQuerying)
+        assertTrue(lifecycle.canSchedule())
+        assertFalse(lifecycle.isCurrent(t1))
+    }
+
+    @Test
+    fun finishQueryOnlyReleasesOwnTicket() {
+        val lifecycle = StepCounterController.Lifecycle()
+        lifecycle.setHasViews(true)
+        lifecycle.onScreenOn()
+
+        val t1 = lifecycle.tryStartQuery()!!
+        val clearedByWrong = lifecycle.finishQuery(StepCounterController.QueryTicket(t1.generation, t1.queryId - 1))
+        assertFalse(clearedByWrong)
+        assertTrue(lifecycle.isQuerying)
+        assertTrue(lifecycle.isCurrent(t1))
+    }
+
+    @Test
+    fun resetInvalidatesActiveTicket() {
+        val lifecycle = StepCounterController.Lifecycle()
+        lifecycle.setHasViews(true)
+        lifecycle.onScreenOn()
+
+        val t1 = lifecycle.tryStartQuery()!!
+        lifecycle.reset()
+
+        assertFalse(lifecycle.isCurrent(t1))
+        assertFalse(lifecycle.isQuerying)
+    }
+
+    @Test
+    fun screenOffStopsSchedulingAndInvalidatesActiveTicket() {
         val lifecycle = StepCounterController.Lifecycle()
         lifecycle.setHasViews(true)
         lifecycle.onScreenOn()
         lifecycle.registerTimeTick()
-        lifecycle.tryStartQuery()
+        val t1 = lifecycle.tryStartQuery()!!
 
         lifecycle.onScreenOff()
 
         assertFalse(lifecycle.screenOn)
         assertFalse(lifecycle.timeTickRegistered)
         assertFalse(lifecycle.canSchedule())
-        assertFalse(lifecycle.tryStartQuery())
-
-        // Simulate the in-flight query completing while the screen is still off.
-        lifecycle.finishQuery()
-        assertFalse(lifecycle.isQuerying)
-        assertFalse(lifecycle.canSchedule())
+        assertNull(lifecycle.tryStartQuery())
+        assertFalse(lifecycle.isCurrent(t1))
     }
 
     @Test
@@ -96,7 +136,7 @@ class StepCounterLifecycleTest {
         assertFalse(lifecycle.hasViews)
         assertFalse(lifecycle.timeTickRegistered)
         assertFalse(lifecycle.canSchedule())
-        assertFalse(lifecycle.tryStartQuery())
+        assertNull(lifecycle.tryStartQuery())
     }
 
     @Test
@@ -144,15 +184,15 @@ class StepCounterLifecycleTest {
     }
 
     @Test
-    fun finishQueryReleasesTheSlot() {
+    fun queryIdStrictlyIncreasing() {
         val lifecycle = StepCounterController.Lifecycle()
         lifecycle.setHasViews(true)
         lifecycle.onScreenOn()
 
-        assertTrue(lifecycle.tryStartQuery())
-        assertFalse(lifecycle.canSchedule())
+        val t1 = lifecycle.tryStartQuery()!!
+        lifecycle.finishQuery(t1)
+        val t2 = lifecycle.tryStartQuery()!!
 
-        lifecycle.finishQuery()
-        assertTrue(lifecycle.canSchedule())
+        assertTrue(t2.queryId > t1.queryId)
     }
 }
