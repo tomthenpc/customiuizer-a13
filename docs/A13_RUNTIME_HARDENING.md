@@ -141,13 +141,13 @@ Network speed is driven by the ROM `NetworkSpeedController`.
 
 The module does not add a periodic network-speed updater. The ROM still drives the tick; the module adds per-tick tx/rx sampling, connection state checks and display formatting. The one-shot delayed style callback is now cancellable on `View` detach. Full per-controller state, one-sample-per-tick and locale-aware formatter work remains in progress.
 
-## P1-B.3 closeout progress
+## P1-B.3.1 closeout progress
 
 | Item | Status | Notes |
 |---|---|---|
-| P0-1 Clock timezone / generation / mContext | COMPLETED | `TIMEZONE_CHANGED` handled, `AtomicLong` generation, `mContext` failure stops state |
-| P0-2 Network speed per-controller / one-sample / locale | IN_PROGRESS | style fallback detach done; per-controller state and one-sample-per-tick not yet landed |
-| P0-3 StepCounter query rollback / generation | COMPLETED | `scheduleUpdate` post rollback, `Lifecycle.generation`, stale-result discard, OOM rethrow |
+| P0-1 Clock timezone / generation / mContext | COMPLETED | `TIMEZONE_CHANGED` / `TIME_CHANGED` consult real screen state; `ClockLifecycleAction`; receiver registration failure stops ticker |
+| P0-2 Network speed per-controller / one-sample | COMPLETED | per-controller `NetSpeedRuntimeState` via `AdditionalInstanceField`; one `getTrafficBytes` per tick; no `Pair`; locale/pref cache still pending |
+| P0-3 StepCounter query token / lifecycle | COMPLETED | `QueryTicket(generation, queryId)`; identity `finishQuery(ticket)`; captured context; receiver registration rollback; OOM rethrow |
 | P0-4 DeviceInfo lifecycle | NOT_STARTED | dedicated I/O thread and stale generation pending |
 | P1-1 BatteryIndicator lifecycle | NOT_STARTED | pending |
 | P1-2 AudioVisualizer scheduling | NOT_STARTED | pending |
