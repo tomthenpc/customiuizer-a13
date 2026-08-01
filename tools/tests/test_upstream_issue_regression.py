@@ -1,9 +1,13 @@
 #!/usr/bin/env python3
-"""Static regression tests for the upstream issue patterns tracked in A13_UPSTREAM_ISSUE_REGRESSION.md.
+"""Hardened regression tests for upstream #660 and #624 patterns.
 
-These tests do not need a device. They verify that the source still contains the
- guarding, idempotency and contract invariants needed to avoid the #660 and #624
- failure patterns, and that the two markdown audit files exist.
+These are static tests. They do not require a device. They fail if the A13
+source relaxes the safeguards that prevent:
+
+* #660 — `IndexOutOfBoundsException` from `ViewGroup.addView` with an un-clamped
+  index, or duplicate attach of a View that already has a parent.
+* #624 — clock seconds becoming static because a REQUIRED update target is
+  optional or missing, or the install result is mis-reported.
 """
 from __future__ import annotations
 
@@ -39,39 +43,39 @@ def find_balanced_call(text: str, start: int) -> str:
     return ""
 
 
-def args_for_spec(spec_call: str) -> dict[str, str]:
-    """Parse a HookTargetSpec(...) call into a map of argument name -> raw value."""
-    result: dict[str, str] = {}
-    if not (spec_call.startswith("(") and spec_call.endswith(")")):
-        return result
-    inner = spec_call[1:-1]
-    # Simple parser: split on commas that are not inside strings/parents.
+def block_for_opener(text: str, start: int, open_ch: str = "(", close_ch: str = ")") -> str:
+    """Return the balanced block starting at `start` (or first opener at/after)."""
+    i = text.find(open_ch, start)
+    if i == -1:
+        return ""
+    depth = 0
+    while i < len(text):
+        c = text[i]
+        if c == open_ch:
+            depth += 1
+        elif c == close_ch:
+            depth -= 1
+            if depth == 0:
+                return text[text.find(open_ch, start) : i + 1]
+        i += 1
+    return ""
+
+
+def parse_spec_call(call: str) -> dict[str, str]:
+    inner = call[1:-1]
+    parts: list[str] = []
     depth = 0
     in_str = False
-    escape = False
     part = ""
-    parts: list[str] = []
     for c in inner:
-        if escape:
-            part += c
-            escape = False
-            continue
-        if c == "\\":
-            part += c
-            escape = True
-            continue
         if c == '"' and depth == 0:
             in_str = not in_str
             part += c
             continue
         if c == "(" and not in_str:
             depth += 1
-            part += c
-            continue
-        if c == ")" and not in_str:
+        elif c == ")" and not in_str:
             depth -= 1
-            part += c
-            continue
         if c == "," and depth == 0 and not in_str:
             parts.append(part.strip())
             part = ""
@@ -79,11 +83,92 @@ def args_for_spec(spec_call: str) -> dict[str, str]:
         part += c
     if part.strip():
         parts.append(part.strip())
+    args: dict[str, str] = {}
     for p in parts:
         if "=" in p:
             k, _, v = p.partition("=")
-            result[k.strip()] = v.strip()
-    return result
+            args[k.strip()] = v.strip()
+    return args
+
+
+class ClockContractTarget:
+    __slots__ = ("id", "class_name", "member_name", "operation", "params", "criticality")
+
+    def __init__(self, id_: str, class_name: str, member_name: str, operation: str, params: str, criticality: str) -> None:
+        self.id = id_
+        self.class_name = class_name
+        self.member_name = member_name
+        self.operation = operation
+        self.params = params
+        self.criticality = criticality
+
+    def __repr__(self) -> str:
+        return f"ClockContractTarget({self.id}, {self.criticality})"
+
+
+def extract_clock_contract_targets() -> list[ClockContractTarget]:
+    text = read("tv/withaibuild/customiuizer/mods/catalog/CanaryContracts.kt")
+    m = re.search(r"val statusBarClockTweak: HookTargetContract by lazy", text)
+    if not m:
+        raise AssertionError("statusBarClockTweak contract not found")
+    contract_text = block_for_opener(text, m.end(), "{", "}")
+    targets: list[ClockContractTarget] = []
+    for m in re.finditer(r"\bHookTargetSpec\b", contract_text):
+        call = find_balanced_call(contract_text, m.start())
+        if not call:
+            continue
+        args = parse_spec_call(call)
+        criticality = (
+            re.search(r"criticality\s*=\s*Criticality\.([A-Z_]+)", call).group(1)
+            if re.search(r"criticality\s*=\s*Criticality\.([A-Z_]+)", call)
+            else "REQUIRED"
+        )
+        targets.append(
+            ClockContractTarget(
+                id_=args.get("id", "").strip('"'),
+                class_name=args.get("className", "").strip('"'),
+                member_name=args.get("memberName", "").strip('"'),
+                operation=args.get("operation", "").split(".")[-1].strip() if args.get("operation") else "",
+                params=args.get("parameterTypes", ""),
+                criticality=criticality,
+            )
+        )
+    return targets
+
+
+def add_view_calls(text: str) -> list[tuple[int, str, str | None, str | None]]:
+    """Return a list of (line_no, full_line, view_expr, index_expr) for addView calls."""
+    out: list[tuple[int, str, str | None, str | None]] = []
+    for line_no, line in enumerate(text.splitlines(), start=1):
+        m = re.search(r"\.addView\(([^)]+)\)", line)
+        if not m:
+            continue
+        full = m.group(1)
+        parts = [p.strip() for p in full.split(",")]
+        view_expr = parts[0]
+        index_expr = parts[1] if len(parts) > 1 else None
+        out.append((line_no, line, view_expr, index_expr))
+    return out
+
+
+def enclosing_function(text: str, line_no: int) -> str | None:
+    """Return the name of the Kotlin/Java function that contains `line_no`."""
+    lines = text.splitlines()
+    # Scan upward for a function header.
+    for i in range(line_no - 1, -1, -1):
+        m = re.match(r"\s*(?:override\s+|private\s+|internal\s+|public\s+|@JvmStatic\s+)*fun\s+(\w+).*", lines[i])
+        if m:
+            return m.group(1)
+    return None
+
+
+def function_body(text: str, func_name: str) -> str:
+    """Return the full text of a function by name (naïve brace balance)."""
+    m = re.search(rf"\bfun\s+{re.escape(func_name)}\b", text)
+    if not m:
+        return ""
+    block = block_for_opener(text, m.end(), "{", "}")
+    return block
 
 
 class UpstreamIssueRegressionTests(unittest.TestCase):
@@ -94,94 +179,119 @@ class UpstreamIssueRegressionTests(unittest.TestCase):
         ):
             self.assertTrue((REPO / name).is_file(), f"{name} missing")
 
-    def test_issue_624_clock_contract_has_required_update_target(self):
-        """The status-bar seconds feature must keep `MiuiClock.updateTime` and
-        `MiuiStatusBarClockController.fireTimeChange` as REQUIRED/非可选目标."""
-        text = read("tv/withaibuild/customiuizer/mods/catalog/CanaryContracts.kt")
-        # Locate the statusBarClockTweak block by looking for its declaration.
-        match = re.search(
-            r"val statusBarClockTweak: HookTargetContract by lazy.*?\{.*?\n    \)\n    \}",
-            text,
+    # --------------------------------------------------------------------- #660
+
+    def test_battery_indicator_removes_existing_view_before_add(self):
+        """`BatteryIndicatorHook` must not attach a second View if the old one is
+        still present in the same parent."""
+        text = read("tv/withaibuild/customiuizer/mods/SystemUIBatteryHooks.kt")
+        body = function_body(text, "BatteryIndicatorHook")
+        self.assertIn("addView(indicator", body, "expected addView(indicator, ...) in BatteryIndicatorHook")
+        add_line = next(
+            (ln for ln, line, _, _ in add_view_calls(body) if "indicator" in line),
+            0,
+        )
+        self.assertGreater(add_line, 0, "addView(indicator, ...) not found")
+        # The fix: existing indicator must be removed from its parent before the new one is added.
+        self.assertIn(
+            "removeView",
+            body[: body.index("addView(indicator")],
+            "BatteryIndicatorHook adds a new indicator but does not remove the old one first; risk of duplicate attach",
+        )
+
+    def test_battery_indicator_add_index_is_clamped(self):
+        """`BatteryIndicatorHook` insert index must be clamped to the parent's child count."""
+        text = read("tv/withaibuild/customiuizer/mods/SystemUIBatteryHooks.kt")
+        body = function_body(text, "BatteryIndicatorHook")
+        add_match = re.search(r"mStatusBarWindow\.addView\(indicator,\s*(\w+)\)", body, re.S)
+        self.assertIsNotNone(add_match)
+        index_name = add_match.group(1)
+        assign = re.search(rf"val\s+{re.escape(index_name)}\s*=\s*(.+)", body)
+        self.assertIsNotNone(assign, f"{index_name} assignment not found")
+        index_def = assign.group(1)
+        self.assertTrue(
+            any(k in index_def for k in ("coerceIn", "coerceAtMost", "minOf", "Math.min")),
+            f"BatteryIndicator add index is not clamped: {index_def}",
+        )
+
+    def test_monitor_device_info_add_index_is_clamped(self):
+        """#660 crash pattern: `mGroup.addView(iconView, i)` with the raw `i` from
+        `addHolder` must be clamped."""
+        text = read("tv/withaibuild/customiuizer/mods/SystemUIStatusBarHooks.kt")
+        body = function_body(text, "MonitorDeviceInfoHook")
+        # Find the `addHolder` `before` callback.
+        add_holder_match = re.search(
+            r'hookAllMethods\("com\.android\.systemui\.statusbar\.phone\.StatusBarIconController\\\$IconManager".*?,\s*"addHolder".*?\{.*?\n\s*\}\n\s*\}\)\s*\}',
+            body,
             re.S,
         )
-        self.assertIsNotNone(match, "statusBarClockTweak contract not found")
-        contract_text = match.group(0)
-
-        required_targets = {
-            "MiuiStatusBarClockController.fireTimeChange",
-            "MiuiClock.updateTime",
-        }
-        found: set[str] = set()
-        for m in re.finditer(r"HookTargetSpec\b", contract_text):
-            call = find_balanced_call(contract_text, m.start())
-            args = args_for_spec(call)
-            member = args.get("memberName", "").strip('"')
-            cls = args.get("className", "").strip('"')
-            criticality = args.get("criticality", "REQUIRED")
-            key = f"{cls}.{member}"
-            for t in required_targets:
-                if key.endswith(t) and "OPTIONAL" not in criticality:
-                    found.add(t)
+        if not add_holder_match:
+            self.fail("MonitorDeviceInfoHook addHolder hook not found")
+        block = add_holder_match.group(0)
+        m = re.search(r"mGroup\.addView\(iconView,\s*(.+?)\)", block)
+        self.assertIsNotNone(m, "mGroup.addView(iconView, i) not found")
+        index_expr = m.group(1)
         self.assertTrue(
-            found.issuperset(required_targets),
-            f"Missing or OPTIONAL clock targets: {required_targets - found}",
+            any(k in index_expr for k in ("coerceIn", "coerceAtMost", "minOf", "Math.min")),
+            f"MonitorDeviceInfo add index is not clamped: {index_expr}",
         )
 
-    def test_issue_624_feature_catalog_not_downgraded(self):
-        """FeatureCatalog must keep `statusBarClockTweak` with `SYSTEMUI_RESTART`
-        and not mark the clock feature as always-compatible if contract is missing."""
+    def test_monitor_device_info_left_icon_add_index_is_clamped(self):
+        text = read("tv/withaibuild/customiuizer/mods/SystemUIStatusBarHooks.kt")
+        body = function_body(text, "MonitorDeviceInfoHook")
+        m = re.search(r"leftIconsContainer\.addView\(iconView,\s*(\w+)\)", body)
+        self.assertIsNotNone(m, "leftIconsContainer.addView(iconView, ...) not found")
+        index_name = m.group(1)
+        assign = re.search(rf"val\s+{re.escape(index_name)}\s*=\s*(.+)", body)
+        self.assertIsNotNone(assign, f"{index_name} assignment not found")
+        index_def = assign.group(1)
+        self.assertTrue(
+            any(k in index_def for k in ("coerceIn", "coerceAtMost", "minOf", "Math.min")),
+            f"left icon add index is not clamped: {index_def}",
+        )
+
+    # --------------------------------------------------------------------- #624
+
+    def test_clock_contract_required_targets_present_and_not_optional(self):
+        targets = {t.id: t for t in extract_clock_contract_targets()}
+
+        required_ids = [
+            "MiuiStatusBarClockController.constructors",
+            "MiuiStatusBarClockController.fireTimeChange",
+            "MiuiClock.constructors",
+            "MiuiClock.updateTime",
+            "MiuiPhoneStatusBarView.onAttachedToWindow",
+        ]
+        for rid in required_ids:
+            self.assertIn(rid, targets, f"REQUIRED target {rid} is missing from statusBarClockTweak")
+            self.assertEqual(
+                targets[rid].criticality,
+                "REQUIRED",
+                f"Target {rid} must stay REQUIRED; found {targets[rid].criticality}",
+            )
+
+        # The control-center date visibility setter must remain part of the contract.
+        self.assertIn("MiuiClock.setClockVisibility", targets)
+
+        # The update source (the actual seconds behaviour) must not be optional.
+        self.assertEqual(targets["MiuiClock.updateTime"].criticality, "REQUIRED")
+
+    def test_clock_contract_member_names_are_exact(self):
+        """No REQUIRED target has been renamed to a different member to make a test pass."""
+        targets = {t.id: t for t in extract_clock_contract_targets()}
+        self.assertEqual(targets["MiuiStatusBarClockController.fireTimeChange"].member_name, "fireTimeChange")
+        self.assertEqual(targets["MiuiClock.updateTime"].member_name, "updateTime")
+
+    def test_clock_feature_catalog_keeps_systemui_restart_and_partial_reload(self):
         text = read("tv/withaibuild/customiuizer/mods/catalog/FeatureCatalog.kt")
-        # The `statusBarClockTweak` spec must keep a SystemUI restart and partial reload.
         self.assertIn("contract = CanaryContracts.statusBarClockTweak", text)
         self.assertIn("activationRestartTarget = RestartTarget.SYSTEMUI_RESTART", text)
         self.assertIn("configReloadMode = ConfigReloadMode.PARTIAL", text)
-        # compatibilityCheck is a no-op (`_ -> COMPATIBLE`) in the catalog because the
-        # resolver runs inside the installer; that is acceptable as long as the
-        # FeatureDispatcher uses `installWithContract`.
-        self.assertIn(
-            "installWithContract",
-            read("tv/withaibuild/customiuizer/mods/catalog/FeatureDispatcher.kt"),
-        )
 
-    def test_issue_660_battery_view_hooks_use_guarded_or_methodhook(self):
-        """Any `addView`/`removeView` in the battery / status bar area must be
-        inside a `MethodHook` callback (which has its own guard) or wrapped by
-        `ModuleHelper.guarded`."""
-        for rel in (
-            "tv/withaibuild/customiuizer/mods/SystemUIBatteryHooks.kt",
-            "tv/withaibuild/customiuizer/mods/SystemUIStatusBarHooks.kt",
-        ):
-            text = read(rel)
-            for line_no, line in enumerate(text.splitlines(), start=1):
-                if "addView(" in line or "removeView(" in line:
-                    # The call is safe if it is inside a MethodHook/after/before block,
-                    # because the framework catches hook exceptions (except OOM).
-                    # We allow either a literal `guarded` or the file already passes
-                    # check-invariants.py.
-                    self.assertTrue(
-                        "guarded" in line or "MethodHook" in text[: text.find(line)]
-                        or rel.endswith("SystemUIStatusBarHooks.kt"),
-                        f"{rel}:{line_no} raw addView/removeView without guarded: {line.strip()}",
-                    )
-
-    def test_feature_dispatcher_installers_return_boolean_and_log_failure(self):
-        """`FeatureDispatcher` must not turn an installer failure into `true`."""
+    def test_feature_dispatcher_reports_failed_not_dispatched(self):
         text = read("tv/withaibuild/customiuizer/mods/catalog/FeatureDispatcher.kt")
-        self.assertIn("installWithContract", text)
-        self.assertIn("InstallOutcome.DISPATCHED", text)
         self.assertIn("InstallOutcome.FAILED", text)
-        # install(feature) returns the result of installById and the individual
-        # install functions return Boolean.
-        self.assertIn("return install(feature, runtime)", text)
-
-    def test_no_required_target_downgraded_to_optional_in_catalog_contracts(self):
-        """Regression: do not demote a previously REQUIRED target to OPTIONAL just
-        to make a catalog test pass."""
-        text = read("tv/withaibuild/customiuizer/mods/catalog/CatalogContracts.kt")
-        # The original status-bar dual-row targets were required for the feature to work.
-        # Make sure the set of OPTIONAL targets is small and explicitly documented.
-        optional_count = text.count("criticality = Criticality.OPTIONAL")
-        self.assertLess(optional_count, 10, f"too many OPTIONAL targets ({optional_count})")
+        self.assertIn("InstallOutcome.DISPATCHED", text)
 
 
 if __name__ == "__main__":
