@@ -77,11 +77,26 @@ Source-level steady-state cost checklist. Each row states the current evidence; 
 | ResourceHooks partial install recovery | COMPLETED | `applyHooks()` `PARTIAL_FAILED` / `INSTALLED` state; `installedMask` CAS per method; `ResourceHooksTest` idempotence + concurrent | Retry only missing bits; no double-hook |
 | Owned receiver detached-bucket race | COMPLETED | `OwnedReceiverBucket`; `synchronized(bucket)`; re-check `ownedReceivers.get(key) == bucket`; identity remove on empty | `ModuleHelperReceiverTest` concurrency test |
 | Stale receiver identity remove | COMPLETED | `drainModuleStale` / `drainOwnedStale` use `stale*.remove(key, deque)` after draining | Prevents leaving empty stale containers |
-| Periodic tasks (clock, network, device info, battery, audio, album art) | PENDING | Not yet audited | `postDelayed` / `Handler` instances need stop-on-screen-off and disabled-zero-start review |
-| High-frequency callback allocations | PENDING | Not yet audited | `Regex`, `String.format`, `StringBuilder`, `ArrayList`, `lambda` in hot paths need pass |
-| Bitmap / large object budgets | PENDING | `AlbumArtPolicy.kt` has `CACHE_BUDGET_FRAMES` | Need in-flight task and View strong-reference audit |
+| Stale receiver refill race | COMPLETED | `addToStale` / `drainStale` share `synchronized(deque)` and re-check `staleMap.get(key) == deque` | `ModuleHelperReceiverTest.staleModule*` drains and identity removes |
+| Status-bar second ticker | COMPLETED | `SystemStatusBarClockAndMoreHooks` `ClockRunnable` reused; `removeCallbacks` before `postDelayed`; `SecondTickerState` generation invalidates old callbacks | `SystemStatusBarClockAndMoreHooksTest` state machine; one pending callback per controller |
+| High-frequency callback allocations | PARTIAL | `CLOCK_HOUR_PATTERN` precompiled; `ResourceHooks` no hot `Executable.getName()` | `Regex`, `String.format`, `StringBuilder`, `ArrayList`, `lambda` in remaining hot paths need pass |
+| Bitmap / large object budgets | PARTIAL | `AlbumArtPolicy.kt` has `CACHE_BUDGET_FRAMES` and `BLUR_MAX_PIXELS`; `DiagnosticRecorder` bounded | In-flight task / View strong-reference audit pending |
 | Disabled feature zero-cost | VERIFIED_STATIC | `FeatureDispatcher` checks `runtime.prefs` before `installWithContract` | `SystemServerInstaller` / `SystemUiInstaller` / `LauncherInstaller` already gate by process + prefs |
 | Diagnostics bounded | COMPLETED | `DiagnosticRecorder` `MAX_SNAPSHOTS=32`, `MAX_DETAIL_LENGTH=512`, `THROTTLE_MS=60_000` | Already fixed capacity and throttling |
+
+## Periodic-work inventory (P1-B)
+
+| Component | Trigger | Start condition | Stop condition | Screen off | View detach | Feature off | Repeat init | Notes |
+|---|---|---|---|---|---|---|---|---|
+| `SystemStatusBarClockAndMoreHooks` second ticker | `SCREEN_ON` / `TIME_SET` / `TIMEZONE_CHANGED` | `isScreenOn() && (ccShowSeconds \|\| sbShowSeconds)` | `SCREEN_OFF` or seconds disabled | stops via `stopSecondTimer()` | controller GC releases `WeakReference`s | `FeatureDispatcher` gate for clock tweaks | `removeCallbacks` before each `postDelayed`; `ClockRunnable` reused | one `Handler` + one `ClockRunnable` per controller; `SecondTickerState` generation guards old ticks |
+| `DeviceInfoMonitor` temperature/current tick | preference + screen state | `start(enabled, interactive)` | `stop()` / `snapshot.enabled = false` | `screenOn = enabled && interactive` | owner `WeakReference` | `DeviceInfoMonitor` feature pref | single `snapshot` per update | already gated by enabled flag and screen |
+| `StepCounterController` step updates | `screenOn` lifecycle + `SensorManager` | `scheduleUpdate()` if `lifecycle.screenOn` | lifecycle off | stops | not applicable | step feature pref | pending flag / `removeCallbacks` | uses `StepCounterLifecycle` with `screenOn` |
+| `AudioVisualizer` capture | visualizer / per frame | `onAttachedToWindow` if enabled | `onDetachedFromWindow` release | not applicable | `release()` on detach | visualizer feature pref | session token + `WeakReference` | audit not yet completed; Visualizer release lifecycle needs explicit test |
+| `LockScreenAlbumArtController` decode | media change | enabled + active media | `stop()` / controller destroyed | not applicable | release `View`/Drawable | lock-screen album art pref | in-flight `Future` per cache key; `generation` token | `AlbumArtPolicy` budgets bytes; `inFlight` cleanup pending |
+| `Network speed` | `postDelayed` | `NetworkSpeed` feature + `SystemUIStatusBarHooks` | screen off / view gone | needs audit | needs audit | `FeatureDispatcher` gate | needs audit | sysfs/network I/O scheduling not yet verified |
+| `BatteryIndicator` | `observePreferenceChange` + `viewScope.launch` | enabled | view detached | needs audit | `viewScope` cleared | `BatteryIndicator` pref | single `viewScope` | lifecycle audited but needs explicit View detach test |
+
+*Components marked `needs audit` are tracked in the remaining-risks list below.* |
 
 ## Remaining risks
 
