@@ -60,6 +60,7 @@ import tv.withaibuild.customiuizer.mods.utils.ProcessScope;
 import tv.withaibuild.customiuizer.mods.utils.ProcessScopes;
 import tv.withaibuild.customiuizer.mods.utils.ResourceHooks;
 import tv.withaibuild.customiuizer.mods.utils.XposedHelpers;
+import tv.withaibuild.customiuizer.installers.InputMethodInstaller;
 import tv.withaibuild.customiuizer.installers.LauncherInstaller;
 import tv.withaibuild.customiuizer.installers.PackageInstallerRouter;
 import tv.withaibuild.customiuizer.installers.SystemUiInstaller;
@@ -175,14 +176,7 @@ public class MainModule extends XposedModule {
         initPrefs();
 
         if (scope == ProcessScope.INPUT_METHOD) {
-            if (mPrefs.getBoolean("controls_volumecursor")) Controls.VolumeCursorHook(lpparam);
-            if (mPrefs.getBoolean("controls_nonavbar_fix_inputmethod")
-                && mPrefs.getBoolean("controls_nonavbar")) {
-                Various.FixInputMethodBottomMarginHook(lpparam);
-            }
-            if (pkg.startsWith("com.google.android.inputmethod")) {
-                if (mPrefs.getInt("various_gboardpadding_port", 0) > 0 || mPrefs.getInt("various_gboardpadding_land", 0) > 0) Various.GboardPaddingHook(lpparam);
-            }
+            InputMethodInstaller.install(lpparam, pkg);
             return;
         }
 
