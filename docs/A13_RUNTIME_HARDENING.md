@@ -89,6 +89,7 @@ Source-level steady-state cost checklist. Each row states the current evidence; 
 |---|---|---|---|
 | ResourceHooks fixed method kind | COMPLETED | `ResourceHooks.java` uses `int kind`; no `Executable.getName()`; bit-mask install tracking (`installedMask`); `ResourceHooksTest` | OBJECT/DENSITY/ID routing by kind; active hit avoids Context lookup and resource-name parsing |
 | ResourceHooks partial install recovery | COMPLETED | `applyHooks()` `PARTIAL_FAILED` / `INSTALLED` state; `installedMask` CAS per method; `ResourceHooksTest` idempotence + concurrent | Retry only missing bits; no double-hook |
+| ResourceHooks nested OOM boundary | VERIFIED_STATIC | All resource lookup/install fallbacks rethrow OOM; `logNonFatal` isolates ordinary logger failures without swallowing logger OOM | 14 getter targets, parameter expansion and partial-install retry are unchanged |
 | Owned receiver detached-bucket race | COMPLETED | `OwnedReceiverBucket`; `synchronized(bucket)`; re-check `ownedReceivers.get(key) == bucket`; identity remove on empty | `ModuleHelperReceiverTest` concurrency test |
 | Stale receiver identity remove | COMPLETED | `drainModuleStale` / `drainOwnedStale` use `stale*.remove(key, deque)` after draining | Prevents leaving empty stale containers |
 | Stale receiver refill race | COMPLETED | `addToStale` / `drainStale` share `synchronized(deque)` and re-check `staleMap.get(key) == deque` | `ModuleHelperReceiverTest.staleModule*` drains and identity removes |
