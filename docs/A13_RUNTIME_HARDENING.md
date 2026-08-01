@@ -170,9 +170,12 @@ The module does not add a periodic network-speed updater. The ROM still drives t
 
 - H1.1b 静态闭环：VERIFIED_STATIC
 - H1.1c 严格版本解析与诊断失败隔离：VERIFIED_STATIC
-- H1.2 A14 静态对照：PENDING
-
-- `RomEnvironment` 数据结构：COMPLETED
+- H1.2a A14 静态对照：部分完成
+  - 完成 A14参考分支 `devin/a14-runtime-hardening` SHA `f4ef55f034dee52625d7496a4cd51093ad113bb3` 的只读审计
+  - 完成 3 个 `system_server` Canary 静态矩阵：`PACKAGE_PERMISSIONS`、`AUTO_BRIGHTNESS_RANGE`、`MUFFLED_VIBRATION`
+  - 三个 Feature 均评为 S2（REFERENCE_ONLY），`deviceVerified=false`
+  - 未引入任何生产 Hook fallback
+- H1.2b 剩余 Canary 与完整 variant机制：PENDING
 - `SystemPropertyReader` 异常隔离：VERIFIED_STATIC
   - 缓存 `android.os.SystemProperties.get(String)` Method 一次
   - 普通反射异常降级为 `null`
@@ -195,9 +198,12 @@ The module does not add a periodic network-speed updater. The ROM still drives t
   - 保存 `state` / `compatibility` / `reason` / `detail`
   - 去重 key 包含 `compatibility`
   - Markdown/Text 摘要增加 ROM Environments 明细
-- H1.2 A14 静态对照：PENDING
-  - 需要以只读方式读取 A14 `mods/` 中对应 Hook 文件
-  - 对 8 个 Canary 完成 S0–S3 分级
+- H1.2a `system_server` Canary 静态对照：VERIFIED_STATIC
+  - A14参考分支 `devin/a14-runtime-hardening` SHA `f4ef55f034dee52625d7496a4cd51093ad113bb3` 只读审计
+  - `PACKAGE_PERMISSIONS`、`AUTO_BRIGHTNESS_RANGE`、`MUFFLED_VIBRATION` 均评为 S2
+  - `deviceVerified=false` 保留
+  - 未引入任何生产 Hook fallback
+- H1.2b 剩余 Canary / 完整 `FeatureTargetVariant` 机制：PENDING
 - HyperOS 生产 fallback：NOT_IMPLEMENTED
 - HyperOS 实机验证：DEFERRED_EXTERNAL
 
