@@ -388,15 +388,18 @@ object SystemStatusBarClockAndMoreHooks {
     /**
      * Scheduler abstraction so the second-ticker lifecycle can be unit tested without a
      * real [Handler]. Production uses [HandlerScheduler]; tests use [FakeTickerScheduler].
+     *
+     * Returns true if the runnable was actually enqueued, matching Android
+     * [Handler.postDelayed] semantics.
      */
     internal interface TickerScheduler {
-        fun postDelayed(runnable: Runnable, delayMillis: Long)
+        fun postDelayed(runnable: Runnable, delayMillis: Long): Boolean
         fun removeCallbacks(runnable: Runnable)
     }
 
     internal class HandlerScheduler(private val handler: Handler) : TickerScheduler {
-        override fun postDelayed(runnable: Runnable, delayMillis: Long) {
-            handler.postDelayed(runnable, delayMillis)
+        override fun postDelayed(runnable: Runnable, delayMillis: Long): Boolean {
+            return handler.postDelayed(runnable, delayMillis)
         }
         override fun removeCallbacks(runnable: Runnable) {
             handler.removeCallbacks(runnable)
@@ -465,7 +468,7 @@ object SystemStatusBarClockAndMoreHooks {
         override fun run() {
             val state = stateRef.get() ?: return
             synchronized(state) {
-                if (state.scheduledGeneration != scheduledGen || !state.running || !state.screenOn) return
+                if (state.scheduledGeneration != scheduledGen || !state.running || !state.screenOn || !state.callbackPending) return
                 state.markCallbackPending(false)
             }
 
@@ -474,12 +477,7 @@ object SystemStatusBarClockAndMoreHooks {
             }
 
             val after = stateRef.get() ?: return
-            synchronized(after) {
-                if (after.canRePost(scheduledGen)) {
-                    after.markCallbackPending(true)
-                    scheduler.postDelayed(this, 1000L)
-                }
-            }
+            scheduleTicker(after, scheduler, this, scheduledGen, 1000L)
         }
 
         protected open fun doTick() {
@@ -498,6 +496,35 @@ object SystemStatusBarClockAndMoreHooks {
         }
     }
 
+    /**
+     * Posts [runnable] if the [state] generation still matches, the screen is on and no
+     * callback is already pending. The post is performed inside [state]'s monitor so the
+     * [SecondTickerState.callbackPending] flag always reflects the real scheduler state.
+     */
+    internal fun scheduleTicker(
+        state: SecondTickerState,
+        scheduler: TickerScheduler,
+        runnable: Runnable,
+        generation: Long,
+        delayMillis: Long
+    ): Boolean {
+        synchronized(state) {
+            if (!state.canRePost(generation)) return false
+            state.markCallbackPending(true)
+            try {
+                if (!scheduler.postDelayed(runnable, delayMillis)) {
+                    state.markCallbackPending(false)
+                    return false
+                }
+            } catch (t: Throwable) {
+                state.markCallbackPending(false)
+                if (t is OutOfMemoryError) throw t
+                return false
+            }
+            return true
+        }
+    }
+
     private fun secondTickerState(clockController: Any): SecondTickerState {
         var state = XposedHelpers.getAdditionalInstanceField(clockController, "secondTickerState") as? SecondTickerState
         if (state == null) {
@@ -511,10 +538,16 @@ object SystemStatusBarClockAndMoreHooks {
 
     private fun stopSecondTimer(clockController: Any) {
         val state = secondTickerState(clockController)
-        val clockHandler = XposedHelpers.getAdditionalInstanceField(clockController, "clockHandler") as? Handler ?: return
-        val clockRunnable = XposedHelpers.getAdditionalInstanceField(clockController, "clockRunnable") as? Runnable ?: return
-        clockHandler.removeCallbacks(clockRunnable)
-        state.stop()
+
+        synchronized(state) {
+            state.stop()
+        }
+
+        val clockHandler = XposedHelpers.getAdditionalInstanceField(clockController, "clockHandler") as? Handler
+        val clockRunnable = XposedHelpers.getAdditionalInstanceField(clockController, "clockRunnable") as? Runnable
+        if (clockHandler != null && clockRunnable != null) {
+            clockHandler.removeCallbacks(clockRunnable)
+        }
     }
 
     private fun startOrRestartSecondTicker(clockController: Any) {
@@ -542,7 +575,7 @@ object SystemStatusBarClockAndMoreHooks {
         val scheduler = HandlerScheduler(clockHandler)
         clockRunnable = ClockRunnable(newGen, WeakReference(clockController), WeakReference(state), scheduler)
         XposedHelpers.setAdditionalInstanceField(clockController, "clockRunnable", clockRunnable)
-        scheduler.postDelayed(clockRunnable, 1000 - java.lang.System.currentTimeMillis() % 1000)
+        scheduleTicker(state, scheduler, clockRunnable, newGen, 1000 - java.lang.System.currentTimeMillis() % 1000)
     }
 
     @JvmStatic
