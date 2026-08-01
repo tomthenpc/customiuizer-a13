@@ -531,6 +531,13 @@ object FeatureDispatcher {
         contract: HookTargetContract,
         crossinline installer: () -> InstallOutcome
     ): Boolean {
+        // Trigger the per-process ROM environment detection once, on the first
+        // enabled catalog feature that reaches the install cold path. Disabled
+        // features never call installWithContract, so the environment is not
+        // initialized for them.
+        @Suppress("UNUSED_VARIABLE")
+        val environment = runtime.environment
+
         val (compat, compatResult) = runtime.resolver.evaluateContract(contract, diagnosticId)
 
         DiagnosticRecorder.record(

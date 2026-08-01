@@ -158,12 +158,20 @@ The module does not add a periodic network-speed updater. The ROM still drives t
 ## A13-H1 HyperOS 1 / Android 13 兼容基线
 
 - `RomEnvironment` / `RomProfile` 检测：COMPLETED
+  - HyperOS 1 证据优先于 MIUI V14 证据
+  - 支持 `OS1` / `OS1.0.10.0` / `V14` / `V14.0.10.0` 等格式
+  - `UNSUPPORTED_ANDROID` 使用 `ANDROID_VERSION_UNSUPPORTED` reason
 - `FeatureRuntime` 懒加载集成：COMPLETED
-- 诊断 ReasonCode：`ROM_PROFILE_DETECTED`、`ROM_PROFILE_UNKNOWN`、`ROM_EVIDENCE_CONFLICT`、`HYPEROS_FALLBACK_FOUND`、`HYPEROS_TARGET_NOT_FOUND`：COMPLETED
-- Canary target 审计：见 `build/compat-audit/hyperos-a13-canary-audit.md`（未提交，见下方结果）
-  - 全部 8 个 Canary feature 的主 target 均为 MIUI 14 / Android 13
-  - HyperOS 1 / Android 13 fallback 尚无真实 A13 证据，全部标记为 `DEFERRED_EXTERNAL`
+- 生产 cold path 触发：COMPLETED
+  - `FeatureDispatcher.installWithContract` 首次读取 `runtime.environment`
+  - disabled Feature 不触发检测
+- 诊断 ReasonCode：`ROM_PROFILE_DETECTED`、`ROM_PROFILE_UNKNOWN`、`ROM_EVIDENCE_CONFLICT`、`ANDROID_VERSION_UNSUPPORTED`、`HYPEROS_FALLBACK_FOUND`、`HYPEROS_TARGET_NOT_FOUND`：COMPLETED
+- Canary target 审计（H1.1）：见 `build/compat-audit/hyperos-a13-canary-audit.md`（未提交，见 H1.1 结果）
 - LSPosed 日志分析器 ROM 环境解析：COMPLETED
+- H1.2 A14 静态对照与 S1 fallback：PENDING
+  - 需要以只读方式读取 A14 `mods/` 中对应 Hook 文件
+  - 对 8 个 Canary 完成 S0–S3 分级
+  - 仅 S1 且完整 target bundle 才进入生产 fallback
 
 ## Remaining risks
 

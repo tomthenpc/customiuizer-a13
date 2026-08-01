@@ -5,6 +5,7 @@ import tv.withaibuild.customiuizer.mods.diagnostics.DiagnosticRecorder
 import tv.withaibuild.customiuizer.mods.diagnostics.ReasonCode
 import tv.withaibuild.customiuizer.mods.catalog.CompatibilityState
 import java.lang.reflect.Method
+import java.util.Locale
 
 /**
  * ROM profile for the current host process.
@@ -31,6 +32,10 @@ internal data class RomEnvironment(
 )
 
 internal object RomEnvironmentDetector {
+
+    /** Test hook to suppress per-process diagnostic output when not relevant to the test. */
+    @JvmField
+    internal var recordDiagnostics: Boolean = true
 
     private const val MIUI_VERSION_NAME = "ro.miui.ui.version.name"
     private const val MIUI_VERSION_CODE = "ro.miui.ui.version.code"
@@ -62,8 +67,10 @@ internal object RomEnvironmentDetector {
         buildIncremental: String,
         properties: Map<String, String>
     ): RomEnvironment {
-        val miuiVersionName = properties[MIUI_VERSION_NAME]?.takeIf { it.isNotEmpty() }
-        val hyperOsVersionName = properties[HYPER_OS_VERSION_NAME]?.takeIf { it.isNotEmpty() }
+        val rawMiui = properties[MIUI_VERSION_NAME]?.takeIf { it.isNotEmpty() }
+        val rawHyper = properties[HYPER_OS_VERSION_NAME]?.takeIf { it.isNotEmpty() }
+        val miuiVersionName = rawMiui?.takeIf { isValidMiuiVersion(it) }
+        val hyperOsVersionName = rawHyper?.takeIf { isValidHyperOsVersion(it) }
 
         val evidence = buildList {
             if (buildDisplay.isNotEmpty()) add("display=$buildDisplay")
@@ -77,8 +84,8 @@ internal object RomEnvironmentDetector {
 
         val profile = when {
             sdkInt != 33 -> RomProfile.UNSUPPORTED_ANDROID
-            miuiVersionName != null && hyperOsVersionName == null -> RomProfile.MIUI14_A13
-            hyperOsVersionName != null && miuiVersionName == null -> RomProfile.HYPEROS1_A13
+            hyperOsVersionName != null -> RomProfile.HYPEROS1_A13
+            miuiVersionName != null -> RomProfile.MIUI14_A13
             else -> RomProfile.UNKNOWN_A13
         }
 
@@ -94,6 +101,30 @@ internal object RomEnvironmentDetector {
 
         recordEnvironment(environment)
         return environment
+    }
+
+    /** HyperOS 1 candidate: "OS1" or "OS1.x.y.z" after normalization. */
+    internal fun isValidHyperOsVersion(value: String): Boolean {
+        val v = value.trim().uppercase(Locale.ROOT)
+        if (v.isEmpty()) return false
+        if (v == "OS1") return true
+        if (v.startsWith("OS1")) {
+            val next = v.getOrNull(3)
+            return next == null || next == '.' || next.isDigit()
+        }
+        return false
+    }
+
+    /** MIUI 14 candidate: "V14" or "V14.x.y.z" after normalization. */
+    internal fun isValidMiuiVersion(value: String): Boolean {
+        val v = value.trim().uppercase(Locale.ROOT)
+        if (v.isEmpty()) return false
+        if (v == "V14") return true
+        if (v.startsWith("V14")) {
+            val next = v.getOrNull(3)
+            return next == null || next == '.' || next.isDigit()
+        }
+        return false
     }
 
     private fun readSystemProperties(): Map<String, String> {
@@ -118,6 +149,7 @@ internal object RomEnvironmentDetector {
     }
 
     private fun recordEnvironment(environment: RomEnvironment) {
+        if (!recordDiagnostics) return
         val compatibility = when (environment.profile) {
             RomProfile.MIUI14_A13, RomProfile.HYPEROS1_A13 -> CompatibilityState.COMPATIBLE
             RomProfile.UNKNOWN_A13 -> CompatibilityState.DEGRADED
@@ -126,7 +158,7 @@ internal object RomEnvironmentDetector {
         val reason = when (environment.profile) {
             RomProfile.MIUI14_A13, RomProfile.HYPEROS1_A13 -> ReasonCode.ROM_PROFILE_DETECTED
             RomProfile.UNKNOWN_A13 -> ReasonCode.ROM_PROFILE_UNKNOWN
-            RomProfile.UNSUPPORTED_ANDROID -> ReasonCode.ROM_EVIDENCE_CONFLICT
+            RomProfile.UNSUPPORTED_ANDROID -> ReasonCode.ANDROID_VERSION_UNSUPPORTED
         }
         DiagnosticRecorder.record(
             id = "rom.environment",

@@ -91,6 +91,8 @@ class LogProfile:
         self.source_classes: set[str] = set()
         self.top_fingerprints: list[tuple[str, int]] = []
         self.rom_environment: list[dict] = []
+        self.rom_environment_seen: set[str] = set()
+        self.rom_environment_overflow = 0
         self.hyperos_fallback = 0
         self.hyperos_target_not_found = 0
 
@@ -128,11 +130,18 @@ class LogProfile:
             self.hook_failed += 1
         m = RE_ROM.search(line)
         if m:
-            self.rom_environment.append({
+            entry = {
                 "state": m.group(1),
                 "reason": m.group(2),
                 "detail": (m.group(3) or "").strip(),
-            })
+            }
+            key = f"{entry['state']}|{entry['reason']}|{entry['detail']}"
+            if key not in self.rom_environment_seen:
+                if len(self.rom_environment) < 32:
+                    self.rom_environment_seen.add(key)
+                    self.rom_environment.append(entry)
+                else:
+                    self.rom_environment_overflow += 1
         if RE_HYPEROS_FALLBACK.search(line):
             self.hyperos_fallback += 1
         if RE_HYPEROS_TARGET_NOT_FOUND.search(line):
@@ -302,7 +311,7 @@ def text_summary(profile: LogProfile) -> str:
         f"Time range:      {profile.first_time or 'N/A'} -> {profile.last_time or 'N/A'}",
         f"P0:              {p0_count(profile)}",
         f"P1:              {p1_count(profile)}",
-        f"ROM environments: {len(profile.rom_environment)}",
+        f"ROM environments: {len(profile.rom_environment)} (+{profile.rom_environment_overflow} overflow)",
         f"HyperOS fallback: {profile.hyperos_fallback}",
         f"HyperOS missing target: {profile.hyperos_target_not_found}",
         f"Hook diagnostics: {profile.hook_diagnostics}",
@@ -347,7 +356,7 @@ def markdown_summary(profile: LogProfile) -> str:
         f"| Time range | {profile.first_time or 'N/A'} -> {profile.last_time or 'N/A'} |",
         f"| P0 | {p0_count(profile)} |",
         f"| P1 | {p1_count(profile)} |",
-        f"| ROM environments | {len(profile.rom_environment)} |",
+        f"| ROM environments | {len(profile.rom_environment)} (+{profile.rom_environment_overflow} overflow) |",
         f"| HyperOS fallback | {profile.hyperos_fallback} |",
         f"| HyperOS missing target | {profile.hyperos_target_not_found} |",
         f"| Hook diagnostics | {profile.hook_diagnostics} |",

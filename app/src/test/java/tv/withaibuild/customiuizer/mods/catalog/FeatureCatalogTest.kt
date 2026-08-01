@@ -10,6 +10,7 @@ import org.junit.Before
 import org.junit.Test
 import tv.withaibuild.customiuizer.MainModule
 import tv.withaibuild.customiuizer.mods.catalog.CompatibilityState
+import tv.withaibuild.customiuizer.mods.compat.RomEnvironmentDetector
 import tv.withaibuild.customiuizer.mods.diagnostics.DiagnosticIds
 import tv.withaibuild.customiuizer.mods.diagnostics.DiagnosticRecorder
 import tv.withaibuild.customiuizer.mods.diagnostics.InstallOutcome
@@ -30,6 +31,8 @@ class FeatureCatalogTest {
         DiagnosticRecorder.clock = { 0L }
         DiagnosticRecorder.logger = { logMessages += it }
         XposedHelpers.moduleInst = FakeXposedInterface.create()
+        // Environment diagnostics are independent of feature install logs.
+        RomEnvironmentDetector.recordDiagnostics = false
     }
 
     private fun runtime(

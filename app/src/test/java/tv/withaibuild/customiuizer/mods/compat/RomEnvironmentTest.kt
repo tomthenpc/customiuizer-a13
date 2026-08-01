@@ -1,6 +1,7 @@
 package tv.withaibuild.customiuizer.mods.compat
 
 import org.junit.Assert.assertEquals
+import org.junit.Assert.assertFalse
 import org.junit.Assert.assertNull
 import org.junit.Assert.assertTrue
 import org.junit.Test
@@ -43,14 +44,14 @@ class RomEnvironmentTest {
     }
 
     @Test
-    fun bothMiuiAndHyperOsIsUnknown() {
+    fun bothMiuiAndHyperOsUsesHyperOs() {
         val env = env(
             props = mapOf(
                 "ro.miui.ui.version.name" to "V14.0.0",
                 "ro.mi.os.version.name" to "OS1.0.2.0"
             )
         )
-        assertEquals(RomProfile.UNKNOWN_A13, env.profile)
+        assertEquals(RomProfile.HYPEROS1_A13, env.profile)
     }
 
     @Test
@@ -82,5 +83,48 @@ class RomEnvironmentTest {
         assertTrue(env.evidence.any { it.startsWith("display=") })
         assertTrue(env.evidence.any { it.startsWith("buildIncremental=") })
         assertTrue(env.evidence.any { it.startsWith("roIncremental=") })
+    }
+
+    @Test
+    fun hyperOsHasPriorityWhenBothPropertiesPresent() {
+        val env = env(
+            props = mapOf(
+                "ro.mi.os.version.name" to "OS1.0.10.0",
+                "ro.miui.ui.version.name" to "V14"
+            )
+        )
+        assertEquals(RomProfile.HYPEROS1_A13, env.profile)
+        assertEquals("OS1.0.10.0", env.hyperOsVersionName)
+    }
+
+    @Test
+    fun invalidHyperOsFallsBackToMiui() {
+        val env = env(
+            props = mapOf(
+                "ro.mi.os.version.name" to "OS2.0",
+                "ro.miui.ui.version.name" to "V14.0.10.0"
+            )
+        )
+        assertEquals(RomProfile.MIUI14_A13, env.profile)
+    }
+
+    @Test
+    fun invalidMiuiFallsBackToUnknown() {
+        val env = env(
+            props = mapOf("ro.miui.ui.version.name" to "V15.0.0.0")
+        )
+        assertEquals(RomProfile.UNKNOWN_A13, env.profile)
+    }
+
+    @Test
+    fun versionParsingAcceptsCommonFormats() {
+        assertTrue(RomEnvironmentDetector.isValidHyperOsVersion("OS1"))
+        assertTrue(RomEnvironmentDetector.isValidHyperOsVersion("os1.0"))
+        assertTrue(RomEnvironmentDetector.isValidHyperOsVersion("  OS1.0.10.0  "))
+        assertTrue(RomEnvironmentDetector.isValidMiuiVersion("V14"))
+        assertTrue(RomEnvironmentDetector.isValidMiuiVersion("v14.0"))
+        assertTrue(RomEnvironmentDetector.isValidMiuiVersion("V14.0.10.0"))
+        assertFalse(RomEnvironmentDetector.isValidHyperOsVersion("OS2"))
+        assertFalse(RomEnvironmentDetector.isValidMiuiVersion("V816"))
     }
 }
