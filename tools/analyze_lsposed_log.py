@@ -61,7 +61,7 @@ RE_NO_METHOD = re.compile(r"NoSuchMethod(?:Error|Exception)")
 RE_NO_FIELD = re.compile(r"NoSuchField(?:Error|Exception)")
 RE_INVOCATION = re.compile(r"InvocationTargetException")
 RE_HOOK_FAILED = re.compile(r"Hook failed")
-RE_ROM = re.compile(r"Diagnostic\[rom\.environment\].*?\s+(\S+)\s+reason=(\S+)(?:\s+detail=(.+?))?(?:\s+\||$)")
+RE_ROM = re.compile(r"Diagnostic\[rom\.environment\]\s+(\S+)(?:\s+compat=(\S+))?\s+reason=(\S+)(?:\s+detail=(.+?))?(?:\s+\||$)")
 RE_HYPEROS_FALLBACK = re.compile(r"fallback=true")
 RE_HYPEROS_TARGET_NOT_FOUND = re.compile(r"HYPEROS_TARGET_NOT_FOUND")
 
@@ -132,8 +132,8 @@ class LogProfile:
         if m:
             entry = {
                 "state": m.group(1),
-                "reason": m.group(2),
-                "detail": (m.group(3) or "").strip(),
+                "reason": m.group(3),
+                "detail": (m.group(4) or "").strip(),
             }
             key = f"{entry['state']}|{entry['reason']}|{entry['detail']}"
             if key not in self.rom_environment_seen:

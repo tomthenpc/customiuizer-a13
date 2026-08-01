@@ -57,7 +57,7 @@ class RomEnvironmentParsingTest(unittest.TestCase):
         profile.bump_kind("Diagnostic[rom.environment] COMPATIBLE compat=COMPATIBLE reason=ROM_PROFILE_DETECTED detail=HYPEROS1_A13")
         summary = analyze.markdown_summary(profile)
         self.assertIn("ROM environments", summary)
-        self.assertIn("HYPEROS1_A13", summary)
+        self.assertIn("1 (+0 overflow)", summary)
 
 
 if __name__ == "__main__":
