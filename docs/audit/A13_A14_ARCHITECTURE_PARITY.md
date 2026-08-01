@@ -6,7 +6,7 @@ Scope: A13 `devin/a13-rom-intelligence-audit` vs A14 `devin/a14-runtime-hardenin
 |---|---|---|---|---|
 | ProcessScope | `mods/utils/ProcessScope.kt` | `mods/utils/ProcessScope.kt` | ALIGNED | A13 enum and `ProcessScopes` cover 18 scopes, matching A14 semantics. |
 | ProcessRouter | `mods/utils/ProcessRouter.kt` | `mods/utils/ProcessScopes.kt` | ALIGNED | `ProcessScopes.resolve` is the A13 pure-function equivalent. |
-| MainModule process routing | `MainModule.java` uses `ProcessScope.isInstallable` | `MainModule.java` uses `ProcessScopes.isRejected`/`ProcessScope` | PARTIAL | `MainModule` now uses `ProcessScope` for all known package scopes; only Application.attach dynamic statusbar/nooverscroll/media remain inline. |
+| MainModule process routing | `MainModule.java` uses `ProcessScope.isInstallable` | `MainModule.java` uses `ProcessScopes.isRejected`/`ProcessScope` | ALIGNED | `MainModule` now purely dispatches by `ProcessScope`; no direct `mPrefs.get*` or `Application.attach` Hook decisions remain. |
 | InputMethodInstaller | `installers/InputMethodInstaller.kt` (via registry) | `installers/InputMethodInstaller.java` | ALIGNED | A13 installer extracted from `MainModule` and owns all input method hooks. |
 | SystemServerInstaller | `mods/utils/SystemServerInstaller.kt` | `installers/SystemServerInstaller.java` | ALIGNED | Java equivalent, installs package permissions. |
 | SystemUiInstaller | `installers/SystemUiInstaller.kt` | `installers/SystemUiInstaller.java` | ALIGNED | Java equivalent. |

@@ -8,7 +8,7 @@
   "components": [
     {"component": "ProcessScope", "a14_path": "mods/utils/ProcessScope.kt", "a13_path": "mods/utils/ProcessScope.kt", "status": "ALIGNED", "gap": null},
     {"component": "ProcessRouter", "a14_path": "mods/utils/ProcessRouter.kt", "a13_path": "mods/utils/ProcessScopes.kt", "status": "ALIGNED", "gap": null},
-    {"component": "MainModule", "a14_path": "MainModule.java", "a13_path": "MainModule.java", "status": "PARTIAL", "gap": "All known package scopes now use ProcessScope; only Application.attach dynamic statusbar/nooverscroll/media remain inline"},
+    {"component": "MainModule", "a14_path": "MainModule.java", "a13_path": "MainModule.java", "status": "ALIGNED", "gap": null},
     {"component": "InputMethodInstaller", "a14_path": "installers/InputMethodInstaller.kt", "a13_path": "installers/InputMethodInstaller.java", "status": "ALIGNED", "gap": null},
     {"component": "SettingsInstaller", "a14_path": "installers/SettingsInstaller.kt", "a13_path": "installers/SettingsInstaller.java", "status": "ALIGNED", "gap": null},
     {"component": "SecurityCenterInstaller", "a14_path": "installers/SecurityCenterInstaller.kt", "a13_path": "installers/SecurityCenterInstaller.java", "status": "ALIGNED", "gap": null},
