@@ -10,6 +10,7 @@ import org.junit.Assert.assertFalse
 import org.junit.Assert.assertTrue
 import org.junit.Test
 import java.util.concurrent.CountDownLatch
+import java.util.concurrent.CyclicBarrier
 import java.util.concurrent.atomic.AtomicInteger
 
 class ModuleHelperReceiverTest {
@@ -39,6 +40,8 @@ class ModuleHelperReceiverTest {
         var registerDelayMs = 0L
         var failNextRegister = false
         var failNextUnregister = false
+
+        override fun getApplicationContext(): Context = this
 
         override fun registerReceiver(receiver: BroadcastReceiver?, filter: IntentFilter?): Intent? {
             return registerReceiver(receiver, filter, null, null, Context.RECEIVER_NOT_EXPORTED)
@@ -292,13 +295,11 @@ class ModuleHelperReceiverTest {
     fun ownedReceiver_concurrentRegisterAndUnregisterIsSafe() {
         val context = TrackableContext()
         val owner = Any()
-        val registered = AtomicInteger(0)
-        val unregistered = AtomicInteger(0)
-        val barrier = CountDownLatch(2)
+        val start = CyclicBarrier(2)
+        val done = CountDownLatch(2)
 
-        // Thread A tries to register with a small delay.
         val t1 = Thread {
-            context.registerDelayMs = 20L
+            start.await()
             val ok = ModuleHelper.registerOwnedReceiver(
                 context,
                 owner,
@@ -307,24 +308,57 @@ class ModuleHelperReceiverTest {
                 intentFilter("action"),
                 Context.RECEIVER_NOT_EXPORTED
             )
-            if (ok) registered.incrementAndGet()
-            barrier.countDown()
+            assertTrue("registration must succeed", ok)
+            done.countDown()
         }
 
-        // Thread B tries to unregister the same owner/key.
         val t2 = Thread {
-            Thread.sleep(5L)
+            start.await()
             ModuleHelper.unregisterOwnedReceiver("raceKey", owner)
-            unregistered.incrementAndGet()
-            barrier.countDown()
+            done.countDown()
         }
 
         t1.start()
         t2.start()
-        barrier.await()
+        done.await()
+
+        // Ensure a final unregister so the receiver is always cleaned up,
+        // regardless of which thread won the initial race.
+        ModuleHelper.unregisterOwnedReceiver("raceKey", owner)
 
         // No leaked framework receiver: whatever was registered is also unregistered.
         assertEquals(context.registeredReceivers.size, context.unregisteredReceivers.size)
+        assertEquals(1, context.registeredReceivers.size)
+        assertEquals(1, context.unregisteredReceivers.size)
+    }
+
+    @Test
+    fun staleModuleReceiver_failedUnregisterIsDrainedByNextRegister() {
+        val context = TrackableContext()
+        val receiver = StubReceiver()
+
+        ModuleHelper.registerModuleReceiver(
+            context,
+            "staleKey",
+            receiver,
+            intentFilter("action"),
+            Context.RECEIVER_NOT_EXPORTED
+        )
+
+        context.failNextUnregister = true
+        ModuleHelper.unregisterModuleReceiver("staleKey")
+
+        context.failNextUnregister = false
+        ModuleHelper.registerModuleReceiver(
+            context,
+            "staleKey",
+            StubReceiver(),
+            intentFilter("action"),
+            Context.RECEIVER_NOT_EXPORTED
+        )
+
+        assertEquals(1, context.unregisteredReceivers.size)
+        assertEquals(2, context.registeredReceivers.size)
     }
 
     private fun emptyOwnedBucket(key: String): Boolean {
@@ -332,5 +366,14 @@ class ModuleHelperReceiverTest {
         field.isAccessible = true
         val map = field.get(null) as MutableMap<*, *>
         return !map.containsKey(key)
+    }
+
+    private fun staleMapContains(fieldName: String, key: String): Boolean {
+        val field = ModuleHelper::class.java.getDeclaredField(fieldName)
+        field.isAccessible = true
+        val map = field.get(null) as MutableMap<*, *>
+        if (!map.containsKey(key)) return false
+        val deque = map[key] as? Collection<*> ?: return false
+        return !deque.isEmpty()
     }
 }

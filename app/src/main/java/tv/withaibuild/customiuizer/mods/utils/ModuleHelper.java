@@ -853,13 +853,9 @@ public class ModuleHelper {
                     } catch (Throwable t) {
                         registration.state = RegistrationState.STALE;
                         if (registration instanceof OwnedReceiverRegistration) {
-                            staleOwnedReceivers
-                                .computeIfAbsent(registration.key, k -> new ConcurrentLinkedDeque<OwnedReceiverRegistration>())
-                                .add((OwnedReceiverRegistration) registration);
+                            addToStale(staleOwnedReceivers, registration.key, (OwnedReceiverRegistration) registration);
                         } else {
-                            staleModuleReceivers
-                                .computeIfAbsent(registration.key, k -> new ConcurrentLinkedDeque<ReceiverRegistration>())
-                                .add(registration);
+                            addToStale(staleModuleReceivers, registration.key, registration);
                         }
                     }
                     return;
@@ -867,46 +863,72 @@ public class ModuleHelper {
         }
     }
 
-    private static boolean drainModuleStale(String key) {
-        ConcurrentLinkedDeque<ReceiverRegistration> stale = staleModuleReceivers.get(key);
-        if (stale != null && !stale.isEmpty()) {
-            Iterator<ReceiverRegistration> it = stale.iterator();
-            while (it.hasNext()) {
-                ReceiverRegistration reg = it.next();
-                if (tryRelease(reg)) {
-                    it.remove();
+    /**
+     * Atomically add a stale registration to the deque for {@code key}. The deque
+     * is the synchronization object; if the deque we locked is no longer in the
+     * map, we retry with the current (or newly created) deque. This prevents
+     * adding to a detached deque that is about to be removed.
+     */
+    private static <T extends ReceiverRegistration> void addToStale(
+        ConcurrentHashMap<String, ConcurrentLinkedDeque<T>> map,
+        String key,
+        T reg
+    ) {
+        while (true) {
+            ConcurrentLinkedDeque<T> deque = map.computeIfAbsent(key, k -> new ConcurrentLinkedDeque<T>());
+            synchronized (deque) {
+                if (map.get(key) == deque) {
+                    deque.add(reg);
+                    return;
                 }
+                // Deque was removed while we were acquiring the lock; retry.
             }
         }
-        // Identity remove: only the exact empty deque we drained is removed,
-        // so a concurrent re-population cannot be lost.
-        ConcurrentLinkedDeque<ReceiverRegistration> after = staleModuleReceivers.get(key);
-        if (after != null && after.isEmpty()) {
-            staleModuleReceivers.remove(key, after);
-        }
-        after = staleModuleReceivers.get(key);
-        return after == null || after.isEmpty() || after.size() < MAX_STALE_RECEIVERS;
+    }
+
+    private static boolean drainModuleStale(String key) {
+        return drainStale(staleModuleReceivers, key, MAX_STALE_RECEIVERS);
     }
 
     private static boolean drainOwnedStale(String key) {
-        ConcurrentLinkedDeque<OwnedReceiverRegistration> stale = staleOwnedReceivers.get(key);
-        if (stale != null && !stale.isEmpty()) {
-            Iterator<OwnedReceiverRegistration> it = stale.iterator();
-            while (it.hasNext()) {
-                OwnedReceiverRegistration reg = it.next();
-                if (tryRelease(reg)) {
-                    it.remove();
+        return drainStale(staleOwnedReceivers, key, MAX_STALE_RECEIVERS);
+    }
+
+    /**
+     * Drain a stale deque for {@code key} without losing concurrent re-adds.
+     * The drain and the {@link #addToStale} path synchronize on the same deque
+     * and re-check that the deque is still the one mapped to {@code key}.
+     */
+    private static <T extends ReceiverRegistration> boolean drainStale(
+        ConcurrentHashMap<String, ConcurrentLinkedDeque<T>> map,
+        String key,
+        int max
+    ) {
+        ConcurrentLinkedDeque<T> deque = map.get(key);
+        while (true) {
+            if (deque == null) return true;
+            synchronized (deque) {
+                if (map.get(key) == deque) {
+                    if (!deque.isEmpty()) {
+                        Iterator<T> it = deque.iterator();
+                        while (it.hasNext()) {
+                            T reg = it.next();
+                            if (tryRelease(reg)) {
+                                it.remove();
+                            }
+                        }
+                    }
+                    if (deque.isEmpty()) {
+                        map.remove(key, deque);
+                    }
+                    break;
                 }
             }
+            // The deque was detached by another drain; get the current one and retry.
+            deque = map.get(key);
         }
-        // Identity remove: only the exact empty deque we drained is removed,
-        // so a concurrent re-population cannot be lost.
-        ConcurrentLinkedDeque<OwnedReceiverRegistration> after = staleOwnedReceivers.get(key);
-        if (after != null && after.isEmpty()) {
-            staleOwnedReceivers.remove(key, after);
-        }
-        after = staleOwnedReceivers.get(key);
-        return after == null || after.isEmpty() || after.size() < MAX_STALE_RECEIVERS;
+        ConcurrentLinkedDeque<T> after = map.get(key);
+        return after == null || after.isEmpty() || after.size() < max;
     }
 
     public static synchronized Context getModuleContext(Context context) throws Throwable {
