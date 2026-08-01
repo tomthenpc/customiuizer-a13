@@ -29,7 +29,6 @@ Scope: A13 `devin/a13-rom-intelligence-audit` vs A14 `devin/a14-runtime-hardenin
 | InstallPhase | `mods/utils/InstallPhase.kt` | Implicit in installers / catalog | MISSING | A13 has no `InstallPhase` enum. |
 | FeatureTarget | `mods/utils/FeatureTarget.kt` | `mods/catalog/ProcessTarget.kt` | PARTIAL | `ProcessTarget` sealed class serves similar purpose but naming differs. |
 | PreferenceBootstrap | `utils/PreferenceBootstrap.kt` | `utils/PreferenceBootstrap.java` | ALIGNED | Java equivalent, single process bootstrap. |
-| FeatureTarget | `mods/utils/FeatureTarget.kt` | `mods/catalog/ProcessTarget.kt` | PARTIAL | A13 `ProcessTarget` sealed class vs A14 `FeatureTarget` enum. |
 | Contract / Target resolver | `mods/utils/Contract.kt`, `mods/utils/TargetResolver.kt` | `mods/catalog/CanaryContracts.kt` | PARTIAL | A13 has static Canary/Catalog contracts but no active resolver. |
 | ReflectionCache | `mods/utils/ReflectionCache.kt` | `mods/utils/ReflectionCache.java` | ALIGNED | Java equivalent with safe lifecycle. |
 | Diagnostics | `mods/utils/HookDiagnostics.kt` | `mods/diagnostics/DiagnosticRecorder.kt` | PARTIAL | A13 has `DiagnosticRecorder` but not unified with `InstallResult`. |
@@ -38,6 +37,7 @@ Scope: A13 `devin/a13-rom-intelligence-audit` vs A14 `devin/a14-runtime-hardenin
 
 ## Overall Status
 
-- Phase 1 (ProcessScope / MainModule routing) largely complete.
+- Phase 1 (ProcessScope / MainModule routing) complete.
 - Phase 2 (FeatureInstallState / FeatureInstallResult / FeatureId) model layer added.
-- Remaining `MISSING` / `PARTIAL` are the per-package installer split and Feature registry/Spec unification.
+- Phases 3-7 (per-package installers) complete.
+- Phase 8-9 (Catalog/legacy unification and `FeatureDispatcher` registry) remain open.
