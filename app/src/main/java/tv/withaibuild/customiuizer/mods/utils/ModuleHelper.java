@@ -669,8 +669,9 @@ public class ModuleHelper {
             try {
                 registrationContext.registerReceiver(receiver, filter, flags);
             } catch (Throwable t) {
-                log(key, t);
                 newRegistration.state = RegistrationState.REGISTER_FAILED;
+                if (t instanceof OutOfMemoryError) throw (OutOfMemoryError) t;
+                log(key, t);
                 return false;
             }
 
@@ -749,8 +750,9 @@ public class ModuleHelper {
                 try {
                     registrationContext.registerReceiver(receiver, filter, flags);
                 } catch (Throwable t) {
-                    log(key, t);
                     newRegistration.state = RegistrationState.REGISTER_FAILED;
+                    if (t instanceof OutOfMemoryError) throw (OutOfMemoryError) t;
+                    log(key, t);
                     return false;
                 }
 
@@ -828,6 +830,7 @@ public class ModuleHelper {
                         return true;
                     } catch (Throwable t) {
                         registration.state = RegistrationState.STALE;
+                        if (t instanceof OutOfMemoryError) throw (OutOfMemoryError) t;
                         return false;
                     }
             }
@@ -857,6 +860,7 @@ public class ModuleHelper {
                         } else {
                             addToStale(staleModuleReceivers, registration.key, registration);
                         }
+                        if (t instanceof OutOfMemoryError) throw (OutOfMemoryError) t;
                     }
                     return;
             }

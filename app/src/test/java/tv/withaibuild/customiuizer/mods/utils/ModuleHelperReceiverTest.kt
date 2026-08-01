@@ -40,6 +40,7 @@ class ModuleHelperReceiverTest {
         var registerDelayMs = 0L
         var failNextRegister = false
         var failNextUnregister = false
+        var oomNextRegister = false
 
         override fun getApplicationContext(): Context = this
 
@@ -52,6 +53,10 @@ class ModuleHelperReceiverTest {
             filter: IntentFilter?,
             flags: Int
         ): Intent? {
+            if (oomNextRegister) {
+                oomNextRegister = false
+                throw OutOfMemoryError("simulated register OOM")
+            }
             if (failNextRegister) {
                 failNextRegister = false
                 throw IllegalStateException("simulated register failure")
@@ -114,6 +119,58 @@ class ModuleHelperReceiverTest {
         )
 
         assertFalse(ok)
+        assertEquals(0, context.registeredReceivers.size)
+    }
+
+    @Test
+    fun moduleReceiver_failedReplacementKeepsPreviousRegistration() {
+        val context = TrackableContext()
+        val first = StubReceiver()
+
+        assertTrue(
+            ModuleHelper.registerModuleReceiver(
+                context,
+                "testKey",
+                first,
+                intentFilter("action"),
+                Context.RECEIVER_NOT_EXPORTED
+            )
+        )
+        context.failNextRegister = true
+
+        assertFalse(
+            ModuleHelper.registerModuleReceiver(
+                context,
+                "testKey",
+                StubReceiver(),
+                intentFilter("action"),
+                Context.RECEIVER_NOT_EXPORTED
+            )
+        )
+        assertFalse(context.unregisteredReceivers.contains(first))
+
+        ModuleHelper.unregisterModuleReceiver("testKey")
+        assertTrue(context.unregisteredReceivers.contains(first))
+    }
+
+    @Test
+    fun moduleReceiver_registrationRethrowsOutOfMemoryError() {
+        val context = TrackableContext().apply { oomNextRegister = true }
+        var thrown = false
+
+        try {
+            ModuleHelper.registerModuleReceiver(
+                context,
+                "testKey",
+                StubReceiver(),
+                intentFilter("action"),
+                Context.RECEIVER_NOT_EXPORTED
+            )
+        } catch (_: OutOfMemoryError) {
+            thrown = true
+        }
+
+        assertTrue(thrown)
         assertEquals(0, context.registeredReceivers.size)
     }
 
@@ -270,6 +327,40 @@ class ModuleHelperReceiverTest {
 
         assertFalse(ok)
         assertEquals(0, context.registeredReceivers.size)
+    }
+
+    @Test
+    fun ownedReceiver_failedReplacementKeepsPreviousRegistration() {
+        val context = TrackableContext()
+        val owner = Any()
+        val first = StubReceiver()
+
+        assertTrue(
+            ModuleHelper.registerOwnedReceiver(
+                context,
+                owner,
+                "testKey",
+                first,
+                intentFilter("action"),
+                Context.RECEIVER_NOT_EXPORTED
+            )
+        )
+        context.failNextRegister = true
+
+        assertFalse(
+            ModuleHelper.registerOwnedReceiver(
+                context,
+                owner,
+                "testKey",
+                StubReceiver(),
+                intentFilter("action"),
+                Context.RECEIVER_NOT_EXPORTED
+            )
+        )
+        assertFalse(context.unregisteredReceivers.contains(first))
+
+        ModuleHelper.unregisterOwnedReceiver("testKey", owner)
+        assertTrue(context.unregisteredReceivers.contains(first))
     }
 
     @Test
