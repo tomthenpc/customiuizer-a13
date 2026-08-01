@@ -59,9 +59,13 @@ class ProcessScopeTests(unittest.TestCase):
         self.assertNotIn("listOf", text)
         self.assertIn("private val KNOWN_PACKAGES: Set<String>", text)
 
-    def test_android_package_is_system_server(self):
+    def test_android_package_routing(self):
         text = read("tv/withaibuild/customiuizer/mods/utils/ProcessScope.kt")
-        self.assertIn('PKG_ANDROID -> ProcessScope.SYSTEM_SERVER', text)
+        self.assertIn("ProcessScope.ANDROID_PACKAGE", text)
+        self.assertIn(
+            'PKG_ANDROID -> if (isMainProcess(packageName, processName)) ProcessScope.ANDROID_PACKAGE else ProcessScope.SYSTEM_SERVER',
+            text,
+        )
 
     def test_wallpaper_package_classified(self):
         text = read("tv/withaibuild/customiuizer/mods/utils/ProcessScope.kt")

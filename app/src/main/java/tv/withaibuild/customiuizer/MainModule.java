@@ -16,6 +16,7 @@ import tv.withaibuild.customiuizer.mods.utils.ProcessScope;
 import tv.withaibuild.customiuizer.mods.utils.ProcessScopes;
 import tv.withaibuild.customiuizer.mods.utils.ResourceHooks;
 import tv.withaibuild.customiuizer.mods.utils.XposedHelpers;
+import tv.withaibuild.customiuizer.installers.AndroidPackageInstaller;
 import tv.withaibuild.customiuizer.installers.GenericAppInstaller;
 import tv.withaibuild.customiuizer.installers.InputMethodInstaller;
 import tv.withaibuild.customiuizer.installers.LauncherInstaller;
@@ -183,8 +184,14 @@ public class MainModule extends XposedModule {
             return;
         }
 
+        if (scope == ProcessScope.ANDROID_PACKAGE) {
+            AndroidPackageInstaller.install(lpparam, this::watchPreferenceChange);
+            return;
+        }
+
         if (scope == ProcessScope.SYSTEM_UI) {
             SystemUiInstaller.install(lpparam, this::watchPreferenceChange);
+            return;
         }
 
 

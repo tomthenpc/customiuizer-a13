@@ -46,20 +46,10 @@ public final class SystemUiInstaller {
 
     public static void install(final PackageReadyParam lpparam, final Runnable watchPreferences) {
         String pkg = lpparam.getPackageName();
-        if (pkg.equals("android") || pkg.equals("com.android.systemui")) {
-            if (MainModule.mPrefs.getInt("system_statusbarheight", 19) > 19) SystemStatusBarAndClockHooks.StatusBarHeightRes();
-            if (MainModule.mPrefs.getInt("controls_navbarheight", 19) > 19) Controls.NavbarHeightRes();
-        }
-        if (pkg.equals("android")) {
-            if (MainModule.mPrefs.getBoolean("system_cleanshare")) SystemShareAndOpenWithHooks.CleanShareMenuHook(lpparam);
-            if (MainModule.mPrefs.getBoolean("system_cleanopenwith")) SystemShareAndOpenWithHooks.CleanOpenWithMenuHook(lpparam);
-            if (MainModule.mPrefs.getStringAsInt("system_allrotations2", 1) > 1) {
-                MainModule.getResHooks().setObjectReplacement("android", "bool", "config_allowAllRotations", MainModule.mPrefs.getStringAsInt("system_allrotations2", 1) == 2);
-            }
-            if (MainModule.mPrefs.getStringAsInt("system_rotateanim", 1) > 1) SystemDisplayAndWindowHooks.RotationAnimationRes();
-            watchPreferences.run();
-        }
-        if (pkg.equals("com.android.systemui")) {
+        if (!pkg.equals("com.android.systemui")) return;
+
+        if (MainModule.mPrefs.getInt("system_statusbarheight", 19) > 19) SystemStatusBarAndClockHooks.StatusBarHeightRes();
+        if (MainModule.mPrefs.getInt("controls_navbarheight", 19) > 19) Controls.NavbarHeightRes();
             Context mContext = ModuleHelper.findContext(lpparam);
             long restartTime = Settings.System.getLong(mContext.getContentResolver(), "systemui_restart_time", 0L);
             long currentTime = java.lang.System.currentTimeMillis();
@@ -341,7 +331,5 @@ public final class SystemUiInstaller {
                 SystemUILockScreenHooks.HideLockscreenZenModeHook(lpparam);
             }
             if (MainModule.mPrefs.getBoolean("system_nopassword")) SystemLockScreenHooks.NoPasswordHook(lpparam);
-        }
-
     }
 }

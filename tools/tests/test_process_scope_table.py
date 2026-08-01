@@ -20,7 +20,8 @@ def read(rel: str) -> str:
 
 # package, process, expected scope
 PROCESS_TABLE = [
-    ("android", "android", "SYSTEM_SERVER"),
+    ("android", "android", "ANDROID_PACKAGE"),
+    ("android", "system", "SYSTEM_SERVER"),
     ("android", "system_server", "SYSTEM_SERVER"),
     ("com.android.systemui", "com.android.systemui", "SYSTEM_UI"),
     ("com.android.systemui", "com.miui.notification", "SYSTEM_UI_PLUGIN"),

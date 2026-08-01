@@ -9,6 +9,7 @@ package tv.withaibuild.customiuizer.mods.utils
  */
 enum class ProcessScope {
     SYSTEM_SERVER,
+    ANDROID_PACKAGE,
     SYSTEM_UI,
     SYSTEM_UI_PLUGIN,
     LAUNCHER,
@@ -86,7 +87,7 @@ object ProcessScopes {
      */
     @JvmStatic
     fun resolve(packageName: String, processName: String): ProcessScope = when (packageName) {
-        PKG_ANDROID -> ProcessScope.SYSTEM_SERVER
+        PKG_ANDROID -> if (isMainProcess(packageName, processName)) ProcessScope.ANDROID_PACKAGE else ProcessScope.SYSTEM_SERVER
         PKG_SYSTEM_UI -> if (isMainProcess(packageName, processName)) ProcessScope.SYSTEM_UI else ProcessScope.SYSTEM_UI_PLUGIN
         PKG_HOME, PKG_GLOBAL_LAUNCHER -> ProcessScope.LAUNCHER
         PKG_SETTINGS -> if (isMainProcess(packageName, processName)) ProcessScope.SETTINGS_MAIN else ProcessScope.SETTINGS_REMOTE

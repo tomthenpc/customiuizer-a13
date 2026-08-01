@@ -54,6 +54,7 @@ object FeatureLifecycles {
     @JvmStatic
     fun fromProcessScope(scope: ProcessScope): FeatureLifecycle = when (scope) {
         ProcessScope.SYSTEM_SERVER,
+        ProcessScope.ANDROID_PACKAGE,
         ProcessScope.SYSTEM_UI,
         ProcessScope.SYSTEM_UI_PLUGIN,
         ProcessScope.LAUNCHER,
