@@ -1,40 +1,48 @@
 package tv.withaibuild.customiuizer.mods.utils
 
+import tv.withaibuild.customiuizer.mods.diagnostics.DiagnosticState
+import tv.withaibuild.customiuizer.mods.diagnostics.InstallOutcome
+
 /**
  * Outcome of installing a single feature.
  *
- * Feature installation must be explicit about what happened. A feature is a
- * unit of functionality guarded by a preference and a process/phase target.
- * The result tells the installer whether the feature is now active, was
- * skipped, failed in a way that should be retried, or failed permanently.
+ * This is the only production result type for feature installation. Each
+ * variant is explicit about why a feature was or was not activated.
  */
-enum class FeatureInstallResult {
-
-    /** The feature was installed for the first time in this process. */
-    INSTALLED,
-
-    /** The feature was already installed; the request was idempotent. */
-    ALREADY_INSTALLED,
-
-    /**
-     * The feature was skipped because it is disabled, not applicable to the
-     * current process/phase, or a precondition was not met.
-     */
-    SKIPPED,
-
-    /**
-     * Installation failed but may succeed later (for example, the target class
-     * is not yet loaded). The installer may retry the feature on a later phase.
-     */
-    FAILED_TRANSIENT,
-
-    /**
-     * Installation failed and should not be retried automatically (for example,
-     * a class or method is missing in this ROM).
-     */
-    FAILED_PERMANENT;
+sealed interface FeatureInstallResult {
 
     /** Whether this result means the feature is active in the target process. */
     val isActive: Boolean
-        get() = this == INSTALLED || this == ALREADY_INSTALLED
+        get() = this is Installed || this is AlreadyInstalled
+
+    data object Installed : FeatureInstallResult
+    data object AlreadyInstalled : FeatureInstallResult
+    data object Disabled : FeatureInstallResult
+    data class UnsupportedProcess(val scope: String? = null) : FeatureInstallResult
+    data class WrongPhase(val expected: InstallPhase, val actual: InstallPhase) : FeatureInstallResult
+    data class Incompatible(val reason: String) : FeatureInstallResult
+    data class FailedTransient(val reason: String) : FeatureInstallResult
+    data class FailedPermanent(val reason: String) : FeatureInstallResult
+
+    fun toInstallOutcome(): InstallOutcome = when (this) {
+        is Installed,
+        is AlreadyInstalled -> InstallOutcome.INSTALLED
+        is Disabled,
+        is UnsupportedProcess,
+        is WrongPhase,
+        is Incompatible -> InstallOutcome.FAILED
+        is FailedTransient -> InstallOutcome.DEGRADED
+        is FailedPermanent -> InstallOutcome.FAILED
+    }
+
+    fun toDiagnosticState(): DiagnosticState = when (this) {
+        is Installed,
+        is AlreadyInstalled -> DiagnosticState.INSTALLED
+        is Disabled -> DiagnosticState.DISABLED
+        is UnsupportedProcess,
+        is WrongPhase -> DiagnosticState.INCOMPATIBLE
+        is Incompatible -> DiagnosticState.INCOMPATIBLE
+        is FailedTransient -> DiagnosticState.FAILED
+        is FailedPermanent -> DiagnosticState.FAILED
+    }
 }
