@@ -93,7 +93,7 @@ Source-level steady-state cost checklist. Each row states the current evidence; 
 | `StepCounterController` step updates | `screenOn` lifecycle + `SensorManager` | `scheduleUpdate()` if `lifecycle.screenOn` | lifecycle off | stops | not applicable | step feature pref | pending flag / `removeCallbacks` | uses `StepCounterLifecycle` with `screenOn` |
 | `AudioVisualizer` capture | visualizer / per frame | `onAttachedToWindow` if enabled | `onDetachedFromWindow` release | not applicable | `release()` on detach | visualizer feature pref | session token + `WeakReference` | audit not yet completed; Visualizer release lifecycle needs explicit test |
 | `LockScreenAlbumArtController` decode | media change | enabled + active media | `stop()` / controller destroyed | not applicable | release `View`/Drawable | lock-screen album art pref | in-flight `Future` per cache key; `generation` token | `AlbumArtPolicy` budgets bytes; `inFlight` cleanup pending |
-| `Network speed` | `postDelayed` | `NetworkSpeed` feature + `SystemUIStatusBarHooks` | screen off / view gone | needs audit | needs audit | `FeatureDispatcher` gate | needs audit | sysfs/network I/O scheduling not yet verified |
+| `Network speed` | ROM `updateNetworkSpeed` / `postUpdateNetworkSpeedDelay` | MIUI `NetworkSpeedController` is already ticked by the system; module hooks `updateNetworkSpeed` and `updateText` | ROM stops its own updater; module does not add a second cycle | N/A (ROM owned) | `NetSpeedStyleHook` constructor attaches `OnAttachStateChangeListener` to remove the 200ms style init `Runnable` on detach | `FeatureDispatcher` gate for `NetSpeedStyleHook` / `DetailedNetSpeedHook` / `NetSpeedIntervalHook` | one-shot 200ms `postDelayed` per `NetworkSpeedView` | module only reformats the text produced by ROM; `updateText` reuses cached `unitSuffix` and `speedChars` per locale |
 | `BatteryIndicator` | `observePreferenceChange` + `viewScope.launch` | enabled | view detached | needs audit | `viewScope` cleared | `BatteryIndicator` pref | single `viewScope` | lifecycle audited but needs explicit View detach test |
 
 *Components marked `needs audit` are tracked in the remaining-risks list below.* |
@@ -117,6 +117,18 @@ This means:
 - `OutOfMemoryError` propagates through `ModuleHelper.guarded`.
 
 The `ClockRunnable.doTick()` still uses `XposedHelpers.getObjectField` for `mCalendar`, `mIs24` and `mClockListeners`. These remain functional necessary reflection on the MIUI controller. No new `Runnable` is created per tick; one `ClockRunnable` is created per `startOrRestart` (lifecycle event), not per second.
+
+## P1-B.2 network speed audit
+
+Network speed is driven by the ROM `NetworkSpeedController`.
+
+* `NetSpeedIntervalHook` only changes the argument passed to `postUpdateNetworkSpeedDelay`; it does not create a module Handler/Runnable.
+* `DetailedNetSpeedHook` hooks `getTotalByte` and `updateNetworkSpeed` to provide the data MIUI then formats and displays.
+* `updateText` uses `MainModule.resHooks` for `network_speed_suffix` and a per-locale cache (`cachedUnitSuffix`, `cachedSpeedChars`) to avoid re-reading resources on every tick.
+* `NetSpeedStyleHook` adds an `OnAttachStateChangeListener` to the `NetworkSpeedView`. When the view is detached, the listener removes the 200ms one-shot style init `Runnable`, preventing a detached view from being restyled.
+* `initNetSpeedStyle` runs inside `ModuleHelper.guarded` so a single style failure is logged once and the update finishes.
+
+The module does not add a periodic network-speed updater. All repeat work is owned by the ROM controller. The one-shot delayed style callback is now cancellable on `View` detach.
 
 ## Remaining risks
 
