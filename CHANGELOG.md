@@ -26,8 +26,15 @@
 ### 验证边界
 
 - 完整静态验证、Kotlin/Java 编译、JVM 单元测试、Python 工具测试和 Lint 作为发布门禁；
-- 正式 APK 另行核验版本、SHA-256、签名证书、zipalign、Xposed 元数据和 `debuggable=false`；
+- 正式 APK 已核验版本、SHA-256、A13 专用签名证书、zipalign、Xposed 元数据和 `debuggable=false`；
 - MIUI 14 / Android 13 保留既有实机稳定基线；本版本新增改动及 HyperOS 1 / Android 13 仍需新的 LSPosed 详细日志验证。
+
+### 正式产物
+
+- APK：`CustoMIUIzer-A13-r13.9.1.apk`（`2,860,194` bytes）；
+- APK SHA-256：`98F03BFB1FA29E776C3A638E771CCE6D1672F5C94F91B39B7D7D4362DB6EF96C`；
+- 签名证书 SHA-256：`15CE32F03E4D8E62DF9390F77431862E59BF2CF95CD5A72F0C7330CDFCCA2934`；
+- r13.8.6 使用了不同的历史证书，不能直接覆盖安装 r13.9.1；请先备份模块设置，再卸载旧版并安装本版。后续 A13 正式版固定使用本证书。
 
 ## 历代核心实现总结
 

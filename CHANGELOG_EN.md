@@ -26,8 +26,15 @@
 ### Verification boundary
 
 - Full static verification, Kotlin/Java compilation, JVM tests, Python tool tests, and Lint are release gates;
-- The formal APK is separately checked for version, SHA-256, signing certificate, zip alignment, Xposed metadata, and `debuggable=false`;
+- The formal APK passed version, SHA-256, A13-specific signing certificate, zip alignment, Xposed metadata, and `debuggable=false` checks;
 - MIUI 14 / Android 13 retains the established device baseline. This release's new changes and HyperOS 1 / Android 13 still require new detailed LSPosed logs.
+
+### Formal artifact
+
+- APK: `CustoMIUIzer-A13-r13.9.1.apk` (`2,860,194` bytes);
+- APK SHA-256: `98F03BFB1FA29E776C3A638E771CCE6D1672F5C94F91B39B7D7D4362DB6EF96C`;
+- Signing certificate SHA-256: `15CE32F03E4D8E62DF9390F77431862E59BF2CF95CD5A72F0C7330CDFCCA2934`;
+- r13.8.6 used a different historical certificate and cannot be upgraded in place to r13.9.1. Back up module settings, uninstall the old build, then install this release. Future formal A13 releases will retain this certificate.
 
 ## Historical implementation summary
 

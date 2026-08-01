@@ -1,4 +1,5 @@
 {
+  "schemaVersion": 1,
   "applicationId": "tv.withaibuild.customiuizer.r13",
   "namespace": "tv.withaibuild.customiuizer",
   "modulePackage": "tv.withaibuild.customiuizer.r13",
@@ -11,115 +12,41 @@
     "targetApiVersion": 102,
     "staticScope": false
   },
-  "certificateSha256": "C0EFF2DC4E662717195490DA78B12A984C6F2E6BD38ACF4EDAD14D53E3D22E70",
-  "certificateDnNote": "The certificate's Subject DN contains the historical label 'CN=CustoMIUIzer A14'. The signer has not been changed; the same PKCS#12 store (customiuizer-a14-release.p12) is retained for A13 upgrade compatibility. This APK supports Android 13 / MIUI 14 only.",
-  "metadata": {
-    "buildTimeFields": ["apkName", "apkSizeBytes", "apkSha256", "buildCommit"],
-    "postReleaseFields": ["lsposedTag", "deviceStatus", "sourceCommit"],
-    "note": "Build-time fields are produced by the CI/Gradle pipeline. Post-release fields are updated when the release tag is published and real-device status is reported."
-  },
+  "certificateSha256": "15CE32F03E4D8E62DF9390F77431862E59BF2CF95CD5A72F0C7330CDFCCA2934",
   "releases": [
     {
-      "versionName": "r13.8.6",
-      "versionCode": 131,
-      "sourceCommit": "442cc58",
-      "buildCommit": "442cc58",
-      "dataSource": "docs/releases/r13.8.6.md",
+      "versionName": "r13.9.1",
+      "versionCode": 132,
+      "buildCommit": "90b4d05",
+      "dataSource": "docs/releases/r13.9.1.md",
       "verifiedAtBuild": true,
-      "lsposedTag": "131-r13.8.6",
-      "apkName": "CustoMIUIzer-A13-r13.8.6.apk",
-      "apkSizeBytes": 2836582,
-      "apkSha256": "ABF31CE311253AE863F7B2CEB87BF95140EE706EFF39ADA219033552B6FA7287",
-      "androidVersion": "Android 13 / MIUI 14",
+      "lsposedTag": "132-r13.9.1",
+      "apkName": "CustoMIUIzer-A13-r13.9.1.apk",
+      "apkSizeBytes": 2860194,
+      "apkSha256": "98F03BFB1FA29E776C3A638E771CCE6D1672F5C94F91B39B7D7D4362DB6EF96C",
+      "androidVersion": "Android 13 / MIUI 14 / HyperOS 1",
       "verification": {
+        "fullStaticVerification": "PASS",
+        "releaseUnitTests": {
+          "tests": 549,
+          "failures": 0,
+          "errors": 0,
+          "status": "PASS"
+        },
+        "pythonUnitTests": {
+          "tests": 42,
+          "status": "PASS"
+        },
+        "lintRelease": "PASS",
+        "lintVitalRelease": "PASS",
         "assembleRelease": "PASS",
         "zipalign": "PASS",
         "apkSignatureSchemeV2": "PASS",
         "apkMetadata": "PASS",
-        "xposedMetadata": "PASS"
+        "xposedMetadata": "PASS",
+        "debuggable": false
       },
-      "deviceStatus": "待实机验证",
-      "note": "A13 最新维护分支合并后的正式版本。"
-    },
-    {
-      "versionName": "r13.7.0",
-      "versionCode": 124,
-      "sourceCommit": "4b386cd",
-      "buildCommit": "d578e80",
-      "dataSource": "docs/releases/r13.7.0.md",
-      "verifiedAtBuild": false,
-      "lsposedTag": "124-r13.7.0",
-      "apkName": "CustoMIUIzer-A13-r13.7.0.apk",
-      "apkSizeBytes": 2781130,
-      "apkSha256": "0A7A07C6A6639DA8890912D6EE145FAB5123F6288D1F98F121AFB1572F75C8A8",
-      "androidVersion": "Android 13 / MIUI 14",
-      "verification": {
-        "runtimeInvariants": { "filesScanned": 117, "violations": 0, "status": "PASS" },
-        "systemMigrationAudit": { "baselineEntries": 124, "directCallSites": 119, "facadeCalls": 0, "status": "PASS" },
-        "unitTests": { "debug": 226, "develop": 226, "release": 226, "total": 678, "failures": 0, "status": "PASS" },
-        "lintDebug": { "errors": 0, "warnings": 521, "status": "PASS" },
-        "lintRelease": { "errors": 0, "warnings": 512, "status": "PASS" },
-        "lintVitalRelease": { "tasks": 23, "status": "PASS" },
-        "assembleDebug": "PASS",
-        "assembleRelease": "PASS",
-        "r8AndResourceShrink": "PASS",
-        "zipalign": "PASS",
-        "apkSignatureSchemeV2": "PASS",
-        "legacyXposedDexScan": "PASS"
-      },
-      "deviceStatus": "待实机验证",
-      "note": "正式稳定版本。包含 K11-K18 优化、Kotlin 迁移完成、生命周期与回调异常边界加固。"
-    },
-    {
-      "versionName": "r13.8.5",
-      "versionCode": 130,
-      "sourceCommit": "0ffa39a",
-      "buildCommit": "0ffa39a",
-      "dataSource": "docs/releases/r13.8.5.md",
-      "verifiedAtBuild": true,
-      "lsposedTag": null,
-      "apkName": "CustoMIUIzer-A13-r13.8.5.apk",
-      "apkSizeBytes": 2830726,
-      "apkSha256": "98355766E3D13EDBFCBABD0021EFEF574A2427D19EB34A6A2CF07F394A309FE1",
-      "androidVersion": "Android 13 / MIUI 14",
-      "verification": {
-        "runtimeInvariants": { "filesScanned": 136, "violations": 0, "status": "PASS" },
-        "systemMigrationAudit": { "baselineEntries": 124, "directCallSites": 119, "facadeCalls": 0, "status": "PASS" },
-        "architectureAudit": { "features": 25, "diagnosticIds": 29, "schemaEntries": 27, "catalogPreferenceKeys": 27, "status": "PASS" },
-        "unitTests": { "debug": "PASS", "develop": "PASS", "release": "PASS", "status": "PASS" },
-        "lintDebug": { "errors": 0, "warnings": 0, "status": "PASS" },
-        "lintRelease": { "errors": 0, "warnings": 0, "status": "PASS" },
-        "lintVitalRelease": { "status": "SKIPPED" },
-        "assembleDebug": "PASS",
-        "assembleRelease": "PASS",
-        "r8AndResourceShrink": "PASS",
-        "zipalign": "PASS",
-        "apkSignatureSchemeV2": "PASS",
-        "legacyXposedDexScan": "PASS"
-      },
-      "deviceStatus": "待实机及 LSPosed 日志验证",
-      "note": "本地签名候选版本。由 release/r13.8.5 分支整合 A13 维护、Catalog 扩展与性能优化后构建；包含内存缓存限制、Catalog/Resolver 懒加载、热路径参数/Regex/String.format 优化。尚未完成实机和 LSPosed 日志验证，不创建 tag 或 GitHub Release。"
+      "deviceStatus": "MIUI 14 既有基线；本版改动与 HyperOS 1 / Android 13 待 LSPosed 详细日志验证"
     }
-  ],
-  "draft": {
-    "versionName": "r13.8.5",
-    "versionCode": 130,
-    "status": "CANDIDATE",
-    "sourceBranch": "release/r13.8.5",
-    "sourceCommit": "0ffa39a",
-    "lsposedTag": null,
-    "apkName": "CustoMIUIzer-A13-r13.8.5.apk",
-    "apkSizeBytes": 2830726,
-    "apkSha256": "98355766E3D13EDBFCBABD0021EFEF574A2427D19EB34A6A2CF07F394A309FE1",
-    "androidVersion": "Android 13 / MIUI 14",
-    "verification": {},
-    "deviceStatus": "待实机及 LSPosed 日志验证",
-    "plannedItems": [
-      "完整实机安装、作用域与 LSPosed 日志验证",
-      "跨版本分支整合台账归档",
-      "CI baseline-ref 固化与旧远程分支清理"
-    ],
-    "note": "本地签名候选版本，待实机和 LSPosed 日志验证。不创建 tag 或 GitHub Release。"
-  },
-  "schemaVersion": 1
+  ]
 }
