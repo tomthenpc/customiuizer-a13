@@ -78,7 +78,7 @@ Source-level steady-state cost checklist. Each row states the current evidence; 
 | Owned receiver detached-bucket race | COMPLETED | `OwnedReceiverBucket`; `synchronized(bucket)`; re-check `ownedReceivers.get(key) == bucket`; identity remove on empty | `ModuleHelperReceiverTest` concurrency test |
 | Stale receiver identity remove | COMPLETED | `drainModuleStale` / `drainOwnedStale` use `stale*.remove(key, deque)` after draining | Prevents leaving empty stale containers |
 | Stale receiver refill race | COMPLETED | `addToStale` / `drainStale` share `synchronized(deque)` and re-check `staleMap.get(key) == deque` | `ModuleHelperReceiverTest.staleModule*` drains and identity removes |
-| Status-bar second ticker | COMPLETED | `SystemStatusBarClockAndMoreHooks` `ClockRunnable` reused; `removeCallbacks` before `postDelayed`; `SecondTickerState` generation invalidates old callbacks | `SystemStatusBarClockAndMoreHooksTest` state machine; one pending callback per controller |
+| Status-bar second ticker | COMPLETED | `SystemStatusBarClockAndMoreHooks` `ClockRunnable` per generation; `TickerScheduler` abstraction; `SecondTickerState` `scheduledGeneration` + `callbackPending`; `startOrRestartSecondTicker` / `stopSecondTimer` / `scheduleNextSecondTick` invariants | `SystemStatusBarClockAndMoreHooksTest` state machine + `FakeTickerScheduler`; old callback cannot repost after new generation; one pending callback per controller |
 | High-frequency callback allocations | PARTIAL | `CLOCK_HOUR_PATTERN` precompiled; `ResourceHooks` no hot `Executable.getName()` | `Regex`, `String.format`, `StringBuilder`, `ArrayList`, `lambda` in remaining hot paths need pass |
 | Bitmap / large object budgets | PARTIAL | `AlbumArtPolicy.kt` has `CACHE_BUDGET_FRAMES` and `BLUR_MAX_PIXELS`; `DiagnosticRecorder` bounded | In-flight task / View strong-reference audit pending |
 | Disabled feature zero-cost | VERIFIED_STATIC | `FeatureDispatcher` checks `runtime.prefs` before `installWithContract` | `SystemServerInstaller` / `SystemUiInstaller` / `LauncherInstaller` already gate by process + prefs |
@@ -97,6 +97,26 @@ Source-level steady-state cost checklist. Each row states the current evidence; 
 | `BatteryIndicator` | `observePreferenceChange` + `viewScope.launch` | enabled | view detached | needs audit | `viewScope` cleared | `BatteryIndicator` pref | single `viewScope` | lifecycle audited but needs explicit View detach test |
 
 *Components marked `needs audit` are tracked in the remaining-risks list below.* |
+
+## P1-B.2 clock scheduling design
+
+The status-bar second ticker now uses these invariants:
+
+1. Every posted `ClockRunnable` is created with a fixed `scheduledGen`.
+2. `SecondTickerState.start(newGen)` increments `generation` and sets `scheduledGeneration`.
+3. A running `ClockRunnable` enters `callbackPending = false` at the beginning of `run()`.
+4. The UI update is wrapped in `ModuleHelper.guarded`; non-OOM exceptions are logged and the ticker continues to the next scheduling check.
+5. After the update, the callback can only repost if `state.canRePost(scheduledGen)` is true, which requires `screenOn`, `running`, `!callbackPending` and `generation == scheduledGen`.
+6. `startOrRestartSecondTicker` removes any pending old `ClockRunnable`, starts a new generation and posts exactly one new `ClockRunnable`.
+7. `stopSecondTimer` removes the pending callback and sets `running = false`, `callbackPending = false`.
+
+This means:
+- `SCREEN_OFF` sets `screenOn = false` and removes the pending callback; pending count becomes 0.
+- `SCREEN_ON` / `TIME_SET` / `TIMEZONE_CHANGED` creates a new generation and posts one new callback; at most one pending callback per controller.
+- A normal exception during the tick does not kill the loop; the next scheduling check still runs and, if generation matches, posts the next tick.
+- `OutOfMemoryError` propagates through `ModuleHelper.guarded`.
+
+The `ClockRunnable.doTick()` still uses `XposedHelpers.getObjectField` for `mCalendar`, `mIs24` and `mClockListeners`. These remain functional necessary reflection on the MIUI controller. No new `Runnable` is created per tick; one `ClockRunnable` is created per `startOrRestart` (lifecycle event), not per second.
 
 ## Remaining risks
 
