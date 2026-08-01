@@ -78,18 +78,21 @@ object SystemNotificationMoreHooks {
                 val infoBtn: Any? = try {
                     menuItem.newInstance(param.thisObject, mContext, appInfoDescId, null, appInfoIconResId)
                 } catch (t: Throwable) {
+                    if (t is OutOfMemoryError) throw t
                     XposedHelpers.log(t)
                     null
                 }
                 val forceCloseBtn: Any? = try {
                     menuItem.newInstance(param.thisObject, mContext, forceCloseDescId, null, forceCloseIconResId)
                 } catch (t: Throwable) {
+                    if (t is OutOfMemoryError) throw t
                     XposedHelpers.log(t)
                     null
                 }
                 val openFwBtn: Any? = try {
                     menuItem.newInstance(param.thisObject, mContext, openInFwDescId, null, openInFwIconResId)
                 } catch (t: Throwable) {
+                    if (t is OutOfMemoryError) throw t
                     XposedHelpers.log(t)
                     null
                 }
@@ -115,6 +118,7 @@ object SystemNotificationMoreHooks {
                     try {
                         user = XposedHelpers.callStaticMethod(UserHandle::class.java, "getUserId", uid) as? Int ?: 0
                     } catch (t: Throwable) {
+                        if (t is OutOfMemoryError) throw t
                         XposedHelpers.log(t)
                     }
 
@@ -132,7 +136,9 @@ object SystemNotificationMoreHooks {
                             try {
                                 val appName = mContext.packageManager.getApplicationLabel(mContext.packageManager.getApplicationInfo(pkgName, 0))
                                 Toast.makeText(mContext, ModuleHelper.getModuleRes(mContext).getString(R.string.force_closed, appName), Toast.LENGTH_SHORT).show()
-                            } catch (ignore: Throwable) {}
+                            } catch (t: Throwable) {
+                                if (t is OutOfMemoryError) throw t
+                            }
                         }
                         mOpenFwBtn -> {
                             val Dependency = XposedHelpers.findClass("com.android.systemui.Dependency", lpparam.classLoader)
@@ -176,6 +182,7 @@ object SystemNotificationMoreHooks {
             val isSelected = selectedApps != null && selectedApps.contains(pkgName)
             opt == 2 && !isSelected || opt == 3 && isSelected
         } catch (t: Throwable) {
+            if (t is OutOfMemoryError) throw t
             XposedHelpers.log(t)
             false
         }
@@ -203,7 +210,7 @@ object SystemNotificationMoreHooks {
 
         ModuleHelper.hookAllMethods("com.android.server.vibrator.VibratorManagerService", lpparam.classLoader, "vibrate", object : MethodHook() {
             override fun before(param: BeforeHookCallback) {
-                val pkgName = param.args[1] as? String ?: return
+                val pkgName = param.getArg(1) as? String ?: return
                 if (checkVibration(pkgName, param.thisObject)) param.returnAndSkip(null)
             }
         })
@@ -213,7 +220,7 @@ object SystemNotificationMoreHooks {
     fun NoDuckingHook(lpparam: SystemServerStartingParam) {
         ModuleHelper.hookAllMethods("com.android.server.audio.FocusRequester", lpparam.classLoader, "handleFocusLoss", object : MethodHook() {
             override fun before(param: BeforeHookCallback) {
-                if (param.args[0] == AudioManager.AUDIOFOCUS_LOSS_TRANSIENT_CAN_DUCK) param.returnAndSkip(null)
+                if (param.getArg(0) == AudioManager.AUDIOFOCUS_LOSS_TRANSIENT_CAN_DUCK) param.returnAndSkip(null)
             }
         })
     }
@@ -224,9 +231,9 @@ object SystemNotificationMoreHooks {
         val rotMethod = "rotationForOrientation"
         ModuleHelper.hookAllMethods(windowClass, lpparam.classLoader, rotMethod, object : MethodHook() {
             override fun after(param: AfterHookCallback) {
-                if (param.args[0] == -1) {
+                if (param.getArg(0) == -1) {
                     val opt = MainModule.mPrefs.getInt("qs_autorotate_state", 0)
-                    var prevOrient = param.args[1] as? Int ?: 0
+                    var prevOrient = param.getArg(1) as? Int ?: 0
                     if (opt == 1) {
                         if (prevOrient != 0 && prevOrient != 2) prevOrient = 0
                         if (param.result == 1 || param.result == 3) param.setResult(prevOrient)
@@ -335,7 +342,7 @@ object SystemNotificationMoreHooks {
     fun MaxNotificationIconsHook(lpparam: PackageReadyParam) {
         ModuleHelper.findAndHookMethod("com.android.systemui.statusbar.phone.NotificationIconContainer", lpparam.classLoader, "miuiShowNotificationIcons", Boolean::class.javaPrimitiveType, object : MethodHook() {
             override fun before(param: BeforeHookCallback) {
-                val isShow = param.args[0] as? Boolean ?: false
+                val isShow = param.getArg(0) as? Boolean ?: false
                 if (isShow) {
                     var opt = MainModule.mPrefs.getStringAsInt("system_maxsbicons", 0)
                     opt = if (opt == -1) 999 else opt
@@ -354,13 +361,15 @@ object SystemNotificationMoreHooks {
     fun MoreNotificationsHook(lpparam: PackageReadyParam) {
         ModuleHelper.findAndHookMethod("com.android.systemui.statusbar.notification.policy.NotificationCountLimitPolicy", lpparam.classLoader, "checkNotificationCountLimit", String::class.java, object : MethodHook() {
             override fun before(param: BeforeHookCallback) {
-                val pkgName = param.args[0] as? String ?: return
+                val pkgName = param.getArg(0) as? String ?: return
                 val mNotifications = XposedHelpers.callMethod(XposedHelpers.getObjectField(param.thisObject, "mEntryManager"), "getAllNotifs") as? Collection<Any> ?: return
-                val list = mNotifications.filter {
-                    val notifyPkgName = XposedHelpers.callMethod(XposedHelpers.callMethod(it, "getSbn"), "getPackageName") as? String
-                    pkgName == notifyPkgName
+                var count = 0
+                for (notification in mNotifications) {
+                    val sbn = XposedHelpers.callMethod(notification, "getSbn")
+                    val notifyPkgName = XposedHelpers.callMethod(sbn, "getPackageName") as? String
+                    if (pkgName == notifyPkgName && ++count >= 24) return
                 }
-                if (list.size < 24) param.returnAndSkip(null)
+                param.returnAndSkip(null)
             }
         })
     }
@@ -369,7 +378,7 @@ object SystemNotificationMoreHooks {
     fun AutoDismissExpandedPopupsHook(lpparam: PackageReadyParam) {
         ModuleHelper.findAndHookMethod("com.android.systemui.statusbar.phone.HeadsUpManagerPhone\$HeadsUpEntryPhone", lpparam.classLoader, "setExpanded", Boolean::class.javaPrimitiveType, object : MethodHook() {
             override fun before(param: BeforeHookCallback) {
-                val newValue = param.args[0] as? Boolean ?: false
+                val newValue = param.getArg(0) as? Boolean ?: false
                 if (newValue) {
                     val expanded = XposedHelpers.getBooleanField(param.thisObject, "expanded")
                     if (expanded != newValue) {
@@ -389,17 +398,19 @@ object SystemNotificationMoreHooks {
     fun MinimalNotificationViewHook(lpparam: PackageReadyParam) {
         ModuleHelper.hookAllMethods("com.android.systemui.statusbar.phone.StatusBar", lpparam.classLoader, "updateNotification", object : MethodHook() {
             override fun after(param: AfterHookCallback) {
-                if (param.args.size != 3) return
-                val expandableRow = XposedHelpers.getObjectField(param.args[0], "row")
+                if (param.getArgsCount() != 3) return
+                val entry = param.getArg(0)
+                val ranking = param.getArg(1)
+                val expandableRow = XposedHelpers.getObjectField(entry, "row")
                 val mNotificationData = XposedHelpers.getObjectField(param.thisObject, "mNotificationData")
-                val newLowPriority = XposedHelpers.callMethod(mNotificationData, "isAmbient", XposedHelpers.callMethod(param.args[1], "getKey")) as? Boolean == true &&
-                        !(XposedHelpers.callMethod(XposedHelpers.callMethod(param.args[1], "getNotification"), "isGroupSummary") as? Boolean ?: false)
-                val hasEntry = XposedHelpers.callMethod(mNotificationData, "get", XposedHelpers.getObjectField(param.args[0], "key")) != null
+                val newLowPriority = XposedHelpers.callMethod(mNotificationData, "isAmbient", XposedHelpers.callMethod(ranking, "getKey")) as? Boolean == true &&
+                        !(XposedHelpers.callMethod(XposedHelpers.callMethod(ranking, "getNotification"), "isGroupSummary") as? Boolean ?: false)
+                val hasEntry = XposedHelpers.callMethod(mNotificationData, "get", XposedHelpers.getObjectField(entry, "key")) != null
                 val isLowPriority = XposedHelpers.callMethod(expandableRow, "isLowPriority") as? Boolean ?: false
                 XposedHelpers.callMethod(expandableRow, "setIsLowPriority", newLowPriority)
                 val hasLowPriorityChanged = hasEntry && isLowPriority != newLowPriority
                 XposedHelpers.callMethod(expandableRow, "setLowPriorityStateUpdated", hasLowPriorityChanged)
-                XposedHelpers.callMethod(expandableRow, "updateNotification", param.args[0])
+                XposedHelpers.callMethod(expandableRow, "updateNotification", entry)
             }
         })
     }
@@ -408,7 +419,7 @@ object SystemNotificationMoreHooks {
     fun NotificationChannelSettingsHook(lpparam: PackageReadyParam) {
         ModuleHelper.hookAllMethods("com.android.systemui.statusbar.notification.row.MiuiNotificationMenuRow", lpparam.classLoader, "onClickInfoItem", object : MethodHook() {
             override fun before(param: BeforeHookCallback) {
-                val mContext = param.args[0] as? Context ?: return
+                val mContext = param.getArg(0) as? Context ?: return
                 val entry = XposedHelpers.callMethod(XposedHelpers.getObjectField(param.thisObject, "mParent"), "getEntry")
                 val id = XposedHelpers.callMethod(XposedHelpers.callMethod(entry, "getChannel"), "getId") as? String ?: return
                 if ("miscellaneous" == id) return
@@ -438,6 +449,7 @@ object SystemNotificationMoreHooks {
                     val ModalController = XposedHelpers.callStaticMethod(XposedHelpers.findClass("com.android.systemui.Dependency", mContext.classLoader), "get", XposedHelpers.findClass("com.android.systemui.statusbar.notification.modal.ModalController", mContext.classLoader))
                     XposedHelpers.callMethod(ModalController, "animExitModelCollapsePanels")
                 } catch (ignore: Throwable) {
+                    if (ignore is OutOfMemoryError) throw ignore
                     XposedHelpers.log(ignore)
                 }
             }
@@ -463,7 +475,7 @@ object SystemNotificationMoreHooks {
             private var mHeadsUpPaddingTop = 0
             private var mHeadsUpHeight = 0
             override fun after(param: AfterHookCallback) {
-                val context = param.args[0] as? Context ?: return
+                val context = param.getArg(0) as? Context ?: return
                 val resources = context.resources
                 if (mHeadsUpPaddingTop == 0) {
                     val dimId = resources.getIdentifier("heads_up_status_bar_padding", "dimen", "com.android.systemui")
