@@ -2,10 +2,12 @@ package tv.withaibuild.customiuizer.mods.utils;
 
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
+import static org.junit.Assert.assertSame;
 import static org.junit.Assert.assertThrows;
 import static org.junit.Assert.assertTrue;
 
 import java.lang.reflect.Executable;
+import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
 import java.util.Collections;
 import java.util.List;
@@ -71,6 +73,22 @@ public class HookerClassHelperTest {
         };
 
         assertThrows(OutOfMemoryError.class, () -> hook.intercept(chain));
+        assertFalse(chain.proceeded);
+    }
+
+    @Test
+    public void wrappedBeforeOutOfMemoryIsUnwrappedBeforeProceed() {
+        FakeChain chain = new FakeChain();
+        OutOfMemoryError failure = new OutOfMemoryError("wrapped before oom");
+        HookerClassHelper.MethodHook hook = new HookerClassHelper.MethodHook() {
+            @Override protected void before(HookerClassHelper.BeforeHookCallback callback)
+                throws Throwable {
+                throw new InvocationTargetException(failure);
+            }
+        };
+
+        OutOfMemoryError thrown = assertThrows(OutOfMemoryError.class, () -> hook.intercept(chain));
+        assertSame(failure, thrown);
         assertFalse(chain.proceeded);
     }
 

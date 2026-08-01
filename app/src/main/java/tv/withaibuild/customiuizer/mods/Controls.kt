@@ -141,7 +141,11 @@ object Controls {
             override fun after(param: AfterHookCallback) {
                 val mContext = XposedHelpers.getObjectField(param.getThisObject(), "mContext") as? Context ?: return
                 if (sScreenOnContext != null) {
-                    try { sScreenOnContext?.unregisterReceiver(mScreenOnReceiver) } catch (_: Throwable) {}
+                    try {
+                        sScreenOnContext?.unregisterReceiver(mScreenOnReceiver)
+                    } catch (t: Throwable) {
+                        if (t is OutOfMemoryError) throw t
+                    }
                 }
                 mContext.registerReceiver(mScreenOnReceiver, IntentFilter(Intent.ACTION_SCREEN_ON), Context.RECEIVER_NOT_EXPORTED)
                 sScreenOnContext = mContext
@@ -194,6 +198,7 @@ object Controls {
                         XposedHelpers.callMethod(mPowerManager, "wakeUp", SystemClock.uptimeMillis())
                         param.returnAndSkip(0)
                     } catch (t: Throwable) {
+                        if (t is OutOfMemoryError) throw t
                         XposedHelpers.log(t)
                     } else if (wasRaise2WakeEnabled && !isTorchEnabled(mContext)) {
                         wasRaise2WakeEnabled = false
@@ -276,10 +281,13 @@ object Controls {
     @JvmStatic
     fun VolumeMediaPlayerHook(lpparam: PackageReadyParam) {
         val mediaPlayerCls = XposedHelpers.findClass("android.media.MediaPlayer", lpparam.classLoader)
+        val getAudioStreamType = mediaPlayerCls.getDeclaredMethod("getAudioStreamType").apply {
+            isAccessible = true
+        }
         ModuleHelper.findAndHookMethod(mediaPlayerCls, "pause", object : MethodHook() {
             override fun before(param: BeforeHookCallback) {
                 val mContext = ModuleHelper.findContext(lpparam) as? Context ?: return
-                val mStreamType = (findMethodExact(mediaPlayerCls, "getAudioStreamType", *emptyArray<Class<*>>()).invoke(param.getThisObject()) as? Number)?.toInt() ?: 0
+                val mStreamType = (getAudioStreamType.invoke(param.getThisObject()) as? Number)?.toInt() ?: 0
                 if (mStreamType == AudioManager.STREAM_MUSIC || mStreamType == 0x80000000.toInt()) {
                     val intent = Intent(GlobalActions.ACTION_PREFIX + "SaveLastMusicPausedTime")
                     intent.setPackage("android")
@@ -330,7 +338,9 @@ object Controls {
         } else if (action == 1) {
             try {
                 Toast.makeText(ModuleHelper.getModuleContext(context), R.string.controls_navbar_noaction, Toast.LENGTH_SHORT).show()
-            } catch (_: Throwable) {}
+            } catch (t: Throwable) {
+                if (t is OutOfMemoryError) throw t
+            }
             false
         } else {
             GlobalActions.handleAction(context, key)
@@ -396,6 +406,7 @@ object Controls {
             dot1 = modRes.getDrawable(R.drawable.ic_sysbar_dot_bottomleft, modCtx.theme)
             dot2 = modRes.getDrawable(R.drawable.ic_sysbar_dot_topright, modCtx.theme)
         } catch (t: Throwable) {
+            if (t is OutOfMemoryError) throw t
             XposedHelpers.log(t)
             return
         }
@@ -415,7 +426,9 @@ object Controls {
         if (kbrCls != null) try {
             val lripple = kbrCls.getConstructor(Context::class.java, View::class.java).newInstance(mContext, leftbtn) as? Drawable
             leftbtn.background = lripple
-        } catch (_: Throwable) {}
+        } catch (t: Throwable) {
+            if (t is OutOfMemoryError) throw t
+        }
         leftbtn.isClickable = true
         leftbtn.isHapticFeedbackEnabled = true
         leftbtn.setOnClickListener {
@@ -444,7 +457,9 @@ object Controls {
         if (kbrCls != null) try {
             val rripple = kbrCls.getConstructor(Context::class.java, View::class.java).newInstance(mContext, rightbtn) as? Drawable
             rightbtn.background = rripple
-        } catch (_: Throwable) {}
+        } catch (t: Throwable) {
+            if (t is OutOfMemoryError) throw t
+        }
         rightbtn.isClickable = true
         rightbtn.isHapticFeedbackEnabled = true
         rightbtn.setOnClickListener {
@@ -722,6 +737,7 @@ object Controls {
             if (GlobalActions.handleAction(ctx, "controls_backlong")) HookUtils.performStrongVibration(ctx)
             if (MainModule.mPrefs.getInt("controls_backlong_action", 1) != 1) markShortcutTriggered?.invoke(obj)
         } catch (t: Throwable) {
+            if (t is OutOfMemoryError) throw t
             XposedHelpers.log(t)
         }
     }
@@ -733,6 +749,7 @@ object Controls {
             if (GlobalActions.handleAction(ctx, "controls_homelong")) HookUtils.performStrongVibration(ctx)
             if (MainModule.mPrefs.getInt("controls_homelong_action", 1) != 1) markShortcutTriggered?.invoke(obj)
         } catch (t: Throwable) {
+            if (t is OutOfMemoryError) throw t
             XposedHelpers.log(t)
         }
     }
@@ -744,6 +761,7 @@ object Controls {
             if (GlobalActions.handleAction(ctx, "controls_menulong")) HookUtils.performStrongVibration(ctx)
             if (MainModule.mPrefs.getInt("controls_menulong_action", 1) != 1) markShortcutTriggered?.invoke(obj)
         } catch (t: Throwable) {
+            if (t is OutOfMemoryError) throw t
             XposedHelpers.log(t)
         }
     }
@@ -914,15 +932,13 @@ object Controls {
     @JvmStatic
     fun PowerDoubleTapActionHook(lpparam: SystemServerStartingParam) {
         val dtFromVolumeDown = MainModule.mPrefs.getBoolean("controls_volumedowndt_torch")
-        val doubleTapResons = arrayListOf("double_click_power", "power_double_tap", "double_click_power_key")
         val className = "com.miui.server.input.util.ShortCutActionsUtils"
         ModuleHelper.findAndHookMethod(className, lpparam.classLoader, "triggerFunction", String::class.java, String::class.java, Bundle::class.java, Boolean::class.javaPrimitiveType, object : MethodHook() {
             override fun before(param: BeforeHookCallback) {
-                val arg0 = param.getArg(0) as? String
                 val arg1 = param.getArg(1) as? String
                 if (dtFromVolumeDown && arg1 == "double_click_volume_down") {
                     param.getArgs()[0] = "turn_on_torch"
-                } else if (!dtFromVolumeDown && doubleTapResons.contains(arg1)) {
+                } else if (!dtFromVolumeDown && isPowerDoubleTapReason(arg1)) {
                     val mContext = XposedHelpers.getObjectField(param.getThisObject(), "mContext") as? Context ?: return
                     GlobalActions.handleAction(mContext, "controls_powerdt", true)
                     param.returnAndSkip(true)
@@ -933,6 +949,12 @@ object Controls {
         if (dtFromVolumeDown) {
             ModuleHelper.findAndHookMethod("com.android.server.policy.MiuiKeyShortcutManager", lpparam.classLoader, "getVolumeKeyLaunchCamera", HookerClassHelper.returnConstant(true))
         }
+    }
+
+    internal fun isPowerDoubleTapReason(reason: String?): Boolean {
+        return reason == "double_click_power" ||
+            reason == "power_double_tap" ||
+            reason == "double_click_power_key"
     }
 
     @JvmStatic

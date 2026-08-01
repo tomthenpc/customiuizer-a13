@@ -221,9 +221,7 @@ public final class HookerClassHelper {
                 }
             }
 
-            if (throwable instanceof OutOfMemoryError) {
-                throw throwable;
-            }
+            throwIfOutOfMemory(throwable);
 
             if (hasAfter) {
                 AfterHookCallback after = new AfterHookCallback(before, result, throwable);
@@ -244,7 +242,7 @@ public final class HookerClassHelper {
             try {
                 before(callback);
             } catch (Throwable t) {
-                if (t instanceof OutOfMemoryError) throw (OutOfMemoryError) t;
+                throwIfOutOfMemory(t);
                 XposedHelpers.log(t);
             }
         }
@@ -253,7 +251,7 @@ public final class HookerClassHelper {
             try {
                 after(callback);
             } catch (Throwable t) {
-                if (t instanceof OutOfMemoryError) throw (OutOfMemoryError) t;
+                throwIfOutOfMemory(t);
                 XposedHelpers.log(t);
             }
         }
@@ -262,6 +260,18 @@ public final class HookerClassHelper {
         }
 
         protected void after(AfterHookCallback callback) throws Throwable {
+        }
+
+        private static void throwIfOutOfMemory(Throwable throwable) {
+            Throwable current = throwable;
+            for (int depth = 0; current != null && depth < 8; depth++) {
+                if (current instanceof OutOfMemoryError) {
+                    throw (OutOfMemoryError) current;
+                }
+                Throwable next = current.getCause();
+                if (next == current) return;
+                current = next;
+            }
         }
     }
 
