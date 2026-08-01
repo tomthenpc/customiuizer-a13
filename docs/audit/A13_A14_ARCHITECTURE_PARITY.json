@@ -1,0 +1,31 @@
+{
+  "source_of_truth": {
+    "a13_branch": "devin/a13-rom-intelligence-audit",
+    "a14_branch": "devin/a14-runtime-hardening",
+    "generated_at": "end-of-session",
+    "generated_by": "a13_architecture_audit"
+  },
+  "components": [
+    {"component": "ProcessScope", "a14_path": "mods/utils/ProcessScope.kt", "a13_path": "mods/utils/ProcessScope.kt", "status": "ALIGNED", "gap": null},
+    {"component": "ProcessRouter", "a14_path": "mods/utils/ProcessRouter.kt", "a13_path": "mods/utils/ProcessScopes.kt", "status": "ALIGNED", "gap": null},
+    {"component": "MainModule", "a14_path": "MainModule.java", "a13_path": "MainModule.java", "status": "PARTIAL", "gap": "Input method and launcher/systemui now use ProcessScope; alarmcompat/generic app still inline"},
+    {"component": "InputMethodInstaller", "a14_path": "installers/InputMethodInstaller.kt", "a13_path": "installers/InputMethodInstaller.java", "status": "ALIGNED", "gap": null},
+    {"component": "SettingsInstaller", "a14_path": "installers/SettingsInstaller.kt", "a13_path": "installers/PackageInstallerRouter.java", "status": "MISSING", "gap": "Settings hooks still in PackageInstallerRouter"},
+    {"component": "SecurityCenterInstaller", "a14_path": "installers/SecurityCenterInstaller.kt", "a13_path": "installers/PackageInstallerRouter.java", "status": "MISSING", "gap": "SecurityCenter hooks still in PackageInstallerRouter"},
+    {"component": "PowerKeeperInstaller", "a14_path": "installers/PowerKeeperInstaller.kt", "a13_path": "installers/PackageInstallerRouter.java", "status": "MISSING", "gap": "PowerKeeper hooks still in PackageInstallerRouter"},
+    {"component": "MediaInstaller", "a14_path": "installers/MediaInstaller.kt", "a13_path": "installers/PackageInstallerRouter.java", "status": "MISSING", "gap": "Media hooks still in PackageInstallerRouter"},
+    {"component": "PhoneInstaller", "a14_path": "installers/PhoneInstaller.kt", "a13_path": "installers/PackageInstallerRouter.java", "status": "MISSING", "gap": "Phone hooks still in PackageInstallerRouter"},
+    {"component": "FeatureId", "a14_path": "mods/utils/FeatureId.kt", "a13_path": "mods/utils/FeatureId.kt", "status": "ALIGNED", "gap": null},
+    {"component": "FeatureState", "a14_path": "mods/utils/FeatureState.kt", "a13_path": "mods/utils/FeatureState.kt", "status": "ALIGNED", "gap": null},
+    {"component": "FeatureInstallResult", "a14_path": "mods/utils/FeatureInstallResult.kt", "a13_path": "mods/utils/FeatureInstallResult.kt", "status": "ALIGNED", "gap": null},
+    {"component": "FeatureInstallState", "a14_path": "mods/utils/FeatureInstallState.kt", "a13_path": "mods/utils/FeatureInstallState.kt", "status": "ALIGNED", "gap": null},
+    {"component": "FeatureSpec", "a14_path": "mods/utils/FeatureSpec.kt", "a13_path": "mods/catalog/FeatureSpec.kt", "status": "PARTIAL", "gap": "A13 uses data class; A14 uses interface"},
+    {"component": "FeatureDefinition", "a14_path": "mods/utils/FeatureDefinition.kt", "a13_path": "mods/catalog/FeatureSpec", "status": "MISSING", "gap": "No FeatureDefinition abstraction"},
+    {"component": "FeatureInstallRegistry", "a14_path": "mods/utils/FeatureInstallRegistry.kt", "a13_path": "mods/catalog/FeatureDispatcher.kt", "status": "PARTIAL", "gap": "FeatureDispatcher returns Boolean, no full registry"},
+    {"component": "InstallPhase", "a14_path": "mods/utils/InstallPhase.kt", "a13_path": "installers/*Installer.java", "status": "MISSING", "gap": "No InstallPhase enum"},
+    {"component": "FeatureTarget", "a14_path": "mods/utils/FeatureTarget.kt", "a13_path": "mods/catalog/ProcessTarget.kt", "status": "PARTIAL", "gap": "ProcessTarget sealed class vs FeatureTarget enum"},
+    {"component": "Diagnostics", "a14_path": "mods/utils/HookDiagnostics.kt", "a13_path": "mods/diagnostics/DiagnosticRecorder.kt", "status": "PARTIAL", "gap": "Not unified with InstallResult"},
+    {"component": "ReflectionCache", "a14_path": "mods/utils/ReflectionCache.kt", "a13_path": "mods/utils/ReflectionCache.java", "status": "ALIGNED", "gap": null},
+    {"component": "PreferenceBootstrap", "a14_path": "utils/PreferenceBootstrap.kt", "a13_path": "utils/PreferenceBootstrap.java", "status": "ALIGNED", "gap": null}
+  ]
+}
