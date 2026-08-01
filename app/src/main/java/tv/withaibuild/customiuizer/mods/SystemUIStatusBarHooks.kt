@@ -1358,7 +1358,22 @@ object SystemUIStatusBarHooks {
                         lp.width = viewWidth
                         meter.layoutParams = lp
                     }
-                    meter.postDelayed({ ModuleHelper.guarded { initNetSpeedStyle(meter) } }, 200)
+                    lateinit var attachStateListener: android.view.View.OnAttachStateChangeListener
+                    val initStyleRunnable = Runnable {
+                        ModuleHelper.guarded {
+                            meter.removeOnAttachStateChangeListener(attachStateListener)
+                            initNetSpeedStyle(meter)
+                        }
+                    }
+                    attachStateListener = object : android.view.View.OnAttachStateChangeListener {
+                        override fun onViewAttachedToWindow(v: View) {}
+                        override fun onViewDetachedFromWindow(v: View) {
+                            v.removeCallbacks(initStyleRunnable)
+                            v.removeOnAttachStateChangeListener(this)
+                        }
+                    }
+                    meter.addOnAttachStateChangeListener(attachStateListener)
+                    meter.postDelayed(initStyleRunnable, 200)
                 }
             }
         })
