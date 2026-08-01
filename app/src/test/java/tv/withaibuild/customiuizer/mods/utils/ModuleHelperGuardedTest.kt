@@ -147,4 +147,34 @@ class ModuleHelperGuardedTest {
 
         assertEquals(0, laterCalls)
     }
+
+    @Test
+    fun preferenceObserverThreadDeathIsRethrown() {
+        var laterCalls = 0
+        ModuleHelper.observePreferenceChange {
+            throw ThreadDeath()
+        }
+        ModuleHelper.observePreferenceChange { laterCalls++ }
+
+        assertThrows(ThreadDeath::class.java) {
+            ModuleHelper.handlePreferenceChanged("key")
+        }
+
+        assertEquals(0, laterCalls)
+    }
+
+    @Test
+    fun preferenceObserverVirtualMachineErrorIsRethrown() {
+        var laterCalls = 0
+        ModuleHelper.observePreferenceChange {
+            throw InternalError("observer vme")
+        }
+        ModuleHelper.observePreferenceChange { laterCalls++ }
+
+        assertThrows(VirtualMachineError::class.java) {
+            ModuleHelper.handlePreferenceChanged("key")
+        }
+
+        assertEquals(0, laterCalls)
+    }
 }

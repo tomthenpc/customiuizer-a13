@@ -611,6 +611,8 @@ public class ModuleHelper {
                 prefObserver.onChange(key);
             } catch (Throwable t) {
                 if (t instanceof OutOfMemoryError) throw (OutOfMemoryError) t;
+                if (t instanceof ThreadDeath) throw (ThreadDeath) t;
+                if (t instanceof VirtualMachineError) throw (VirtualMachineError) t;
                 log(t);
             }
         }
@@ -619,6 +621,8 @@ public class ModuleHelper {
                 prefObserver.onChange(key);
             } catch (Throwable t) {
                 if (t instanceof OutOfMemoryError) throw (OutOfMemoryError) t;
+                if (t instanceof ThreadDeath) throw (ThreadDeath) t;
+                if (t instanceof VirtualMachineError) throw (VirtualMachineError) t;
                 log(t);
             }
         }
@@ -642,6 +646,8 @@ public class ModuleHelper {
                 }
             } catch (Throwable t) {
                 if (t instanceof OutOfMemoryError) throw (OutOfMemoryError) t;
+                if (t instanceof ThreadDeath) throw (ThreadDeath) t;
+                if (t instanceof VirtualMachineError) throw (VirtualMachineError) t;
                 log(t);
             }
         }
@@ -1043,12 +1049,17 @@ public class ModuleHelper {
      * Framework callbacks (BroadcastReceiver.onReceive, Handler.handleMessage,
      * Runnable.run, View listeners, etc.) run outside the MethodHook try/catch.
      * An uncaught exception inside them can crash system_server, SystemUI or Launcher.
+     *
+     * OutOfMemoryError, ThreadDeath and VirtualMachineError are rethrown so the
+     * host process is not left in a corrupt or unrecoverable state.
      */
     public static void guarded(Runnable block) {
         try {
             block.run();
         } catch (Throwable t) {
             if (t instanceof OutOfMemoryError) throw (OutOfMemoryError) t;
+            if (t instanceof ThreadDeath) throw (ThreadDeath) t;
+            if (t instanceof VirtualMachineError) throw (VirtualMachineError) t;
             log(t);
         }
     }
@@ -1085,6 +1096,8 @@ public class ModuleHelper {
             block.run();
         } catch (Throwable t) {
             if (t instanceof OutOfMemoryError) throw (OutOfMemoryError) t;
+            if (t instanceof ThreadDeath) throw (ThreadDeath) t;
+            if (t instanceof VirtualMachineError) throw (VirtualMachineError) t;
             logGuardedFailure(callbackName, t, failureLogger);
         }
     }
@@ -1092,12 +1105,16 @@ public class ModuleHelper {
     /**
      * Guarded variant that returns a value. The fallback is returned when the body fails
      * so the framework sees a safe, "not consumed" result.
+     *
+     * OutOfMemoryError, ThreadDeath and VirtualMachineError are rethrown.
      */
     public static <T> T guarded(T fallback, Callable<T> block) {
         try {
             return block.call();
         } catch (Throwable t) {
             if (t instanceof OutOfMemoryError) throw (OutOfMemoryError) t;
+            if (t instanceof ThreadDeath) throw (ThreadDeath) t;
+            if (t instanceof VirtualMachineError) throw (VirtualMachineError) t;
             log(t);
             return fallback;
         }
@@ -1115,6 +1132,8 @@ public class ModuleHelper {
             return block.call();
         } catch (Throwable t) {
             if (t instanceof OutOfMemoryError) throw (OutOfMemoryError) t;
+            if (t instanceof ThreadDeath) throw (ThreadDeath) t;
+            if (t instanceof VirtualMachineError) throw (VirtualMachineError) t;
             logGuardedFailure(callbackName, t, failureLogger);
             return fallback;
         }
