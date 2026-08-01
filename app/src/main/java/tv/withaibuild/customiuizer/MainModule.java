@@ -1,7 +1,5 @@
 package tv.withaibuild.customiuizer;
 
-import android.app.Application;
-import android.content.Context;
 import android.content.SharedPreferences;
 import android.os.Build;
 
@@ -13,11 +11,6 @@ import io.github.libxposed.api.XposedModule;
 import io.github.libxposed.api.XposedModuleInterface;
 import io.github.libxposed.api.XposedModuleInterface.PackageReadyParam;
 import io.github.libxposed.api.XposedModuleInterface.SystemServerStartingParam;
-import tv.withaibuild.customiuizer.mods.Controls;
-import tv.withaibuild.customiuizer.mods.SystemAudioAndVisualAndMoreHooks;
-import tv.withaibuild.customiuizer.mods.SystemStatusBarAndClockHooks;
-import tv.withaibuild.customiuizer.mods.utils.HookerClassHelper.AfterHookCallback;
-import tv.withaibuild.customiuizer.mods.utils.HookerClassHelper.MethodHook;
 import tv.withaibuild.customiuizer.mods.utils.ModuleHelper;
 import tv.withaibuild.customiuizer.mods.utils.ProcessScope;
 import tv.withaibuild.customiuizer.mods.utils.ProcessScopes;
@@ -200,26 +193,8 @@ public class MainModule extends XposedModule {
 
         if (isLauncherPkg) {
             LauncherInstaller.installPackageReady(lpparam);
+            LauncherInstaller.installApplication(lpparam);
             watchPreferenceChange();
-        }
-
-        final boolean isStatusBarColor = mPrefs.getBoolean("system_statusbarcolor") && mPrefs.getStringSet("system_statusbarcolor_apps").contains(pkg);
-        final boolean isNoOverscroll = mPrefs.getBoolean("system_nooverscroll") && mPrefs.getStringSet("system_nooverscroll_apps").contains(pkg);
-        final boolean controlMedia = (mPrefs.getStringAsInt("controls_volumemedia_up", 0) > 0
-            || mPrefs.getStringAsInt("controls_volumemedia_down", 0) > 0) && mPrefs.getStringSet("controls_mediaplayer_apps").contains(pkg);
-        if (isLauncherPkg || isStatusBarColor || isNoOverscroll || controlMedia) {
-            ModuleHelper.findAndHookMethod(Application.class, "attach", Context.class, new MethodHook() {
-                @Override
-                protected void after(AfterHookCallback param) throws Throwable {
-                    if (isLauncherPkg) LauncherInstaller.handleLoadLauncher(lpparam);
-                    if (isStatusBarColor) {
-                        SystemStatusBarAndClockHooks.StatusBarBackgroundCompatHook(lpparam);
-                        SystemStatusBarAndClockHooks.StatusBarBackgroundHook(lpparam);
-                    }
-                    if (isNoOverscroll) SystemAudioAndVisualAndMoreHooks.NoOverscrollAppHook(lpparam);
-                    if (controlMedia) Controls.VolumeMediaPlayerHook(lpparam);
-                }
-            });
         }
     }
 

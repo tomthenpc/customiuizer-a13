@@ -1,9 +1,15 @@
 package tv.withaibuild.customiuizer.installers;
 
+import android.app.Application;
+import android.content.Context;
+
 import io.github.libxposed.api.XposedModuleInterface.PackageReadyParam;
 import tv.withaibuild.customiuizer.MainModule;
 import tv.withaibuild.customiuizer.mods.Controls;
 import tv.withaibuild.customiuizer.mods.LauncherAnimationHooks;
+import tv.withaibuild.customiuizer.mods.utils.HookerClassHelper.AfterHookCallback;
+import tv.withaibuild.customiuizer.mods.utils.HookerClassHelper.MethodHook;
+import tv.withaibuild.customiuizer.mods.utils.ModuleHelper;
 import tv.withaibuild.customiuizer.mods.LauncherFolderHooks;
 import tv.withaibuild.customiuizer.mods.LauncherGestureHooks;
 import tv.withaibuild.customiuizer.mods.LauncherIconHooks;
@@ -90,5 +96,14 @@ public final class LauncherInstaller {
         }
         if (closeOnLaunch) LauncherFolderHooks.CloseFolderOrDrawerOnLaunchShortcutMenuHook(lpparam);
         if (MainModule.mPrefs.getBoolean("system_resizablewidgets")) LauncherLayoutHooks.ResizableWidgetsHook(lpparam);
+    }
+
+    public static void installApplication(final PackageReadyParam lpparam) {
+        ModuleHelper.findAndHookMethod(Application.class, "attach", Context.class, new MethodHook() {
+            @Override
+            protected void after(AfterHookCallback param) throws Throwable {
+                handleLoadLauncher(lpparam);
+            }
+        });
     }
 }
