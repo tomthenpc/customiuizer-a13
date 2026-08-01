@@ -33,3 +33,4 @@ __pycache__/
 /build/rom-intelligence/
 *.rom-sample
 *.rom.json
+rom-target-diff.md
