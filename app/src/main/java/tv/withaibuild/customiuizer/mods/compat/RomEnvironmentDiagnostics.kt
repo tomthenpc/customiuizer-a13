@@ -8,11 +8,23 @@ import tv.withaibuild.customiuizer.mods.diagnostics.ReasonCode
  * Records the per-process ROM environment exactly once.
  *
  * This is intentionally separate from [RomEnvironmentDetector] so that classification can be
- * tested without side effects on the global diagnostic recorder.
+ * tested without side effects on the global diagnostic recorder. A failure here is non-fatal
+ * and must not block target resolution or Hook installation.
  */
 internal object RomEnvironmentDiagnostics {
 
-    fun record(environment: RomEnvironment) {
+    fun recordSafely(environment: RomEnvironment) {
+        try {
+            record(environment)
+        } catch (oom: OutOfMemoryError) {
+            throw oom
+        } catch (_: Throwable) {
+            // Diagnostic recording is best-effort metadata. A recording failure must never
+            // prevent the feature installer from continuing.
+        }
+    }
+
+    internal fun record(environment: RomEnvironment) {
         val compatibility = when (environment.profile) {
             RomProfile.MIUI14_A13, RomProfile.HYPEROS1_A13 -> CompatibilityState.COMPATIBLE
             RomProfile.UNKNOWN_A13 -> CompatibilityState.DEGRADED
@@ -25,44 +37,53 @@ internal object RomEnvironmentDiagnostics {
             RomProfile.UNSUPPORTED_ANDROID -> ReasonCode.ANDROID_VERSION_UNSUPPORTED
         }
 
+        val detail = buildString {
+            append("profile=").append(environment.profile.name)
+            append("; sdk=").append(environment.sdkInt)
+            append("; evidence=[")
+            appendEvidence(this, environment)
+            append(']')
+        }
+
         DiagnosticRecorder.record(
             id = "rom.environment",
             compatibility = compatibility,
             reasonCode = reason,
-            detail = buildString {
-                append("profile=").append(environment.profile.name)
-                append("; sdk=").append(environment.sdkInt)
-                append("; evidence=[")
-                append(formatEvidence(environment))
-                append(']')
-            }
+            detail = detail
         )
     }
 
-    private fun formatEvidence(environment: RomEnvironment): String {
+    private fun appendEvidence(builder: StringBuilder, environment: RomEnvironment) {
         val flags = environment.evidenceFlags
-        val parts = ArrayList<String>(7)
+        var first = true
+
+        fun addPart(key: String, value: String?) {
+            if (value.isNullOrEmpty()) return
+            if (!first) builder.append(", ")
+            first = false
+            builder.append(key).append('=').append(value)
+        }
+
         if (flags and RomEnvironmentDetector.EVIDENCE_DISPLAY != 0) {
-            parts.add("display=${environment.buildDisplay}")
+            addPart("display", environment.buildDisplay)
         }
         if (flags and RomEnvironmentDetector.EVIDENCE_BUILD_INCREMENTAL != 0) {
-            parts.add("buildIncremental=${environment.buildIncremental}")
+            addPart("buildIncremental", environment.buildIncremental)
         }
         if (flags and RomEnvironmentDetector.EVIDENCE_RO_INCREMENTAL != 0) {
-            parts.add("roIncremental=${environment.roIncremental}")
+            addPart("roIncremental", environment.roIncremental)
         }
         if (flags and RomEnvironmentDetector.EVIDENCE_MIUI != 0) {
-            parts.add("miui=${environment.miuiVersionName}")
+            addPart("miui", environment.miuiVersionName)
         }
         if (flags and RomEnvironmentDetector.EVIDENCE_MIUI_CODE != 0) {
-            parts.add("miuiCode=${environment.miuiVersionCode}")
+            addPart("miuiCode", environment.miuiVersionCode)
         }
         if (flags and RomEnvironmentDetector.EVIDENCE_HYPEROS != 0) {
-            parts.add("hyperos=${environment.hyperOsVersionName}")
+            addPart("hyperos", environment.hyperOsVersionName)
         }
         if (flags and RomEnvironmentDetector.EVIDENCE_HYPEROS_CODE != 0) {
-            parts.add("hyperosCode=${environment.hyperOsVersionCode}")
+            addPart("hyperosCode", environment.hyperOsVersionCode)
         }
-        return parts.joinToString(", ")
     }
 }

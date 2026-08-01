@@ -52,7 +52,6 @@ internal object AndroidSystemPropertyReader : SystemPropertyReader {
             null
         }
     }
-
 }
 
 /**
@@ -121,6 +120,26 @@ internal object RomEnvironmentDetector {
         buildIncremental: String,
         reader: SystemPropertyReader
     ): RomEnvironment {
+        if (sdkInt != 33) {
+            val cleanBuildDisplay = sanitizeEvidence(buildDisplay)
+            val cleanBuildIncremental = sanitizeEvidence(buildIncremental)
+            val evidenceFlags = 0
+                .let { if (cleanBuildDisplay.isNotEmpty()) it or EVIDENCE_DISPLAY else it }
+                .let { if (cleanBuildIncremental.isNotEmpty()) it or EVIDENCE_BUILD_INCREMENTAL else it }
+            return RomEnvironment(
+                sdkInt = sdkInt,
+                profile = RomProfile.UNSUPPORTED_ANDROID,
+                buildDisplay = cleanBuildDisplay,
+                buildIncremental = cleanBuildIncremental,
+                miuiVersionName = null,
+                miuiVersionCode = null,
+                hyperOsVersionName = null,
+                hyperOsVersionCode = null,
+                roIncremental = null,
+                evidenceFlags = evidenceFlags
+            )
+        }
+
         val miuiNameRaw = readProperty(reader, MIUI_VERSION_NAME)
         val miuiCode = readProperty(reader, MIUI_VERSION_CODE)
         val hyperNameRaw = readProperty(reader, HYPER_OS_VERSION_NAME)
@@ -131,7 +150,6 @@ internal object RomEnvironmentDetector {
         val hyperOsVersionName = hyperNameRaw?.takeIf { isValidHyperOsVersion(it) }
 
         val profile = when {
-            sdkInt != 33 -> RomProfile.UNSUPPORTED_ANDROID
             hyperOsVersionName != null -> RomProfile.HYPEROS1_A13
             miuiVersionName != null -> RomProfile.MIUI14_A13
             else -> RomProfile.UNKNOWN_A13
@@ -178,20 +196,70 @@ internal object RomEnvironmentDetector {
             null
         }
 
-    /** HyperOS 1 candidate: exactly "OS1" or "OS1.x.y.z". */
+    /** HyperOS 1 candidate: "OS1" or a dotted numeric version starting with "OS1.". */
     internal fun isValidHyperOsVersion(value: String): Boolean {
         val v = value.trim().uppercase(Locale.ROOT)
-        return v == "OS1" || v.startsWith("OS1.")
+        return isNumericVersion(v, "OS1")
     }
 
-    /** MIUI 14 candidate: exactly "V14" or "V14.x.y.z". */
+    /** MIUI 14 candidate: "V14" or a dotted numeric version starting with "V14.". */
     internal fun isValidMiuiVersion(value: String): Boolean {
         val v = value.trim().uppercase(Locale.ROOT)
-        return v == "V14" || v.startsWith("V14.")
+        return isNumericVersion(v, "V14")
     }
 
-    internal fun sanitizeEvidence(value: String): String =
-        value.trim().replace(Regex("[\r\n]"), " ").take(MAX_EVIDENCE_LENGTH)
+    /**
+     * Validates that [normalized] is exactly [prefix] or [prefix] followed by a dot-separated
+     * numeric version where every segment is non-empty and contains only digits.
+     *
+     * No regex, split or temporary collections are used.
+     */
+    private fun isNumericVersion(normalized: String, prefix: String): Boolean {
+        if (normalized == prefix) return true
+        if (!normalized.startsWith(prefix)) return false
+
+        var index = prefix.length
+        if (index >= normalized.length) return false
+        if (normalized[index] != '.') return false
+        index++
+        if (index >= normalized.length) return false
+
+        var insideSegment = false
+        while (index < normalized.length) {
+            val char = normalized[index]
+            if (char == '.') {
+                if (!insideSegment) return false
+                insideSegment = false
+            } else if (char in '0'..'9') {
+                insideSegment = true
+            } else {
+                return false
+            }
+            index++
+        }
+        return insideSegment
+    }
+
+    internal fun sanitizeEvidence(value: String): String {
+        val trimmed = value.trim()
+        val limit = kotlin.math.min(trimmed.length, MAX_EVIDENCE_LENGTH)
+        var builder: StringBuilder? = null
+
+        for (index in 0 until limit) {
+            val char = trimmed[index]
+            if (char == '\r' || char == '\n') {
+                if (builder == null) {
+                    builder = StringBuilder(limit)
+                    builder.append(trimmed, 0, index)
+                }
+                builder.append(' ')
+            } else {
+                builder?.append(char)
+            }
+        }
+
+        return builder?.toString() ?: trimmed.take(limit)
+    }
 
     private fun computeEvidenceFlags(
         buildDisplay: String,

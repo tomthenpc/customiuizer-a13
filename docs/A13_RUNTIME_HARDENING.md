@@ -168,11 +168,16 @@ The module does not add a periodic network-speed updater. The ROM still drives t
 
 ## A13-H1 HyperOS 1 / Android 13 兼容基线
 
+- H1.1b 静态闭环：VERIFIED_STATIC
+- H1.1c 严格版本解析与诊断失败隔离：VERIFIED_STATIC
+- H1.2 A14 静态对照：PENDING
+
 - `RomEnvironment` 数据结构：COMPLETED
 - `SystemPropertyReader` 异常隔离：VERIFIED_STATIC
   - 缓存 `android.os.SystemProperties.get(String)` Method 一次
   - 普通反射异常降级为 `null`
   - 直接 / 包装 `OutOfMemoryError` 重新抛出
+  - `API != 33` 时零 property 读取
 - ROM 分类规则：VERIFIED_STATIC
   - HyperOS 1 证据优先于 MIUI V14 证据
   - 支持 `OS1` / `OS1.0.10.0` / `V14` / `V14.0.10.0` 等格式

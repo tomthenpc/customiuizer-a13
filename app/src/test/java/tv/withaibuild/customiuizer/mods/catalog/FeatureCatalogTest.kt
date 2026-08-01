@@ -5,6 +5,7 @@ import io.github.libxposed.api.XposedModuleInterface.SystemServerStartingParam
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse
 import org.junit.Assert.assertNotNull
+import org.junit.After
 import org.junit.Assert.assertTrue
 import org.junit.Before
 import org.junit.Test
@@ -34,6 +35,13 @@ class FeatureCatalogTest {
             if (!line.startsWith("Diagnostic[rom.environment]")) logMessages += line
         }
         XposedHelpers.moduleInst = FakeXposedInterface.create()
+    }
+
+    @After
+    fun tearDown() {
+        DiagnosticRecorder.reset()
+        MainModule.mPrefs = PrefMap()
+        XposedHelpers.moduleInst = null
     }
 
     private fun runtime(

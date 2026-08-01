@@ -26,7 +26,9 @@ class FeatureRuntime(
     val prefs: PrefMap<String, Any>
 ) {
     private val environmentLazy = lazy(LazyThreadSafetyMode.SYNCHRONIZED) {
-        RomEnvironmentDetector.detect().also { RomEnvironmentDiagnostics.record(it) }
+        val environment = RomEnvironmentDetector.detect()
+        RomEnvironmentDiagnostics.recordSafely(environment)
+        environment
     }
     internal val environment: RomEnvironment by environmentLazy
 

@@ -45,6 +45,22 @@ class RomEnvironmentTest {
     }
 
     @Test
+    fun unsupportedSdkReadsNoProperties() {
+        val requestedKeys = mutableListOf<String>()
+        val reader = SystemPropertyReader { key ->
+            requestedKeys += key
+            "OS1.0"
+        }
+
+        RomEnvironmentDetector.detect(32, "", "", reader)
+        assertTrue(requestedKeys.isEmpty())
+
+        requestedKeys.clear()
+        RomEnvironmentDetector.detect(34, "", "", reader)
+        assertTrue(requestedKeys.isEmpty())
+    }
+
+    @Test
     fun noEvidenceIsUnknown() {
         val env = env()
         assertEquals(RomProfile.UNKNOWN_A13, env.profile)
@@ -131,12 +147,33 @@ class RomEnvironmentTest {
     fun versionParsingHandlesCaseAndWhitespace() {
         assertTrue(RomEnvironmentDetector.isValidHyperOsVersion("  os1.0  "))
         assertTrue(RomEnvironmentDetector.isValidMiuiVersion("v14.0"))
-        assertFalse(RomEnvironmentDetector.isValidHyperOsVersion("OS1x"))
-        assertFalse(RomEnvironmentDetector.isValidMiuiVersion("V14x"))
     }
 
     @Test
-    fun whitespaceOnlyIsInvalid() {
+    fun validNumericVersions() {
+        assertTrue(RomEnvironmentDetector.isValidHyperOsVersion("OS1"))
+        assertTrue(RomEnvironmentDetector.isValidHyperOsVersion("OS1.0"))
+        assertTrue(RomEnvironmentDetector.isValidHyperOsVersion("OS1.0.10.0"))
+        assertTrue(RomEnvironmentDetector.isValidMiuiVersion("V14"))
+        assertTrue(RomEnvironmentDetector.isValidMiuiVersion("V14.0"))
+        assertTrue(RomEnvironmentDetector.isValidMiuiVersion("V14.0.10.0"))
+    }
+
+    @Test
+    fun invalidVersionSuffixesRejected() {
+        assertFalse(RomEnvironmentDetector.isValidHyperOsVersion("OS1."))
+        assertFalse(RomEnvironmentDetector.isValidHyperOsVersion("OS1..0"))
+        assertFalse(RomEnvironmentDetector.isValidHyperOsVersion("OS1.beta"))
+        assertFalse(RomEnvironmentDetector.isValidHyperOsVersion("OS1.0-beta"))
+        assertFalse(RomEnvironmentDetector.isValidHyperOsVersion("OS10"))
+        assertFalse(RomEnvironmentDetector.isValidHyperOsVersion("OS"))
+        assertFalse(RomEnvironmentDetector.isValidHyperOsVersion("OS1x"))
+        assertFalse(RomEnvironmentDetector.isValidMiuiVersion("V14."))
+        assertFalse(RomEnvironmentDetector.isValidMiuiVersion("V14..0"))
+        assertFalse(RomEnvironmentDetector.isValidMiuiVersion("V14.beta"))
+        assertFalse(RomEnvironmentDetector.isValidMiuiVersion("V140"))
+        assertFalse(RomEnvironmentDetector.isValidMiuiVersion("V13"))
+        assertFalse(RomEnvironmentDetector.isValidMiuiVersion("V14x"))
         assertFalse(RomEnvironmentDetector.isValidHyperOsVersion("   "))
         assertFalse(RomEnvironmentDetector.isValidMiuiVersion("   "))
     }
