@@ -120,33 +120,44 @@ The `ClockRunnable.doTick()` still uses `XposedHelpers.getObjectField` for `mCal
 
 ## P1-B.2 step counter audit
 
-`StepCounterController` (P0-3 complete):
+`StepCounterController` (P0-3 VERIFIED_STATIC):
 
-* `Lifecycle` now owns a monotonic `AtomicLong generation` and `isCurrent(gen)`.
-* `reset()` and `bumpGeneration()` roll the generation on init/reinit/destroy.
-* `scheduleUpdate()` rolls back `isQuerying` if `queryHandler` is null or `post()` fails or throws.
-* `runQuery(gen)` only publishes the result and updates views when the captured `gen` still matches `lifecycle.generation`.
-* `querySteps()` `Throwable` path rethrows `OutOfMemoryError`.
-* The `uiHandler.post { updateViews(...) }` lambda is guarded with `ModuleHelper.guarded`.
+* `Lifecycle` uses a single `synchronized` lock to protect the combined state (`screenOn`, `hasViews`, `timeTickRegistered`, `generation`, `nextQueryId`, `activeTicket`, `latestValidQueryId`).
+* `QueryTicket(generation, queryId)` identifies each query and its validity window.
+* `PendingQuerySlot` provides identity-based replacement and clearing of the single pending `QueryRunnable`.
+* `Lifecycle.canPublish(ticket)` is the single atomic gate for publication; it checks `queryId`, `generation`, `screenOn` and `hasViews` under one lock.
+* All `QueryRunnable` paths enter `try/finally`, calling `finishQuery(ticket)` and `clearPendingQuery(thisRunnable)` on every exit.
+* `scheduleUpdate()` calls `abortQueryStart()` on `queryHandler` null/false/exception/OOM, cleaning the pending slot, active ticket and result validity.
+* `postResult(ticket, text)` handles `uiHandler` null/false/exception/OOM and calls `consumeResult(ticket)` on every non-success path.
+* `updateViews(ticket, newText)` checks `canPublish` before and after taking the `liveViews()` snapshot; it consumes the result on every path and does not modify `TextView` or `stepsWithGoal` for stale tickets.
+* `querySteps()` `Throwable` path rethrows `OutOfMemoryError` and logs throttled class names for other exceptions.
+* `stepViews` is protected by `viewLock`; `liveViews()` returns a snapshot and is never called from the background query thread.
+* The data source is `ContentResolver.query`, not `SensorManager`.
+
+待验证：真实 `ContentResolver`、真实 `HandlerThread`、`SystemUI` 屏幕/View 并发、`WeakReference` GC、`LSPosed` 实机。
 
 ## P1-B.2 network speed audit
 
 Network speed is driven by the ROM `NetworkSpeedController`.
 
 * `NetSpeedIntervalHook` only changes the argument passed to `postUpdateNetworkSpeedDelay`; it does not create a module Handler/Runnable.
-* `DetailedNetSpeedHook` hooks `getTotalByte` and `updateNetworkSpeed` to provide the data MIUI then formats and displays.
+* `DetailedNetSpeedHook` no longer hooks `getTotalByte`. `getTotalByte` hook has been removed.
+* `DetailedNetSpeedHook` hooks `updateNetworkSpeed` and `updateText` to reformat the speed text produced by the ROM once per tick.
 * `updateText` uses `MainModule.resHooks` for `network_speed_suffix` and a per-locale cache (`cachedUnitSuffix`, `cachedSpeedChars`) to avoid re-reading resources on every tick.
 * `NetSpeedStyleHook` adds an `OnAttachStateChangeListener` to the `NetworkSpeedView`. When the view is detached, the listener removes the 200ms one-shot style init `Runnable`, preventing a detached view from being restyled.
 * `initNetSpeedStyle` runs inside `ModuleHelper.guarded` so a single style failure is logged once and the update finishes.
+* `NetSpeedRuntimeState` is stored per controller via `AdditionalInstanceField`; there is no global `txBytes`/`rxBytes` state.
+* Per-tick traffic is sampled once for each interface; `Pair` return values and global speed state have been removed.
+* The first tick after a network reconnect only establishes the new baseline and does not publish a value.
 
-The module does not add a periodic network-speed updater. The ROM still drives the tick; the module adds per-tick tx/rx sampling, connection state checks and display formatting. The one-shot delayed style callback is now cancellable on `View` detach. Full per-controller state, one-sample-per-tick and locale-aware formatter work remains in progress.
+The module does not add a periodic network-speed updater. The ROM still drives the tick; the module adds per-tick tx/rx sampling, connection state checks and display formatting. The one-shot delayed style callback is now cancellable on `View` detach. Locale/pref cache and strict style one-shot remain pending.
 
 ## P1-B.3.1 closeout progress
 
 | Item | Status | Notes |
 |---|---|---|
 | P0-1 Clock timezone / generation / mContext | COMPLETED | `TIMEZONE_CHANGED` / `TIME_CHANGED` consult real screen state; `ClockLifecycleAction`; receiver registration failure stops ticker |
-| P0-2 Network speed per-controller / one-sample | COMPLETED | per-controller `NetSpeedRuntimeState` via `AdditionalInstanceField`; one `getTrafficBytes` per tick; no `Pair`; locale/pref cache and strict style one-shot still pending |
+| P0-2 Network speed per-controller / one-sample | PARTIAL | `getTotalByte` hook removed; per-controller `NetSpeedRuntimeState` via `AdditionalInstanceField`; one `getTrafficBytes` per tick; no `Pair`; reconnect baseline reset pending; locale/pref cache and strict style one-shot still pending |
 | P0-3 StepCounter query token / lifecycle | VERIFIED_STATIC | `QueryTicket(generation, queryId)`; `Lifecycle.canPublish` single atomic check; `PendingQuerySlot` identity-based; all `QueryRunnable` paths enter `finally`; terminal `queryHandler`/`uiHandler` posts cleaned; `Lifecycle`/`View` thread races covered by tests |
 | P0-4 DeviceInfo lifecycle | NOT_STARTED | dedicated I/O thread and stale generation pending |
 | P1-1 BatteryIndicator lifecycle | NOT_STARTED | pending |
@@ -157,21 +168,33 @@ The module does not add a periodic network-speed updater. The ROM still drives t
 
 ## A13-H1 HyperOS 1 / Android 13 兼容基线
 
-- `RomEnvironment` / `RomProfile` 检测：COMPLETED
+- `RomEnvironment` 数据结构：COMPLETED
+- ROM 分类规则：VERIFIED_STATIC
   - HyperOS 1 证据优先于 MIUI V14 证据
   - 支持 `OS1` / `OS1.0.10.0` / `V14` / `V14.0.10.0` 等格式
   - `UNSUPPORTED_ANDROID` 使用 `ANDROID_VERSION_UNSUPPORTED` reason
-- `FeatureRuntime` 懒加载集成：COMPLETED
-- 生产 cold path 触发：COMPLETED
+- `FeatureRuntime` cold-path 触发：VERIFIED_STATIC
   - `FeatureDispatcher.installWithContract` 首次读取 `runtime.environment`
   - disabled Feature 不触发检测
-- 诊断 ReasonCode：`ROM_PROFILE_DETECTED`、`ROM_PROFILE_UNKNOWN`、`ROM_EVIDENCE_CONFLICT`、`ANDROID_VERSION_UNSUPPORTED`、`HYPEROS_FALLBACK_FOUND`、`HYPEROS_TARGET_NOT_FOUND`：COMPLETED
-- Canary target 审计（H1.1）：见 `build/compat-audit/hyperos-a13-canary-audit.md`（未提交，见 H1.1 结果）
-- LSPosed 日志分析器 ROM 环境解析：COMPLETED
-- H1.2 A14 静态对照与 S1 fallback：PENDING
+- `SystemPropertyReader` 异常隔离：PENDING
+- 诊断测试隔离：PENDING
+- LSPosed ROM 日志解析：PARTIAL
+  - 可解析 `Diagnostic[rom.environment]` 的 state/compatibility/reason/detail
+  - 最多保留 32 条唯一 ROM 环境记录并统计 overflow
+- H1.2 A14 静态对照：PENDING
   - 需要以只读方式读取 A14 `mods/` 中对应 Hook 文件
   - 对 8 个 Canary 完成 S0–S3 分级
-  - 仅 S1 且完整 target bundle 才进入生产 fallback
+- HyperOS 生产 fallback：NOT_IMPLEMENTED
+- HyperOS 实机验证：DEFERRED_EXTERNAL
+
+> 当前仅能在运行时识别 `HYPEROS1_A13` 并输出诊断；没有任何 Feature 因 `HYPEROS1_A13` profile 而选择不同 Hook target。检测到 HyperOS 不等于功能兼容。`MIUI14_A13` 原路径没有改变。
+
+| Profile             |  API | 当前行为    | Hook状态          | 实机状态              |
+| ------------------- | ---: | ------- | --------------- | ----------------- |
+| MIUI14_A13          |   33 | 原路径     | primary         | existing baseline |
+| HYPEROS1_A13        |   33 | 环境识别与诊断 | no fallback yet | not verified      |
+| UNKNOWN_A13         |   33 | 继续能力探测  | primary only    | unknown           |
+| UNSUPPORTED_ANDROID | !=33 | 不支持     | none            | not applicable    |
 
 ## Remaining risks
 

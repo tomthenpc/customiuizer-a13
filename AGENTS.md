@@ -74,13 +74,43 @@
 
 ## HyperOS 1 / Android 13 兼容边界
 
-- 目标系统为 MIUI 14 / Android 13（API 33），实验兼容 HyperOS 1 / Android 13（API 33）。
-- A14 仓库只作为工程方法参考，不得直接复制其类名、Hook target、资源或 Manifest。
-- 兼容判断以 `HookTargetContract` 能力探测为准，不以 ROM 名称为唯一依据。
-- 只有具备 LSPosed 日志、APK、反编译类结构等真实 A13 HyperOS 1 证据时，才允许增加生产 fallback。
-- A14 类名只能作为候选记录，不得未经 A13 证据直接移植。
+- Android 13 / API 33 为唯一运行基线。
+- 主支持：MIUI 14 / Android 13。
+- 实验兼容开发：HyperOS 1 / Android 13。
+- Android 14 及以上不属于 A13 项目范围。
+- A14 只作为静态候选来源，不作为 H1 / A13 实机证据。
+
+### A14 参考风险分级
+
+- S0：A13 与 A14 目标完全相同（类名、方法、参数、字段、进程、阶段、行为均相同）。
+  - 记录为 `SHARED_TARGET`。
+  - 不新增重复 fallback。
+- S1：完整 target bundle、无 API 34 类型/常量/权限、语义和安装阶段一致、运行时能力探测通过、deviceVerified=false。
+  - 允许作为实验 fallback 进入生产，但运行时仍必须依赖 `HookTargetContract` 能力探测。
+  - 不得宣称实机验证。
+- S2：方法重载不明确、语义不明、依赖资源/构造函数/生命周期、缺少完整 bundle。
+  - 只允许记录和探测，不得调用生产 Hook。
+- S3：API 34 专属类型、A13 无对应能力、逻辑已完全重写、无法安全失败。
+  - 不可下移。
+
+### S1 必须满足
+
+- 完整 variant 选择，不混合 A13/A14 成员。
+- 一次只安装一套 target。
+- `Contract` 与真实 `installer` 使用同一 resolved target。
+- 无 API 34 类型、常量、权限或资源。
+- 目标缺失时安全跳过。
+- `callback` 热路径不判断 ROM profile。
+- 不宣称实机验证。
 - `RomProfile` 仅用于诊断、候选优先级和日志分析，不能成为功能总开关。
-- 兼容代码不得进入 hook callback 热路径。
+
+### 禁止
+
+- 整文件复制 A14 Hook。
+- 修改 A14。
+- 建立跨仓库运行时库。
+- 合并 A13/A14 APK。
+- 兼容代码进入 hook callback 热路径。
 
 ## Agent 阅读顺序
 
