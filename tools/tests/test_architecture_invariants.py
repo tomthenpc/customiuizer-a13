@@ -92,6 +92,22 @@ class ArchitectureInvariantTest(unittest.TestCase):
         self.assertIn("MediaInstaller.install", text)
         self.assertIn("PhoneInstaller.install", text)
 
+    def test_main_module_delegates_generic_and_package_installer(self):
+        text = MAIN.read_text(encoding="utf-8")
+        self.assertIn("GenericAppInstaller.install(lpparam, pkg);", text)
+        self.assertIn("PackageInstallerRouter.install(lpparam);", text)
+        self.assertNotIn("Various.AlarmCompatHook();", text)
+
+    def test_generic_app_installer_contains_lbe_and_alarm_compat(self):
+        text = (REPO / "app" / "src" / "main" / "java" / "tv" / "withaibuild" / "customiuizer" / "installers" / "GenericAppInstaller.java").read_text(encoding="utf-8")
+        self.assertIn("SmartClipboardActionHook", text)
+        self.assertIn("AlarmCompatHook", text)
+
+    def test_package_installer_router_only_package_installer(self):
+        text = (REPO / "app" / "src" / "main" / "java" / "tv" / "withaibuild" / "customiuizer" / "installers" / "PackageInstallerRouter.java").read_text(encoding="utf-8")
+        self.assertIn("com.miui.packageinstaller", text)
+        self.assertNotIn("com.lbe.security.miui", text)
+
     def test_process_scope_is_single_source(self):
         text = read("tv/withaibuild/customiuizer/mods/utils/ProcessScope.kt")
         self.assertIn("enum class ProcessScope", text)

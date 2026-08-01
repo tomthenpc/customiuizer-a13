@@ -16,7 +16,6 @@ import io.github.libxposed.api.XposedModuleInterface.SystemServerStartingParam;
 import tv.withaibuild.customiuizer.mods.Controls;
 import tv.withaibuild.customiuizer.mods.SystemAudioAndVisualAndMoreHooks;
 import tv.withaibuild.customiuizer.mods.SystemStatusBarAndClockHooks;
-import tv.withaibuild.customiuizer.mods.Various;
 import tv.withaibuild.customiuizer.mods.utils.HookerClassHelper.AfterHookCallback;
 import tv.withaibuild.customiuizer.mods.utils.HookerClassHelper.MethodHook;
 import tv.withaibuild.customiuizer.mods.utils.ModuleHelper;
@@ -24,6 +23,7 @@ import tv.withaibuild.customiuizer.mods.utils.ProcessScope;
 import tv.withaibuild.customiuizer.mods.utils.ProcessScopes;
 import tv.withaibuild.customiuizer.mods.utils.ResourceHooks;
 import tv.withaibuild.customiuizer.mods.utils.XposedHelpers;
+import tv.withaibuild.customiuizer.installers.GenericAppInstaller;
 import tv.withaibuild.customiuizer.installers.InputMethodInstaller;
 import tv.withaibuild.customiuizer.installers.LauncherInstaller;
 import tv.withaibuild.customiuizer.installers.MediaInstaller;
@@ -150,10 +150,6 @@ public class MainModule extends XposedModule {
             return;
         }
 
-        if (mPrefs.getBoolean("various_alarmcompat") && mPrefs.getStringSet("various_alarmcompat_apps").contains(pkg)) {
-            Various.AlarmCompatHook();
-        }
-
         if (scope == ProcessScope.SETTINGS_MAIN) {
             SettingsInstaller.install(lpparam);
             return;
@@ -184,7 +180,15 @@ public class MainModule extends XposedModule {
             return;
         }
 
-        if (PackageInstallerRouter.install(pkg, lpparam)) return;
+        if (scope == ProcessScope.PACKAGE_INSTALLER) {
+            PackageInstallerRouter.install(lpparam);
+            return;
+        }
+
+        if (scope == ProcessScope.GENERIC_APP) {
+            GenericAppInstaller.install(lpparam, pkg);
+            return;
+        }
 
         if (scope == ProcessScope.SYSTEM_UI) {
             SystemUiInstaller.install(lpparam, this::watchPreferenceChange);
