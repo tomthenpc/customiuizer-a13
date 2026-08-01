@@ -19,10 +19,11 @@
 | Area | Status | Evidence | Notes |
 |---|---|---|---|
 | `AGENTS.md` current rules | COMPLETED | `AGENTS.md` updated for `devin/a13-runtime-hardening`, no ADB/APK |
-| `tools/verify.py` | COMPLETED | `fast` / `full` modes; no APK build |
+| `tools/verify.py` | COMPLETED | `fast` / `full` modes; invariant and compatibility-contract fail-fast gates; no APK build |
 | `tools/check-invariants.py` | COMPLETED | static source invariants |
+| `tools/check-compat-contracts.py` | COMPLETED | selected-variant, callback-independence and OOM boundaries; invoked by `verify.py` |
 | `tools/analyze_lsposed_log.py` | COMPLETED | offline log analyzer only |
-| `.github/workflows/build.yml` | REMOVED | local `tools/verify.py` + `tools/check-invariants.py` remain the only gates; no cloud CI |
+| `.github/workflows/build.yml` | REMOVED | local `tools/verify.py` orchestrates invariant, compatibility, compile, unit-test and lint gates; no cloud CI |
 | `PrefMap` atomic snapshot + typed getters | COMPLETED | `PrefMap.kt`, `PrefMapTest.kt`; map-style `get` and `in` normalize keys |
 | `PreferenceBootstrap` state machine | COMPLETED | `PreferenceBootstrap.java`, `PreferenceBootstrapTest.kt` |
 | `ModuleHelper` receiver lifecycle | COMPLETED | two-phase module/owned registration, stale tracking with bound, identity checks; `ModuleHelperReceiverTest.kt` |
@@ -41,6 +42,7 @@
 | Check | Command | Result |
 |---|---|---|
 | Invariants | `python tools/check-invariants.py` | PASS |
+| Compatibility contracts | `python tools/check-compat-contracts.py` | PASS |
 | Kotlin compile | `gradlew :app:compileDebugKotlin` | PASS |
 | Java compile | `gradlew :app:compileDebugJavaWithJavac` | PASS |
 | Unit tests | `gradlew :app:testDebugUnitTest` | PASS |
