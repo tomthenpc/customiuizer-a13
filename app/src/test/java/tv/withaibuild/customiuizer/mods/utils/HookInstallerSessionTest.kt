@@ -130,6 +130,32 @@ class HookInstallerSessionTest {
     }
 
     @Test
+    fun sessionRejectsInstallerClassLoaderDifferentFromResolver() {
+        val contract = contract()
+        val classLoader = this.javaClass.classLoader!!
+        val otherClassLoader = object : ClassLoader(classLoader) {}
+
+        HookInstaller.withSession(
+            resolver = resolver(classLoader),
+            contract = contract,
+            diagnosticId = "test",
+            classLoader = classLoader
+        ) {
+            try {
+                HookInstaller.resolveClassIfRecording(
+                    ResolverTestTarget::class.java.name,
+                    otherClassLoader
+                )
+                fail("mismatched installer ClassLoader should throw")
+            } catch (e: IllegalArgumentException) {
+                assertTrue(e.message?.contains("ClassLoader differs") == true)
+            }
+        }
+
+        assertFalse(HookInstaller.isRecording())
+    }
+
+    @Test
     fun sessionRecordsInstallAgainstContract() {
         val contract = contract()
         val classLoader = this.javaClass.classLoader!!

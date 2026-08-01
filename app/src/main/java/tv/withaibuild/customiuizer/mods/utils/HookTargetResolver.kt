@@ -582,10 +582,10 @@ object HookEvidenceEvaluator {
                 append(", fallbacks=").append(fallbackUsedIds.joinToString(","))
             }
             if (requiredFailures.isNotEmpty()) {
-                append(", required_failed=").append(requiredFailures.joinToString(",") { it.spec.id })
+                append(", required_failed=").append(requiredFailures.joinToString(",") { failureLabel(it) })
             }
             if (optionalFailures.isNotEmpty()) {
-                append(", optional_failed=").append(optionalFailures.joinToString(",") { it.spec.id })
+                append(", optional_failed=").append(optionalFailures.joinToString(",") { failureLabel(it) })
             }
         }
 
@@ -608,6 +608,11 @@ object HookEvidenceEvaluator {
 
     private fun isEvidence(record: HookTargetRecord, phase: EvidencePhase): Boolean {
         return if (phase == EvidencePhase.COMPATIBILITY) record.resolved else record.installed
+    }
+
+    private fun failureLabel(record: HookTargetRecord): String {
+        val type = record.failureType ?: return record.spec.id
+        return "${record.spec.id}:${type.substringAfterLast('.')}"
     }
 }
 

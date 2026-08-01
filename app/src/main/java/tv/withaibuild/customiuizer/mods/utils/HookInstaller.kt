@@ -38,7 +38,8 @@ object HookInstaller {
                             resolved = false,
                             installed = false,
                             failureReason = null,
-                            installedCount = 0
+                            installedCount = 0,
+                            failureType = null
                         )
                     )
                 }
@@ -115,7 +116,8 @@ object HookInstaller {
                     resolved = false,
                     installed = false,
                     failureReason = null,
-                    installedCount = 0
+                    installedCount = 0,
+                    failureType = null
                 )
             )
         }
@@ -131,7 +133,8 @@ object HookInstaller {
             s.recordsById[record.spec.id] = sessionRecord.copy(
                 resolved = record.resolved,
                 installed = if (isPassive) record.resolved else sessionRecord.installed,
-                failureReason = record.failureReason
+                failureReason = record.failureReason,
+                failureType = record.failureType
             )
         }
     }
@@ -144,8 +147,18 @@ object HookInstaller {
     @JvmStatic
     fun resolveClassIfRecording(className: String, classLoader: ClassLoader): Class<*>? {
         val s = session.get() ?: return null
-        return s.resolver.resolveClass(className, s.diagnosticId)
-            ?: runCatching { Class.forName(className, false, classLoader) }.getOrNull()
+        require(classLoader === s.classLoader) {
+            "Installer ClassLoader differs from resolver ClassLoader for ${s.contract.featureId}"
+        }
+        val resolved = s.resolver.resolveClass(className, s.diagnosticId)
+        if (resolved != null) return resolved
+        return try {
+            Class.forName(className, false, classLoader)
+        } catch (oom: OutOfMemoryError) {
+            throw oom
+        } catch (_: Throwable) {
+            null
+        }
     }
 
     /**
@@ -183,6 +196,7 @@ object HookInstaller {
             s.recordsById[spec.id] = record.copy(
                 installed = true,
                 failureReason = null,
+                failureType = null,
                 installedCount = if (count > 1) count else record.installedCount
             )
         }
@@ -196,11 +210,24 @@ object HookInstaller {
         operation: HookOperation,
         parameterTypes: List<Class<*>>,
         reason: HookFailureReason
+    ) = recordFailure(className, memberName, operation, parameterTypes, reason, null)
+
+    @JvmStatic
+    fun recordFailure(
+        className: String,
+        memberName: String?,
+        operation: HookOperation,
+        parameterTypes: List<Class<*>>,
+        reason: HookFailureReason,
+        failureType: String?
     ) {
         val s = session.get() ?: return
         for (record in matchingRecords(s, className, memberName, operation, parameterTypes)) {
             if (!record.installed && record.failureReason == null) {
-                s.recordsById[record.spec.id] = record.copy(failureReason = reason)
+                s.recordsById[record.spec.id] = record.copy(
+                    failureReason = reason,
+                    failureType = failureType
+                )
             }
         }
     }

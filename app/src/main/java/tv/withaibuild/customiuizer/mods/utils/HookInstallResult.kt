@@ -62,6 +62,8 @@ data class HookTargetSpec(
  * @param installedCount For [HookOperation.ALL_METHODS_BY_NAME] /
  *        [HookOperation.ALL_CONSTRUCTORS], the number of overloads/constructors
  *        actually hooked.
+ * @param failureType Exception class name captured at the hook boundary. The
+ *        Throwable itself is never retained.
  */
 data class HookTargetRecord(
     val spec: HookTargetSpec,
@@ -69,7 +71,8 @@ data class HookTargetRecord(
     val resolved: Boolean = false,
     val installed: Boolean = false,
     val failureReason: HookFailureReason? = null,
-    val installedCount: Int = 0
+    val installedCount: Int = 0,
+    val failureType: String? = null
 )
 
 /**

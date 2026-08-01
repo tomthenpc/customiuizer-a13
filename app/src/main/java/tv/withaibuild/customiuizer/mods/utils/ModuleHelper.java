@@ -113,6 +113,7 @@ public class ModuleHelper {
             CustomMethodUnhooker unhooker = XposedHelpers.doHookMethod(method, callback);
             return unhooker;
         } catch (Throwable t) {
+            if (t instanceof OutOfMemoryError) throw (OutOfMemoryError) t;
             log("Failed to hook " + method.getName() + " method: " + t);
             return null;
         }
@@ -141,6 +142,7 @@ public class ModuleHelper {
             }
             return unhooker;
         } catch (Throwable t) {
+            if (t instanceof OutOfMemoryError) throw (OutOfMemoryError) t;
             if (recording) {
                 recordHookFailure(className, methodName, HookOperation.EXACT_METHOD, paramTypes, t);
             }
@@ -161,6 +163,7 @@ public class ModuleHelper {
             }
             return unhooker;
         } catch (Throwable t) {
+            if (t instanceof OutOfMemoryError) throw (OutOfMemoryError) t;
             if (recording) {
                 recordHookFailure(clazz.getName(), methodName, HookOperation.EXACT_METHOD, paramTypes, t);
             }
@@ -178,7 +181,14 @@ public class ModuleHelper {
         } else {
             reason = HookFailureReason.HOOK_FAILED;
         }
-        HookInstaller.recordFailure(className, memberName, operation, Arrays.asList(parameterTypes), reason);
+        HookInstaller.recordFailure(
+            className,
+            memberName,
+            operation,
+            Arrays.asList(parameterTypes),
+            reason,
+            t.getClass().getName()
+        );
     }
 
     private static Class<?>[] extractParameterTypes(Object... parameterTypesAndCallback) {
@@ -215,6 +225,7 @@ public class ModuleHelper {
             if (recording) HookInstaller.recordInstall(className, methodName, HookOperation.EXACT_METHOD, Arrays.asList(paramTypes), 1);
             return true;
         } catch (Throwable t) {
+            if (t instanceof OutOfMemoryError) throw (OutOfMemoryError) t;
             if (recording) recordHookFailure(className, methodName, HookOperation.EXACT_METHOD, paramTypes, t);
             return false;
         }
@@ -229,6 +240,7 @@ public class ModuleHelper {
             if (recording) HookInstaller.recordInstall(clazz.getName(), methodName, HookOperation.EXACT_METHOD, Arrays.asList(paramTypes), 1);
             return true;
         } catch (Throwable t) {
+            if (t instanceof OutOfMemoryError) throw (OutOfMemoryError) t;
             if (recording) recordHookFailure(clazz.getName(), methodName, HookOperation.EXACT_METHOD, paramTypes, t);
             return false;
         }
@@ -256,6 +268,7 @@ public class ModuleHelper {
             }
             return unhooker;
         } catch (Throwable t) {
+            if (t instanceof OutOfMemoryError) throw (OutOfMemoryError) t;
             if (recording) recordHookFailure(className, null, HookOperation.EXACT_CONSTRUCTOR, paramTypes, t);
             log("Failed to hook constructor in " + className + ": " + t);
             return null;
@@ -285,6 +298,7 @@ public class ModuleHelper {
                 HookInstaller.recordInstall(className, null, HookOperation.ALL_CONSTRUCTORS, Arrays.asList(new Class<?>[0]), unhooks.size());
             }
         } catch (Throwable t) {
+            if (t instanceof OutOfMemoryError) throw (OutOfMemoryError) t;
             if (recording) recordHookFailure(className, null, HookOperation.ALL_CONSTRUCTORS, new Class<?>[0], t);
             log("Failed to hook " + className + " constructor: " + t);
         }
@@ -301,6 +315,7 @@ public class ModuleHelper {
                 HookInstaller.recordInstall(hookClass.getName(), null, HookOperation.ALL_CONSTRUCTORS, Arrays.asList(new Class<?>[0]), unhooks.size());
             }
         } catch (Throwable t) {
+            if (t instanceof OutOfMemoryError) throw (OutOfMemoryError) t;
             if (recording) recordHookFailure(hookClass.getName(), null, HookOperation.ALL_CONSTRUCTORS, new Class<?>[0], t);
             log(t);
         }
@@ -329,6 +344,7 @@ public class ModuleHelper {
                 HookInstaller.recordInstall(className, methodName, HookOperation.ALL_METHODS_BY_NAME, Arrays.asList(new Class<?>[0]), unhooks.size());
             }
         } catch (Throwable t) {
+            if (t instanceof OutOfMemoryError) throw (OutOfMemoryError) t;
             if (recording) recordHookFailure(className, methodName, HookOperation.ALL_METHODS_BY_NAME, new Class<?>[0], t);
             log(t);
         }
@@ -345,6 +361,7 @@ public class ModuleHelper {
                 HookInstaller.recordInstall(hookClass.getName(), methodName, HookOperation.ALL_METHODS_BY_NAME, Arrays.asList(new Class<?>[0]), unhooks.size());
             }
         } catch (Throwable t) {
+            if (t instanceof OutOfMemoryError) throw (OutOfMemoryError) t;
             if (recording) recordHookFailure(hookClass.getName(), methodName, HookOperation.ALL_METHODS_BY_NAME, new Class<?>[0], t);
             log(t);
         }
@@ -382,6 +399,7 @@ public class ModuleHelper {
             }
             return hooked;
         } catch (Throwable t) {
+            if (t instanceof OutOfMemoryError) throw (OutOfMemoryError) t;
             if (recording) recordHookFailure(className, methodName, HookOperation.ALL_METHODS_BY_NAME, new Class<?>[0], t);
             return false;
         }
@@ -401,6 +419,7 @@ public class ModuleHelper {
             }
             return hooked;
         } catch (Throwable t) {
+            if (t instanceof OutOfMemoryError) throw (OutOfMemoryError) t;
             if (recording) recordHookFailure(hookClass.getName(), methodName, HookOperation.ALL_METHODS_BY_NAME, new Class<?>[0], t);
             return false;
         }

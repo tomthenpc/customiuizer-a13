@@ -49,6 +49,18 @@
 | Lint | `gradlew :app:lintDebug` | PASS |
 | APK build | intentionally not run | N/A |
 
+## STATUSBAR_CLOCK_TWEAK root-cause closeout
+
+The historical `COMPATIBLE 5/5 + optional 1/1 -> INSTALLER_FAILED` summary does not prove a ROM target mismatch. Source and closed-loop tests establish the following:
+
+* Resolver and installer use the same `FeatureRuntime.classLoader`; `HookInstaller` now rejects a different installer ClassLoader instead of silently resolving again.
+* Contract operations match production calls: controller/View no-arg methods use `EXACT_METHOD`, controller/clock constructors use `ALL_CONSTRUCTORS`, and enabled preference combinations select only the targets the installer actually invokes.
+* The old diagnostic gap was that `ModuleHelper` converted a caught hook exception into `HOOK_FAILED` and a target id. That identified partial installation but discarded the exception type from `InstallSummary`, so the aggregate log could not distinguish framework rejection, member lookup failure or another installer exception.
+* Install records now retain only the exception class name (never the Throwable or ROM object) and append it to the failed target in diagnostic detail. Hook wrappers also rethrow `OutOfMemoryError`.
+* JVM closed-loop coverage proves the status-bar-only path installs `5/5`, the date-only path installs `2/2 + optional 1/1`, and incompatible resolution never calls the installer.
+
+No REQUIRED target was downgraded and no HyperOS fallback was added. The remaining unknown is the original LSPosed/libxposed exception on MIUI 14 and the corresponding HyperOS 1 target bundle; both require a new exported LSPosed detail log.
+
 ## Runtime inventory
 
 Source-level steady-state cost checklist. Each row states the current evidence; items marked `PENDING` are still being audited.
@@ -60,7 +72,7 @@ Source-level steady-state cost checklist. Each row states the current evidence; 
 | `ModuleHelper` module receivers | Cold | Zero | One active `ReceiverRegistration` per key; stale bounded at `MAX_STALE_RECEIVERS=3`; empty stale deque removed by identity | `moduleReceivers`, `staleModuleReceivers` | None; stale entries retried on next registration | Register-new-before-release-old ordering and failed-replacement preservation covered by deterministic tests; OOM rethrown |
 | `ModuleHelper` owned receivers | Cold | Zero | `OwnedReceiverBucket` per key; per-bucket lock; re-check `ownedReceivers.get(key) == bucket` before adding; `WeakReference<owner>` + `OwnedReceiverRegistration` | `ownedReceivers`, `staleOwnedReceivers` | None; cleaned on next dispatch if owner GCed | Same-owner failed replacement preserves the active registration; detached-bucket/stale identity races covered by tests; OOM rethrown |
 | `FeatureDispatcher` | Process start | Zero if features disabled | One install per enabled `FeatureId` | `FeatureCatalog` singleton | None | Need disabled-feature no-op proof |
-| `StatusBar clock` | Per second | Needs audit | Needs audit | Needs audit | `secondTicker` `Runnable`? | Periodic UI refresh while screen off |
+| `StatusBar clock` | Per second only when seconds display is enabled | Zero when all clock/date tweaks are disabled | One reused Runnable per controller generation; one pending callback while screen on | Weak controller/state references; one owner-scoped receiver per controller | Stops on screen off and restarts on time/timezone/screen-on lifecycle | MIUI hook exception type and HyperOS target bundle still need exported LSPosed evidence |
 | `Network speed` | Periodic | Needs audit | Needs audit | Needs audit | `NetworkSpeed` callback | sysfs/network I/O schedule |
 | `DeviceInfoMonitor` | Periodic while screen on | Zero when both master features are disabled | One sysfs pass per ROM-looper tick; failures back off from 2s to 60s | Two Handlers, one snapshot, two text states, one receiver | Reuses `NetworkSpeedController` looper; no module thread | ROM looper identity and sysfs availability need device-log confirmation |
 | `Launcher` hooks | High | Needs audit | Needs audit | Needs audit | `launcher` events | Object allocation on every layout pass |

@@ -105,6 +105,31 @@ class HookEvidenceEvaluatorTest {
     }
 
     @Test
+    fun installationFailureDetailIncludesOriginalExceptionType() {
+        val spec = target("clock")
+        val c = contract(SingleTargetRequirement(spec))
+        val records = listOf(
+            HookTargetRecord(
+                spec = spec,
+                requirementId = spec.id,
+                resolved = true,
+                installed = false,
+                failureReason = HookFailureReason.HOOK_FAILED,
+                failureType = "java.lang.IllegalStateException"
+            )
+        )
+
+        val install = HookEvidenceEvaluator.evaluate(
+            c,
+            records,
+            HookEvidenceEvaluator.EvidencePhase.INSTALLATION
+        )
+
+        assertEquals(InstallOutcome.FAILED, install.installation)
+        assertTrue(install.detail?.contains("clock:IllegalStateException") == true)
+    }
+
+    @Test
     fun twoRequiredAnyOfGroups_eachGroupNeedsOneSuccess_onlyOnePerGroup() {
         val c = contract(
             AnyOfRequirement(
