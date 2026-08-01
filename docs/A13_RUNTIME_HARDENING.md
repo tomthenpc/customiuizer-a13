@@ -22,7 +22,7 @@
 | `tools/verify.py` | COMPLETED | `fast` / `full` modes; no APK build |
 | `tools/check-invariants.py` | COMPLETED | static source invariants |
 | `tools/analyze_lsposed_log.py` | COMPLETED | offline log analyzer only |
-| `.github/workflows/build.yml` | COMPLETED | `check-invariants.py` + `verify.py full`; no APK |
+| `.github/workflows/build.yml` | REMOVED | local `tools/verify.py` + `tools/check-invariants.py` remain the only gates; no cloud CI |
 | `PrefMap` atomic snapshot + typed getters | COMPLETED | `PrefMap.kt`, `PrefMapTest.kt`; map-style `get` and `in` normalize keys |
 | `PreferenceBootstrap` state machine | COMPLETED | `PreferenceBootstrap.java`, `PreferenceBootstrapTest.kt` |
 | `ModuleHelper` receiver lifecycle | COMPLETED | two-phase module/owned registration, stale tracking with bound, identity checks; `ModuleHelperReceiverTest.kt` |
