@@ -66,8 +66,9 @@ object GlobalActions {
     private var mGlobalReceiverContext: Context? = null
     private var mSBReceiverContext: Context? = null
 
-    @JvmField
-    val mMainHandler = Handler(Looper.getMainLooper())
+    private val mMainHandler by lazy(LazyThreadSafetyMode.SYNCHRONIZED) {
+        Handler(Looper.getMainLooper())
+    }
 
     const val ACTION_PREFIX: String = "tv.withaibuild.customiuizer.mods.action."
     const val EVENT_PREFIX: String = "tv.withaibuild.customiuizer.mods.event."
@@ -674,7 +675,7 @@ object GlobalActions {
 
     @JvmStatic
     fun miuizerSettingsHook(lpparam: PackageReadyParam) {
-        val settingsIconResId = MainModule.resHooks.addResource("ic_miuizer_settings", R.drawable.ic_miuizer_settings)
+        val settingsIconResId = MainModule.getResHooks().addResource("ic_miuizer_settings", R.drawable.ic_miuizer_settings)
         ModuleHelper.findAndHookMethod("com.android.settings.MiuiSettings", lpparam.classLoader, "updateHeaderList", List::class.java, object : MethodHook() {
             override fun after(param: AfterHookCallback) {
                 if (param.getArg(0) == null) return

@@ -68,8 +68,15 @@ import tv.withaibuild.customiuizer.utils.PreferenceBootstrap;
 public class MainModule extends XposedModule {
 
     public static PrefMap<String, Object> mPrefs = new PrefMap<String, Object>();
-    public static ResourceHooks resHooks = new ResourceHooks();
     String processName;
+
+    private static final class ResourceHooksHolder {
+        private static final ResourceHooks INSTANCE = new ResourceHooks();
+    }
+
+    public static ResourceHooks getResHooks() {
+        return ResourceHooksHolder.INSTANCE;
+    }
 
     private final PreferenceBootstrap preferenceBootstrap = new PreferenceBootstrap(
         this::getRemotePreferences,

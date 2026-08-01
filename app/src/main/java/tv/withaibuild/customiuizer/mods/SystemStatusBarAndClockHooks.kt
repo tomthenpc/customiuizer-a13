@@ -27,10 +27,10 @@ object SystemStatusBarAndClockHooks {
     fun StatusBarHeightRes() {
         val opt = MainModule.mPrefs.getInt("system_statusbarheight", 19)
         val heightDpi = if (opt == 19) 27 else opt
-        MainModule.resHooks.setDensityReplacement("*", "dimen", "status_bar_height_default", heightDpi.toFloat())
-        MainModule.resHooks.setDensityReplacement("*", "dimen", "status_bar_height", heightDpi.toFloat())
-        MainModule.resHooks.setDensityReplacement("*", "dimen", "status_bar_height_portrait", heightDpi.toFloat())
-        MainModule.resHooks.setDensityReplacement("*", "dimen", "status_bar_height_landscape", heightDpi.toFloat())
+        MainModule.getResHooks().setDensityReplacement("*", "dimen", "status_bar_height_default", heightDpi.toFloat())
+        MainModule.getResHooks().setDensityReplacement("*", "dimen", "status_bar_height", heightDpi.toFloat())
+        MainModule.getResHooks().setDensityReplacement("*", "dimen", "status_bar_height_portrait", heightDpi.toFloat())
+        MainModule.getResHooks().setDensityReplacement("*", "dimen", "status_bar_height_landscape", heightDpi.toFloat())
     }
 
     @JvmStatic

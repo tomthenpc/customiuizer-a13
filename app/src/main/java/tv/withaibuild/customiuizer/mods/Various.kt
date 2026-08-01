@@ -468,8 +468,8 @@ object Various {
         val isHooked = booleanArrayOf(false, false)
         val enableSideBar = MainModule.mPrefs.getBoolean("various_swipe_expand_sidebar")
         if (!enableSideBar) {
-            MainModule.resHooks.setDensityReplacement("com.miui.securitycenter", "dimen", "sidebar_height_default", 8f)
-            MainModule.resHooks.setDensityReplacement("com.miui.securitycenter", "dimen", "sidebar_height_vertical", 8f)
+            MainModule.getResHooks().setDensityReplacement("com.miui.securitycenter", "dimen", "sidebar_height_default", 8f)
+            MainModule.getResHooks().setDensityReplacement("com.miui.securitycenter", "dimen", "sidebar_height_vertical", 8f)
         }
         val regionSamplingHelper = XposedHelpers.findClassIfExists("com.android.systemui.navigationbar.gestural.RegionSamplingHelper", lpparam.classLoader)
         if (regionSamplingHelper == null) {
@@ -640,7 +640,7 @@ object Various {
                 if (defaultViewId == -1) {
                     val act = param.thisObject as? Activity ?: return
                     defaultViewId = act.resources.getIdentifier("am_detail_default", "id", "com.miui.securitycenter")
-                    MainModule.resHooks.setResReplacement("com.miui.securitycenter", "string", "app_manager_default_open_title", R.string.various_open_by_default_title)
+                    MainModule.getResHooks().setResReplacement("com.miui.securitycenter", "string", "app_manager_default_open_title", R.string.various_open_by_default_title)
                 }
             }
         })

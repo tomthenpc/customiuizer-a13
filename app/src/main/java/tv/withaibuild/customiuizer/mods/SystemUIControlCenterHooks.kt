@@ -177,8 +177,8 @@ object SystemUIControlCenterHooks {
 
     @JvmStatic
     fun BlurVolumeDialogBackgroundHook(classLoader: ClassLoader) {
-        MainModule.resHooks.setObjectReplacement("miui.systemui.plugin", "fraction", "miui_volume_dim_behind_collapsed", 0f)
-        MainModule.resHooks.setObjectReplacement("miui.systemui.plugin", "fraction", "miui_volume_dim_behind_expanded", 0f)
+        MainModule.getResHooks().setObjectReplacement("miui.systemui.plugin", "fraction", "miui_volume_dim_behind_collapsed", 0f)
+        MainModule.getResHooks().setObjectReplacement("miui.systemui.plugin", "fraction", "miui_volume_dim_behind_expanded", 0f)
 
         ModuleHelper.findAndHookMethod("com.android.systemui.miui.volume.MiuiVolumeDialogImpl", classLoader, "updateDialogWindowH", Boolean::class.javaPrimitiveType, object : MethodHook() {
             override fun after(param: AfterHookCallback) {
@@ -241,12 +241,12 @@ object SystemUIControlCenterHooks {
             XposedHelpers.setStaticBooleanField(UtilCls, "sIsNotificationSingle", true)
             ModuleHelper.findAndHookMethod("com.android.systemui.miui.volume.Util", classLoader, "isNotificationSingle", Context::class.java, Int::class.javaPrimitiveType, HookerClassHelper.returnConstant(true))
         } else {
-            MainModule.resHooks.setResReplacement("miui.systemui.plugin", "dimen", "miui_volume_content_width_expanded", R.dimen.miui_volume_content_width_expanded)
-            MainModule.resHooks.setResReplacement("miui.systemui.plugin", "dimen", "miui_volume_ringer_layout_width_expanded", R.dimen.miui_volume_ringer_layout_width_expanded)
-            MainModule.resHooks.setResReplacement("miui.systemui.plugin", "dimen", "miui_volume_column_width_expanded", R.dimen.miui_volume_column_width_expanded)
-            MainModule.resHooks.setResReplacement("miui.systemui.plugin", "dimen", "miui_volume_column_margin_horizontal_expanded", R.dimen.miui_volume_column_margin_horizontal_expanded)
-            notifVolumeOnResId = MainModule.resHooks.addResource("ic_miui_volume_notification", R.drawable.ic_miui_volume_notification)
-            notifVolumeOffResId = MainModule.resHooks.addResource("ic_miui_volume_notification_mute", R.drawable.ic_miui_volume_notification_mute)
+            MainModule.getResHooks().setResReplacement("miui.systemui.plugin", "dimen", "miui_volume_content_width_expanded", R.dimen.miui_volume_content_width_expanded)
+            MainModule.getResHooks().setResReplacement("miui.systemui.plugin", "dimen", "miui_volume_ringer_layout_width_expanded", R.dimen.miui_volume_ringer_layout_width_expanded)
+            MainModule.getResHooks().setResReplacement("miui.systemui.plugin", "dimen", "miui_volume_column_width_expanded", R.dimen.miui_volume_column_width_expanded)
+            MainModule.getResHooks().setResReplacement("miui.systemui.plugin", "dimen", "miui_volume_column_margin_horizontal_expanded", R.dimen.miui_volume_column_margin_horizontal_expanded)
+            notifVolumeOnResId = MainModule.getResHooks().addResource("ic_miui_volume_notification", R.drawable.ic_miui_volume_notification)
+            notifVolumeOffResId = MainModule.getResHooks().addResource("ic_miui_volume_notification_mute", R.drawable.ic_miui_volume_notification_mute)
             ModuleHelper.hookAllMethods("com.android.systemui.miui.volume.MiuiVolumeDialogImpl", classLoader, "addColumn", object : MethodHook() {
                 override fun before(param: BeforeHookCallback) {
                     if (param.getArgsCount() != 4) return
@@ -264,7 +264,7 @@ object SystemUIControlCenterHooks {
         val cols = MainModule.mPrefs.getInt("system_ccgridcolumns", 4)
         val rows = MainModule.mPrefs.getInt("system_ccgridrows", 4)
         if (cols > 4) {
-            MainModule.resHooks.setObjectReplacement(lpparam.packageName, "dimen", "qs_control_tiles_columns", cols)
+            MainModule.getResHooks().setObjectReplacement(lpparam.packageName, "dimen", "qs_control_tiles_columns", cols)
         }
 
         ModuleHelper.findAndHookMethod("com.android.systemui.SystemUIApplication", lpparam.classLoader, "onCreate", object : MethodHook() {
@@ -280,11 +280,11 @@ object SystemUIControlCenterHooks {
                     if (cols > 4) {
                         tileWidthDim /= density
                         scaledTileWidthDim = tileWidthDim * 4 / cols
-                        MainModule.resHooks.setDensityReplacement(lpparam.packageName, "dimen", "qs_control_center_tile_width", scaledTileWidthDim)
-                        MainModule.resHooks.setDensityReplacement("miui.systemui.plugin", "dimen", "qs_control_center_tile_width", scaledTileWidthDim)
-                        MainModule.resHooks.setDensityReplacement(lpparam.packageName, "dimen", "qs_control_tile_icon_bg_size", scaledTileWidthDim)
-                        MainModule.resHooks.setDensityReplacement("miui.systemui.plugin", "dimen", "qs_control_tile_icon_bg_size", scaledTileWidthDim)
-                        MainModule.resHooks.setDensityReplacement("miui.systemui.plugin", "dimen", "qs_cell_height", 85f)
+                        MainModule.getResHooks().setDensityReplacement(lpparam.packageName, "dimen", "qs_control_center_tile_width", scaledTileWidthDim)
+                        MainModule.getResHooks().setDensityReplacement("miui.systemui.plugin", "dimen", "qs_control_center_tile_width", scaledTileWidthDim)
+                        MainModule.getResHooks().setDensityReplacement(lpparam.packageName, "dimen", "qs_control_tile_icon_bg_size", scaledTileWidthDim)
+                        MainModule.getResHooks().setDensityReplacement("miui.systemui.plugin", "dimen", "qs_control_tile_icon_bg_size", scaledTileWidthDim)
+                        MainModule.getResHooks().setDensityReplacement("miui.systemui.plugin", "dimen", "qs_cell_height", 85f)
                     }
                 }
             }
@@ -394,7 +394,7 @@ object SystemUIControlCenterHooks {
             7 -> R.integer.quick_quick_settings_num_rows_7
             else -> R.integer.quick_quick_settings_num_rows_5
         }
-        MainModule.resHooks.setResReplacement("com.android.systemui", "integer", "quick_settings_qqs_count", colsResId)
+        MainModule.getResHooks().setResReplacement("com.android.systemui", "integer", "quick_settings_qqs_count", colsResId)
     }
 
     @JvmStatic
@@ -416,8 +416,8 @@ object SystemUIControlCenterHooks {
             5 -> R.integer.quick_settings_num_rows_5
             else -> R.integer.quick_settings_num_rows_4
         }
-        if (cols > 2) MainModule.resHooks.setResReplacement("com.android.systemui", "integer", "quick_settings_num_columns", colsRes)
-        if (rows > 1) MainModule.resHooks.setResReplacement("com.android.systemui", "integer", "quick_settings_num_rows", rowsRes)
+        if (cols > 2) MainModule.getResHooks().setResReplacement("com.android.systemui", "integer", "quick_settings_num_columns", colsRes)
+        if (rows > 1) MainModule.getResHooks().setResReplacement("com.android.systemui", "integer", "quick_settings_num_rows", rowsRes)
     }
 
     @JvmStatic
@@ -475,7 +475,7 @@ object SystemUIControlCenterHooks {
     }
 
     private fun HideCCLabelsHook(pluginLoader: ClassLoader) {
-        MainModule.resHooks.setDensityReplacement("miui.systemui.plugin", "dimen", "qs_cell_height", 85f)
+        MainModule.getResHooks().setDensityReplacement("miui.systemui.plugin", "dimen", "qs_cell_height", 85f)
         val QSController = XposedHelpers.findClassIfExists("miui.systemui.controlcenter.qs.tileview.StandardTileView", pluginLoader) ?: return
         ModuleHelper.hookAllMethods(QSController, "init", object : MethodHook() {
             override fun before(param: BeforeHookCallback) {

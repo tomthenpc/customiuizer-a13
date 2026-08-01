@@ -383,8 +383,8 @@ object SystemFreeformAndMultiWindowHooks {
 
     @JvmStatic
     fun MultiWindowPlusHook(lpparam: SystemServerStartingParam) {
-        MainModule.resHooks.setResReplacement("android", "array", "miui_resize_black_list", R.array.miui_resize_black_list)
-        MainModule.resHooks.setResReplacement("com.miui.rom", "array", "miui_resize_black_list", R.array.miui_resize_black_list)
+        MainModule.getResHooks().setResReplacement("android", "array", "miui_resize_black_list", R.array.miui_resize_black_list)
+        MainModule.getResHooks().setResReplacement("com.miui.rom", "array", "miui_resize_black_list", R.array.miui_resize_black_list)
         val AtmClass = XposedHelpers.findClassIfExists("com.android.server.wm.ActivityTaskManagerServiceImpl", lpparam.classLoader)
         if (AtmClass != null) {
             ModuleHelper.findAndHookMethod(AtmClass, "updateResizeBlackList", Context::class.java, HookerClassHelper.DO_NOTHING)
@@ -448,8 +448,8 @@ object SystemFreeformAndMultiWindowHooks {
 
     @JvmStatic
     fun NoFloatingWindowBlacklistHook(lpparam: SystemServerStartingParam) {
-        MainModule.resHooks.setResReplacement("android", "array", "freeform_black_list", R.array.miui_resize_black_list)
-        MainModule.resHooks.setResReplacement("com.miui.rom", "array", "freeform_black_list", R.array.miui_resize_black_list)
+        MainModule.getResHooks().setResReplacement("android", "array", "freeform_black_list", R.array.miui_resize_black_list)
+        MainModule.getResHooks().setResReplacement("com.miui.rom", "array", "freeform_black_list", R.array.miui_resize_black_list)
         DisableFloatingWindowBlacklistHook(lpparam.classLoader)
         ModuleHelper.findAndHookMethod("com.android.server.wm.MiuiFreeformServicesUtils", lpparam.classLoader, "supportsFreeform", object : MethodHook() {
             override fun before(param: BeforeHookCallback) {

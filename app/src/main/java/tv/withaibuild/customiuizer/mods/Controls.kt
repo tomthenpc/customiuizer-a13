@@ -788,13 +788,13 @@ object Controls {
     fun NavbarHeightRes() {
         val opt = MainModule.mPrefs.getInt("controls_navbarheight", 19)
         val heightDpi = if (opt == 19) 47 else opt
-        MainModule.resHooks.setDensityReplacement("*", "dimen", "navigation_bar_height", heightDpi.toFloat())
-        MainModule.resHooks.setDensityReplacement("*", "dimen", "navigation_bar_height_landscape", heightDpi.toFloat())
-        MainModule.resHooks.setDensityReplacement("*", "dimen", "navigation_bar_frame_height", heightDpi.toFloat())
-        MainModule.resHooks.setDensityReplacement("*", "dimen", "navigation_bar_frame_height_landscape", heightDpi.toFloat())
-        MainModule.resHooks.setDensityReplacement("*", "dimen", "navigation_bar_gesture_height", heightDpi.toFloat())
-        MainModule.resHooks.setDensityReplacement("*", "dimen", "navigation_bar_width", heightDpi.toFloat())
-        MainModule.resHooks.setDensityReplacement("com.android.systemui", "dimen", "navigation_bar_size", heightDpi.toFloat())
+        MainModule.getResHooks().setDensityReplacement("*", "dimen", "navigation_bar_height", heightDpi.toFloat())
+        MainModule.getResHooks().setDensityReplacement("*", "dimen", "navigation_bar_height_landscape", heightDpi.toFloat())
+        MainModule.getResHooks().setDensityReplacement("*", "dimen", "navigation_bar_frame_height", heightDpi.toFloat())
+        MainModule.getResHooks().setDensityReplacement("*", "dimen", "navigation_bar_frame_height_landscape", heightDpi.toFloat())
+        MainModule.getResHooks().setDensityReplacement("*", "dimen", "navigation_bar_gesture_height", heightDpi.toFloat())
+        MainModule.getResHooks().setDensityReplacement("*", "dimen", "navigation_bar_width", heightDpi.toFloat())
+        MainModule.getResHooks().setDensityReplacement("com.android.systemui", "dimen", "navigation_bar_size", heightDpi.toFloat())
     }
 
     @JvmStatic

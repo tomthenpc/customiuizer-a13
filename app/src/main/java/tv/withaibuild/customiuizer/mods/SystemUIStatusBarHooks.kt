@@ -86,48 +86,48 @@ object SystemUIStatusBarHooks {
     @JvmStatic
     fun setupStatusBar(mContext: Context) {
         statusbarTextIconLayoutResId = if (newStyle) {
-            MainModule.resHooks.addResource("statusbar_text_icon", R.layout.statusbar_text_icon_new)
+            MainModule.getResHooks().addResource("statusbar_text_icon", R.layout.statusbar_text_icon_new)
         } else {
-            MainModule.resHooks.addResource("statusbar_text_icon", R.layout.statusbar_text_icon)
+            MainModule.getResHooks().addResource("statusbar_text_icon", R.layout.statusbar_text_icon)
         }
         if (MainModule.mPrefs.getBoolean("system_statusbar_topmargin")) {
             val topMargin = MainModule.mPrefs.getInt("system_statusbar_topmargin_val", 1)
-            MainModule.resHooks.setDensityReplacement("com.android.systemui", "dimen", "status_bar_padding_top", topMargin.toFloat())
+            MainModule.getResHooks().setDensityReplacement("com.android.systemui", "dimen", "status_bar_padding_top", topMargin.toFloat())
         }
         if (MainModule.mPrefs.getBoolean("system_statusbar_horizmargin")) {
-            MainModule.resHooks.setDensityReplacement("com.android.systemui", "dimen", "status_bar_padding_start", 0f)
-            MainModule.resHooks.setDensityReplacement("com.android.systemui", "dimen", "status_bar_padding_end", 0f)
+            MainModule.getResHooks().setDensityReplacement("com.android.systemui", "dimen", "status_bar_padding_start", 0f)
+            MainModule.getResHooks().setDensityReplacement("com.android.systemui", "dimen", "status_bar_padding_end", 0f)
         }
         if (MainModule.mPrefs.getBoolean("system_cc_enable_style_switch")) {
-            MainModule.resHooks.setObjectReplacement("com.android.systemui", "integer", "force_use_control_panel", 0)
+            MainModule.getResHooks().setObjectReplacement("com.android.systemui", "integer", "force_use_control_panel", 0)
         }
         if (MainModule.mPrefs.getBoolean("system_qs_force_systemfonts")) {
-            MainModule.resHooks.setObjectReplacement("com.android.systemui", "bool", "header_big_time_use_system_font", true)
+            MainModule.getResHooks().setObjectReplacement("com.android.systemui", "bool", "header_big_time_use_system_font", true)
         }
         if (MainModule.mPrefs.getBoolean("system_detailednetspeed_fakedualrow")) {
-            MainModule.resHooks.setObjectReplacement("com.android.systemui", "string", "network_speed_suffix", "%1\$s\n%2\$s")
+            MainModule.getResHooks().setObjectReplacement("com.android.systemui", "string", "network_speed_suffix", "%1\$s\n%2\$s")
         }
         if (MainModule.mPrefs.getBoolean("system_compactnotif")) {
-            MainModule.resHooks.setDensityReplacement("com.android.systemui", "dimen", "notification_row_extra_padding", 0f)
+            MainModule.getResHooks().setDensityReplacement("com.android.systemui", "dimen", "notification_row_extra_padding", 0f)
         }
         if (MainModule.mPrefs.getBoolean("system_volumetimer")) {
-            MainModule.resHooks.setResReplacement("miui.systemui.plugin", "array", "miui_volume_timer_segments", R.array.miui_volume_timer_segments)
+            MainModule.getResHooks().setResReplacement("miui.systemui.plugin", "array", "miui_volume_timer_segments", R.array.miui_volume_timer_segments)
         }
         if (MainModule.mPrefs.getBoolean("system_cc_tile_roundedrect")) {
-            MainModule.resHooks.setResReplacement("miui.systemui.plugin", "drawable", "qs_background_unavailable", R.drawable.ic_qs_tile_bg_disabled)
-            MainModule.resHooks.setResReplacement("miui.systemui.plugin", "drawable", "qs_background_disabled", R.drawable.ic_qs_tile_bg_disabled)
-            MainModule.resHooks.setResReplacement("miui.systemui.plugin", "drawable", "qs_background_warning", R.drawable.ic_qs_tile_bg_warning)
+            MainModule.getResHooks().setResReplacement("miui.systemui.plugin", "drawable", "qs_background_unavailable", R.drawable.ic_qs_tile_bg_disabled)
+            MainModule.getResHooks().setResReplacement("miui.systemui.plugin", "drawable", "qs_background_disabled", R.drawable.ic_qs_tile_bg_disabled)
+            MainModule.getResHooks().setResReplacement("miui.systemui.plugin", "drawable", "qs_background_warning", R.drawable.ic_qs_tile_bg_warning)
         }
         val iconSize = MainModule.mPrefs.getInt("system_statusbar_iconsize", 6)
         if (iconSize > 6) {
-            MainModule.resHooks.setDensityReplacement("com.android.systemui", "dimen", "status_bar_icon_size", iconSize.toFloat())
-            MainModule.resHooks.setDensityReplacement("com.android.systemui", "dimen", "status_bar_clock_size", iconSize + 0.4f)
-            MainModule.resHooks.setDensityReplacement("com.android.systemui", "dimen", "status_bar_icon_drawing_size", iconSize.toFloat())
-            MainModule.resHooks.setDensityReplacement("com.android.systemui", "dimen", "status_bar_icon_drawing_size_dark", iconSize.toFloat())
+            MainModule.getResHooks().setDensityReplacement("com.android.systemui", "dimen", "status_bar_icon_size", iconSize.toFloat())
+            MainModule.getResHooks().setDensityReplacement("com.android.systemui", "dimen", "status_bar_clock_size", iconSize + 0.4f)
+            MainModule.getResHooks().setDensityReplacement("com.android.systemui", "dimen", "status_bar_icon_drawing_size", iconSize.toFloat())
+            MainModule.getResHooks().setDensityReplacement("com.android.systemui", "dimen", "status_bar_icon_drawing_size_dark", iconSize.toFloat())
             val notifyPadding = 2.5f * iconSize / 13
-            MainModule.resHooks.setDensityReplacement("com.android.systemui", "dimen", "status_bar_notification_icon_padding", notifyPadding)
+            MainModule.getResHooks().setDensityReplacement("com.android.systemui", "dimen", "status_bar_notification_icon_padding", notifyPadding)
             val iconHeight = 20.5f * iconSize / 13
-            MainModule.resHooks.setDensityReplacement("com.android.systemui", "dimen", "status_bar_icon_height", iconHeight)
+            MainModule.getResHooks().setDensityReplacement("com.android.systemui", "dimen", "status_bar_icon_height", iconHeight)
         }
         if (MainModule.mPrefs.getBoolean("system_cc_show_stepcount")) {
             StepCounterController.initContext(mContext)
@@ -682,9 +682,9 @@ object SystemUIStatusBarHooks {
     fun DualRowSignalHook(lpparam: PackageReadyParam) {
         val mobileTypeSingle = MainModule.mPrefs.getBoolean("system_statusbar_mobiletype_single")
         if (!mobileTypeSingle) {
-            MainModule.resHooks.setDensityReplacement("com.android.systemui", "dimen", "status_bar_mobile_type_half_to_top_distance", 3f)
-            MainModule.resHooks.setDensityReplacement("com.android.systemui", "dimen", "status_bar_mobile_left_inout_over_strength", 0f)
-            MainModule.resHooks.setDensityReplacement("com.android.systemui", "dimen", "status_bar_mobile_type_middle_to_strength_start", -0.4f)
+            MainModule.getResHooks().setDensityReplacement("com.android.systemui", "dimen", "status_bar_mobile_type_half_to_top_distance", 3f)
+            MainModule.getResHooks().setDensityReplacement("com.android.systemui", "dimen", "status_bar_mobile_left_inout_over_strength", 0f)
+            MainModule.getResHooks().setDensityReplacement("com.android.systemui", "dimen", "status_bar_mobile_type_middle_to_strength_start", -0.4f)
         }
 
         val dualSignalResMap = HashMap<String, Int>()
@@ -706,7 +706,7 @@ object SystemUIStatusBarHooks {
                                     val colorPart = if (colorMode.isNotEmpty()) "_$colorMode" else ""
                                     val dualIconResName = "statusbar_signal_${slot}_${lvl}${colorPart}${stylePart}"
                                     val iconResId = modRes.getIdentifier(dualIconResName, "drawable", HookUtils.modulePkg)
-                                    dualSignalResMap[dualIconResName] = MainModule.resHooks.addResource(dualIconResName, iconResId)
+                                    dualSignalResMap[dualIconResName] = MainModule.getResHooks().addResource(dualIconResName, iconResId)
                                 }
                             }
                         }

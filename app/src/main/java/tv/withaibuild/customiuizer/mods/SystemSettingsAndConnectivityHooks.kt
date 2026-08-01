@@ -19,8 +19,8 @@ object SystemSettingsAndConnectivityHooks {
 
     @JvmStatic
     fun ViewWifiPasswordHook(lpparam: PackageReadyParam) {
-        val titleId = MainModule.resHooks.addResource("system_wifipassword_btn_title", R.string.system_wifipassword_btn_title)
-        val dlgTitleId = MainModule.resHooks.addResource("system_wifi_password_dlgtitle", R.string.system_wifi_password_dlgtitle)
+        val titleId = MainModule.getResHooks().addResource("system_wifipassword_btn_title", R.string.system_wifipassword_btn_title)
+        val dlgTitleId = MainModule.getResHooks().addResource("system_wifi_password_dlgtitle", R.string.system_wifi_password_dlgtitle)
 
         ModuleHelper.hookAllMethods("com.android.settings.wifi.SavedAccessPointPreference", lpparam.classLoader, "onBindViewHolder", object : MethodHook() {
             override fun after(param: AfterHookCallback) {

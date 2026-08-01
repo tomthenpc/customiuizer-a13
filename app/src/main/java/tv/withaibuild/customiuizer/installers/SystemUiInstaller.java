@@ -54,7 +54,7 @@ public final class SystemUiInstaller {
             if (MainModule.mPrefs.getBoolean("system_cleanshare")) SystemShareAndOpenWithHooks.CleanShareMenuHook(lpparam);
             if (MainModule.mPrefs.getBoolean("system_cleanopenwith")) SystemShareAndOpenWithHooks.CleanOpenWithMenuHook(lpparam);
             if (MainModule.mPrefs.getStringAsInt("system_allrotations2", 1) > 1) {
-                MainModule.resHooks.setObjectReplacement("android", "bool", "config_allowAllRotations", MainModule.mPrefs.getStringAsInt("system_allrotations2", 1) == 2);
+                MainModule.getResHooks().setObjectReplacement("android", "bool", "config_allowAllRotations", MainModule.mPrefs.getStringAsInt("system_allrotations2", 1) == 2);
             }
             if (MainModule.mPrefs.getStringAsInt("system_rotateanim", 1) > 1) SystemDisplayAndWindowHooks.RotationAnimationRes();
             watchPreferences.run();

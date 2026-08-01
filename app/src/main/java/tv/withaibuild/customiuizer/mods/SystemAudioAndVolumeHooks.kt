@@ -22,7 +22,7 @@ object SystemAudioAndVolumeHooks {
 
     @JvmStatic
     fun NotificationVolumeSettingsRes() {
-        callsResId = MainModule.resHooks.addResource("ring_volume_option_newtitle", R.string.calls)
+        callsResId = MainModule.getResHooks().addResource("ring_volume_option_newtitle", R.string.calls)
     }
 
     @JvmStatic

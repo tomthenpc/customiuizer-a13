@@ -372,14 +372,14 @@ object SystemDisplayAndWindowHooks {
             exit = 0
         }
 
-        MainModule.resHooks.setResReplacement("android", "anim", "screen_rotate_0_enter", enter)
-        MainModule.resHooks.setResReplacement("android", "anim", "screen_rotate_0_exit", exit)
-        MainModule.resHooks.setResReplacement("android", "anim", "screen_rotate_180_enter", enter)
-        MainModule.resHooks.setResReplacement("android", "anim", "screen_rotate_180_exit", exit)
-        MainModule.resHooks.setResReplacement("android", "anim", "screen_rotate_minus_90_enter", enter)
-        MainModule.resHooks.setResReplacement("android", "anim", "screen_rotate_minus_90_exit", exit)
-        MainModule.resHooks.setResReplacement("android", "anim", "screen_rotate_plus_90_enter", enter)
-        MainModule.resHooks.setResReplacement("android", "anim", "screen_rotate_plus_90_exit", exit)
+        MainModule.getResHooks().setResReplacement("android", "anim", "screen_rotate_0_enter", enter)
+        MainModule.getResHooks().setResReplacement("android", "anim", "screen_rotate_0_exit", exit)
+        MainModule.getResHooks().setResReplacement("android", "anim", "screen_rotate_180_enter", enter)
+        MainModule.getResHooks().setResReplacement("android", "anim", "screen_rotate_180_exit", exit)
+        MainModule.getResHooks().setResReplacement("android", "anim", "screen_rotate_minus_90_enter", enter)
+        MainModule.getResHooks().setResReplacement("android", "anim", "screen_rotate_minus_90_exit", exit)
+        MainModule.getResHooks().setResReplacement("android", "anim", "screen_rotate_plus_90_enter", enter)
+        MainModule.getResHooks().setResReplacement("android", "anim", "screen_rotate_plus_90_exit", exit)
     }
 
     @JvmStatic

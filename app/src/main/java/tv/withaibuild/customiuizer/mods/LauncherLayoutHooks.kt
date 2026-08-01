@@ -131,12 +131,12 @@ object LauncherLayoutHooks {
 
     @JvmStatic
     fun UnlockGridsRes() {
-        MainModule.resHooks.setObjectReplacement("com.miui.home", "integer", "config_cell_count_x", 3)
-        MainModule.resHooks.setObjectReplacement("com.miui.home", "integer", "config_cell_count_y", 4)
-        MainModule.resHooks.setObjectReplacement("com.miui.home", "integer", "config_cell_count_x_min", 3)
-        MainModule.resHooks.setObjectReplacement("com.miui.home", "integer", "config_cell_count_y_min", 4)
-        MainModule.resHooks.setObjectReplacement("com.miui.home", "integer", "config_cell_count_x_max", 8)
-        MainModule.resHooks.setObjectReplacement("com.miui.home", "integer", "config_cell_count_y_max", 10)
+        MainModule.getResHooks().setObjectReplacement("com.miui.home", "integer", "config_cell_count_x", 3)
+        MainModule.getResHooks().setObjectReplacement("com.miui.home", "integer", "config_cell_count_y", 4)
+        MainModule.getResHooks().setObjectReplacement("com.miui.home", "integer", "config_cell_count_x_min", 3)
+        MainModule.getResHooks().setObjectReplacement("com.miui.home", "integer", "config_cell_count_y_min", 4)
+        MainModule.getResHooks().setObjectReplacement("com.miui.home", "integer", "config_cell_count_x_max", 8)
+        MainModule.getResHooks().setObjectReplacement("com.miui.home", "integer", "config_cell_count_y_max", 10)
     }
 
     @JvmStatic
@@ -195,23 +195,23 @@ object LauncherLayoutHooks {
     @JvmStatic
     fun HorizontalSpacingRes() {
         val opt = MainModule.mPrefs.getInt("launcher_horizmargin", 0) - 21
-        MainModule.resHooks.setDensityReplacement("com.miui.home", "dimen", "workspace_cell_padding_side", opt.toFloat())
-        MainModule.resHooks.setDensityReplacement("com.miui.home", "dimen", "workspace_cell_padding_side_no_word", opt.toFloat())
-        MainModule.resHooks.setDensityReplacement("com.miui.home", "dimen", "workspace_cell_padding_side_rotatable", opt.toFloat())
-        MainModule.resHooks.setDensityReplacement("com.mi.android.globallauncher", "dimen", "workspace_cell_padding_side", opt.toFloat())
+        MainModule.getResHooks().setDensityReplacement("com.miui.home", "dimen", "workspace_cell_padding_side", opt.toFloat())
+        MainModule.getResHooks().setDensityReplacement("com.miui.home", "dimen", "workspace_cell_padding_side_no_word", opt.toFloat())
+        MainModule.getResHooks().setDensityReplacement("com.miui.home", "dimen", "workspace_cell_padding_side_rotatable", opt.toFloat())
+        MainModule.getResHooks().setDensityReplacement("com.mi.android.globallauncher", "dimen", "workspace_cell_padding_side", opt.toFloat())
     }
 
     @JvmStatic
     fun IndicatorHeightRes() {
         val opt = MainModule.mPrefs.getInt("launcher_indicatorheight", 9)
-        MainModule.resHooks.setDensityReplacement("com.miui.home", "dimen", "slide_bar_height", opt.toFloat())
-        MainModule.resHooks.setDensityReplacement("com.mi.android.globallauncher", "dimen", "slide_bar_height", opt.toFloat())
+        MainModule.getResHooks().setDensityReplacement("com.miui.home", "dimen", "slide_bar_height", opt.toFloat())
+        MainModule.getResHooks().setDensityReplacement("com.mi.android.globallauncher", "dimen", "slide_bar_height", opt.toFloat())
     }
 
     @JvmStatic
     fun ShowHotseatTitlesRes() {
-        MainModule.resHooks.setObjectReplacement("com.miui.home", "bool", "config_hide_hotseats_app_title", false)
-        MainModule.resHooks.setObjectReplacement("com.mi.android.globallauncher", "bool", "config_hide_hotseats_app_title", false)
+        MainModule.getResHooks().setObjectReplacement("com.miui.home", "bool", "config_hide_hotseats_app_title", false)
+        MainModule.getResHooks().setObjectReplacement("com.mi.android.globallauncher", "bool", "config_hide_hotseats_app_title", false)
     }
 
     @JvmStatic
@@ -252,8 +252,8 @@ object LauncherLayoutHooks {
     @JvmStatic
     fun IndicatorMarginTopHook(lpparam: PackageReadyParam) {
         val opt = MainModule.mPrefs.getInt("launcher_indicator_topmargin", 0) - 21
-        MainModule.resHooks.setDensityReplacement("com.miui.home", "dimen", "slide_bar_margin_top", opt.toFloat())
-        MainModule.resHooks.setDensityReplacement("com.mi.android.globallauncher", "dimen", "slide_bar_margin_top", opt.toFloat())
+        MainModule.getResHooks().setDensityReplacement("com.miui.home", "dimen", "slide_bar_margin_top", opt.toFloat())
+        MainModule.getResHooks().setDensityReplacement("com.mi.android.globallauncher", "dimen", "slide_bar_margin_top", opt.toFloat())
         ModuleHelper.findAndHookMethod("com.miui.home.launcher.util.DimenUtils1X", lpparam.classLoader, "getDimensionPixelSize", Context::class.java, String::class.java, object : MethodHook() {
             override fun before(param: BeforeHookCallback) {
                 val resKey = param.getArg(1) as? String ?: return
