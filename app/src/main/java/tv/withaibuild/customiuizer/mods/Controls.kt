@@ -79,31 +79,33 @@ object Controls {
     }
 
     private var sVolumeContext: Context? = null
-    private var sVolumePowerManager: PowerManager? = null
-    private var sVolumeKeyEvent: KeyEvent? = null
+    private var sVolumeKeyCode = KeyEvent.KEYCODE_UNKNOWN
 
     private val mVolumeLongPressRunnable = Runnable {
-        ModuleHelper.guarded {
-            if (isVolumePressed) {
-                val ctx = sVolumeContext ?: return@guarded
-                if (!GlobalActions.isMediaActionsAllowed(ctx)) return@guarded
-                isVolumeLongPressed = true
-                val keyEvent = sVolumeKeyEvent ?: return@guarded
-                when (keyEvent.keyCode) {
-                    KeyEvent.KEYCODE_VOLUME_UP -> {
-                        val prefMediaUp = MainModule.mPrefs.getStringAsInt("controls_volumemedia_up", 0)
-                        if (prefMediaUp == 0) return@guarded
-                        GlobalActions.sendDownUpKeyEvent(ctx, prefMediaUp, true)
-                    }
-                    KeyEvent.KEYCODE_VOLUME_DOWN -> {
-                        val prefMediaDown = MainModule.mPrefs.getStringAsInt("controls_volumemedia_down", 0)
-                        if (prefMediaDown == 0) return@guarded
-                        GlobalActions.sendDownUpKeyEvent(ctx, prefMediaDown, true)
+        try {
+            ModuleHelper.guarded {
+                if (isVolumePressed) {
+                    val ctx = sVolumeContext ?: return@guarded
+                    if (!GlobalActions.isMediaActionsAllowed(ctx)) return@guarded
+                    isVolumeLongPressed = true
+                    when (sVolumeKeyCode) {
+                        KeyEvent.KEYCODE_VOLUME_UP -> {
+                            val prefMediaUp = MainModule.mPrefs.getStringAsInt("controls_volumemedia_up", 0)
+                            if (prefMediaUp == 0) return@guarded
+                            GlobalActions.sendDownUpKeyEvent(ctx, prefMediaUp, true)
+                        }
+                        KeyEvent.KEYCODE_VOLUME_DOWN -> {
+                            val prefMediaDown = MainModule.mPrefs.getStringAsInt("controls_volumemedia_down", 0)
+                            if (prefMediaDown == 0) return@guarded
+                            GlobalActions.sendDownUpKeyEvent(ctx, prefMediaDown, true)
+                        }
                     }
                 }
             }
+        } finally {
             isVolumePressed = false
             isWaitingForVolumeLongPressed = false
+            sVolumeKeyCode = KeyEvent.KEYCODE_UNKNOWN
         }
     }
 
@@ -239,8 +241,7 @@ object Controls {
 
                     mHandler = XposedHelpers.getObjectField(param.getThisObject(), "mHandler") as? Handler
                     sVolumeContext = mContext
-                    sVolumePowerManager = mPowerManager
-                    sVolumeKeyEvent = keyEvent
+                    sVolumeKeyCode = keycode
 
                     // Post only one delayed runnable that waits for long press timeout
                     if (mHandler != null && !isWaitingForVolumeLongPressed) {
@@ -273,6 +274,7 @@ object Controls {
                     }
                     param.returnAndSkip(0)
                     isWaitingForVolumeLongPressed = false
+                    sVolumeKeyCode = KeyEvent.KEYCODE_UNKNOWN
                 }
             }
         })

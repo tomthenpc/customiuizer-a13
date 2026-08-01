@@ -281,26 +281,32 @@ object GlobalActions {
                     ACTION_PREFIX + "ScrollToTop" ->
                         mMainHandler.postDelayed(object : Runnable {
                             override fun run() {
-                                try {
-                                    val injectInputEventMethod = InputManager::class.java.getDeclaredMethod("injectInputEvent", InputEvent::class.java, Int::class.javaPrimitiveType)
-                                    val instanceMethod = InputManager::class.java.getDeclaredMethod("getInstance")
-                                    val im = instanceMethod.invoke(InputManager::class.java)
-                                    val uptimeMillis = SystemClock.uptimeMillis()
-                                    val swipeDownEvt = MotionEvent.obtain(uptimeMillis, uptimeMillis, MotionEvent.ACTION_DOWN, 500f, 500f, 0)
-                                    swipeDownEvt.setSource(InputDevice.SOURCE_TOUCHSCREEN)
-                                    injectInputEventMethod.invoke(im, swipeDownEvt, 1)
-                                    val swipeMoveEvt = MotionEvent.obtain(uptimeMillis, uptimeMillis + 25, MotionEvent.ACTION_MOVE, 500f, 240000f, 0)
-                                    swipeMoveEvt.setSource(InputDevice.SOURCE_TOUCHSCREEN)
-                                    injectInputEventMethod.invoke(im, swipeMoveEvt, 2)
-                                    val swipeUpEvt = MotionEvent.obtain(uptimeMillis, uptimeMillis + 25, MotionEvent.ACTION_UP, 500f, 240000f, 0)
-                                    swipeUpEvt.setSource(InputDevice.SOURCE_TOUCHSCREEN)
-                                    injectInputEventMethod.invoke(im, swipeUpEvt, 2)
-                                    swipeDownEvt.recycle()
-                                    swipeMoveEvt.recycle()
-                                    swipeUpEvt.recycle()
-                                } catch (e: Throwable) {
-                                    if (e is OutOfMemoryError) throw e
-                                    XposedHelpers.log("err: $e")
+                                ModuleHelper.guarded("GlobalActions.scrollToTop") {
+                                    var swipeDownEvt: MotionEvent? = null
+                                    var swipeMoveEvt: MotionEvent? = null
+                                    var swipeUpEvt: MotionEvent? = null
+                                    try {
+                                        val injectInputEventMethod = InputManager::class.java.getDeclaredMethod("injectInputEvent", InputEvent::class.java, Int::class.javaPrimitiveType)
+                                        val instanceMethod = InputManager::class.java.getDeclaredMethod("getInstance")
+                                        val im = instanceMethod.invoke(InputManager::class.java)
+                                        val uptimeMillis = SystemClock.uptimeMillis()
+                                        swipeDownEvt = MotionEvent.obtain(uptimeMillis, uptimeMillis, MotionEvent.ACTION_DOWN, 500f, 500f, 0)
+                                        swipeDownEvt.setSource(InputDevice.SOURCE_TOUCHSCREEN)
+                                        injectInputEventMethod.invoke(im, swipeDownEvt, 1)
+                                        swipeMoveEvt = MotionEvent.obtain(uptimeMillis, uptimeMillis + 25, MotionEvent.ACTION_MOVE, 500f, 240000f, 0)
+                                        swipeMoveEvt.setSource(InputDevice.SOURCE_TOUCHSCREEN)
+                                        injectInputEventMethod.invoke(im, swipeMoveEvt, 2)
+                                        swipeUpEvt = MotionEvent.obtain(uptimeMillis, uptimeMillis + 25, MotionEvent.ACTION_UP, 500f, 240000f, 0)
+                                        swipeUpEvt.setSource(InputDevice.SOURCE_TOUCHSCREEN)
+                                        injectInputEventMethod.invoke(im, swipeUpEvt, 2)
+                                    } catch (e: Throwable) {
+                                        if (e is OutOfMemoryError) throw e
+                                        XposedHelpers.log("err: $e")
+                                    } finally {
+                                        swipeDownEvt?.recycle()
+                                        swipeMoveEvt?.recycle()
+                                        swipeUpEvt?.recycle()
+                                    }
                                 }
                             }
                         }, 100L)
