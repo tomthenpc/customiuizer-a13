@@ -26,12 +26,15 @@ import tv.withaibuild.customiuizer.mods.utils.ResourceHooks;
 import tv.withaibuild.customiuizer.mods.utils.XposedHelpers;
 import tv.withaibuild.customiuizer.installers.InputMethodInstaller;
 import tv.withaibuild.customiuizer.installers.LauncherInstaller;
+import tv.withaibuild.customiuizer.installers.MediaInstaller;
 import tv.withaibuild.customiuizer.installers.PackageInstallerRouter;
+import tv.withaibuild.customiuizer.installers.PhoneInstaller;
 import tv.withaibuild.customiuizer.installers.PowerKeeperInstaller;
 import tv.withaibuild.customiuizer.installers.SecurityCenterInstaller;
 import tv.withaibuild.customiuizer.installers.SettingsInstaller;
 import tv.withaibuild.customiuizer.installers.SystemUiInstaller;
 import tv.withaibuild.customiuizer.installers.SystemServerInstaller;
+import tv.withaibuild.customiuizer.installers.WallpaperInstaller;
 import tv.withaibuild.customiuizer.utils.PrefMap;
 import tv.withaibuild.customiuizer.utils.PreferenceBootstrap;
 
@@ -163,6 +166,21 @@ public class MainModule extends XposedModule {
 
         if (scope == ProcessScope.POWER_KEEPER) {
             PowerKeeperInstaller.install(lpparam);
+            return;
+        }
+
+        if (scope == ProcessScope.WALLPAPER) {
+            WallpaperInstaller.install(lpparam);
+            return;
+        }
+
+        if (scope == ProcessScope.MEDIA) {
+            MediaInstaller.install(lpparam, pkg);
+            return;
+        }
+
+        if (scope == ProcessScope.PHONE) {
+            PhoneInstaller.install(lpparam);
             return;
         }
 

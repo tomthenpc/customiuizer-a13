@@ -76,6 +76,22 @@ class ArchitectureInvariantTest(unittest.TestCase):
         self.assertIn("AppInfoHook", text)
         self.assertIn("SkipSecurityScanHook", text)
 
+    def test_wallpaper_media_phone_installers_contain_real_hooks(self):
+        for name in ("WallpaperInstaller", "MediaInstaller", "PhoneInstaller"):
+            text = (REPO / "app" / "src" / "main" / "java" / "tv" / "withaibuild" / "customiuizer" / "installers" / f"{name}.java").read_text(encoding="utf-8")
+            self.assertIn("install", text)
+
+    def test_package_installer_router_only_routes_remaining_packages(self):
+        text = (REPO / "app" / "src" / "main" / "java" / "tv" / "withaibuild" / "customiuizer" / "installers" / "PackageInstallerRouter.java").read_text(encoding="utf-8")
+        for pkg in ("com.miui.miwallpaper", "com.android.incallui", "com.miui.screenshot", "com.miui.gallery"):
+            self.assertNotIn(pkg, text, f"PackageInstallerRouter still routes {pkg}")
+
+    def test_main_module_delegates_wallpaper_media_phone_to_installers(self):
+        text = MAIN.read_text(encoding="utf-8")
+        self.assertIn("WallpaperInstaller.install", text)
+        self.assertIn("MediaInstaller.install", text)
+        self.assertIn("PhoneInstaller.install", text)
+
     def test_process_scope_is_single_source(self):
         text = read("tv/withaibuild/customiuizer/mods/utils/ProcessScope.kt")
         self.assertIn("enum class ProcessScope", text)
