@@ -59,6 +59,14 @@ class ProcessScopeTests(unittest.TestCase):
         self.assertNotIn("listOf", text)
         self.assertIn("private val KNOWN_PACKAGES: Set<String>", text)
 
+    def test_android_package_is_system_server(self):
+        text = read("tv/withaibuild/customiuizer/mods/utils/ProcessScope.kt")
+        self.assertIn('PKG_ANDROID -> ProcessScope.SYSTEM_SERVER', text)
+
+    def test_wallpaper_package_classified(self):
+        text = read("tv/withaibuild/customiuizer/mods/utils/ProcessScope.kt")
+        self.assertIn('"com.miui.miwallpaper" -> ProcessScope.WALLPAPER', text)
+
     def test_process_scopes_default_rejects_unknown_auxiliary(self):
         """Any package with an auxiliary process name that is not the main package
         should resolve to a non-MAIN scope."""

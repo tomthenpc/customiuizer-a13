@@ -75,6 +75,7 @@ object ProcessScopes {
      */
     @JvmStatic
     fun resolve(packageName: String, processName: String): ProcessScope = when (packageName) {
+        PKG_ANDROID -> ProcessScope.SYSTEM_SERVER
         PKG_SYSTEM_UI -> if (isMainProcess(packageName, processName)) ProcessScope.SYSTEM_UI else ProcessScope.SYSTEM_UI_PLUGIN
         PKG_HOME, PKG_GLOBAL_LAUNCHER -> ProcessScope.LAUNCHER
         PKG_SETTINGS -> if (isMainProcess(packageName, processName)) ProcessScope.SETTINGS_MAIN else ProcessScope.SETTINGS_REMOTE
@@ -84,6 +85,7 @@ object ProcessScopes {
             else -> ProcessScope.SECURITY_CENTER_MAIN
         }
         PKG_POWER_KEEPER -> ProcessScope.POWER_KEEPER
+        "com.miui.miwallpaper" -> ProcessScope.WALLPAPER
         PKG_PACKAGE_INSTALLER -> ProcessScope.GENERIC_APP
         "com.miui.miwallpaper" -> ProcessScope.WALLPAPER
         "com.android.location.fused" -> ProcessScope.UNSUPPORTED
