@@ -41,7 +41,7 @@ open class PreferenceFragmentBase : PreferenceFragmentCompat() {
     protected var toolbarMenu = false
 
     @JvmField
-    protected var animDur = 200
+    protected var animDur = 350
 
     @JvmField
     protected var activeMenus = ""
