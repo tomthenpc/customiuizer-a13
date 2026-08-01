@@ -31,6 +31,20 @@ object StepCounterController {
      */
     internal class QueryTicket(val generation: Long, val queryId: Long)
 
+    /**
+     * Identity-aware slot for the single pending query runnable.
+     * Replacing the slot returns the previous runnable (for handler removal).
+     * Clearing is always identity-based so a stale runnable cannot wipe a newer one.
+     */
+    internal class PendingQuerySlot {
+        private val value = AtomicReference<Runnable?>(null)
+
+        fun replace(runnable: Runnable): Runnable? = value.getAndSet(runnable)
+        fun clear(runnable: Runnable): Boolean = value.compareAndSet(runnable, null)
+        fun take(): Runnable? = value.getAndSet(null)
+        fun peek(): Runnable? = value.get()
+    }
+
     internal class Lifecycle {
         private val lock = Any()
         private var screenOnState = true
@@ -105,6 +119,13 @@ object StepCounterController {
             ticket.queryId == latestValidQueryIdState && ticket.generation == generationState
         }
 
+        fun canPublish(ticket: QueryTicket): Boolean = synchronized(lock) {
+            ticket.queryId == latestValidQueryIdState &&
+                ticket.generation == generationState &&
+                screenOnState &&
+                hasViewsState
+        }
+
         fun isCurrent(gen: Long): Boolean = synchronized(lock) { generationState == gen }
 
         fun consumeResult(ticket: QueryTicket): Boolean = synchronized(lock) {
@@ -159,7 +180,7 @@ object StepCounterController {
     private var timeTickReceiver: BroadcastReceiver? = null
     private var screenReceiver: BroadcastReceiver? = null
     private var disableObserver: ModuleHelper.PreferenceObserver? = null
-    internal val pendingQueryRunnable = AtomicReference<Runnable?>(null)
+    internal val pendingQuerySlot = PendingQuerySlot()
 
     @JvmField
     internal val lifecycle = Lifecycle()
@@ -363,7 +384,7 @@ object StepCounterController {
     }
 
     private fun stopTimeTick() {
-        val old = pendingQueryRunnable.getAndSet(null)
+        val old = pendingQuerySlot.take()
         old?.let { queryHandler?.removeCallbacks(it) }
         lifecycle.unregisterTimeTick()
         timeTickReceiver?.let {
@@ -373,7 +394,13 @@ object StepCounterController {
     }
 
     private fun clearPendingQuery(runnable: Runnable) {
-        pendingQueryRunnable.compareAndSet(runnable, null)
+        pendingQuerySlot.clear(runnable)
+    }
+
+    private fun abortQueryStart(runnable: Runnable, ticket: QueryTicket) {
+        clearPendingQuery(runnable)
+        lifecycle.finishQuery(ticket)
+        lifecycle.consumeResult(ticket)
     }
 
     private fun scheduleUpdate() {
@@ -387,48 +414,74 @@ object StepCounterController {
         val ticket = lifecycle.tryStartQuery() ?: return
 
         val newRunnable = QueryRunnable(ticket, capturedContext)
-        val old = pendingQueryRunnable.getAndSet(newRunnable)
+        val old = pendingQuerySlot.replace(newRunnable)
         old?.let { queryHandler?.removeCallbacks(it) }
         val posted = try {
             queryHandler?.post(newRunnable) ?: false
         } catch (t: Throwable) {
-            if (t is OutOfMemoryError) throw t
-            XposedHelpers.log(t)
+            if (t is OutOfMemoryError) {
+                abortQueryStart(newRunnable, ticket)
+                throw t
+            }
+            XposedHelpers.log("StepCounterController", "queryHandler.post failed: ${t.javaClass.name}")
             false
         }
         if (!posted) {
-            pendingQueryRunnable.compareAndSet(newRunnable, null)
-            lifecycle.finishQuery(ticket)
+            abortQueryStart(newRunnable, ticket)
         }
     }
 
     private fun runQuery(thisRunnable: QueryRunnable) {
         val ticket = thisRunnable.ticket
-        if (!lifecycle.isCurrent(ticket) || !lifecycle.hasViews) {
-            lifecycle.finishQuery(ticket)
-            return
-        }
+        var newText: String? = null
 
-        val newText: String? = try {
-            querySteps(thisRunnable.context)
+        try {
+            if (!lifecycle.canPublish(ticket)) return
+            newText = querySteps(thisRunnable.context)
+        } catch (oom: OutOfMemoryError) {
+            throw oom
         } catch (t: Throwable) {
-            if (t is OutOfMemoryError) throw t
-            XposedHelpers.log(t)
-            null
+            XposedHelpers.log("StepCounterController", "querySteps failed: ${t.javaClass.name}")
         } finally {
             lifecycle.finishQuery(ticket)
             clearPendingQuery(thisRunnable)
         }
 
-        if (newText != null && lifecycle.isCurrent(ticket) && lifecycle.hasViews && lifecycle.screenOn) {
-            val posted = uiHandler?.post {
+        if (newText == null) {
+            lifecycle.consumeResult(ticket)
+            return
+        }
+
+        postResult(ticket, newText)
+    }
+
+    private fun postResult(ticket: QueryTicket, newText: String) {
+        if (uiHandler == null) {
+            lifecycle.consumeResult(ticket)
+            return
+        }
+
+        if (!lifecycle.canPublish(ticket)) {
+            lifecycle.consumeResult(ticket)
+            return
+        }
+
+        val posted = try {
+            uiHandler?.post {
                 ModuleHelper.guarded("StepCounterController.updateViews") {
                     updateViews(ticket, newText)
                 }
             } ?: false
-            if (!posted) {
-                lifecycle.consumeResult(ticket)
-            }
+        } catch (oom: OutOfMemoryError) {
+            lifecycle.consumeResult(ticket)
+            throw oom
+        } catch (t: Throwable) {
+            XposedHelpers.log("StepCounterController", "uiHandler.post failed: ${t.javaClass.name}")
+            false
+        }
+
+        if (!posted) {
+            lifecycle.consumeResult(ticket)
         }
     }
 
@@ -448,12 +501,18 @@ object StepCounterController {
     }
 
     private fun updateViews(ticket: QueryTicket, newText: String) {
-        if (!lifecycle.screenOn) {
+        if (!lifecycle.canPublish(ticket)) {
             lifecycle.consumeResult(ticket)
             return
         }
 
         val views = liveViews()
+
+        if (!lifecycle.canPublish(ticket)) {
+            lifecycle.consumeResult(ticket)
+            return
+        }
+
         if (views.isEmpty()) {
             lifecycle.setHasViews(false)
             stopTimeTick()
@@ -465,8 +524,8 @@ object StepCounterController {
             lifecycle.consumeResult(ticket)
             return
         }
-        stepsWithGoal = newText
 
+        stepsWithGoal = newText
         for (view in views) {
             view.text = newText
         }

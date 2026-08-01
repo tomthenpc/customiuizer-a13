@@ -285,7 +285,7 @@ class StepCounterLifecycleTest {
     }
 
     @Test
-    fun tryStartQueryIsAtomicAgainstInvalidate() {
+    fun invalidateThenStartUsesNewGeneration() {
         val lifecycle = StepCounterController.Lifecycle()
         lifecycle.setHasViews(true)
         lifecycle.onScreenOn()
@@ -298,5 +298,41 @@ class StepCounterLifecycleTest {
         assertTrue(t2.queryId > t1.queryId)
         assertFalse(lifecycle.isCurrent(t1))
         assertTrue(lifecycle.isCurrent(t2))
+    }
+
+    @Test
+    fun canPublishRequiresAllConditions() {
+        val lifecycle = StepCounterController.Lifecycle()
+        lifecycle.setHasViews(true)
+        lifecycle.onScreenOn()
+
+        val t1 = lifecycle.tryStartQuery()!!
+        assertTrue(lifecycle.canPublish(t1))
+
+        lifecycle.onScreenOff()
+        assertFalse(lifecycle.canPublish(t1))
+
+        // Screen on alone cannot restore an already-invalidated ticket; a new
+        // query is required to establish a valid publication window.
+        lifecycle.onScreenOn()
+        assertFalse(lifecycle.canPublish(t1))
+
+        lifecycle.setHasViews(false)
+        val t2 = lifecycle.tryStartQuery()
+        assertNull(t2)
+    }
+
+    @Test
+    fun canPublishRejectsOldAfterNewQuery() {
+        val lifecycle = StepCounterController.Lifecycle()
+        lifecycle.setHasViews(true)
+        lifecycle.onScreenOn()
+
+        val t1 = lifecycle.tryStartQuery()!!
+        lifecycle.finishQuery(t1)
+        val t2 = lifecycle.tryStartQuery()!!
+
+        assertTrue(lifecycle.canPublish(t2))
+        assertFalse(lifecycle.canPublish(t1))
     }
 }

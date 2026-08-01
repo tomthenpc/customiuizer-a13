@@ -1,64 +1,71 @@
 package tv.withaibuild.customiuizer.mods.utils
 
+import org.junit.Assert.assertFalse
 import org.junit.Assert.assertNull
 import org.junit.Assert.assertSame
+import org.junit.Assert.assertTrue
 import org.junit.Test
 
 class StepCounterPendingRunnableTest {
 
+    private val slot = StepCounterController.PendingQuerySlot()
+
     @Test
-    fun getAndSetReplacesPendingAndReturnsOld() {
-        val slot = java.util.concurrent.atomic.AtomicReference<Runnable?>(null)
+    fun replaceReturnsPreviousAndStoresNew() {
         val a = Runnable {}
         val b = Runnable {}
 
-        slot.set(a)
-        val old = slot.getAndSet(b)
+        slot.replace(a)
+        val old = slot.replace(b)
 
         assertSame(a, old)
-        assertSame(b, slot.get())
+        assertSame(b, slot.peek())
     }
 
     @Test
     fun clearByIdentityLeavesNewPending() {
-        val slot = java.util.concurrent.atomic.AtomicReference<Runnable?>(null)
         val a = Runnable {}
         val b = Runnable {}
 
-        slot.set(a)
-        slot.getAndSet(b)
+        slot.replace(a)
+        slot.replace(b)
 
-        // Simulating old A's finally: compareAndSet only clears if the slot is still A.
-        val clearedByA = slot.compareAndSet(a, null)
-        assertSame(false, clearedByA)
-        assertSame(b, slot.get())
+        val clearedByA = slot.clear(a)
+        assertFalse(clearedByA)
+        assertSame(b, slot.peek())
     }
 
     @Test
     fun clearByOwnIdentityRemovesPending() {
-        val slot = java.util.concurrent.atomic.AtomicReference<Runnable?>(null)
         val a = Runnable {}
         val b = Runnable {}
 
-        slot.set(a)
-        slot.getAndSet(b)
-        slot.compareAndSet(a, null) // old A cannot clear
+        slot.replace(a)
+        slot.replace(b)
 
-        // B clears itself
-        val clearedByB = slot.compareAndSet(b, null)
-        assertSame(true, clearedByB)
-        assertNull(slot.get())
+        assertFalse(slot.clear(a))
+        assertTrue(slot.clear(b))
+        assertNull(slot.peek())
     }
 
     @Test
-    fun getAndSetNullReplacesAndReturnsCurrentPending() {
-        val slot = java.util.concurrent.atomic.AtomicReference<Runnable?>(null)
+    fun takeReturnsAndEmptiesSlot() {
         val a = Runnable {}
 
-        slot.set(a)
-        val old = slot.getAndSet(null)
+        slot.replace(a)
+        val taken = slot.take()
 
-        assertSame(a, old)
-        assertNull(slot.get())
+        assertSame(a, taken)
+        assertNull(slot.peek())
+    }
+
+    @Test
+    fun takeIsIdempotent() {
+        val a = Runnable {}
+
+        slot.replace(a)
+        assertSame(a, slot.take())
+        assertNull(slot.take())
+        assertNull(slot.peek())
     }
 }
