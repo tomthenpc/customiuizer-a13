@@ -4,6 +4,7 @@ import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse
 import org.junit.Assert.assertTrue
 import org.junit.Test
+import tv.withaibuild.customiuizer.utils.PrefMap
 
 class DeviceInfoMonitorLifecycleTest {
 
@@ -61,5 +62,23 @@ class DeviceInfoMonitorLifecycleTest {
         assertFalse(state.running)
         assertFalse(state.screenOn)
         assertEquals(0, state.consecutiveFailures)
+    }
+
+    @Test
+    fun currentTickRequiresMatchingGenerationSnapshotAndScheduleState() {
+        val snapshot = DeviceInfoMonitor.readSnapshot(PrefMap())
+
+        assertTrue(DeviceInfoMonitor.isCurrentTick(3, 3, snapshot, snapshot, true))
+        assertFalse(DeviceInfoMonitor.isCurrentTick(2, 3, snapshot, snapshot, true))
+        assertFalse(
+            DeviceInfoMonitor.isCurrentTick(
+                3,
+                3,
+                snapshot,
+                snapshot.copy(batteryPositive = !snapshot.batteryPositive),
+                true
+            )
+        )
+        assertFalse(DeviceInfoMonitor.isCurrentTick(3, 3, snapshot, snapshot, false))
     }
 }

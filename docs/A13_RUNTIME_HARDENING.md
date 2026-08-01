@@ -62,7 +62,7 @@ Source-level steady-state cost checklist. Each row states the current evidence; 
 | `FeatureDispatcher` | Process start | Zero if features disabled | One install per enabled `FeatureId` | `FeatureCatalog` singleton | None | Need disabled-feature no-op proof |
 | `StatusBar clock` | Per second | Needs audit | Needs audit | Needs audit | `secondTicker` `Runnable`? | Periodic UI refresh while screen off |
 | `Network speed` | Periodic | Needs audit | Needs audit | Needs audit | `NetworkSpeed` callback | sysfs/network I/O schedule |
-| `DeviceInfoMonitor` | Periodic | Needs audit | Needs audit | Needs audit | Temperature/current tick | Wake/refresh alignment |
+| `DeviceInfoMonitor` | Periodic while screen on | Zero when both master features are disabled | One sysfs pass per ROM-looper tick; failures back off from 2s to 60s | Two Handlers, one snapshot, two text states, one receiver | Reuses `NetworkSpeedController` looper; no module thread | ROM looper identity and sysfs availability need device-log confirmation |
 | `Launcher` hooks | High | Needs audit | Needs audit | Needs audit | `launcher` events | Object allocation on every layout pass |
 | `Album art` | Event driven | Needs audit | Needs audit | Needs audit | Media broadcast | Bitmap unbounded / full-screen ARGB |
 | `BatteryIndicator` | Event/periodic | Needs audit | Needs audit | Needs audit | Level/tick | Listener lifecycle |
@@ -161,7 +161,7 @@ The module does not add a periodic network-speed updater. The ROM still drives t
 | P0-1 Clock timezone / generation / mContext | COMPLETED | `TIMEZONE_CHANGED` / `TIME_CHANGED` consult real screen state; `ClockLifecycleAction`; receiver registration failure stops ticker |
 | P0-2 Network speed per-controller / one-sample | PARTIAL | `getTotalByte` hook removed; per-controller `NetSpeedRuntimeState` via `AdditionalInstanceField`; one `getTrafficBytes` per tick; no `Pair`; disconnect resets the full sampling baseline; style initialization commits once per View; locale/pref caching remains pending |
 | P0-3 StepCounter query token / lifecycle | VERIFIED_STATIC | `QueryTicket(generation, queryId)`; `Lifecycle.canPublish` single atomic check; `PendingQuerySlot` identity-based; all `QueryRunnable` paths enter `finally`; terminal `queryHandler`/`uiHandler` posts cleaned; `Lifecycle`/`View` thread races covered by tests |
-| P0-4 DeviceInfo lifecycle | NOT_STARTED | dedicated I/O thread and stale generation pending |
+| P0-4 DeviceInfo lifecycle | VERIFIED_STATIC | reuses the ROM-provided `NetworkSpeedController` looper; screen-off removes monitor/UI messages; generation + snapshot identity reject stale I/O publication and duplicate scheduling; bounded failure backoff; OOM rethrown |
 | P1-1 BatteryIndicator lifecycle | NOT_STARTED | pending |
 | P1-2 AudioVisualizer scheduling | NOT_STARTED | pending |
 | P1-3 Album Art large-object lifecycle | NOT_STARTED | pending |

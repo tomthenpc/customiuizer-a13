@@ -107,6 +107,18 @@ object DeviceInfoMonitor {
         fun canSchedule(): Boolean = running && screenOn
     }
 
+    internal fun isCurrentTick(
+        activeGeneration: Int,
+        currentGeneration: Int,
+        tickSnapshot: Snapshot,
+        latestSnapshot: Snapshot?,
+        canSchedule: Boolean
+    ): Boolean {
+        return activeGeneration == currentGeneration &&
+            tickSnapshot === latestSnapshot &&
+            canSchedule
+    }
+
     private data class IconUpdate(
         val type: Int,
         val show: Boolean,
@@ -312,35 +324,58 @@ object DeviceInfoMonitor {
         }
 
         val result = readDeviceData(current)
-        publish(current, result)
+        publish(activeGeneration, current, result)
 
         synchronized(lock) {
-            if (activeGeneration != generation || !lifecycle.canSchedule()) return
+            if (!isCurrentTick(
+                    activeGeneration,
+                    generation,
+                    current,
+                    snapshot,
+                    lifecycle.canSchedule()
+                )
+            ) {
+                return
+            }
             val delay = lifecycle.recordRead(result.complete)
+            backgroundHandler?.removeMessages(MONITOR_MESSAGE)
             backgroundHandler?.sendEmptyMessageDelayed(MONITOR_MESSAGE, delay)
         }
     }
 
-    private fun publish(current: Snapshot, result: ReadResult) {
-        if (current.showBatteryDetail &&
-            (batteryState.show != result.batteryShow || batteryState.text != result.batteryText)
-        ) {
-            batteryState.show = result.batteryShow
-            batteryState.text = result.batteryText
-            mainHandler?.obtainMessage(
-                UPDATE_MESSAGE,
-                IconUpdate(91, result.batteryShow, result.batteryText)
-            )?.sendToTarget()
-        }
-        if (current.showDeviceTemp &&
-            (tempState.show != result.tempShow || tempState.text != result.tempText)
-        ) {
-            tempState.show = result.tempShow
-            tempState.text = result.tempText
-            mainHandler?.obtainMessage(
-                UPDATE_MESSAGE,
-                IconUpdate(92, result.tempShow, result.tempText)
-            )?.sendToTarget()
+    private fun publish(activeGeneration: Int, current: Snapshot, result: ReadResult) {
+        synchronized(lock) {
+            if (!isCurrentTick(
+                    activeGeneration,
+                    generation,
+                    current,
+                    snapshot,
+                    lifecycle.canSchedule()
+                )
+            ) {
+                return
+            }
+            val handler = mainHandler ?: return
+            if (current.showBatteryDetail &&
+                (batteryState.show != result.batteryShow || batteryState.text != result.batteryText)
+            ) {
+                batteryState.show = result.batteryShow
+                batteryState.text = result.batteryText
+                handler.obtainMessage(
+                    UPDATE_MESSAGE,
+                    IconUpdate(91, result.batteryShow, result.batteryText)
+                ).sendToTarget()
+            }
+            if (current.showDeviceTemp &&
+                (tempState.show != result.tempShow || tempState.text != result.tempText)
+            ) {
+                tempState.show = result.tempShow
+                tempState.text = result.tempText
+                handler.obtainMessage(
+                    UPDATE_MESSAGE,
+                    IconUpdate(92, result.tempShow, result.tempText)
+                ).sendToTarget()
+            }
         }
     }
 
@@ -391,6 +426,8 @@ object DeviceInfoMonitor {
             FileInputStream("/sys/class/power_supply/battery/uevent").use { input ->
                 Properties().apply { load(input) }
             }
+        } catch (oom: OutOfMemoryError) {
+            throw oom
         } catch (_: Throwable) {
             null
         }
@@ -402,6 +439,8 @@ object DeviceInfoMonitor {
                 "/sys/devices/virtual/thermal/thermal_zone0/temp",
                 "r"
             ).use { it.readLine() }
+        } catch (oom: OutOfMemoryError) {
+            throw oom
         } catch (_: Throwable) {
             null
         }
