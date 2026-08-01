@@ -29,3 +29,7 @@ backup/
 *.bak
 __pycache__/
 *.py[cod]
+/local-rom-samples/
+/build/rom-intelligence/
+*.rom-sample
+*.rom.json
