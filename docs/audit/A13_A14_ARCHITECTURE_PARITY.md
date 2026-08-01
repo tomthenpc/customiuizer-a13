@@ -6,7 +6,7 @@ Scope: A13 `devin/a13-rom-intelligence-audit` vs A14 `devin/a14-runtime-hardenin
 |---|---|---|---|---|
 | ProcessScope | `mods/utils/ProcessScope.kt` | `mods/utils/ProcessScope.kt` | ALIGNED | A13 enum and `ProcessScopes` cover 18 scopes, matching A14 semantics. |
 | ProcessRouter | `mods/utils/ProcessRouter.kt` | `mods/utils/ProcessScopes.kt` | ALIGNED | `ProcessScopes.resolve` is the A13 pure-function equivalent. |
-| MainModule process routing | `MainModule.java` uses `ProcessScope.isInstallable` | `MainModule.java` uses `ProcessScopes.isRejected`/`ProcessScope` | PARTIAL | `MainModule` now uses `ProcessScope` for input method / launcher / systemui / settings / security center / power keeper. AlarmCompat and generic app attach still remain. |
+| MainModule process routing | `MainModule.java` uses `ProcessScope.isInstallable` | `MainModule.java` uses `ProcessScopes.isRejected`/`ProcessScope` | PARTIAL | `MainModule` now uses `ProcessScope` for input method / launcher / systemui / settings / security center / power keeper / wallpaper / media / phone. AlarmCompat and generic app attach still remain. |
 | InputMethodInstaller | `installers/InputMethodInstaller.kt` (via registry) | `installers/InputMethodInstaller.java` | ALIGNED | A13 installer extracted from `MainModule` and owns all input method hooks. |
 | SystemServerInstaller | `mods/utils/SystemServerInstaller.kt` | `installers/SystemServerInstaller.java` | ALIGNED | Java equivalent, installs package permissions. |
 | SystemUiInstaller | `installers/SystemUiInstaller.kt` | `installers/SystemUiInstaller.java` | ALIGNED | Java equivalent. |
@@ -14,8 +14,9 @@ Scope: A13 `devin/a13-rom-intelligence-audit` vs A14 `devin/a14-runtime-hardenin
 | SettingsInstaller | `installers/SettingsInstaller.kt` | `installers/SettingsInstaller.java` | ALIGNED | Migrated out of `PackageInstallerRouter`. |
 | SecurityCenterInstaller | `installers/SecurityCenterInstaller.kt` | `installers/SecurityCenterInstaller.java` | ALIGNED | Migrated out of `PackageInstallerRouter`. |
 | PowerKeeperInstaller | `installers/PowerKeeperInstaller.kt` | `installers/PowerKeeperInstaller.java` | ALIGNED | Migrated out of `PackageInstallerRouter`. |
-| MediaInstaller | `installers/MediaInstaller.kt` | `installers/PackageInstallerRouter.java` | MISSING | A13 still routes miwallpaper/screenshot/gallery through `PackageInstallerRouter`. Needs `MediaInstaller` per A14. |
-| PhoneInstaller | `installers/PhoneInstaller.kt` | `installers/PackageInstallerRouter.java` | MISSING | A13 still routes `com.android.incallui` through `PackageInstallerRouter`. Needs `PhoneInstaller` per A14. |
+| WallpaperInstaller | `installers/WallpaperInstaller.kt` | `installers/WallpaperInstaller.java` | ALIGNED | Migrated out of `PackageInstallerRouter`. |
+| MediaInstaller | `installers/MediaInstaller.kt` | `installers/MediaInstaller.java` | ALIGNED | Migrated out of `PackageInstallerRouter`. |
+| PhoneInstaller | `installers/PhoneInstaller.kt` | `installers/PhoneInstaller.java` | ALIGNED | Migrated out of `PackageInstallerRouter`. |
 | PackageInstallerRouter | `installers/PackageInstallerRouter.kt` | `installers/PackageInstallerRouter.java` | ALIGNED | A13 version is the legacy router; A14 uses it too for package installer features. |
 | GenericAppInstaller | `installers/GenericAppInstaller.kt` | `MainModule.onPackageReady` (inline) | PARTIAL | A13 generic app hooks still inline; A14 has a dedicated installer. |
 | FeatureId | `mods/utils/FeatureId.kt` | `mods/utils/FeatureId.kt` | ALIGNED | A13 model added. |
