@@ -15,15 +15,15 @@
   "certificateSha256": "15CE32F03E4D8E62DF9390F77431862E59BF2CF95CD5A72F0C7330CDFCCA2934",
   "releases": [
     {
-      "versionName": "r13.9.1",
-      "versionCode": 132,
-      "buildCommit": "90b4d05",
-      "dataSource": "docs/releases/r13.9.1.md",
+      "versionName": "r13.9.2",
+      "versionCode": 133,
+      "buildCommit": "45e9596",
+      "dataSource": "docs/releases/r13.9.2.md",
       "verifiedAtBuild": true,
-      "lsposedTag": "132-r13.9.1",
-      "apkName": "CustoMIUIzer-A13-r13.9.1.apk",
-      "apkSizeBytes": 2860194,
-      "apkSha256": "98F03BFB1FA29E776C3A638E771CCE6D1672F5C94F91B39B7D7D4362DB6EF96C",
+      "lsposedTag": "133-r13.9.2",
+      "apkName": "CustoMIUIzer-A13-r13.9.2.apk",
+      "apkSizeBytes": 2859894,
+      "apkSha256": "0542E87E5FED06A1BBEC5509C7F5412555D8677850BE939032CD15A2F439BD80",
       "androidVersion": "Android 13 / MIUI 14 / HyperOS 1",
       "verification": {
         "fullStaticVerification": "PASS",
@@ -34,7 +34,7 @@
           "status": "PASS"
         },
         "pythonUnitTests": {
-          "tests": 42,
+          "tests": 43,
           "status": "PASS"
         },
         "lintRelease": "PASS",
