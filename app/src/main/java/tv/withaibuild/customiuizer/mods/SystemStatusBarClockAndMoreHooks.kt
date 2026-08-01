@@ -418,6 +418,39 @@ object SystemStatusBarClockAndMoreHooks {
         fun shouldRePost(myGen: Long): Boolean = screenOn && running && generation == myGen
     }
 
+    /**
+     * Single per-controller second-ticker runnable. It reads the current generation from
+     * [SecondTickerState] each tick, so re-initialising the timer does not create a second
+     * pending callback.
+     */
+    private class ClockRunnable(
+        private val controllerRef: WeakReference<Any>,
+        private val stateRef: WeakReference<SecondTickerState>,
+        private val handler: Handler
+    ) : Runnable {
+        override fun run() {
+            ModuleHelper.guarded("SystemStatusBarClockAndMoreHooks.secondTicker") {
+                val controller = controllerRef.get() ?: return@guarded
+                val currentState = stateRef.get() ?: return@guarded
+                val context = XposedHelpers.getObjectField(controller, "mContext") as? Context ?: return@guarded
+                val mCalendar = XposedHelpers.getObjectField(controller, "mCalendar")
+                XposedHelpers.callMethod(mCalendar, "setTimeInMillis", java.lang.System.currentTimeMillis())
+                XposedHelpers.setObjectField(controller, "mIs24", DateFormat.is24HourFormat(context))
+                val mClockListeners = XposedHelpers.getObjectField(controller, "mClockListeners") as? ArrayList<Any> ?: return@guarded
+                for (clock in mClockListeners) {
+                    val showSeconds = XposedHelpers.getAdditionalInstanceField(clock, "showSeconds")
+                    if (showSeconds != null) {
+                        XposedHelpers.callMethod(clock, "onTimeChange")
+                    }
+                }
+                val myGen = currentState.generation
+                if (currentState.shouldRePost(myGen)) {
+                    handler.postDelayed(this, 1000L)
+                }
+            }
+        }
+    }
+
     private fun secondTickerState(clockController: Any): SecondTickerState {
         var state = XposedHelpers.getAdditionalInstanceField(clockController, "secondTickerState") as? SecondTickerState
         if (state == null) {
@@ -440,7 +473,7 @@ object SystemStatusBarClockAndMoreHooks {
         val finalSbShowSeconds = getShowSeconds()
         val state = secondTickerState(clockController)
         var clockHandler = XposedHelpers.getAdditionalInstanceField(clockController, "clockHandler") as? Handler
-        val clockRunnable = XposedHelpers.getAdditionalInstanceField(clockController, "clockRunnable") as? Runnable
+        var clockRunnable = XposedHelpers.getAdditionalInstanceField(clockController, "clockRunnable") as? ClockRunnable
         if (clockHandler != null && clockRunnable != null) {
             clockHandler.removeCallbacks(clockRunnable)
         }
@@ -453,36 +486,14 @@ object SystemStatusBarClockAndMoreHooks {
             clockHandler = Handler(mContext.mainLooper)
             XposedHelpers.setAdditionalInstanceField(clockController, "clockHandler", clockHandler)
         }
+        if (clockRunnable == null) {
+            clockRunnable = ClockRunnable(WeakReference(clockController), WeakReference(state), clockHandler)
+            XposedHelpers.setAdditionalInstanceField(clockController, "clockRunnable", clockRunnable)
+        }
         val newGen = java.lang.System.nanoTime()
         state.start(newGen)
-        val handler = clockHandler
-        val controllerRef = WeakReference(clockController)
-        val stateRef = WeakReference(state)
-        val newRunnable = object : Runnable {
-            override fun run() {
-                ModuleHelper.guarded("SystemStatusBarClockAndMoreHooks.secondTicker") {
-                    val self = this
-                    val controller = controllerRef.get() ?: return@guarded
-                    val currentState = stateRef.get() ?: return@guarded
-                    val context = XposedHelpers.getObjectField(controller, "mContext") as? Context ?: return@guarded
-                    val mCalendar = XposedHelpers.getObjectField(controller, "mCalendar")
-                    XposedHelpers.callMethod(mCalendar, "setTimeInMillis", java.lang.System.currentTimeMillis())
-                    XposedHelpers.setObjectField(controller, "mIs24", DateFormat.is24HourFormat(context))
-                    val mClockListeners = XposedHelpers.getObjectField(controller, "mClockListeners") as? ArrayList<Any> ?: return@guarded
-                    for (clock in mClockListeners) {
-                        val showSeconds = XposedHelpers.getAdditionalInstanceField(clock, "showSeconds")
-                        if (showSeconds != null) {
-                            XposedHelpers.callMethod(clock, "onTimeChange")
-                        }
-                    }
-                    if (currentState.shouldRePost(newGen)) {
-                        handler.postDelayed(self, 1000L)
-                    }
-                }
-            }
-        }
-        XposedHelpers.setAdditionalInstanceField(clockController, "clockRunnable", newRunnable)
-        handler.postDelayed(newRunnable, 1000 - java.lang.System.currentTimeMillis() % 1000)
+        clockHandler.removeCallbacks(clockRunnable)
+        clockHandler.postDelayed(clockRunnable, 1000 - java.lang.System.currentTimeMillis() % 1000)
     }
 
     @JvmStatic
