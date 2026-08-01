@@ -1584,15 +1584,31 @@ object SystemUIStatusBarHooks {
         })
     }
 
-    private var measureTime = 0L
-    private var txBytesTotal = 0L
-    private var rxBytesTotal = 0L
-    private var txSpeed = 0L
-    private var rxSpeed = 0L
+    private const val NANOS_PER_SECOND = 1_000_000_000.0
+    private const val NET_SPEED_STATE_TAG = "customiuizerNetSpeedState"
 
-    private fun getTrafficBytes(thisObject: Any?): android.util.Pair<Long, Long> {
-        var tx = -1L
-        var rx = -1L
+    internal class NetSpeedRuntimeState {
+        var lastMeasureNanos: Long = 0
+        var lastTxBytes: Long = 0
+        var lastRxBytes: Long = 0
+        var currentTxBytes: Long = 0
+        var currentRxBytes: Long = 0
+        var txBytesPerSecond: Long = 0
+        var rxBytesPerSecond: Long = 0
+    }
+
+    private fun netSpeedStateFor(controller: Any?): NetSpeedRuntimeState? {
+        if (controller == null) return null
+        val existing = XposedHelpers.getAdditionalInstanceField(controller, NET_SPEED_STATE_TAG) as? NetSpeedRuntimeState
+        if (existing != null) return existing
+        val newState = NetSpeedRuntimeState()
+        XposedHelpers.setAdditionalInstanceField(controller, NET_SPEED_STATE_TAG, newState)
+        return newState
+    }
+
+    private fun getTrafficBytes(controller: Any?, state: NetSpeedRuntimeState) {
+        var tx = 0L
+        var rx = 0L
         try {
             val list = java.net.NetworkInterface.getNetworkInterfaces()
             while (list.hasMoreElements()) {
@@ -1603,11 +1619,13 @@ object SystemUIStatusBarHooks {
                 }
             }
         } catch (t: Throwable) {
+            if (t is OutOfMemoryError) throw t
             XposedHelpers.log(t)
             tx = TrafficStats.getTotalTxBytes()
             rx = TrafficStats.getTotalRxBytes()
         }
-        return android.util.Pair(tx, rx)
+        state.currentTxBytes = tx
+        state.currentRxBytes = rx
     }
 
     @SuppressLint("DefaultLocale")
@@ -1653,17 +1671,10 @@ object SystemUIStatusBarHooks {
             return
         }
 
-        ModuleHelper.findAndHookMethod(nscCls, "getTotalByte", object : MethodHook() {
-            override fun after(param: AfterHookCallback) {
-                val bytes = getTrafficBytes(param.getThisObject())
-                txBytesTotal = bytes.first
-                rxBytesTotal = bytes.second
-                measureTime = java.lang.System.nanoTime()
-            }
-        })
-
         ModuleHelper.findAndHookMethod(nscCls, "updateNetworkSpeed", object : MethodHook() {
             override fun before(param: BeforeHookCallback) {
+                val state = netSpeedStateFor(param.getThisObject()) ?: return
+
                 var isConnected = false
                 val mContext = XposedHelpers.getObjectField(param.getThisObject(), "mContext") as? Context ?: return
                 val mConnectivityManager = mContext.getSystemService(Context.CONNECTIVITY_SERVICE) as? android.net.ConnectivityManager ?: return
@@ -1674,26 +1685,40 @@ object SystemUIStatusBarHooks {
                         isConnected = true
                     }
                 }
-                if (isConnected) {
-                    val nanoTime = java.lang.System.nanoTime()
-                    var newTime = nanoTime - measureTime
-                    measureTime = nanoTime
-                    if (newTime == 0L) newTime = Math.round(4 * Math.pow(10.0, 9.0))
-                    val bytes = getTrafficBytes(param.getThisObject())
-                    val newTxBytes = bytes.first
-                    val newRxBytes = bytes.second
-                    var newTxBytesFixed = newTxBytes - txBytesTotal
-                    var newRxBytesFixed = newRxBytes - rxBytesTotal
-                    if (newTxBytesFixed < 0 || txBytesTotal == 0L) newTxBytesFixed = 0
-                    if (newRxBytesFixed < 0 || rxBytesTotal == 0L) newRxBytesFixed = 0
-                    txSpeed = Math.round(newTxBytesFixed / (newTime / Math.pow(10.0, 9.0)))
-                    rxSpeed = Math.round(newRxBytesFixed / (newTime / Math.pow(10.0, 9.0)))
-                    txBytesTotal = newTxBytes
-                    rxBytesTotal = newRxBytes
-                } else {
-                    txSpeed = 0
-                    rxSpeed = 0
+                if (!isConnected) {
+                    state.txBytesPerSecond = 0
+                    state.rxBytesPerSecond = 0
+                    return
                 }
+
+                getTrafficBytes(param.getThisObject(), state)
+                val nanoTime = java.lang.System.nanoTime()
+
+                // First sample only records the baseline; speed is calculated from the second tick.
+                if (state.lastMeasureNanos == 0L) {
+                    state.lastMeasureNanos = nanoTime
+                    state.lastTxBytes = state.currentTxBytes
+                    state.lastRxBytes = state.currentRxBytes
+                    state.txBytesPerSecond = 0
+                    state.rxBytesPerSecond = 0
+                    return
+                }
+
+                var newTimeNanos = nanoTime - state.lastMeasureNanos
+                if (newTimeNanos <= 0L) newTimeNanos = NANOS_PER_SECOND.toLong()
+
+                var newTxBytesFixed = state.currentTxBytes - state.lastTxBytes
+                var newRxBytesFixed = state.currentRxBytes - state.lastRxBytes
+                if (newTxBytesFixed < 0) newTxBytesFixed = 0
+                if (newRxBytesFixed < 0) newRxBytesFixed = 0
+
+                val seconds = newTimeNanos / NANOS_PER_SECOND
+                state.txBytesPerSecond = if (seconds > 0) Math.round(newTxBytesFixed / seconds) else 0L
+                state.rxBytesPerSecond = if (seconds > 0) Math.round(newRxBytesFixed / seconds) else 0L
+
+                state.lastMeasureNanos = nanoTime
+                state.lastTxBytes = state.currentTxBytes
+                state.lastRxBytes = state.currentRxBytes
             }
         })
 
@@ -1718,6 +1743,7 @@ object SystemUIStatusBarHooks {
             }
 
             override fun before(param: BeforeHookCallback) {
+                val state = netSpeedStateFor(param.getThisObject()) ?: return
                 val mContext = XposedHelpers.getObjectField(param.getThisObject(), "mContext") as? Context ?: return
                 val modRes = ModuleHelper.getModuleRes(mContext)
                 refreshFormatResources(modRes)
@@ -1732,15 +1758,15 @@ object SystemUIStatusBarHooks {
                 var txarrow = ""
                 var rxarrow = ""
                 if (icons == 2) {
-                    txarrow = if (txSpeed < lowLevel) "△" else "▲"
-                    rxarrow = if (rxSpeed < lowLevel) "▽" else "▼"
+                    txarrow = if (state.txBytesPerSecond < lowLevel) "△" else "▲"
+                    rxarrow = if (state.rxBytesPerSecond < lowLevel) "▽" else "▼"
                 } else if (icons == 3) {
-                    txarrow = if (txSpeed < lowLevel) " ☖" else " ☗"
-                    rxarrow = if (rxSpeed < lowLevel) " ⛉" else " ⛊"
+                    txarrow = if (state.txBytesPerSecond < lowLevel) " ☖" else " ☗"
+                    rxarrow = if (state.rxBytesPerSecond < lowLevel) " ⛉" else " ⛊"
                 }
 
-                val tx = if (hideLow && txSpeed < lowLevel) "" else humanReadableByteCount(txSpeed, unitSuffix, speedChars) + txarrow
-                val rx = if (hideLow && rxSpeed < lowLevel) "" else humanReadableByteCount(rxSpeed, unitSuffix, speedChars) + rxarrow
+                val tx = if (hideLow && state.txBytesPerSecond < lowLevel) "" else humanReadableByteCount(state.txBytesPerSecond, unitSuffix, speedChars) + txarrow
+                val rx = if (hideLow && state.rxBytesPerSecond < lowLevel) "" else humanReadableByteCount(state.rxBytesPerSecond, unitSuffix, speedChars) + rxarrow
                 if (newStyle) {
                     param.getArgs()[0] = arrayOf(tx + "\n" + rx, "")
                 } else {
