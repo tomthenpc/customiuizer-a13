@@ -100,14 +100,14 @@ Source-level steady-state cost checklist. Each row states the current evidence; 
 
 ## P1-B.2 clock scheduling design
 
-The status-bar second ticker now uses these invariants:
+The status-bar second ticker now uses these invariants (P0-1 complete):
 
-1. Every posted `ClockRunnable` is created with a fixed `scheduledGen`.
-2. `SecondTickerState.start(newGen)` increments `generation` and sets `scheduledGeneration`.
+1. `tickerGeneration` is an `AtomicLong`; `nextGeneration()` is a strict counter, not a time measurement.
+2. `SecondTickerState.start(newGen)` increments `generation` and sets `scheduledGeneration`; every `ClockRunnable` is created with a fixed `scheduledGen`.
 3. A running `ClockRunnable` enters `callbackPending = false` at the beginning of `run()`.
 4. The UI update is wrapped in `ModuleHelper.guarded`; non-OOM exceptions are logged and the ticker continues to the next scheduling check.
 5. After the update, the callback can only repost if `state.canRePost(scheduledGen)` is true, which requires `screenOn`, `running`, `!callbackPending` and `generation == scheduledGen`.
-6. `startOrRestartSecondTicker` removes any pending old `ClockRunnable`, starts a new generation and posts exactly one new `ClockRunnable`.
+6. `startOrRestartSecondTicker` removes any pending old `ClockRunnable`, starts a new generation and posts exactly one new `ClockRunnable`; if `mContext` cannot be read it stops the ticker state instead of leaving it half-armed.
 7. `stopSecondTimer` removes the pending callback and sets `running = false`, `callbackPending = false`.
 
 This means:
@@ -117,6 +117,17 @@ This means:
 - `OutOfMemoryError` propagates through `ModuleHelper.guarded`.
 
 The `ClockRunnable.doTick()` still uses `XposedHelpers.getObjectField` for `mCalendar`, `mIs24` and `mClockListeners`. These remain functional necessary reflection on the MIUI controller. No new `Runnable` is created per tick; one `ClockRunnable` is created per `startOrRestart` (lifecycle event), not per second.
+
+## P1-B.2 step counter audit
+
+`StepCounterController` (P0-3 complete):
+
+* `Lifecycle` now owns a monotonic `AtomicLong generation` and `isCurrent(gen)`.
+* `reset()` and `bumpGeneration()` roll the generation on init/reinit/destroy.
+* `scheduleUpdate()` rolls back `isQuerying` if `queryHandler` is null or `post()` fails or throws.
+* `runQuery(gen)` only publishes the result and updates views when the captured `gen` still matches `lifecycle.generation`.
+* `querySteps()` `Throwable` path rethrows `OutOfMemoryError`.
+* The `uiHandler.post { updateViews(...) }` lambda is guarded with `ModuleHelper.guarded`.
 
 ## P1-B.2 network speed audit
 
@@ -128,7 +139,21 @@ Network speed is driven by the ROM `NetworkSpeedController`.
 * `NetSpeedStyleHook` adds an `OnAttachStateChangeListener` to the `NetworkSpeedView`. When the view is detached, the listener removes the 200ms one-shot style init `Runnable`, preventing a detached view from being restyled.
 * `initNetSpeedStyle` runs inside `ModuleHelper.guarded` so a single style failure is logged once and the update finishes.
 
-The module does not add a periodic network-speed updater. All repeat work is owned by the ROM controller. The one-shot delayed style callback is now cancellable on `View` detach.
+The module does not add a periodic network-speed updater. The ROM still drives the tick; the module adds per-tick tx/rx sampling, connection state checks and display formatting. The one-shot delayed style callback is now cancellable on `View` detach. Full per-controller state, one-sample-per-tick and locale-aware formatter work remains in progress.
+
+## P1-B.3 closeout progress
+
+| Item | Status | Notes |
+|---|---|---|
+| P0-1 Clock timezone / generation / mContext | COMPLETED | `TIMEZONE_CHANGED` handled, `AtomicLong` generation, `mContext` failure stops state |
+| P0-2 Network speed per-controller / one-sample / locale | IN_PROGRESS | style fallback detach done; per-controller state and one-sample-per-tick not yet landed |
+| P0-3 StepCounter query rollback / generation | COMPLETED | `scheduleUpdate` post rollback, `Lifecycle.generation`, stale-result discard, OOM rethrow |
+| P0-4 DeviceInfo lifecycle | NOT_STARTED | dedicated I/O thread and stale generation pending |
+| P1-1 BatteryIndicator lifecycle | NOT_STARTED | pending |
+| P1-2 AudioVisualizer scheduling | NOT_STARTED | pending |
+| P1-3 Album Art large-object lifecycle | NOT_STARTED | pending |
+| P1-4 Receiver deterministic ordering test | NOT_STARTED | pending |
+| P1-5 Final hot-path scan and docs | IN_PROGRESS | this section |
 
 ## Remaining risks
 
