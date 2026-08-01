@@ -224,6 +224,20 @@ The module does not add a periodic network-speed updater. The ROM still drives t
   - `InvocationTargetException` / `ExceptionInInitializerError` 包装 OOM 解包后重新抛出
   - OOM 不写 negative cache
   - 缓存硬上限 128
+- H1.2d 生产 Variant 执行绑定：VERIFIED_STATIC
+  - `FeatureDispatcher.installWithContractVariant` 显式传入 `selectedVariant`
+  - `AUTO_BRIGHTNESS_RANGE` 真实 Hook 只安装 resolver 选中的完整 variant
+  - 未选 variant 不发生 `ModuleHelper` 调用
+  - `installWithContract` / `installWithLegacyCheck` 重新抛出 `OutOfMemoryError`
+  - `DiagnosticRecorder` fallback logger 在 OOM 时重新抛出，普通异常不阻断安装
+- H1.2e `HookInstaller` 选择结果严格边界：VERIFIED_STATIC
+  - 多 variant contract 缺 `compatibilityResult.selectedVariant` 显式失败
+  - 单 variant legacy 路径仍可用
+  - 校验 selected variant 属于当前 contract 且 target 数量一致
+- H1.2f 真实生产入口 anti-mixing 测试：VERIFIED_STATIC
+  - `AutoBrightnessVariantExecutionTest` 覆盖 ABC/DPC 独占安装、部分 bundle 零安装、失败后不切换、OOM 传播与 Session 清理
+- H1.2g 兼容框架静态检查：VERIFIED_STATIC
+  - `tools/check-compat-contracts.py` 检查 variant 参数传递、callback 独立性与 OOM 边界
 - H1.2 总状态：VERIFIED_STATIC
   - 8 个 Canary 静态审计矩阵完整
   - 无生产 HyperOS fallback
