@@ -197,7 +197,7 @@ class InteractionPerformanceInvariant(unittest.TestCase):
     def test_navigation_is_async_and_short(self) -> None:
         source = (REPO_ROOT / "app/src/main/java/tv/withaibuild/customiuizer/PreferenceFragmentBase.kt").read_text(encoding="utf-8")
         self.assertNotIn("executePendingTransactions", source)
-        self.assertIn("protected var animDur = 200", source)
+        self.assertIn("protected var animDur = 350", source)
 
     def test_fragment_animators_use_short_gpu_properties(self) -> None:
         animator_dir = REPO_ROOT / "app/src/main/res/animator"
@@ -209,16 +209,14 @@ class InteractionPerformanceInvariant(unittest.TestCase):
         ):
             xml = (animator_dir / name).read_text(encoding="utf-8")
             self.assertIn('android:propertyName="x"', xml, name)
-            self.assertIn('android:duration="200"', xml, name)
-            self.assertIn('@android:interpolator/fast_out_slow_in', xml, name)
+            self.assertIn('android:duration="350"', xml, name)
+            self.assertNotIn('android:interpolator=', xml, name)
 
-    def test_switch_feedback_never_consumes_click(self) -> None:
+    def test_switch_feedback_reuses_parent_pressed_state(self) -> None:
         source = (PREFS_DIR / "CheckBoxPreferenceEx.kt").read_text(encoding="utf-8")
-        self.assertIn("PRESS_IN_DURATION_MS = 60L", source)
-        self.assertIn("PRESS_OUT_DURATION_MS = 120L", source)
-        self.assertIn("setOnTouchListener(pressFeedbackListener)", source)
-        self.assertIn("itemView.animate().cancel()", source)
-        self.assertIn("            false\n        }", source)
+        self.assertIn("isDuplicateParentStateEnabled = true", source)
+        self.assertNotIn("setOnTouchListener", source)
+        self.assertNotIn("itemView.animate()", source)
 
     def test_main_search_releases_destroyed_views(self) -> None:
         source = (REPO_ROOT / "app/src/main/java/tv/withaibuild/customiuizer/MainFragment.kt").read_text(encoding="utf-8")

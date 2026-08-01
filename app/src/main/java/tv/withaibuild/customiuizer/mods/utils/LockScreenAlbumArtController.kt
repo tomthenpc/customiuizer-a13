@@ -260,6 +260,7 @@ object LockScreenAlbumArtController {
                         ownerAttached = false
                         requestGeneration.incrementAndGet()
                         cancelWork()
+                        releaseRenderedArtwork()
                     }
                 }
             }
@@ -616,6 +617,13 @@ object LockScreenAlbumArtController {
             cacheBudgetBytes = 0
             cacheSignature = null
         }
+    }
+
+    private fun releaseRenderedArtwork() {
+        clearAppliedBackground()
+        clearCache()
+        val clazz = miuiThemeUtilsClass
+        if (clazz != null) XposedHelpers.setAdditionalStaticField(clazz, "mAlbumArt", null)
     }
 
     private fun applyBackground(view: View, art: Bitmap) {
