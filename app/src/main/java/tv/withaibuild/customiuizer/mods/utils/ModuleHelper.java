@@ -429,6 +429,7 @@ public class ModuleHelper {
         try {
             return XposedHelpers.getStaticObjectField(clazz, fieldName);
         } catch (Throwable t) {
+            if (t instanceof OutOfMemoryError) throw (OutOfMemoryError) t;
             return NOT_EXIST_SYMBOL;
         }
     }
@@ -437,6 +438,7 @@ public class ModuleHelper {
         try {
             return XposedHelpers.getObjectField(obj, fieldName);
         } catch (Throwable t) {
+            if (t instanceof OutOfMemoryError) throw (OutOfMemoryError) t;
             return NOT_EXIST_SYMBOL;
         }
     }
@@ -450,7 +452,9 @@ public class ModuleHelper {
                 Object currentActivityThread = sCurrentActivityThreadMethod.invoke(null);
                 if (currentActivityThread != null) context = (Context) sGetSystemContextMethod.invoke(currentActivityThread);
             }
-        } catch (Throwable ignore) {}
+        } catch (Throwable t) {
+            if (t instanceof OutOfMemoryError) throw (OutOfMemoryError) t;
+        }
         return context;
     }
 
@@ -463,7 +467,9 @@ public class ModuleHelper {
                 Object currentActivityThread = sCurrentActivityThreadMethod.invoke(null);
                 if (currentActivityThread != null) context = (Context) sGetSystemContextMethod.invoke(currentActivityThread);
             }
-        } catch (Throwable ignore) {}
+        } catch (Throwable t) {
+            if (t instanceof OutOfMemoryError) throw (OutOfMemoryError) t;
+        }
         return context;
     }
 
@@ -507,6 +513,7 @@ public class ModuleHelper {
 
             nextTime = cal.getTimeInMillis();
         } catch (Throwable t) {
+            if (t instanceof OutOfMemoryError) throw (OutOfMemoryError) t;
             log(t);
         }
         return nextTime;
@@ -519,6 +526,7 @@ public class ModuleHelper {
             if (user != 0) intent.putExtra("miui.intent.extra.USER_ID", user);
             context.startActivity(intent);
         } catch (Throwable t) {
+            if (t instanceof OutOfMemoryError) throw (OutOfMemoryError) t;
             try {
                 Intent intent = new Intent(android.provider.Settings.ACTION_APPLICATION_DETAILS_SETTINGS);
                 intent.setFlags(Intent.FLAG_ACTIVITY_NEW_TASK | Intent.FLAG_ACTIVITY_RESET_TASK_IF_NEEDED);
@@ -528,6 +536,7 @@ public class ModuleHelper {
                 else
                     context.startActivity(intent);
             } catch (Throwable t2) {
+                if (t2 instanceof OutOfMemoryError) throw (OutOfMemoryError) t2;
                 log(t2);
             }
         }
@@ -601,6 +610,7 @@ public class ModuleHelper {
             try {
                 prefObserver.onChange(key);
             } catch (Throwable t) {
+                if (t instanceof OutOfMemoryError) throw (OutOfMemoryError) t;
                 log(t);
             }
         }
@@ -608,6 +618,7 @@ public class ModuleHelper {
             try {
                 prefObserver.onChange(key);
             } catch (Throwable t) {
+                if (t instanceof OutOfMemoryError) throw (OutOfMemoryError) t;
                 log(t);
             }
         }
@@ -630,6 +641,7 @@ public class ModuleHelper {
                     prefObserver.onChange(key);
                 }
             } catch (Throwable t) {
+                if (t instanceof OutOfMemoryError) throw (OutOfMemoryError) t;
                 log(t);
             }
         }
@@ -982,6 +994,7 @@ public class ModuleHelper {
             else
                 return null;
         } catch (Throwable t) {
+            if (t instanceof OutOfMemoryError) throw (OutOfMemoryError) t;
             return null;
         }
     }
@@ -1019,6 +1032,7 @@ public class ModuleHelper {
             } else
                 return null;
         } catch (Throwable t) {
+            if (t instanceof OutOfMemoryError) throw (OutOfMemoryError) t;
             return null;
         }
     }

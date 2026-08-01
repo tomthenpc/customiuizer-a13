@@ -97,6 +97,7 @@ Source-level steady-state cost checklist. Each row states the current evidence; 
 | Bitmap / large object budgets | VERIFIED_STATIC | album-art blur input is capped at 512x512; cache is capped to one output frame; cancelled generations remove queued publication, recycle private intermediates and cannot repopulate a cleared cache; module-owned View backgrounds are cleared by exact Drawable identity | Device peak RSS and ROM Bitmap ownership still need measurement |
 | Disabled feature zero-cost | VERIFIED_STATIC | `FeatureDispatcher` checks `runtime.prefs` before `installWithContract` | `SystemServerInstaller` / `SystemUiInstaller` / `LauncherInstaller` already gate by process + prefs |
 | Diagnostics bounded | COMPLETED | `DiagnosticRecorder` `MAX_SNAPSHOTS=32`, `MAX_DETAIL_LENGTH=512`, `THROTTLE_MS=60_000` | Already fixed capacity and throttling |
+| Shared OOM boundary | VERIFIED_STATIC | `ModuleHelper` hook, reflection fallback, context discovery, action lookup, receiver and preference-observer catch paths all rethrow `OutOfMemoryError`; observer propagation covered by `ModuleHelperGuardedTest` | Ordinary ROM/reflection failures remain isolated; OOM is never converted into a missing-member sentinel or ignored callback |
 
 ## Periodic-work inventory (P1-B)
 

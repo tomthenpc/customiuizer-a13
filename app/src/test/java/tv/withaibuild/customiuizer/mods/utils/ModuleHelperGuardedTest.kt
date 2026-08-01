@@ -5,6 +5,7 @@ import org.junit.After
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse
 import org.junit.Assert.assertTrue
+import org.junit.Assert.assertThrows
 import org.junit.Test
 
 class ModuleHelperGuardedTest {
@@ -130,5 +131,20 @@ class ModuleHelperGuardedTest {
 
         assertEquals(1, firstCalls)
         assertEquals(1, secondCalls)
+    }
+
+    @Test
+    fun preferenceObserverOutOfMemoryIsRethrown() {
+        var laterCalls = 0
+        ModuleHelper.observePreferenceChange {
+            throw OutOfMemoryError("observer oom")
+        }
+        ModuleHelper.observePreferenceChange { laterCalls++ }
+
+        assertThrows(OutOfMemoryError::class.java) {
+            ModuleHelper.handlePreferenceChanged("key")
+        }
+
+        assertEquals(0, laterCalls)
     }
 }
