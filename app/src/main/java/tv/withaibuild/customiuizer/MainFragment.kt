@@ -10,11 +10,8 @@ import android.text.TextUtils
 import android.view.Menu
 import android.view.MenuInflater
 import android.view.MenuItem
-import android.view.MotionEvent
 import android.view.View
 import android.view.ViewGroup
-import android.widget.AdapterView
-import android.widget.ImageView
 import android.widget.ListView
 import androidx.appcompat.app.ActionBar
 import androidx.appcompat.app.AppCompatActivity
@@ -31,7 +28,6 @@ import tv.withaibuild.customiuizer.subs.Launcher
 import tv.withaibuild.customiuizer.subs.System
 import tv.withaibuild.customiuizer.subs.Various
 import tv.withaibuild.customiuizer.utils.AppHelper
-import tv.withaibuild.customiuizer.utils.AppLocaleController
 import tv.withaibuild.customiuizer.utils.Helpers
 import tv.withaibuild.customiuizer.utils.ModData
 import tv.withaibuild.customiuizer.utils.ModSearchAdapter
@@ -51,7 +47,6 @@ class MainFragment : PreferenceFragmentBase() {
     @JvmField
     var prefVarious: Various = Various()
 
-    private var mActionMenu: Menu? = null
     private var listView: RecyclerView? = null
     private var resultView: ListView? = null
     private var mMainHandler: Handler? = null
@@ -66,19 +61,6 @@ class MainFragment : PreferenceFragmentBase() {
     @JvmField
     var lastFilter: String? = null
 
-    private val showUpdateNotification = Runnable {
-        if (view != null) try {
-            val alert = view?.findViewById<ImageView>(R.id.update_alert)
-            alert?.visibility = View.VISIBLE
-        } catch (_: Throwable) {}
-    }
-
-    private val hideUpdateNotification = Runnable {
-        if (view != null) try {
-            val alert = view?.findViewById<ImageView>(R.id.update_alert)
-            alert?.visibility = View.GONE
-        } catch (_: Throwable) {}
-    }
 
     private fun isFragmentReady(act: AppCompatActivity?): Boolean {
         return act != null && !act.isFinishing && isAdded
@@ -127,8 +109,7 @@ class MainFragment : PreferenceFragmentBase() {
     @SuppressLint("RestrictedApi")
     override fun onCreateOptionsMenu(menu: Menu, inflater: MenuInflater) {
         super.onCreateOptionsMenu(menu, inflater)
-        mActionMenu = menu
-        val searchMenuItem = mActionMenu?.findItem(R.id.search_btn)
+        val searchMenuItem = menu.findItem(R.id.search_btn)
         val searchView = searchMenuItem?.actionView as? SearchView
 
         searchMenuItem?.let { item ->
@@ -340,9 +321,17 @@ class MainFragment : PreferenceFragmentBase() {
     }
 
     override fun onDestroyView() {
-        super.onDestroyView()
         mCheckActiveRunnable?.let { mMainHandler?.removeCallbacks(it) }
         mHideKeyboardRunnable?.let { mMainHandler?.removeCallbacks(it) }
+        resultView?.onItemClickListener = null
+        resultView?.setOnTouchListener(null)
+        resultView?.adapter = null
+        resultView = null
+        listView = null
+        mCheckActiveRunnable = null
+        mHideKeyboardRunnable = null
+        mMainHandler = null
+        super.onDestroyView()
     }
 
     override fun onPreferenceTreeClick(preference: Preference): Boolean {

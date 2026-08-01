@@ -41,7 +41,7 @@ open class PreferenceFragmentBase : PreferenceFragmentCompat() {
     protected var toolbarMenu = false
 
     @JvmField
-    protected var animDur = 350
+    protected var animDur = 200
 
     @JvmField
     protected var activeMenus = ""
@@ -304,7 +304,6 @@ open class PreferenceFragmentBase : PreferenceFragmentCompat() {
             .replace(R.id.fragment_container, fragment)
             .addToBackStack(null)
             .commitAllowingStateLoss()
-        parentFragmentManager.executePendingTransactions()
     }
 
     override fun onAttach(context: Context) {

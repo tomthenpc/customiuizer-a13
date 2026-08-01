@@ -4,6 +4,7 @@ import android.content.Context
 import android.content.res.Resources
 import android.content.res.TypedArray
 import android.util.AttributeSet
+import android.view.MotionEvent
 import android.view.View
 import android.widget.TextView
 import androidx.preference.PreferenceViewHolder
@@ -16,6 +17,27 @@ class CheckBoxPreferenceEx @JvmOverloads constructor(
     attrs: AttributeSet? = null,
     defStyleAttr: Int = androidx.preference.R.attr.switchPreferenceStyle
 ) : SwitchPreference(context, attrs, defStyleAttr), PreferenceState {
+
+    companion object {
+        private const val PRESSED_ALPHA = 0.72f
+        private const val PRESS_IN_DURATION_MS = 60L
+        private const val PRESS_OUT_DURATION_MS = 120L
+
+        private val pressFeedbackListener = View.OnTouchListener { itemView, event ->
+            when {
+                event.actionMasked == MotionEvent.ACTION_DOWN && itemView.isEnabled -> {
+                    itemView.animate().cancel()
+                    itemView.animate().alpha(PRESSED_ALPHA).setDuration(PRESS_IN_DURATION_MS).start()
+                }
+                event.actionMasked == MotionEvent.ACTION_UP ||
+                    event.actionMasked == MotionEvent.ACTION_CANCEL -> {
+                    itemView.animate().cancel()
+                    itemView.animate().alpha(1f).setDuration(PRESS_OUT_DURATION_MS).start()
+                }
+            }
+            false
+        }
+    }
 
     private val res: Resources = context.resources
     private val childpadding = res.getDimensionPixelSize(R.dimen.preference_item_child_padding)
@@ -46,6 +68,9 @@ class CheckBoxPreferenceEx @JvmOverloads constructor(
 
     override fun onBindViewHolder(view: PreferenceViewHolder) {
         super.onBindViewHolder(view)
+        view.itemView.animate().cancel()
+        view.itemView.alpha = 1f
+        view.itemView.setOnTouchListener(pressFeedbackListener)
         val title = view.findViewById(android.R.id.title) as? TextView ?: return
         title.maxLines = 3
         getView(view.itemView)

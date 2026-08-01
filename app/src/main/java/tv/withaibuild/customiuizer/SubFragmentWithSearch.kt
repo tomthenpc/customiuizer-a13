@@ -6,10 +6,8 @@ import android.os.Bundle
 import android.text.Editable
 import android.text.TextWatcher
 import android.view.KeyEvent
-import android.view.MotionEvent
 import android.view.View
 import android.widget.ImageView
-import android.widget.ListAdapter
 import android.widget.ListView
 import android.widget.TextView
 import androidx.appcompat.app.AppCompatActivity
@@ -23,9 +21,15 @@ open class SubFragmentWithSearch : SubFragment() {
 
     @JvmField
     var listView: ListView? = null
-    private var searchView: View? = null
     private var isSearchFocused = false
     private var textInput: TextView? = null
+    private val searchTextWatcher = object : TextWatcher {
+        override fun beforeTextChanged(s: CharSequence, start: Int, count: Int, after: Int) {}
+        override fun onTextChanged(s: CharSequence, start: Int, before: Int, count: Int) {}
+        override fun afterTextChanged(s: Editable) {
+            applyFilter(s.toString().trim())
+        }
+    }
 
     fun setActionModeStyle(searchView: View?) {
         val ctx = getValidContext() ?: return
@@ -55,9 +59,9 @@ open class SubFragmentWithSearch : SubFragment() {
 
         val view = view ?: return
 
-        searchView = view.findViewById(R.id.searchView)
+        val searchView = view.findViewById<View>(R.id.searchView)
         setActionModeStyle(searchView)
-        textInput = searchView?.findViewById(android.R.id.input)
+        textInput = searchView.findViewById(android.R.id.input)
 
         textInput?.setOnFocusChangeListener { _, hasFocus ->
             isSearchFocused = hasFocus
@@ -75,13 +79,7 @@ open class SubFragmentWithSearch : SubFragment() {
                 false
             }
         }
-        textInput?.addTextChangedListener(object : TextWatcher {
-            override fun beforeTextChanged(s: CharSequence, start: Int, count: Int, after: Int) {}
-            override fun onTextChanged(s: CharSequence, start: Int, before: Int, count: Int) {}
-            override fun afterTextChanged(s: Editable) {
-                applyFilter(s.toString().trim())
-            }
-        })
+        textInput?.addTextChangedListener(searchTextWatcher)
 
         listView = view.findViewById(android.R.id.list)
         listView?.setOnTouchListener { v, event ->
@@ -103,5 +101,18 @@ open class SubFragmentWithSearch : SubFragment() {
             is ResolveInfoAdapter -> adapter.filter.filter(filter)
             else -> {}
         }
+    }
+
+    override fun onDestroyView() {
+        textInput?.removeTextChangedListener(searchTextWatcher)
+        textInput?.onFocusChangeListener = null
+        textInput?.setOnClickListener(null)
+        textInput?.setOnEditorActionListener(null)
+        listView?.setOnTouchListener(null)
+        listView?.adapter = null
+        textInput = null
+        listView = null
+        isSearchFocused = false
+        super.onDestroyView()
     }
 }

@@ -191,6 +191,54 @@ class PreferenceStyleInvariant(unittest.TestCase):
         finally:
             check_invariants.EXPECTED_DEFSTYLE = original
 
+class InteractionPerformanceInvariant(unittest.TestCase):
+    """Navigation, toggle feedback, and destroyed-view references stay lightweight."""
+
+    def test_navigation_is_async_and_short(self) -> None:
+        source = (REPO_ROOT / "app/src/main/java/tv/withaibuild/customiuizer/PreferenceFragmentBase.kt").read_text(encoding="utf-8")
+        self.assertNotIn("executePendingTransactions", source)
+        self.assertIn("protected var animDur = 200", source)
+
+    def test_fragment_animators_use_short_gpu_properties(self) -> None:
+        animator_dir = REPO_ROOT / "app/src/main/res/animator"
+        for name in (
+            "fragment_open_enter.xml",
+            "fragment_open_exit.xml",
+            "fragment_close_enter.xml",
+            "fragment_close_exit.xml",
+        ):
+            xml = (animator_dir / name).read_text(encoding="utf-8")
+            self.assertIn('android:propertyName="x"', xml, name)
+            self.assertIn('android:duration="200"', xml, name)
+            self.assertIn('@android:interpolator/fast_out_slow_in', xml, name)
+
+    def test_switch_feedback_never_consumes_click(self) -> None:
+        source = (PREFS_DIR / "CheckBoxPreferenceEx.kt").read_text(encoding="utf-8")
+        self.assertIn("PRESS_IN_DURATION_MS = 60L", source)
+        self.assertIn("PRESS_OUT_DURATION_MS = 120L", source)
+        self.assertIn("setOnTouchListener(pressFeedbackListener)", source)
+        self.assertIn("itemView.animate().cancel()", source)
+        self.assertIn("            false\n        }", source)
+
+    def test_main_search_releases_destroyed_views(self) -> None:
+        source = (REPO_ROOT / "app/src/main/java/tv/withaibuild/customiuizer/MainFragment.kt").read_text(encoding="utf-8")
+        for statement in (
+            "resultView?.adapter = null",
+            "resultView = null",
+            "listView = null",
+            "mMainHandler = null",
+        ):
+            self.assertIn(statement, source)
+
+    def test_sub_search_releases_watcher_and_adapter(self) -> None:
+        source = (REPO_ROOT / "app/src/main/java/tv/withaibuild/customiuizer/SubFragmentWithSearch.kt").read_text(encoding="utf-8")
+        for statement in (
+            "removeTextChangedListener(searchTextWatcher)",
+            "listView?.adapter = null",
+            "textInput = null",
+            "listView = null",
+        ):
+            self.assertIn(statement, source)
 
 if __name__ == "__main__":
     unittest.main()
