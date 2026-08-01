@@ -99,6 +99,7 @@ Source-level steady-state cost checklist. Each row states the current evidence; 
 | Diagnostics bounded | COMPLETED | `DiagnosticRecorder` `MAX_SNAPSHOTS=32`, `MAX_DETAIL_LENGTH=512`, `THROTTLE_MS=60_000` | Already fixed capacity and throttling |
 | Shared OOM boundary | VERIFIED_STATIC | `ModuleHelper` hook, reflection fallback, context discovery, action lookup, receiver and preference-observer catch paths all rethrow `OutOfMemoryError`; observer propagation covered by `ModuleHelperGuardedTest` | Ordinary ROM/reflection failures remain isolated; OOM is never converted into a missing-member sentinel or ignored callback |
 | Installer OOM boundary | VERIFIED_STATIC | `SystemServerInstaller.needGlobalActions` rethrows OOM; `check-invariants.py` rejects every Java/Kotlin installer `catch (Throwable)` without an explicit OOM rethrow | Prevents partial initialization from being misreported as a disabled feature or compatibility miss |
+| Hook callback OOM boundary | VERIFIED_STATIC | `HookerClassHelper.MethodHook` rethrows OOM from before/after callbacks and from the hooked host method before an after hook can replace it; `HookerClassHelperTest` covers ordinary failure isolation and all three OOM paths | Normal callback failures remain isolated; non-OOM host throw/result replacement semantics are unchanged |
 
 ## Periodic-work inventory (P1-B)
 

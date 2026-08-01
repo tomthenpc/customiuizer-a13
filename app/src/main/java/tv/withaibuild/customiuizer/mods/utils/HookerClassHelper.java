@@ -221,6 +221,10 @@ public final class HookerClassHelper {
                 }
             }
 
+            if (throwable instanceof OutOfMemoryError) {
+                throw throwable;
+            }
+
             if (hasAfter) {
                 AfterHookCallback after = new AfterHookCallback(before, result, throwable);
                 afterHook(after);
@@ -240,6 +244,7 @@ public final class HookerClassHelper {
             try {
                 before(callback);
             } catch (Throwable t) {
+                if (t instanceof OutOfMemoryError) throw (OutOfMemoryError) t;
                 XposedHelpers.log(t);
             }
         }
@@ -248,6 +253,7 @@ public final class HookerClassHelper {
             try {
                 after(callback);
             } catch (Throwable t) {
+                if (t instanceof OutOfMemoryError) throw (OutOfMemoryError) t;
                 XposedHelpers.log(t);
             }
         }
