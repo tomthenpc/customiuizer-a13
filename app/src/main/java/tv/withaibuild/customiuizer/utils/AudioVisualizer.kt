@@ -32,6 +32,7 @@ import java.util.concurrent.Future
 import java.util.concurrent.LinkedBlockingQueue
 import java.util.concurrent.ThreadPoolExecutor
 import java.util.concurrent.TimeUnit
+import java.util.concurrent.atomic.AtomicBoolean
 import java.util.concurrent.atomic.AtomicInteger
 
 internal fun audioVisualizerBandBinLimits(bands: FloatArray, fftSize: Int): IntArray {
@@ -176,6 +177,7 @@ class AudioVisualizer @JvmOverloads constructor(
     private val mHandler: Handler
     private var mArt: Bitmap? = null
     private var mProcessedArt: Bitmap? = null
+    @Volatile
     private var detached = false
     private var viewAttached = false
     private var viewVisible = true
@@ -188,6 +190,9 @@ class AudioVisualizer @JvmOverloads constructor(
     private val paletteHandlerToken = Any()
     private val visualizerExecutor = createWorker("Visualizer")
     private val paletteExecutor = createLatestWorker("Palette")
+    private val customLockScreenFile = File("/data/system/theme/lockscreen")
+    private val randomColorHsv = FloatArray(3)
+    private val rainbowColorHsv = floatArrayOf(0f, 1f, 1f)
 
     @JvmField
     var showOnCustom = false
@@ -217,11 +222,21 @@ class AudioVisualizer @JvmOverloads constructor(
     private var mFrameStartTime = 0L
     @Volatile
     private var mFrameCallbackScheduled = false
+    private val mFrameRequestPosted = AtomicBoolean()
     private val mFrameCallback = object : Choreographer.FrameCallback {
         override fun doFrame(frameTimeNanos: Long) {
             ModuleHelper.guarded("AudioVisualizer.frameCallback") {
                 runFrame(frameTimeNanos)
             }
+        }
+    }
+    private val mFrameRequest = Runnable {
+        try {
+            ModuleHelper.guarded("AudioVisualizer.frameRequest") {
+                startFrameScheduler()
+            }
+        } finally {
+            mFrameRequestPosted.set(false)
         }
     }
 
@@ -276,7 +291,15 @@ class AudioVisualizer @JvmOverloads constructor(
         Choreographer.getInstance().postFrameCallback(mFrameCallback)
     }
 
+    private fun requestFrameScheduler() {
+        if (detached || !mDisplaying || mFrameCallbackScheduled) return
+        if (!mFrameRequestPosted.compareAndSet(false, true)) return
+        if (!post(mFrameRequest)) mFrameRequestPosted.set(false)
+    }
+
     private fun stopFrameScheduler() {
+        removeCallbacks(mFrameRequest)
+        mFrameRequestPosted.set(false)
         mFrameCallbackScheduled = false
         Choreographer.getInstance().removeFrameCallback(mFrameCallback)
     }
@@ -329,6 +352,8 @@ class AudioVisualizer @JvmOverloads constructor(
                     showWithControllerOnly = MainModule.mPrefs.getBoolean("system_visualizer_controller", false)
                 }
             }
+        } catch (oom: OutOfMemoryError) {
+            throw oom
         } catch (t: Throwable) {
             XposedHelpers.log(t)
         }
@@ -417,7 +442,9 @@ class AudioVisualizer @JvmOverloads constructor(
                         System.arraycopy(mComputedTargets, 0, mPendingTargets, 0, band)
                         mNewDataPending = true
                     }
-                    if (!mFrameCallbackScheduled) post { startFrameScheduler() }
+                    requestFrameScheduler()
+                } catch (oom: OutOfMemoryError) {
+                    throw oom
                 } catch (t: Throwable) {
                     XposedHelpers.log(t)
                 }
@@ -449,6 +476,8 @@ class AudioVisualizer @JvmOverloads constructor(
                         if (color == Color.TRANSPARENT) color = it.getDarkVibrantColor(color)
                     }
                     setColor(color)
+                } catch (oom: OutOfMemoryError) {
+                    throw oom
                 } catch (t: Throwable) {
                     XposedHelpers.log(t)
                 }
@@ -462,13 +491,10 @@ class AudioVisualizer @JvmOverloads constructor(
     }
 
     private fun getRandomColor(): Int {
-        return Color.HSVToColor(
-            floatArrayOf(
-                (Math.random() * 360).toFloat(),
-                (0.5 + Math.random() * 0.5).toFloat(),
-                (0.75 + Math.random() * 0.25).toFloat()
-            )
-        )
+        randomColorHsv[0] = (Math.random() * 360).toFloat()
+        randomColorHsv[1] = (0.5 + Math.random() * 0.5).toFloat()
+        randomColorHsv[2] = (0.75 + Math.random() * 0.25).toFloat()
+        return Color.HSVToColor(randomColorHsv)
     }
 
     private fun computeBandBinLimits(fftSize: Int) {
@@ -570,6 +596,8 @@ class AudioVisualizer @JvmOverloads constructor(
         if (!mDisplaying) return
         try {
             if (mVisualizer?.enabled != true) return
+        } catch (oom: OutOfMemoryError) {
+            throw oom
         } catch (_: Throwable) {
             return
         }
@@ -654,6 +682,8 @@ class AudioVisualizer @JvmOverloads constructor(
             )
             enabled = true
         }
+    } catch (oom: OutOfMemoryError) {
+        throw oom
     } catch (t: Throwable) {
         XposedHelpers.log(t)
         null
@@ -674,11 +704,15 @@ class AudioVisualizer @JvmOverloads constructor(
         visualizerExecutor.execute {
             try {
                 visualizer.enabled = false
+            } catch (oom: OutOfMemoryError) {
+                throw oom
             } catch (t: Throwable) {
                 XposedHelpers.log(t)
             }
             try {
                 visualizer.release()
+            } catch (oom: OutOfMemoryError) {
+                throw oom
             } catch (t: Throwable) {
                 XposedHelpers.log(t)
             }
@@ -700,6 +734,8 @@ class AudioVisualizer @JvmOverloads constructor(
             paletteFuture = paletteExecutor.submit {
                 val palette = try {
                     Palette.from(art).generate()
+                } catch (oom: OutOfMemoryError) {
+                    throw oom
                 } catch (t: Throwable) {
                     XposedHelpers.log(t)
                     null
@@ -722,6 +758,8 @@ class AudioVisualizer @JvmOverloads constructor(
                     SystemClock.uptimeMillis()
                 )
             }
+        } catch (oom: OutOfMemoryError) {
+            throw oom
         } catch (t: Throwable) {
             XposedHelpers.log(t)
         }
@@ -779,13 +817,15 @@ class AudioVisualizer @JvmOverloads constructor(
     private fun updateRainbowColors() {
         val jump = 300f / mBandsNum
         for (i in 0 until mRainbow.size) {
-            mRainbow[i] = Color.HSVToColor(transparency, floatArrayOf(jump * i, 1.0f, 1.0f))
+            rainbowColorHsv[0] = jump * i
+            mRainbow[i] = Color.HSVToColor(transparency, rainbowColorHsv)
         }
 
         for (i in 0 until mRainbowVertical.size) {
             var h = 140 + jump * i
             if (h > 360) h -= 360
-            mRainbowVertical[i] = Color.HSVToColor(transparency, floatArrayOf(h, 1.0f, 1.0f))
+            rainbowColorHsv[0] = h
+            mRainbowVertical[i] = Color.HSVToColor(transparency, rainbowColorHsv)
         }
     }
 
@@ -835,7 +875,7 @@ class AudioVisualizer @JvmOverloads constructor(
         isMusicPlaying = isPlaying
         isOnKeyguard = isKeyguard
         isExpandedPanel = showInDrawer && !isOnKeyguard && isExpanded
-        isOnCustomLockScreen = File("/data/system/theme/lockscreen").exists()
+        isOnCustomLockScreen = customLockScreenFile.exists()
         updatePlaying()
     }
 

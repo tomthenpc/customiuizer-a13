@@ -6,6 +6,7 @@ import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse
 import org.junit.Assert.assertTrue
 import org.junit.Test
+import java.util.concurrent.atomic.AtomicBoolean
 
 class AudioVisualizerLifecycleTest {
 
@@ -48,6 +49,8 @@ class AudioVisualizerLifecycleTest {
         }
 
         assertEquals(1, frameCallbacks)
+        assertEquals(Runnable::class.java, clazz.getDeclaredField("mFrameRequest").type)
+        assertEquals(AtomicBoolean::class.java, clazz.getDeclaredField("mFrameRequestPosted").type)
         assertFalse(clazz.declaredFields.any { it.name == "mValueAnimators" })
         assertFalse(clazz.declaredClasses.any { it.simpleName == "PaletteTask" })
     }

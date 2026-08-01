@@ -796,7 +796,13 @@ object SystemAudioAndVisualAndMoreHooks {
                 if (art == null) {
                     val wallpaperMgr = WallpaperManager.getInstance(mContext)
                     @Suppress("MissingPermission")
-                    val wallpaperDrawable: Drawable? = try { wallpaperMgr.drawable } catch (ignore: Throwable) { null }
+                    val wallpaperDrawable: Drawable? = try {
+                        wallpaperMgr.drawable
+                    } catch (oom: OutOfMemoryError) {
+                        throw oom
+                    } catch (ignore: Throwable) {
+                        null
+                    }
                     if (wallpaperDrawable is BitmapDrawable) {
                         art = wallpaperDrawable.bitmap
                     }
