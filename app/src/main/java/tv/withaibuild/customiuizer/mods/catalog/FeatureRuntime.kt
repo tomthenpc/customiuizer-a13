@@ -1,5 +1,7 @@
 package tv.withaibuild.customiuizer.mods.catalog
 
+import tv.withaibuild.customiuizer.mods.compat.RomEnvironment
+import tv.withaibuild.customiuizer.mods.compat.RomEnvironmentDetector
 import tv.withaibuild.customiuizer.mods.utils.HookTargetResolver
 import tv.withaibuild.customiuizer.utils.PrefMap
 
@@ -11,9 +13,10 @@ import tv.withaibuild.customiuizer.utils.PrefMap
  * [FeatureDispatcher.installById] call so the [HookTargetResolver] cache is shared
  * across features in the same process.
  *
- * The [HookTargetResolver] is created lazily: if no catalog feature is requested
- * in a process, the resolver (and its reflection cache) is never allocated,
- * reducing disabled-feature overhead in scope processes.
+ * The [HookTargetResolver] and [RomEnvironment] are created lazily: if no catalog
+ * feature is requested in a process, the resolver, its reflection cache and the
+ * ROM environment object are never allocated, reducing disabled-feature overhead
+ * in scope processes.
  */
 class FeatureRuntime(
     val processName: String,
@@ -21,8 +24,12 @@ class FeatureRuntime(
     val classLoader: ClassLoader,
     val prefs: PrefMap<String, Any>
 ) {
+    private val environmentLazy = lazy(LazyThreadSafetyMode.NONE) { RomEnvironmentDetector.detect() }
+    internal val environment: RomEnvironment by environmentLazy
+
     private val resolverLazy = lazy(LazyThreadSafetyMode.NONE) { HookTargetResolver(classLoader) }
     val resolver: HookTargetResolver by resolverLazy
 
+    internal fun isEnvironmentInitialized(): Boolean = environmentLazy.isInitialized()
     internal fun isResolverInitialized(): Boolean = resolverLazy.isInitialized()
 }
