@@ -1,17 +1,25 @@
 package tv.withaibuild.customiuizer.mods.catalog
 
 import org.junit.Assert.assertEquals
+import org.junit.Assert.assertNotNull
 import org.junit.Assert.assertTrue
 import org.junit.Test
 import tv.withaibuild.customiuizer.mods.utils.AnyOfRequirement
+import tv.withaibuild.customiuizer.mods.utils.HookEvidenceEvaluator
 
 class CanaryContractAuditTest {
 
-    /**
-     * Fixture of the three SystemUI Canary contracts and their audited target ids.
-     * The ids must stay in sync with the source-level audit in
-     * `build/compat-audit/a13-a14-systemui-canary.md`.
-     */
+    private val allCanaries = listOf(
+        CanaryContracts.packagePermissions,
+        CanaryContracts.autoBrightnessRange,
+        CanaryContracts.muffledVibration,
+        CanaryContracts.statusBarClockTweak,
+        CanaryContracts.noMoreIcon,
+        CanaryContracts.batteryIndicator,
+        CanaryContracts.noClockHide,
+        CanaryContracts.noWidgetOnly
+    )
+
     @Test
     fun statusBarClockTweakContractHasAuditedTargets() {
         val contract = CanaryContracts.statusBarClockTweak
@@ -51,13 +59,36 @@ class CanaryContractAuditTest {
     }
 
     @Test
-    fun allCanaryTargetIdsAreUniqueWithinContract() {
-        val contracts = listOf(
-            CanaryContracts.statusBarClockTweak,
-            CanaryContracts.noMoreIcon,
-            CanaryContracts.batteryIndicator
+    fun autoBrightnessRangeHasTwoAtomicVariants() {
+        val contract = CanaryContracts.autoBrightnessRange
+        assertEquals(2, contract.variants.size)
+
+        val abc = contract.variants[0]
+        assertEquals("automatic_brightness_controller", abc.id)
+        assertEquals(
+            setOf(
+                "AutomaticBrightnessController.clampScreenBrightness",
+                "AutomaticBrightnessController.constructors"
+            ),
+            abc.allTargets.map { it.id }.toSet()
         )
-        for (contract in contracts) {
+
+        val dpc = contract.variants[1]
+        assertEquals("display_power_controller", dpc.id)
+        assertEquals(
+            setOf(
+                "DisplayPowerController.clampScreenBrightness",
+                "DisplayPowerController.constructors"
+            ),
+            dpc.allTargets.map { it.id }.toSet()
+        )
+
+        assertTrue(contract.allTargets.isNotEmpty())
+    }
+
+    @Test
+    fun allCanaryTargetIdsAreUniqueWithinContract() {
+        for (contract in allCanaries) {
             val ids = contract.allTargets.map { it.id }
             assertEquals(
                 "contract ${contract.featureId} has duplicate target ids",
@@ -65,5 +96,44 @@ class CanaryContractAuditTest {
                 ids.size
             )
         }
+    }
+
+    @Test
+    fun allCanaryVariantIdsAreUniqueWithinContract() {
+        for (contract in allCanaries) {
+            val variantIds = contract.variants.map { it.id }
+            assertEquals(
+                "contract ${contract.featureId} has duplicate variant ids",
+                variantIds.toSet().size,
+                variantIds.size
+            )
+        }
+    }
+
+    @Test
+    fun allCanariesHaveAtLeastOneVariantAndOneRequirement() {
+        for (contract in allCanaries) {
+            assertTrue("${contract.featureId} has no variants", contract.variants.isNotEmpty())
+            for (variant in contract.variants) {
+                assertNotNull(variant)
+                assertTrue(
+                    "${contract.featureId} variant ${variant.id} has no requirements",
+                    variant.requirements.isNotEmpty()
+                )
+            }
+        }
+    }
+
+    @Test
+    fun singleVariantCanaryEvaluatesAgainstDefaultPrimary() {
+        val contract = CanaryContracts.noClockHide
+        assertEquals(1, contract.variants.size)
+        assertEquals("primary", contract.variants.single().id)
+        val result = HookEvidenceEvaluator.evaluate(
+            contract.variants.single(),
+            emptyList(),
+            HookEvidenceEvaluator.EvidencePhase.COMPATIBILITY
+        )
+        assertEquals(CompatibilityState.INCOMPATIBLE, result.compatibility)
     }
 }
