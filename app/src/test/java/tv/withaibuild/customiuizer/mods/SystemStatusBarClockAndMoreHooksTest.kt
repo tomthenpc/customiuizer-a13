@@ -3,6 +3,7 @@ package tv.withaibuild.customiuizer.mods
 import android.content.Intent
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse
+import org.junit.Assert.assertSame
 import org.junit.Assert.assertThrows
 import org.junit.Assert.assertTrue
 import org.junit.Test
@@ -14,6 +15,24 @@ import tv.withaibuild.customiuizer.mods.SystemStatusBarClockAndMoreHooks.schedul
 import java.lang.ref.WeakReference
 
 class SystemStatusBarClockAndMoreHooksTest {
+
+    @Test
+    fun replaceClockHourToken_replacesFirstHourRun() {
+        assertEquals("HH:mm", SystemStatusBarClockAndMoreHooks.replaceClockHourToken("h:mm", "HH"))
+        assertEquals("H:mm a", SystemStatusBarClockAndMoreHooks.replaceClockHourToken("hh:mm a", "H"))
+        assertEquals("HH:mm h:ss", SystemStatusBarClockAndMoreHooks.replaceClockHourToken("h:mm h:ss", "HH"))
+    }
+
+    @Test
+    fun replaceClockHourToken_skipsNonMatchingRunAndFindsNext() {
+        assertEquals("h mm HH:ss", SystemStatusBarClockAndMoreHooks.replaceClockHourToken("h mm hh:ss", "HH"))
+    }
+
+    @Test
+    fun replaceClockHourToken_returnsSameStringWhenUnchanged() {
+        val format = "H:mm a"
+        assertSame(format, SystemStatusBarClockAndMoreHooks.replaceClockHourToken(format, "HH"))
+    }
 
     class FakeTickerScheduler : TickerScheduler {
         val pending = ArrayList<Runnable>()

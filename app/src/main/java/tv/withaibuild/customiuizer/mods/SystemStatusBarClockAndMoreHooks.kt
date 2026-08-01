@@ -30,8 +30,24 @@ import tv.withaibuild.customiuizer.mods.utils.XposedHelpers
 
 object SystemStatusBarClockAndMoreHooks {
 
-    // Pre-compiled regex for clock format hour replacement (hot path, called each tick).
-    private val CLOCK_HOUR_PATTERN = Regex("h+:")
+    internal fun replaceClockHourToken(format: String, hourToken: String): String {
+        var start = format.indexOf('h')
+        while (start >= 0) {
+            var end = start + 1
+            while (end < format.length && format[end] == 'h') {
+                end++
+            }
+            if (end < format.length && format[end] == ':') {
+                return StringBuilder(format.length - (end - start) + hourToken.length)
+                    .append(format, 0, start)
+                    .append(hourToken)
+                    .append(format, end, format.length)
+                    .toString()
+            }
+            start = format.indexOf('h', end)
+        }
+        return format
+    }
 
     @JvmStatic
     fun StatusBarClockTweakHook(lpparam: PackageReadyParam) {
@@ -173,7 +189,7 @@ object SystemStatusBarClockAndMoreHooks {
                         if (hourIn2d) {
                             hourStr += hourStr
                         }
-                        timeFmt = CLOCK_HOUR_PATTERN.replaceFirst(fmtString, "$hourStr:")
+                        timeFmt = replaceClockHourToken(fmtString, hourStr)
                     }
                 }
                 if (timeFmt != null) {
