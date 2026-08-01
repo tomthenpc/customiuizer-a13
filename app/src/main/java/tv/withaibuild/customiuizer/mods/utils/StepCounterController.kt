@@ -34,11 +34,13 @@ object StepCounterController {
         private val _hasViews = AtomicBoolean(false)
         private val _timeTickRegistered = AtomicBoolean(false)
         private val _isQuerying = AtomicBoolean(false)
+        private val _generation = java.util.concurrent.atomic.AtomicLong(0L)
 
         val screenOn: Boolean get() = _screenOn.get()
         val hasViews: Boolean get() = _hasViews.get()
         val timeTickRegistered: Boolean get() = _timeTickRegistered.get()
         val isQuerying: Boolean get() = _isQuerying.get()
+        val generation: Long get() = _generation.get()
 
         fun onScreenOn() {
             _screenOn.set(true)
@@ -85,11 +87,16 @@ object StepCounterController {
             _isQuerying.set(false)
         }
 
+        fun bumpGeneration(): Long = _generation.incrementAndGet()
+
+        fun isCurrent(gen: Long): Boolean = _generation.get() == gen
+
         fun reset() {
             _screenOn.set(true)
             _hasViews.set(false)
             _timeTickRegistered.set(false)
             _isQuerying.set(false)
+            _generation.incrementAndGet()
         }
     }
 
@@ -113,7 +120,10 @@ object StepCounterController {
     internal val lifecycle = Lifecycle()
 
     private val queryRunnable = Runnable {
-        ModuleHelper.guarded("StepCounterController.queryRunnable") { runQuery() }
+        ModuleHelper.guarded("StepCounterController.queryRunnable") {
+            val startGen = lifecycle.generation
+            runQuery(startGen)
+        }
     }
 
     @JvmStatic
@@ -320,12 +330,21 @@ object StepCounterController {
         if (!lifecycle.tryStartQuery()) return
 
         queryHandler?.removeCallbacks(queryRunnable)
-        queryHandler?.post(queryRunnable)
+        val posted = try {
+            queryHandler?.post(queryRunnable) ?: false
+        } catch (t: Throwable) {
+            if (t is OutOfMemoryError) throw t
+            XposedHelpers.log(t)
+            false
+        }
+        if (!posted) {
+            lifecycle.finishQuery()
+        }
     }
 
-    private fun runQuery() {
+    private fun runQuery(startGen: Long) {
         val context = sContext
-        if (context == null) {
+        if (context == null || !lifecycle.isCurrent(startGen)) {
             lifecycle.finishQuery()
             return
         }
@@ -333,14 +352,19 @@ object StepCounterController {
         val newText = try {
             querySteps(context)
         } catch (t: Throwable) {
+            if (t is OutOfMemoryError) throw t
             XposedHelpers.log(t)
             null
         } finally {
             lifecycle.finishQuery()
         }
 
-        if (newText != null) {
-            uiHandler?.post { updateViews(newText) }
+        if (newText != null && lifecycle.isCurrent(startGen)) {
+            uiHandler?.post {
+                ModuleHelper.guarded("StepCounterController.updateViews") {
+                    if (lifecycle.isCurrent(startGen)) updateViews(newText)
+                }
+            }
         }
     }
 

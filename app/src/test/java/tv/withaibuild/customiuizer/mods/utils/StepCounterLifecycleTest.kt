@@ -1,6 +1,8 @@
 package tv.withaibuild.customiuizer.mods.utils
 
+import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse
+import org.junit.Assert.assertNotEquals
 import org.junit.Assert.assertTrue
 import org.junit.Test
 
@@ -109,6 +111,36 @@ class StepCounterLifecycleTest {
         lifecycle.unregisterTimeTick()
 
         assertFalse(lifecycle.timeTickRegistered)
+    }
+
+    @Test
+    fun generationBumpsOnResetAndBump() {
+        val lifecycle = StepCounterController.Lifecycle()
+        val gen1 = lifecycle.generation
+
+        lifecycle.bumpGeneration()
+        val gen2 = lifecycle.generation
+
+        assertNotEquals(gen1, gen2)
+        assertEquals(gen2, gen1 + 1)
+
+        lifecycle.reset()
+        val gen3 = lifecycle.generation
+
+        assertNotEquals(gen2, gen3)
+        assertEquals(gen3, gen2 + 1)
+    }
+
+    @Test
+    fun isCurrentReflectsLastGeneration() {
+        val lifecycle = StepCounterController.Lifecycle()
+        val gen = lifecycle.generation
+
+        assertTrue(lifecycle.isCurrent(gen))
+        assertFalse(lifecycle.isCurrent(gen + 1))
+
+        lifecycle.bumpGeneration()
+        assertFalse(lifecycle.isCurrent(gen))
     }
 
     @Test
