@@ -17,6 +17,7 @@ import android.os.Handler
 import android.os.Looper
 import android.os.PowerManager
 import android.os.Process
+import android.os.SystemClock
 import android.util.LruCache
 import android.view.View
 import android.view.WindowManager
@@ -42,6 +43,8 @@ object LockScreenAlbumArtController {
     private var contextRef: WeakReference<Context>? = null
     private var ownerRef: WeakReference<View>? = null
     private var ownerListener: View.OnAttachStateChangeListener? = null
+    private var appliedViewRef: WeakReference<View>? = null
+    private var appliedDrawableRef: WeakReference<BitmapDrawable>? = null
     private var screenReceiverRegistered = false
     private var lastTargetWidth = 0
     private var lastTargetHeight = 0
@@ -62,9 +65,11 @@ object LockScreenAlbumArtController {
     private val sourceTokenSequence = AtomicLong()
     private val mainHandler = Handler(Looper.getMainLooper())
     private val workLock = Any()
+    private val cacheLock = Any()
     private var workFuture: Future<*>? = null
     private var activeKey: AlbumArtCacheKey? = null
     private var activeGeneration = 0L
+    private val publishHandlerToken = Any()
 
     private val worker = ThreadPoolExecutor(
         1,
@@ -106,9 +111,16 @@ object LockScreenAlbumArtController {
     @JvmStatic
     fun setMiuiThemeUtilsClass(clazz: Class<*>?) {
         if (clazz == null) {
-            requestGeneration.incrementAndGet()
-            cancelWork()
-            unregisterScreenReceiver()
+            clear(null, false)
+            val owner = ownerRef?.get()
+            val listener = ownerListener
+            if (owner != null && listener != null) {
+                owner.removeOnAttachStateChangeListener(listener)
+            }
+            ownerRef = null
+            ownerListener = null
+            ownerAttached = false
+            contextRef = null
         }
         miuiThemeUtilsClass = clazz
     }
@@ -126,9 +138,12 @@ object LockScreenAlbumArtController {
         invalidateForSizeChange(view.width, view.height)
         val art = getAlbumArt()
         if (art != null) {
-            view.background = BitmapDrawable(view.resources, art)
+            applyBackground(view, art)
         } else if (canProcess()) {
+            clearAppliedBackground()
             processPending()
+        } else {
+            clearAppliedBackground()
         }
         return art != null
     }
@@ -142,9 +157,9 @@ object LockScreenAlbumArtController {
         grayscale: Boolean
     ) {
         val clazz = miuiThemeUtilsClass ?: return
-        rememberContext(context)
-
         val previousSource = getSource()
+        if (art == null && previousSource == null) return
+        rememberContext(context)
         val sameParameters =
             blur == pendingBlur &&
                 rescale == pendingRescale &&
@@ -160,11 +175,9 @@ object LockScreenAlbumArtController {
         pendingRescale = rescale
         pendingGrayscale = grayscale
 
-        if (art == null && previousSource == null) return
         if (sameSource && sameParameters && (getAlbumArt() != null || hasActiveWork())) return
-        if (!sameParameters) {
-            cache?.evictAll()
-            cacheSignature = null
+        if (!sameSource || !sameParameters) {
+            clearCache()
         }
 
         XposedHelpers.setAdditionalStaticField(clazz, "mAlbumArtSource", art)
@@ -186,10 +199,10 @@ object LockScreenAlbumArtController {
         pendingSource = null
         pendingSourceToken = 0L
         activeKey = null
-        cache?.evictAll()
-        cacheSignature = null
+        clearCache()
         lastTargetWidth = 0
         lastTargetHeight = 0
+        clearAppliedBackground()
 
         val clazz = miuiThemeUtilsClass ?: return
         XposedHelpers.setAdditionalStaticField(clazz, "mAlbumArtSource", null)
@@ -229,6 +242,7 @@ object LockScreenAlbumArtController {
         if (current != null && oldListener != null) {
             current.removeOnAttachStateChangeListener(oldListener)
         }
+        clearAppliedBackground()
 
         val listener = object : View.OnAttachStateChangeListener {
             override fun onViewAttachedToWindow(attachedView: View) {
@@ -315,42 +329,58 @@ object LockScreenAlbumArtController {
             workFuture?.cancel(true)
             worker.queue.clear()
             worker.purge()
+            mainHandler.removeCallbacksAndMessages(publishHandlerToken)
             activeKey = key
             activeGeneration = generation
             try {
                 workFuture = worker.submit {
                     var posted = false
-                    ModuleHelper.guarded("LockScreenAlbumArtController.worker") {
-                        val processed = process(
-                            source,
-                            blur,
-                            rescale,
-                            grayscale,
-                            targetWidth,
-                            targetHeight,
-                            generation,
-                            key
-                        ) ?: return@guarded
-                        if (!isCurrent(generation)) return@guarded
+                    try {
+                        ModuleHelper.guarded("LockScreenAlbumArtController.worker") {
+                            val processed = process(
+                                source,
+                                blur,
+                                rescale,
+                                grayscale,
+                                targetWidth,
+                                targetHeight,
+                                generation,
+                                key
+                            ) ?: return@guarded
+                            if (!isCurrent(generation)) return@guarded
 
-                        val colors = try {
-                            WallpaperColors.fromBitmap(processed)
-                        } catch (failure: Throwable) {
-                            XposedHelpers.log(failure)
-                            null
-                        }
-                        if (!isCurrent(generation)) return@guarded
-
-                        posted = mainHandler.post {
-                            ModuleHelper.guarded("LockScreenAlbumArtController.publish") {
-                                if (isCurrent(generation) && canProcess() && pendingSource === source) {
-                                    applyResult(context, processed, colors)
-                                }
+                            val colors = try {
+                                WallpaperColors.fromBitmap(processed)
+                            } catch (oom: OutOfMemoryError) {
+                                throw oom
+                            } catch (failure: Throwable) {
+                                XposedHelpers.log(failure)
+                                null
                             }
-                            finishGeneration(generation)
+                            if (!isCurrent(generation)) return@guarded
+
+                            synchronized(workLock) {
+                                if (!isCurrent(generation)) return@guarded
+                                posted = mainHandler.postAtTime(
+                                    {
+                                        try {
+                                            ModuleHelper.guarded("LockScreenAlbumArtController.publish") {
+                                                if (isCurrent(generation) && canProcess() && pendingSource === source) {
+                                                    applyResult(context, processed, colors)
+                                                }
+                                            }
+                                        } finally {
+                                            finishGeneration(generation)
+                                        }
+                                    },
+                                    publishHandlerToken,
+                                    SystemClock.uptimeMillis()
+                                )
+                            }
                         }
+                    } finally {
+                        if (!posted) finishGeneration(generation)
                     }
-                    if (!posted) finishGeneration(generation)
                 }
             } catch (failure: RejectedExecutionException) {
                 activeKey = null
@@ -388,8 +418,9 @@ object LockScreenAlbumArtController {
 
         val signature =
             AlbumArtCacheSignature(outputWidth, outputHeight, blur, rescale, grayscale)
-        val artworkCache = cacheFor(signature)
-        artworkCache?.get(key)?.let { return it }
+        synchronized(cacheLock) {
+            cacheForLocked(signature)?.get(key)?.let { return it }
+        }
 
         val downsampled =
             if (source.width == inputSize.width && source.height == inputSize.height) {
@@ -397,26 +428,59 @@ object LockScreenAlbumArtController {
             } else {
                 Bitmap.createScaledBitmap(source, inputSize.width, inputSize.height, true)
             }
-        if (!isCurrent(generation)) return null
+        var blurred: Bitmap? = null
+        var processed: Bitmap? = null
+        var keepProcessed = false
+        try {
+            if (!isCurrent(generation)) return null
 
-        val blurred =
-            if (blur > 0) HookUtils.fastBlur(downsampled, blur + 1) ?: downsampled else downsampled
-        if (!isCurrent(generation)) return null
+            blurred =
+                if (blur > 0) HookUtils.fastBlur(downsampled, blur + 1) ?: downsampled else downsampled
+            if (!isCurrent(generation)) return null
 
-        val processed = drawAlbumArt(
-            blurred,
-            rescale,
-            grayscale,
-            outputWidth,
-            outputHeight
-        ) ?: return null
-        if (!isCurrent(generation)) return null
+            processed = drawAlbumArt(
+                blurred,
+                rescale,
+                grayscale,
+                outputWidth,
+                outputHeight
+            ) ?: return null
+            if (!isCurrent(generation)) return null
 
-        artworkCache?.put(key, processed)
-        return processed
+            synchronized(cacheLock) {
+                if (!isCurrent(generation)) return null
+                cacheForLocked(signature)?.put(key, processed)
+            }
+            keepProcessed = true
+            return processed
+        } finally {
+            val kept = if (keepProcessed) processed else null
+            if (downsampled !== source && downsampled !== kept && !downsampled.isRecycled) {
+                downsampled.recycle()
+            }
+            if (
+                blurred != null &&
+                blurred !== source &&
+                blurred !== downsampled &&
+                blurred !== kept &&
+                !blurred.isRecycled
+            ) {
+                blurred.recycle()
+            }
+            if (
+                processed != null &&
+                processed !== source &&
+                processed !== downsampled &&
+                processed !== blurred &&
+                processed !== kept &&
+                !processed.isRecycled
+            ) {
+                processed.recycle()
+            }
+        }
     }
 
-    private fun cacheFor(signature: AlbumArtCacheSignature): LruCache<AlbumArtCacheKey, Bitmap>? {
+    private fun cacheForLocked(signature: AlbumArtCacheSignature): LruCache<AlbumArtCacheKey, Bitmap>? {
         val budget = AlbumArtPolicy.cacheBudgetBytes(signature.targetWidth, signature.targetHeight)
         if (budget <= 0) return null
 
@@ -515,7 +579,11 @@ object LockScreenAlbumArtController {
     }
 
     private fun isCurrent(generation: Long): Boolean =
-        AlbumArtPolicy.shouldPublish(generation, requestGeneration.get())
+        AlbumArtPolicy.shouldContinue(
+            generation,
+            requestGeneration.get(),
+            Thread.currentThread().isInterrupted
+        )
 
     private fun hasActiveWork(): Boolean =
         synchronized(workLock) { activeGeneration != 0L }
@@ -538,6 +606,44 @@ object LockScreenAlbumArtController {
             worker.queue.clear()
             worker.purge()
         }
+        mainHandler.removeCallbacksAndMessages(publishHandlerToken)
+    }
+
+    private fun clearCache() {
+        synchronized(cacheLock) {
+            cache?.evictAll()
+            cache = null
+            cacheBudgetBytes = 0
+            cacheSignature = null
+        }
+    }
+
+    private fun applyBackground(view: View, art: Bitmap) {
+        val currentView = appliedViewRef?.get()
+        val currentDrawable = appliedDrawableRef?.get()
+        if (
+            currentView === view &&
+            currentDrawable?.bitmap === art &&
+            view.background === currentDrawable
+        ) {
+            return
+        }
+
+        clearAppliedBackground()
+        val drawable = BitmapDrawable(view.resources, art)
+        view.background = drawable
+        appliedViewRef = WeakReference(view)
+        appliedDrawableRef = WeakReference(drawable)
+    }
+
+    private fun clearAppliedBackground() {
+        val view = appliedViewRef?.get()
+        val drawable = appliedDrawableRef?.get()
+        if (view != null && drawable != null && view.background === drawable) {
+            view.background = null
+        }
+        appliedViewRef = null
+        appliedDrawableRef = null
     }
 
     private fun invalidateForSizeChange(width: Int, height: Int) {
@@ -549,8 +655,7 @@ object LockScreenAlbumArtController {
         ) {
             requestGeneration.incrementAndGet()
             cancelWork()
-            cache?.evictAll()
-            cacheSignature = null
+            clearCache()
             val clazz = miuiThemeUtilsClass
             if (clazz != null) XposedHelpers.setAdditionalStaticField(clazz, "mAlbumArt", null)
         }

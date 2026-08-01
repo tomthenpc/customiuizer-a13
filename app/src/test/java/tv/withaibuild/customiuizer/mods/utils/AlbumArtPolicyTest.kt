@@ -37,7 +37,7 @@ class AlbumArtPolicyTest {
     fun cacheBudgetIsMeasuredInBytesAndCappedSafely() {
         val oneFrame = 1_080 * 2_400 * 4
 
-        assertEquals(oneFrame * 2, AlbumArtPolicy.cacheBudgetBytes(1_080, 2_400))
+        assertEquals(oneFrame, AlbumArtPolicy.cacheBudgetBytes(1_080, 2_400))
         assertEquals(0, AlbumArtPolicy.cacheBudgetBytes(0, 2_400))
         assertEquals(Int.MAX_VALUE, AlbumArtPolicy.cacheBudgetBytes(Int.MAX_VALUE, Int.MAX_VALUE))
     }
@@ -77,5 +77,7 @@ class AlbumArtPolicyTest {
     fun onlyLatestGenerationMayPublish() {
         assertFalse(AlbumArtPolicy.shouldPublish(4L, 5L))
         assertTrue(AlbumArtPolicy.shouldPublish(5L, 5L))
+        assertFalse(AlbumArtPolicy.shouldContinue(5L, 5L, interrupted = true))
+        assertTrue(AlbumArtPolicy.shouldContinue(5L, 5L, interrupted = false))
     }
 }

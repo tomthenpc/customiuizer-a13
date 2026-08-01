@@ -96,6 +96,8 @@ object SystemUILockScreenHooks {
                                 if (intent.action == GlobalActions.EVENT_PREFIX + "UPDATE_LS_ALBUM_ART") {
                                     try {
                                         XposedHelpers.callMethod(panel, "updateThemeBackground")
+                                    } catch (oom: OutOfMemoryError) {
+                                        throw oom
                                     } catch (e: Throwable) {
                                         XposedHelpers.callMethod(panel, "updateThemeBackgroundVisibility")
                                     }

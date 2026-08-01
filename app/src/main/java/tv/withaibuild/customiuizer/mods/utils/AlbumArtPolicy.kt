@@ -25,7 +25,7 @@ internal data class AlbumArtCacheSignature(
 
 internal object AlbumArtPolicy {
     const val BLUR_MAX_PIXELS = 512 * 512
-    const val CACHE_BUDGET_FRAMES = 2
+    const val CACHE_BUDGET_FRAMES = 1
     private const val BYTES_PER_PIXEL = 4
 
     fun downsampleSize(
@@ -77,4 +77,10 @@ internal object AlbumArtPolicy {
 
     fun shouldPublish(resultGeneration: Long, currentGeneration: Long): Boolean =
         resultGeneration == currentGeneration
+
+    fun shouldContinue(
+        resultGeneration: Long,
+        currentGeneration: Long,
+        interrupted: Boolean
+    ): Boolean = !interrupted && shouldPublish(resultGeneration, currentGeneration)
 }
