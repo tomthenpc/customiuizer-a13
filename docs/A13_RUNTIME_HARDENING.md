@@ -65,7 +65,7 @@ Source-level steady-state cost checklist. Each row states the current evidence; 
 | `DeviceInfoMonitor` | Periodic while screen on | Zero when both master features are disabled | One sysfs pass per ROM-looper tick; failures back off from 2s to 60s | Two Handlers, one snapshot, two text states, one receiver | Reuses `NetworkSpeedController` looper; no module thread | ROM looper identity and sysfs availability need device-log confirmation |
 | `Launcher` hooks | High | Needs audit | Needs audit | Needs audit | `launcher` events | Object allocation on every layout pass |
 | `Album art` | Event driven | Needs audit | Needs audit | Needs audit | Media broadcast | Bitmap unbounded / full-screen ARGB |
-| `BatteryIndicator` | Event/periodic | Needs audit | Needs audit | Needs audit | Level/tick | Listener lifecycle |
+| `BatteryIndicator` | Event driven; 20ms only during explicit test animation | Zero when feature is disabled | One draw update per state change; deferred View updates are coalesced | One View; lazy rainbow palettes; cached evaluator and shapes | SystemUI battery/power/dark/layout events | Duplicate `createAndAddWindows` installation still needs device-log confirmation |
 | `AudioVisualizer` | Per frame | Needs audit | Needs audit | Needs audit | Visualizer callback | Per-frame allocation |
 | `Diagnostics` | Error events | Zero if no errors | `CopyOnWriteArraySet` / `Map` | diagnostic ids | None | Need explicit capacity bound |
 
@@ -96,7 +96,7 @@ Source-level steady-state cost checklist. Each row states the current evidence; 
 | `AudioVisualizer` capture | visualizer / per frame | `onAttachedToWindow` if enabled | `onDetachedFromWindow` release | not applicable | `release()` on detach | visualizer feature pref | session token + `WeakReference` | audit not yet completed; Visualizer release lifecycle needs explicit test |
 | `LockScreenAlbumArtController` decode | media change | enabled + active media | `stop()` / controller destroyed | not applicable | release `View`/Drawable | lock-screen album art pref | in-flight `Future` per cache key; `generation` token | `AlbumArtPolicy` budgets bytes; `inFlight` cleanup pending |
 | `Network speed` | ROM `updateNetworkSpeed` / `postUpdateNetworkSpeedDelay` | MIUI `NetworkSpeedController` is already ticked by the system; module hooks `updateNetworkSpeed` and `updateText` | ROM stops its own updater; module does not add a second cycle | N/A (ROM owned) | `NetSpeedStyleHook` constructor attaches `OnAttachStateChangeListener` to remove the 200ms style init `Runnable` on detach | `FeatureDispatcher` gate for `NetSpeedStyleHook` / `DetailedNetSpeedHook` / `NetSpeedIntervalHook` | one-shot 200ms `postDelayed` per `NetworkSpeedView` | module only reformats the text produced by ROM; `updateText` reuses cached `unitSuffix` and `speedChars` per locale |
-| `BatteryIndicator` | `observePreferenceChange` + `viewScope.launch` | enabled | view detached | needs audit | `viewScope` cleared | `BatteryIndicator` pref | single `viewScope` | lifecycle audited but needs explicit View detach test |
+| `BatteryIndicator` | preference observer + battery/power/dark/layout events; explicit test uses one `View.postDelayed` chain | feature installed and View attached | View detached or test completes | not applicable | detach unregisters observer/receiver and removes every owned Runnable | `BatteryIndicator` pref | stable coalesced Runnables; weak `CentralSurfaces` reference | static lifecycle hardening complete; duplicate window installation and detach behavior need device-log confirmation |
 
 *Components marked `needs audit` are tracked in the remaining-risks list below.* |
 
@@ -162,7 +162,7 @@ The module does not add a periodic network-speed updater. The ROM still drives t
 | P0-2 Network speed per-controller / one-sample | PARTIAL | `getTotalByte` hook removed; per-controller `NetSpeedRuntimeState` via `AdditionalInstanceField`; one `getTrafficBytes` per tick; no `Pair`; disconnect resets the full sampling baseline; style initialization commits once per View; locale/pref caching remains pending |
 | P0-3 StepCounter query token / lifecycle | VERIFIED_STATIC | `QueryTicket(generation, queryId)`; `Lifecycle.canPublish` single atomic check; `PendingQuerySlot` identity-based; all `QueryRunnable` paths enter `finally`; terminal `queryHandler`/`uiHandler` posts cleaned; `Lifecycle`/`View` thread races covered by tests |
 | P0-4 DeviceInfo lifecycle | VERIFIED_STATIC | reuses the ROM-provided `NetworkSpeedController` looper; screen-off removes monitor/UI messages; generation + snapshot identity reject stale I/O publication and duplicate scheduling; bounded failure backoff; OOM rethrown |
-| P1-1 BatteryIndicator lifecycle | NOT_STARTED | pending |
+| P1-1 BatteryIndicator lifecycle | VERIFIED_STATIC | `CentralSurfaces` reference is weak; preference/layout/test Runnables are stable and cancelled on detach; detached Views reject draw work; observer and receiver remain owner-scoped; rainbow palettes, evaluator and shapes are reused; OOM is rethrown; duplicate window installation still needs device-log confirmation |
 | P1-2 AudioVisualizer scheduling | NOT_STARTED | pending |
 | P1-3 Album Art large-object lifecycle | NOT_STARTED | pending |
 | P1-4 Receiver deterministic ordering test | NOT_STARTED | pending |

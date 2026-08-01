@@ -14,8 +14,6 @@ import android.graphics.Shader
 import android.graphics.drawable.ShapeDrawable
 import android.graphics.drawable.shapes.RectShape
 import android.graphics.drawable.shapes.RoundRectShape
-import android.os.Handler
-import android.os.Looper
 import android.util.AttributeSet
 import android.view.Gravity
 import android.view.View
@@ -25,11 +23,16 @@ import androidx.appcompat.widget.AppCompatImageView
 import tv.withaibuild.customiuizer.MainModule
 import tv.withaibuild.customiuizer.mods.utils.ModuleHelper
 import tv.withaibuild.customiuizer.mods.utils.XposedHelpers
+import java.lang.ref.WeakReference
 
 class BatteryIndicator @JvmOverloads constructor(
     context: Context,
     attrs: AttributeSet? = null
 ) : AppCompatImageView(context, attrs) {
+
+    private companion object {
+        const val RAINBOW_STEPS = 15
+    }
 
     protected var mDisplayWidth = 0
     protected var mIsBeingCharged = false
@@ -62,17 +65,70 @@ class BatteryIndicator @JvmOverloads constructor(
     private var mBottom = false
     private var mLimited = false
     private var mTintColor = Color.argb(153, 0, 0, 0)
-    private var mStatusBar: Any? = null
+    private var mStatusBar: WeakReference<Any>? = null
     private var callbacksEnabled = false
+    private val argbEvaluator = ArgbEvaluator()
+    private val rectShape = RectShape()
+    private var roundRectHeight = Int.MIN_VALUE
+    private var roundRectShape: RoundRectShape? = null
+    private lateinit var rainbowPositions: FloatArray
+    private lateinit var rainbowColors: IntArray
+    private lateinit var centeredRainbowColors: IntArray
+
+    private val rainbowShaderFactory = object : ShapeDrawable.ShaderFactory() {
+        override fun resize(width: Int, height: Int): Shader {
+            val displayPadding = Math.round(mPadding / 100f * mDisplayWidth)
+            val colors = if (mCentered) centeredRainbowColors else rainbowColors
+            return if (mCentered) {
+                LinearGradient(
+                    width / 2f - (mDisplayWidth - displayPadding * 2) / 2f,
+                    height / 2f,
+                    (mDisplayWidth - displayPadding * 2).toFloat(),
+                    height / 2f,
+                    colors,
+                    rainbowPositions,
+                    Shader.TileMode.CLAMP
+                )
+            } else {
+                LinearGradient(
+                    0f,
+                    height / 2f,
+                    (mDisplayWidth - displayPadding * 2).toFloat(),
+                    height / 2f,
+                    colors,
+                    rainbowPositions,
+                    Shader.TileMode.CLAMP
+                )
+            }
+        }
+    }
+
+    private val preferenceUpdate = Runnable {
+        ModuleHelper.guarded("BatteryIndicator.preferenceUpdate") {
+            if (!isAttachedToWindow) return@guarded
+            updateParameters()
+            update()
+        }
+    }
+
+    private val deferredUpdate = Runnable {
+        ModuleHelper.guarded("BatteryIndicator.deferredUpdate") {
+            if (isAttachedToWindow) update()
+        }
+    }
+
+    private val finishTest = Runnable {
+        ModuleHelper.guarded("BatteryIndicator.finishTest") {
+            if (!isAttachedToWindow) return@guarded
+            updateParameters()
+            update()
+        }
+    }
 
     private val preferenceObserver = ModuleHelper.PreferenceObserver { key ->
         if (!mTesting && key != null && key.contains("pref_key_system_batteryindicator")) {
-            Handler(Looper.getMainLooper()).post {
-                ModuleHelper.guarded("BatteryIndicator.preferenceUpdate") {
-                    updateParameters()
-                    update()
-                }
-            }
+            removeCallbacks(preferenceUpdate)
+            post(preferenceUpdate)
         }
     }
 
@@ -99,7 +155,7 @@ class BatteryIndicator @JvmOverloads constructor(
     }
 
     fun init(statusBar: Any?) {
-        mStatusBar = statusBar
+        mStatusBar = statusBar?.let(::WeakReference)
 
         try {
             val shape = ShapeDrawable()
@@ -108,6 +164,8 @@ class BatteryIndicator @JvmOverloads constructor(
             paint.isAntiAlias = true
             shape.setIntrinsicWidth(9999)
             setImageDrawable(shape)
+        } catch (oom: OutOfMemoryError) {
+            throw oom
         } catch (t: Throwable) {
             XposedHelpers.log(t)
         }
@@ -136,13 +194,20 @@ class BatteryIndicator @JvmOverloads constructor(
 
     override fun onAttachedToWindow() {
         super.onAttachedToWindow()
-        if (callbacksEnabled) registerCallbacks()
+        if (callbacksEnabled) {
+            registerCallbacks()
+            postUpdate()
+        }
     }
 
     override fun onDetachedFromWindow() {
         ModuleHelper.removePreferenceObserver("systemui.batteryIndicator", this)
         ModuleHelper.unregisterOwnedReceiver("systemui.batteryIndicatorReceiver", this)
+        removeCallbacks(preferenceUpdate)
+        removeCallbacks(deferredUpdate)
+        removeCallbacks(finishTest)
         removeCallbacks(step)
+        mTesting = false
         super.onDetachedFromWindow()
     }
 
@@ -150,6 +215,10 @@ class BatteryIndicator @JvmOverloads constructor(
 
     private inner class StepRunnable : Runnable {
         override fun run() {
+            if (!isAttachedToWindow) {
+                mTesting = false
+                return
+            }
             mTestPowerLevel--
             if (mTestPowerLevel >= 0) {
                 update()
@@ -157,22 +226,41 @@ class BatteryIndicator @JvmOverloads constructor(
             } else {
                 removeCallbacks(this)
                 mTesting = false
-                postDelayed({
-                    updateParameters()
-                    update()
-                }, 1000L)
+                postDelayed(finishTest, 1000L)
             }
         }
     }
 
     private fun startTest() {
+        if (!isAttachedToWindow) return
+        removeCallbacks(finishTest)
+        removeCallbacks(step)
         mTesting = true
         mTestPowerLevel = 100
         post(step)
     }
 
     private fun postUpdate() {
-        post { update() }
+        removeCallbacks(deferredUpdate)
+        post(deferredUpdate)
+    }
+
+    private fun ensureRainbowPalette() {
+        if (::rainbowPositions.isInitialized) return
+
+        rainbowPositions = FloatArray(RAINBOW_STEPS)
+        rainbowColors = IntArray(RAINBOW_STEPS)
+        centeredRainbowColors = IntArray(RAINBOW_STEPS)
+        val hsv = floatArrayOf(0f, 1f, 1f)
+        val jump = 300f / RAINBOW_STEPS
+        for (i in 0 until RAINBOW_STEPS) {
+            rainbowPositions[i] = i / (RAINBOW_STEPS - 1).toFloat()
+            hsv[0] = jump * i
+            rainbowColors[i] = Color.HSVToColor(255, hsv)
+            hsv[0] = 240f + jump * i
+            if (hsv[0] > 360f) hsv[0] -= 360f
+            centeredRainbowColors[i] = Color.HSVToColor(255, hsv)
+        }
     }
 
     fun updateScreenShotState(screenshot: Boolean) {
@@ -237,6 +325,7 @@ class BatteryIndicator @JvmOverloads constructor(
     }
 
     fun update() {
+        if (!isAttachedToWindow) return
         if (mScreenshot) {
             visibility = View.GONE
         } else {
@@ -271,6 +360,8 @@ class BatteryIndicator @JvmOverloads constructor(
 
         try {
             imageAlpha = 255 - Math.round(255 * mTransparency / 100f)
+        } catch (oom: OutOfMemoryError) {
+            throw oom
         } catch (ignored: Throwable) {
         }
         visibility = mVisibility
@@ -293,14 +384,15 @@ class BatteryIndicator @JvmOverloads constructor(
             val paint = shape.paint
             paint.shader = null
 
-            if (color == Color.TRANSPARENT && mStatusBar != null) {
+            val statusBar = mStatusBar?.get()
+            if (color == Color.TRANSPARENT && statusBar != null) {
                 try {
                     color = if (mExpanded) {
                         Color.WHITE
                     } else {
                         if (mOnKeyguard) {
                             val isLightWallpaperStatusBar = XposedHelpers.getBooleanField(
-                                XposedHelpers.getObjectField(mStatusBar, "mKeyguardIndicationController"),
+                                XposedHelpers.getObjectField(statusBar, "mKeyguardIndicationController"),
                                 "mDarkStyle"
                             )
                             if (isLightWallpaperStatusBar) Color.argb(153, 0, 0, 0) else Color.WHITE
@@ -308,6 +400,8 @@ class BatteryIndicator @JvmOverloads constructor(
                             mTintColor
                         }
                     }
+                } catch (oom: OutOfMemoryError) {
+                    throw oom
                 } catch (t: Throwable) {
                     XposedHelpers.log(t)
                 }
@@ -316,54 +410,25 @@ class BatteryIndicator @JvmOverloads constructor(
             val mDisplayPadding = Math.round(mPadding / 100f * this.mDisplayWidth)
 
             if (mColorMode == ColorMode.GRADUAL) {
-                color = ArgbEvaluator().evaluate(
+                color = argbEvaluator.evaluate(
                     1f - (level - this.mLowLevel) / (100f - this.mLowLevel),
                     color,
                     mLowColor
                 ) as Int
             } else if (mColorMode == ColorMode.RAINBOW) {
-                val steps = 15
-                val jump = 300f / steps
-                val pos = FloatArray(steps)
-                val rainbow = IntArray(steps)
-                for (i in 0 until steps) {
-                    pos[i] = i / (steps - 1).toFloat()
-                    var c = (if (mCentered) 240 else 0) + jump * i
-                    if (c > 360) c -= 360
-                    rainbow[i] = Color.HSVToColor(255, floatArrayOf(c, 1.0f, 1.0f))
-                }
-                shape.shaderFactory = object : ShapeDrawable.ShaderFactory() {
-                    override fun resize(width: Int, height: Int): Shader {
-                        return if (mCentered) {
-                            LinearGradient(
-                                width / 2f - (mDisplayWidth - mDisplayPadding * 2) / 2f,
-                                height / 2f,
-                                (mDisplayWidth - mDisplayPadding * 2).toFloat(),
-                                height / 2f,
-                                rainbow,
-                                pos,
-                                Shader.TileMode.CLAMP
-                            )
-                        } else {
-                            LinearGradient(
-                                0f,
-                                height / 2f,
-                                (mDisplayWidth - mDisplayPadding * 2).toFloat(),
-                                height / 2f,
-                                rainbow,
-                                pos,
-                                Shader.TileMode.CLAMP
-                            )
-                        }
-                    }
-                }
+                ensureRainbowPalette()
+                shape.shaderFactory = rainbowShaderFactory
             }
 
             paint.color = color
             shape.shape = if (mRounded) {
-                RoundRectShape(FloatArray(8) { mHeight.toFloat() }, null, null)
+                if (roundRectHeight != mHeight) {
+                    roundRectHeight = mHeight
+                    roundRectShape = RoundRectShape(FloatArray(8) { mHeight.toFloat() }, null, null)
+                }
+                roundRectShape
             } else {
-                RectShape()
+                rectShape
             }
 
             val mWidth = Math.round((this.mDisplayWidth - mDisplayPadding * 2) * level / 100f)
@@ -417,6 +482,8 @@ class BatteryIndicator @JvmOverloads constructor(
             }
 
             invalidate()
+        } catch (oom: OutOfMemoryError) {
+            throw oom
         } catch (t: Throwable) {
             XposedHelpers.log(t)
         }
