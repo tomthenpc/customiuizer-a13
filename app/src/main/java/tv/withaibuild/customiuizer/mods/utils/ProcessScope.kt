@@ -19,6 +19,9 @@ enum class ProcessScope {
     SECURITY_CENTER_BOOTAWARE,
     POWER_KEEPER,
     WALLPAPER,
+    MEDIA,
+    PHONE,
+    PACKAGE_INSTALLER,
     INPUT_METHOD,
     NETWORK_STACK,
     GENERIC_APP,
@@ -42,14 +45,14 @@ object ProcessScopes {
         PKG_HOME,
         PKG_GLOBAL_LAUNCHER,
         "com.miui.miwallpaper",
+        "com.miui.screenshot",
+        "com.miui.gallery",
         "com.lbe.security.miui",
         "com.android.incallui",
         PKG_SECURITY_CENTER,
         PKG_POWER_KEEPER,
         PKG_SETTINGS,
-        PKG_PACKAGE_INSTALLER,
-        "com.miui.screenshot",
-        "com.miui.gallery"
+        PKG_PACKAGE_INSTALLER
     )
 
     @JvmStatic
@@ -86,8 +89,10 @@ object ProcessScopes {
         }
         PKG_POWER_KEEPER -> ProcessScope.POWER_KEEPER
         "com.miui.miwallpaper" -> ProcessScope.WALLPAPER
-        PKG_PACKAGE_INSTALLER -> ProcessScope.GENERIC_APP
-        "com.miui.miwallpaper" -> ProcessScope.WALLPAPER
+        "com.miui.screenshot",
+        "com.miui.gallery" -> ProcessScope.MEDIA
+        "com.android.incallui" -> ProcessScope.PHONE
+        PKG_PACKAGE_INSTALLER -> ProcessScope.PACKAGE_INSTALLER
         "com.android.location.fused" -> ProcessScope.UNSUPPORTED
         else -> when {
             packageName.startsWith("com.android.networkstack") -> ProcessScope.NETWORK_STACK

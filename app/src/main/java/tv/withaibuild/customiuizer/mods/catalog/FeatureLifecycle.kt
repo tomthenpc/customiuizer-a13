@@ -61,6 +61,9 @@ object FeatureLifecycles {
         ProcessScope.SECURITY_CENTER_MAIN,
         ProcessScope.POWER_KEEPER,
         ProcessScope.WALLPAPER,
+        ProcessScope.MEDIA,
+        ProcessScope.PHONE,
+        ProcessScope.PACKAGE_INSTALLER,
         ProcessScope.INPUT_METHOD,
         ProcessScope.GENERIC_APP -> FeatureLifecycle.READY
         ProcessScope.SETTINGS_REMOTE,
