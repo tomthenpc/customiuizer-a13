@@ -11,6 +11,7 @@ import android.os.Handler
 import android.os.PowerManager
 import android.text.format.DateFormat
 import java.lang.ref.WeakReference
+import java.util.concurrent.atomic.AtomicLong
 import android.util.TypedValue
 import android.view.Gravity
 import android.view.View
@@ -55,6 +56,7 @@ object SystemStatusBarClockAndMoreHooks {
                                     stopSecondTimer(controller)
                                 }
                                 Intent.ACTION_SCREEN_ON,
+                                Intent.ACTION_TIMEZONE_CHANGED,
                                 "android.intent.action.TIME_SET" -> {
                                     state.setScreen(true)
                                     if (isScreenOn(controllerContext)) startOrRestartSecondTicker(controller)
@@ -66,6 +68,7 @@ object SystemStatusBarClockAndMoreHooks {
 
                 val filter = IntentFilter().apply {
                     addAction("android.intent.action.TIME_SET")
+                    addAction(Intent.ACTION_TIMEZONE_CHANGED)
                     addAction(Intent.ACTION_SCREEN_ON)
                     addAction(Intent.ACTION_SCREEN_OFF)
                 }
@@ -534,7 +537,9 @@ object SystemStatusBarClockAndMoreHooks {
         return state
     }
 
-    private fun nextGeneration(): Long = java.lang.System.nanoTime()
+    private val tickerGeneration = AtomicLong(0L)
+
+    private fun nextGeneration(): Long = tickerGeneration.incrementAndGet()
 
     private fun stopSecondTimer(clockController: Any) {
         val state = secondTickerState(clockController)
@@ -563,7 +568,10 @@ object SystemStatusBarClockAndMoreHooks {
             state.stop()
             return
         }
-        val mContext = XposedHelpers.getObjectField(clockController, "mContext") as? Context ?: return
+        val mContext = XposedHelpers.getObjectField(clockController, "mContext") as? Context ?: run {
+            state.stop()
+            return
+        }
         if (clockHandler == null) {
             clockHandler = Handler(mContext.mainLooper)
             XposedHelpers.setAdditionalInstanceField(clockController, "clockHandler", clockHandler)

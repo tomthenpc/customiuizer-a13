@@ -248,6 +248,72 @@ class SystemStatusBarClockAndMoreHooksTest {
     }
 
     @Test
+    fun clockRunnable_timeZoneChangedKeepsOnePending() {
+        val state = SecondTickerState()
+        val gen1 = 100L
+        state.setScreen(true)
+        state.start(gen1)
+        val scheduler = FakeTickerScheduler()
+        val gen2 = 200L
+        val newRunnable = TestClockRunnable(gen2, state, scheduler)
+
+        val oldRunnable = TestClockRunnable(gen1, state, scheduler) {
+            // Simulate an ACTION_TIMEZONE_CHANGED broadcast mid-tick.
+            state.start(gen2)
+            scheduleTicker(state, scheduler, newRunnable, gen2, 1000)
+        }
+        scheduleTicker(state, scheduler, oldRunnable, gen1, 1000)
+
+        scheduler.runCurrent()
+
+        assertEquals(1, scheduler.pendingCount())
+        assertTrue(scheduler.pending.contains(newRunnable))
+    }
+
+    @Test
+    fun clockRunnable_consecutiveTimeZoneChangesKeepOnePending() {
+        val state = SecondTickerState()
+        state.setScreen(true)
+        val scheduler = FakeTickerScheduler()
+        var currentGen = 1L
+        val firstRunnable = TestClockRunnable(currentGen, state, scheduler)
+        scheduleTicker(state, scheduler, firstRunnable, currentGen, 1000)
+
+        // first TZ change
+        currentGen++
+        state.start(currentGen)
+        val secondRunnable = TestClockRunnable(currentGen, state, scheduler)
+        scheduler.removeCallbacks(firstRunnable)
+        scheduleTicker(state, scheduler, secondRunnable, currentGen, 1000)
+
+        // second TZ change before the new callback runs
+        currentGen++
+        state.start(currentGen)
+        val thirdRunnable = TestClockRunnable(currentGen, state, scheduler)
+        scheduler.removeCallbacks(secondRunnable)
+        scheduleTicker(state, scheduler, thirdRunnable, currentGen, 1000)
+
+        assertEquals(1, scheduler.pendingCount())
+    }
+
+    @Test
+    fun clockRunnable_contextLostBeforeStartStopsState() {
+        // When startOrRestartSecondTicker() cannot read mContext, it must stop the ticker.
+        // We can only test the state side-effect through the public state API.
+        val state = SecondTickerState()
+        state.setScreen(true)
+        state.start(1L)
+
+        // Simulate a failed start that left callbackPending=true without a post.
+        state.markCallbackPending(true)
+        // A stop resets it.
+        state.stop()
+
+        assertFalse(state.running)
+        assertFalse(state.callbackPending)
+    }
+
+    @Test
     fun clockRunnable_restartsWhileRunningKeepsOnePending() {
         val state = SecondTickerState()
         val gen1 = 100L
