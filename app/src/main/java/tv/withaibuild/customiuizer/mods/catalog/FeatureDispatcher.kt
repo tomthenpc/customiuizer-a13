@@ -108,9 +108,12 @@ object FeatureDispatcher {
 
     private fun installStatusBarClockTweak(runtime: FeatureRuntime): Boolean {
         if (!ProcessTarget.SystemUI.matches(runtime.processName)) return false
-        if (!runtime.prefs.getBoolean("system_statusbar_clocktweak") &&
-            !runtime.prefs.getBoolean("system_cc_clocktweak") &&
-            !runtime.prefs.getBoolean("system_cc_hidedate") &&
+        val statusBarClockTweakEnabled = runtime.prefs.getBoolean("system_statusbar_clocktweak")
+        val controlCenterClockTweakEnabled = runtime.prefs.getBoolean("system_cc_clocktweak")
+        val hideControlCenterDate = runtime.prefs.getBoolean("system_cc_hidedate")
+        if (!statusBarClockTweakEnabled &&
+            !controlCenterClockTweakEnabled &&
+            !hideControlCenterDate &&
             runtime.prefs.getString("system_cc_dateformat", "").isEmpty()
         ) {
             return false
@@ -120,7 +123,11 @@ object FeatureDispatcher {
         return installWithContract(
             DiagnosticIds.STATUSBAR_CLOCK_TWEAK,
             runtime,
-            CanaryContracts.statusBarClockTweak
+            CanaryContracts.statusBarClockTweakForInstall(
+                statusBarClockTweakEnabled,
+                controlCenterClockTweakEnabled,
+                hideControlCenterDate
+            )
         ) {
             SystemStatusBarClockAndMoreHooks.StatusBarClockTweakHook(
                 runtime.lpparam as PackageReadyParam

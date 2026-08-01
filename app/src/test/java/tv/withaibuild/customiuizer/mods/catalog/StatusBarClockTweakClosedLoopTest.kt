@@ -69,6 +69,79 @@ class StatusBarClockTweakClosedLoopTest {
     }
 
     @Test
+    fun fullLoop_dateOnlyInstallsOnlyDateTargets() {
+        val prefs = PrefMap<String, Any>()
+        prefs["pref_key_system_cc_hidedate"] = true
+
+        val systemui = runtime(prefs)
+
+        assertTrue(FeatureDispatcher.installById("statusBarClockTweak", systemui))
+
+        val summary = DiagnosticRecorder.summarize()[DiagnosticIds.STATUSBAR_CLOCK_TWEAK]
+        assertNotNull(summary)
+        assertEquals(CompatibilityState.COMPATIBLE, summary!!.compatibility)
+        assertEquals(InstallOutcome.INSTALLED, summary.installation)
+        assertEquals(2, summary.installSummary!!.requiredInstalled)
+        assertEquals(2, summary.installSummary!!.requiredTotal)
+        assertEquals(1, summary.installSummary!!.optionalInstalled)
+        assertEquals(1, summary.installSummary!!.optionalTotal)
+    }
+
+    @Test
+    fun fullLoop_customDateFormatDoesNotExpectVisibilityTarget() {
+        val prefs = PrefMap<String, Any>()
+        prefs["pref_key_system_cc_dateformat"] = "yyyy-MM-dd"
+
+        val systemui = runtime(prefs)
+
+        assertTrue(FeatureDispatcher.installById("statusBarClockTweak", systemui))
+
+        val summary = DiagnosticRecorder.summarize()[DiagnosticIds.STATUSBAR_CLOCK_TWEAK]
+        assertNotNull(summary)
+        assertEquals(CompatibilityState.COMPATIBLE, summary!!.compatibility)
+        assertEquals(InstallOutcome.INSTALLED, summary.installation)
+        assertEquals(2, summary.installSummary!!.requiredInstalled)
+        assertEquals(2, summary.installSummary!!.requiredTotal)
+        assertEquals(0, summary.installSummary!!.optionalTotal)
+    }
+
+    @Test
+    fun fullLoop_controlCenterClockOnlyInstallsControllerAndClockTargets() {
+        val prefs = PrefMap<String, Any>()
+        prefs["pref_key_system_cc_clocktweak"] = true
+
+        val systemui = runtime(prefs)
+
+        assertTrue(FeatureDispatcher.installById("statusBarClockTweak", systemui))
+
+        val summary = DiagnosticRecorder.summarize()[DiagnosticIds.STATUSBAR_CLOCK_TWEAK]
+        assertNotNull(summary)
+        assertEquals(CompatibilityState.COMPATIBLE, summary!!.compatibility)
+        assertEquals(InstallOutcome.INSTALLED, summary.installation)
+        assertEquals(4, summary.installSummary!!.requiredInstalled)
+        assertEquals(4, summary.installSummary!!.requiredTotal)
+        assertEquals(0, summary.installSummary!!.optionalTotal)
+    }
+
+    @Test
+    fun fullLoop_statusBarClockOnlyDoesNotExpectDateVisibilityTarget() {
+        val prefs = PrefMap<String, Any>()
+        prefs["pref_key_system_statusbar_clocktweak"] = true
+
+        val systemui = runtime(prefs)
+
+        assertTrue(FeatureDispatcher.installById("statusBarClockTweak", systemui))
+
+        val summary = DiagnosticRecorder.summarize()[DiagnosticIds.STATUSBAR_CLOCK_TWEAK]
+        assertNotNull(summary)
+        assertEquals(CompatibilityState.COMPATIBLE, summary!!.compatibility)
+        assertEquals(InstallOutcome.INSTALLED, summary.installation)
+        assertEquals(5, summary.installSummary!!.requiredInstalled)
+        assertEquals(5, summary.installSummary!!.requiredTotal)
+        assertEquals(0, summary.installSummary!!.optionalTotal)
+    }
+
+    @Test
     fun fullLoop_disabledCreatesNoRuntimeState() {
         val prefs = PrefMap<String, Any>()
 

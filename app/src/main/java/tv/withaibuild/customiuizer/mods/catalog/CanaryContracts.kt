@@ -198,6 +198,27 @@ object CanaryContracts {
     )
     }
 
+    fun statusBarClockTweakForInstall(
+        statusBarClockTweakEnabled: Boolean,
+        controlCenterClockTweakEnabled: Boolean,
+        hideControlCenterDate: Boolean
+    ): HookTargetContract {
+        val controllerHooksEnabled = statusBarClockTweakEnabled || controlCenterClockTweakEnabled
+        val activeRequirements = statusBarClockTweak.requirements.filter { requirement ->
+            when (requirement.id) {
+                "MiuiStatusBarClockController.constructors",
+                "MiuiStatusBarClockController.fireTimeChange" -> controllerHooksEnabled
+                "MiuiClock.setClockVisibility" -> hideControlCenterDate
+                "MiuiPhoneStatusBarView.onAttachedToWindow" -> statusBarClockTweakEnabled
+                else -> true
+            }
+        }
+        return HookTargetContract(
+            featureId = statusBarClockTweak.featureId,
+            requirements = activeRequirements
+        )
+    }
+
     val noMoreIcon: HookTargetContract by lazy(kotlin.LazyThreadSafetyMode.NONE) { HookTargetContract(
         featureId = "noMoreIcon",
         requirements = listOf(
