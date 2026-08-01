@@ -18,6 +18,23 @@ public final class LauncherInstaller {
 
     private LauncherInstaller() {}
 
+    public static void installPackageReady(final PackageReadyParam lpparam) {
+        if (MainModule.mPrefs.getInt("launcher_horizmargin", 0) > 0) LauncherLayoutHooks.HorizontalSpacingRes();
+        if (MainModule.mPrefs.getInt("launcher_indicatorheight", 9) > 9) LauncherLayoutHooks.IndicatorHeightRes();
+        if (MainModule.mPrefs.getInt("launcher_indicator_topmargin", 0) > 0) LauncherLayoutHooks.IndicatorMarginTopHook(lpparam);
+        if (MainModule.mPrefs.getBoolean("launcher_unlockgrids")) {
+            LauncherLayoutHooks.UnlockGridsRes();
+            LauncherLayoutHooks.UnlockGridsHook(lpparam);
+        }
+        if (MainModule.mPrefs.getBoolean("launcher_docktitles")) LauncherLayoutHooks.ShowHotseatTitlesRes();
+        if (MainModule.mPrefs.getBoolean("launcher_disable_log")) {
+            LauncherSystemHooks.DisableLauncherLogHook(lpparam);
+        }
+        if (MainModule.mPrefs.getInt("launcher_topmargin", 0) > 0) LauncherLayoutHooks.WorkspaceCellPaddingTopHook(lpparam);
+        if (MainModule.mPrefs.getInt("launcher_dock_topmargin", 0) > 0) LauncherLayoutHooks.DockMarginTopHook(lpparam);
+        if (MainModule.mPrefs.getInt("launcher_dock_bottommargin", 0) > 0) LauncherLayoutHooks.DockMarginBottomHook(lpparam);
+    }
+
     public static void handleLoadLauncher(final PackageReadyParam lpparam) {
         boolean closeOnLaunch = false;
         FeatureRuntime launcherRuntime = FeatureDispatcher.createRuntime(lpparam.getPackageName(), lpparam, lpparam.getClassLoader(), MainModule.mPrefs);

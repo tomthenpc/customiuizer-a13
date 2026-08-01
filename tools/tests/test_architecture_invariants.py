@@ -45,6 +45,17 @@ class ArchitectureInvariantTest(unittest.TestCase):
         self.assertIn("FeatureId", text)
         self.assertIn("@JvmStatic", text)
 
+    def test_main_module_no_direct_launcher_hooks(self):
+        text = MAIN.read_text(encoding="utf-8")
+        for cls in ("LauncherLayoutHooks", "LauncherSystemHooks", "LauncherAnimationHooks", "LauncherFolderHooks", "LauncherIconHooks"):
+            self.assertNotIn(cls, text, f"MainModule still directly references {cls}")
+
+    def test_launcher_installer_contains_package_ready_hooks(self):
+        text = (REPO / "app" / "src" / "main" / "java" / "tv" / "withaibuild" / "customiuizer" / "installers" / "LauncherInstaller.java").read_text(encoding="utf-8")
+        self.assertIn("installPackageReady", text)
+        self.assertIn("HorizontalSpacingRes", text)
+        self.assertIn("DisableLauncherLogHook", text)
+
     def test_process_scope_is_single_source(self):
         text = read("tv/withaibuild/customiuizer/mods/utils/ProcessScope.kt")
         self.assertIn("enum class ProcessScope", text)

@@ -22,12 +22,6 @@ import tv.withaibuild.customiuizer.mods.Controls;
 import tv.withaibuild.customiuizer.mods.GlobalActions;
 import tv.withaibuild.customiuizer.mods.catalog.FeatureDispatcher;
 import tv.withaibuild.customiuizer.mods.catalog.FeatureRuntime;
-import tv.withaibuild.customiuizer.mods.LauncherAnimationHooks;
-import tv.withaibuild.customiuizer.mods.LauncherFolderHooks;
-import tv.withaibuild.customiuizer.mods.LauncherGestureHooks;
-import tv.withaibuild.customiuizer.mods.LauncherIconHooks;
-import tv.withaibuild.customiuizer.mods.LauncherLayoutHooks;
-import tv.withaibuild.customiuizer.mods.LauncherSystemHooks;
 import tv.withaibuild.customiuizer.mods.SystemAudioAndVisualAndMoreHooks;
 import tv.withaibuild.customiuizer.mods.SystemAudioAndVolumeHooks;
 import tv.withaibuild.customiuizer.mods.SystemChargingAndWallpaperHooks;
@@ -195,21 +189,7 @@ public class MainModule extends XposedModule {
         final boolean isLauncherPkg = scope == ProcessScope.LAUNCHER;
 
         if (isLauncherPkg) {
-            if (mPrefs.getInt("launcher_horizmargin", 0) > 0) LauncherLayoutHooks.HorizontalSpacingRes();
-            if (mPrefs.getInt("launcher_indicatorheight", 9) > 9) LauncherLayoutHooks.IndicatorHeightRes();
-            if (mPrefs.getInt("launcher_indicator_topmargin", 0) > 0) LauncherLayoutHooks.IndicatorMarginTopHook(lpparam);
-            if (mPrefs.getBoolean("launcher_unlockgrids")) {
-                LauncherLayoutHooks.UnlockGridsRes();
-                LauncherLayoutHooks.UnlockGridsHook(lpparam);
-            }
-            if (mPrefs.getBoolean("launcher_docktitles")) LauncherLayoutHooks.ShowHotseatTitlesRes();
-            if (mPrefs.getBoolean("launcher_disable_log")) {
-                LauncherSystemHooks.DisableLauncherLogHook(lpparam);
-            }
-            if (mPrefs.getInt("launcher_topmargin", 0) > 0) LauncherLayoutHooks.WorkspaceCellPaddingTopHook(lpparam);
-            if (mPrefs.getInt("launcher_dock_topmargin", 0) > 0) LauncherLayoutHooks.DockMarginTopHook(lpparam);
-            if (mPrefs.getInt("launcher_dock_bottommargin", 0) > 0) LauncherLayoutHooks.DockMarginBottomHook(lpparam);
-
+            LauncherInstaller.installPackageReady(lpparam);
             watchPreferenceChange();
         }
 
