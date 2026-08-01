@@ -2,6 +2,7 @@ package tv.withaibuild.customiuizer.mods.catalog
 
 import tv.withaibuild.customiuizer.mods.compat.RomEnvironment
 import tv.withaibuild.customiuizer.mods.compat.RomEnvironmentDetector
+import tv.withaibuild.customiuizer.mods.compat.RomEnvironmentDiagnostics
 import tv.withaibuild.customiuizer.mods.utils.HookTargetResolver
 import tv.withaibuild.customiuizer.utils.PrefMap
 
@@ -24,7 +25,9 @@ class FeatureRuntime(
     val classLoader: ClassLoader,
     val prefs: PrefMap<String, Any>
 ) {
-    private val environmentLazy = lazy(LazyThreadSafetyMode.NONE) { RomEnvironmentDetector.detect() }
+    private val environmentLazy = lazy(LazyThreadSafetyMode.SYNCHRONIZED) {
+        RomEnvironmentDetector.detect().also { RomEnvironmentDiagnostics.record(it) }
+    }
     internal val environment: RomEnvironment by environmentLazy
 
     private val resolverLazy = lazy(LazyThreadSafetyMode.NONE) { HookTargetResolver(classLoader) }

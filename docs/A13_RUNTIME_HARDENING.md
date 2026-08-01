@@ -169,18 +169,27 @@ The module does not add a periodic network-speed updater. The ROM still drives t
 ## A13-H1 HyperOS 1 / Android 13 兼容基线
 
 - `RomEnvironment` 数据结构：COMPLETED
+- `SystemPropertyReader` 异常隔离：VERIFIED_STATIC
+  - 缓存 `android.os.SystemProperties.get(String)` Method 一次
+  - 普通反射异常降级为 `null`
+  - 直接 / 包装 `OutOfMemoryError` 重新抛出
 - ROM 分类规则：VERIFIED_STATIC
   - HyperOS 1 证据优先于 MIUI V14 证据
   - 支持 `OS1` / `OS1.0.10.0` / `V14` / `V14.0.10.0` 等格式
+  - 拒绝 `OS10` / `OS` / `V140` / `V13`
   - `UNSUPPORTED_ANDROID` 使用 `ANDROID_VERSION_UNSUPPORTED` reason
 - `FeatureRuntime` cold-path 触发：VERIFIED_STATIC
   - `FeatureDispatcher.installWithContract` 首次读取 `runtime.environment`
   - disabled Feature 不触发检测
-- `SystemPropertyReader` 异常隔离：PENDING
-- 诊断测试隔离：PENDING
-- LSPosed ROM 日志解析：PARTIAL
-  - 可解析 `Diagnostic[rom.environment]` 的 state/compatibility/reason/detail
-  - 最多保留 32 条唯一 ROM 环境记录并统计 overflow
+  - 同一 `FeatureRuntime` 只检测和记录一次
+- 诊断测试隔离：VERIFIED_STATIC
+  - `RomEnvironmentDetector` 不再调用 `DiagnosticRecorder`
+  - `RomEnvironmentDiagnostics` 与分类分离
+  - `FeatureCatalogTest` 不再依赖可变 `recordDiagnostics` 开关
+- LSPosed ROM 日志解析：VERIFIED_STATIC
+  - 保存 `state` / `compatibility` / `reason` / `detail`
+  - 去重 key 包含 `compatibility`
+  - Markdown/Text 摘要增加 ROM Environments 明细
 - H1.2 A14 静态对照：PENDING
   - 需要以只读方式读取 A14 `mods/` 中对应 Hook 文件
   - 对 8 个 Canary 完成 S0–S3 分级

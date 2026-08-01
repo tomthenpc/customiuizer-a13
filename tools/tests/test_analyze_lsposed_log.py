@@ -23,8 +23,16 @@ class RomEnvironmentParsingTest(unittest.TestCase):
         profile.bump_kind(line)
         self.assertEqual(1, len(profile.rom_environment))
         self.assertEqual("COMPATIBLE", profile.rom_environment[0]["state"])
+        self.assertEqual("COMPATIBLE", profile.rom_environment[0]["compatibility"])
         self.assertEqual("ROM_PROFILE_DETECTED", profile.rom_environment[0]["reason"])
         self.assertIn("MIUI14_A13", profile.rom_environment[0]["detail"])
+
+    def test_parse_falls_back_to_state_for_compatibility(self) -> None:
+        profile = analyze.LogProfile()
+        profile.bump_kind("Diagnostic[rom.environment] COMPATIBLE reason=ROM_PROFILE_UNKNOWN detail=UNKNOWN_A13")
+        self.assertEqual(1, len(profile.rom_environment))
+        self.assertEqual("COMPATIBLE", profile.rom_environment[0]["state"])
+        self.assertEqual("COMPATIBLE", profile.rom_environment[0]["compatibility"])
 
     def test_rom_environment_dedup_and_bound(self) -> None:
         profile = analyze.LogProfile()
@@ -42,6 +50,12 @@ class RomEnvironmentParsingTest(unittest.TestCase):
         self.assertEqual(32, len(profile.rom_environment))
         self.assertEqual(8, profile.rom_environment_overflow)
 
+    def test_compatibility_is_part_of_dedup_key(self) -> None:
+        profile = analyze.LogProfile()
+        profile.bump_kind("Diagnostic[rom.environment] COMPATIBLE compat=COMPATIBLE reason=ROM_PROFILE_DETECTED detail=same")
+        profile.bump_kind("Diagnostic[rom.environment] COMPATIBLE compat=DEGRADED reason=ROM_PROFILE_DETECTED detail=same")
+        self.assertEqual(2, len(profile.rom_environment))
+
     def test_hyperos_fallback_counted(self) -> None:
         profile = analyze.LogProfile()
         profile.bump_kind("Diagnostic[statusBarClockTweak] DEGRADED compat=DEGRADED fallback=true reason=HYPEROS_FALLBACK_FOUND")
@@ -52,12 +66,44 @@ class RomEnvironmentParsingTest(unittest.TestCase):
         profile.bump_kind("Diagnostic[statusBarClockTweak] INCOMPATIBLE compat=INCOMPATIBLE reason=HYPEROS_TARGET_NOT_FOUND")
         self.assertEqual(1, profile.hyperos_target_not_found)
 
-    def test_markdown_summary_contains_rom_environment(self) -> None:
+    def test_markdown_summary_contains_rom_table(self) -> None:
         profile = analyze.LogProfile()
         profile.bump_kind("Diagnostic[rom.environment] COMPATIBLE compat=COMPATIBLE reason=ROM_PROFILE_DETECTED detail=HYPEROS1_A13")
         summary = analyze.markdown_summary(profile)
-        self.assertIn("ROM environments", summary)
-        self.assertIn("1 (+0 overflow)", summary)
+        self.assertIn("## ROM Environments", summary)
+        self.assertIn("| State | Compatibility | Reason | Detail |", summary)
+        self.assertIn("COMPATIBLE", summary)
+        self.assertIn("HYPEROS1_A13", summary)
+
+    def test_markdown_summary_escapes_pipe(self) -> None:
+        profile = analyze.LogProfile()
+        profile.bump_kind("Diagnostic[rom.environment] COMPATIBLE compat=COMPATIBLE reason=ROM_PROFILE_DETECTED detail=has|pipe")
+        summary = analyze.markdown_summary(profile)
+        self.assertIn("has\\|pipe", summary)
+
+    def test_markdown_summary_handles_newline_in_detail(self) -> None:
+        profile = analyze.LogProfile()
+        profile.bump_kind("Diagnostic[rom.environment] COMPATIBLE compat=COMPATIBLE reason=ROM_PROFILE_DETECTED detail=line1\nline2")
+        summary = analyze.markdown_summary(profile)
+        self.assertNotIn("\nline2", summary)
+
+    def test_text_summary_contains_rom_environment(self) -> None:
+        profile = analyze.LogProfile()
+        profile.bump_kind("Diagnostic[rom.environment] COMPATIBLE compat=COMPATIBLE reason=ROM_PROFILE_DETECTED detail=MIUI14_A13")
+        summary = analyze.text_summary(profile)
+        self.assertIn("ROM environments:", summary)
+        self.assertIn("compat=COMPATIBLE", summary)
+
+    def test_malformed_line_does_not_crash(self) -> None:
+        profile = analyze.LogProfile()
+        profile.bump_kind("Diagnostic[rom.environment] not well formed")
+        self.assertEqual(0, len(profile.rom_environment))
+
+    def test_empty_profile_markdown(self) -> None:
+        profile = analyze.LogProfile()
+        summary = analyze.markdown_summary(profile)
+        self.assertIn("## ROM Environments", summary)
+        self.assertIn("None", summary)
 
 
 if __name__ == "__main__":

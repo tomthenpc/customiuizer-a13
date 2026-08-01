@@ -66,6 +66,22 @@ RE_HYPEROS_FALLBACK = re.compile(r"fallback=true")
 RE_HYPEROS_TARGET_NOT_FOUND = re.compile(r"HYPEROS_TARGET_NOT_FOUND")
 
 MAX_FINGERPRINTS = 5000
+MAX_ROM_DETAIL_LENGTH = 80
+
+
+def _safe_text(value: str) -> str:
+    v = value.replace("\r", " ").replace("\n", " ")
+    if len(v) > MAX_ROM_DETAIL_LENGTH:
+        v = v[: MAX_ROM_DETAIL_LENGTH - 3] + "..."
+    return v
+
+
+def _md_escape(value: str) -> str:
+    v = value.replace("\\", "\\\\").replace("|", "\\|")
+    v = v.replace("\r", " ").replace("\n", " ")
+    if len(v) > MAX_ROM_DETAIL_LENGTH:
+        v = v[: MAX_ROM_DETAIL_LENGTH - 3] + "..."
+    return v
 
 
 class LogProfile:
@@ -130,12 +146,15 @@ class LogProfile:
             self.hook_failed += 1
         m = RE_ROM.search(line)
         if m:
+            state = m.group(1)
+            compatibility = m.group(2) or state
             entry = {
-                "state": m.group(1),
+                "state": state,
+                "compatibility": compatibility,
                 "reason": m.group(3),
                 "detail": (m.group(4) or "").strip(),
             }
-            key = f"{entry['state']}|{entry['reason']}|{entry['detail']}"
+            key = f"{entry['state']}|{entry['compatibility']}|{entry['reason']}|{entry['detail']}"
             if key not in self.rom_environment_seen:
                 if len(self.rom_environment) < 32:
                     self.rom_environment_seen.add(key)
@@ -331,6 +350,15 @@ def text_summary(profile: LogProfile) -> str:
     ]
     for fp, cnt in profile.top_fingerprints[:10]:
         lines.append(f"  {cnt:5d}  {fp}")
+    if profile.rom_environment:
+        lines.append("")
+        lines.append("ROM environments:")
+        for env in profile.rom_environment[:10]:
+            lines.append(
+                f"  state={env['state']} compat={env['compatibility']} reason={env['reason']} detail={_safe_text(env['detail'])}"
+            )
+        if len(profile.rom_environment) > 10:
+            lines.append(f"  ... and {len(profile.rom_environment) - 10} more")
     if profile.crashes:
         lines.append("")
         lines.append("Crashes with module frames:")
@@ -379,6 +407,19 @@ def markdown_summary(profile: LogProfile) -> str:
     ]
     for fp, cnt in profile.top_fingerprints[:10]:
         lines.append(f"| {cnt} | `{fp}` |")
+
+    lines += ["", "## ROM Environments", ""]
+    if profile.rom_environment:
+        lines += ["| State | Compatibility | Reason | Detail |", "|---|---|---|---|"]
+        for env in profile.rom_environment:
+            lines.append(
+                f"| {env['state']} | {env['compatibility']} | {env['reason']} | {_md_escape(env['detail'])} |"
+            )
+        if profile.rom_environment_overflow:
+            lines.append(f"| ... | ... | ... | +{profile.rom_environment_overflow} overflow |")
+    else:
+        lines.append("None")
+
     if profile.crashes:
         lines += ["", "## Crashes with module frames", ""]
         for c in profile.crashes[:5]:

@@ -10,7 +10,6 @@ import org.junit.Before
 import org.junit.Test
 import tv.withaibuild.customiuizer.MainModule
 import tv.withaibuild.customiuizer.mods.catalog.CompatibilityState
-import tv.withaibuild.customiuizer.mods.compat.RomEnvironmentDetector
 import tv.withaibuild.customiuizer.mods.diagnostics.DiagnosticIds
 import tv.withaibuild.customiuizer.mods.diagnostics.DiagnosticRecorder
 import tv.withaibuild.customiuizer.mods.diagnostics.InstallOutcome
@@ -29,10 +28,12 @@ class FeatureCatalogTest {
         DiagnosticRecorder.reset()
         logMessages.clear()
         DiagnosticRecorder.clock = { 0L }
-        DiagnosticRecorder.logger = { logMessages += it }
+        // Rom environment records via DiagnosticRecorder; filter it from the install log
+        // assertions so tests only observe the feature they are exercising.
+        DiagnosticRecorder.logger = { line ->
+            if (!line.startsWith("Diagnostic[rom.environment]")) logMessages += line
+        }
         XposedHelpers.moduleInst = FakeXposedInterface.create()
-        // Environment diagnostics are independent of feature install logs.
-        RomEnvironmentDetector.recordDiagnostics = false
     }
 
     private fun runtime(
@@ -62,8 +63,8 @@ class FeatureCatalogTest {
 
         assertFalse(FeatureDispatcher.installById("batteryIndicator", systemui))
 
+        assertFalse(systemui.isEnvironmentInitialized())
         assertFalse(systemui.isResolverInitialized())
-        assertTrue(DiagnosticRecorder.summarize().isEmpty())
     }
 
     @Test
