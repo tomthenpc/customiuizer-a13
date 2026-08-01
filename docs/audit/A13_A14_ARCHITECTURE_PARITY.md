@@ -6,7 +6,7 @@ Scope: A13 `devin/a13-rom-intelligence-audit` vs A14 `devin/a14-runtime-hardenin
 |---|---|---|---|---|
 | ProcessScope | `mods/utils/ProcessScope.kt` | `mods/utils/ProcessScope.kt` | ALIGNED | A13 enum and `ProcessScopes` cover 18 scopes, matching A14 semantics. |
 | ProcessRouter | `mods/utils/ProcessRouter.kt` | `mods/utils/ProcessScopes.kt` | ALIGNED | `ProcessScopes.resolve` is the A13 pure-function equivalent. |
-| MainModule process routing | `MainModule.java` uses `ProcessScope.isInstallable` | `MainModule.java` uses `ProcessScopes.isRejected`/`ProcessScope` | PARTIAL | `MainModule` now uses `ProcessScope` for input method / launcher / systemui / settings / security center / power keeper / wallpaper / media / phone. AlarmCompat and generic app attach still remain. |
+| MainModule process routing | `MainModule.java` uses `ProcessScope.isInstallable` | `MainModule.java` uses `ProcessScopes.isRejected`/`ProcessScope` | PARTIAL | `MainModule` now uses `ProcessScope` for all known package scopes; only Application.attach dynamic statusbar/nooverscroll/media remain inline. |
 | InputMethodInstaller | `installers/InputMethodInstaller.kt` (via registry) | `installers/InputMethodInstaller.java` | ALIGNED | A13 installer extracted from `MainModule` and owns all input method hooks. |
 | SystemServerInstaller | `mods/utils/SystemServerInstaller.kt` | `installers/SystemServerInstaller.java` | ALIGNED | Java equivalent, installs package permissions. |
 | SystemUiInstaller | `installers/SystemUiInstaller.kt` | `installers/SystemUiInstaller.java` | ALIGNED | Java equivalent. |
@@ -17,8 +17,8 @@ Scope: A13 `devin/a13-rom-intelligence-audit` vs A14 `devin/a14-runtime-hardenin
 | WallpaperInstaller | `installers/WallpaperInstaller.kt` | `installers/WallpaperInstaller.java` | ALIGNED | Migrated out of `PackageInstallerRouter`. |
 | MediaInstaller | `installers/MediaInstaller.kt` | `installers/MediaInstaller.java` | ALIGNED | Migrated out of `PackageInstallerRouter`. |
 | PhoneInstaller | `installers/PhoneInstaller.kt` | `installers/PhoneInstaller.java` | ALIGNED | Migrated out of `PackageInstallerRouter`. |
-| PackageInstallerRouter | `installers/PackageInstallerRouter.kt` | `installers/PackageInstallerRouter.java` | ALIGNED | A13 version is the legacy router; A14 uses it too for package installer features. |
-| GenericAppInstaller | `installers/GenericAppInstaller.kt` | `MainModule.onPackageReady` (inline) | PARTIAL | A13 generic app hooks still inline; A14 has a dedicated installer. |
+| PackageInstallerRouter | `installers/PackageInstallerRouter.kt` | `installers/PackageInstallerRouter.java` | ALIGNED | Now scoped to `com.miui.packageinstaller` only. |
+| GenericAppInstaller | `installers/GenericAppInstaller.kt` | `installers/GenericAppInstaller.java` | ALIGNED | Handles `com.lbe.security.miui` and `various_alarmcompat` dynamic apps. |
 | FeatureId | `mods/utils/FeatureId.kt` | `mods/utils/FeatureId.kt` | ALIGNED | A13 model added. |
 | FeatureState | `mods/utils/FeatureState.kt` | `mods/utils/FeatureState.kt` | ALIGNED | A13 model added. |
 | FeatureInstallResult | `mods/utils/FeatureInstallResult.kt` | `mods/utils/FeatureInstallResult.kt` | ALIGNED | A13 model added. |
