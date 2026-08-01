@@ -54,7 +54,8 @@ android {
         targetSdk = 34
         versionCode = lastVersion
         versionName = lastVersionName
-        buildConfigField("long", "BUILD_TIME", "${System.currentTimeMillis()}L")
+        val buildTimeProp = (findProperty("buildTime") as? String)?.toLongOrNull() ?: 0L
+        buildConfigField("long", "BUILD_TIME", "${buildTimeProp}L")
         resConfigs(*supportedLocales.toTypedArray())
         ndk {
             abiFilters += "arm64-v8a"
