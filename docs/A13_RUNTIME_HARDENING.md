@@ -146,7 +146,7 @@ The module does not add a periodic network-speed updater. The ROM still drives t
 | Item | Status | Notes |
 |---|---|---|
 | P0-1 Clock timezone / generation / mContext | COMPLETED | `TIMEZONE_CHANGED` / `TIME_CHANGED` consult real screen state; `ClockLifecycleAction`; receiver registration failure stops ticker |
-| P0-2 Network speed per-controller / one-sample | COMPLETED | per-controller `NetSpeedRuntimeState` via `AdditionalInstanceField`; one `getTrafficBytes` per tick; no `Pair`; locale/pref cache still pending |
+| P0-2 Network speed per-controller / one-sample | COMPLETED | per-controller `NetSpeedRuntimeState` via `AdditionalInstanceField`; one `getTrafficBytes` per tick; no `Pair`; locale/pref cache and strict style one-shot still pending |
 | P0-3 StepCounter query token / lifecycle | COMPLETED | `QueryTicket(generation, queryId)`; identity `finishQuery(ticket)`; captured context; receiver registration rollback; OOM rethrow |
 | P0-4 DeviceInfo lifecycle | NOT_STARTED | dedicated I/O thread and stale generation pending |
 | P1-1 BatteryIndicator lifecycle | NOT_STARTED | pending |
@@ -154,6 +154,16 @@ The module does not add a periodic network-speed updater. The ROM still drives t
 | P1-3 Album Art large-object lifecycle | NOT_STARTED | pending |
 | P1-4 Receiver deterministic ordering test | NOT_STARTED | pending |
 | P1-5 Final hot-path scan and docs | IN_PROGRESS | this section |
+
+## A13-H1 HyperOS 1 / Android 13 兼容基线
+
+- `RomEnvironment` / `RomProfile` 检测：COMPLETED
+- `FeatureRuntime` 懒加载集成：COMPLETED
+- 诊断 ReasonCode：`ROM_PROFILE_DETECTED`、`ROM_PROFILE_UNKNOWN`、`ROM_EVIDENCE_CONFLICT`、`HYPEROS_FALLBACK_FOUND`、`HYPEROS_TARGET_NOT_FOUND`：COMPLETED
+- Canary target 审计：见 `build/compat-audit/hyperos-a13-canary-audit.md`（未提交，见下方结果）
+  - 全部 8 个 Canary feature 的主 target 均为 MIUI 14 / Android 13
+  - HyperOS 1 / Android 13 fallback 尚无真实 A13 证据，全部标记为 `DEFERRED_EXTERNAL`
+- LSPosed 日志分析器 ROM 环境解析：COMPLETED
 
 ## Remaining risks
 

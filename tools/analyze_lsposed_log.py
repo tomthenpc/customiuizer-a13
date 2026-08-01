@@ -61,6 +61,9 @@ RE_NO_METHOD = re.compile(r"NoSuchMethod(?:Error|Exception)")
 RE_NO_FIELD = re.compile(r"NoSuchField(?:Error|Exception)")
 RE_INVOCATION = re.compile(r"InvocationTargetException")
 RE_HOOK_FAILED = re.compile(r"Hook failed")
+RE_ROM = re.compile(r"Diagnostic\[rom\.environment\].*?\s+(\S+)\s+reason=(\S+)(?:\s+detail=(.+?))?(?:\s+\||$)")
+RE_HYPEROS_FALLBACK = re.compile(r"fallback=true")
+RE_HYPEROS_TARGET_NOT_FOUND = re.compile(r"HYPEROS_TARGET_NOT_FOUND")
 
 MAX_FINGERPRINTS = 5000
 
@@ -87,6 +90,9 @@ class LogProfile:
         self.fingerprint_overflow = 0
         self.source_classes: set[str] = set()
         self.top_fingerprints: list[tuple[str, int]] = []
+        self.rom_environment: list[dict] = []
+        self.hyperos_fallback = 0
+        self.hyperos_target_not_found = 0
 
     def record_exception(self, exc_type: str, frames: list[str], process: str) -> None:
         module_frames = [f for f in frames if f.startswith(MODULE_PREFIX)]
@@ -120,6 +126,17 @@ class LogProfile:
             self.dexkit += 1
         if RE_HOOK_FAILED.search(line):
             self.hook_failed += 1
+        m = RE_ROM.search(line)
+        if m:
+            self.rom_environment.append({
+                "state": m.group(1),
+                "reason": m.group(2),
+                "detail": (m.group(3) or "").strip(),
+            })
+        if RE_HYPEROS_FALLBACK.search(line):
+            self.hyperos_fallback += 1
+        if RE_HYPEROS_TARGET_NOT_FOUND.search(line):
+            self.hyperos_target_not_found += 1
 
 
 def pick_process(line: str, current: str | None) -> str | None:
@@ -285,6 +302,9 @@ def text_summary(profile: LogProfile) -> str:
         f"Time range:      {profile.first_time or 'N/A'} -> {profile.last_time or 'N/A'}",
         f"P0:              {p0_count(profile)}",
         f"P1:              {p1_count(profile)}",
+        f"ROM environments: {len(profile.rom_environment)}",
+        f"HyperOS fallback: {profile.hyperos_fallback}",
+        f"HyperOS missing target: {profile.hyperos_target_not_found}",
         f"Hook diagnostics: {profile.hook_diagnostics}",
         f"Empty prefs:     {profile.preference_empty}",
         f"Receiver fails:  {profile.receiver_fail}",
@@ -327,6 +347,9 @@ def markdown_summary(profile: LogProfile) -> str:
         f"| Time range | {profile.first_time or 'N/A'} -> {profile.last_time or 'N/A'} |",
         f"| P0 | {p0_count(profile)} |",
         f"| P1 | {p1_count(profile)} |",
+        f"| ROM environments | {len(profile.rom_environment)} |",
+        f"| HyperOS fallback | {profile.hyperos_fallback} |",
+        f"| HyperOS missing target | {profile.hyperos_target_not_found} |",
         f"| Hook diagnostics | {profile.hook_diagnostics} |",
         f"| Empty prefs | {profile.preference_empty} |",
         f"| Receiver fails | {profile.receiver_fail} |",

@@ -72,6 +72,16 @@
 
 禁止 R8、zipalign、签名、APK 上传和 Release。
 
+## HyperOS 1 / Android 13 兼容边界
+
+- 目标系统为 MIUI 14 / Android 13（API 33），实验兼容 HyperOS 1 / Android 13（API 33）。
+- A14 仓库只作为工程方法参考，不得直接复制其类名、Hook target、资源或 Manifest。
+- 兼容判断以 `HookTargetContract` 能力探测为准，不以 ROM 名称为唯一依据。
+- 只有具备 LSPosed 日志、APK、反编译类结构等真实 A13 HyperOS 1 证据时，才允许增加生产 fallback。
+- A14 类名只能作为候选记录，不得未经 A13 证据直接移植。
+- `RomProfile` 仅用于诊断、候选优先级和日志分析，不能成为功能总开关。
+- 兼容代码不得进入 hook callback 热路径。
+
 ## Agent 阅读顺序
 
 进行运行时代码任务时，按以下顺序阅读：
