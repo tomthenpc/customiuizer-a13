@@ -117,6 +117,7 @@ object LauncherFolderHooks {
                                     XposedHelpers.callMethod(act, "startSecurityHide")
                                 }
                             } catch (t: Throwable) {
+                                if (t is OutOfMemoryError) throw t
                                 XposedHelpers.log(t)
                             }
                         }

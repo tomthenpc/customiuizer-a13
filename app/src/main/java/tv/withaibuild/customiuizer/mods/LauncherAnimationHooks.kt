@@ -45,7 +45,8 @@ object LauncherAnimationHooks {
                 XposedHelpers.setFloatField(param.getThisObject(), "mAlphaStiffness", scaleStiffness(XposedHelpers.getFloatField(param.getThisObject(), "mAlphaStiffness"), scale))
                 try {
                     XposedHelpers.setFloatField(param.getThisObject(), "mRatioStiffness", scaleStiffness(XposedHelpers.getFloatField(param.getThisObject(), "mRatioStiffness"), scale))
-                } catch (_: Throwable) {
+                } catch (t: Throwable) {
+                    if (t is OutOfMemoryError) throw t
                     XposedHelpers.setFloatField(param.getThisObject(), "mRadioStiffness", scaleStiffness(XposedHelpers.getFloatField(param.getThisObject(), "mRadioStiffness"), scale))
                 }
             }

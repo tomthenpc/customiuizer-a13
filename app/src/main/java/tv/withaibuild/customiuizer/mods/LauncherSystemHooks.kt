@@ -24,6 +24,12 @@ import tv.withaibuild.customiuizer.utils.HookUtils
 @Suppress("UNUSED_PARAMETER")
 object LauncherSystemHooks {
 
+    internal fun isFloatingWindowBlockedPackage(packageName: String): Boolean {
+        return packageName == "com.miui.securitycenter" ||
+            packageName == "com.miui.home" ||
+            packageName == "com.android.camera"
+    }
+
     @JvmStatic
     fun NoClockHideHook(lpparam: PackageReadyParam) {
         ModuleHelper.findAndHookMethod("com.miui.home.launcher.Launcher", lpparam.classLoader, "updateStatusBarClock", Long::class.javaPrimitiveType, HookerClassHelper.DO_NOTHING)
@@ -37,13 +43,16 @@ object LauncherSystemHooks {
                     val itemInfo = param.getArg(0) ?: return
                     val component: ComponentName? = try {
                         XposedHelpers.callMethod(itemInfo, "getComponentName") as? ComponentName
-                    } catch (_: Throwable) {
+                    } catch (t: Throwable) {
+                        if (t is OutOfMemoryError) throw t
                         try {
                             XposedHelpers.callMethod(XposedHelpers.getObjectField(itemInfo, "intent"), "getComponent") as? ComponentName
-                        } catch (_: Throwable) {
+                        } catch (t: Throwable) {
+                            if (t is OutOfMemoryError) throw t
                             try {
                                 XposedHelpers.getObjectField(itemInfo, "providerName") as? ComponentName
-                            } catch (_: Throwable) {
+                            } catch (t: Throwable) {
+                                if (t is OutOfMemoryError) throw t
                                 XposedHelpers.getObjectField(XposedHelpers.getObjectField(itemInfo, "providerInfo"), "provider") as? ComponentName
                             }
                         }
@@ -108,7 +117,6 @@ object LauncherSystemHooks {
 
     @JvmStatic
     fun StickyFloatingWindowsLauncherHook(lpparam: PackageReadyParam) {
-        val fwBlackList = arrayListOf("com.miui.securitycenter", "com.miui.home", "com.android.camera")
         ModuleHelper.findAndHookMethod("com.miui.home.recents.views.RecentsContainer", lpparam.classLoader, "onAttachedToWindow", object : MethodHook() {
             override fun after(param: AfterHookCallback) {
                 val recents = param.getThisObject() ?: return
@@ -121,6 +129,7 @@ object LauncherSystemHooks {
                                 XposedHelpers.callMethod(recents, "dismissRecentsToLaunchTargetTaskOrHome", pkgName, true)
                             }
                         } catch (t: Throwable) {
+                            if (t is OutOfMemoryError) throw t
                             XposedHelpers.log(t)
                         }
                     }
@@ -139,7 +148,7 @@ object LauncherSystemHooks {
             override fun before(param: BeforeHookCallback) {
                 val intent = XposedHelpers.getObjectField(param.getThisObject(), "mIntent") as? android.content.Intent ?: return
                 val pkgName = intent.component?.packageName ?: return
-                if (fwBlackList.contains(pkgName)) return
+                if (isFloatingWindowBlockedPackage(pkgName)) return
                 val launcher = XposedHelpers.getSurroundingThis(param.getThisObject()) ?: return
                 val mAppTransitionManager = XposedHelpers.getObjectField(launcher, "mAppTransitionManager")
                 val fwApps = XposedHelpers.getAdditionalInstanceField(launcher, "fwApps") as? String
@@ -176,7 +185,7 @@ object LauncherSystemHooks {
         ModuleHelper.hookAllMethods("com.miui.home.recents.views.TaskView", lpparam.classLoader, "getActivityOptions", object : MethodHook() {
             override fun before(param: BeforeHookCallback) {
                 val pkgName = XposedHelpers.callMethod(param.getThisObject(), "getBasePackageName") as? String ?: return
-                if (fwBlackList.contains(pkgName)) return
+                if (isFloatingWindowBlockedPackage(pkgName)) return
                 val taskView = param.getThisObject() as? View ?: return
                 val fwApps = Settings.Global.getString(taskView.context.contentResolver, HookUtils.modulePkg + ".fw.apps")
                 if (fwApps != null && fwApps.contains(pkgName)) {

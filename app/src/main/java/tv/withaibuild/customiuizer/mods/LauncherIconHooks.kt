@@ -77,6 +77,7 @@ object LauncherIconHooks {
                             }
                         }
                     } catch (t: Throwable) {
+                        if (t is OutOfMemoryError) throw t
                         XposedHelpers.log(t)
                     }
                 }
@@ -191,6 +192,7 @@ object LauncherIconHooks {
                             mMessage?.animate()?.scaleX(multx)?.scaleY(multx)?.setStartDelay(0)?.start()
                         }
                     } catch (t: Throwable) {
+                        if (t is OutOfMemoryError) throw t
                         XposedHelpers.log(t)
                     }
                 })
