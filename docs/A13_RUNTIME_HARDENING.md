@@ -79,7 +79,7 @@ Source-level steady-state cost checklist. Each row states the current evidence; 
 | Stale receiver identity remove | COMPLETED | `drainModuleStale` / `drainOwnedStale` use `stale*.remove(key, deque)` after draining | Prevents leaving empty stale containers |
 | Stale receiver refill race | COMPLETED | `addToStale` / `drainStale` share `synchronized(deque)` and re-check `staleMap.get(key) == deque` | `ModuleHelperReceiverTest.staleModule*` drains and identity removes |
 | Status-bar second ticker | COMPLETED | `SystemStatusBarClockAndMoreHooks` `ClockRunnable` per generation; `TickerScheduler` abstraction; `SecondTickerState` `scheduledGeneration` + `callbackPending`; `startOrRestartSecondTicker` / `stopSecondTimer` / `scheduleNextSecondTick` invariants | `SystemStatusBarClockAndMoreHooksTest` state machine + `FakeTickerScheduler`; old callback cannot repost after new generation; one pending callback per controller |
-| High-frequency callback allocations | PARTIAL | `CLOCK_HOUR_PATTERN` precompiled; `ResourceHooks` no hot `Executable.getName()` | `Regex`, `String.format`, `StringBuilder`, `ArrayList`, `lambda` in remaining hot paths need pass |
+| High-frequency callback allocations | PARTIAL | `CLOCK_HOUR_PATTERN` precompiled; network-speed suffix removal uses a zero-allocation-on-miss character scan; `ResourceHooks` no hot `Executable.getName()` | `Regex`, `String.format`, `StringBuilder`, `ArrayList`, `lambda` in remaining hot paths need pass |
 | Bitmap / large object budgets | PARTIAL | `AlbumArtPolicy.kt` has `CACHE_BUDGET_FRAMES` and `BLUR_MAX_PIXELS`; `DiagnosticRecorder` bounded | In-flight task / View strong-reference audit pending |
 | Disabled feature zero-cost | VERIFIED_STATIC | `FeatureDispatcher` checks `runtime.prefs` before `installWithContract` | `SystemServerInstaller` / `SystemUiInstaller` / `LauncherInstaller` already gate by process + prefs |
 | Diagnostics bounded | COMPLETED | `DiagnosticRecorder` `MAX_SNAPSHOTS=32`, `MAX_DETAIL_LENGTH=512`, `THROTTLE_MS=60_000` | Already fixed capacity and throttling |
@@ -157,7 +157,7 @@ The module does not add a periodic network-speed updater. The ROM still drives t
 | Item | Status | Notes |
 |---|---|---|
 | P0-1 Clock timezone / generation / mContext | COMPLETED | `TIMEZONE_CHANGED` / `TIME_CHANGED` consult real screen state; `ClockLifecycleAction`; receiver registration failure stops ticker |
-| P0-2 Network speed per-controller / one-sample | PARTIAL | `getTotalByte` hook removed; per-controller `NetSpeedRuntimeState` via `AdditionalInstanceField`; one `getTrafficBytes` per tick; no `Pair`; reconnect baseline reset pending; locale/pref cache and strict style one-shot still pending |
+| P0-2 Network speed per-controller / one-sample | PARTIAL | `getTotalByte` hook removed; per-controller `NetSpeedRuntimeState` via `AdditionalInstanceField`; one `getTrafficBytes` per tick; no `Pair`; disconnect resets the full sampling baseline; locale/pref cache and strict style one-shot still pending |
 | P0-3 StepCounter query token / lifecycle | VERIFIED_STATIC | `QueryTicket(generation, queryId)`; `Lifecycle.canPublish` single atomic check; `PendingQuerySlot` identity-based; all `QueryRunnable` paths enter `finally`; terminal `queryHandler`/`uiHandler` posts cleaned; `Lifecycle`/`View` thread races covered by tests |
 | P0-4 DeviceInfo lifecycle | NOT_STARTED | dedicated I/O thread and stale generation pending |
 | P1-1 BatteryIndicator lifecycle | NOT_STARTED | pending |

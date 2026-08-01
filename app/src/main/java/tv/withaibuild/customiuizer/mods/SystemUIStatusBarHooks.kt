@@ -61,9 +61,6 @@ object SystemUIStatusBarHooks {
     private var netSpeedViewLogged = false
     private var initNetSpeedStyleLogged = false
 
-    // Pre-compiled regex for net-speed suffix removal (hot path).
-    private val NET_SPEED_SUFFIX_REGEX = Regex("B?[/']s")
-
     // Thread-local DecimalFormat for status-bar numeric formatting.
     // Reuses Formatter state and avoids per-call String.format allocations.
     private val DF_1DEC = object : ThreadLocal<DecimalFormat>() {
@@ -1205,12 +1202,24 @@ object SystemUIStatusBarHooks {
             override fun after(param: AfterHookCallback) {
                 val hideUnit = MainModule.mPrefs.getBoolean("system_detailednetspeed_secunit")
                 if (hideUnit && !newStyle) {
-                    var speedText = param.getResult() as? String ?: return
-                    speedText = NET_SPEED_SUFFIX_REGEX.replaceFirst(speedText, "")
-                    param.setResult(speedText)
+                    val speedText = param.getResult() as? String ?: return
+                    param.setResult(stripNetSpeedSuffix(speedText))
                 }
             }
         })
+    }
+
+    internal fun stripNetSpeedSuffix(value: String): String {
+        var i = 0
+        while (i + 1 < value.length) {
+            val marker = value[i]
+            if ((marker == '/' || marker == '\'') && value[i + 1] == 's') {
+                val start = if (i > 0 && value[i - 1] == 'B') i - 1 else i
+                return value.removeRange(start, i + 2)
+            }
+            i++
+        }
+        return value
     }
 
     /**
@@ -1595,6 +1604,16 @@ object SystemUIStatusBarHooks {
         var currentRxBytes: Long = 0
         var txBytesPerSecond: Long = 0
         var rxBytesPerSecond: Long = 0
+
+        fun resetBaseline() {
+            lastMeasureNanos = 0
+            lastTxBytes = 0
+            lastRxBytes = 0
+            currentTxBytes = 0
+            currentRxBytes = 0
+            txBytesPerSecond = 0
+            rxBytesPerSecond = 0
+        }
     }
 
     private fun netSpeedStateFor(controller: Any?): NetSpeedRuntimeState? {
@@ -1644,6 +1663,8 @@ object SystemUIStatusBarHooks {
             val pre = speedChars[expIndex]
             val formatted = if (f < 100.0f) format1(f) else Math.round(f).toString()
             formatted + pre + unitSuffix
+        } catch (oom: OutOfMemoryError) {
+            throw oom
         } catch (t: Throwable) {
             XposedHelpers.log(t)
             ""
@@ -1686,8 +1707,7 @@ object SystemUIStatusBarHooks {
                     }
                 }
                 if (!isConnected) {
-                    state.txBytesPerSecond = 0
-                    state.rxBytesPerSecond = 0
+                    state.resetBaseline()
                     return
                 }
 
