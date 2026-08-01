@@ -54,6 +54,7 @@ object SystemUIStatusBarHooks {
     private val viewInitedTag = ResourceHooks.getFakeResId("view_inited_tag")
     private val netSpeedStyleStateTag = ResourceHooks.getFakeResId("net_speed_style_state")
     private val netSpeedViewHolderTag = ResourceHooks.getFakeResId("net_speed_view_holder")
+    private val netSpeedStyleAppliedTag = ResourceHooks.getFakeResId("net_speed_style_applied")
     private var statusbarIconList: List<String>? = null
     private val mStatusbarTextIcons = ArrayList<WeakReference<View>>()
 
@@ -474,7 +475,6 @@ object SystemUIStatusBarHooks {
     }
 
     private fun registerStatusbarTextIcon(iconView: View) {
-        if (iconView == null) return
         val it = mStatusbarTextIcons.iterator()
         while (it.hasNext()) {
             val ref = it.next()
@@ -1273,6 +1273,7 @@ object SystemUIStatusBarHooks {
     }
 
     private fun initNetSpeedStyle(meter: View) {
+        if (meter.getTag(netSpeedStyleAppliedTag) == true) return
         val isFirst = !initNetSpeedStyleLogged
         if (isFirst) {
             initNetSpeedStyleLogged = true
@@ -1323,6 +1324,7 @@ object SystemUIStatusBarHooks {
 
             applyNetSpeedTypeface(iconTextView)
             holder.unitView?.let { applyNetSpeedTypeface(it) }
+            meter.setTag(netSpeedStyleAppliedTag, true)
 
             if (isFirst) {
                 XposedHelpers.log("CustoMIUIzer NetSpeed", "initNetSpeedStyle completed")

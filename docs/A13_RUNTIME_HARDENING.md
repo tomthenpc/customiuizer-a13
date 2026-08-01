@@ -150,14 +150,14 @@ Network speed is driven by the ROM `NetworkSpeedController`.
 * Per-tick traffic is sampled once for each interface; `Pair` return values and global speed state have been removed.
 * The first tick after a network reconnect only establishes the new baseline and does not publish a value.
 
-The module does not add a periodic network-speed updater. The ROM still drives the tick; the module adds per-tick tx/rx sampling, connection state checks and display formatting. The one-shot delayed style callback is now cancellable on `View` detach. Locale/pref cache and strict style one-shot remain pending.
+The module does not add a periodic network-speed updater. The ROM still drives the tick; the module adds per-tick tx/rx sampling, connection state checks and display formatting. The delayed style fallback is cancellable on `View` detach, and a per-View completion tag prevents `onFinishInflate` plus the delayed fallback from applying the full style twice. Locale/pref caching remains pending.
 
 ## P1-B.3.1 closeout progress
 
 | Item | Status | Notes |
 |---|---|---|
 | P0-1 Clock timezone / generation / mContext | COMPLETED | `TIMEZONE_CHANGED` / `TIME_CHANGED` consult real screen state; `ClockLifecycleAction`; receiver registration failure stops ticker |
-| P0-2 Network speed per-controller / one-sample | PARTIAL | `getTotalByte` hook removed; per-controller `NetSpeedRuntimeState` via `AdditionalInstanceField`; one `getTrafficBytes` per tick; no `Pair`; disconnect resets the full sampling baseline; locale/pref cache and strict style one-shot still pending |
+| P0-2 Network speed per-controller / one-sample | PARTIAL | `getTotalByte` hook removed; per-controller `NetSpeedRuntimeState` via `AdditionalInstanceField`; one `getTrafficBytes` per tick; no `Pair`; disconnect resets the full sampling baseline; style initialization commits once per View; locale/pref caching remains pending |
 | P0-3 StepCounter query token / lifecycle | VERIFIED_STATIC | `QueryTicket(generation, queryId)`; `Lifecycle.canPublish` single atomic check; `PendingQuerySlot` identity-based; all `QueryRunnable` paths enter `finally`; terminal `queryHandler`/`uiHandler` posts cleaned; `Lifecycle`/`View` thread races covered by tests |
 | P0-4 DeviceInfo lifecycle | NOT_STARTED | dedicated I/O thread and stale generation pending |
 | P1-1 BatteryIndicator lifecycle | NOT_STARTED | pending |
