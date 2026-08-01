@@ -203,7 +203,14 @@ The module does not add a periodic network-speed updater. The ROM still drives t
   - `PACKAGE_PERMISSIONS`、`AUTO_BRIGHTNESS_RANGE`、`MUFFLED_VIBRATION` 均评为 S2
   - `deviceVerified=false` 保留
   - 未引入任何生产 Hook fallback
-- H1.2b 剩余 Canary / 完整 `FeatureTargetVariant` 机制：PENDING
+- H1.2b 剩余 SystemUI Canary 静态对照：VERIFIED_STATIC
+  - A14 当前远程 HEAD `9302ae552c9b3c3e5bd6ef16ecbdfd76f54b9799`；审计固定引用 `f4ef55f034dee52625d7496a4cd51093ad113bb3`
+  - 完成 3 个 SystemUI Canary 静态矩阵：`STATUS_BAR_CLOCK_TWEAK`、`NO_MORE_ICON`、`BATTERY_INDICATOR`
+  - 三个 Feature 均评为 S2（REFERENCE_ONLY），`deviceVerified=false`，无 S1 证据
+  - `NO_MORE_ICON` 在 A14 当前参考中缺失（`A14_CURRENTLY_ABSENT`）
+  - `DiagnosticRecorder` logger 异常隔离：普通 `RuntimeException` 不阻断 `FeatureDispatcher.installById`；`OutOfMemoryError` 重新抛出
+  - 新增 `FeatureDispatcherRegressionTest` 与 `CanaryContractAuditTest`
+- 完整 `FeatureTargetVariant` 机制：PENDING（当前无 S1 候选，延后实现）
 - HyperOS 生产 fallback：NOT_IMPLEMENTED
 - HyperOS 实机验证：DEFERRED_EXTERNAL
 
