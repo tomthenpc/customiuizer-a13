@@ -1587,7 +1587,7 @@ public final class XposedHelpers {
         } catch (IllegalArgumentException e) {
             throw e;
         } catch (InvocationTargetException e) {
-            throw new InvocationTargetError(e.getCause());
+            throw invocationTargetError(e);
         }
     }
 
@@ -1601,7 +1601,7 @@ public final class XposedHelpers {
         } catch (IllegalArgumentException e) {
             throw e;
         } catch (InvocationTargetException e) {
-            throw new InvocationTargetError(e.getCause());
+            throw invocationTargetError(e);
         }
     }
 
@@ -1622,7 +1622,7 @@ public final class XposedHelpers {
         } catch (IllegalArgumentException e) {
             throw e;
         } catch (InvocationTargetException e) {
-            throw new InvocationTargetError(e.getCause());
+            throw invocationTargetError(e);
         }
     }
 
@@ -1645,7 +1645,7 @@ public final class XposedHelpers {
         } catch (IllegalArgumentException e) {
             throw e;
         } catch (InvocationTargetException e) {
-            throw new InvocationTargetError(e.getCause());
+            throw invocationTargetError(e);
         }
     }
 
@@ -1659,7 +1659,7 @@ public final class XposedHelpers {
         } catch (IllegalArgumentException e) {
             throw e;
         } catch (InvocationTargetException e) {
-            throw new InvocationTargetError(e.getCause());
+            throw invocationTargetError(e);
         }
     }
 
@@ -1680,7 +1680,7 @@ public final class XposedHelpers {
         } catch (IllegalArgumentException e) {
             throw e;
         } catch (InvocationTargetException e) {
-            throw new InvocationTargetError(e.getCause());
+            throw invocationTargetError(e);
         }
     }
 
@@ -1700,6 +1700,12 @@ public final class XposedHelpers {
         public InvocationTargetError(Throwable cause) {
             super(cause);
         }
+    }
+
+    private static InvocationTargetError invocationTargetError(InvocationTargetException exception) {
+        Throwable cause = exception.getCause();
+        if (cause instanceof OutOfMemoryError) throw (OutOfMemoryError) cause;
+        return new InvocationTargetError(cause);
     }
 
     //#################################################################################################
@@ -1724,7 +1730,7 @@ public final class XposedHelpers {
         } catch (IllegalArgumentException e) {
             throw e;
         } catch (InvocationTargetException e) {
-            throw new InvocationTargetError(e.getCause());
+            throw invocationTargetError(e);
         } catch (InstantiationException e) {
             throw new InstantiationError(e.getMessage());
         }
@@ -1747,7 +1753,7 @@ public final class XposedHelpers {
         } catch (IllegalArgumentException e) {
             throw e;
         } catch (InvocationTargetException e) {
-            throw new InvocationTargetError(e.getCause());
+            throw invocationTargetError(e);
         } catch (InstantiationException e) {
             throw new InstantiationError(e.getMessage());
         }

@@ -3,6 +3,7 @@ package tv.withaibuild.customiuizer.mods
 import android.app.Activity
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertTrue
+import org.junit.Assert.assertThrows
 import org.junit.Test
 
 class GlobalActionsFastRebootTest {
@@ -17,6 +18,13 @@ class GlobalActionsFastRebootTest {
         fun reboot(confirm: Boolean, reason: String?, wait: Boolean) {
             if (shouldThrow) throw RuntimeException("reboot failed")
             rebooted = true
+        }
+    }
+
+    private class OomRebootService {
+        @Suppress("unused")
+        fun reboot(confirm: Boolean, reason: String?, wait: Boolean) {
+            throw OutOfMemoryError("reboot oom")
         }
     }
 
@@ -52,6 +60,15 @@ class GlobalActionsFastRebootTest {
         GlobalActions.performFastReboot(pm, true) { resultCode = it }
 
         assertEquals(GlobalActions.ACTION_UNHANDLED, resultCode)
+    }
+
+    @Test
+    fun rebootOutOfMemoryIsRethrown() {
+        val pm = FakePowerManager(OomRebootService())
+
+        assertThrows(OutOfMemoryError::class.java) {
+            GlobalActions.performFastReboot(pm, true) {}
+        }
     }
 
     @Test

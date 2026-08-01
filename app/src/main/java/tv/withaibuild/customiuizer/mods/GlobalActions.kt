@@ -172,6 +172,7 @@ object GlobalActions {
         val mService = try {
             XposedHelpers.getObjectField(pm, "mService")
         } catch (t: Throwable) {
+            if (t is OutOfMemoryError) throw t
             if (isOrdered) setResultCode(ACTION_UNHANDLED)
             XposedHelpers.log(t)
             return
@@ -181,6 +182,7 @@ object GlobalActions {
         try {
             XposedHelpers.callMethod(mService, "reboot", false, null, false)
         } catch (t: Throwable) {
+            if (t is OutOfMemoryError) throw t
             if (isOrdered) setResultCode(ACTION_UNHANDLED)
             XposedHelpers.log(t)
         }
@@ -220,6 +222,7 @@ object GlobalActions {
                         try {
                             MiuiMultiWindowUtils.startSmallFreeform(context)
                         } catch (err: Throwable) {
+                            if (err is OutOfMemoryError) throw err
                             XposedHelpers.log(err)
                         }
                     ACTION_PREFIX + "PinningWindow" ->
@@ -258,13 +261,16 @@ object GlobalActions {
                                                 val homeUp = KeyEvent(now, now, 1, 3, 0, 0, -1, 0)
                                                 injectInputEventMethod.invoke(im, homeDown, 0)
                                                 injectInputEventMethod.invoke(im, homeUp, 0)
-                                            } catch (_: Throwable) {}
+                                            } catch (t: Throwable) {
+                                                if (t is OutOfMemoryError) throw t
+                                            }
                                         }
                                     }, 120)
                                     return
                                 }
                             }
                         } catch (err: Throwable) {
+                            if (err is OutOfMemoryError) throw err
                             XposedHelpers.log(err)
                         }
                     ACTION_PREFIX + "SwitchOneHanded" -> {
@@ -292,6 +298,7 @@ object GlobalActions {
                                     swipeMoveEvt.recycle()
                                     swipeUpEvt.recycle()
                                 } catch (e: Throwable) {
+                                    if (e is OutOfMemoryError) throw e
                                     XposedHelpers.log("err: $e")
                                 }
                             }
@@ -316,6 +323,7 @@ object GlobalActions {
                                 XposedHelpers.callMethod(mStatusBar, "animateExpandNotificationsPanel")
                             }
                         } catch (t: Throwable) {
+                            if (t is OutOfMemoryError) throw t
                             val token = Binder.clearCallingIdentity()
                             XposedHelpers.callMethod(context.getSystemService("statusbar"), "expandNotificationsPanel")
                             Binder.restoreCallingIdentity(token)
@@ -346,6 +354,7 @@ object GlobalActions {
                                 XposedHelpers.callMethod(mStatusBar, "animateExpandSettingsPanel", null)
                             }
                         } catch (t: Throwable) {
+                            if (t is OutOfMemoryError) throw t
                             val token = Binder.clearCallingIdentity()
                             XposedHelpers.callMethod(context.getSystemService("statusbar"), "expandSettingsPanel")
                             Binder.restoreCallingIdentity(token)
@@ -396,11 +405,13 @@ object GlobalActions {
                                             XposedHelpers.callMethod(miuiVolumeDialog, "showH", 1)
                                         }
                                     } catch (t: Throwable) {
+                                        if (t is OutOfMemoryError) throw t
                                         XposedHelpers.log(t)
                                     }
                                 }
                             })
                         } catch (t: Throwable) {
+                            if (t is OutOfMemoryError) throw t
                             XposedHelpers.log(t)
                         }
 
@@ -426,6 +437,7 @@ object GlobalActions {
                     }
                 }
             } catch (t: Throwable) {
+                if (t is OutOfMemoryError) throw t
                 XposedHelpers.log(t)
             }
         }
@@ -504,6 +516,7 @@ object GlobalActions {
                                 break
                             }
                         } catch (t: Throwable) {
+                            if (t is OutOfMemoryError) throw t
                             XposedHelpers.log(t)
                         }
                     }
@@ -653,6 +666,7 @@ object GlobalActions {
                     }
                 }
             } catch (t: Throwable) {
+                if (t is OutOfMemoryError) throw t
                 XposedHelpers.log(t)
             }
         }
@@ -762,7 +776,11 @@ object GlobalActions {
                 val mGlobalContext = param.getArg(0) as? Context ?: return
 
                 if (mGlobalReceiverContext != null) {
-                    try { mGlobalReceiverContext?.unregisterReceiver(mGlobalReceiver) } catch (_: Throwable) {}
+                    try {
+                        mGlobalReceiverContext?.unregisterReceiver(mGlobalReceiver)
+                    } catch (t: Throwable) {
+                        if (t is OutOfMemoryError) throw t
+                    }
                 }
 
                 val intentFilter = IntentFilter()
@@ -825,10 +843,12 @@ object GlobalActions {
                                 injectEvent.isAccessible = true
                                 injectEvent.invoke(thisObject, 82)
                             } catch (t1: Throwable) {
+                                if (t1 is OutOfMemoryError) throw t1
                                 try {
                                     val mHandler = XposedHelpers.getObjectField(thisObject, "mHandler") as? Handler
                                     mHandler?.sendMessageDelayed(mHandler.obtainMessage(1, "show_menu"), ViewConfiguration.getLongPressTimeout().toLong())
                                 } catch (t2: Throwable) {
+                                    if (t2 is OutOfMemoryError) throw t2
                                     XposedHelpers.log(t2)
                                 }
                             }
@@ -838,6 +858,7 @@ object GlobalActions {
                                 closeApp.isAccessible = true
                                 closeApp.invoke(thisObject, false)
                             } catch (t: Throwable) {
+                                if (t is OutOfMemoryError) throw t
                                 XposedHelpers.log(t)
                             }
 
@@ -869,7 +890,11 @@ object GlobalActions {
                 val mStatusBarContext = XposedHelpers.getObjectField(param.getThisObject(), "mContext") as? Context ?: return
 
                 if (mSBReceiverContext != null) {
-                    try { mSBReceiverContext?.unregisterReceiver(mSBReceiver) } catch (_: Throwable) {}
+                    try {
+                        mSBReceiverContext?.unregisterReceiver(mSBReceiver)
+                    } catch (t: Throwable) {
+                        if (t is OutOfMemoryError) throw t
+                    }
                 }
 
                 val intentFilter = IntentFilter()
@@ -946,6 +971,7 @@ object GlobalActions {
                 intent
             }
         } catch (t: Throwable) {
+            if (t is OutOfMemoryError) throw t
             XposedHelpers.log(t)
             null
         }
@@ -986,6 +1012,7 @@ object GlobalActions {
             context.sendBroadcast(showIntent)
             true
         } catch (t: Throwable) {
+            if (t is OutOfMemoryError) throw t
             XposedHelpers.log(t)
             false
         }
@@ -997,6 +1024,7 @@ object GlobalActions {
             context.sendBroadcast(Intent(ACTION_PREFIX + action))
             true
         } catch (t: Throwable) {
+            if (t is OutOfMemoryError) throw t
             XposedHelpers.log(t)
             false
         }
@@ -1021,6 +1049,7 @@ object GlobalActions {
             context.sendBroadcast(Intent(ACTION_PREFIX + "Toggle" + whatStr))
             true
         } catch (t: Throwable) {
+            if (t is OutOfMemoryError) throw t
             XposedHelpers.log(t)
             false
         }
