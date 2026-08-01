@@ -25,7 +25,15 @@ enum class ProcessScope {
     INPUT_METHOD,
     NETWORK_STACK,
     GENERIC_APP,
-    UNSUPPORTED
+    UNSUPPORTED;
+
+    /** True if this scope is allowed to load and install module hooks. */
+    val isInstallable: Boolean
+        get() = this != UNSUPPORTED
+                && this != SYSTEM_UI_PLUGIN
+                && this != SETTINGS_REMOTE
+                && this != SECURITY_CENTER_REMOTE
+                && this != SECURITY_CENTER_BOOTAWARE
 }
 
 object ProcessScopes {
@@ -113,13 +121,8 @@ object ProcessScopes {
         processName.endsWith(".bootaware") || processName.endsWith(":bootaware")
 
     @JvmStatic
-    fun isRejected(packageName: String, processName: String): Boolean = when (resolve(packageName, processName)) {
-        ProcessScope.SETTINGS_REMOTE,
-        ProcessScope.SECURITY_CENTER_BOOTAWARE,
-        ProcessScope.UNSUPPORTED,
-        ProcessScope.NETWORK_STACK -> true
-        else -> false
-    }
+    fun isRejected(packageName: String, processName: String): Boolean =
+        !resolve(packageName, processName).isInstallable
 
     @JvmStatic
     fun shouldLoadPrefs(packageName: String, processName: String): Boolean =

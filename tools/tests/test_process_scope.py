@@ -74,6 +74,11 @@ class ProcessScopeTests(unittest.TestCase):
         # The default branch returns GENERIC_APP for unknown packages.
         self.assertIn("ProcessScope.GENERIC_APP", text)
 
+    def test_process_scopes_system_ui_plugin_non_installable(self):
+        text = read("tv/withaibuild/customiuizer/mods/utils/ProcessScope.kt")
+        self.assertIn("this != SYSTEM_UI_PLUGIN", text)
+        self.assertIn("!resolve(packageName, processName).isInstallable", text)
+
 
 if __name__ == "__main__":
     unittest.main()

@@ -71,11 +71,11 @@ class ProcessScopeTableTest(unittest.TestCase):
 
     def test_rejected_list(self):
         text = read("tv/withaibuild/customiuizer/mods/utils/ProcessScope.kt")
-        for scope in ("SETTINGS_REMOTE", "SECURITY_CENTER_BOOTAWARE", "UNSUPPORTED", "NETWORK_STACK"):
+        for scope in ("SYSTEM_UI_PLUGIN", "SETTINGS_REMOTE", "SECURITY_CENTER_REMOTE", "SECURITY_CENTER_BOOTAWARE", "UNSUPPORTED"):
             self.assertRegex(
                 text,
-                rf"ProcessScope\.{scope}\s*(?:,|->)",
-                f"rejected scope {scope} missing from isRejected when",
+                rf"this != {scope}",
+                f"non-installable scope {scope} missing from isInstallable getter",
             )
 
     def test_bootaware_dot_and_colon(self):
