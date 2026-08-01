@@ -101,7 +101,16 @@ object DiagnosticRecorder {
             }
             logThrottler[id] = now
             val log = logger
-            if (log != null) log(logLine) else XposedHelpers.log(logLine)
+            if (log != null) {
+                try {
+                    log(logLine)
+                } catch (t: Throwable) {
+                    if (t is OutOfMemoryError) throw t
+                    XposedHelpers.log("Diagnostic logger failed: ${t.message}")
+                }
+            } else {
+                XposedHelpers.log(logLine)
+            }
         }
     }
 
