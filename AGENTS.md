@@ -72,6 +72,35 @@
 
 禁止 R8、zipalign、签名、APK 上传和 Release。
 
+## Agent 阅读顺序
+
+进行运行时代码任务时，按以下顺序阅读：
+
+1. `AGENTS.md`
+2. 相关 `installers/*Installer.java`
+3. 相关 `mods/utils/FeatureDispatcher.kt` 与 `FeatureDefinition.kt`
+4. 目标 Hook 或 Controller 文件
+5. 对应单元测试
+6. `docs/A13_RUNTIME_HARDENING.md` 中对应组件的当前状态
+
+不要默认读取：
+
+- `README.md` / `README_EN.md`（仅用户安装说明）
+- `CHANGELOG.md` / `CHANGELOG_EN.md`（仅历史记录）
+- 旧 Release 记录
+- 全部 `strings.xml`
+- 全部 `docs/`（只读指定的 `A13_RUNTIME_HARDENING.md` 等）
+
+## 搜索纪律
+
+先按进程和组件限定目录，再搜索精确类/方法/Preference key：
+
+1. 猜测目标组件（`system_server`、`com.android.systemui`、`com.miui.home`、Settings 等）。
+2. 使用 `installers/` 的 `*Installer` 文件确认 feature 到 Hook 的映射。
+3. 使用 `PrefMap.kt` 或 `R.xml.*_pref_` 确认 preference key。
+4. 只有调用链不清楚时才全仓搜索；全仓搜索后记录关键路径，减少下一次搜索。
+5. 对 Xposed 字符串、DexKit 目标和 `META-INF/xposed` 使用 `grep` 后必须核对 `ProGuard/R8` keep 规则。
+
 ## 基础纪律
 
 - 用户本轮明确要求 > 本文件 > 源码与验证证据。
