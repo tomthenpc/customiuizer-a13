@@ -56,6 +56,7 @@ import tv.withaibuild.customiuizer.mods.Various;
 import tv.withaibuild.customiuizer.mods.utils.HookerClassHelper.AfterHookCallback;
 import tv.withaibuild.customiuizer.mods.utils.HookerClassHelper.MethodHook;
 import tv.withaibuild.customiuizer.mods.utils.ModuleHelper;
+import tv.withaibuild.customiuizer.mods.utils.ProcessScopes;
 import tv.withaibuild.customiuizer.mods.utils.ResourceHooks;
 import tv.withaibuild.customiuizer.mods.utils.XposedHelpers;
 import tv.withaibuild.customiuizer.installers.LauncherInstaller;
@@ -187,12 +188,7 @@ public class MainModule extends XposedModule {
         if (!lpparam.isFirstPackage()) return;
 
         String pkg = lpparam.getPackageName();
-        if (
-            pkg.equals("com.android.settings") && !"com.android.settings".equals(processName)
-            || pkg.equals("com.miui.securitycenter") && "com.miui.securitycenter.bootaware".equals(processName)
-            || pkg.equals("com.android.location.fused")
-            || pkg.startsWith("com.android.networkstack")
-        ) {
+        if (ProcessScopes.isRejected(pkg, processName)) {
             return;
         }
 
