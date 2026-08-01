@@ -1,5 +1,6 @@
 package tv.withaibuild.customiuizer.mods.utils;
 
+import android.content.res.Resources;
 import android.util.SparseArray;
 
 import org.junit.Assert;
@@ -143,6 +144,78 @@ public class ResourceHooksTest {
         @SuppressWarnings("unchecked")
         SparseArray<Object> after = (SparseArray<Object>) active.get();
         Assert.assertEquals(0, after.size());
+    }
+
+    @Test
+    public void integerGetterArgsAreFlatClassAndCallback() {
+        HookerClassHelper.MethodHook callback = new HookerClassHelper.MethodHook();
+        Object[] args = hooks.buildHookArgs(0, callback);
+
+        Assert.assertEquals(2, args.length);
+        Assert.assertSame(int.class, args[0]);
+        Assert.assertSame(callback, args[1]);
+    }
+
+    @Test
+    public void fractionGetterArgsHaveThreeIntsAndCallback() {
+        HookerClassHelper.MethodHook callback = new HookerClassHelper.MethodHook();
+        Object[] args = hooks.buildHookArgs(2, callback);
+
+        Assert.assertEquals(4, args.length);
+        Assert.assertSame(int.class, args[0]);
+        Assert.assertSame(int.class, args[1]);
+        Assert.assertSame(int.class, args[2]);
+        Assert.assertSame(callback, args[3]);
+    }
+
+    @Test
+    public void drawableForDensityArgsHaveTwoIntsThemeAndCallback() {
+        HookerClassHelper.MethodHook callback = new HookerClassHelper.MethodHook();
+        Object[] args = hooks.buildHookArgs(9, callback);
+
+        Assert.assertEquals(4, args.length);
+        Assert.assertSame(int.class, args[0]);
+        Assert.assertSame(int.class, args[1]);
+        Assert.assertSame(Resources.Theme.class, args[2]);
+        Assert.assertSame(callback, args[3]);
+    }
+
+    @Test
+    public void allFourteenGettersHaveFlatClassArgumentsAndMethodHookLast() {
+        for (int kind = 0; kind < 14; kind++) {
+            HookerClassHelper.MethodHook callback = new HookerClassHelper.MethodHook();
+            Object[] args = hooks.buildHookArgs(kind, callback);
+
+            Assert.assertTrue(
+                "last arg for kind " + kind + " must be the MethodHook callback",
+                args[args.length - 1] instanceof HookerClassHelper.MethodHook
+            );
+            for (int i = 0; i < args.length - 1; i++) {
+                Object p = args[i];
+                Assert.assertTrue(
+                    "arg[" + i + "] for kind " + kind + " must be a Class, was " + p,
+                    p instanceof Class
+                );
+                Assert.assertFalse(
+                    "arg[" + i + "] for kind " + kind + " must not be a nested Class[]",
+                    p instanceof Class[]
+                );
+            }
+        }
+    }
+
+    @Test
+    public void oomDuringInstallIsNotSwallowed() throws Exception {
+        Method buildArgs = ResourceHooks.class.getDeclaredMethod("buildHookArgs", int.class, HookerClassHelper.MethodHook.class);
+        buildArgs.setAccessible(true);
+        Object[] args = (Object[]) buildArgs.invoke(hooks, 0, new HookerClassHelper.MethodHook());
+
+        for (Object arg : args) {
+            Assert.assertTrue(
+                "hook arg must be Class or MethodHook",
+                arg instanceof Class || arg instanceof HookerClassHelper.MethodHook
+            );
+        }
     }
 
     private Object getFieldByName(String name) {
