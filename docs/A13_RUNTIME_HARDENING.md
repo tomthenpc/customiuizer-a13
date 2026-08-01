@@ -210,7 +210,24 @@ The module does not add a periodic network-speed updater. The ROM still drives t
   - `NO_MORE_ICON` 在 A14 当前参考中缺失（`A14_CURRENTLY_ABSENT`）
   - `DiagnosticRecorder` logger 异常隔离：普通 `RuntimeException` 不阻断 `FeatureDispatcher.installById`；`OutOfMemoryError` 重新抛出
   - 新增 `FeatureDispatcherRegressionTest` 与 `CanaryContractAuditTest`
-- 完整 `FeatureTargetVariant` 机制：PENDING（当前无 S1 候选，延后实现）
+- H1.2c Launcher Canary 静态对照：VERIFIED_STATIC
+  - A14 参考固定 `9302ae552c9b3c3e5bd6ef16ecbdfd76f54b9799` 只读审计
+  - `NO_CLOCK_HIDE` 与 `NO_WIDGET_ONLY` 均评为 S0（A13/A14 target 完全相同）
+  - 生产 fallback：无
+- 原子 `FeatureTargetVariant` 机制：VERIFIED_STATIC
+  - `HookTargetContract` 支持 `FeatureTargetVariant`
+  - `HookTargetResolver` 按固定优先级评估完整 variant，选中即停止，禁止跨 variant 混合
+  - `HookInstaller.withSession` 仅记录选中 variant 的 target
+  - `AUTO_BRIGHTNESS_RANGE` 拆为 `automatic_brightness_controller` 与 `display_power_controller` 两个原子 variant
+- `HookTargetResolver` fatal/OOM 边界：VERIFIED_STATIC
+  - 直接 `OutOfMemoryError` 重新抛出
+  - `InvocationTargetException` / `ExceptionInInitializerError` 包装 OOM 解包后重新抛出
+  - OOM 不写 negative cache
+  - 缓存硬上限 128
+- H1.2 总状态：VERIFIED_STATIC
+  - 8 个 Canary 静态审计矩阵完整
+  - 无生产 HyperOS fallback
+  - 所有 Canary 保持 `deviceVerified=false`
 - HyperOS 生产 fallback：NOT_IMPLEMENTED
 - HyperOS 实机验证：DEFERRED_EXTERNAL
 
