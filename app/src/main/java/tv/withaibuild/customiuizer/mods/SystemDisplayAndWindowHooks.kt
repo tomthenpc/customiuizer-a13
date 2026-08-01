@@ -251,8 +251,32 @@ object SystemDisplayAndWindowHooks {
         return v
     }
 
+    enum class AutoBrightnessVariant {
+        AUTOMATIC_BRIGHTNESS_CONTROLLER,
+        DISPLAY_POWER_CONTROLLER
+    }
+
+    internal interface AutoBrightnessInstaller {
+        fun loadBacklightRange()
+        fun installExactMethod(
+            className: String,
+            methodName: String,
+            parameterType: Class<*>,
+            hook: MethodHook
+        )
+        fun installAllConstructors(className: String, hook: MethodHook)
+    }
+
+    /** Test seam. Production defaults to null so real [ModuleHelper] calls are used. */
+    @JvmField
+    internal var autoBrightnessInstallerForTest: AutoBrightnessInstaller? = null
+
     @JvmStatic
-    fun AutoBrightnessRangeHook(lpparam: SystemServerStartingParam) {
+    @JvmOverloads
+    fun AutoBrightnessRangeHook(
+        lpparam: SystemServerStartingParam,
+        variant: AutoBrightnessVariant = AutoBrightnessVariant.AUTOMATIC_BRIGHTNESS_CONTROLLER
+    ) {
         val clampHook = object : MethodHook() {
             override fun after(param: AfterHookCallback) {
                 val result = param.result as? Float ?: return
@@ -261,28 +285,69 @@ object SystemDisplayAndWindowHooks {
                 }
             }
         }
-        ModuleHelper.findAndHookMethod("com.android.server.display.AutomaticBrightnessController", lpparam.classLoader, "clampScreenBrightness", Float::class.javaPrimitiveType, clampHook)
+        val installer = autoBrightnessInstallerForTest
+        when (variant) {
+            AutoBrightnessVariant.AUTOMATIC_BRIGHTNESS_CONTROLLER ->
+                installAutomaticBrightness(lpparam, clampHook, installer)
+            AutoBrightnessVariant.DISPLAY_POWER_CONTROLLER ->
+                installDisplayPowerController(lpparam, clampHook, installer)
+        }
+    }
 
-        ModuleHelper.hookAllConstructors("com.android.server.display.AutomaticBrightnessController", lpparam.classLoader, object : MethodHook() {
+    private fun installAutomaticBrightness(
+        lpparam: SystemServerStartingParam,
+        clampHook: MethodHook,
+        seam: AutoBrightnessInstaller?
+    ) {
+        if (seam != null) {
+            seam.loadBacklightRange()
+        } else {
+            loadBacklightRange()
+        }
+        val constructorHook = object : MethodHook() {
             override fun after(param: AfterHookCallback) {
                 XposedHelpers.setLongField(param.thisObject, "mBrighteningLightDebounceConfig", 1000L)
                 XposedHelpers.setLongField(param.thisObject, "mDarkeningLightDebounceConfig", 1200L)
             }
-        })
+        }
+        val abc = "com.android.server.display.AutomaticBrightnessController"
+        if (seam != null) {
+            seam.installExactMethod(abc, "clampScreenBrightness", Float::class.javaPrimitiveType!!, clampHook)
+            seam.installAllConstructors(abc, constructorHook)
+        } else {
+            ModuleHelper.findAndHookMethod(abc, lpparam.classLoader, "clampScreenBrightness", Float::class.javaPrimitiveType, clampHook)
+            ModuleHelper.hookAllConstructors(abc, lpparam.classLoader, constructorHook)
+        }
+    }
 
-        ModuleHelper.findAndHookMethod("com.android.server.display.DisplayPowerController", lpparam.classLoader, "clampScreenBrightness", Float::class.javaPrimitiveType, clampHook)
-
-        ModuleHelper.hookAllConstructors("com.android.server.display.DisplayPowerController", lpparam.classLoader, object : MethodHook() {
+    private fun installDisplayPowerController(
+        lpparam: SystemServerStartingParam,
+        clampHook: MethodHook,
+        seam: AutoBrightnessInstaller?
+    ) {
+        val constructorHook = object : MethodHook() {
             override fun before(param: BeforeHookCallback) {
-                val res = android.content.res.Resources.getSystem()
-                val minBrightnessLevel = res.getInteger(res.getIdentifier("config_screenBrightnessSettingMinimum", "integer", "android"))
-                val maxBrightnessLevel = res.getInteger(res.getIdentifier("config_screenBrightnessSettingMaximum", "integer", "android"))
-                val backlightBit = res.getInteger(res.getIdentifier("config_backlightBit", "integer", "android.miui"))
-                backlightMaxLevel = (1 shl backlightBit) - 1
-                mMinimumBacklight = (minBrightnessLevel - 1) * 1.0f / (backlightMaxLevel - 1)
-                mMaximumBacklight = (maxBrightnessLevel - 1) * 1.0f / (backlightMaxLevel - 1)
+                loadBacklightRange()
             }
-        })
+        }
+        val dpc = "com.android.server.display.DisplayPowerController"
+        if (seam != null) {
+            seam.installExactMethod(dpc, "clampScreenBrightness", Float::class.javaPrimitiveType!!, clampHook)
+            seam.installAllConstructors(dpc, constructorHook)
+        } else {
+            ModuleHelper.findAndHookMethod(dpc, lpparam.classLoader, "clampScreenBrightness", Float::class.javaPrimitiveType, clampHook)
+            ModuleHelper.hookAllConstructors(dpc, lpparam.classLoader, constructorHook)
+        }
+    }
+
+    private fun loadBacklightRange() {
+        val res = android.content.res.Resources.getSystem()
+        val minBrightnessLevel = res.getInteger(res.getIdentifier("config_screenBrightnessSettingMinimum", "integer", "android"))
+        val maxBrightnessLevel = res.getInteger(res.getIdentifier("config_screenBrightnessSettingMaximum", "integer", "android"))
+        val backlightBit = res.getInteger(res.getIdentifier("config_backlightBit", "integer", "android.miui"))
+        backlightMaxLevel = (1 shl backlightBit) - 1
+        mMinimumBacklight = (minBrightnessLevel - 1) * 1.0f / (backlightMaxLevel - 1)
+        mMaximumBacklight = (maxBrightnessLevel - 1) * 1.0f / (backlightMaxLevel - 1)
     }
 
     @JvmStatic

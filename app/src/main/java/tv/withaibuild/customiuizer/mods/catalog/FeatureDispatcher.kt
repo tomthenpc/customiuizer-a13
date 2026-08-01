@@ -5,6 +5,8 @@ import io.github.libxposed.api.XposedModuleInterface.SystemServerStartingParam
 import tv.withaibuild.customiuizer.mods.PackagePermissions
 import tv.withaibuild.customiuizer.mods.SystemAudioAndVisualAndMoreHooks
 import tv.withaibuild.customiuizer.mods.SystemDisplayAndWindowHooks
+import tv.withaibuild.customiuizer.mods.SystemDisplayAndWindowHooks.AutoBrightnessVariant
+
 import tv.withaibuild.customiuizer.mods.SystemLockScreenMoreHooks
 import tv.withaibuild.customiuizer.mods.SystemNotificationMoreHooks
 import tv.withaibuild.customiuizer.mods.SystemStatusBarClockAndMoreHooks
@@ -23,6 +25,7 @@ import tv.withaibuild.customiuizer.mods.diagnostics.EnabledState
 import tv.withaibuild.customiuizer.mods.diagnostics.InstallOutcome
 import tv.withaibuild.customiuizer.mods.diagnostics.InstallSummary
 import tv.withaibuild.customiuizer.mods.diagnostics.ReasonCode
+import tv.withaibuild.customiuizer.mods.utils.FeatureTargetVariant
 import tv.withaibuild.customiuizer.mods.utils.HookInstaller
 import tv.withaibuild.customiuizer.mods.utils.HookTargetContract
 import tv.withaibuild.customiuizer.mods.utils.XposedHelpers
@@ -131,13 +134,23 @@ object FeatureDispatcher {
         if (!runtime.prefs.getBoolean("system_autobrightness", false)) return false
 
         recordRequested(DiagnosticIds.AUTO_BRIGHTNESS_RANGE)
-        return installWithContract(
+        return installWithContractVariant(
             DiagnosticIds.AUTO_BRIGHTNESS_RANGE,
             runtime,
             CanaryContracts.autoBrightnessRange
-        ) {
+        ) { selectedVariant ->
+            val variant = when (selectedVariant.id) {
+                "automatic_brightness_controller" ->
+                    AutoBrightnessVariant.AUTOMATIC_BRIGHTNESS_CONTROLLER
+                "display_power_controller" ->
+                    AutoBrightnessVariant.DISPLAY_POWER_CONTROLLER
+                else -> throw IllegalArgumentException(
+                    "Unknown autoBrightnessRange variant: ${selectedVariant.id}"
+                )
+            }
             SystemDisplayAndWindowHooks.AutoBrightnessRangeHook(
-                runtime.lpparam as SystemServerStartingParam
+                runtime.lpparam as SystemServerStartingParam,
+                variant
             )
             InstallOutcome.DISPATCHED
         }
@@ -530,6 +543,15 @@ object FeatureDispatcher {
         runtime: FeatureRuntime,
         contract: HookTargetContract,
         crossinline installer: () -> InstallOutcome
+    ): Boolean = installWithContractVariant(diagnosticId, runtime, contract) { _ ->
+        installer()
+    }
+
+    private inline fun installWithContractVariant(
+        diagnosticId: String,
+        runtime: FeatureRuntime,
+        contract: HookTargetContract,
+        crossinline installer: (FeatureTargetVariant) -> InstallOutcome
     ): Boolean {
         // Trigger the per-process ROM environment detection once, on the first
         // enabled catalog feature that reaches the install cold path. Disabled
@@ -557,6 +579,9 @@ object FeatureDispatcher {
             return false
         }
 
+        val selectedVariant = compatResult.selectedVariant
+            ?: throw IllegalStateException("Contract ${contract.featureId} resolved without a selected variant")
+
         return try {
             val result = HookInstaller.withSession(
                 resolver = runtime.resolver,
@@ -565,7 +590,7 @@ object FeatureDispatcher {
                 classLoader = runtime.classLoader,
                 compatibilityResult = compatResult
             ) {
-                installer()
+                installer(selectedVariant)
             }
 
             val summary = InstallSummary(
@@ -586,6 +611,8 @@ object FeatureDispatcher {
                 installSummary = summary
             )
             result.installation != InstallOutcome.FAILED
+        } catch (oom: OutOfMemoryError) {
+            throw oom
         } catch (t: Throwable) {
             DiagnosticRecorder.record(
                 diagnosticId,
@@ -624,6 +651,8 @@ object FeatureDispatcher {
                         } else null
                     )
                     outcome != InstallOutcome.FAILED
+                } catch (oom: OutOfMemoryError) {
+                    throw oom
                 } catch (t: Throwable) {
                     DiagnosticRecorder.record(
                         diagnosticId,

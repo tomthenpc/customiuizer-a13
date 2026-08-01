@@ -71,7 +71,26 @@ object HookInstaller {
         if (session.get() != null) {
             throw IllegalStateException("HookInstaller session already active on this thread")
         }
-        val selected = compatibilityResult?.selectedVariant ?: contract.variants.single()
+        val selected = if (compatibilityResult != null) {
+            val sv = compatibilityResult.selectedVariant
+                ?: throw IllegalStateException("Contract ${contract.featureId} requires selected variant")
+            val contractVariant = contract.variants.find { it.id == sv.id }
+                ?: throw IllegalArgumentException(
+                    "Selected variant ${sv.id} does not belong to contract ${contract.featureId}"
+                )
+            if (sv.allTargets.size != contractVariant.allTargets.size) {
+                throw IllegalArgumentException(
+                    "Selected variant ${sv.id} target count does not match contract ${contract.featureId}"
+                )
+            }
+            contractVariant
+        } else if (contract.variants.size == 1) {
+            contract.variants[0]
+        } else {
+            throw IllegalStateException(
+                "Contract ${contract.featureId} requires selected variant"
+            )
+        }
         val s = Session(resolver, contract, selected, diagnosticId, classLoader)
         session.set(s)
         try {
