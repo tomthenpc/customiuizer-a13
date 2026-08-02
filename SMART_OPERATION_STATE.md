@@ -23,9 +23,9 @@ CurrentObjectiveStartEvidence: batch 9/10 contract/runtime parity audit; tools/c
 NextObjectiveFirstAction: migrate the next batch 12 legacy hook to the typed catalog
 ResumeTask: batch 12 migration resumed; first feature tempHideOverlayApp moved to catalog
 DeepSweepDue: false
-LastVerifiedTree: 0d925dea5368920099b6a5a71e3b752b8287b0b4
+LastVerifiedTree: 69ffb0d51a05c7353af13922d9ba476c34e536b0
 LastVerifiedMode: Full
-LastVerifiedAt: 2026-08-02T17:55:00+08:00
+LastVerifiedAt: 2026-08-02T17:56:45+08:00
 LastVerifiedCommandsDigest: python tools/check_hook_contract_parity.py; powershell -NoProfile -ExecutionPolicy Bypass -File .\scripts\verify.ps1 -Mode Fast; powershell -NoProfile -ExecutionPolicy Bypass -File .\scripts\verify.ps1 -Mode Full
 ```
 
