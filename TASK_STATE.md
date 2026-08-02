@@ -749,7 +749,7 @@ P0 后重建，但不得删除未解决问题。
 | BASELINE-001 | P0 | Git/branch | COMPLETE | P0.1 已记录仓库/分支/HEAD/upstream/Git 状态 | 完成 P0.1 |
 | VERIFY-001 | P0 | Build | COMPLETE | P0.3 运行 `scripts/verify.ps1 -Mode Full` 通过 | 完成 P0.3 |
 | ARCH-001 | P1 | Feature lifecycle | COMPLETE | P2 已完成，全部 typed Feature 通过 `FeatureInstallRegistry` | inventory 后全量收口 |
-| DOC-001 | P2 | Docs | TODO | 文档可能落后代码 | 代码与生成数据一致 |
+| DOC-001 | P2 | Docs | IN_PROGRESS | v4 文档契约检查器与 audit docs 已建立 | 代码与生成数据一致 |
 | DEVICE-001 | P1 | Device | BLOCKED_EXTERNAL | 无本轮真实日志 | 完成 P13 |
 
 ---
@@ -762,6 +762,8 @@ P0 后重建，但不得删除未解决问题。
 | 2 | `9d2fa23` | v3 governance: automation state checker + stewardship refresh | `scripts/verify.ps1 -Mode Fast` 通过 | qualifying |
 | 3 | `37e8f1a` | P3.1 — refresh hook ownership inventory from typed catalog | `scripts/verify.ps1 -Mode Fast` 通过 | qualifying |
 | 4 | `1cbc4db` | P3.2 — migrate `system_volumesteps` to typed `volumeSteps` | `scripts/verify.ps1 -Mode Fast` 通过 | qualifying |
+| 5 | `182ee03` | P3.2 — migrate `system_toasttime` to typed `toastTime` | `scripts/verify.ps1 -Mode Fast` 通过 | qualifying |
+| 6 | `pending` | v4 审计融合：文档契约检查器 + v4 audit docs | `scripts/verify.ps1 -Mode Fast` 通过 | qualifying |
 
 ---
 
