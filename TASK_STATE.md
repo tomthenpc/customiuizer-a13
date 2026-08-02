@@ -211,6 +211,8 @@ docs/audit/A13_BASELINE_INVENTORY.md
 
 # P1 — 单一事实源
 
+State: `COMPLETE`
+
 ## P1.1 Feature identity
 
 State: `COMPLETE`
@@ -349,7 +351,7 @@ UNKNOWN
 
 # P2 — typed Feature Registry 全量收口
 
-State: `TODO`
+State: `IN_PROGRESS`
 
 目标：
 
