@@ -423,4 +423,64 @@ object CatalogContracts {
         )
     )
     }
+
+    val cleanShareMenu: HookTargetContract by lazy(kotlin.LazyThreadSafetyMode.NONE) { HookTargetContract(
+        featureId = "cleanShareMenu",
+        requirements = listOf(
+            SingleTargetRequirement(
+                target = HookTargetSpec(
+                    id = "ResolverActivityRunner.run",
+                    operation = HookOperation.ALL_METHODS_BY_NAME,
+                    className = "miui.securityspace.XSpaceResolverActivityHelper.ResolverActivityRunner",
+                    memberName = "run"
+                )
+            )
+        )
+    )
+    }
+
+    val cleanShareMenuService: HookTargetContract by lazy(kotlin.LazyThreadSafetyMode.NONE) { HookTargetContract(
+        featureId = "cleanShareMenuService",
+        requirements = listOf(
+            SingleTargetRequirement(
+                target = HookTargetSpec(
+                    id = "ComputerEngine.queryIntentActivitiesInternal",
+                    operation = HookOperation.ALL_METHODS_BY_NAME,
+                    className = "com.android.server.pm.ComputerEngine",
+                    memberName = "queryIntentActivitiesInternal"
+                )
+            )
+        )
+    )
+    }
+
+    val cleanOpenWithMenu: HookTargetContract by lazy(kotlin.LazyThreadSafetyMode.NONE) { HookTargetContract(
+        featureId = "cleanOpenWithMenu",
+        requirements = listOf(
+            SingleTargetRequirement(
+                target = HookTargetSpec(
+                    id = "ResolverActivityRunner.run",
+                    operation = HookOperation.ALL_METHODS_BY_NAME,
+                    className = "miui.securityspace.XSpaceResolverActivityHelper.ResolverActivityRunner",
+                    memberName = "run"
+                )
+            )
+        )
+    )
+    }
+
+    val cleanOpenWithMenuService: HookTargetContract by lazy(kotlin.LazyThreadSafetyMode.NONE) { HookTargetContract(
+        featureId = "cleanOpenWithMenuService",
+        requirements = listOf(
+            SingleTargetRequirement(
+                target = HookTargetSpec(
+                    id = "ComputerEngine.queryIntentActivitiesInternal",
+                    operation = HookOperation.ALL_METHODS_BY_NAME,
+                    className = "com.android.server.pm.ComputerEngine",
+                    memberName = "queryIntentActivitiesInternal"
+                )
+            )
+        )
+    )
+    }
 }

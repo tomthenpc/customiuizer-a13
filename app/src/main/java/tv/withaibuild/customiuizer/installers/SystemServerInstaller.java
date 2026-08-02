@@ -17,7 +17,6 @@ import tv.withaibuild.customiuizer.mods.SystemNotificationAndShareHooks;
 import tv.withaibuild.customiuizer.mods.SystemNotificationMoreHooks;
 import tv.withaibuild.customiuizer.mods.SystemSecurityAndSystemHooks;
 import tv.withaibuild.customiuizer.mods.SystemSettingsMoreHooks;
-import tv.withaibuild.customiuizer.mods.SystemShareAndOpenWithHooks;
 import tv.withaibuild.customiuizer.mods.SystemStatusBarAndClockHooks;
 import tv.withaibuild.customiuizer.mods.Various;
 import tv.withaibuild.customiuizer.mods.catalog.FeatureDispatcher;
@@ -60,8 +59,8 @@ public final class SystemServerInstaller {
         if (MainModule.mPrefs.getBoolean("system_downgrade")) SystemSecurityAndSystemHooks.NoVersionCheckHook(lpparam);
         if (MainModule.mPrefs.getBoolean("system_orientationlock")) SystemNotificationMoreHooks.OrientationLockHook(lpparam);
         if (MainModule.mPrefs.getBoolean("system_noducking")) SystemNotificationMoreHooks.NoDuckingHook(lpparam);
-        if (MainModule.mPrefs.getBoolean("system_cleanshare")) SystemShareAndOpenWithHooks.CleanShareMenuServiceHook(lpparam);
-        if (MainModule.mPrefs.getBoolean("system_cleanopenwith")) SystemShareAndOpenWithHooks.CleanOpenWithMenuServiceHook(lpparam);
+        if (MainModule.mPrefs.getBoolean("system_cleanshare")) FeatureDispatcher.installById("cleanShareMenuService", serverRuntime);
+        if (MainModule.mPrefs.getBoolean("system_cleanopenwith")) FeatureDispatcher.installById("cleanOpenWithMenuService", serverRuntime);
         FeatureDispatcher.installById("autoBrightnessRange", serverRuntime);
         if (MainModule.mPrefs.getBoolean("system_lockscreen_disable_strongauth_72h")) SystemNotificationMoreHooks.Disable72hStrongAuthHook(lpparam);
         if (MainModule.mPrefs.getBoolean("system_applock")) SystemLockScreenMoreHooks.AppLockHook(lpparam);

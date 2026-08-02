@@ -38,7 +38,11 @@ enum class FeatureId(val canonicalId: String) {
     NO_UNLOCK_ANIMATION("noUnlockAnimation"),
     TEMP_HIDE_OVERLAY_SYSTEMUI("tempHideOverlaySystemUI"),
     HIDE_STATUS_BAR_BEFORE_SCREENSHOT("hideStatusBarBeforeScreenshot"),
-    HIDE_NAV_BAR_BEFORE_SCREENSHOT("hideNavBarBeforeScreenshot");
+    HIDE_NAV_BAR_BEFORE_SCREENSHOT("hideNavBarBeforeScreenshot"),
+    CLEAN_SHARE_MENU("cleanShareMenu"),
+    CLEAN_SHARE_MENU_SERVICE("cleanShareMenuService"),
+    CLEAN_OPEN_WITH_MENU("cleanOpenWithMenu"),
+    CLEAN_OPEN_WITH_MENU_SERVICE("cleanOpenWithMenuService");
 
     companion object {
         private val byString: Map<String, FeatureId> = values().associateBy {
