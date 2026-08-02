@@ -47,7 +47,13 @@ data class FeatureSpec(
     val installPhase: InstallPhase? = null,
     val preferenceKeys: Set<String>,
     val condition: (PrefMap<String, Any>) -> Boolean,
-    val compatibilityCheck: (FeatureRuntime) -> CompatibilityState,
+    val compatibilityCheck: (FeatureRuntime) -> CompatibilityState = { runtime ->
+        if (contract == null) {
+            CompatibilityState.INCOMPATIBLE
+        } else {
+            runtime.resolver.evaluateContract(contract, diagnosticId).first
+        }
+    },
     val installer: (FeatureRuntime) -> FeatureInstallResult,
     val activationRestartTarget: RestartTarget,
     val configReloadMode: ConfigReloadMode

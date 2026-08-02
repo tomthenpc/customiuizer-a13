@@ -34,8 +34,11 @@ object FeatureInstallRegistry {
     private val specs = ConcurrentHashMap<String, FeatureSpec>()
     private val states = ConcurrentHashMap<String, FeatureState>()
 
+    private fun normalizeId(id: String): String =
+        id.lowercase().replace("_", "").replace(" ", "")
+
     fun register(spec: FeatureSpec) {
-        specs[spec.id] = spec
+        specs[normalizeId(spec.id)] = spec
     }
 
     fun registerAll(specs: List<FeatureSpec>) {
@@ -49,7 +52,7 @@ object FeatureInstallRegistry {
         phase: InstallPhase,
         runtime: FeatureRuntime
     ): FeatureInstallResult {
-        val spec = specs[id]
+        val spec = specs[normalizeId(id)]
         if (spec == null) {
             DiagnosticRecorder.record(
                 id = DiagnosticIds.UNKNOWN_FEATURE_ID,
