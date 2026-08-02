@@ -90,9 +90,7 @@ public final class SystemUiInstaller {
                 SystemUIMonitorAndTileHooks.AddCustomTileHook(lpparam);
             }
 
-            if (MainModule.mPrefs.getBoolean("system_hidestatusbar_whenscreenshot")) {
-                SystemUIScreenshotHooks.HideStatusBarBeforeScreenshotHook(lpparam);
-            }
+            FeatureDispatcher.installById("hideStatusBarBeforeScreenshot", systemuiRuntime);
 
             if (MainModule.mPrefs.getInt("system_qsgridcolumns", 2) > 2 || MainModule.mPrefs.getInt("system_qsgridrows", 1) > 1) SystemUIControlCenterHooks.QSGridRes();
             if (MainModule.mPrefs.getInt("system_qqsgridcolumns", 2) > 2) SystemUIControlCenterHooks.QQSGridRes();

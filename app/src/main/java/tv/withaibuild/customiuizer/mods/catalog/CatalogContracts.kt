@@ -393,4 +393,19 @@ object CatalogContracts {
         )
     )
     }
+
+    val hideStatusBarBeforeScreenshot: HookTargetContract by lazy(kotlin.LazyThreadSafetyMode.NONE) { HookTargetContract(
+        featureId = "hideStatusBarBeforeScreenshot",
+        requirements = listOf(
+            SingleTargetRequirement(
+                target = HookTargetSpec(
+                    id = "MiuiCollapsedStatusBarFragment.initMiuiViewsOnViewCreated",
+                    operation = HookOperation.ALL_METHODS_BY_NAME,
+                    className = "com.android.systemui.statusbar.phone.MiuiCollapsedStatusBarFragment",
+                    memberName = "initMiuiViewsOnViewCreated"
+                )
+            )
+        )
+    )
+    }
 }

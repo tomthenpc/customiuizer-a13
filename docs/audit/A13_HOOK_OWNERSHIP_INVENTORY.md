@@ -4,10 +4,10 @@ Total direct hook call sites: 676
 
 | Category | Files | Direct calls | Share |
 |---|---|---:|---:|
-| `REGISTRY_FEATURE` | 16 | 50 | 7.4 % |
+| `REGISTRY_FEATURE` | 17 | 52 | 7.7 % |
 | `INSTALLER_INFRASTRUCTURE` | 5 | 6 | 0.9 % |
 | `API_BRIDGE` | 1 | 23 | 3.4 % |
-| `LEGACY_EXCEPTION` | 35 | 597 | 88.3 % |
+| `LEGACY_EXCEPTION` | 35 | 595 | 88.0 % |
 | `UNKNOWN` | 0 | 0 | 0.0 % |
 
 ## Per-file summary
@@ -50,7 +50,7 @@ Total direct hook call sites: 676
 | `tv/withaibuild/customiuizer/mods/SystemUILockScreenHooks.kt` | 28 | 0 | 28 | `LEGACY_EXCEPTION` | no typed catalog owner |
 | `tv/withaibuild/customiuizer/mods/SystemUIMonitorAndTileHooks.kt` | 8 | 0 | 8 | `LEGACY_EXCEPTION` | no typed catalog owner |
 | `tv/withaibuild/customiuizer/mods/SystemUINotificationHooks.kt` | 14 | 1 | 13 | `LEGACY_EXCEPTION` | mixed: typed=1, legacy=13 |
-| `tv/withaibuild/customiuizer/mods/SystemUIScreenshotHooks.kt` | 3 | 0 | 3 | `LEGACY_EXCEPTION` | no typed catalog owner |
+| `tv/withaibuild/customiuizer/mods/SystemUIScreenshotHooks.kt` | 3 | 2 | 1 | `LEGACY_EXCEPTION` | mixed: typed=2, legacy=1 |
 | `tv/withaibuild/customiuizer/mods/SystemUIStatusBarHooks.kt` | 55 | 3 | 52 | `LEGACY_EXCEPTION` | mixed: typed=3, legacy=52 |
 | `tv/withaibuild/customiuizer/mods/Various.kt` | 54 | 0 | 54 | `LEGACY_EXCEPTION` | no typed catalog owner |
 | `tv/withaibuild/customiuizer/mods/utils/DeviceInfoMonitor.kt` | 1 | 0 | 1 | `LEGACY_EXCEPTION` | no typed catalog owner |

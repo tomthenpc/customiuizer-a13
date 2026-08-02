@@ -1002,6 +1002,33 @@ object FeatureCatalog {
             },
             activationRestartTarget = RestartTarget.SYSTEMUI_RESTART,
             configReloadMode = ConfigReloadMode.NONE
+        ),
+        FeatureSpec(
+            compatibilityPolicy = CompatibilityPolicy.CONTRACT_REQUIRED,
+            contract = CatalogContracts.hideStatusBarBeforeScreenshot,
+            id = "hideStatusBarBeforeScreenshot",
+            diagnosticId = DiagnosticIds.HIDE_STATUS_BAR_BEFORE_SCREENSHOT,
+            processScope = ProcessScope.SYSTEM_UI,
+            installPhase = InstallPhase.PACKAGE_READY,
+            processTarget = ProcessTarget.SystemUI,
+            preferenceKeys = setOf("system_hidestatusbar_whenscreenshot"),
+            condition = { prefs ->
+                prefs.getBoolean("system_hidestatusbar_whenscreenshot", false)
+            },
+            installer = { runtime, compatResult ->
+                legacyInstall(
+                    runtime = runtime,
+                    compatResult = compatResult,
+                    contract = CatalogContracts.hideStatusBarBeforeScreenshot,
+                    diagnosticId = DiagnosticIds.HIDE_STATUS_BAR_BEFORE_SCREENSHOT
+                ) {
+                    SystemUIScreenshotHooks.HideStatusBarBeforeScreenshotHook(
+                        runtime.lpparam as PackageReadyParam
+                    )
+                }
+            },
+            activationRestartTarget = RestartTarget.SYSTEMUI_RESTART,
+            configReloadMode = ConfigReloadMode.NONE
         )
     ) }
 
