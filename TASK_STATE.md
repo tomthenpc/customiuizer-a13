@@ -749,6 +749,7 @@ P0 后重建，但不得删除未解决问题。
 | # | Commit | Task | Verification | State |
 |---|---|---|---|---|
 | 1 | `354e239` | P2 — typed Feature Registry 全量收口 | `scripts/verify.ps1 -Mode Full` 通过 | qualifying |
+| 2 | `9d2fa23` | v3 governance: automation state checker + stewardship refresh | `scripts/verify.ps1 -Mode Fast` 通过 | qualifying |
 
 ---
 
