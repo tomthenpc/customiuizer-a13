@@ -3,7 +3,7 @@
 ## 0. 控制状态
 
 ```text
-OverallState: READY_FOR_BASELINE
+OverallState: BASELINE_LOCKED
 CompletionTarget: PROJECT_COMPLETE
 Repository: tomthenpc/customiuizer-a13
 AuthorizedBranch: devin/a13-rom-intelligence-audit
@@ -166,22 +166,30 @@ powershell -NoProfile -ExecutionPolicy Bypass -File .\scripts\verify.ps1 -Mode F
 
 ## P0.4 生成完整基线 inventory
 
-State: `IN_PROGRESS`
+State: `COMPLETE`
 
 生成：
 
-- production Java/Kotlin；
-- production Hook entries；
-- Feature IDs / canonical IDs / diagnostics IDs；
-- Registry / legacy / infrastructure ownership；
-- process / phase / Installer；
-- contract / variant；
-- preference keys；
-- tests；
-- static tools；
-- docs freshness；
-- APK size；
-- device evidence。
+| 项 | 来源/文件 | 状态 |
+|---|---|---|
+| production Java/Kotlin | `docs/audit/A13_BASELINE_INVENTORY.md` | 94 文件（22 Java / 72 Kotlin） |
+| production Hook entries | `docs/audit/A13_BASELINE_INVENTORY.md` | 627 `ModuleHelper.*` hook-helper matches；25 `FeatureDispatcher.install*`；16 `FeatureInstallRegistry` |
+| Feature IDs / canonical IDs / diagnostics IDs | `FeatureCatalog.kt` / `FeatureId.kt` / `DiagnosticIds.kt` | 25 typed `FeatureId` |
+| Registry / legacy / infrastructure ownership | `docs/audit/A13_BASELINE_INVENTORY.md` | 8 registry / 17 legacy / 13 installer-infrastructure |
+| process / phase / Installer | `docs/rom-intelligence/A13_PROCESS_MATRIX.md` | 已存在 |
+| contract / variant | `CanaryContracts.kt` / `CatalogContracts.kt` | 8 Canary / 17 Catalog；`autoBrightnessRange` 有 variant |
+| preference keys | `app/src/main/res/xml/prefs_*.xml` | 628 unique / 659 total |
+| tests | `app/src/test` / `tools/tests` | 57 Java/Kotlin tests + 16 Python tool tests |
+| static tools | `tools/` | `verify.py`, `check-invariants.py`, `check-compat-contracts.py` 等 |
+| docs freshness | `docs/` | 18 doc files；无过期 |
+| APK size | `app/build/outputs/apk/debug/CustoMIUIzer-A13-r13.9.2-debug.apk` | 12,336,006 bytes |
+| device evidence | N/A | `NOT_EXERCISED` |
+
+基线 inventory 文件：
+
+```text
+docs/audit/A13_BASELINE_INVENTORY.md
+```
 
 完成后将 `OverallState` 更新为 `BASELINE_LOCKED`。
 
