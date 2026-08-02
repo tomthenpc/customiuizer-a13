@@ -563,3 +563,22 @@ AutoResume: true
 - 中断后从 Git、TASK_STATE 和 SMART state 恢复。
 
 本节不放宽分支、main、force-push、rebase、secret、签名、ADB、设备证据和 Release 限制。
+
+---
+
+## 19. 签名配置规则
+
+```text
+SigningDiscoveryMode: EXACT_CONFIG_ONLY
+SigningGradleProperty: customiuizerA13KeystoreProperties
+SigningEnvironmentVariable: CUSTOMIUIZER_A13_KEYSTORE_PROPERTIES
+ExpectedLocalProperties: C:\Users\tv\Documents\buildkey\r13\keystore.properties
+RecursiveSigningSearch: forbidden
+CrossProductKeyUse: forbidden
+```
+
+- 签名配置仅通过 `customiuizerA13KeystoreProperties` Gradle property 或 `CUSTOMIUIZER_A13_KEYSTORE_PROPERTIES` 环境变量指定。
+- 未配置时 debug 构建与普通测试仍可运行；`develop` / `release` 正式打包明确失败。
+- 禁止递归扫描 `C:\Users\tv`、自动搜索 `*.jks` / `*.p12`、猜测其他项目密钥或回退到 A14 路径。
+- 实际 keystore 文件仅由 `keystore.properties` 中的 `storeFile` 提供。
+- 禁止把 keystore、密码、token、签名配置或本机绝对路径提交到 Git。

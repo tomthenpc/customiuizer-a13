@@ -5,9 +5,13 @@ plugins {
     alias(libs.plugins.kotlin.android)
 }
 
-val keystorePropertiesFile = rootProject.file("../keystore.properties")
+val keystorePropertiesPath =
+    providers.gradleProperty("customiuizerA13KeystoreProperties").orNull
+        ?: providers.environmentVariable("CUSTOMIUIZER_A13_KEYSTORE_PROPERTIES").orNull
+
+val keystorePropertiesFile = keystorePropertiesPath?.let(::file)
 val keystoreProperties = Properties()
-val hasReleaseSigning = if (keystorePropertiesFile.isFile) {
+val hasReleaseSigning = if (keystorePropertiesFile != null && keystorePropertiesFile.isFile) {
     keystorePropertiesFile.inputStream().use { keystoreProperties.load(it) }
     listOf("storeFile", "storePassword", "keyAlias", "keyPassword").all { key ->
         keystoreProperties.getProperty(key).isNullOrBlank().not()
@@ -159,14 +163,17 @@ val signingRequiredTasks = setOf(
     "packageDevelopUniversalApk",
     "signDevelopBundle"
 )
-val signingConfigurationPath = keystorePropertiesFile.absolutePath
+val signingConfigurationPath = keystorePropertiesPath ?: "(not configured)"
 
 tasks.configureEach {
     if (!hasReleaseSigning && name in signingRequiredTasks) {
         val packagingKind = if (name.contains("Develop")) "develop" else "release"
         val signingFailureMessage =
-            "Formal $packagingKind packaging requires the repository-external " +
-                "$signingConfigurationPath with storeFile, storePassword, keyAlias, and keyPassword. " +
+            "Formal $packagingKind packaging requires the A13 signing configuration. " +
+                "Set the Gradle property 'customiuizerA13KeystoreProperties' or the " +
+                "environment variable 'CUSTOMIUIZER_A13_KEYSTORE_PROPERTIES' to a " +
+                "properties file containing storeFile, storePassword, keyAlias, and keyPassword. " +
+                "Configured path: $signingConfigurationPath. " +
                 "Unsigned CI verification may run tests, lint, and R8 only."
         doFirst {
             throw GradleException(signingFailureMessage)

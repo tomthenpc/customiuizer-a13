@@ -1,29 +1,20 @@
 #!/usr/bin/env python3
 """Hardened regression tests for upstream #660 and #624 patterns.
-
 These are static tests. They do not require a device. They fail if the A13
 source relaxes the safeguards that prevent:
-
 * #660 — `IndexOutOfBoundsException` from `ViewGroup.addView` with an un-clamped
   index, or duplicate attach of a View that already has a parent.
 * #624 — clock seconds becoming static because a REQUIRED update target is
   optional or missing, or the install result is mis-reported.
 """
 from __future__ import annotations
-
 import re
 import unittest
 from pathlib import Path
-
-
 REPO = Path(__file__).resolve().parent.parent.parent
 SRC = REPO / "app" / "src" / "main" / "java"
-
-
 def read(rel: str) -> str:
     return (SRC / rel.replace("/", "\\")).read_text(encoding="utf-8")
-
-
 def find_balanced_call(text: str, start: int) -> str:
     """Return the braced block starting at `(` at or after `start`, balanced."""
     paren = text.find("(", start)
@@ -41,8 +32,6 @@ def find_balanced_call(text: str, start: int) -> str:
                 return text[paren : i + 1]
         i += 1
     return ""
-
-
 def block_for_opener(text: str, start: int, open_ch: str = "(", close_ch: str = ")") -> str:
     """Return the balanced block starting at `start` (or first opener at/after)."""
     i = text.find(open_ch, start)
@@ -59,8 +48,6 @@ def block_for_opener(text: str, start: int, open_ch: str = "(", close_ch: str = 
                 return text[text.find(open_ch, start) : i + 1]
         i += 1
     return ""
-
-
 def parse_spec_call(call: str) -> dict[str, str]:
     inner = call[1:-1]
     parts: list[str] = []
@@ -89,11 +76,8 @@ def parse_spec_call(call: str) -> dict[str, str]:
             k, _, v = p.partition("=")
             args[k.strip()] = v.strip()
     return args
-
-
 class ClockContractTarget:
     __slots__ = ("id", "class_name", "member_name", "operation", "params", "criticality")
-
     def __init__(self, id_: str, class_name: str, member_name: str, operation: str, params: str, criticality: str) -> None:
         self.id = id_
         self.class_name = class_name
@@ -101,11 +85,8 @@ class ClockContractTarget:
         self.operation = operation
         self.params = params
         self.criticality = criticality
-
     def __repr__(self) -> str:
         return f"ClockContractTarget({self.id}, {self.criticality})"
-
-
 def extract_clock_contract_targets() -> list[ClockContractTarget]:
     text = read("tv/withaibuild/customiuizer/mods/catalog/CanaryContracts.kt")
     m = re.search(r"val statusBarClockTweak: HookTargetContract by lazy", text)
@@ -134,8 +115,6 @@ def extract_clock_contract_targets() -> list[ClockContractTarget]:
             )
         )
     return targets
-
-
 def add_view_calls(text: str) -> list[tuple[int, str, str | None, str | None]]:
     """Return a list of (line_no, full_line, view_expr, index_expr) for addView calls."""
     out: list[tuple[int, str, str | None, str | None]] = []
@@ -149,8 +128,6 @@ def add_view_calls(text: str) -> list[tuple[int, str, str | None, str | None]]:
         index_expr = parts[1] if len(parts) > 1 else None
         out.append((line_no, line, view_expr, index_expr))
     return out
-
-
 def enclosing_function(text: str, line_no: int) -> str | None:
     """Return the name of the Kotlin/Java function that contains `line_no`."""
     lines = text.splitlines()
@@ -160,8 +137,6 @@ def enclosing_function(text: str, line_no: int) -> str | None:
         if m:
             return m.group(1)
     return None
-
-
 def function_body(text: str, func_name: str) -> str:
     """Return the full text of a function by name (naïve brace balance)."""
     m = re.search(rf"\bfun\s+{re.escape(func_name)}\b", text)
@@ -169,8 +144,6 @@ def function_body(text: str, func_name: str) -> str:
         return ""
     block = block_for_opener(text, m.end(), "{", "}")
     return block
-
-
 class UpstreamIssueRegressionTests(unittest.TestCase):
     def test_audit_files_exist(self):
         for name in (
@@ -178,9 +151,7 @@ class UpstreamIssueRegressionTests(unittest.TestCase):
             "docs/audit/A13_DEVICE_REGRESSION_CHECKLIST.md",
         ):
             self.assertTrue((REPO / name).is_file(), f"{name} missing")
-
     # --------------------------------------------------------------------- #660
-
     def test_battery_indicator_removes_existing_view_before_add(self):
         """`BatteryIndicatorHook` must not attach a second View if the old one is
         still present in the same parent."""
@@ -198,7 +169,6 @@ class UpstreamIssueRegressionTests(unittest.TestCase):
             body[: body.index("addView(indicator")],
             "BatteryIndicatorHook adds a new indicator but does not remove the old one first; risk of duplicate attach",
         )
-
     def test_battery_indicator_add_index_is_clamped(self):
         """`BatteryIndicatorHook` insert index must be clamped to the parent's child count."""
         text = read("tv/withaibuild/customiuizer/mods/SystemUIBatteryHooks.kt")
@@ -213,7 +183,6 @@ class UpstreamIssueRegressionTests(unittest.TestCase):
             any(k in index_def for k in ("coerceIn", "coerceAtMost", "minOf", "Math.min")),
             f"BatteryIndicator add index is not clamped: {index_def}",
         )
-
     def test_monitor_device_info_add_index_is_clamped(self):
         """#660 crash pattern: `mGroup.addView(iconView, i)` with the raw `i` from
         `addHolder` must be clamped."""
@@ -235,7 +204,6 @@ class UpstreamIssueRegressionTests(unittest.TestCase):
             any(k in index_expr for k in ("coerceIn", "coerceAtMost", "minOf", "Math.min")),
             f"MonitorDeviceInfo add index is not clamped: {index_expr}",
         )
-
     def test_monitor_device_info_left_icon_add_index_is_clamped(self):
         text = read("tv/withaibuild/customiuizer/mods/SystemUIStatusBarHooks.kt")
         body = function_body(text, "MonitorDeviceInfoHook")
@@ -249,12 +217,9 @@ class UpstreamIssueRegressionTests(unittest.TestCase):
             any(k in index_def for k in ("coerceIn", "coerceAtMost", "minOf", "Math.min")),
             f"left icon add index is not clamped: {index_def}",
         )
-
     # --------------------------------------------------------------------- #624
-
     def test_clock_contract_required_targets_present_and_not_optional(self):
         targets = {t.id: t for t in extract_clock_contract_targets()}
-
         required_ids = [
             "MiuiStatusBarClockController.constructors",
             "MiuiStatusBarClockController.fireTimeChange",
@@ -269,31 +234,25 @@ class UpstreamIssueRegressionTests(unittest.TestCase):
                 "REQUIRED",
                 f"Target {rid} must stay REQUIRED; found {targets[rid].criticality}",
             )
-
         # The control-center date visibility setter must remain part of the contract.
         self.assertIn("MiuiClock.setClockVisibility", targets)
-
         # The update source (the actual seconds behaviour) must not be optional.
         self.assertEqual(targets["MiuiClock.updateTime"].criticality, "REQUIRED")
-
     def test_clock_contract_member_names_are_exact(self):
         """No REQUIRED target has been renamed to a different member to make a test pass."""
         targets = {t.id: t for t in extract_clock_contract_targets()}
         self.assertEqual(targets["MiuiStatusBarClockController.fireTimeChange"].member_name, "fireTimeChange")
         self.assertEqual(targets["MiuiClock.updateTime"].member_name, "updateTime")
-
     def test_clock_feature_catalog_keeps_systemui_restart_and_partial_reload(self):
         text = read("tv/withaibuild/customiuizer/mods/catalog/FeatureCatalog.kt")
         self.assertIn("statusBarClockTweakContract", text)
         self.assertIn("CanaryContracts.statusBarClockTweakForInstall", text)
         self.assertIn("activationRestartTarget = RestartTarget.SYSTEMUI_RESTART", text)
         self.assertIn("configReloadMode = ConfigReloadMode.PARTIAL", text)
-
     def test_feature_dispatcher_reports_failed_not_dispatched(self):
         text = read("tv/withaibuild/customiuizer/mods/catalog/FeatureDispatcher.kt")
         self.assertIn("InstallOutcome.FAILED", text)
-        self.assertIn("InstallOutcome.DISPATCHED", text)
-
-
+        self.assertNotIn("InstallOutcome.DISPATCHED", text,
+                         "FeatureDispatcher must not report legacy DISPATCHED state after P2 registry migration")
 if __name__ == "__main__":
     unittest.main()
