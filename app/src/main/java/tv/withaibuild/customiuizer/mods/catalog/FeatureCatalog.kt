@@ -18,8 +18,6 @@ import tv.withaibuild.customiuizer.mods.LauncherIconHooks
 import tv.withaibuild.customiuizer.mods.LauncherLayoutHooks
 import tv.withaibuild.customiuizer.mods.LauncherSystemHooks
 import tv.withaibuild.customiuizer.mods.diagnostics.DiagnosticIds
-import tv.withaibuild.customiuizer.mods.diagnostics.DiagnosticRecorder
-import tv.withaibuild.customiuizer.mods.diagnostics.ReasonCode
 import tv.withaibuild.customiuizer.mods.utils.FeatureInstallResult
 
 /**
@@ -40,15 +38,6 @@ object FeatureCatalog {
             processTarget = ProcessTarget.SystemServer,
             preferenceKeys = emptySet(),
             condition = { true },
-            compatibilityCheck = { _ ->
-                DiagnosticRecorder.record(
-                    DiagnosticIds.PACKAGE_PERMISSIONS,
-                    compatibility = CompatibilityState.COMPATIBLE,
-                    reasonCode = ReasonCode.PRIMARY_TARGET_FOUND,
-                    detail = "package permissions always checked at system_server startup"
-                )
-                CompatibilityState.COMPATIBLE
-            },
             installer = { runtime ->
                 PackagePermissions.hook(runtime.lpparam as SystemServerStartingParam)
                 FeatureInstallResult.Installed
@@ -73,7 +62,6 @@ object FeatureCatalog {
                 prefs.getBoolean("system_cc_hidedate") ||
                 prefs.getString("system_cc_dateformat", "").isNotEmpty()
             },
-            compatibilityCheck = { _ -> CompatibilityState.COMPATIBLE },
             installer = { runtime ->
                 SystemStatusBarClockAndMoreHooks.StatusBarClockTweakHook(
                     runtime.lpparam as PackageReadyParam
@@ -93,12 +81,25 @@ object FeatureCatalog {
             condition = { prefs ->
                 prefs.getBoolean("system_autobrightness", false)
             },
-            compatibilityCheck = { _ -> CompatibilityState.COMPATIBLE },
             installer = { runtime ->
-                SystemDisplayAndWindowHooks.AutoBrightnessRangeHook(
-                    runtime.lpparam as SystemServerStartingParam
-                )
-                FeatureInstallResult.Installed
+                run {
+                    val (_, compatResult) = runtime.resolver.evaluateContract(
+                        CanaryContracts.autoBrightnessRange,
+                        DiagnosticIds.AUTO_BRIGHTNESS_RANGE
+                    )
+                    val variant = when (compatResult.selectedVariant?.id) {
+                        "automatic_brightness_controller" ->
+                            SystemDisplayAndWindowHooks.AutoBrightnessVariant.AUTOMATIC_BRIGHTNESS_CONTROLLER
+                        "display_power_controller" ->
+                            SystemDisplayAndWindowHooks.AutoBrightnessVariant.DISPLAY_POWER_CONTROLLER
+                        else -> null
+                    } ?: return@run FeatureInstallResult.Incompatible("no selectable autoBrightness variant")
+                    SystemDisplayAndWindowHooks.AutoBrightnessRangeHook(
+                        runtime.lpparam as SystemServerStartingParam,
+                        variant
+                    )
+                    FeatureInstallResult.Installed
+                }
             },
             activationRestartTarget = RestartTarget.REBOOT,
             configReloadMode = ConfigReloadMode.NONE

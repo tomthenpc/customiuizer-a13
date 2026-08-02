@@ -57,6 +57,7 @@ object FeatureInstallRegistry {
             DiagnosticRecorder.record(
                 id = DiagnosticIds.UNKNOWN_FEATURE_ID,
                 compatibility = CompatibilityState.INCOMPATIBLE,
+                installation = InstallOutcome.FAILED,
                 reasonCode = ReasonCode.UNKNOWN,
                 detail = id
             )
@@ -90,6 +91,13 @@ object FeatureInstallRegistry {
             return FeatureInstallResult.Disabled
         }
 
+        DiagnosticRecorder.record(
+            id = spec.diagnosticId,
+            enabled = EnabledState.REQUESTED,
+            reasonCode = ReasonCode.REQUESTED,
+            detail = spec.id
+        )
+
         val specProcessScope = spec.processScope
         if (specProcessScope != null && specProcessScope != scope) {
             return recordAndReturn(
@@ -106,6 +114,7 @@ object FeatureInstallRegistry {
                 spec,
                 FeatureInstallResult.UnsupportedProcess(runtime.processName),
                 compatibility = CompatibilityState.INCOMPATIBLE,
+                installation = InstallOutcome.FAILED,
                 reasonCode = ReasonCode.UNKNOWN,
                 detail = "process target mismatch: ${runtime.processName}"
             )
@@ -117,6 +126,7 @@ object FeatureInstallRegistry {
                 spec,
                 FeatureInstallResult.WrongPhase(specInstallPhase, phase),
                 compatibility = CompatibilityState.INCOMPATIBLE,
+                installation = InstallOutcome.FAILED,
                 reasonCode = ReasonCode.TARGET_NOT_FOUND,
                 detail = "expected phase ${specInstallPhase}, got $phase"
             )
@@ -129,6 +139,7 @@ object FeatureInstallRegistry {
             DiagnosticRecorder.record(
                 id = spec.diagnosticId,
                 compatibility = CompatibilityState.INCOMPATIBLE,
+                installation = InstallOutcome.FAILED,
                 reasonCode = ReasonCode.TARGET_NOT_FOUND,
                 detail = t.message
             )
@@ -137,13 +148,13 @@ object FeatureInstallRegistry {
 
         when (compatibility) {
             CompatibilityState.INCOMPATIBLE -> {
-                return recordAndReturn(
-                    spec,
-                    FeatureInstallResult.Incompatible("required target not compatible"),
-                    compatibility = CompatibilityState.INCOMPATIBLE,
+                DiagnosticRecorder.record(
+                    id = spec.diagnosticId,
+                    installation = InstallOutcome.FAILED,
                     reasonCode = ReasonCode.TARGET_NOT_FOUND,
                     detail = spec.id
                 )
+                return FeatureInstallResult.Incompatible("required target not compatible")
             }
             CompatibilityState.DEGRADED -> {
                 // proceed but a failure is transient
@@ -161,7 +172,7 @@ object FeatureInstallRegistry {
                 states[stateKey] = FeatureState.FAILED_PERMANENT
                 throw t
             }
-            FeatureInstallResult.FailedTransient(t.message ?: "installer threw")
+            FeatureInstallResult.FailedPermanent(t.message ?: "installer threw")
         }
 
         val finalState = when (result) {
@@ -223,6 +234,11 @@ object FeatureInstallRegistry {
             detail = detail
         )
         return result
+    }
+
+    /** Test-only reset of per-process install state. */
+    fun clear() {
+        states.clear()
     }
 
     private fun isFatal(t: Throwable): Boolean =

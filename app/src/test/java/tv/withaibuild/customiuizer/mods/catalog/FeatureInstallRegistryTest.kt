@@ -19,11 +19,13 @@ class FeatureInstallRegistryTest {
     @Before
     fun setUp() {
         DiagnosticRecorder.reset()
+        FeatureInstallRegistry.clear()
     }
 
     @After
     fun tearDown() {
         DiagnosticRecorder.reset()
+        FeatureInstallRegistry.clear()
     }
 
     private fun runtime(processName: String = "test-${System.nanoTime()}"): FeatureRuntime {

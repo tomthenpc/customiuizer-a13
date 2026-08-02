@@ -1,6 +1,8 @@
 package tv.withaibuild.customiuizer.mods.catalog
 
 import tv.withaibuild.customiuizer.mods.diagnostics.DiagnosticIds
+import tv.withaibuild.customiuizer.mods.diagnostics.DiagnosticRecorder
+import tv.withaibuild.customiuizer.mods.diagnostics.ReasonCode
 import tv.withaibuild.customiuizer.mods.utils.FeatureInstallResult
 import tv.withaibuild.customiuizer.mods.utils.HookTargetContract
 import tv.withaibuild.customiuizer.mods.utils.InstallPhase
@@ -49,9 +51,22 @@ data class FeatureSpec(
     val condition: (PrefMap<String, Any>) -> Boolean,
     val compatibilityCheck: (FeatureRuntime) -> CompatibilityState = { runtime ->
         if (contract == null) {
+            DiagnosticRecorder.record(
+                diagnosticId,
+                compatibility = CompatibilityState.INCOMPATIBLE,
+                reasonCode = ReasonCode.TARGET_NOT_FOUND,
+                detail = "no contract"
+            )
             CompatibilityState.INCOMPATIBLE
         } else {
-            runtime.resolver.evaluateContract(contract, diagnosticId).first
+            val (compat, result) = runtime.resolver.evaluateContract(contract, diagnosticId)
+            DiagnosticRecorder.record(
+                diagnosticId,
+                compatibility = compat,
+                reasonCode = result.reasonCode,
+                detail = result.detail
+            )
+            compat
         }
     },
     val installer: (FeatureRuntime) -> FeatureInstallResult,
