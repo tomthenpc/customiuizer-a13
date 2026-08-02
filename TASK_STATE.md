@@ -563,9 +563,13 @@ required 不降级；optional 有理由；candidate 不等于 verified；generat
 
 # P9 — 测试、CI 与构建
 
-State: `TODO`
+State: `IN_PROGRESS`
 
 ## P9.1 Local
+
+State: `VERIFIED_BUILD`
+
+Evidence: `BUILD_VERIFIED`
 
 稳定通过：
 
@@ -768,6 +772,7 @@ P0 后重建，但不得删除未解决问题。
 | 7 | `d939868` | A13-ALG-001：FeatureCatalog O(1) index 与命名修正 | `scripts/verify.ps1 -Mode Fast` 通过 | qualifying |
 | 8 | `590421d` | v5 长期治理宪章融合：GOAL/AGENTS/constitution + checker | `scripts/verify.ps1 -Mode Fast` 通过 | qualifying |
 | 9 | `9fd9e10` | v6 控制状态修复：签名 source of truth + A13-ALG-002 + v6 governance docs | `scripts/verify.ps1 -Mode Final` 通过 | qualifying |
+| 10 | `pending` | V6.1 Standard sweep：progress snapshot generator + exact-branch Fast CI | `python tools/verify.py full` 通过 | qualifying |
 
 ---
 

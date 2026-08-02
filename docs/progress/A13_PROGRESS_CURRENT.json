@@ -1,0 +1,225 @@
+{
+  "audit_time": "2026-08-02T05:11:47.694842+00:00",
+  "head": "0a0cb024d4fc739514583e34d645702e2753e516",
+  "tree": "09bf8528a56018fed93139ad6536211ee7f54436",
+  "verified_tree": "09bf8528a56018fed93139ad6536211ee7f54436",
+  "verified_mode": "fast",
+  "ahead_of_main": 69,
+  "checkpoint_count": 10,
+  "project_progress": 20.75,
+  "machine_progress": 20.75,
+  "stage": "CORE_RECONSTRUCTION",
+  "domain_scores": [
+    {
+      "name": "Baseline and autonomous control",
+      "weight": 8,
+      "score": 50.0,
+      "evidence_level": "NOT_EXERCISED",
+      "sections": [
+        "P0",
+        "P11"
+      ]
+    },
+    {
+      "name": "Runtime architecture and Feature/Hook ownership",
+      "weight": 22,
+      "score": 62.5,
+      "evidence_level": "NOT_EXERCISED",
+      "sections": [
+        "P1",
+        "P2",
+        "P3",
+        "P4"
+      ]
+    },
+    {
+      "name": "Runtime safety, lifecycle and concurrency",
+      "weight": 18,
+      "score": 0.0,
+      "evidence_level": "NOT_EXERCISED",
+      "sections": [
+        "P5"
+      ]
+    },
+    {
+      "name": "Performance, memory, APK and R8",
+      "weight": 12,
+      "score": 0.0,
+      "evidence_level": "NOT_EXERCISED",
+      "sections": [
+        "P6"
+      ]
+    },
+    {
+      "name": "ROM intelligence and compatibility evidence",
+      "weight": 10,
+      "score": 0.0,
+      "evidence_level": "NOT_EXERCISED",
+      "sections": [
+        "P8"
+      ]
+    },
+    {
+      "name": "Java/Kotlin boundary and maintainability",
+      "weight": 8,
+      "score": 0.0,
+      "evidence_level": "NOT_EXERCISED",
+      "sections": [
+        "P7"
+      ]
+    },
+    {
+      "name": "Build, CI, signing, artifact and release engineering",
+      "weight": 12,
+      "score": 25.0,
+      "evidence_level": "NOT_EXERCISED",
+      "sections": [
+        "P9",
+        "P12"
+      ]
+    },
+    {
+      "name": "Current documentation and provenance",
+      "weight": 5,
+      "score": 0.0,
+      "evidence_level": "NOT_EXERCISED",
+      "sections": [
+        "P10"
+      ]
+    },
+    {
+      "name": "Device validation",
+      "weight": 5,
+      "score": 0.0,
+      "evidence_level": "NOT_EXERCISED",
+      "sections": [
+        "P13"
+      ]
+    }
+  ],
+  "sections": [
+    {
+      "id": "P0",
+      "title": "— 锁定真实基线",
+      "state": "COMPLETE",
+      "evidence": [
+        "NOT_EXERCISED"
+      ]
+    },
+    {
+      "id": "P1",
+      "title": "— 单一事实源",
+      "state": "COMPLETE",
+      "evidence": [
+        "NOT_EXERCISED"
+      ]
+    },
+    {
+      "id": "P2",
+      "title": "— typed Feature Registry 全量收口",
+      "state": "COMPLETE",
+      "evidence": [
+        "BUILD_VERIFIED"
+      ]
+    },
+    {
+      "id": "P3",
+      "title": "— 全部生产 Hook 收口",
+      "state": "IN_PROGRESS",
+      "evidence": [
+        "NOT_EXERCISED"
+      ]
+    },
+    {
+      "id": "P4",
+      "title": "— 进程与 Installer",
+      "state": "TODO",
+      "evidence": [
+        "NOT_EXERCISED"
+      ]
+    },
+    {
+      "id": "P5",
+      "title": "— Runtime safety",
+      "state": "TODO",
+      "evidence": [
+        "NOT_EXERCISED"
+      ]
+    },
+    {
+      "id": "P6",
+      "title": "— 性能与内存",
+      "state": "TODO",
+      "evidence": [
+        "NOT_EXERCISED"
+      ]
+    },
+    {
+      "id": "P7",
+      "title": "— Java → Kotlin 最终收口",
+      "state": "TODO",
+      "evidence": [
+        "NOT_EXERCISED"
+      ]
+    },
+    {
+      "id": "P8",
+      "title": "— ROM intelligence",
+      "state": "TODO",
+      "evidence": [
+        "NOT_EXERCISED"
+      ]
+    },
+    {
+      "id": "P9",
+      "title": "— 测试、CI 与构建",
+      "state": "IN_PROGRESS",
+      "evidence": [
+        "BUILD_VERIFIED"
+      ]
+    },
+    {
+      "id": "P10",
+      "title": "— 文档与 dead code",
+      "state": "TODO",
+      "evidence": [
+        "NOT_EXERCISED"
+      ]
+    },
+    {
+      "id": "P11",
+      "title": "— 自主 discovery sweep",
+      "state": "TODO",
+      "evidence": [
+        "NOT_EXERCISED"
+      ]
+    },
+    {
+      "id": "P12",
+      "title": "— MACHINE_COMPLETE",
+      "state": "TODO",
+      "evidence": [
+        "NOT_EXERCISED"
+      ]
+    },
+    {
+      "id": "P13",
+      "title": "— DEVICE_VALIDATED",
+      "state": "BLOCKED_EXTERNAL",
+      "evidence": [
+        "NOT_EXERCISED"
+      ]
+    },
+    {
+      "id": "P14",
+      "title": "— PROJECT_COMPLETE",
+      "state": "TODO",
+      "evidence": [
+        "NOT_EXERCISED"
+      ]
+    }
+  ],
+  "notes": [
+    "Device validation is blocked by external evidence."
+  ]
+}

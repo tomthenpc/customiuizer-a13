@@ -2,24 +2,24 @@
 
 ```text
 Mode: PROFESSIONAL_AUTONOMOUS_STEWARDSHIP
-CheckpointCount: 9
-CheckpointsSinceStandardSweep: 9
-CheckpointsSinceDeepSweep: 9
-LastQualifyingCheckpoint: 9fd9e10
+CheckpointCount: 10
+CheckpointsSinceStandardSweep: 0
+CheckpointsSinceDeepSweep: 10
+LastQualifyingCheckpoint: HEAD
 LastLightSweepCommit: none
-LastStandardSweepCommit: none
+LastStandardSweepCommit: HEAD
 LastDeepSweepCommit: none
-LastFullVerificationCommit: 9fd9e10
-LastCIState: NOT_CONFIGURED
-LastCleanupCommit: 46db78c
-LastToolCreated: scripts/check-signing-config.ps1
+LastFullVerificationCommit: HEAD
+LastCIState: PENDING
+LastCleanupCommit: HEAD
+LastToolCreated: tools/progress_snapshot.py
 LastFailureClass: none
-CurrentObjective: P3.0 — remove FeatureDispatcher legacy private paths and add static invariants
-ResumeTask: P3 — 全部生产 Hook 收口; v6 control-state correction in progress
+CurrentObjective: P3.3 — refresh Hook ownership and classify remaining production hooks
+ResumeTask: P3 — 全部生产 Hook 收口; P3.3 hook ownership generator/audit first
 LastVerifiedTree: derived
-LastVerifiedMode: fast
-LastVerifiedAt: 2026-08-02T04:54:44+00:00
-LastVerifiedCommandsDigest: scripts/verify.ps1 -Mode Fast
+LastVerifiedMode: full
+LastVerifiedAt: 2026-08-02T05:09:19+00:00
+LastVerifiedCommandsDigest: python tools/verify.py full
 ```
 
 本文件只记录执行节奏，不保存、替代或重置产品任务。

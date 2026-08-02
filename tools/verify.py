@@ -149,6 +149,13 @@ def check_goal_constitution() -> int:
     )
 
 
+def check_progress_snapshot() -> int:
+    return run(
+        [find_python(), str(REPO_ROOT / "tools" / "progress_snapshot.py"), "--check"],
+        "progress-snapshot",
+    )
+
+
 def compile_debug() -> int:
     gradle = gradle_cmd()
     return run([gradle, ":app:compileDebugKotlin"], "compileDebugKotlin")
@@ -183,6 +190,8 @@ def fast_mode(pattern: str | None, skip_android: bool) -> int:
         return 1
     if check_goal_constitution() != 0:
         return 1
+    if check_progress_snapshot() != 0:
+        return 1
     if skip_android:
         print("[verify] no relevant source changes; skipping Android build tasks")
         return 0
@@ -205,6 +214,8 @@ def full_mode() -> int:
     if check_document_contracts() != 0:
         return 1
     if check_goal_constitution() != 0:
+        return 1
+    if check_progress_snapshot() != 0:
         return 1
     if compile_debug() != 0:
         return 1
