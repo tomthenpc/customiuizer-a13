@@ -18,6 +18,7 @@ class TargetKey:
     class_name: str
     member_name: str
     operation: str
+    parameter_types: tuple[str, ...] = ()
 
 
 @dataclass(frozen=True)
@@ -206,6 +207,7 @@ def resolve_class_variables(body: str) -> dict[str, str]:
 def extract_production_targets(source_root: Path, rel_path: str, function_name: str) -> tuple[list[ProductionTarget], list[str]]:
     path = source_root / rel_path
     text = path.read_text(encoding="utf-8")
+    imports = parse_imports(text)
     extracted = extract_function_body(text, function_name)
     if not extracted:
         return [], [f"UNPARSEABLE_HOOK_SURFACE: cannot locate function {function_name} in {rel_path}"]
@@ -221,7 +223,9 @@ def extract_production_targets(source_root: Path, rel_path: str, function_name: 
             errors.append(f"UNPARSEABLE_HOOK_SURFACE: {rel_path}:{line}: {method} argument parse failed")
             continue
         class_resolved = False
-        class_name = first_class_literal(args)
+        class_name_from_literal = first_class_literal(args)
+        class_name = class_name_from_literal
+        first_is_string = class_name_from_literal is not None
         if not class_name:
             var = args[0].strip()
             if var in class_vars:
@@ -231,13 +235,35 @@ def extract_production_targets(source_root: Path, rel_path: str, function_name: 
         if not class_name:
             errors.append(f"UNPARSEABLE_HOOK_SURFACE: {rel_path}:{line}: {method} className not a literal string")
             continue
+        op = resolve_operation(method)
         if method in ("ModuleHelper.hookAllConstructors", "ModuleHelper.findAndHookConstructor"):
             member_name = "<constructors>"
         if not member_name:
             errors.append(f"UNPARSEABLE_HOOK_SURFACE: {rel_path}:{line}: {method} memberName not a literal string")
             continue
-        op = resolve_operation(method)
-        key = TargetKey(class_name=unescape_string(class_name), member_name=member_name, operation=op)
+        # Determine parameter type expressions from the call signature.
+        if op in ("ALL_METHODS_BY_NAME", "ALL_CONSTRUCTORS"):
+            param_exprs: list[str] = []
+        elif first_is_string:
+            if op == "EXACT_CONSTRUCTOR":
+                # [className, classLoader, types..., callback]
+                param_exprs = args[2:-1]
+            else:
+                # [className, classLoader, memberName, types..., callback]
+                param_exprs = args[3:-1]
+        else:
+            # [classExpr/variable, memberName, types..., callback]
+            param_exprs = args[2:-1]
+        if not args[-1].strip():
+            # Missing callback means the call is malformed or the parser stopped early.
+            param_exprs = []
+        parameter_types = tuple(resolve_type_expr(p.strip(), imports) for p in param_exprs)
+        key = TargetKey(
+            class_name=unescape_string(class_name),
+            member_name=member_name,
+            operation=op,
+            parameter_types=parameter_types,
+        )
         # line is approximate; normalize to body-relative line
         body_lines_before = body[:m.start()].count("\n")
         abs_line = line + body_lines_before
@@ -246,8 +272,12 @@ def extract_production_targets(source_root: Path, rel_path: str, function_name: 
 
 
 def parse_contract_targets(contracts_text: str, feature_id: str) -> dict[TargetKey, tuple[str, bool]]:
-    """Extract SingleTargetRequirement/AnyOfRequirement blocks for the named contract."""
+    """Extract SingleTargetRequirement blocks for the named contract.
+
+    AnyOfRequirement candidates are intentionally out of scope for P3.2.1A.
+    """
     results: dict[TargetKey, tuple[str, bool]] = {}
+    imports = parse_imports(contracts_text)
     # find the val <featureId>: HookTargetContract block
     block_re = re.compile(
         rf"val\s+{re.escape(feature_id)}\s*:\s*HookTargetContract.*?\{{",
@@ -299,9 +329,24 @@ def parse_contract_targets(contracts_text: str, feature_id: str) -> dict[TargetK
         criticality = symbol_field(full, "criticality") or "REQUIRED"
         if operation == "ALL_CONSTRUCTORS" and not member_name:
             member_name = "<constructors>"
+        # Extract parameterTypes (default emptyList()).
+        parameter_types_expr = "emptyList()"
+        pt_match = re.search(
+            r"\bparameterTypes\s*=\s*(listOf\s*\(.*?\)|emptyList\s*\(\))",
+            target_block,
+            re.DOTALL,
+        )
+        if pt_match:
+            parameter_types_expr = pt_match.group(1)
         optional = criticality == "OPTIONAL"
         if class_name and member_name and operation:
-            key = TargetKey(class_name=class_name, member_name=member_name, operation=operation)
+            parameter_types = resolve_parameter_list(parameter_types_expr, imports)
+            key = TargetKey(
+                class_name=class_name,
+                member_name=member_name,
+                operation=operation,
+                parameter_types=parameter_types,
+            )
             results[key] = (criticality, optional)
     return results
 
@@ -350,6 +395,149 @@ def unescape_string(s: str) -> str:
     return s.replace("\\$", "$").replace("\\n", "\n").replace("\\t", "\t").replace("\\\\", "\\")
 
 
+# JVM canonical names for Kotlin built-in / common types.
+BUILTINS: dict[str, str] = {
+    "Int": "java.lang.Integer",
+    "Boolean": "java.lang.Boolean",
+    "Long": "java.lang.Long",
+    "Float": "java.lang.Float",
+    "Double": "java.lang.Double",
+    "Char": "java.lang.Character",
+    "Byte": "java.lang.Byte",
+    "Short": "java.lang.Short",
+    "String": "java.lang.String",
+    "Any": "java.lang.Object",
+    "List": "java.util.List",
+    "Map": "java.util.Map",
+    "Set": "java.util.Set",
+    "Runnable": "java.lang.Runnable",
+}
+
+
+PRIMITIVE_BY_WRAPPER: dict[str, str] = {
+    "Int": "int",
+    "Boolean": "boolean",
+    "Long": "long",
+    "Float": "float",
+    "Double": "double",
+    "Char": "char",
+    "Byte": "byte",
+    "Short": "short",
+}
+
+
+# Local constants used inside CatalogContracts.
+CONTRACT_CONSTANTS: dict[str, str] = {
+    "INT": "int",
+    "BOOLEAN": "boolean",
+    "LONG": "long",
+    "STRING": "java.lang.String",
+}
+
+
+def parse_imports(text: str) -> dict[str, str]:
+    """Build simple-name -> fully-qualified mapping from import statements."""
+    imports: dict[str, str] = {}
+    for line in text.splitlines():
+        stripped = line.strip()
+        if not stripped.startswith("import "):
+            continue
+        if stripped.startswith("import static "):
+            continue
+        # Drop trailing semicolon.
+        fq = stripped[7:].rstrip(";").strip()
+        if " as " in fq:
+            fq, alias = fq.rsplit(" as ", 1)
+            simple = alias.strip()
+        else:
+            simple = fq.split(".")[-1]
+        imports[simple] = fq
+    return imports
+
+
+def _resolve_simple_name(simple: str, imports: dict[str, str]) -> str:
+    if simple in CONTRACT_CONSTANTS:
+        return CONTRACT_CONSTANTS[simple]
+    if simple in imports:
+        return imports[simple]
+    if simple in BUILTINS:
+        return BUILTINS[simple]
+    if "." in simple or "$" in simple:
+        return simple
+    return simple
+
+
+def resolve_type_expr(expr: str, imports: dict[str, str]) -> str:
+    """Turn a Kotlin parameter type expression into a stable JVM canonical name."""
+    expr = expr.strip().rstrip("!!").rstrip(".!!").strip()
+    if not expr:
+        return ""
+
+    # Contract local constant.
+    if expr in CONTRACT_CONSTANTS:
+        return CONTRACT_CONSTANTS[expr]
+
+    # Array<T>::class.java -> T[]
+    array_m = re.match(r"^Array<(.+)>::class\.java$", expr)
+    if array_m:
+        inner = resolve_type_expr(array_m.group(1), imports)
+        return f"{inner}[]"
+
+    # T::class.java or T::class.javaPrimitiveType
+    class_m = re.match(r"^([A-Za-z0-9_$.]+)::class\.java(PrimitiveType)?$", expr)
+    if class_m:
+        body = class_m.group(1)
+        primitive = class_m.group(2)
+        if primitive:
+            return PRIMITIVE_BY_WRAPPER.get(body, body.lower())
+        # Nested class shorthand from a base import, e.g. Settings.System
+        if "." in body:
+            base, _, rest = body.partition(".")
+            base_fq = _resolve_simple_name(base, imports)
+            if base_fq != base:
+                return base_fq + "$" + rest
+            return body.replace(".", "$")
+        return _resolve_simple_name(body, imports)
+
+    # Fully qualified name used directly without ::class.java.
+    if "." in expr or "$" in expr:
+        return expr.replace(".", "$").replace("$$", "$") if "$" not in expr else expr
+
+    return _resolve_simple_name(expr, imports)
+
+
+def resolve_parameter_list(text: str, imports: dict[str, str]) -> tuple[str, ...]:
+    """Parse listOf(...) / emptyList() contents and return canonical types."""
+    text = text.strip()
+    if text.startswith("emptyList()") or text.startswith("listOf()"):
+        return ()
+    m = re.match(r"^listOf\s*\((.*)\)\s*$", text, re.DOTALL)
+    if not m:
+        # Treat unknown list expression as empty and let callers report.
+        return ()
+    inner = m.group(1).strip()
+    if not inner:
+        return ()
+    # Split by commas at top level (ignoring nested generics).
+    parts: list[str] = []
+    current = ""
+    depth = 0
+    for ch in inner:
+        if ch == "<":
+            depth += 1
+        elif ch == ">":
+            depth -= 1
+        elif ch == "," and depth == 0:
+            if current.strip():
+                parts.append(current.strip())
+            current = ""
+            continue
+        current += ch
+    if current.strip():
+        parts.append(current.strip())
+    return tuple(resolve_type_expr(p, imports) for p in parts)
+
+
 def field(block: str, name: str) -> str | None:
     m = re.search(rf"\b{re.escape(name)}\s*=\s*\"([^\"]+)\"", block)
     return unescape_string(m.group(1)) if m else None
@@ -385,14 +573,38 @@ def check_batch(
 
         contract_keys = set(contract_targets.keys())
 
+        def base(k: TargetKey) -> tuple[str, str, str]:
+            return (k.class_name, k.member_name, k.operation)
+
+        contract_by_base: dict[tuple[str, str, str], list[TargetKey]] = {}
+        for k in contract_keys:
+            contract_by_base.setdefault(base(k), []).append(k)
+        prod_by_base: dict[tuple[str, str, str], list[TargetKey]] = {}
+        for k in prod_keys:
+            prod_by_base.setdefault(base(k), []).append(k)
+
         missing = prod_keys - contract_keys
         for k in missing:
             pt = next(t for t in prod_targets if t.key == k)
-            issues.append(f"MISSING_CONTRACT_TARGET: {feature_id} {pt.source}: {k}")
+            b = base(k)
+            if b in contract_by_base:
+                contract_versions = [c.parameter_types for c in contract_by_base[b]]
+                issues.append(
+                    f"PARAMETER_TYPES_MISMATCH: {feature_id} {pt.source}: {b} production types {k.parameter_types} do not match contract types {contract_versions}"
+                )
+            else:
+                issues.append(f"MISSING_CONTRACT_TARGET: {feature_id} {pt.source}: {k}")
 
         orphan = contract_keys - prod_keys
         for k in orphan:
-            issues.append(f"ORPHAN_CONTRACT_TARGET: {feature_id} contract has {k} not found in production")
+            b = base(k)
+            if b in prod_by_base:
+                prod_versions = [p.parameter_types for p in prod_by_base[b]]
+                issues.append(
+                    f"ORPHAN_PARAMETER_TYPES: {feature_id} contract {k} not found in production; production has {prod_versions}"
+                )
+            else:
+                issues.append(f"ORPHAN_CONTRACT_TARGET: {feature_id} contract has {k} not found in production")
 
         for pt in prod_targets:
             if pt.key in contract_targets:

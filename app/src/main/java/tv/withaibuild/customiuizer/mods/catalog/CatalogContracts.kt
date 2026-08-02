@@ -925,7 +925,8 @@ object CatalogContracts {
                     id = "MiuiFreeFormGestureController\$FreeFormReceiver.onReceive",
                     operation = HookOperation.EXACT_METHOD,
                     className = "com.android.server.wm.MiuiFreeFormGestureController\$FreeFormReceiver",
-                    memberName = "onReceive"
+                    memberName = "onReceive",
+                    parameterTypes = listOf(Context::class.java, Intent::class.java)
                 )
             ),
             SingleTargetRequirement(
