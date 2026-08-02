@@ -129,7 +129,7 @@ public final class SystemUiInstaller {
             if (MainModule.mPrefs.getBoolean("system_removedismiss")) FeatureDispatcher.installById("hideDismissView", systemuiRuntime);
             if (MainModule.mPrefs.getBoolean("system_drawer_removeshortcut")) SystemUINotificationHooks.HideNoficationAccessIconHook(lpparam);
             if (MainModule.mPrefs.getBoolean("controls_nonavbar")) Controls.HideNavBarHook(lpparam);
-            else if (MainModule.mPrefs.getBoolean("controls_hidenavbar_whenscreenshot")) SystemUIScreenshotHooks.HideNavBarBeforeScreenshotHook(lpparam);
+            else if (MainModule.mPrefs.getBoolean("controls_hidenavbar_whenscreenshot")) FeatureDispatcher.installById("hideNavBarBeforeScreenshot", systemuiRuntime);
             if (MainModule.mPrefs.getBoolean("controls_imebackalticon")) Controls.ImeBackAltIconHook(lpparam);
             if (MainModule.mPrefs.getBoolean("system_visualizer")) SystemAudioAndVisualAndMoreHooks.AudioVisualizerHook(lpparam);
             if (MainModule.mPrefs.getBoolean("system_nosilentvibrate")

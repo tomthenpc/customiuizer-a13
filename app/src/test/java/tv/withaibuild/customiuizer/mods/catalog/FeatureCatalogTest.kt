@@ -547,9 +547,9 @@ class FeatureCatalogTest {
         val registryMigrated = registryIds.size
         val dispatcherLegacy = legacyIds.size
 
-        assertEquals("catalog total", 29, catalogTotal)
+        assertEquals("catalog total", 30, catalogTotal)
         assertEquals("registry migrated", 8, registryMigrated)
-        assertEquals("dispatcher legacy", 21, dispatcherLegacy)
+        assertEquals("dispatcher legacy", 22, dispatcherLegacy)
 
         assertTrue("registry ids are a subset of catalog ids", registryIds.all { it in catalogIds })
         assertEquals("dispatcher ids match catalog ids", catalogIds, dispatcherIds)

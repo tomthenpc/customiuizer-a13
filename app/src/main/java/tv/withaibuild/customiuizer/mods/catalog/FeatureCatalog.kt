@@ -1029,6 +1029,33 @@ object FeatureCatalog {
             },
             activationRestartTarget = RestartTarget.SYSTEMUI_RESTART,
             configReloadMode = ConfigReloadMode.NONE
+        ),
+        FeatureSpec(
+            compatibilityPolicy = CompatibilityPolicy.CONTRACT_REQUIRED,
+            contract = CatalogContracts.hideNavBarBeforeScreenshot,
+            id = "hideNavBarBeforeScreenshot",
+            diagnosticId = DiagnosticIds.HIDE_NAV_BAR_BEFORE_SCREENSHOT,
+            processScope = ProcessScope.SYSTEM_UI,
+            installPhase = InstallPhase.PACKAGE_READY,
+            processTarget = ProcessTarget.SystemUI,
+            preferenceKeys = setOf("controls_hidenavbar_whenscreenshot"),
+            condition = { prefs ->
+                prefs.getBoolean("controls_hidenavbar_whenscreenshot", false)
+            },
+            installer = { runtime, compatResult ->
+                legacyInstall(
+                    runtime = runtime,
+                    compatResult = compatResult,
+                    contract = CatalogContracts.hideNavBarBeforeScreenshot,
+                    diagnosticId = DiagnosticIds.HIDE_NAV_BAR_BEFORE_SCREENSHOT
+                ) {
+                    SystemUIScreenshotHooks.HideNavBarBeforeScreenshotHook(
+                        runtime.lpparam as PackageReadyParam
+                    )
+                }
+            },
+            activationRestartTarget = RestartTarget.SYSTEMUI_RESTART,
+            configReloadMode = ConfigReloadMode.NONE
         )
     ) }
 

@@ -408,4 +408,19 @@ object CatalogContracts {
         )
     )
     }
+
+    val hideNavBarBeforeScreenshot: HookTargetContract by lazy(kotlin.LazyThreadSafetyMode.NONE) { HookTargetContract(
+        featureId = "hideNavBarBeforeScreenshot",
+        requirements = listOf(
+            SingleTargetRequirement(
+                target = HookTargetSpec(
+                    id = "NavigationBar.onInit",
+                    operation = HookOperation.ALL_METHODS_BY_NAME,
+                    className = "com.android.systemui.navigationbar.NavigationBar",
+                    memberName = "onInit"
+                )
+            )
+        )
+    )
+    }
 }

@@ -37,7 +37,8 @@ enum class FeatureId(val canonicalId: String) {
     HIDE_ICONS_CLOCK("hideIconsClock"),
     NO_UNLOCK_ANIMATION("noUnlockAnimation"),
     TEMP_HIDE_OVERLAY_SYSTEMUI("tempHideOverlaySystemUI"),
-    HIDE_STATUS_BAR_BEFORE_SCREENSHOT("hideStatusBarBeforeScreenshot");
+    HIDE_STATUS_BAR_BEFORE_SCREENSHOT("hideStatusBarBeforeScreenshot"),
+    HIDE_NAV_BAR_BEFORE_SCREENSHOT("hideNavBarBeforeScreenshot");
 
     companion object {
         private val byString: Map<String, FeatureId> = values().associateBy {

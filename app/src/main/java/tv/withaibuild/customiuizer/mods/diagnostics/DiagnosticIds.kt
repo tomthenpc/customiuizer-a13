@@ -53,4 +53,5 @@ object DiagnosticIds {
     /** Catalog expansion batch 4: SystemUI screenshot. */
     const val TEMP_HIDE_OVERLAY_SYSTEMUI = "TEMP_HIDE_OVERLAY_SYSTEMUI"
     const val HIDE_STATUS_BAR_BEFORE_SCREENSHOT = "HIDE_STATUS_BAR_BEFORE_SCREENSHOT"
+    const val HIDE_NAV_BAR_BEFORE_SCREENSHOT = "HIDE_NAV_BAR_BEFORE_SCREENSHOT"
 }
