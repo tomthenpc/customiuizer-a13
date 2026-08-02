@@ -451,7 +451,7 @@ object FeatureCatalog {
         )
     ) }
 
-    private val legacySpecsInternal by lazy(LazyThreadSafetyMode.NONE) { listOf(
+    private val adaptedSpecsInternal by lazy(LazyThreadSafetyMode.NONE) { listOf(
         // Catalog expansion batch 1: system_server
         FeatureSpec(
             compatibilityPolicy = CompatibilityPolicy.CONTRACT_REQUIRED,
@@ -1020,7 +1020,7 @@ object FeatureCatalog {
 
     /**
      * Build probe used by tests to prove that [registrySpecs] does not touch the
-     * legacy list and that [specs] combines both lists without double-counting.
+     * adapted list and that [specs] combines both lists without double-counting.
      * Production code leaves the counters at their default values.
      */
     internal object CatalogBuildProbe {
@@ -1028,19 +1028,27 @@ object FeatureCatalog {
         var registrySpecsBuilt: Int = 0
 
         @JvmField
-        var legacySpecsBuilt: Int = 0
+        var adaptedSpecsBuilt: Int = 0
 
         @JvmStatic
         fun reset() {
             registrySpecsBuilt = 0
-            legacySpecsBuilt = 0
+            adaptedSpecsBuilt = 0
         }
+    }
+
+    private val allSpecsInternal by lazy(LazyThreadSafetyMode.NONE) {
+        registrySpecsInternal + adaptedSpecsInternal
+    }
+
+    private val specByCanonicalIdInternal by lazy(LazyThreadSafetyMode.NONE) {
+        allSpecsInternal.associateBy(FeatureSpec::id)
     }
 
     /**
      * Returns only the specs that have been migrated to the production
-     * [FeatureInstallRegistry]. Non-migrated catalog features remain routed
-     * through the legacy [FeatureDispatcher] paths.
+     * [FeatureInstallRegistry]. Remaining catalog features are routed through
+     * the typed [FeatureDispatcher] paths.
      */
     @JvmStatic
     fun registrySpecs(): List<FeatureSpec> {
@@ -1050,14 +1058,34 @@ object FeatureCatalog {
     }
 
     /**
+     * Returns the catalog specs that are still installed through typed
+     * legacy installers. These are still first-class [FeatureSpec]s and are
+     * included in [specs].
+     */
+    @JvmStatic
+    fun adaptedSpecs(): List<FeatureSpec> {
+        val result = adaptedSpecsInternal
+        CatalogBuildProbe.adaptedSpecsBuilt += result.size
+        return result
+    }
+
+    /**
      * Returns a snapshot of all specs for documentation and audit.
+     *
+     * The list is cached; repeated calls do not allocate a new list.
      */
     @JvmStatic
     fun specs(): List<FeatureSpec> {
-        val registry = registrySpecsInternal
-        val legacy = legacySpecsInternal
-        CatalogBuildProbe.registrySpecsBuilt += registry.size
-        CatalogBuildProbe.legacySpecsBuilt += legacy.size
-        return registry + legacy
+        registrySpecs()
+        adaptedSpecs()
+        return allSpecsInternal
     }
+
+    /**
+     * O(1) lookup of a [FeatureSpec] by its canonical id.
+     *
+     * Returns `null` when the id is unknown to this catalog.
+     */
+    @JvmStatic
+    fun specByCanonicalId(id: String): FeatureSpec? = specByCanonicalIdInternal[id]
 }

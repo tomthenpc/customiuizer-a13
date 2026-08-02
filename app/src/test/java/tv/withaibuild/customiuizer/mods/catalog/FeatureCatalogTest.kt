@@ -522,7 +522,7 @@ class FeatureCatalogTest {
         val specs = FeatureCatalog.registrySpecs()
         assertEquals(8, specs.size)
         assertEquals("registrySpecs only builds the 8 migrated specs", 8, FeatureCatalog.CatalogBuildProbe.registrySpecsBuilt)
-        assertEquals("registrySpecs does not touch legacy specs", 0, FeatureCatalog.CatalogBuildProbe.legacySpecsBuilt)
+        assertEquals("registrySpecs does not touch adapted specs", 0, FeatureCatalog.CatalogBuildProbe.adaptedSpecsBuilt)
     }
 
     @Test
@@ -531,7 +531,7 @@ class FeatureCatalogTest {
         val specs = FeatureCatalog.specs()
         assertEquals(27, specs.size)
         assertEquals("specs builds the 8 registry specs once", 8, FeatureCatalog.CatalogBuildProbe.registrySpecsBuilt)
-        assertEquals("specs builds the 19 legacy specs once", 19, FeatureCatalog.CatalogBuildProbe.legacySpecsBuilt)
+        assertEquals("specs builds the 19 adapted specs once", 19, FeatureCatalog.CatalogBuildProbe.adaptedSpecsBuilt)
     }
 
     @Test

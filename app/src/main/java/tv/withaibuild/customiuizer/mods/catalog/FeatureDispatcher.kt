@@ -78,7 +78,7 @@ object FeatureDispatcher {
 
     @JvmStatic
     fun install(feature: FeatureId, runtime: FeatureRuntime): Boolean {
-        val spec = FeatureCatalog.specs().find { it.id == feature.canonicalId }
+        val spec = FeatureCatalog.specByCanonicalId(feature.canonicalId)
         if (spec == null) {
             DiagnosticRecorder.record(
                 id = DiagnosticIds.UNKNOWN_FEATURE_ID,

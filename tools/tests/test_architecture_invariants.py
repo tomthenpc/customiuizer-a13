@@ -123,19 +123,19 @@ class ArchitectureInvariantTest(unittest.TestCase):
     def test_feature_catalog_registry_and_legacy_spec_counts(self):
         text = (REPO / "app" / "src" / "main" / "java" / "tv" / "withaibuild" / "customiuizer" / "mods" / "catalog" / "FeatureCatalog.kt").read_text(encoding="utf-8")
         self.assertIn("private val registrySpecsInternal", text)
-        self.assertIn("private val legacySpecsInternal", text)
+        self.assertIn("private val adaptedSpecsInternal", text)
 
-        delimiter = "private val legacySpecsInternal by lazy(LazyThreadSafetyMode.NONE) { listOf("
-        self.assertIn(delimiter, text, "registry and legacy spec lists must be split")
-        registry_text, legacy_text = text.split(delimiter, 1)
+        delimiter = "private val adaptedSpecsInternal by lazy(LazyThreadSafetyMode.NONE) { listOf("
+        self.assertIn(delimiter, text, "registry and adapted spec lists must be split")
+        registry_text, adapted_text = text.split(delimiter, 1)
 
         registry_ids = re.findall(r'id = "([^"]+)"', registry_text)
-        legacy_ids = re.findall(r'id = "([^"]+)"', legacy_text)
+        adapted_ids = re.findall(r'id = "([^"]+)"', adapted_text)
 
         self.assertEqual(8, len(registry_ids), f"registry specs must contain exactly 8 ids: {registry_ids}")
-        self.assertEqual(19, len(legacy_ids), f"legacy specs must contain exactly 19 ids: {legacy_ids}")
-        self.assertEqual(27, len(registry_ids) + len(legacy_ids))
-        self.assertEqual(set(), set(registry_ids) & set(legacy_ids), "registry and legacy ids must be disjoint")
+        self.assertEqual(19, len(adapted_ids), f"adapted specs must contain exactly 19 ids: {adapted_ids}")
+        self.assertEqual(27, len(registry_ids) + len(adapted_ids))
+        self.assertEqual(set(), set(registry_ids) & set(adapted_ids), "registry and adapted ids must be disjoint")
 
     def test_feature_dispatcher_routing_no_duplicate_paths(self):
         dispatcher = (REPO / "app" / "src" / "main" / "java" / "tv" / "withaibuild" / "customiuizer" / "mods" / "catalog" / "FeatureDispatcher.kt").read_text(encoding="utf-8")
