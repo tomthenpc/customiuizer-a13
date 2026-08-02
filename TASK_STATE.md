@@ -422,7 +422,7 @@ typed catalog 之外的 Hook 同样必须处理。
 
 子任务：
 
-- [ ] P3.1 刷新 Hook ownership inventory（根据 FeatureCatalog 调用关系重新分类）；
+- [x] P3.1 刷新 Hook ownership inventory（根据 FeatureCatalog 调用关系重新分类）；
 - [ ] P3.2 迁移可直接归类的 legacy hook 到 Registry（按 process/phase 分批）；
 - [ ] P3.3 登记不可迁移项为 LEGACY_EXCEPTION 并补充原因/owner/test；
 - [ ] P3.4 增加 inventory 机械门禁，防止 UNKNOWN/重复 ownership。
@@ -757,6 +757,7 @@ P0 后重建，但不得删除未解决问题。
 |---|---|---|---|---|
 | 1 | `354e239` | P2 — typed Feature Registry 全量收口 | `scripts/verify.ps1 -Mode Full` 通过 | qualifying |
 | 2 | `9d2fa23` | v3 governance: automation state checker + stewardship refresh | `scripts/verify.ps1 -Mode Fast` 通过 | qualifying |
+| 3 | `37e8f1a` | P3.1 — refresh hook ownership inventory from typed catalog | `scripts/verify.ps1 -Mode Fast` 通过 | qualifying |
 
 ---
 
