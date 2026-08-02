@@ -108,8 +108,10 @@ class Snapshot:
 
 def git(*args: str, check: bool = False) -> str:
     cmd = ["git", "-C", str(REPO_ROOT)] + list(args)
-    result = subprocess.run(cmd, capture_output=True, text=True, check=check)
-    return result.stdout.strip() if result.returncode == 0 else ""
+    result = subprocess.run(
+        cmd, capture_output=True, text=True, encoding="utf-8", errors="replace", check=check
+    )
+    return result.stdout.strip() if result.stdout and result.returncode == 0 else ""
 
 
 def head_sha() -> str:

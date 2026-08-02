@@ -1,77 +1,58 @@
 # A13 Hook Ownership Inventory
 
-> Branch: `devin/a13-rom-intelligence-audit`
-> Baseline commit: `HEAD`
-> Generated: auto
-> Repository: `tomthenpc/customiuizer-a13`
-> Device evidence: `NOT_EXERCISED`
+Total direct hook call sites: 676
 
----
-
-## 1. Classification
-
-| Category | Meaning |
-|---|---|
-| `REGISTRY_FEATURE` | Hook implementation owned by a typed catalog `FeatureId` and installed through `FeatureInstallRegistry`. |
-| `INSTALLER_INFRASTRUCTURE` | Bootstrap / utility hook used by an `Installer` or shared runtime helper, not a business Feature. |
-| `LEGACY_EXCEPTION` | Business hook with at least one call site not yet owned by a typed catalog Feature. |
-| `UNKNOWN` | Hook with no reachable owner (target: 0). |
-
----
-
-## 2. Summary
-
-| Category | Files | Direct `ModuleHelper.*` call sites | Share |
-|---|---|---|---|
-| `REGISTRY_FEATURE` | 0 | 0 | 0.0 % |
-| `INSTALLER_INFRASTRUCTURE` | 0 | 0 | 0.0 % |
-| `LEGACY_EXCEPTION` | 40 | 630 | 100.0 % |
+| Category | Files | Direct calls | Share |
+|---|---|---:|---:|
+| `REGISTRY_FEATURE` | 16 | 50 | 7.4 % |
+| `INSTALLER_INFRASTRUCTURE` | 5 | 6 | 0.9 % |
+| `API_BRIDGE` | 1 | 23 | 3.4 % |
+| `LEGACY_EXCEPTION` | 35 | 597 | 88.3 % |
 | `UNKNOWN` | 0 | 0 | 0.0 % |
-| **Total** | **40** | **630** | **100 %** |
 
----
+## Per-file summary
 
-## 3. Per-file inventory
-
-| File | Direct calls | Primary process | Category | Notes |
-|---|---|---|---|---|
-| `installers/GenericAppInstaller.java` | 1 | per-app / mixed | `LEGACY_EXCEPTION` | no typed catalog owner |
-| `installers/LauncherInstaller.java` | 1 | com.miui.home / com.mi.android.globallauncher | `LEGACY_EXCEPTION` | no typed catalog owner |
-| `installers/SystemUiInstaller.java` | 1 | com.android.systemui | `LEGACY_EXCEPTION` | no typed catalog owner |
-| `mods/Controls.kt` | 29 | mixed | `LEGACY_EXCEPTION` | no typed catalog owner |
-| `mods/GlobalActions.kt` | 8 | mixed | `LEGACY_EXCEPTION` | no typed catalog owner |
-| `mods/LauncherAnimationHooks.kt` | 14 | com.miui.home / com.mi.android.globallauncher | `LEGACY_EXCEPTION` | mixed: typed=1, legacy=7 |
-| `mods/LauncherFolderHooks.kt` | 11 | com.miui.home / com.mi.android.globallauncher | `LEGACY_EXCEPTION` | mixed: typed=1, legacy=4 |
-| `mods/LauncherGestureHooks.kt` | 32 | com.miui.home / com.mi.android.globallauncher | `LEGACY_EXCEPTION` | no typed catalog owner |
-| `mods/LauncherIconHooks.kt` | 19 | com.miui.home / com.mi.android.globallauncher | `LEGACY_EXCEPTION` | mixed: typed=2, legacy=4 |
-| `mods/LauncherLayoutHooks.kt` | 27 | com.miui.home / com.mi.android.globallauncher | `LEGACY_EXCEPTION` | mixed: typed=1, legacy=11 |
-| `mods/LauncherSystemHooks.kt` | 15 | com.android.systemui | `LEGACY_EXCEPTION` | mixed: typed=2, legacy=5 |
-| `mods/PackagePermissions.kt` | 5 | mixed | `LEGACY_EXCEPTION` | no typed catalog owner |
-| `mods/SystemAudioAndVisualAndMoreHooks.kt` | 47 | com.android.systemui | `LEGACY_EXCEPTION` | mixed: typed=6, legacy=15 |
-| `mods/SystemAudioAndVolumeHooks.kt` | 5 | com.android.systemui | `LEGACY_EXCEPTION` | mixed: typed=1, legacy=2 |
-| `mods/SystemChargingAndWallpaperHooks.kt` | 3 | com.android.systemui | `LEGACY_EXCEPTION` | no typed catalog owner |
-| `mods/SystemDisplayAndWindowHooks.kt` | 22 | com.android.systemui | `LEGACY_EXCEPTION` | mixed: typed=2, legacy=6 |
-| `mods/SystemFreeformAndMultiWindowHooks.kt` | 27 | com.android.systemui | `LEGACY_EXCEPTION` | no typed catalog owner |
-| `mods/SystemLockScreenHooks.kt` | 7 | com.android.systemui | `LEGACY_EXCEPTION` | no typed catalog owner |
-| `mods/SystemLockScreenMoreHooks.kt` | 18 | com.android.systemui | `LEGACY_EXCEPTION` | mixed: typed=1, legacy=6 |
-| `mods/SystemNotificationAndShareHooks.kt` | 14 | com.android.systemui | `LEGACY_EXCEPTION` | no typed catalog owner |
-| `mods/SystemNotificationMoreHooks.kt` | 30 | com.android.systemui | `LEGACY_EXCEPTION` | mixed: typed=2, legacy=16 |
-| `mods/SystemNotificationPopupsHooks.kt` | 7 | com.android.systemui | `LEGACY_EXCEPTION` | no typed catalog owner |
-| `mods/SystemSecurityAndSystemHooks.kt` | 19 | com.android.systemui | `LEGACY_EXCEPTION` | no typed catalog owner |
-| `mods/SystemSettingsAndConnectivityHooks.kt` | 13 | com.android.systemui | `LEGACY_EXCEPTION` | no typed catalog owner |
-| `mods/SystemSettingsMoreHooks.kt` | 5 | com.android.systemui | `LEGACY_EXCEPTION` | no typed catalog owner |
-| `mods/SystemShareAndOpenWithHooks.kt` | 4 | com.android.systemui | `LEGACY_EXCEPTION` | no typed catalog owner |
-| `mods/SystemStatusBarAndClockHooks.kt` | 6 | com.android.systemui | `LEGACY_EXCEPTION` | no typed catalog owner |
-| `mods/SystemStatusBarClockAndMoreHooks.kt` | 10 | com.android.systemui | `LEGACY_EXCEPTION` | mixed: typed=1, legacy=2 |
-| `mods/SystemStatusBarMoreHooks.kt` | 11 | com.android.systemui | `LEGACY_EXCEPTION` | mixed: typed=1, legacy=6 |
-| `mods/SystemUIBatteryHooks.kt` | 8 | com.android.systemui | `LEGACY_EXCEPTION` | mixed: typed=1, legacy=1 |
-| `mods/SystemUIControlCenterHooks.kt` | 53 | com.android.systemui | `LEGACY_EXCEPTION` | no typed catalog owner |
-| `mods/SystemUILockScreenHooks.kt` | 28 | com.android.systemui | `LEGACY_EXCEPTION` | no typed catalog owner |
-| `mods/SystemUIMonitorAndTileHooks.kt` | 8 | com.android.systemui | `LEGACY_EXCEPTION` | no typed catalog owner |
-| `mods/SystemUINotificationHooks.kt` | 13 | com.android.systemui | `LEGACY_EXCEPTION` | mixed: typed=1, legacy=6 |
-| `mods/SystemUIScreenshotHooks.kt` | 3 | com.android.systemui | `LEGACY_EXCEPTION` | no typed catalog owner |
-| `mods/SystemUIStatusBarHooks.kt` | 54 | com.android.systemui | `LEGACY_EXCEPTION` | mixed: typed=2, legacy=17 |
-| `mods/Various.kt` | 48 | mixed | `LEGACY_EXCEPTION` | no typed catalog owner |
-| `mods/utils/DeviceInfoMonitor.kt` | 1 | mixed | `LEGACY_EXCEPTION` | no typed catalog owner |
-| `mods/utils/HookInstaller.kt` | 2 | mixed | `LEGACY_EXCEPTION` | no typed catalog owner |
-| `mods/utils/ResourceHooks.java` | 1 | mixed | `LEGACY_EXCEPTION` | no typed catalog owner |
+| File | Direct calls | Registry calls | Legacy calls | Category | Notes |
+|---|---|---:|---:|---|---|---|
+| `tv/withaibuild/customiuizer/mods/utils/ModuleHelper.java` | 23 | 0 | 23 | `API_BRIDGE` | infrastructure |
+| `tv/withaibuild/customiuizer/installers/GenericAppInstaller.java` | 1 | 0 | 1 | `INSTALLER_INFRASTRUCTURE` | infrastructure |
+| `tv/withaibuild/customiuizer/installers/LauncherInstaller.java` | 1 | 0 | 1 | `INSTALLER_INFRASTRUCTURE` | infrastructure |
+| `tv/withaibuild/customiuizer/installers/SystemUiInstaller.java` | 1 | 0 | 1 | `INSTALLER_INFRASTRUCTURE` | infrastructure |
+| `tv/withaibuild/customiuizer/mods/utils/HookInstaller.kt` | 2 | 0 | 2 | `INSTALLER_INFRASTRUCTURE` | infrastructure |
+| `tv/withaibuild/customiuizer/mods/utils/ResourceHooks.java` | 1 | 0 | 1 | `INSTALLER_INFRASTRUCTURE` | infrastructure |
+| `tv/withaibuild/customiuizer/mods/Controls.kt` | 29 | 0 | 29 | `LEGACY_EXCEPTION` | no typed catalog owner |
+| `tv/withaibuild/customiuizer/mods/GlobalActions.kt` | 8 | 0 | 8 | `LEGACY_EXCEPTION` | no typed catalog owner |
+| `tv/withaibuild/customiuizer/mods/LauncherAnimationHooks.kt` | 14 | 1 | 13 | `LEGACY_EXCEPTION` | mixed: typed=1, legacy=13 |
+| `tv/withaibuild/customiuizer/mods/LauncherFolderHooks.kt` | 11 | 3 | 8 | `LEGACY_EXCEPTION` | mixed: typed=3, legacy=8 |
+| `tv/withaibuild/customiuizer/mods/LauncherGestureHooks.kt` | 32 | 0 | 32 | `LEGACY_EXCEPTION` | no typed catalog owner |
+| `tv/withaibuild/customiuizer/mods/LauncherIconHooks.kt` | 19 | 2 | 17 | `LEGACY_EXCEPTION` | mixed: typed=2, legacy=17 |
+| `tv/withaibuild/customiuizer/mods/LauncherLayoutHooks.kt` | 27 | 1 | 26 | `LEGACY_EXCEPTION` | mixed: typed=1, legacy=26 |
+| `tv/withaibuild/customiuizer/mods/LauncherSystemHooks.kt` | 15 | 3 | 12 | `LEGACY_EXCEPTION` | mixed: typed=3, legacy=12 |
+| `tv/withaibuild/customiuizer/mods/SystemAudioAndVisualAndMoreHooks.kt` | 47 | 8 | 39 | `LEGACY_EXCEPTION` | mixed: typed=8, legacy=39 |
+| `tv/withaibuild/customiuizer/mods/SystemAudioAndVolumeHooks.kt` | 5 | 1 | 4 | `LEGACY_EXCEPTION` | mixed: typed=1, legacy=4 |
+| `tv/withaibuild/customiuizer/mods/SystemChargingAndWallpaperHooks.kt` | 3 | 0 | 3 | `LEGACY_EXCEPTION` | no typed catalog owner |
+| `tv/withaibuild/customiuizer/mods/SystemDisplayAndWindowHooks.kt` | 22 | 3 | 19 | `LEGACY_EXCEPTION` | mixed: typed=3, legacy=19 |
+| `tv/withaibuild/customiuizer/mods/SystemFreeformAndMultiWindowHooks.kt` | 27 | 0 | 27 | `LEGACY_EXCEPTION` | no typed catalog owner |
+| `tv/withaibuild/customiuizer/mods/SystemLockScreenHooks.kt` | 7 | 0 | 7 | `LEGACY_EXCEPTION` | no typed catalog owner |
+| `tv/withaibuild/customiuizer/mods/SystemLockScreenMoreHooks.kt` | 18 | 1 | 17 | `LEGACY_EXCEPTION` | mixed: typed=1, legacy=17 |
+| `tv/withaibuild/customiuizer/mods/SystemNotificationAndShareHooks.kt` | 15 | 0 | 15 | `LEGACY_EXCEPTION` | no typed catalog owner |
+| `tv/withaibuild/customiuizer/mods/SystemNotificationMoreHooks.kt` | 30 | 2 | 28 | `LEGACY_EXCEPTION` | mixed: typed=2, legacy=28 |
+| `tv/withaibuild/customiuizer/mods/SystemNotificationPopupsHooks.kt` | 7 | 0 | 7 | `LEGACY_EXCEPTION` | no typed catalog owner |
+| `tv/withaibuild/customiuizer/mods/SystemSecurityAndSystemHooks.kt` | 19 | 0 | 19 | `LEGACY_EXCEPTION` | no typed catalog owner |
+| `tv/withaibuild/customiuizer/mods/SystemSettingsAndConnectivityHooks.kt` | 13 | 0 | 13 | `LEGACY_EXCEPTION` | no typed catalog owner |
+| `tv/withaibuild/customiuizer/mods/SystemSettingsMoreHooks.kt` | 5 | 0 | 5 | `LEGACY_EXCEPTION` | no typed catalog owner |
+| `tv/withaibuild/customiuizer/mods/SystemShareAndOpenWithHooks.kt` | 4 | 0 | 4 | `LEGACY_EXCEPTION` | no typed catalog owner |
+| `tv/withaibuild/customiuizer/mods/SystemStatusBarAndClockHooks.kt` | 10 | 0 | 10 | `LEGACY_EXCEPTION` | no typed catalog owner |
+| `tv/withaibuild/customiuizer/mods/SystemStatusBarClockAndMoreHooks.kt` | 10 | 8 | 2 | `LEGACY_EXCEPTION` | mixed: typed=8, legacy=2 |
+| `tv/withaibuild/customiuizer/mods/SystemStatusBarMoreHooks.kt` | 11 | 1 | 10 | `LEGACY_EXCEPTION` | mixed: typed=1, legacy=10 |
+| `tv/withaibuild/customiuizer/mods/SystemUIBatteryHooks.kt` | 8 | 7 | 1 | `LEGACY_EXCEPTION` | mixed: typed=7, legacy=1 |
+| `tv/withaibuild/customiuizer/mods/SystemUIControlCenterHooks.kt` | 54 | 0 | 54 | `LEGACY_EXCEPTION` | no typed catalog owner |
+| `tv/withaibuild/customiuizer/mods/SystemUILockScreenHooks.kt` | 28 | 0 | 28 | `LEGACY_EXCEPTION` | no typed catalog owner |
+| `tv/withaibuild/customiuizer/mods/SystemUIMonitorAndTileHooks.kt` | 8 | 0 | 8 | `LEGACY_EXCEPTION` | no typed catalog owner |
+| `tv/withaibuild/customiuizer/mods/SystemUINotificationHooks.kt` | 14 | 1 | 13 | `LEGACY_EXCEPTION` | mixed: typed=1, legacy=13 |
+| `tv/withaibuild/customiuizer/mods/SystemUIScreenshotHooks.kt` | 3 | 0 | 3 | `LEGACY_EXCEPTION` | no typed catalog owner |
+| `tv/withaibuild/customiuizer/mods/SystemUIStatusBarHooks.kt` | 55 | 3 | 52 | `LEGACY_EXCEPTION` | mixed: typed=3, legacy=52 |
+| `tv/withaibuild/customiuizer/mods/Various.kt` | 54 | 0 | 54 | `LEGACY_EXCEPTION` | no typed catalog owner |
+| `tv/withaibuild/customiuizer/mods/utils/DeviceInfoMonitor.kt` | 1 | 0 | 1 | `LEGACY_EXCEPTION` | no typed catalog owner |
+| `tv/withaibuild/customiuizer/mods/utils/XposedHelpers.java` | 9 | 0 | 9 | `LEGACY_EXCEPTION` | no typed catalog owner |
+| `tv/withaibuild/customiuizer/mods/PackagePermissions.kt` | 5 | 5 | 0 | `REGISTRY_FEATURE` | typed catalog |
