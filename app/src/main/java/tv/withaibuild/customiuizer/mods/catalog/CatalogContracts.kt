@@ -520,4 +520,64 @@ object CatalogContracts {
         )
     )
     }
+
+    val noVersionCheck: HookTargetContract by lazy(kotlin.LazyThreadSafetyMode.NONE) { HookTargetContract(
+        featureId = "noVersionCheck",
+        requirements = listOf(
+            SingleTargetRequirement(
+                target = HookTargetSpec(
+                    id = "PackageManagerServiceUtils.checkDowngrade",
+                    operation = HookOperation.ALL_METHODS_BY_NAME,
+                    className = "com.android.server.pm.PackageManagerServiceUtils",
+                    memberName = "checkDowngrade"
+                )
+            )
+        )
+    )
+    }
+
+    val removeActStartConfirm: HookTargetContract by lazy(kotlin.LazyThreadSafetyMode.NONE) { HookTargetContract(
+        featureId = "removeActStartConfirm",
+        requirements = listOf(
+            SingleTargetRequirement(
+                target = HookTargetSpec(
+                    id = "SecurityManagerService.checkAllowStartActivity",
+                    operation = HookOperation.ALL_METHODS_BY_NAME,
+                    className = "com.miui.server.SecurityManagerService",
+                    memberName = "checkAllowStartActivity"
+                )
+            )
+        )
+    )
+    }
+
+    val forceClose: HookTargetContract by lazy(kotlin.LazyThreadSafetyMode.NONE) { HookTargetContract(
+        featureId = "forceClose",
+        requirements = listOf(
+            SingleTargetRequirement(
+                target = HookTargetSpec(
+                    id = "BaseMiuiPhoneWindowManager.constructors",
+                    operation = HookOperation.ALL_CONSTRUCTORS,
+                    className = "com.android.server.policy.BaseMiuiPhoneWindowManager"
+                )
+            )
+        )
+    )
+    }
+
+    val disableSystemIntegrity: HookTargetContract by lazy(kotlin.LazyThreadSafetyMode.NONE) { HookTargetContract(
+        featureId = "disableSystemIntegrity",
+        requirements = listOf(
+            SingleTargetRequirement(
+                target = HookTargetSpec(
+                    id = "ApkSignatureVerifier.getMinimumSignatureSchemeVersionForTargetSdk",
+                    operation = HookOperation.EXACT_METHOD,
+                    className = "android.util.apk.ApkSignatureVerifier",
+                    memberName = "getMinimumSignatureSchemeVersionForTargetSdk",
+                    parameterTypes = listOf(INT)
+                )
+            )
+        )
+    )
+    }
 }

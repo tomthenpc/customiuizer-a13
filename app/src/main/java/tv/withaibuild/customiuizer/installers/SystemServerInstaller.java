@@ -52,10 +52,10 @@ public final class SystemServerInstaller {
         if (MainModule.mPrefs.getInt("system_toasttime", 0) > 0) FeatureDispatcher.installById("toastTime", serverRuntime);
         if (!"none".equals(MainModule.mPrefs.getString("system_defaultusb", "none"))) SystemSettingsMoreHooks.USBConfigHook(lpparam);
         if (MainModule.mPrefs.getBoolean("system_removesecure")) SystemSecurityAndSystemHooks.RemoveSecureHook(lpparam);
-        if (MainModule.mPrefs.getBoolean("system_remove_startactconfirm")) SystemSecurityAndSystemHooks.RemoveActStartConfirmHook(lpparam);
+        if (MainModule.mPrefs.getBoolean("system_remove_startactconfirm")) FeatureDispatcher.installById("removeActStartConfirm", serverRuntime);
         if (MainModule.mPrefs.getBoolean("system_securelock")) SystemLockScreenHooks.EnhancedSecurityHook(lpparam);
         if (MainModule.mPrefs.getBoolean("system_separatevolume")) SystemAudioAndVolumeHooks.NotificationVolumeServiceHook(lpparam);
-        if (MainModule.mPrefs.getBoolean("system_downgrade")) SystemSecurityAndSystemHooks.NoVersionCheckHook(lpparam);
+        if (MainModule.mPrefs.getBoolean("system_downgrade")) FeatureDispatcher.installById("noVersionCheck", serverRuntime);
         if (MainModule.mPrefs.getBoolean("system_orientationlock")) SystemNotificationMoreHooks.OrientationLockHook(lpparam);
         if (MainModule.mPrefs.getBoolean("system_noducking")) SystemNotificationMoreHooks.NoDuckingHook(lpparam);
         if (MainModule.mPrefs.getBoolean("system_cleanshare")) FeatureDispatcher.installById("cleanShareMenuService", serverRuntime);
@@ -66,11 +66,11 @@ public final class SystemServerInstaller {
         if (MainModule.mPrefs.getBoolean("system_applock_skip")) SystemLockScreenMoreHooks.SkipAppLockHook(lpparam);
         if (MainModule.mPrefs.getBoolean("various_alarmcompat")) Various.AlarmCompatServiceHook(lpparam);
         if (MainModule.mPrefs.getBoolean("system_ignorecalls")) SystemAudioAndVisualAndMoreHooks.NoCallInterruptionHook(lpparam);
-        if (MainModule.mPrefs.getBoolean("system_forceclose")) SystemSecurityAndSystemHooks.ForceCloseHook(lpparam);
+        if (MainModule.mPrefs.getBoolean("system_forceclose")) FeatureDispatcher.installById("forceClose", serverRuntime);
         if (MainModule.mPrefs.getBoolean("system_hideproxywarn")) FeatureDispatcher.installById("hideProximityWarning", serverRuntime);
         if (MainModule.mPrefs.getBoolean("system_firstpress")) FeatureDispatcher.installById("firstVolumePress", serverRuntime);
         if (MainModule.mPrefs.getBoolean("system_apksign")) SystemSecurityAndSystemHooks.NoSignatureVerifyServiceHook(lpparam);
-        if (MainModule.mPrefs.getBoolean("system_disableintegrity")) SystemSecurityAndSystemHooks.DisableSystemIntegrityHook(lpparam);
+        if (MainModule.mPrefs.getBoolean("system_disableintegrity")) FeatureDispatcher.installById("disableSystemIntegrity", serverRuntime);
         FeatureDispatcher.installById("muffledVibration", serverRuntime);
         if (MainModule.mPrefs.getBoolean("system_clearalltasks")) FeatureDispatcher.installById("clearAllTasks", serverRuntime);
         if (MainModule.mPrefs.getBoolean("system_nodarkforce")) SystemSecurityAndSystemHooks.NoDarkForceHook(lpparam);

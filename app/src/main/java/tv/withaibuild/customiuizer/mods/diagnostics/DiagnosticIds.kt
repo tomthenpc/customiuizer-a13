@@ -64,4 +64,10 @@ object DiagnosticIds {
     /** Catalog expansion batch 6: Charging info and lockscreen wallpaper. */
     const val CHARGING_INFO = "CHARGING_INFO"
     const val SET_LOCKSCREEN_WALLPAPER = "SET_LOCKSCREEN_WALLPAPER"
+
+    /** Catalog expansion batch 7: SystemServer security hooks. */
+    const val NO_VERSION_CHECK = "NO_VERSION_CHECK"
+    const val REMOVE_ACT_START_CONFIRM = "REMOVE_ACT_START_CONFIRM"
+    const val FORCE_CLOSE = "FORCE_CLOSE"
+    const val DISABLE_SYSTEM_INTEGRITY = "DISABLE_SYSTEM_INTEGRITY"
 }

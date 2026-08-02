@@ -44,7 +44,11 @@ enum class FeatureId(val canonicalId: String) {
     CLEAN_OPEN_WITH_MENU("cleanOpenWithMenu"),
     CLEAN_OPEN_WITH_MENU_SERVICE("cleanOpenWithMenuService"),
     CHARGING_INFO("chargingInfo"),
-    SET_LOCKSCREEN_WALLPAPER("setLockscreenWallpaper");
+    SET_LOCKSCREEN_WALLPAPER("setLockscreenWallpaper"),
+    NO_VERSION_CHECK("noVersionCheck"),
+    REMOVE_ACT_START_CONFIRM("removeActStartConfirm"),
+    FORCE_CLOSE("forceClose"),
+    DISABLE_SYSTEM_INTEGRITY("disableSystemIntegrity");
 
     companion object {
         private val byString: Map<String, FeatureId> = values().associateBy {

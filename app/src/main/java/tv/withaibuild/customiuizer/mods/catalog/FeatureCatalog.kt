@@ -13,6 +13,7 @@ import tv.withaibuild.customiuizer.mods.SystemNotificationMoreHooks
 import tv.withaibuild.customiuizer.mods.SystemStatusBarClockAndMoreHooks
 import tv.withaibuild.customiuizer.mods.SystemStatusBarMoreHooks
 import tv.withaibuild.customiuizer.mods.SystemShareAndOpenWithHooks
+import tv.withaibuild.customiuizer.mods.SystemSecurityAndSystemHooks
 import tv.withaibuild.customiuizer.mods.SystemUIBatteryHooks
 import tv.withaibuild.customiuizer.mods.SystemUINotificationHooks
 import tv.withaibuild.customiuizer.mods.SystemUIStatusBarHooks
@@ -1223,6 +1224,115 @@ object FeatureCatalog {
                     diagnosticId = DiagnosticIds.SET_LOCKSCREEN_WALLPAPER
                 ) {
                     SystemChargingAndWallpaperHooks.SetLockscreenWallpaperHook(
+                        runtime.lpparam as SystemServerStartingParam
+                    )
+                }
+            },
+            activationRestartTarget = RestartTarget.REBOOT,
+            configReloadMode = ConfigReloadMode.NONE
+        ),
+        // Catalog expansion batch 7: SystemServer security hooks
+        FeatureSpec(
+            compatibilityPolicy = CompatibilityPolicy.CONTRACT_REQUIRED,
+            contract = CatalogContracts.noVersionCheck,
+            id = "noVersionCheck",
+            diagnosticId = DiagnosticIds.NO_VERSION_CHECK,
+            processScope = ProcessScope.SYSTEM_SERVER,
+            installPhase = InstallPhase.SYSTEM_SERVER_STARTING,
+            processTarget = ProcessTarget.SystemServer,
+            preferenceKeys = setOf("system_downgrade"),
+            condition = { prefs ->
+                prefs.getBoolean("system_downgrade", false)
+            },
+            installer = { runtime, compatResult ->
+                legacyInstall(
+                    runtime = runtime,
+                    compatResult = compatResult,
+                    contract = CatalogContracts.noVersionCheck,
+                    diagnosticId = DiagnosticIds.NO_VERSION_CHECK
+                ) {
+                    SystemSecurityAndSystemHooks.NoVersionCheckHook(
+                        runtime.lpparam as SystemServerStartingParam
+                    )
+                }
+            },
+            activationRestartTarget = RestartTarget.REBOOT,
+            configReloadMode = ConfigReloadMode.NONE
+        ),
+        FeatureSpec(
+            compatibilityPolicy = CompatibilityPolicy.CONTRACT_REQUIRED,
+            contract = CatalogContracts.removeActStartConfirm,
+            id = "removeActStartConfirm",
+            diagnosticId = DiagnosticIds.REMOVE_ACT_START_CONFIRM,
+            processScope = ProcessScope.SYSTEM_SERVER,
+            installPhase = InstallPhase.SYSTEM_SERVER_STARTING,
+            processTarget = ProcessTarget.SystemServer,
+            preferenceKeys = setOf("system_remove_startactconfirm"),
+            condition = { prefs ->
+                prefs.getBoolean("system_remove_startactconfirm", false)
+            },
+            installer = { runtime, compatResult ->
+                legacyInstall(
+                    runtime = runtime,
+                    compatResult = compatResult,
+                    contract = CatalogContracts.removeActStartConfirm,
+                    diagnosticId = DiagnosticIds.REMOVE_ACT_START_CONFIRM
+                ) {
+                    SystemSecurityAndSystemHooks.RemoveActStartConfirmHook(
+                        runtime.lpparam as SystemServerStartingParam
+                    )
+                }
+            },
+            activationRestartTarget = RestartTarget.REBOOT,
+            configReloadMode = ConfigReloadMode.NONE
+        ),
+        FeatureSpec(
+            compatibilityPolicy = CompatibilityPolicy.CONTRACT_REQUIRED,
+            contract = CatalogContracts.forceClose,
+            id = "forceClose",
+            diagnosticId = DiagnosticIds.FORCE_CLOSE,
+            processScope = ProcessScope.SYSTEM_SERVER,
+            installPhase = InstallPhase.SYSTEM_SERVER_STARTING,
+            processTarget = ProcessTarget.SystemServer,
+            preferenceKeys = setOf("system_forceclose", "system_forceclose_apps"),
+            condition = { prefs ->
+                prefs.getBoolean("system_forceclose", false)
+            },
+            installer = { runtime, compatResult ->
+                legacyInstall(
+                    runtime = runtime,
+                    compatResult = compatResult,
+                    contract = CatalogContracts.forceClose,
+                    diagnosticId = DiagnosticIds.FORCE_CLOSE
+                ) {
+                    SystemSecurityAndSystemHooks.ForceCloseHook(
+                        runtime.lpparam as SystemServerStartingParam
+                    )
+                }
+            },
+            activationRestartTarget = RestartTarget.REBOOT,
+            configReloadMode = ConfigReloadMode.NONE
+        ),
+        FeatureSpec(
+            compatibilityPolicy = CompatibilityPolicy.CONTRACT_REQUIRED,
+            contract = CatalogContracts.disableSystemIntegrity,
+            id = "disableSystemIntegrity",
+            diagnosticId = DiagnosticIds.DISABLE_SYSTEM_INTEGRITY,
+            processScope = ProcessScope.SYSTEM_SERVER,
+            installPhase = InstallPhase.SYSTEM_SERVER_STARTING,
+            processTarget = ProcessTarget.SystemServer,
+            preferenceKeys = setOf("system_disableintegrity"),
+            condition = { prefs ->
+                prefs.getBoolean("system_disableintegrity", false)
+            },
+            installer = { runtime, compatResult ->
+                legacyInstall(
+                    runtime = runtime,
+                    compatResult = compatResult,
+                    contract = CatalogContracts.disableSystemIntegrity,
+                    diagnosticId = DiagnosticIds.DISABLE_SYSTEM_INTEGRITY
+                ) {
+                    SystemSecurityAndSystemHooks.DisableSystemIntegrityHook(
                         runtime.lpparam as SystemServerStartingParam
                     )
                 }
