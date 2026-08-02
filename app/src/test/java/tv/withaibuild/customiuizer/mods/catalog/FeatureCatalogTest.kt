@@ -462,7 +462,8 @@ class FeatureCatalogTest {
             "hideIconsClock",
             "noUnlockAnimation",
             "tempHideOverlaySystemUI",
-            "hideStatusBarBeforeScreenshot"
+            "hideStatusBarBeforeScreenshot",
+            "hideNavBarBeforeScreenshot"
         )
         assertEquals(ids, FeatureCatalog.specs().map { it.id }.toSet())
     }
@@ -531,9 +532,9 @@ class FeatureCatalogTest {
     fun specsBuildsCompleteCatalogWithoutDoubleCounting() {
         FeatureCatalog.CatalogBuildProbe.reset()
         val specs = FeatureCatalog.specs()
-        assertEquals(29, specs.size)
+        assertEquals(30, specs.size)
         assertEquals("specs builds the 8 registry specs once", 8, FeatureCatalog.CatalogBuildProbe.registrySpecsBuilt)
-        assertEquals("specs builds the 21 adapted specs once", 21, FeatureCatalog.CatalogBuildProbe.adaptedSpecsBuilt)
+        assertEquals("specs builds the 22 adapted specs once", 22, FeatureCatalog.CatalogBuildProbe.adaptedSpecsBuilt)
     }
 
     @Test
