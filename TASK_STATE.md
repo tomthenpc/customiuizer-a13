@@ -191,6 +191,20 @@ State: `COMPLETE`
 docs/audit/A13_BASELINE_INVENTORY.md
 ```
 
+命令与证据：
+
+```text
+- powershell -NoProfile -ExecutionPolicy Bypass -File .\scripts\verify.ps1 -Mode Fast
+  -> A13 VERIFICATION PASSED (exit 0)
+- git diff --check
+  -> exit 0
+- git commit -m "docs: baseline inventory and P0.4 completion"
+  -> 8e9d500
+- git push origin devin/a13-rom-intelligence-audit
+  -> pushed 8e9d500
+- CI: 无仓库级 CI workflow；仅本地 verify
+```
+
 完成后将 `OverallState` 更新为 `BASELINE_LOCKED`。
 
 ---
