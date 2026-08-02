@@ -30,7 +30,7 @@ class FeatureCatalogTest {
     @Before
     fun setUp() {
         DiagnosticRecorder.reset()
-        FeatureInstallRegistry.clear()
+        FeatureInstallRegistry.clearStatesForTesting()
         logMessages.clear()
         DiagnosticRecorder.clock = { 0L }
         // Rom environment records via DiagnosticRecorder; filter it from the install log
@@ -44,7 +44,7 @@ class FeatureCatalogTest {
     @After
     fun tearDown() {
         DiagnosticRecorder.reset()
-        FeatureInstallRegistry.clear()
+        FeatureInstallRegistry.clearStatesForTesting()
         MainModule.mPrefs = PrefMap()
         XposedHelpers.moduleInst = null
     }
@@ -504,10 +504,8 @@ class FeatureCatalogTest {
     }
 
     @Test
-    fun allRegistrySpecsDeclareScopePhaseAndCompatibilityPolicy() {
-        for (spec in FeatureCatalog.registrySpecs()) {
-            assertNotNull("${spec.id} processScope", spec.processScope)
-            assertNotNull("${spec.id} installPhase", spec.installPhase)
+    fun allCatalogSpecsHaveExplicitCompatibilityPolicy() {
+        for (spec in FeatureCatalog.specs()) {
             assertTrue(
                 "${spec.id} compatibility policy is explicit",
                 spec.compatibilityPolicy == CompatibilityPolicy.CONTRACT_REQUIRED ||
@@ -517,18 +515,45 @@ class FeatureCatalogTest {
     }
 
     @Test
+    fun registrySpecsDoNotBuildLegacySpecs() {
+        FeatureCatalog.CatalogBuildProbe.reset()
+        val specs = FeatureCatalog.registrySpecs()
+        assertEquals(8, specs.size)
+        assertEquals("registrySpecs only builds the 8 migrated specs", 8, FeatureCatalog.CatalogBuildProbe.registrySpecsBuilt)
+        assertEquals("registrySpecs does not touch legacy specs", 0, FeatureCatalog.CatalogBuildProbe.legacySpecsBuilt)
+    }
+
+    @Test
+    fun specsBuildsCompleteCatalogWithoutDoubleCounting() {
+        FeatureCatalog.CatalogBuildProbe.reset()
+        val specs = FeatureCatalog.specs()
+        assertEquals(25, specs.size)
+        assertEquals("specs builds the 8 registry specs once", 8, FeatureCatalog.CatalogBuildProbe.registrySpecsBuilt)
+        assertEquals("specs builds the 17 legacy specs once", 17, FeatureCatalog.CatalogBuildProbe.legacySpecsBuilt)
+    }
+
+    @Test
     fun migrationStatistics() {
-        val catalogTotal = FeatureCatalog.specs().size
-        val registryMigrated = FeatureCatalog.registrySpecs().size
-        val dispatcherLegacy = FeatureId.values().size - registryMigrated
+        val catalogIds = FeatureCatalog.specs().map { it.id }.toSet()
+        val registryIds = FeatureCatalog.registrySpecs().map { it.id }.toSet()
+        val dispatcherIds = FeatureId.values().map { it.canonicalId }.toSet()
+        val legacyIds = catalogIds - registryIds
 
-        assertTrue("at least 8 features migrated", registryMigrated >= 8)
-        assertTrue("catalog still contains non-migrated legacy features", catalogTotal > registryMigrated)
+        val catalogTotal = catalogIds.size
+        val registryMigrated = registryIds.size
+        val dispatcherLegacy = legacyIds.size
 
-        // duplicatePaths is verified by the source invariants below:
-        // each registry feature is installed only through FeatureInstallRegistry,
-        // and each legacy feature remains only in the dispatcher when branch.
-        println("catalogTotal=$catalogTotal registryMigrated=$registryMigrated dispatcherLegacy=$dispatcherLegacy duplicatePaths=0")
+        assertEquals("catalog total", 25, catalogTotal)
+        assertEquals("registry migrated", 8, registryMigrated)
+        assertEquals("dispatcher legacy", 17, dispatcherLegacy)
+
+        assertTrue("registry ids are a subset of catalog ids", registryIds.all { it in catalogIds })
+        assertEquals("dispatcher ids match catalog ids", catalogIds, dispatcherIds)
+        val duplicatePaths = registryIds.intersect(legacyIds).size
+        assertEquals("registry and legacy features have no duplicate path", 0, duplicatePaths)
+        assertEquals("registry + legacy == catalog", catalogIds, registryIds union legacyIds)
+
+        println("catalogTotal=$catalogTotal registryMigrated=$registryMigrated dispatcherLegacy=$dispatcherLegacy duplicatePaths=$duplicatePaths")
     }
 
     private fun newPackageReadyParam(packageName: String, classLoader: ClassLoader): PackageReadyParam {

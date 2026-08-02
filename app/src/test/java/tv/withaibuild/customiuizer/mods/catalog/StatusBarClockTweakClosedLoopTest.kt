@@ -24,7 +24,7 @@ class StatusBarClockTweakClosedLoopTest {
     @Before
     fun setUp() {
         DiagnosticRecorder.reset()
-        FeatureInstallRegistry.clear()
+        FeatureInstallRegistry.clearStatesForTesting()
         logs.clear()
         DiagnosticRecorder.clock = { 0L }
         DiagnosticRecorder.logger = { logs += it }

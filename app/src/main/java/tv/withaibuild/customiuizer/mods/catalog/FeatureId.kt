@@ -3,43 +3,44 @@ package tv.withaibuild.customiuizer.mods.catalog
 /**
  * Strongly-typed feature identifiers.
  *
- * New callers should use [FeatureId]; the legacy string ID entry point in
- * [FeatureDispatcher.installById] is kept as a compatibility shim and logs
- * unknown IDs.
+ * Each [FeatureId] carries the canonical id used by [FeatureCatalog],
+ * [FeatureInstallRegistry] and the Python invariants. New callers should use
+ * [FeatureId]; the legacy string ID entry point in [FeatureDispatcher] is kept
+ * as a compatibility shim and logs unknown IDs.
  */
-enum class FeatureId {
-    PACKAGE_PERMISSIONS,
-    STATUS_BAR_CLOCK_TWEAK,
-    AUTO_BRIGHTNESS_RANGE,
-    MUFFLED_VIBRATION,
-    NO_MORE_ICON,
-    BATTERY_INDICATOR,
-    NO_CLOCK_HIDE,
-    NO_WIDGET_ONLY,
-    SCREEN_DIM_TIME,
-    FIRST_VOLUME_PRESS,
-    NETWORK_INDICATOR_WIFI,
-    MUTE_VISIBLE_NOTIFICATIONS,
-    HIDE_LAUNCHER_TITLES,
-    FIX_APP_INFO_LAUNCH,
-    HIDE_PROXIMITY_WARNING,
-    CLEAR_ALL_TASKS,
-    HIDE_DISMISS_VIEW,
-    HIDE_LOCK_SCREEN_HINT,
-    FOLDER_COLUMNS,
-    TITLE_TOP_MARGIN,
-    NO_LIGHT_UP_ON_CHARGE,
-    ALL_ROTATIONS,
-    NO_NETWORK_SPEED_SEPARATOR,
-    HIDE_ICONS_CLOCK,
-    NO_UNLOCK_ANIMATION;
+enum class FeatureId(val canonicalId: String) {
+    PACKAGE_PERMISSIONS("packagePermissions"),
+    STATUS_BAR_CLOCK_TWEAK("statusBarClockTweak"),
+    AUTO_BRIGHTNESS_RANGE("autoBrightnessRange"),
+    MUFFLED_VIBRATION("muffledVibration"),
+    NO_MORE_ICON("noMoreIcon"),
+    BATTERY_INDICATOR("batteryIndicator"),
+    NO_CLOCK_HIDE("noClockHide"),
+    NO_WIDGET_ONLY("noWidgetOnly"),
+    SCREEN_DIM_TIME("screenDimTime"),
+    FIRST_VOLUME_PRESS("firstVolumePress"),
+    NETWORK_INDICATOR_WIFI("networkIndicatorWifi"),
+    MUTE_VISIBLE_NOTIFICATIONS("muteVisibleNotifications"),
+    HIDE_LAUNCHER_TITLES("hideLauncherTitles"),
+    FIX_APP_INFO_LAUNCH("fixAppInfoLaunch"),
+    HIDE_PROXIMITY_WARNING("hideProximityWarning"),
+    CLEAR_ALL_TASKS("clearAllTasks"),
+    HIDE_DISMISS_VIEW("hideDismissView"),
+    HIDE_LOCK_SCREEN_HINT("hideLockScreenHint"),
+    FOLDER_COLUMNS("folderColumns"),
+    TITLE_TOP_MARGIN("titleTopMargin"),
+    NO_LIGHT_UP_ON_CHARGE("noLightUpOnCharge"),
+    ALL_ROTATIONS("allRotations"),
+    NO_NETWORK_SPEED_SEPARATOR("noNetworkSpeedSeparator"),
+    HIDE_ICONS_CLOCK("hideIconsClock"),
+    NO_UNLOCK_ANIMATION("noUnlockAnimation");
 
     companion object {
         private val byString: Map<String, FeatureId> = values().associateBy {
-            it.name.lowercase().replace("_", "")
+            FeatureIdentity.normalizeLookupId(it.canonicalId)
         }
 
         @JvmStatic
-        fun fromString(id: String): FeatureId? = byString[id.lowercase().replace("_", "")]
+        fun fromString(id: String): FeatureId? = byString[FeatureIdentity.normalizeLookupId(id)]
     }
 }

@@ -29,7 +29,7 @@ class AutoBrightnessVariantExecutionTest {
     fun reset() {
         SystemDisplayAndWindowHooks.autoBrightnessInstallerForTest = null
         DiagnosticRecorder.reset()
-        FeatureInstallRegistry.clear()
+        FeatureInstallRegistry.clearStatesForTesting()
     }
 
     private fun runtimeFor(resolvedAbc: Boolean, resolvedDpc: Boolean): FeatureRuntime {

@@ -54,7 +54,7 @@ data class FeatureSpec(
     val installPhase: InstallPhase? = null,
     val preferenceKeys: Set<String>,
     val condition: (PrefMap<String, Any>) -> Boolean,
-    val compatibilityPolicy: CompatibilityPolicy = CompatibilityPolicy.CONTRACT_REQUIRED,
+    val compatibilityPolicy: CompatibilityPolicy,
     val compatibilityCheck: (FeatureRuntime) -> CompatibilityResult = { runtime ->
         when (compatibilityPolicy) {
             CompatibilityPolicy.LEGACY_TRUSTED ->

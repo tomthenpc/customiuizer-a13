@@ -120,6 +120,56 @@ class ArchitectureInvariantTest(unittest.TestCase):
         text = read("tv/withaibuild/customiuizer/mods/utils/ProcessScope.kt")
         self.assertIn("enum class ProcessScope", text)
 
+    def test_feature_catalog_registry_and_legacy_spec_counts(self):
+        text = (REPO / "app" / "src" / "main" / "java" / "tv" / "withaibuild" / "customiuizer" / "mods" / "catalog" / "FeatureCatalog.kt").read_text(encoding="utf-8")
+        self.assertIn("private val registrySpecsInternal", text)
+        self.assertIn("private val legacySpecsInternal", text)
+
+        delimiter = "private val legacySpecsInternal by lazy(LazyThreadSafetyMode.NONE) { listOf("
+        self.assertIn(delimiter, text, "registry and legacy spec lists must be split")
+        registry_text, legacy_text = text.split(delimiter, 1)
+
+        registry_ids = re.findall(r'id = "([^"]+)"', registry_text)
+        legacy_ids = re.findall(r'id = "([^"]+)"', legacy_text)
+
+        self.assertEqual(8, len(registry_ids), f"registry specs must contain exactly 8 ids: {registry_ids}")
+        self.assertEqual(17, len(legacy_ids), f"legacy specs must contain exactly 17 ids: {legacy_ids}")
+        self.assertEqual(25, len(registry_ids) + len(legacy_ids))
+        self.assertEqual(set(), set(registry_ids) & set(legacy_ids), "registry and legacy ids must be disjoint")
+
+    def test_feature_dispatcher_routing_no_duplicate_paths(self):
+        dispatcher = (REPO / "app" / "src" / "main" / "java" / "tv" / "withaibuild" / "customiuizer" / "mods" / "catalog" / "FeatureDispatcher.kt").read_text(encoding="utf-8")
+        catalog = (REPO / "app" / "src" / "main" / "java" / "tv" / "withaibuild" / "customiuizer" / "mods" / "catalog" / "FeatureCatalog.kt").read_text(encoding="utf-8")
+
+        # Build canonical id -> diagnostic id map from FeatureCatalog.kt.
+        catalog_ids = dict(re.findall(r'id = "([^"]+)".*?diagnosticId = DiagnosticIds\.(\w+)', catalog, re.DOTALL))
+        diagnostic_to_canonical = {v: k for k, v in catalog_ids.items()}
+
+        # Registry route uses FeatureInstallRegistry.installById("<canonical>").
+        install_by_id = re.findall(r'FeatureInstallRegistry\.installById\(\s*"([^"]+)"', dispatcher)
+        # Legacy route calls installWithContract(DiagnosticIds.XXX, ...).
+        legacy_records = re.findall(r'recordRequested\(DiagnosticIds\.(\w+)\)', dispatcher)
+
+        # Ensure each migrated feature is routed only through the registry.
+        self.assertEqual(8, len(install_by_id), "FeatureDispatcher must route exactly 8 registry features through installById")
+        self.assertEqual(17, len(legacy_records), "FeatureDispatcher must route exactly 17 legacy features through installWithContract")
+
+        registry_ids_from_dispatcher = set(install_by_id)
+        legacy_diagnostics_from_dispatcher = set(legacy_records)
+
+        # Any legacy diagnostic id that maps back to a registry canonical id is a duplicate path.
+        duplicate_paths = [
+            diagnostic_to_canonical[did]
+            for did in legacy_diagnostics_from_dispatcher
+            if did in diagnostic_to_canonical and diagnostic_to_canonical[did] in registry_ids_from_dispatcher
+        ]
+
+        self.assertEqual(
+            0,
+            len(duplicate_paths),
+            f"features must not be routed through both registry and legacy dispatcher paths: {duplicate_paths}",
+        )
+
 
 if __name__ == "__main__":
     unittest.main()

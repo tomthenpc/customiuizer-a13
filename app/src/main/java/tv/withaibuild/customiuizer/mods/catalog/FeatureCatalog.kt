@@ -44,8 +44,9 @@ object FeatureCatalog {
         return CanaryContracts.statusBarClockTweakForInstall(statusBar, controlCenter, hideDate)
     }
 
-    private val auditSpecs by lazy(LazyThreadSafetyMode.NONE) { listOf(
+    private val registrySpecsInternal by lazy(LazyThreadSafetyMode.NONE) { listOf(
         FeatureSpec(
+            compatibilityPolicy = CompatibilityPolicy.CONTRACT_REQUIRED,
             contract = CanaryContracts.packagePermissions,
             id = "packagePermissions",
             diagnosticId = DiagnosticIds.PACKAGE_PERMISSIONS,
@@ -156,6 +157,7 @@ object FeatureCatalog {
         ),
         // Canary: system_server
         FeatureSpec(
+            compatibilityPolicy = CompatibilityPolicy.CONTRACT_REQUIRED,
             contract = CanaryContracts.autoBrightnessRange,
             id = "autoBrightnessRange",
             diagnosticId = DiagnosticIds.AUTO_BRIGHTNESS_RANGE,
@@ -214,6 +216,7 @@ object FeatureCatalog {
             configReloadMode = ConfigReloadMode.NONE
         ),
         FeatureSpec(
+            compatibilityPolicy = CompatibilityPolicy.CONTRACT_REQUIRED,
             contract = CanaryContracts.muffledVibration,
             id = "muffledVibration",
             diagnosticId = DiagnosticIds.MUFFLED_VIBRATION,
@@ -260,6 +263,7 @@ object FeatureCatalog {
         ),
         // Canary: SystemUI
         FeatureSpec(
+            compatibilityPolicy = CompatibilityPolicy.CONTRACT_REQUIRED,
             contract = CanaryContracts.noMoreIcon,
             id = "noMoreIcon",
             diagnosticId = DiagnosticIds.NO_MORE_ICON,
@@ -305,6 +309,7 @@ object FeatureCatalog {
             configReloadMode = ConfigReloadMode.NONE
         ),
         FeatureSpec(
+            compatibilityPolicy = CompatibilityPolicy.CONTRACT_REQUIRED,
             contract = CanaryContracts.batteryIndicator,
             id = "batteryIndicator",
             diagnosticId = DiagnosticIds.BATTERY_INDICATOR,
@@ -351,6 +356,7 @@ object FeatureCatalog {
         ),
         // Canary: Launcher
         FeatureSpec(
+            compatibilityPolicy = CompatibilityPolicy.CONTRACT_REQUIRED,
             contract = CanaryContracts.noClockHide,
             id = "noClockHide",
             diagnosticId = DiagnosticIds.NO_CLOCK_HIDE,
@@ -396,6 +402,7 @@ object FeatureCatalog {
             configReloadMode = ConfigReloadMode.NONE
         ),
         FeatureSpec(
+            compatibilityPolicy = CompatibilityPolicy.CONTRACT_REQUIRED,
             contract = CanaryContracts.noWidgetOnly,
             id = "noWidgetOnly",
             diagnosticId = DiagnosticIds.NO_WIDGET_ONLY,
@@ -439,9 +446,13 @@ object FeatureCatalog {
             },
             activationRestartTarget = RestartTarget.LAUNCHER_RESTART,
             configReloadMode = ConfigReloadMode.NONE
-        ),
+        )
+    ) }
+
+    private val legacySpecsInternal by lazy(LazyThreadSafetyMode.NONE) { listOf(
         // Catalog expansion batch 1: system_server
         FeatureSpec(
+            compatibilityPolicy = CompatibilityPolicy.CONTRACT_REQUIRED,
             contract = CatalogContracts.screenDimTime,
             id = "screenDimTime",
             diagnosticId = DiagnosticIds.SCREEN_DIM_TIME,
@@ -460,6 +471,7 @@ object FeatureCatalog {
             configReloadMode = ConfigReloadMode.NONE
         ),
         FeatureSpec(
+            compatibilityPolicy = CompatibilityPolicy.CONTRACT_REQUIRED,
             contract = CatalogContracts.firstVolumePress,
             id = "firstVolumePress",
             diagnosticId = DiagnosticIds.FIRST_VOLUME_PRESS,
@@ -479,6 +491,7 @@ object FeatureCatalog {
         ),
         // Catalog expansion batch 1: SystemUI
         FeatureSpec(
+            compatibilityPolicy = CompatibilityPolicy.CONTRACT_REQUIRED,
             contract = CatalogContracts.networkIndicatorWifi,
             id = "networkIndicatorWifi",
             diagnosticId = DiagnosticIds.NETWORK_INDICATOR_WIFI,
@@ -497,6 +510,7 @@ object FeatureCatalog {
             configReloadMode = ConfigReloadMode.NONE
         ),
         FeatureSpec(
+            compatibilityPolicy = CompatibilityPolicy.CONTRACT_REQUIRED,
             contract = CatalogContracts.muteVisibleNotifications,
             id = "muteVisibleNotifications",
             diagnosticId = DiagnosticIds.MUTE_VISIBLE_NOTIFICATIONS,
@@ -516,6 +530,7 @@ object FeatureCatalog {
         ),
         // Catalog expansion batch 1: Launcher
         FeatureSpec(
+            compatibilityPolicy = CompatibilityPolicy.CONTRACT_REQUIRED,
             contract = CatalogContracts.hideLauncherTitles,
             id = "hideLauncherTitles",
             diagnosticId = DiagnosticIds.HIDE_LAUNCHER_TITLES,
@@ -534,6 +549,7 @@ object FeatureCatalog {
             configReloadMode = ConfigReloadMode.NONE
         ),
         FeatureSpec(
+            compatibilityPolicy = CompatibilityPolicy.CONTRACT_REQUIRED,
             contract = CatalogContracts.fixAppInfoLaunch,
             id = "fixAppInfoLaunch",
             diagnosticId = DiagnosticIds.FIX_APP_INFO_LAUNCH,
@@ -553,6 +569,7 @@ object FeatureCatalog {
         ),
         // Catalog expansion batch 2: system_server
         FeatureSpec(
+            compatibilityPolicy = CompatibilityPolicy.CONTRACT_REQUIRED,
             contract = CatalogContracts.hideProximityWarning,
             id = "hideProximityWarning",
             diagnosticId = DiagnosticIds.HIDE_PROXIMITY_WARNING,
@@ -571,6 +588,7 @@ object FeatureCatalog {
             configReloadMode = ConfigReloadMode.NONE
         ),
         FeatureSpec(
+            compatibilityPolicy = CompatibilityPolicy.CONTRACT_REQUIRED,
             contract = CatalogContracts.clearAllTasks,
             id = "clearAllTasks",
             diagnosticId = DiagnosticIds.CLEAR_ALL_TASKS,
@@ -590,6 +608,7 @@ object FeatureCatalog {
         ),
         // Catalog expansion batch 2: SystemUI
         FeatureSpec(
+            compatibilityPolicy = CompatibilityPolicy.CONTRACT_REQUIRED,
             contract = CatalogContracts.hideDismissView,
             id = "hideDismissView",
             diagnosticId = DiagnosticIds.HIDE_DISMISS_VIEW,
@@ -608,6 +627,7 @@ object FeatureCatalog {
             configReloadMode = ConfigReloadMode.NONE
         ),
         FeatureSpec(
+            compatibilityPolicy = CompatibilityPolicy.CONTRACT_REQUIRED,
             contract = CatalogContracts.hideLockScreenHint,
             id = "hideLockScreenHint",
             diagnosticId = DiagnosticIds.HIDE_LOCK_SCREEN_HINT,
@@ -627,6 +647,7 @@ object FeatureCatalog {
         ),
         // Catalog expansion batch 2: Launcher
         FeatureSpec(
+            compatibilityPolicy = CompatibilityPolicy.CONTRACT_REQUIRED,
             contract = CatalogContracts.folderColumns,
             id = "folderColumns",
             diagnosticId = DiagnosticIds.FOLDER_COLUMNS,
@@ -645,6 +666,7 @@ object FeatureCatalog {
             configReloadMode = ConfigReloadMode.NONE
         ),
         FeatureSpec(
+            compatibilityPolicy = CompatibilityPolicy.CONTRACT_REQUIRED,
             contract = CatalogContracts.titleTopMargin,
             id = "titleTopMargin",
             diagnosticId = DiagnosticIds.TITLE_TOP_MARGIN,
@@ -664,6 +686,7 @@ object FeatureCatalog {
         ),
         // Catalog expansion batch 3: system_server
         FeatureSpec(
+            compatibilityPolicy = CompatibilityPolicy.CONTRACT_REQUIRED,
             contract = CatalogContracts.noLightUpOnCharge,
             id = "noLightUpOnCharge",
             diagnosticId = DiagnosticIds.NO_LIGHT_UP_ON_CHARGE,
@@ -682,6 +705,7 @@ object FeatureCatalog {
             configReloadMode = ConfigReloadMode.NONE
         ),
         FeatureSpec(
+            compatibilityPolicy = CompatibilityPolicy.CONTRACT_REQUIRED,
             contract = CatalogContracts.allRotations,
             id = "allRotations",
             diagnosticId = DiagnosticIds.ALL_ROTATIONS,
@@ -701,6 +725,7 @@ object FeatureCatalog {
         ),
         // Catalog expansion batch 3: SystemUI
         FeatureSpec(
+            compatibilityPolicy = CompatibilityPolicy.CONTRACT_REQUIRED,
             contract = CatalogContracts.noNetworkSpeedSeparator,
             id = "noNetworkSpeedSeparator",
             diagnosticId = DiagnosticIds.NO_NETWORK_SPEED_SEPARATOR,
@@ -719,6 +744,7 @@ object FeatureCatalog {
             configReloadMode = ConfigReloadMode.NONE
         ),
         FeatureSpec(
+            compatibilityPolicy = CompatibilityPolicy.CONTRACT_REQUIRED,
             contract = CatalogContracts.hideIconsClock,
             id = "hideIconsClock",
             diagnosticId = DiagnosticIds.HIDE_ICONS_CLOCK,
@@ -738,6 +764,7 @@ object FeatureCatalog {
         ),
         // Catalog expansion batch 3: Launcher
         FeatureSpec(
+            compatibilityPolicy = CompatibilityPolicy.CONTRACT_REQUIRED,
             contract = CatalogContracts.noUnlockAnimation,
             id = "noUnlockAnimation",
             diagnosticId = DiagnosticIds.NO_UNLOCK_ANIMATION,
@@ -757,16 +784,24 @@ object FeatureCatalog {
         )
     ) }
 
-    private val registryMigratedIds = setOf(
-        "packagePermissions",
-        "statusBarClockTweak",
-        "autoBrightnessRange",
-        "muffledVibration",
-        "noMoreIcon",
-        "batteryIndicator",
-        "noClockHide",
-        "noWidgetOnly"
-    )
+    /**
+     * Build probe used by tests to prove that [registrySpecs] does not touch the
+     * legacy list and that [specs] combines both lists without double-counting.
+     * Production code leaves the counters at their default values.
+     */
+    internal object CatalogBuildProbe {
+        @JvmField
+        var registrySpecsBuilt: Int = 0
+
+        @JvmField
+        var legacySpecsBuilt: Int = 0
+
+        @JvmStatic
+        fun reset() {
+            registrySpecsBuilt = 0
+            legacySpecsBuilt = 0
+        }
+    }
 
     /**
      * Returns only the specs that have been migrated to the production
@@ -774,12 +809,21 @@ object FeatureCatalog {
      * through the legacy [FeatureDispatcher] paths.
      */
     @JvmStatic
-    fun registrySpecs(): List<FeatureSpec> =
-        auditSpecs.filter { it.id in registryMigratedIds }
+    fun registrySpecs(): List<FeatureSpec> {
+        val result = registrySpecsInternal
+        CatalogBuildProbe.registrySpecsBuilt += result.size
+        return result
+    }
 
     /**
-     * Returns a snapshot of the specs for documentation and audit.
+     * Returns a snapshot of all specs for documentation and audit.
      */
     @JvmStatic
-    fun specs(): List<FeatureSpec> = auditSpecs
+    fun specs(): List<FeatureSpec> {
+        val registry = registrySpecsInternal
+        val legacy = legacySpecsInternal
+        CatalogBuildProbe.registrySpecsBuilt += registry.size
+        CatalogBuildProbe.legacySpecsBuilt += legacy.size
+        return registry + legacy
+    }
 }
