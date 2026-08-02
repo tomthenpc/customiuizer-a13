@@ -37,6 +37,7 @@ enum class FeatureId(val canonicalId: String) {
     HIDE_ICONS_CLOCK("hideIconsClock"),
     NO_UNLOCK_ANIMATION("noUnlockAnimation"),
     TEMP_HIDE_OVERLAY_SYSTEMUI("tempHideOverlaySystemUI"),
+    OPEN_APP_IN_FREE_FORM("openAppInFreeForm"),
     HIDE_STATUS_BAR_BEFORE_SCREENSHOT("hideStatusBarBeforeScreenshot"),
     HIDE_NAV_BAR_BEFORE_SCREENSHOT("hideNavBarBeforeScreenshot"),
     CLEAN_SHARE_MENU("cleanShareMenu"),

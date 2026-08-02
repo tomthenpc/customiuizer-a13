@@ -38,7 +38,7 @@ public final class SystemServerInstaller {
             || MainModule.mPrefs.getBoolean("system_fw_forcein_actionsend")
             || MainModule.mPrefs.getBoolean("system_betterpopups_allowfloat")
         ) {
-            SystemFreeformAndMultiWindowHooks.OpenAppInFreeFormHook(lpparam);
+            FeatureDispatcher.installById("openAppInFreeForm", serverRuntime);
         }
 
         if (MainModule.mPrefs.getInt("controls_backlong_action", 1) > 1 ||

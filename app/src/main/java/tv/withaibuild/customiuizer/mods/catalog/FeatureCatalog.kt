@@ -1942,6 +1942,35 @@ object FeatureCatalog {
             },
             activationRestartTarget = RestartTarget.REBOOT,
             configReloadMode = ConfigReloadMode.NONE
+        ),
+        FeatureSpec(
+            compatibilityPolicy = CompatibilityPolicy.CONTRACT_REQUIRED,
+            contract = CatalogContracts.openAppInFreeForm,
+            id = "openAppInFreeForm",
+            diagnosticId = DiagnosticIds.OPEN_APP_IN_FREE_FORM,
+            processScope = ProcessScope.SYSTEM_SERVER,
+            installPhase = InstallPhase.SYSTEM_SERVER_STARTING,
+            processTarget = ProcessTarget.SystemServer,
+            preferenceKeys = setOf("system_notify_openinfw", "system_fw_forcein_actionsend", "system_betterpopups_allowfloat"),
+            condition = { prefs ->
+                prefs.getBoolean("system_notify_openinfw", false) ||
+                prefs.getBoolean("system_fw_forcein_actionsend", false) ||
+                prefs.getBoolean("system_betterpopups_allowfloat", false)
+            },
+            installer = { runtime, compatResult ->
+                legacyInstall(
+                    runtime = runtime,
+                    compatResult = compatResult,
+                    contract = CatalogContracts.openAppInFreeForm,
+                    diagnosticId = DiagnosticIds.OPEN_APP_IN_FREE_FORM
+                ) {
+                    SystemFreeformAndMultiWindowHooks.OpenAppInFreeFormHook(
+                        runtime.lpparam as SystemServerStartingParam
+                    )
+                }
+            },
+            activationRestartTarget = RestartTarget.REBOOT,
+            configReloadMode = ConfigReloadMode.NONE
         )
     ) }
 

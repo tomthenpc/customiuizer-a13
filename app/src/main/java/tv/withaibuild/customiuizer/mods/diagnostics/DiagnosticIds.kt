@@ -104,4 +104,5 @@ object DiagnosticIds {
 
     /** Catalog expansion batch 12 (continued): screenshot overlay and freeform hooks. */
     const val TEMP_HIDE_OVERLAY_APP = "TEMP_HIDE_OVERLAY_APP"
+    const val OPEN_APP_IN_FREE_FORM = "OPEN_APP_IN_FREE_FORM"
 }

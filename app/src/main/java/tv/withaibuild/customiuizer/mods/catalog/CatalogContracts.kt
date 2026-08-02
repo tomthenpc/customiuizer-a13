@@ -1145,4 +1145,28 @@ object CatalogContracts {
         )
     )
     }
+
+    val openAppInFreeForm: HookTargetContract by lazy(kotlin.LazyThreadSafetyMode.NONE) { HookTargetContract(
+        featureId = "openAppInFreeForm",
+        requirements = listOf(
+            SingleTargetRequirement(
+                target = HookTargetSpec(
+                    id = "ActivityTaskManagerService.onSystemReady",
+                    operation = HookOperation.EXACT_METHOD,
+                    className = "com.android.server.wm.ActivityTaskManagerService",
+                    memberName = "onSystemReady",
+                    parameterTypes = emptyList()
+                )
+            ),
+            SingleTargetRequirement(
+                target = HookTargetSpec(
+                    id = "ActivityStarter.executeRequest",
+                    operation = HookOperation.ALL_METHODS_BY_NAME,
+                    className = "com.android.server.wm.ActivityStarter",
+                    memberName = "executeRequest"
+                )
+            )
+        )
+    )
+    }
 }

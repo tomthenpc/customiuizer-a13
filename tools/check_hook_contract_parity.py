@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 """Compare production hook calls in legacy hook functions to their CatalogContracts definitions.
 
-Covers batches 9/10/11 by default. Detects MISSING_CONTRACT_TARGET, ORPHAN_CONTRACT_TARGET,
+Covers batches 9/10/11/12 by default. Detects MISSING_CONTRACT_TARGET, ORPHAN_CONTRACT_TARGET,
 CRITICALITY_MISMATCH, DUPLICATE_TARGET and UNPARSEABLE_HOOK_SURFACE.
 """
 from __future__ import annotations
@@ -46,6 +46,10 @@ BATCH_FUNCTIONS: dict[str, dict[str, tuple[str, str]]] = {
         "noAccessDeviceLogsRequest": ("tv/withaibuild/customiuizer/mods/SystemDisplayAndWindowHooks.kt", "NoAccessDeviceLogsRequest"),
         "autoGroupNotifications": ("tv/withaibuild/customiuizer/mods/SystemNotificationAndShareHooks.kt", "AutoGroupNotificationsHook"),
         "appLockTimeout": ("tv/withaibuild/customiuizer/mods/SystemLockScreenMoreHooks.kt", "AppLockTimeoutHook"),
+    },
+    "12": {
+        "tempHideOverlayApp": ("tv/withaibuild/customiuizer/mods/SystemAudioAndVisualAndMoreHooks.kt", "TempHideOverlayAppHook"),
+        "openAppInFreeForm": ("tv/withaibuild/customiuizer/mods/SystemFreeformAndMultiWindowHooks.kt", "OpenAppInFreeFormHook"),
     },
 }
 
@@ -403,7 +407,7 @@ def check_batch(
 
 def main(argv: list[str] | None = None) -> int:
     p = argparse.ArgumentParser()
-    p.add_argument("--batch", default="9,10,11", help="comma-separated batch numbers")
+    p.add_argument("--batch", default="9,10,11,12", help="comma-separated batch numbers")
     p.add_argument("--contracts", default="app/src/main/java/tv/withaibuild/customiuizer/mods/catalog/CatalogContracts.kt")
     p.add_argument("--source-root", default="app/src/main/java")
     args = p.parse_args(argv)

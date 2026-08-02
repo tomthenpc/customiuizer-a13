@@ -435,11 +435,11 @@ typed catalog 之外的 Hook 同样必须处理。
   - [x] batch 9: `EnhancedSecurity`, `AppLock`, `SkipAppLock`, `NoCallInterruption` (system_server, SYSTEM_SERVER_STARTING) — contract corrected, all hard/silent criticality verified
   - [x] batch 10: `RemoveSecure`, `NoSignatureVerify`, `NoDarkForce`, `StickyFloatingWindows` (system_server, SYSTEM_SERVER_STARTING) — contract corrected to match production hook calls; `stickyFloatingWindows` expanded from 1 to 7 targets after parity audit
   - [x] batch 11: `AppsDisableService`, `NoAccessDeviceLogsRequest`, `AutoGroupNotifications`, `AppLockTimeout` (system_server, SYSTEM_SERVER_STARTING) — migrated with focused behavior tests
-  - [~] P3.2.1 合同—生产表面门禁：新增 `tools/check_hook_contract_parity.py` + `tools/tests/test_check_hook_contract_parity.py`，覆盖 batch 9/10/11，已接入 `tools/verify.py` 和 CI
+  - [~] P3.2.1 合同—生产表面门禁：新增 `tools/check_hook_contract_parity.py` + `tools/tests/test_check_hook_contract_parity.py`，覆盖 batch 9/10/11/12，已接入 `tools/verify.py` 和 CI
   - [~] batch 12: 剩余 system_server SYSTEM_SERVER_STARTING 直接调用：
     口径：`SystemServerInstaller.install` 内非 `FeatureDispatcher.installById` 的直接调用，不含 `GlobalActions`/`Controls`/`Various`/`USBConfig`/`AlarmCompatService` 等已声明暂缓项，含一个偏好对应一个入口、每个入口只计一次：
     - [x] `TempHideOverlayAppHook` (system_screenshot_overlay) → `tempHideOverlayApp` FeatureSpec
-    - [ ] `OpenAppInFreeFormHook` (system_notify_openinfw / system_fw_forcein_actionsend / system_betterpopups_allowfloat)
+    - [x] `OpenAppInFreeFormHook` (system_notify_openinfw / system_fw_forcein_actionsend / system_betterpopups_allowfloat) → `openAppInFreeForm` FeatureSpec
     - [ ] `NavBarActionsHook` / `PowerDoubleTapActionHook` (controls_backlong_action / controls_powerdt_action)
     - [ ] `SelectiveToastsHook` (system_blocktoasts)
     - [ ] `MultiWindowPlusHook` / `NoFloatingWindowBlacklistHook` (system_fw_splitscreen / system_fw_noblacklist)

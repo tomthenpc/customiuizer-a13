@@ -82,4 +82,22 @@ class Batch12BehaviorTest {
         assertTrue("tempHideOverlayApp second install is AlreadyInstalled", FeatureDispatcher.installById("tempHideOverlayApp", server))
     }
 
+    @Test
+    fun openAppInFreeForm_disabledPathDoesNotExecuteInstaller() {
+        val prefs = PrefMap<String, Any>()
+        val server = runtime(prefs)
+
+        assertFalse("openAppInFreeForm disabled", FeatureDispatcher.installById("openAppInFreeForm", server))
+    }
+
+    @Test
+    fun openAppInFreeForm_installsWhenAnyPreferenceEnabled() {
+        val prefs = PrefMap<String, Any>()
+        prefs["system_notify_openinfw"] = true
+        val server = runtime(prefs)
+
+        assertTrue("openAppInFreeForm first install (system_notify_openinfw)", FeatureDispatcher.installById("openAppInFreeForm", server))
+        assertTrue("openAppInFreeForm second install is AlreadyInstalled", FeatureDispatcher.installById("openAppInFreeForm", server))
+    }
+
 }
