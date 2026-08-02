@@ -11,21 +11,21 @@ LastStandardSweepCommit: HEAD
 LastDeepSweepCommit: HEAD
 LastFullVerificationCommit: HEAD
 LastCIState: PASS
-LastCIRun: https://github.com/tomthenpc/customiuizer-a13/actions/runs/30741425209
-LastCIJob: https://github.com/tomthenpc/customiuizer-a13/actions/runs/30741425209/job/91479453395
-LastCICommit: 66ad73b9e96019a2424d92ba193e2fa2cc1a35ab
+LastCIRun: https://github.com/tomthenpc/customiuizer-a13/actions/runs/30742095328
+LastCIJob: https://github.com/tomthenpc/customiuizer-a13/actions/runs/30742095328/job/91481190904
+LastCICommit: c1ab165c06cb9734dc160cc19298f029b5575a5b
 LastCleanupCommit: HEAD
 LastToolCreated: tools/check_hook_contract_parity.py
-LastFailureClass: CONTRACT_RUNTIME_PARITY
+LastFailureClass: none
 CurrentObjective: P3
 CurrentObjectiveState: ACTIVE
 CurrentObjectiveStartEvidence: batch 9/10 contract/runtime parity audit; tools/check_hook_contract_parity.py covers batch 9/10/11
-NextObjectiveFirstAction: expand stickyFloatingWindows contract to cover all production hook targets
-ResumeTask: repair batch 9/10 parity, complete batch 11, verify, push, inspect CI, continue batch 12
+NextObjectiveFirstAction: migrate the next batch 12 legacy hook to the typed catalog
+ResumeTask: batch 12 migration resumed; first feature tempHideOverlayApp moved to catalog
 DeepSweepDue: false
-LastVerifiedTree: 6feda5cbfbd782013a82b79362bae537cb84f80d
+LastVerifiedTree: 0d925dea5368920099b6a5a71e3b752b8287b0b4
 LastVerifiedMode: Full
-LastVerifiedAt: 2026-08-02T17:31:00+08:00
+LastVerifiedAt: 2026-08-02T17:55:00+08:00
 LastVerifiedCommandsDigest: python tools/check_hook_contract_parity.py; powershell -NoProfile -ExecutionPolicy Bypass -File .\scripts\verify.ps1 -Mode Fast; powershell -NoProfile -ExecutionPolicy Bypass -File .\scripts\verify.ps1 -Mode Full
 ```
 

@@ -69,7 +69,8 @@ enum class FeatureId(val canonicalId: String) {
     APPS_DISABLE_SERVICE("appsDisableService"),
     NO_ACCESS_DEVICE_LOGS_REQUEST("noAccessDeviceLogsRequest"),
     AUTO_GROUP_NOTIFICATIONS("autoGroupNotifications"),
-    APP_LOCK_TIMEOUT("appLockTimeout");
+    APP_LOCK_TIMEOUT("appLockTimeout"),
+    TEMP_HIDE_OVERLAY_APP("tempHideOverlayApp");
 
     companion object {
         private val byString: Map<String, FeatureId> = values().associateBy {

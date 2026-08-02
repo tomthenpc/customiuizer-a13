@@ -31,7 +31,7 @@ public final class SystemServerInstaller {
         if (needGlobalActions()) GlobalActions.setupGlobalActions(lpparam);
 
         if (MainModule.mPrefs.getBoolean("system_screenshot_overlay")) {
-            SystemAudioAndVisualAndMoreHooks.TempHideOverlayAppHook(lpparam);
+            FeatureDispatcher.installById("tempHideOverlayApp", serverRuntime);
         }
 
         if (MainModule.mPrefs.getBoolean("system_notify_openinfw")

@@ -1915,6 +1915,33 @@ object FeatureCatalog {
             },
             activationRestartTarget = RestartTarget.REBOOT,
             configReloadMode = ConfigReloadMode.NONE
+        ),
+        FeatureSpec(
+            compatibilityPolicy = CompatibilityPolicy.CONTRACT_REQUIRED,
+            contract = CatalogContracts.tempHideOverlayApp,
+            id = "tempHideOverlayApp",
+            diagnosticId = DiagnosticIds.TEMP_HIDE_OVERLAY_APP,
+            processScope = ProcessScope.SYSTEM_SERVER,
+            installPhase = InstallPhase.SYSTEM_SERVER_STARTING,
+            processTarget = ProcessTarget.SystemServer,
+            preferenceKeys = setOf("system_screenshot_overlay"),
+            condition = { prefs ->
+                prefs.getBoolean("system_screenshot_overlay", false)
+            },
+            installer = { runtime, compatResult ->
+                legacyInstall(
+                    runtime = runtime,
+                    compatResult = compatResult,
+                    contract = CatalogContracts.tempHideOverlayApp,
+                    diagnosticId = DiagnosticIds.TEMP_HIDE_OVERLAY_APP
+                ) {
+                    SystemAudioAndVisualAndMoreHooks.TempHideOverlayAppHook(
+                        runtime.lpparam as SystemServerStartingParam
+                    )
+                }
+            },
+            activationRestartTarget = RestartTarget.REBOOT,
+            configReloadMode = ConfigReloadMode.NONE
         )
     ) }
 

@@ -1131,4 +1131,18 @@ object CatalogContracts {
         )
     )
     }
+
+    val tempHideOverlayApp: HookTargetContract by lazy(kotlin.LazyThreadSafetyMode.NONE) { HookTargetContract(
+        featureId = "tempHideOverlayApp",
+        requirements = listOf(
+            SingleTargetRequirement(
+                target = HookTargetSpec(
+                    id = "WindowSurfaceController.constructors",
+                    operation = HookOperation.ALL_CONSTRUCTORS,
+                    className = "com.android.server.wm.WindowSurfaceController"
+                )
+            )
+        )
+    )
+    }
 }
