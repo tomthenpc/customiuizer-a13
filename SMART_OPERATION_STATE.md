@@ -5,7 +5,7 @@ Mode: PROFESSIONAL_AUTONOMOUS_STEWARDSHIP
 CheckpointCount: 7
 CheckpointsSinceStandardSweep: 7
 CheckpointsSinceDeepSweep: 7
-LastQualifyingCheckpoint: 44602f7
+LastQualifyingCheckpoint: d939868
 LastLightSweepCommit: none
 LastStandardSweepCommit: none
 LastDeepSweepCommit: none
