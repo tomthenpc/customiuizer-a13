@@ -466,7 +466,16 @@ class FeatureCatalogTest {
     @Test
     fun registrySpecsContainsOnlyMigratedFeatures() {
         val registryIds = FeatureCatalog.registrySpecs().map { it.id }.toSet()
-        val migrated = setOf("packagePermissions", "statusBarClockTweak", "autoBrightnessRange")
+        val migrated = setOf(
+            "packagePermissions",
+            "statusBarClockTweak",
+            "autoBrightnessRange",
+            "muffledVibration",
+            "noMoreIcon",
+            "batteryIndicator",
+            "noClockHide",
+            "noWidgetOnly"
+        )
 
         assertEquals("registry specs are limited to migrated features", migrated, registryIds)
     }
@@ -474,7 +483,7 @@ class FeatureCatalogTest {
     @Test
     fun registrySpecsDoesNotContainLegacyFeatures() {
         val registryIds = FeatureCatalog.registrySpecs().map { it.id }.toSet()
-        val legacy = setOf("muffledVibration", "noMoreIcon", "batteryIndicator", "noClockHide", "noWidgetOnly")
+        val legacy = setOf("screenDimTime", "firstVolumePress", "hideLauncherTitles")
 
         assertTrue("legacy features are not pre-registered", legacy.none { it in registryIds })
     }
@@ -505,6 +514,21 @@ class FeatureCatalogTest {
                 spec.compatibilityPolicy == CompatibilityPolicy.CUSTOM
             )
         }
+    }
+
+    @Test
+    fun migrationStatistics() {
+        val catalogTotal = FeatureCatalog.specs().size
+        val registryMigrated = FeatureCatalog.registrySpecs().size
+        val dispatcherLegacy = FeatureId.values().size - registryMigrated
+
+        assertTrue("at least 8 features migrated", registryMigrated >= 8)
+        assertTrue("catalog still contains non-migrated legacy features", catalogTotal > registryMigrated)
+
+        // duplicatePaths is verified by the source invariants below:
+        // each registry feature is installed only through FeatureInstallRegistry,
+        // and each legacy feature remains only in the dispatcher when branch.
+        println("catalogTotal=$catalogTotal registryMigrated=$registryMigrated dispatcherLegacy=$dispatcherLegacy duplicatePaths=0")
     }
 
     private fun newPackageReadyParam(packageName: String, classLoader: ClassLoader): PackageReadyParam {

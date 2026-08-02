@@ -9,6 +9,7 @@ SRC = REPO / "app" / "src" / "main" / "java"
 MAIN = SRC / "tv" / "withaibuild" / "customiuizer" / "MainModule.java"
 INPUT = SRC / "tv" / "withaibuild" / "customiuizer" / "installers" / "InputMethodInstaller.java"
 UTILS = SRC / "tv" / "withaibuild" / "customiuizer" / "mods" / "utils"
+CATALOG = SRC / "tv" / "withaibuild" / "customiuizer" / "mods" / "catalog"
 
 
 def read(rel: str) -> str:
@@ -35,14 +36,14 @@ class ArchitectureInvariantTest(unittest.TestCase):
 
     def test_feature_install_result_exists(self):
         text = (UTILS / "FeatureInstallResult.kt").read_text(encoding="utf-8")
-        for result in ("INSTALLED", "ALREADY_INSTALLED", "SKIPPED", "FAILED_TRANSIENT", "FAILED_PERMANENT"):
+        for result in ("Installed", "AlreadyInstalled", "Disabled", "FailedTransient", "FailedPermanent"):
             self.assertIn(result, text)
         self.assertIn("isActive", text)
 
-    def test_feature_install_state_exists(self):
-        text = (UTILS / "FeatureInstallState.kt").read_text(encoding="utf-8")
-        self.assertIn("beginInstall", text)
-        self.assertIn("FeatureId", text)
+    def test_feature_install_registry_exists(self):
+        text = (CATALOG / "FeatureInstallRegistry.kt").read_text(encoding="utf-8")
+        self.assertIn("installById", text)
+        self.assertIn("canonicalSpecs", text)
         self.assertIn("@JvmStatic", text)
 
     def test_main_module_no_direct_launcher_hooks(self):

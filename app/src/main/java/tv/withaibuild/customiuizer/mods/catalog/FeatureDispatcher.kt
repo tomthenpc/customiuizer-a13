@@ -129,88 +129,48 @@ object FeatureDispatcher {
     }
 
     private fun installMuffledVibration(runtime: FeatureRuntime): Boolean {
-        if (!ProcessTarget.SystemServer.matches(runtime.processName)) return false
-        if (!runtime.prefs.getBoolean("system_vibration_amp", false)) return false
-
-        recordRequested(DiagnosticIds.MUFFLED_VIBRATION)
-        return installWithContract(
-            DiagnosticIds.MUFFLED_VIBRATION,
-            runtime,
-            CanaryContracts.muffledVibration
-        ) {
-            SystemAudioAndVisualAndMoreHooks.MuffledVibrationHook(
-                runtime.lpparam as SystemServerStartingParam
-            )
-            InstallOutcome.DISPATCHED
-        }
+        return FeatureInstallRegistry.installById(
+            "muffledVibration",
+            ProcessScope.SYSTEM_SERVER,
+            InstallPhase.SYSTEM_SERVER_STARTING,
+            runtime
+        ).isActive
     }
 
     private fun installNoMoreIcon(runtime: FeatureRuntime): Boolean {
-        if (!ProcessTarget.SystemUI.matches(runtime.processName)) return false
-        if (!runtime.prefs.getBoolean("system_hidemoreicon", false)) return false
-
-        recordRequested(DiagnosticIds.NO_MORE_ICON)
-        return installWithContract(
-            DiagnosticIds.NO_MORE_ICON,
-            runtime,
-            CanaryContracts.noMoreIcon
-        ) {
-            SystemNotificationMoreHooks.NoMoreIconHook(
-                runtime.lpparam as PackageReadyParam
-            )
-            InstallOutcome.DISPATCHED
-        }
+        return FeatureInstallRegistry.installById(
+            "noMoreIcon",
+            ProcessScope.SYSTEM_UI,
+            InstallPhase.PACKAGE_READY,
+            runtime
+        ).isActive
     }
 
     private fun installBatteryIndicator(runtime: FeatureRuntime): Boolean {
-        if (!ProcessTarget.SystemUI.matches(runtime.processName)) return false
-        if (!runtime.prefs.getBoolean("system_batteryindicator", false)) return false
-
-        recordRequested(DiagnosticIds.BATTERY_INDICATOR)
-        return installWithContract(
-            DiagnosticIds.BATTERY_INDICATOR,
-            runtime,
-            CanaryContracts.batteryIndicator
-        ) {
-            SystemUIBatteryHooks.BatteryIndicatorHook(
-                runtime.lpparam as PackageReadyParam
-            )
-            InstallOutcome.DISPATCHED
-        }
+        return FeatureInstallRegistry.installById(
+            "batteryIndicator",
+            ProcessScope.SYSTEM_UI,
+            InstallPhase.PACKAGE_READY,
+            runtime
+        ).isActive
     }
 
     private fun installNoClockHide(runtime: FeatureRuntime): Boolean {
-        if (!ProcessTarget.Launcher.matches(runtime.processName)) return false
-        if (!runtime.prefs.getBoolean("launcher_noclockhide", false)) return false
-
-        recordRequested(DiagnosticIds.NO_CLOCK_HIDE)
-        return installWithContract(
-            DiagnosticIds.NO_CLOCK_HIDE,
-            runtime,
-            CanaryContracts.noClockHide
-        ) {
-            LauncherSystemHooks.NoClockHideHook(
-                runtime.lpparam as PackageReadyParam
-            )
-            InstallOutcome.DISPATCHED
-        }
+        return FeatureInstallRegistry.installById(
+            "noClockHide",
+            ProcessScope.LAUNCHER,
+            InstallPhase.PACKAGE_READY,
+            runtime
+        ).isActive
     }
 
     private fun installNoWidgetOnly(runtime: FeatureRuntime): Boolean {
-        if (!ProcessTarget.Launcher.matches(runtime.processName)) return false
-        if (!runtime.prefs.getBoolean("launcher_nowidgetonly", false)) return false
-
-        recordRequested(DiagnosticIds.NO_WIDGET_ONLY)
-        return installWithContract(
-            DiagnosticIds.NO_WIDGET_ONLY,
-            runtime,
-            CanaryContracts.noWidgetOnly
-        ) {
-            LauncherLayoutHooks.NoWidgetOnlyHook(
-                runtime.lpparam as PackageReadyParam
-            )
-            InstallOutcome.DISPATCHED
-        }
+        return FeatureInstallRegistry.installById(
+            "noWidgetOnly",
+            ProcessScope.LAUNCHER,
+            InstallPhase.PACKAGE_READY,
+            runtime
+        ).isActive
     }
 
     private fun installScreenDimTime(runtime: FeatureRuntime): Boolean {

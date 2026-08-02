@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Static tests for the A13 FeatureLifecycle / FeatureInstallResult model."""
+"""Static tests for the A13 FeatureInstallResult / FeatureState lifecycle model."""
 import re
 import unittest
 from pathlib import Path
@@ -13,42 +13,40 @@ def read(rel: str) -> str:
 
 
 class FeatureLifecycleTests(unittest.TestCase):
-    def test_lifecycle_enum_has_all_required_states(self):
-        text = read("tv/withaibuild/customiuizer/mods/catalog/FeatureLifecycle.kt")
+    def test_lifecycle_exposes_all_install_outcomes(self):
+        text = read("tv/withaibuild/customiuizer/mods/utils/FeatureInstallResult.kt")
         for state in (
-            "DISABLED",
-            "UNSUPPORTED_PROCESS",
-            "INCOMPATIBLE",
-            "READY",
-            "INSTALLING",
-            "INSTALLED",
-            "ALREADY_INSTALLED",
-            "FAILED_TRANSIENT",
-            "FAILED_PERMANENT",
+            "Installed",
+            "AlreadyInstalled",
+            "Disabled",
+            "UnsupportedProcess",
+            "WrongPhase",
+            "Incompatible",
+            "FailedTransient",
+            "FailedPermanent",
         ):
-            self.assertRegex(text, rf"\b{state}\b")
+            self.assertIn(state, text, f"FeatureInstallResult subtype {state} is missing")
 
     def test_lifecycle_exposes_install_result_data_class(self):
-        text = read("tv/withaibuild/customiuizer/mods/catalog/FeatureLifecycle.kt")
-        self.assertIn("data class FeatureInstallResult(", text)
-        self.assertIn("val lifecycle: FeatureLifecycle", text)
-        self.assertIn("val diagnostic: DiagnosticState", text)
+        text = read("tv/withaibuild/customiuizer/mods/utils/FeatureInstallResult.kt")
+        self.assertIn("sealed interface FeatureInstallResult", text)
+        self.assertIn("val isActive", text)
+        self.assertIn("toDiagnosticState", text)
 
     def test_lifecycle_mapping_covers_diagnostic_states(self):
-        text = read("tv/withaibuild/customiuizer/mods/catalog/FeatureLifecycle.kt")
+        text = read("tv/withaibuild/customiuizer/mods/utils/FeatureInstallResult.kt")
         self.assertIn("DiagnosticState.DISABLED", text)
         self.assertIn("DiagnosticState.INCOMPATIBLE", text)
         self.assertIn("DiagnosticState.INSTALLED", text)
         self.assertIn("DiagnosticState.FAILED", text)
 
     def test_lifecycle_mapping_covers_process_scopes(self):
-        text = read("tv/withaibuild/customiuizer/mods/catalog/FeatureLifecycle.kt")
-        self.assertIn("fromProcessScope", text)
-        self.assertIn("ProcessScope.SYSTEM_UI", text)
-        self.assertIn("ProcessScope.LAUNCHER", text)
+        text = read("tv/withaibuild/customiuizer/mods/utils/ProcessScope.kt")
+        self.assertIn("SYSTEM_UI", text)
+        self.assertIn("LAUNCHER", text)
 
     def test_lifecycle_no_android_runtime_dependency(self):
-        text = read("tv/withaibuild/customiuizer/mods/catalog/FeatureLifecycle.kt")
+        text = read("tv/withaibuild/customiuizer/mods/utils/FeatureInstallResult.kt")
         self.assertNotIn("import android.", text)
 
 

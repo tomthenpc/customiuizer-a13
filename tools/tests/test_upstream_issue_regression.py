@@ -284,7 +284,8 @@ class UpstreamIssueRegressionTests(unittest.TestCase):
 
     def test_clock_feature_catalog_keeps_systemui_restart_and_partial_reload(self):
         text = read("tv/withaibuild/customiuizer/mods/catalog/FeatureCatalog.kt")
-        self.assertIn("contract = CanaryContracts.statusBarClockTweak", text)
+        self.assertIn("statusBarClockTweakContract", text)
+        self.assertIn("CanaryContracts.statusBarClockTweakForInstall", text)
         self.assertIn("activationRestartTarget = RestartTarget.SYSTEMUI_RESTART", text)
         self.assertIn("configReloadMode = ConfigReloadMode.PARTIAL", text)
 

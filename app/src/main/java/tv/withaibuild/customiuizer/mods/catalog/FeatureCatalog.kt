@@ -217,16 +217,43 @@ object FeatureCatalog {
             contract = CanaryContracts.muffledVibration,
             id = "muffledVibration",
             diagnosticId = DiagnosticIds.MUFFLED_VIBRATION,
+            processScope = ProcessScope.SYSTEM_SERVER,
+            installPhase = InstallPhase.SYSTEM_SERVER_STARTING,
             processTarget = ProcessTarget.SystemServer,
             preferenceKeys = setOf("system_vibration_amp"),
             condition = { prefs ->
                 prefs.getBoolean("system_vibration_amp", false)
             },
-                        installer = { runtime, compatResult ->
-                SystemAudioAndVisualAndMoreHooks.MuffledVibrationHook(
-                    runtime.lpparam as SystemServerStartingParam
-                )
-                FeatureInstallResult.Installed()
+            installer = { runtime, compatResult ->
+                val session = HookInstaller.withSession(
+                    resolver = runtime.resolver,
+                    contract = compatResult.resolvedContract ?: CanaryContracts.muffledVibration,
+                    diagnosticId = DiagnosticIds.MUFFLED_VIBRATION,
+                    classLoader = runtime.classLoader,
+                    compatibilityResult = compatResult
+                ) {
+                    SystemAudioAndVisualAndMoreHooks.MuffledVibrationHook(
+                        runtime.lpparam as SystemServerStartingParam
+                    )
+                }
+                when (session.installation) {
+                    InstallOutcome.INSTALLED,
+                    InstallOutcome.DEGRADED,
+                    InstallOutcome.DISPATCHED -> FeatureInstallResult.Installed(
+                        InstallSummary(
+                            requiredInstalled = session.requiredInstalled,
+                            requiredTotal = session.requiredTotal,
+                            optionalInstalled = session.optionalInstalled,
+                            optionalTotal = session.optionalTotal,
+                            fallbackUsed = session.fallbackUsed,
+                            installation = session.installation ?: InstallOutcome.FAILED,
+                            reasonCode = session.reasonCode
+                        )
+                    )
+                    else -> FeatureInstallResult.FailedTransient(
+                        session.detail ?: "muffledVibration session failed"
+                    )
+                }
             },
             activationRestartTarget = RestartTarget.REBOOT,
             configReloadMode = ConfigReloadMode.NONE
@@ -236,16 +263,43 @@ object FeatureCatalog {
             contract = CanaryContracts.noMoreIcon,
             id = "noMoreIcon",
             diagnosticId = DiagnosticIds.NO_MORE_ICON,
+            processScope = ProcessScope.SYSTEM_UI,
+            installPhase = InstallPhase.PACKAGE_READY,
             processTarget = ProcessTarget.SystemUI,
             preferenceKeys = setOf("system_hidemoreicon"),
             condition = { prefs ->
                 prefs.getBoolean("system_hidemoreicon", false)
             },
-                        installer = { runtime, compatResult ->
-                SystemNotificationMoreHooks.NoMoreIconHook(
-                    runtime.lpparam as PackageReadyParam
-                )
-                FeatureInstallResult.Installed()
+            installer = { runtime, compatResult ->
+                val session = HookInstaller.withSession(
+                    resolver = runtime.resolver,
+                    contract = compatResult.resolvedContract ?: CanaryContracts.noMoreIcon,
+                    diagnosticId = DiagnosticIds.NO_MORE_ICON,
+                    classLoader = runtime.classLoader,
+                    compatibilityResult = compatResult
+                ) {
+                    SystemNotificationMoreHooks.NoMoreIconHook(
+                        runtime.lpparam as PackageReadyParam
+                    )
+                }
+                when (session.installation) {
+                    InstallOutcome.INSTALLED,
+                    InstallOutcome.DEGRADED,
+                    InstallOutcome.DISPATCHED -> FeatureInstallResult.Installed(
+                        InstallSummary(
+                            requiredInstalled = session.requiredInstalled,
+                            requiredTotal = session.requiredTotal,
+                            optionalInstalled = session.optionalInstalled,
+                            optionalTotal = session.optionalTotal,
+                            fallbackUsed = session.fallbackUsed,
+                            installation = session.installation ?: InstallOutcome.FAILED,
+                            reasonCode = session.reasonCode
+                        )
+                    )
+                    else -> FeatureInstallResult.FailedTransient(
+                        session.detail ?: "noMoreIcon session failed"
+                    )
+                }
             },
             activationRestartTarget = RestartTarget.SYSTEMUI_RESTART,
             configReloadMode = ConfigReloadMode.NONE
@@ -254,16 +308,43 @@ object FeatureCatalog {
             contract = CanaryContracts.batteryIndicator,
             id = "batteryIndicator",
             diagnosticId = DiagnosticIds.BATTERY_INDICATOR,
+            processScope = ProcessScope.SYSTEM_UI,
+            installPhase = InstallPhase.PACKAGE_READY,
             processTarget = ProcessTarget.SystemUI,
             preferenceKeys = setOf("system_batteryindicator"),
             condition = { prefs ->
                 prefs.getBoolean("system_batteryindicator", false)
             },
-                        installer = { runtime, compatResult ->
-                SystemUIBatteryHooks.BatteryIndicatorHook(
-                    runtime.lpparam as PackageReadyParam
-                )
-                FeatureInstallResult.Installed()
+            installer = { runtime, compatResult ->
+                val session = HookInstaller.withSession(
+                    resolver = runtime.resolver,
+                    contract = compatResult.resolvedContract ?: CanaryContracts.batteryIndicator,
+                    diagnosticId = DiagnosticIds.BATTERY_INDICATOR,
+                    classLoader = runtime.classLoader,
+                    compatibilityResult = compatResult
+                ) {
+                    SystemUIBatteryHooks.BatteryIndicatorHook(
+                        runtime.lpparam as PackageReadyParam
+                    )
+                }
+                when (session.installation) {
+                    InstallOutcome.INSTALLED,
+                    InstallOutcome.DEGRADED,
+                    InstallOutcome.DISPATCHED -> FeatureInstallResult.Installed(
+                        InstallSummary(
+                            requiredInstalled = session.requiredInstalled,
+                            requiredTotal = session.requiredTotal,
+                            optionalInstalled = session.optionalInstalled,
+                            optionalTotal = session.optionalTotal,
+                            fallbackUsed = session.fallbackUsed,
+                            installation = session.installation ?: InstallOutcome.FAILED,
+                            reasonCode = session.reasonCode
+                        )
+                    )
+                    else -> FeatureInstallResult.FailedTransient(
+                        session.detail ?: "batteryIndicator session failed"
+                    )
+                }
             },
             activationRestartTarget = RestartTarget.SYSTEMUI_RESTART,
             configReloadMode = ConfigReloadMode.NONE
@@ -273,16 +354,43 @@ object FeatureCatalog {
             contract = CanaryContracts.noClockHide,
             id = "noClockHide",
             diagnosticId = DiagnosticIds.NO_CLOCK_HIDE,
+            processScope = ProcessScope.LAUNCHER,
+            installPhase = InstallPhase.PACKAGE_READY,
             processTarget = ProcessTarget.Launcher,
             preferenceKeys = setOf("launcher_noclockhide"),
             condition = { prefs ->
                 prefs.getBoolean("launcher_noclockhide", false)
             },
-                        installer = { runtime, compatResult ->
-                LauncherSystemHooks.NoClockHideHook(
-                    runtime.lpparam as PackageReadyParam
-                )
-                FeatureInstallResult.Installed()
+            installer = { runtime, compatResult ->
+                val session = HookInstaller.withSession(
+                    resolver = runtime.resolver,
+                    contract = compatResult.resolvedContract ?: CanaryContracts.noClockHide,
+                    diagnosticId = DiagnosticIds.NO_CLOCK_HIDE,
+                    classLoader = runtime.classLoader,
+                    compatibilityResult = compatResult
+                ) {
+                    LauncherSystemHooks.NoClockHideHook(
+                        runtime.lpparam as PackageReadyParam
+                    )
+                }
+                when (session.installation) {
+                    InstallOutcome.INSTALLED,
+                    InstallOutcome.DEGRADED,
+                    InstallOutcome.DISPATCHED -> FeatureInstallResult.Installed(
+                        InstallSummary(
+                            requiredInstalled = session.requiredInstalled,
+                            requiredTotal = session.requiredTotal,
+                            optionalInstalled = session.optionalInstalled,
+                            optionalTotal = session.optionalTotal,
+                            fallbackUsed = session.fallbackUsed,
+                            installation = session.installation ?: InstallOutcome.FAILED,
+                            reasonCode = session.reasonCode
+                        )
+                    )
+                    else -> FeatureInstallResult.FailedTransient(
+                        session.detail ?: "noClockHide session failed"
+                    )
+                }
             },
             activationRestartTarget = RestartTarget.LAUNCHER_RESTART,
             configReloadMode = ConfigReloadMode.NONE
@@ -291,16 +399,43 @@ object FeatureCatalog {
             contract = CanaryContracts.noWidgetOnly,
             id = "noWidgetOnly",
             diagnosticId = DiagnosticIds.NO_WIDGET_ONLY,
+            processScope = ProcessScope.LAUNCHER,
+            installPhase = InstallPhase.PACKAGE_READY,
             processTarget = ProcessTarget.Launcher,
             preferenceKeys = setOf("launcher_nowidgetonly"),
             condition = { prefs ->
                 prefs.getBoolean("launcher_nowidgetonly", false)
             },
-                        installer = { runtime, compatResult ->
-                LauncherLayoutHooks.NoWidgetOnlyHook(
-                    runtime.lpparam as PackageReadyParam
-                )
-                FeatureInstallResult.Installed()
+            installer = { runtime, compatResult ->
+                val session = HookInstaller.withSession(
+                    resolver = runtime.resolver,
+                    contract = compatResult.resolvedContract ?: CanaryContracts.noWidgetOnly,
+                    diagnosticId = DiagnosticIds.NO_WIDGET_ONLY,
+                    classLoader = runtime.classLoader,
+                    compatibilityResult = compatResult
+                ) {
+                    LauncherLayoutHooks.NoWidgetOnlyHook(
+                        runtime.lpparam as PackageReadyParam
+                    )
+                }
+                when (session.installation) {
+                    InstallOutcome.INSTALLED,
+                    InstallOutcome.DEGRADED,
+                    InstallOutcome.DISPATCHED -> FeatureInstallResult.Installed(
+                        InstallSummary(
+                            requiredInstalled = session.requiredInstalled,
+                            requiredTotal = session.requiredTotal,
+                            optionalInstalled = session.optionalInstalled,
+                            optionalTotal = session.optionalTotal,
+                            fallbackUsed = session.fallbackUsed,
+                            installation = session.installation ?: InstallOutcome.FAILED,
+                            reasonCode = session.reasonCode
+                        )
+                    )
+                    else -> FeatureInstallResult.FailedTransient(
+                        session.detail ?: "noWidgetOnly session failed"
+                    )
+                }
             },
             activationRestartTarget = RestartTarget.LAUNCHER_RESTART,
             configReloadMode = ConfigReloadMode.NONE
@@ -625,7 +760,12 @@ object FeatureCatalog {
     private val registryMigratedIds = setOf(
         "packagePermissions",
         "statusBarClockTweak",
-        "autoBrightnessRange"
+        "autoBrightnessRange",
+        "muffledVibration",
+        "noMoreIcon",
+        "batteryIndicator",
+        "noClockHide",
+        "noWidgetOnly"
     )
 
     /**

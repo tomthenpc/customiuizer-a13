@@ -33,6 +33,9 @@ class FeatureInstallRegistryTest {
     fun tearDown() {
         DiagnosticRecorder.reset()
         FeatureInstallRegistry.resetForTesting()
+        // Restore the production catalog so other test suites that rely on
+        // FeatureDispatcher's class-init registration still find the specs.
+        FeatureInstallRegistry.registerAll(FeatureCatalog.registrySpecs())
     }
 
     private fun runtime(processName: String = "test-${System.nanoTime()}"): FeatureRuntime {
