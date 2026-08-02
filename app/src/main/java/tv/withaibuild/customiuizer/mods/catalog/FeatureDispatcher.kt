@@ -28,6 +28,9 @@ import tv.withaibuild.customiuizer.mods.diagnostics.ReasonCode
 import tv.withaibuild.customiuizer.mods.utils.FeatureTargetVariant
 import tv.withaibuild.customiuizer.mods.utils.HookInstaller
 import tv.withaibuild.customiuizer.mods.utils.HookTargetContract
+import tv.withaibuild.customiuizer.mods.utils.InstallPhase
+import tv.withaibuild.customiuizer.mods.utils.ProcessScope
+import tv.withaibuild.customiuizer.mods.utils.ProcessScopes
 import tv.withaibuild.customiuizer.mods.utils.XposedHelpers
 import tv.withaibuild.customiuizer.utils.PrefMap
 
@@ -39,6 +42,10 @@ import tv.withaibuild.customiuizer.utils.PrefMap
  * list at runtime by using a plain `when` over the known feature ids.
  */
 object FeatureDispatcher {
+
+    init {
+        FeatureInstallRegistry.registerAll(FeatureCatalog.specs())
+    }
 
     @JvmStatic
     fun createRuntime(
@@ -95,15 +102,12 @@ object FeatureDispatcher {
     private fun installPackagePermissions(runtime: FeatureRuntime): Boolean {
         if (!ProcessTarget.SystemServer.matches(runtime.processName)) return false
 
-        recordRequested(DiagnosticIds.PACKAGE_PERMISSIONS)
-        return installWithContract(
-            DiagnosticIds.PACKAGE_PERMISSIONS,
-            runtime,
-            CanaryContracts.packagePermissions
-        ) {
-            PackagePermissions.hook(runtime.lpparam as SystemServerStartingParam)
-            InstallOutcome.DISPATCHED
-        }
+        return FeatureInstallRegistry.installById(
+            "packagePermissions",
+            ProcessScopes.resolve(runtime.processName, runtime.processName),
+            InstallPhase.SYSTEM_SERVER_STARTING,
+            runtime
+        ).isActive
     }
 
     private fun installStatusBarClockTweak(runtime: FeatureRuntime): Boolean {

@@ -27,6 +27,7 @@ class FeatureCatalogTest {
     @Before
     fun setUp() {
         DiagnosticRecorder.reset()
+        FeatureInstallRegistry.clear()
         logMessages.clear()
         DiagnosticRecorder.clock = { 0L }
         // Rom environment records via DiagnosticRecorder; filter it from the install log
@@ -40,6 +41,7 @@ class FeatureCatalogTest {
     @After
     fun tearDown() {
         DiagnosticRecorder.reset()
+        FeatureInstallRegistry.clear()
         MainModule.mPrefs = PrefMap()
         XposedHelpers.moduleInst = null
     }

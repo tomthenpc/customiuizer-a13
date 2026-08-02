@@ -18,7 +18,9 @@ import tv.withaibuild.customiuizer.mods.LauncherIconHooks
 import tv.withaibuild.customiuizer.mods.LauncherLayoutHooks
 import tv.withaibuild.customiuizer.mods.LauncherSystemHooks
 import tv.withaibuild.customiuizer.mods.diagnostics.DiagnosticIds
+import tv.withaibuild.customiuizer.mods.diagnostics.InstallOutcome
 import tv.withaibuild.customiuizer.mods.utils.FeatureInstallResult
+import tv.withaibuild.customiuizer.mods.utils.HookInstaller
 
 /**
  * Static, type-safe feature directory.
@@ -39,8 +41,23 @@ object FeatureCatalog {
             preferenceKeys = emptySet(),
             condition = { true },
             installer = { runtime, compatResult ->
-                PackagePermissions.hook(runtime.lpparam as SystemServerStartingParam)
-                FeatureInstallResult.Installed
+                val session = HookInstaller.withSession(
+                    resolver = runtime.resolver,
+                    contract = CanaryContracts.packagePermissions,
+                    diagnosticId = DiagnosticIds.PACKAGE_PERMISSIONS,
+                    classLoader = runtime.classLoader,
+                    compatibilityResult = compatResult
+                ) {
+                    PackagePermissions.hook(runtime.lpparam as SystemServerStartingParam)
+                }
+                when (session.installation) {
+                    InstallOutcome.INSTALLED,
+                    InstallOutcome.DEGRADED,
+                    InstallOutcome.DISPATCHED -> FeatureInstallResult.Installed
+                    else -> FeatureInstallResult.FailedTransient(
+                        session.detail ?: "packagePermissions session failed"
+                    )
+                }
             },
             activationRestartTarget = RestartTarget.REBOOT,
             configReloadMode = ConfigReloadMode.NONE
@@ -83,10 +100,6 @@ object FeatureCatalog {
             },
             installer = { runtime, compatResult ->
                 run {
-                    val (_, compatResult) = runtime.resolver.evaluateContract(
-                        CanaryContracts.autoBrightnessRange,
-                        DiagnosticIds.AUTO_BRIGHTNESS_RANGE
-                    )
                     val variant = when (compatResult.selectedVariant?.id) {
                         "automatic_brightness_controller" ->
                             SystemDisplayAndWindowHooks.AutoBrightnessVariant.AUTOMATIC_BRIGHTNESS_CONTROLLER
