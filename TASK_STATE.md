@@ -425,6 +425,7 @@ typed catalog 之外的 Hook 同样必须处理。
 - [x] P3.1 刷新 Hook ownership inventory（根据 FeatureCatalog 调用关系重新分类）；
 - [~] P3.2 迁移可直接归类的 legacy hook 到 Registry（按 process/phase 分批）；
   - [x] `system_volumesteps` → `volumeSteps` FeatureSpec (system_server, SYSTEM_SERVER_STARTING)
+  - [x] `system_toasttime` → `toastTime` FeatureSpec (system_server, SYSTEM_SERVER_STARTING)
   - [ ] `system_separatevolume` 等跨 process 项按 LEGACY_EXCEPTION 登记
 - [ ] P3.3 登记不可迁移项为 LEGACY_EXCEPTION 并补充原因/owner/test；
 - [ ] P3.4 增加 inventory 机械门禁，防止 UNKNOWN/重复 ownership。

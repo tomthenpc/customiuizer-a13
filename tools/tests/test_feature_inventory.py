@@ -30,9 +30,9 @@ class FeatureInventoryCompletenessTest(unittest.TestCase):
             re.DOTALL,
         )
         self.assertEqual(
-            26,
+            27,
             len(blocks),
-            "Expected 26 FeatureSpec declarations in FeatureCatalog.kt",
+            "Expected 27 FeatureSpec declarations in FeatureCatalog.kt",
         )
 
         ids = set()
@@ -97,9 +97,9 @@ class FeatureInventoryCompletenessTest(unittest.TestCase):
             f"A13_PROCESS_MATRIX.md has ids not in FeatureCatalog: {extra_in_matrix}",
         )
         self.assertEqual(
-            26,
+            27,
             len(matrix_ids),
-            "A13_PROCESS_MATRIX.md must list exactly the 26 catalog feature ids",
+            "A13_PROCESS_MATRIX.md must list exactly the 27 catalog feature ids",
         )
 
 

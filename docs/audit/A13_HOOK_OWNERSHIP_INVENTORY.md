@@ -47,7 +47,7 @@
 | `mods/LauncherLayoutHooks.kt` | 27 | com.miui.home / com.mi.android.globallauncher | `LEGACY_EXCEPTION` | mixed: typed=1, legacy=11 |
 | `mods/LauncherSystemHooks.kt` | 15 | com.android.systemui | `LEGACY_EXCEPTION` | mixed: typed=2, legacy=5 |
 | `mods/PackagePermissions.kt` | 5 | mixed | `LEGACY_EXCEPTION` | no typed catalog owner |
-| `mods/SystemAudioAndVisualAndMoreHooks.kt` | 47 | com.android.systemui | `LEGACY_EXCEPTION` | mixed: typed=5, legacy=16 |
+| `mods/SystemAudioAndVisualAndMoreHooks.kt` | 47 | com.android.systemui | `LEGACY_EXCEPTION` | mixed: typed=6, legacy=15 |
 | `mods/SystemAudioAndVolumeHooks.kt` | 5 | com.android.systemui | `LEGACY_EXCEPTION` | mixed: typed=1, legacy=2 |
 | `mods/SystemChargingAndWallpaperHooks.kt` | 3 | com.android.systemui | `LEGACY_EXCEPTION` | no typed catalog owner |
 | `mods/SystemDisplayAndWindowHooks.kt` | 22 | com.android.systemui | `LEGACY_EXCEPTION` | mixed: typed=2, legacy=6 |

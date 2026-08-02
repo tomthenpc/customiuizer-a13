@@ -534,6 +534,33 @@ object FeatureCatalog {
             activationRestartTarget = RestartTarget.REBOOT,
             configReloadMode = ConfigReloadMode.NONE
         ),
+        FeatureSpec(
+            compatibilityPolicy = CompatibilityPolicy.CONTRACT_REQUIRED,
+            contract = CatalogContracts.toastTime,
+            id = "toastTime",
+            diagnosticId = DiagnosticIds.TOAST_TIME,
+            processScope = ProcessScope.SYSTEM_SERVER,
+            installPhase = InstallPhase.SYSTEM_SERVER_STARTING,
+            processTarget = ProcessTarget.SystemServer,
+            preferenceKeys = setOf("system_toasttime"),
+            condition = { prefs ->
+                prefs.getInt("system_toasttime", 0) > 0
+            },
+            installer = { runtime, compatResult ->
+                legacyInstall(
+                    runtime = runtime,
+                    compatResult = compatResult,
+                    contract = CatalogContracts.toastTime,
+                    diagnosticId = DiagnosticIds.TOAST_TIME
+                ) {
+                    SystemAudioAndVisualAndMoreHooks.ToastTimeHook(
+                        runtime.lpparam as SystemServerStartingParam
+                    )
+                }
+            },
+            activationRestartTarget = RestartTarget.REBOOT,
+            configReloadMode = ConfigReloadMode.NONE
+        ),
         // Catalog expansion batch 1: SystemUI
         FeatureSpec(
             compatibilityPolicy = CompatibilityPolicy.CONTRACT_REQUIRED,

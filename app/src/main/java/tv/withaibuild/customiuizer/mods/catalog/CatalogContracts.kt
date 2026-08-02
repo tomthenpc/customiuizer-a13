@@ -149,6 +149,22 @@ object CatalogContracts {
     )
     }
 
+    val toastTime: HookTargetContract by lazy(kotlin.LazyThreadSafetyMode.NONE) { HookTargetContract(
+        featureId = "toastTime",
+        requirements = listOf(
+            SingleTargetRequirement(
+                target = HookTargetSpec(
+                    id = "NotificationManagerService.showNextToastLocked",
+                    operation = HookOperation.EXACT_METHOD,
+                    className = "com.android.server.notification.NotificationManagerService",
+                    memberName = "showNextToastLocked",
+                    parameterTypes = emptyList()
+                )
+            )
+        )
+    )
+    }
+
     val hideProximityWarning: HookTargetContract by lazy(kotlin.LazyThreadSafetyMode.NONE) { HookTargetContract(
         featureId = "hideProximityWarning",
         requirements = listOf(

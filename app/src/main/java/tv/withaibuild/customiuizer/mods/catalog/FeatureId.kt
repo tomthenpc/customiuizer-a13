@@ -30,6 +30,7 @@ enum class FeatureId(val canonicalId: String) {
     FOLDER_COLUMNS("folderColumns"),
     TITLE_TOP_MARGIN("titleTopMargin"),
     VOLUME_STEPS("volumeSteps"),
+    TOAST_TIME("toastTime"),
     NO_LIGHT_UP_ON_CHARGE("noLightUpOnCharge"),
     ALL_ROTATIONS("allRotations"),
     NO_NETWORK_SPEED_SEPARATOR("noNetworkSpeedSeparator"),
