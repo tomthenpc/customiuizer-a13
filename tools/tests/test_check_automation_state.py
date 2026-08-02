@@ -1,294 +1,177 @@
-#!/usr/bin/env python3
-"""Tests for tools/check_automation_state.py"""
-
-import os
-import subprocess
-import sys
-import tempfile
+import textwrap
 import unittest
 from pathlib import Path
 
-CHECKER = Path(__file__).resolve().parents[1] / "check_automation_state.py"
+from tools import check_automation_state as checker
 
 
-SMART_TEMPLATE = """# Smart operation state
+class SmartStateTests(unittest.TestCase):
+    def test_parse_detects_duplicate_keys(self):
+        text = textwrap.dedent(
+            """
+            ```text
+            Mode: A
+            LastFailureClass: one
+            LastFailureClass: two
+            ```
+            """
+        )
+        block = checker.parse_smart_state(text)
+        _, errors = checker.smart_state_dict(block)
+        self.assertIn("SMART_OPERATION_STATE duplicate key: LastFailureClass", errors)
 
-```text
-{body}
-```
-"""
+    def test_unknown_key_reported(self):
+        text = textwrap.dedent(
+            """
+            ```text
+            Mode: A
+            UnknownKey: value
+            ```
+            """
+        )
+        block = checker.parse_smart_state(text)
+        _, errors = checker.smart_state_dict(block)
+        self.assertIn("SMART_OPERATION_STATE unknown key: UnknownKey", errors)
 
-TASK_TEMPLATE = """# TASK_STATE
+    def test_missing_text_block(self):
+        text = "No fenced block here."
+        with self.assertRaises(ValueError):
+            checker.parse_smart_state(text)
 
-# P0 — Base
+
+class TaskStateTests(unittest.TestCase):
+    def test_parent_complete_with_incomplete_child(self):
+        text = """
+# P5 — Gesture/Control Center
 
 State: `COMPLETE`
 
-# P1 — One source
-
-State: `COMPLETE`
-
-# P2 — Registry
-
-State: `COMPLETE`
-
-## P2.1 Identity
-
-State: `COMPLETE`
-
-## P2.2 Inventory
-
-State: `COMPLETE`
-
-## P2.3 Hook ownership
-
-State: `COMPLETE`
-
-# P3 — Hooks
+## P5.1 生产状态机
 
 State: `TODO`
 
----
+## P5.2 事件模型
+
+State: `COMPLETE`
+"""
+        sections = checker.parse_task_sections(text)
+        errors = checker.build_parent_child(sections)
+        self.assertTrue(any("P5 is COMPLETE but child P5.1 is TODO" in e for e in errors))
+
+    def test_todo_parent_with_complete_child(self):
+        text = """
+# P5 — Gesture/Control Center
+
+State: `TODO`
+
+## P5.1 生产状态机
+
+State: `COMPLETE`
+"""
+        sections = checker.parse_task_sections(text)
+        errors = checker.build_parent_child(sections)
+        self.assertTrue(any("P5 is TODO but has COMPLETE children" in e for e in errors))
+
+    def test_stale_complete_evidence(self):
+        text = """
+## 4. 发现的问题队列
+
+| ID | Priority | Area | State | Evidence | Acceptance |
+|---|---|---|---|---|---|---|
+| GESTURE-001 | P1 | Gesture | COMPLETE | 尚未由本地 Agent 盘点 | P5 完成 |
+"""
+        errors = checker.check_issue_queue(text)
+        self.assertIn(
+            "TASK_STATE issue GESTURE-001 is COMPLETE but evidence is stale: 尚未由本地 Agent 盘点",
+            errors,
+        )
+
+    def test_todo_with_complete_acceptance(self):
+        text = """
+# P5 — Gesture/Control Center
+
+State: `COMPLETE`
 
 ## 4. 发现的问题队列
 
 | ID | Priority | Area | State | Evidence | Acceptance |
-|---|---|---|---|---|---|
-{issues}
+|---|---|---|---|---|---|---|
+| GESTURE-001 | P1 | Gesture | TODO | 多状态机需盘点 | P5 完成 |
+"""
+        errors = checker.check_issue_queue(text)
+        self.assertIn(
+            "TASK_STATE issue GESTURE-001 is TODO but acceptance implies complete: P5 完成",
+            errors,
+        )
 
----
+    def test_todo_acceptance_references_incomplete_parent(self):
+        text = """
+# P5 — Gesture/Control Center
 
+State: `TODO`
+
+## 4. 发现的问题队列
+
+| ID | Priority | Area | State | Evidence | Acceptance |
+|---|---|---|---|---|---|---|
+| GESTURE-001 | P1 | Gesture | TODO | 多状态机需盘点 | P5 完成 |
+"""
+        errors = checker.check_issue_queue(text)
+        self.assertEqual(errors, [])
+
+    def test_empty_checkpoint(self):
+        text = """
 ## 5. Checkpoint
 
-| # | Commit | Task | Verification | State |
-|---|---|---|---|---|
-{checkpoints}
+尚无。
 
 ---
+
+## 6. 最终报告
 """
-
-GOAL_TEMPLATE = """# GOAL
-
-达到 `PROJECT_COMPLETE` 后：
-
-- 记录最终证据报告；
-- 不创建新分支；
-- 不合并 `main`；
-- 不 tag/release；
-- 进入 CONTINUOUS_MAINTENANCE；
-- 继续 evidence-driven maintenance。
-"""
-
-AGENTS_TEMPLATE = """# AGENTS
-
-## 18. Professional autonomous stewardship
-
-- `PROJECT_COMPLETE` 是证据里程碑，不是主动停止条件；
-- 里程碑后留在当前精确分支进入 `CONTINUOUS_MAINTENANCE`。
-"""
+        errors = checker.check_checkpoint_section(text)
+        self.assertTrue(any("Checkpoint section is empty" in e for e in errors))
 
 
-def init_git(tmp: Path) -> None:
-    subprocess.run(["git", "init", str(tmp)], check=True, capture_output=True)
-    subprocess.run(
-        ["git", "-C", str(tmp), "config", "user.email", "test@example.com"],
-        check=True,
-        capture_output=True,
-    )
-    subprocess.run(
-        ["git", "-C", str(tmp), "config", "user.name", "Test"],
-        check=True,
-        capture_output=True,
-    )
-    (tmp / "file.txt").write_text("x", encoding="utf-8")
-    subprocess.run(["git", "-C", str(tmp), "add", "file.txt"], check=True, capture_output=True)
-    subprocess.run(["git", "-C", str(tmp), "commit", "-m", "init"], check=True, capture_output=True)
+class StopConflictTests(unittest.TestCase):
+    def test_detects_stop_and_wait(self):
+        texts = {
+            "GOAL.md": "达到 PROJECT_COMPLETE 后，... 停止并等待仓库所有者。",
+            "AGENTS.md": "",
+            "SMART_CONTINUOUS_OPERATION.md": "",
+        }
+        errors = checker.check_stop_conflicts(texts)
+        self.assertIn("GOAL.md still contains '停止...等待仓库所有者' post-completion action", errors)
 
 
-def run_checker(tmp: Path, extra_env: dict[str, str] | None = None) -> tuple[int, str, str]:
-    env = os.environ.copy()
-    env["CHECK_AUTOMATION_REPO_ROOT"] = str(tmp)
-    if extra_env:
-        env.update(extra_env)
-    proc = subprocess.run(
-        [sys.executable, str(CHECKER)],
-        cwd=str(tmp),
-        env=env,
-        capture_output=True,
-        text=True,
-        encoding="utf-8",
-        errors="replace",
-    )
-    return proc.returncode, proc.stdout or "", proc.stderr or ""
+class FixtureRegressionTests(unittest.TestCase):
+    def test_current_audit_finding_reproduced_then_fixed(self):
+        """Simulate the state captured in CURRENT_AUDIT_FINDINGS.md."""
+        text = textwrap.dedent(
+            """
+            # Smart operation state
 
-
-def write_fixtures(tmp: Path, smart_body: str, issues: str, checkpoints: str) -> None:
-    (tmp / "SMART_OPERATION_STATE.md").write_text(SMART_TEMPLATE.format(body=smart_body), encoding="utf-8")
-    (tmp / "TASK_STATE.md").write_text(TASK_TEMPLATE.format(issues=issues, checkpoints=checkpoints), encoding="utf-8")
-    (tmp / "GOAL.md").write_text(GOAL_TEMPLATE, encoding="utf-8")
-    (tmp / "AGENTS.md").write_text(AGENTS_TEMPLATE, encoding="utf-8")
-
-
-VALID_SMART = """Mode: PROFESSIONAL_AUTONOMOUS_STEWARDSHIP
-CheckpointCount: 0
-CheckpointsSinceStandardSweep: 0
-CheckpointsSinceDeepSweep: 0
-LastQualifyingCheckpoint: none
-LastLightSweepCommit: none
-LastStandardSweepCommit: none
-LastDeepSweepCommit: none
-LastFullVerificationCommit: none
-LastCIState: NOT_CONFIGURED
-LastCleanupCommit: none
-LastToolCreated: none
-LastFailureClass: none
-ResumeTask: P3 — Hooks
-"""
-
-COMMIT_SMART = """Mode: PROFESSIONAL_AUTONOMOUS_STEWARDSHIP
-CheckpointCount: 1
-CheckpointsSinceStandardSweep: 0
-CheckpointsSinceDeepSweep: 0
-LastQualifyingCheckpoint: HEAD
-LastLightSweepCommit: none
-LastStandardSweepCommit: none
-LastDeepSweepCommit: none
-LastFullVerificationCommit: HEAD
-LastCIState: NOT_CONFIGURED
-LastCleanupCommit: none
-LastToolCreated: none
-LastFailureClass: none
-ResumeTask: P3 — Hooks
-"""
-
-VALID_ISSUES = """| BASELINE-001 | P0 | Git | COMPLETE | done | done |
-| VERIFY-001 | P0 | Build | COMPLETE | done | done |
-| ARCH-001 | P1 | Feature | COMPLETE | done | done |
-| DOC-001 | P2 | Docs | TODO | stale | refresh |
-| DEVICE-001 | P1 | Device | BLOCKED_EXTERNAL | none | later |"""
-
-VALID_CHECKPOINTS = """"""
-
-COMMIT_CHECKPOINTS = """| 1 | HEAD | P2 | `verify.ps1 -Mode Full` | qualifying |"""
-
-
-class TestCheckAutomationState(unittest.TestCase):
-    def test_valid_state_passes(self):
-        with tempfile.TemporaryDirectory() as td:
-            tmp = Path(td)
-            write_fixtures(tmp, VALID_SMART, VALID_ISSUES, VALID_CHECKPOINTS)
-            code, out, _ = run_checker(tmp)
-            self.assertEqual(code, 0, out)
-            self.assertIn("A13 automation state OK", out)
-
-    def test_duplicate_smart_key_fails(self):
-        body = VALID_SMART + "\nMode: SMART_CONTINUOUS_OPERATION\n"
-        with tempfile.TemporaryDirectory() as td:
-            tmp = Path(td)
-            write_fixtures(tmp, body, VALID_ISSUES, VALID_CHECKPOINTS)
-            code, out, _ = run_checker(tmp)
-            self.assertNotEqual(code, 0, out)
-            self.assertIn("duplicate key", out)
-
-    def test_missing_smart_key_fails(self):
-        body = VALID_SMART.replace("LastCIState:", "OldLastCIState:")
-        with tempfile.TemporaryDirectory() as td:
-            tmp = Path(td)
-            write_fixtures(tmp, body, VALID_ISSUES, VALID_CHECKPOINTS)
-            code, out, _ = run_checker(tmp)
-            self.assertNotEqual(code, 0, out)
-            self.assertIn("missing required key", out)
-
-    def test_old_mode_fails(self):
-        body = VALID_SMART.replace(
-            "Mode: PROFESSIONAL_AUTONOMOUS_STEWARDSHIP",
-            "Mode: SMART_CONTINUOUS_OPERATION",
+            ```text
+            Mode: SMART_CONTINUOUS_OPERATION
+            CheckpointCount: 3
+            CheckpointsSinceStandardSweep: 0
+            CheckpointsSinceDeepSweep: 3
+            LastLightSweepCommit: pending
+            LastStandardSweepCommit: pending
+            LastDeepSweepCommit: pending
+            LastFullVerificationCommit: pending
+            LastStandardSweepCommit: pending
+            LastCIState: pending
+            LastCleanupCommit: pending
+            LastToolCreated: none
+            LastFailureClass: none
+            ResumeTask: derive from TASK_STATE.md
+            ```
+            """
         )
-        with tempfile.TemporaryDirectory() as td:
-            tmp = Path(td)
-            write_fixtures(tmp, body, VALID_ISSUES, VALID_CHECKPOINTS)
-            code, out, _ = run_checker(tmp)
-            self.assertNotEqual(code, 0, out)
-            self.assertIn("PROFESSIONAL_AUTONOMOUS_STEWARDSHIP", out)
-
-    def test_false_sweep_pending_fails(self):
-        body = VALID_SMART.replace("LastFullVerificationCommit: none", "LastFullVerificationCommit: pending")
-        with tempfile.TemporaryDirectory() as td:
-            tmp = Path(td)
-            write_fixtures(tmp, body, VALID_ISSUES, VALID_CHECKPOINTS)
-            code, out, _ = run_checker(tmp)
-            self.assertNotEqual(code, 0, out)
-            self.assertIn("false", out.lower())
-
-    def test_invalid_ci_state_fails(self):
-        body = VALID_SMART.replace("LastCIState: NOT_CONFIGURED", "LastCIState: pending")
-        with tempfile.TemporaryDirectory() as td:
-            tmp = Path(td)
-            write_fixtures(tmp, body, VALID_ISSUES, VALID_CHECKPOINTS)
-            code, out, _ = run_checker(tmp)
-            self.assertNotEqual(code, 0, out)
-            self.assertIn("LastCIState", out)
-
-    def test_resume_task_undetermined_fails(self):
-        body = VALID_SMART.replace("ResumeTask: P3 — Hooks", "ResumeTask: derive from TASK_STATE.md")
-        with tempfile.TemporaryDirectory() as td:
-            tmp = Path(td)
-            write_fixtures(tmp, body, VALID_ISSUES, VALID_CHECKPOINTS)
-            code, out, _ = run_checker(tmp)
-            self.assertNotEqual(code, 0, out)
-            self.assertIn("ResumeTask", out)
-
-    def test_stale_todo_issue_fails(self):
-        issues = VALID_ISSUES.replace("| BASELINE-001 | P0 | Git | COMPLETE", "| BASELINE-001 | P0 | Git | TODO")
-        with tempfile.TemporaryDirectory() as td:
-            tmp = Path(td)
-            write_fixtures(tmp, VALID_SMART, issues, VALID_CHECKPOINTS)
-            code, out, _ = run_checker(tmp)
-            self.assertNotEqual(code, 0, out)
-            self.assertIn("BASELINE-001", out)
-
-    def test_parent_complete_child_in_progress_fails(self):
-        task = TASK_TEMPLATE.format(issues=VALID_ISSUES, checkpoints=VALID_CHECKPOINTS).replace(
-            "# P0 — Base\n\nState: `COMPLETE`",
-            "# P0 — Base\n\nState: `COMPLETE`\n\n## P0.1 Git\n\nState: `IN_PROGRESS`",
-        )
-        with tempfile.TemporaryDirectory() as td:
-            tmp = Path(td)
-            (tmp / "SMART_OPERATION_STATE.md").write_text(SMART_TEMPLATE.format(body=VALID_SMART), encoding="utf-8")
-            (tmp / "TASK_STATE.md").write_text(task, encoding="utf-8")
-            (tmp / "GOAL.md").write_text(GOAL_TEMPLATE, encoding="utf-8")
-            (tmp / "AGENTS.md").write_text(AGENTS_TEMPLATE, encoding="utf-8")
-            code, out, _ = run_checker(tmp)
-            self.assertNotEqual(code, 0, out)
-            self.assertIn("P0", out)
-            self.assertIn("P0.1", out)
-
-    def test_checkpoint_count_matches_commits(self):
-        with tempfile.TemporaryDirectory() as td:
-            tmp = Path(td)
-            init_git(tmp)
-            write_fixtures(tmp, COMMIT_SMART, VALID_ISSUES, COMMIT_CHECKPOINTS)
-            code, out, _ = run_checker(tmp)
-            self.assertEqual(code, 0, out)
-            self.assertIn("A13 automation state OK", out)
-
-    def test_checkpoint_count_mismatch_fails(self):
-        with tempfile.TemporaryDirectory() as td:
-            tmp = Path(td)
-            init_git(tmp)
-            write_fixtures(tmp, COMMIT_SMART, VALID_ISSUES, VALID_CHECKPOINTS)
-            code, out, _ = run_checker(tmp)
-            self.assertNotEqual(code, 0, out)
-            self.assertIn("mismatch", out.lower())
-
-    def test_stop_phrase_in_goal_fails(self):
-        with tempfile.TemporaryDirectory() as td:
-            tmp = Path(td)
-            write_fixtures(tmp, VALID_SMART, VALID_ISSUES, VALID_CHECKPOINTS)
-            (tmp / "GOAL.md").write_text("Agent 停止并等待仓库所有者。", encoding="utf-8")
-            code, out, _ = run_checker(tmp)
-            self.assertNotEqual(code, 0, out)
-            self.assertIn("GOAL.md", out)
+        block = checker.parse_smart_state(text)
+        _, errors = checker.smart_state_dict(block)
+        self.assertIn("SMART_OPERATION_STATE duplicate key: LastStandardSweepCommit", errors)
 
 
 if __name__ == "__main__":

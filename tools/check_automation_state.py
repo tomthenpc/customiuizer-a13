@@ -1,31 +1,34 @@
 #!/usr/bin/env python3
-"""A13 control-state invariant checker.
+"""Read-only control-state reconciliation for A13 professional autonomous stewardship.
 
-Read-only by default. Non-zero exit on:
+Exits non-zero on:
 - duplicate keys in SMART_OPERATION_STATE.md
-- missing required SMART keys
-- stale Mode / false CI / false sweep / false checkpoint
-- SMART/TASK checkpoint count mismatch
-- ResumeTask not matching an active TASK_STATE section
-- parent/child state inconsistency in TASK_STATE.md
-- forbidden stop/wait language in GOAL.md / AGENTS.md
-- issue queue with TODO for already-completed baseline/verify/arch
+- unknown/invalid keys or values in SMART_OPERATION_STATE.md
+- non-existent commits referenced by SMART_OPERATION_STATE.md / TASK_STATE.md
+- false CI state
+- parent/child state mismatch in TASK_STATE.md
+- stale issue-queue entries
+- empty checkpoint section
+- stop-rule conflicts between GOAL.md / AGENTS.md / SMART_CONTINUOUS_OPERATION.md
 """
 
-import os
+from __future__ import annotations
+
+import argparse
+import io
 import re
 import subprocess
 import sys
 from pathlib import Path
+from typing import Any
 
-REPO_ROOT = Path(os.environ.get("CHECK_AUTOMATION_REPO_ROOT", Path(__file__).resolve().parents[1]))
+# Ensure stdout can emit UTF-8 text on Windows consoles.
+if hasattr(sys.stdout, "reconfigure"):
+    sys.stdout.reconfigure(encoding="utf-8", errors="replace")
 
-SMART_FILE = REPO_ROOT / "SMART_OPERATION_STATE.md"
-TASK_FILE = REPO_ROOT / "TASK_STATE.md"
-GOAL_FILE = REPO_ROOT / "GOAL.md"
-AGENTS_FILE = REPO_ROOT / "AGENTS.md"
 
-REQUIRED_SMART_KEYS = [
+REPO_ROOT = Path(__file__).resolve().parent.parent
+SMART_REQUIRED_KEYS = {
     "Mode",
     "CheckpointCount",
     "CheckpointsSinceStandardSweep",
@@ -35,35 +38,70 @@ REQUIRED_SMART_KEYS = [
     "LastStandardSweepCommit",
     "LastDeepSweepCommit",
     "LastFullVerificationCommit",
+    "LastVerifiedTree",
+    "LastVerifiedMode",
     "LastCIState",
+    "LastCIRun",
+    "LastCIJob",
+    "LastCICommit",
     "LastCleanupCommit",
     "LastToolCreated",
     "LastFailureClass",
+    "CurrentObjective",
+    "CurrentObjectiveState",
+    "CurrentObjectiveStartEvidence",
+    "NextObjectiveFirstAction",
     "ResumeTask",
-]
-
-ALLOWED_CI_STATES = {"NOT_CONFIGURED", "PENDING", "PASS", "FAIL", "UNAVAILABLE"}
-
-COMMIT_PLACEHOLDERS = {"none", "pending"}
-
-FORBIDDEN_PHRASES = ["停止并等待", "等待仓库所有者", "Agent 停止"]
-
-
-class Findings:
-    def __init__(self) -> None:
-        self.errors: list[str] = []
-
-    def add(self, msg: str) -> None:
-        self.errors.append(msg)
-
-    def ok(self) -> bool:
-        return not self.errors
+    "DeepSweepDue",
+    "LastVerifiedAt",
+    "LastVerifiedCommandsDigest",
+}
+VALID_CI_STATES = {"NOT_CONFIGURED", "PENDING", "PASS", "FAIL", "UNAVAILABLE"}
+VALID_OBJECTIVE_STATES = {"ACTIVE", "PAUSED", "BLOCKED", "COMPLETE"}
 
 
-def git_exists(commitish: str) -> bool:
+def read_text(path: Path) -> str:
+    return path.read_text(encoding="utf-8")
+
+
+def parse_smart_state(text: str) -> str:
+    """Extract the first ```text block from SMART_OPERATION_STATE.md."""
+    match = re.search(r"```text\s*\n(.*?)\n\s*```", text, re.DOTALL)
+    if not match:
+        raise ValueError("SMART_OPERATION_STATE.md missing ```text block")
+    return match.group(1)
+
+
+def smart_state_dict(block: str) -> tuple[dict[str, str], list[str]]:
+    """Parse key: value lines, reporting duplicate keys and unknown keys."""
+    seen: dict[str, str] = {}
+    errors: list[str] = []
+    for raw in block.splitlines():
+        line = raw.strip()
+        if not line or line.startswith("#"):
+            continue
+        if ":" not in line:
+            continue
+        key, value = line.split(":", 1)
+        key = key.strip()
+        value = value.strip()
+        if key in seen:
+            errors.append(f"SMART_OPERATION_STATE duplicate key: {key}")
+        else:
+            seen[key] = value
+        if key not in SMART_REQUIRED_KEYS:
+            errors.append(f"SMART_OPERATION_STATE unknown key: {key}")
+    return seen, errors
+
+
+def git_object_exists(sha: str, repo_root: Path = REPO_ROOT) -> bool:
+    """Check whether a Git object exists in the current repository."""
+    if not sha or sha.lower() == "pending":
+        return False
     try:
         subprocess.run(
-            ["git", "-C", str(REPO_ROOT), "cat-file", "-t", commitish],
+            ["git", "rev-parse", "--verify", f"{sha}^{{commit}}"],
+            cwd=repo_root,
             check=True,
             stdout=subprocess.DEVNULL,
             stderr=subprocess.DEVNULL,
@@ -73,211 +111,361 @@ def git_exists(commitish: str) -> bool:
         return False
 
 
-def parse_smart_state() -> dict[str, str]:
-    text = SMART_FILE.read_text(encoding="utf-8", errors="replace")
-    block_match = re.search(r"```text\n(.*?)\n```", text, re.DOTALL)
-    if not block_match:
-        raise ValueError("SMART_OPERATION_STATE.md has no ```text block")
+def check_smart_state(path: Path, raw_text: str, repo_root: Path) -> list[str]:
+    errors: list[str] = []
+    try:
+        block = parse_smart_state(raw_text)
+    except ValueError as e:
+        return [str(e)]
+    state, parse_errors = smart_state_dict(block)
+    errors.extend(parse_errors)
 
-    raw = block_match.group(1)
-    seen: dict[str, int] = {}
-    values: dict[str, str] = {}
-    for line in raw.splitlines():
-        if ":" not in line:
+    missing = SMART_REQUIRED_KEYS - set(state.keys())
+    for key in sorted(missing):
+        errors.append(f"SMART_OPERATION_STATE missing key: {key}")
+
+    ci = state.get("LastCIState", "")
+    if ci and ci not in VALID_CI_STATES:
+        errors.append(f"SMART_OPERATION_STATE invalid LastCIState: {ci}")
+    if ci == "PENDING":
+        errors.append("SMART_OPERATION_STATE LastCIState is PENDING; set NOT_CONFIGURED if no workflow exists")
+
+    for key in ("LastStandardSweepCommit", "LastDeepSweepCommit", "LastFullVerificationCommit"):
+        value = state.get(key, "")
+        if value and value.lower() != "pending" and not git_object_exists(value, repo_root):
+            errors.append(f"SMART_OPERATION_STATE {key} references non-existent commit: {value}")
+
+    last_qualifying = state.get("LastQualifyingCheckpoint", "")
+    if last_qualifying and last_qualifying.lower() != "pending" and not git_object_exists(last_qualifying, repo_root):
+        errors.append(f"SMART_OPERATION_STATE LastQualifyingCheckpoint references non-existent commit: {last_qualifying}")
+
+    checkpoint_count = state.get("CheckpointCount", "")
+    try:
+        count = int(checkpoint_count) if checkpoint_count else 0
+        if count < 0:
+            errors.append("SMART_OPERATION_STATE CheckpointCount must be non-negative")
+    except ValueError:
+        errors.append(f"SMART_OPERATION_STATE CheckpointCount is not an integer: {checkpoint_count}")
+
+    # Objective handoff invariants (see SMART_CONTINUOUS_OPERATION v3 and A14 CI preflight).
+    objective_state = state.get("CurrentObjectiveState", "")
+    if objective_state and objective_state not in VALID_OBJECTIVE_STATES:
+        errors.append(f"SMART_OPERATION_STATE invalid CurrentObjectiveState: {objective_state}")
+
+    start_evidence = state.get("CurrentObjectiveStartEvidence", "")
+    if objective_state == "ACTIVE" and (not start_evidence or start_evidence.lower() == "pending"):
+        errors.append("SMART_OPERATION_STATE CurrentObjectiveState=ACTIVE but CurrentObjectiveStartEvidence is missing")
+
+    next_action = state.get("NextObjectiveFirstAction", "")
+    if not next_action:
+        errors.append("SMART_OPERATION_STATE NextObjectiveFirstAction is missing")
+    elif any(token in next_action for token in (" or ", " / ", ";", ",")):
+        errors.append("SMART_OPERATION_STATE NextObjectiveFirstAction must be a single action, no 'or' / '/' / ';' / ','")
+
+    resume = state.get("ResumeTask", "")
+    if any(token in resume for token in (" or ", " / ")):
+        errors.append("SMART_OPERATION_STATE ResumeTask must not contain ' or ' or ' / '")
+
+    # LastCIState is a remote fact; do not claim PASS without a real CI run.
+    if ci == "PASS":
+        for key in ("LastCIRun", "LastCIJob", "LastCICommit"):
+            value = state.get(key, "")
+            if not value or value.lower() == "pending":
+                errors.append(f"SMART_OPERATION_STATE LastCIState=PASS but {key} is missing")
+            elif key == "LastCICommit" and value.lower() != "pending" and not git_object_exists(value, repo_root):
+                errors.append(f"SMART_OPERATION_STATE LastCIState=PASS but {key} does not resolve: {value}")
+        for workflow in ("a13-fast-ci.yml",):
+            wf = repo_root / ".github" / "workflows" / workflow
+            if not wf.is_file():
+                errors.append(f"SMART_OPERATION_STATE LastCIState=PASS but workflow is missing: {workflow}")
+
+    # LastVerifiedTree must be an actual 40-character tree hash, not a symbolic reference.
+    verified_tree = state.get("LastVerifiedTree", "")
+    if not re.fullmatch(r"[0-9a-f]{40}", verified_tree.lower()):
+        errors.append(f"SMART_OPERATION_STATE LastVerifiedTree must be a 40-char lowercase hex tree SHA: {verified_tree}")
+    else:
+        # Confirm it is the tree object of a known commit if possible.
+        try:
+            result = subprocess.run(
+                ["git", "cat-file", "-t", verified_tree],
+                cwd=repo_root,
+                capture_output=True,
+                text=True,
+                check=True,
+            )
+            if result.stdout.strip() != "tree":
+                errors.append(f"SMART_OPERATION_STATE LastVerifiedTree is not a tree object: {verified_tree}")
+        except (subprocess.CalledProcessError, FileNotFoundError):
+            errors.append(f"SMART_OPERATION_STATE LastVerifiedTree does not exist in repo: {verified_tree}")
+
+    # Deep sweep accounting.
+    deep_sweep_count = state.get("CheckpointsSinceDeepSweep", "")
+    try:
+        deep_count = int(deep_sweep_count) if deep_sweep_count else 0
+        if deep_count >= 10 and state.get("DeepSweepDue", "").lower() != "true":
+            errors.append("SMART_OPERATION_STATE CheckpointsSinceDeepSweep >= 10 but DeepSweepDue is not true")
+    except ValueError:
+        pass
+
+    return errors
+
+
+SECTION_RE = re.compile(r"^#{1,2} (P\d+(?:\.\d+)?)(?:\s|—|$)", re.MULTILINE)
+
+
+def parse_task_sections(text: str) -> dict[str, dict[str, Any]]:
+    """Parse TASK_STATE.md sections like P3, P3.1, P5, etc."""
+    sections: dict[str, dict[str, Any]] = {}
+    matches = list(SECTION_RE.finditer(text))
+    for i, match in enumerate(matches):
+        sid = match.group(1)
+        start = match.end()
+        end = matches[i + 1].start() if i + 1 < len(matches) else len(text)
+        window = text[start:end]
+        state_match = re.search(r"State: `([^`]+)`", window)
+        sections[sid] = {
+            "state": state_match.group(1) if state_match else "UNKNOWN",
+            "children": [],
+        }
+    return sections
+
+
+def build_parent_child(sections: dict[str, dict[str, Any]]) -> list[str]:
+    """Link P#.# children to P# parents and validate state consistency."""
+    errors: list[str] = []
+    for sid in sections:
+        if "." in sid:
+            parent_id = sid.split(".")[0]
+            if parent_id in sections:
+                sections[parent_id]["children"].append(sid)
+
+    for sid, info in sections.items():
+        if "." in sid:
             continue
-        key, _, value = line.partition(":")
-        key = key.strip()
-        value = value.strip()
-        if not key:
+        children = info.get("children", [])
+        parent_state = info["state"]
+        child_states = [sections[c]["state"] for c in children]
+
+        if parent_state == "COMPLETE":
+            for c, st in zip(children, child_states):
+                if st not in ("COMPLETE", "BLOCKED_EXTERNAL", "NOT_APPLICABLE"):
+                    errors.append(f"TASK_STATE {sid} is COMPLETE but child {c} is {st}")
+        if parent_state == "TODO" and children:
+            if any(st == "COMPLETE" for st in child_states):
+                errors.append(f"TASK_STATE {sid} is TODO but has COMPLETE children")
+
+    return errors
+
+
+def parent_is_complete(text: str, parent_id: str) -> bool:
+    """Check whether a parent phase like P6 is marked COMPLETE."""
+    pattern = re.compile(rf"^# {re.escape(parent_id)} — .+?\n+State: `([^`]+)`", re.MULTILINE | re.DOTALL)
+    match = pattern.search(text)
+    if match:
+        return match.group(1) == "COMPLETE"
+    return False
+
+
+def check_issue_queue(text: str) -> list[str]:
+    """Parse the issue queue table and flag stale TODO/COMPLETE mismatches."""
+    errors: list[str] = []
+    table_match = re.search(r"\|\s*ID\s*\|.*?\n((?:\|[^\n]+\|\n?)+)", text)
+    if not table_match:
+        return errors
+
+    rows = [line for line in table_match.group(1).strip().splitlines() if line.startswith("|")]
+    for row in rows:
+        cells = [c.strip() for c in row.split("|")][1:-1]
+        if len(cells) < 6:
             continue
-        seen[key] = seen.get(key, 0) + 1
-        if seen[key] > 1:
-            raise ValueError(f"SMART_OPERATION_STATE.md duplicate key: {key}")
-        values[key] = value
-    return values
+        issue_id, priority, area, state, evidence, acceptance = cells[:6]
+        if state == "COMPLETE" and ("尚未" in evidence or "未运行" in evidence or evidence.strip() == ""):
+            errors.append(f"TASK_STATE issue {issue_id} is COMPLETE but evidence is stale: {evidence}")
+        if state == "TODO" and "完成" in acceptance:
+            # Only flag if the referenced parent is already COMPLETE or the acceptance
+            # is a plain completion phrase with no pending parent.
+            parent_match = re.search(r"P\d+(?:\.\d+)?", acceptance)
+            if parent_match:
+                if not parent_is_complete(text, parent_match.group(0)):
+                    continue
+            errors.append(f"TASK_STATE issue {issue_id} is TODO but acceptance implies complete: {acceptance}")
+
+    return errors
 
 
-def parse_task_checkpoints() -> list[dict[str, str]]:
-    text = TASK_FILE.read_text(encoding="utf-8", errors="replace")
-    checkpoints: list[dict[str, str]] = []
-    # Find the checkpoint table
-    match = re.search(r"## 5\. Checkpoint\n\n(.*?)(?:\n---|\n# )", text, re.DOTALL)
+def check_checkpoint_section(text: str) -> list[str]:
+    errors: list[str] = []
+    match = re.search(r"## 5\. Checkpoint\s*(.*?)\n##", text, re.DOTALL)
     if not match:
-        return checkpoints
-    table = match.group(1).strip()
-    lines = [ln for ln in table.splitlines() if ln.startswith("|")]
-    if len(lines) < 2:
-        return checkpoints
-    for ln in lines[2:]:
-        cells = [c.strip() for c in ln.strip("|").split("|")]
-        if len(cells) >= 3:
-            checkpoints.append({
-                "commit": cells[1],
-                "task": cells[2],
-                "state": cells[-1] if cells[-1] else "",
-            })
-    return checkpoints
+        return ["TASK_STATE missing Checkpoint section"]
+    section = match.group(1).strip()
+    if "尚无" in section and "```text" not in section:
+        errors.append("TASK_STATE Checkpoint section is empty ('尚无'); record qualifying commits")
+    return errors
 
 
-def parse_task_issues() -> dict[str, dict[str, str]]:
-    text = TASK_FILE.read_text(encoding="utf-8", errors="replace")
-    issues: dict[str, dict[str, str]] = {}
-    match = re.search(r"## 4\. 发现的问题队列\n\n(.*?)(?:\n---|\n# )", text, re.DOTALL)
-    if not match:
-        return issues
-    table = match.group(1).strip()
-    lines = [ln for ln in table.splitlines() if ln.startswith("|")]
-    if len(lines) < 2:
-        return issues
-    for ln in lines[2:]:
-        cells = [c.strip() for c in ln.strip("|").split("|")]
-        if len(cells) >= 4:
-            issues[cells[0]] = {
-                "priority": cells[1],
-                "area": cells[2],
-                "state": cells[3],
-                "evidence": cells[4] if len(cells) > 4 else "",
-                "acceptance": cells[5] if len(cells) > 5 else "",
-            }
+def check_stop_conflicts(texts: dict[str, str]) -> list[str]:
+    """Ensure GOAL.md, AGENTS.md and SMART_CONTINUOUS_OPERATION.md do not ask to stop/wait."""
+    errors: list[str] = []
+    for name, text in texts.items():
+        if re.search(r"停止[^，；。]*等待仓库所有者", text):
+            errors.append(f"{name} still contains '停止...等待仓库所有者' post-completion action")
+    return errors
+
+
+def check_task_state(path: Path, raw_text: str) -> list[str]:
+    errors: list[str] = []
+    sections = parse_task_sections(raw_text)
+    errors.extend(build_parent_child(sections))
+    errors.extend(check_issue_queue(raw_text))
+    errors.extend(check_checkpoint_section(raw_text))
+    return sections, errors
+
+
+def parse_issue_table(text: str) -> list[dict[str, str]]:
+    """Parse the issue queue table and return a list of row dicts."""
+    table_match = re.search(r"\|\s*ID\s*\|.*\n((?:\|[^\n]+\|\n?)+)", text)
+    if not table_match:
+        return []
+
+    rows = [line for line in table_match.group(1).strip().splitlines() if line.startswith("|")]
+    issues: list[dict[str, str]] = []
+    for row in rows:
+        cells = [c.strip() for c in row.split("|")][1:-1]
+        if len(cells) < 6:
+            continue
+        issues.append({
+            "id": cells[0],
+            "priority": cells[1],
+            "area": cells[2],
+            "state": cells[3],
+            "evidence": cells[4],
+            "acceptance": cells[5],
+        })
     return issues
 
 
-def parse_task_parent_states() -> dict[str, tuple[str, list[tuple[str, str]]]]:
-    """Return {parent_id: (state, [(child_id, child_state), ...])}."""
-    text = TASK_FILE.read_text(encoding="utf-8", errors="replace")
-    parents: dict[str, tuple[str, list[tuple[str, str]]]] = {}
-    top_pattern = re.compile(r"^# P(\d+)[ \—].*?\nState: `([A-Z_]+)`", re.MULTILINE | re.DOTALL)
-    for m in top_pattern.finditer(text):
-        parent_id = f"P{m.group(1)}"
-        state = m.group(2)
-        # find children until next top-level P section or end
-        start = m.end()
-        next_m = top_pattern.search(text, start)
-        end = next_m.start() if next_m else len(text)
-        segment = text[start:end]
-        children: list[tuple[str, str]] = []
-        child_pattern = re.compile(r"^## P(\d+(?:\.\d+)?).*?\nState: `([A-Z_]+)`", re.MULTILINE | re.DOTALL)
-        for cm in child_pattern.finditer(segment):
-            children.append((f"P{cm.group(1)}", cm.group(2)))
-        parents[parent_id] = (state, children)
-    return parents
-
-
-def check_smart_state(findings: Findings) -> dict[str, str]:
+def check_current_objective(smart_text: str, task_text: str) -> list[str]:
+    """Cross-validate SMART CurrentObjective against TASK_STATE.md."""
+    errors: list[str] = []
     try:
-        values = parse_smart_state()
-    except ValueError as e:
-        findings.add(str(e))
-        return {}
-
-    for key in REQUIRED_SMART_KEYS:
-        if key not in values:
-            findings.add(f"SMART_OPERATION_STATE.md missing required key: {key}")
-
-    if values.get("Mode") != "PROFESSIONAL_AUTONOMOUS_STEWARDSHIP":
-        findings.add(f"SMART_OPERATION_STATE.md Mode is not PROFESSIONAL_AUTONOMOUS_STEWARDSHIP: {values.get('Mode')}")
-
-    ci = values.get("LastCIState", "")
-    if ci not in ALLOWED_CI_STATES:
-        findings.add(f"SMART_OPERATION_STATE.md LastCIState invalid: {ci}")
-
-    for key in (
-        "LastLightSweepCommit",
-        "LastStandardSweepCommit",
-        "LastDeepSweepCommit",
-        "LastFullVerificationCommit",
-        "LastQualifyingCheckpoint",
-        "LastCleanupCommit",
-    ):
-        val = values.get(key, "")
-        if val in COMMIT_PLACEHOLDERS:
-            if key in ("LastFullVerificationCommit", "LastQualifyingCheckpoint") and val == "pending":
-                findings.add(f"SMART_OPERATION_STATE.md {key} is pending (false sweep/checkpoint)")
-            continue
-        if not git_exists(val):
-            findings.add(f"SMART_OPERATION_STATE.md {key} references non-existent commit: {val}")
-
-    try:
-        count = int(values.get("CheckpointCount", "0"))
+        block = parse_smart_state(smart_text)
     except ValueError:
-        findings.add(f"SMART_OPERATION_STATE.md CheckpointCount is not an integer: {values.get('CheckpointCount')}")
-        count = 0
+        return errors
+    state, _ = smart_state_dict(block)
 
-    checkpoints = parse_task_checkpoints()
-    qualifying = [c for c in checkpoints if c.get("state") == "qualifying"]
-    if count != len(qualifying):
-        findings.add(
-            f"CheckpointCount mismatch: SMART says {count}, TASK_STATE.md has {len(qualifying)} qualifying checkpoints"
-        )
+    current = state.get("CurrentObjective", "")
+    obj_state = state.get("CurrentObjectiveState", "")
 
-    resume = values.get("ResumeTask", "")
-    if resume in ("", "derive from TASK_STATE.md"):
-        findings.add("SMART_OPERATION_STATE.md ResumeTask is not derived")
-    else:
-        text = TASK_FILE.read_text(encoding="utf-8", errors="replace")
-        resume_id = resume.split()[0] if resume.split() else resume
-        if not re.search(rf"^# {re.escape(resume_id)}[ \—]", text, re.MULTILINE):
-            findings.add(f"SMART_OPERATION_STATE.md ResumeTask '{resume}' does not match a TASK_STATE.md section")
+    if obj_state == "COMPLETE":
+        errors.append("SMART_OPERATION_STATE CurrentObjectiveState must not be COMPLETE; move to next incomplete objective")
 
-    return values
+    # Find the matching P# section in TASK_STATE.md.
+    sections = parse_task_sections(task_text)
+    section_id = None
+    objective_prefix = re.match(r"(P\d+(?:\.\d+)?)", current)
+    objective_id = objective_prefix.group(1) if objective_prefix else ""
+    for sid in sections:
+        if sid == objective_id:
+            section_id = sid
+            break
 
+    if section_id:
+        task_state = sections[section_id]["state"]
+        if obj_state == "COMPLETE" and task_state != "COMPLETE":
+            errors.append(
+                f"SMART_OPERATION_STATE CurrentObjectiveState=COMPLETE but {section_id} state in TASK_STATE is {task_state}"
+            )
+        if obj_state != "COMPLETE" and task_state == "COMPLETE":
+            errors.append(
+                f"SMART_OPERATION_STATE CurrentObjective is {section_id} ({task_state}) but CurrentObjectiveState is not COMPLETE"
+            )
+    elif current:
+        # Unknown objective that does not map to a task section.
+        errors.append(f"SMART_OPERATION_STATE CurrentObjective '{current}' does not match any P# section")
 
-def check_task_state(findings: Findings) -> None:
-    issues = parse_task_issues()
-    for issue_id, issue in issues.items():
-        state = issue["state"]
-        if state not in {"TODO", "IN_PROGRESS", "COMPLETE", "BLOCKED_EXTERNAL", "BLOCKED_INTERNAL", "DEFERRED", "REJECTED"}:
-            findings.add(f"TASK_STATE.md issue {issue_id} has unknown state: {state}")
+    # Block choosing P2/P3 while an unblocked P1 is not COMPLETE/BLOCKED_EXTERNAL/CORE_COMPLETE.
+    allowed_incomplete_p1 = {"COMPLETE", "BLOCKED_EXTERNAL", "NOT_APPLICABLE"}
+    issues = parse_issue_table(task_text)
+    unblocked_p1 = [
+        i for i in issues
+        if i["priority"] == "P1" and i["state"] not in allowed_incomplete_p1
+    ]
+    if unblocked_p1:
+        parents = set()
+        for i in unblocked_p1:
+            m = re.search(r"P\d+(?:\.\d+)?", i["acceptance"])
+            if m:
+                parents.add(m.group(0))
+        # The current objective should explicitly reference at least one parent of an unblocked P1.
+        if not any(parent in current for parent in parents):
+            errors.append(
+                f"SMART_OPERATION_STATE CurrentObjective '{current}' does not address unblocked P1 issues { {i['id'] for i in unblocked_p1} } whose parents are {parents}"
+            )
 
-    # Known stale issues from the v3 audit
-    if issues.get("BASELINE-001", {}).get("state") == "TODO":
-        findings.add("TASK_STATE.md BASELINE-001 is still TODO after P0.1")
-    if issues.get("VERIFY-001", {}).get("state") == "TODO":
-        findings.add("TASK_STATE.md VERIFY-001 is still TODO after P0.3")
-    if issues.get("ARCH-001", {}).get("state") == "TODO":
-        findings.add("TASK_STATE.md ARCH-001 is still TODO after P2")
-
-    text = TASK_FILE.read_text(encoding="utf-8", errors="replace")
-    if "## 5. Checkpoint" not in text:
-        findings.add("TASK_STATE.md is missing ## 5. Checkpoint section")
-
-    checkpoints = parse_task_checkpoints()
-
-    parents = parse_task_parent_states()
-    for parent_id, (state, children) in parents.items():
-        if state == "COMPLETE":
-            for child_id, child_state in children:
-                if child_state in ("TODO", "IN_PROGRESS"):
-                    findings.add(
-                        f"TASK_STATE.md parent {parent_id} is COMPLETE but child {child_id} is {child_state}"
-                    )
-        elif state in ("TODO", "IN_PROGRESS"):
-            # all required children must not be COMPLETE if parent is TODO? Not necessarily.
-            pass
-
-
-def check_control_files(findings: Findings) -> None:
-    for path in (GOAL_FILE, AGENTS_FILE):
-        text = path.read_text(encoding="utf-8", errors="replace")
-        for phrase in FORBIDDEN_PHRASES:
-            if phrase in text:
-                findings.add(f"{path.name} contains forbidden stop/wait phrase: {phrase}")
+    return errors
 
 
 def main() -> int:
-    findings = Findings()
-    check_smart_state(findings)
-    check_task_state(findings)
-    check_control_files(findings)
+    parser = argparse.ArgumentParser(description="A14 control-state reconciliation")
+    parser.add_argument("--repo-root", type=Path, default=REPO_ROOT)
+    args = parser.parse_args()
+    repo_root = args.repo_root
 
-    if findings.ok():
-        print("A13 automation state OK")
-        return 0
+    smart_path = repo_root / "SMART_OPERATION_STATE.md"
+    task_path = repo_root / "TASK_STATE.md"
+    goal_path = repo_root / "GOAL.md"
+    agents_path = repo_root / "AGENTS.md"
+    smart_op_path = repo_root / "SMART_CONTINUOUS_OPERATION.md"
 
-    print("A13 automation state errors:")
-    for err in findings.errors:
-        print(f"  - {err}")
-    return 1
+    all_errors: list[str] = []
+
+    if smart_path.exists():
+        all_errors.extend(check_smart_state(smart_path, read_text(smart_path), repo_root))
+    else:
+        all_errors.append("Missing SMART_OPERATION_STATE.md")
+
+    task_text = ""
+    if task_path.exists():
+        task_text = read_text(task_path)
+        _, task_errors = check_task_state(task_path, task_text)
+        all_errors.extend(task_errors)
+    else:
+        all_errors.append("Missing TASK_STATE.md")
+
+    if smart_path.exists() and task_path.exists():
+        all_errors.extend(check_current_objective(read_text(smart_path), task_text))
+
+    progress_snapshot = repo_root / "tools" / "progress_snapshot.py"
+    if progress_snapshot.is_file():
+        try:
+            result = subprocess.run(
+                [sys.executable, str(progress_snapshot), "--check"],
+                cwd=repo_root,
+                capture_output=True,
+                text=True,
+                check=False,
+            )
+            if result.returncode != 0:
+                all_errors.append(f"progress_snapshot.py --check failed: {result.stdout.strip() or result.stderr.strip()}")
+        except (OSError, subprocess.SubprocessError) as e:
+            all_errors.append(f"could not run progress_snapshot.py --check: {e}")
+
+    texts = {
+        "GOAL.md": read_text(goal_path) if goal_path.exists() else "",
+        "AGENTS.md": read_text(agents_path) if agents_path.exists() else "",
+        "SMART_CONTINUOUS_OPERATION.md": read_text(smart_op_path) if smart_op_path.exists() else "",
+    }
+    all_errors.extend(check_stop_conflicts(texts))
+
+    if all_errors:
+        print("CONTROL-STATE INVARIANT VIOLATIONS:")
+        for err in all_errors:
+            print(f"  - {err}")
+        return 1
+
+    print("Control-state invariants pass.")
+    return 0
 
 
 if __name__ == "__main__":

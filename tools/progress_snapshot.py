@@ -1,17 +1,17 @@
 #!/usr/bin/env python3
-"""A13 v6 progress snapshot generator.
+"""Generate a v7 capability-scored progress snapshot from TASK_STATE and SMART_OPERATION_STATE.
 
-Implements the v6 scoring model:
-- Progress is derived from TASK_STATE.md section states.
-- Percentages cannot be hand-edited; all values are computed.
-- PLAN/governance and state-only commits do not increase progress.
-- Each score has an evidence path (state, evidence keywords, git trailer).
+Modes:
+  --write   generate and write docs/progress/A13_PROGRESS_CURRENT.{json,md}
+  --check   compare the generated semantic snapshot with the committed files (read-only)
+  --print   print the generated semantic snapshot to stdout (read-only)
+  no args   print help and exit with non-zero
 """
+
 from __future__ import annotations
 
 import argparse
 import json
-import os
 import re
 import subprocess
 import sys
@@ -20,554 +20,504 @@ from datetime import datetime, timezone
 from pathlib import Path
 from typing import Any
 
-REPO_ROOT = Path(
-    os.environ.get("CHECK_AUTOMATION_REPO_ROOT")
-    if "CHECK_AUTOMATION_REPO_ROOT" in os.environ
-    else Path(__file__).resolve().parent.parent
-)
-if isinstance(REPO_ROOT, str):
-    REPO_ROOT = Path(REPO_ROOT)
+REPO_ROOT = Path(__file__).resolve().parent.parent
+TASK_STATE = REPO_ROOT / "TASK_STATE.md"
+SMART_STATE = REPO_ROOT / "SMART_OPERATION_STATE.md"
+OUT_JSON = REPO_ROOT / "docs" / "progress" / "A13_PROGRESS_CURRENT.json"
+OUT_MD = REPO_ROOT / "docs" / "progress" / "A13_PROGRESS_CURRENT.md"
 
-SMART_FILE = REPO_ROOT / "SMART_OPERATION_STATE.md"
-TASK_FILE = REPO_ROOT / "TASK_STATE.md"
-JSON_FILE = REPO_ROOT / "docs" / "progress" / "A13_PROGRESS_CURRENT.json"
-MD_FILE = REPO_ROOT / "docs" / "progress" / "A13_PROGRESS_CURRENT.md"
+STATE_FACTORS = {
+    "TODO": 0.0,
+    "BLOCKED_INTERNAL": 0.0,
+    "DIAGNOSTIC_MODE": 0.0,
+    "IN_PROGRESS": 0.50,
+    "VERIFIED_STATIC": 0.70,
+    "VERIFIED_BUILD": 0.85,
+    "VERIFIED_CI": 0.95,
+    "VERIFIED_DEVICE": 1.00,
+    "COMPLETE": 1.00,
+    "STATIC_OWNER_COMPLETE": 0.70,
+    "CORE_COMPLETE": 0.70,
+    "BLOCKED_EXTERNAL": 0.0,
+    "NOT_APPLICABLE": 0.0,
+    "UNKNOWN": 0.0,
+}
+
+MILESTONE_IDS = {"P12", "P13", "P14"}
 
 DOMAIN_WEIGHTS = {
-    "Baseline and autonomous control": 8,
-    "Runtime architecture and Feature/Hook ownership": 22,
-    "Runtime safety, lifecycle and concurrency": 18,
-    "Performance, memory, APK and R8": 12,
-    "ROM intelligence and compatibility evidence": 10,
-    "Java/Kotlin boundary and maintainability": 8,
-    "Build, CI, signing, artifact and release engineering": 12,
-    "Current documentation and provenance": 5,
+    "Baseline and control": 8,
+    "Runtime architecture / routing / ownership": 22,
+    "Runtime safety / lifecycle / concurrency": 18,
+    "Performance / memory / APK / R8": 12,
+    "ROM intelligence / compatibility": 10,
+    "Java / Kotlin boundary": 8,
+    "Build / CI / signing / artifacts": 12,
+    "Documentation / provenance": 5,
     "Device validation": 5,
 }
 
-DOMAIN_PATTERNS = [
-    ("Baseline and autonomous control", [r"^P0(\.|$)", r"^P11(\.|$)"]),
-    ("Runtime architecture and Feature/Hook ownership", [r"^P[1234](\.|$)"]),
-    ("Runtime safety, lifecycle and concurrency", [r"^P5(\.|$)"]),
-    ("Performance, memory, APK and R8", [r"^P6(\.|$)"]),
-    ("ROM intelligence and compatibility evidence", [r"^P8(\.|$)"]),
-    ("Java/Kotlin boundary and maintainability", [r"^P7(\.|$)"]),
-    ("Build, CI, signing, artifact and release engineering", [r"^P9(\.|$)", r"^P12(\.|$)"]),
-    ("Current documentation and provenance", [r"^P10(\.|$)"]),
-    ("Device validation", [r"^P13(\.|$)"]),
-]
-
-EVIDENCE_ORDER = ["NOT_EXERCISED", "STATIC_PROVEN", "BUILD_VERIFIED", "CI_VERIFIED", "DEVICE_VERIFIED"]
-
-# Snapshot metadata that only depends on the current commit/time and must not
-# trigger a freshness failure. The semantic payload (progress, sections, scores)
-# is what --check validates.
-VOLATILE_FIELDS = {
-    "audit_time",
-    "head",
-    "tree",
-    "verified_tree",
-    "verified_mode",
-    "ahead_of_main",
-}
-
-STATE_COMPLETION = {
-    "TODO": 0.0,
-    "BLOCKED_INTERNAL": 0.0,
-    "BLOCKED_EXTERNAL": 0.0,
-    "IN_PROGRESS": 0.5,
-    "VERIFIED_STATIC": 1.0,
-    "VERIFIED_BUILD": 1.0,
-    "VERIFIED_CI": 1.0,
-    "VERIFIED_DEVICE": 1.0,
-    "COMPLETE": 1.0,
+DOMAIN_MAP = {
+    "P0": "Baseline and control",
+    "P1": "Runtime architecture / routing / ownership",
+    "P2": "Runtime architecture / routing / ownership",
+    "P3": "Runtime architecture / routing / ownership",
+    "P4": "Runtime architecture / routing / ownership",
+    "P5": "Runtime safety / lifecycle / concurrency",
+    "P6": "Performance / memory / APK / R8",
+    "P7": "Java / Kotlin boundary",
+    "P8": "ROM intelligence / compatibility",
+    "P9": "Build / CI / signing / artifacts",
+    "P10": "Documentation / provenance",
+    "P11": "Build / CI / signing / artifacts",
 }
 
 
-@dataclass
-class Section:
-    id: str
-    title: str
-    state: str
-    evidence: list[str]
+def read_text(path: Path) -> str:
+    return path.read_text(encoding="utf-8", errors="replace")
 
 
-@dataclass
-class DomainScore:
-    name: str
-    weight: int
-    score: float
-    evidence_level: str
-    sections: list[str]
-
-
-@dataclass
-class Snapshot:
-    audit_time: str
-    head: str
-    tree: str
-    verified_tree: str | None
-    verified_mode: str | None
-    ahead_of_main: int
-    checkpoint_count: int
-    project_progress: float
-    machine_progress: float
-    stage: str
-    domain_scores: list[DomainScore]
-    sections: list[Section]
-    notes: list[str]
-
-
-def git(*args: str, check: bool = False) -> str:
-    cmd = ["git", "-C", str(REPO_ROOT)] + list(args)
-    result = subprocess.run(
-        cmd, capture_output=True, text=True, encoding="utf-8", errors="replace", check=check
-    )
-    return result.stdout.strip() if result.stdout and result.returncode == 0 else ""
-
-
-def head_sha() -> str:
-    return git("rev-parse", "HEAD")
-
-
-def head_tree() -> str:
-    return git("rev-parse", "HEAD^{tree}")
-
-
-def ahead_of_main() -> int:
-    out = git("rev-list", "--count", "main..HEAD")
+def git_rev(name: str) -> str:
     try:
-        return int(out)
-    except ValueError:
-        return 0
-
-
-def verified_tree_from_head() -> str | None:
-    message = git("log", "-1", "--pretty=format:%B")
-    match = re.search(r"^Verified-Tree:\s*([0-9a-f]{40})\b", message, re.MULTILINE)
-    return match.group(1) if match else None
-
-
-def verified_mode_from_head() -> str | None:
-    message = git("log", "-1", "--pretty=format:%B")
-    match = re.search(r"^Verification:\s*(\S+)", message, re.MULTILINE)
-    return match.group(1) if match else None
-
-
-def infer_evidence(body: str) -> str:
-    """Infer the strongest evidence type present in a section body."""
-    body_l = body.lower()
-    for level in EVIDENCE_ORDER[::-1]:
-        if level.lower() in body_l:
-            return level
-    if re.search(r"verify\.ps1.*-mode\s+(full|fast|final)", body_l) or re.search(r"verify\.py\s+(full|fast)", body_l):
-        return "BUILD_VERIFIED"
-    if re.search(r"github\s*action|ci:|\.github/workflows", body_l):
-        return "CI_VERIFIED"
-    if re.search(r"lsposed|logcat|rom\s*sample|device\s*evidence|实机", body_l):
-        return "DEVICE_VERIFIED"
-    return "STATIC_PROVEN"
-
-
-def parse_smart() -> dict[str, str]:
-    text = SMART_FILE.read_text(encoding="utf-8", errors="replace")
-    match = re.search(r"```text\n(.*?)\n```", text, re.S)
-    if not match:
-        return {}
-    values: dict[str, str] = {}
-    for line in match.group(1).splitlines():
-        if ":" in line:
-            key, _, value = line.partition(":")
-            values[key.strip()] = value.strip()
-    return values
-
-
-def parse_task_state() -> list[Section]:
-    """Parse major P sections. Subsections are only used when a major has no state."""
-    text = TASK_FILE.read_text(encoding="utf-8", errors="replace")
-    major_pattern = re.compile(r"^(# )P(\d+)[ \—]\s*(.+)$", re.MULTILINE)
-    state_pattern = re.compile(r"State:\s*`(\w+)`")
-    evidence_pattern = re.compile(r"Evidence:\s*`([^`]+)`")
-    sub_pattern = re.compile(r"^(## )P(\d+\.\d+)[ \—]\s*(.+)$", re.MULTILINE)
-
-    majors = list(major_pattern.finditer(text))
-    sections: list[Section] = []
-
-    for i, match in enumerate(majors):
-        major_id = f"P{match.group(2)}"
-        major_title = match.group(3).strip()
-        start = match.end()
-        end = majors[i + 1].start() if i + 1 < len(majors) else len(text)
-        body = text[start:end]
-
-        first_sub = sub_pattern.search(body)
-        header_body = body[: first_sub.start()] if first_sub else body
-        state_match = state_pattern.search(header_body)
-        if state_match:
-            state = state_match.group(1)
-            evidence = [m.group(1) for m in evidence_pattern.finditer(body)]
-            if not evidence:
-                evidence = [infer_evidence(body)] if state in ("COMPLETE", "VERIFIED_STATIC", "VERIFIED_BUILD", "VERIFIED_CI", "VERIFIED_DEVICE") else ["NOT_EXERCISED"]
-            sections.append(Section(major_id, major_title, state, evidence))
-            continue
-
-        # Major has no state: aggregate from subsections.
-        sub_matches = list(sub_pattern.finditer(body))
-        if not sub_matches:
-            sections.append(Section(major_id, major_title, "TODO", ["NOT_EXERCISED"]))
-            continue
-
-        subs: list[Section] = []
-        for j, sub_match in enumerate(sub_matches):
-            sub_id = f"P{sub_match.group(2)}"
-            sub_title = sub_match.group(3).strip()
-            sub_start = sub_match.end()
-            sub_end = sub_matches[j + 1].start() if j + 1 < len(sub_matches) else end
-            sub_body = body[sub_start:sub_end]
-            sub_state_match = state_pattern.search(sub_body)
-            sub_state = sub_state_match.group(1) if sub_state_match else "TODO"
-            sub_evidence = [m.group(1) for m in evidence_pattern.finditer(sub_body)]
-            if not sub_evidence:
-                sub_evidence = [infer_evidence(sub_body)] if sub_state in ("COMPLETE", "VERIFIED_STATIC", "VERIFIED_BUILD", "VERIFIED_CI", "VERIFIED_DEVICE") else ["NOT_EXERCISED"]
-            subs.append(Section(sub_id, sub_title, sub_state, sub_evidence))
-
-        # Aggregate: average completion, take min evidence.
-        completion = sum(STATE_COMPLETION.get(s.state, 0.0) for s in subs) / len(subs)
-        if completion >= 1.0:
-            state = "COMPLETE"
-        elif completion > 0.0:
-            state = "IN_PROGRESS"
-        else:
-            state = "TODO"
-        all_evidence = sorted(
-            {e for s in subs for e in s.evidence if e in EVIDENCE_ORDER},
-            key=EVIDENCE_ORDER.index,
+        result = subprocess.run(
+            ["git", "rev-parse", name],
+            cwd=REPO_ROOT,
+            capture_output=True,
+            text=True,
+            check=True,
         )
-        evidence = all_evidence[:1] or ["NOT_EXERCISED"]
-        sections.append(Section(major_id, major_title, state, evidence))
-
-    return sections
-
-
-def domain_for(section_id: str) -> str | None:
-    for domain, patterns in DOMAIN_PATTERNS:
-        for pattern in patterns:
-            if re.search(pattern, section_id):
-                return domain
-    return None
+        return result.stdout.strip()
+    except subprocess.CalledProcessError:
+        return "pending"
 
 
-def evidence_for(section: Section) -> str:
-    for level in EVIDENCE_ORDER[::-1]:
-        if any(level in e for e in section.evidence):
-            return level
-    if section.state in ("VERIFIED_STATIC", "VERIFIED_BUILD", "VERIFIED_CI", "VERIFIED_DEVICE", "COMPLETE"):
-        return "STATIC_PROVEN"
-    return "NOT_EXERCISED"
+def parse_smart_state() -> dict[str, str]:
+    text = SMART_STATE.read_text(encoding="utf-8")
+    block = re.search(r"```text(.*?)```", text, re.S)
+    if not block:
+        return {}
+    state = {}
+    for line in block.group(1).strip().splitlines():
+        if ":" in line:
+            key, value = line.split(":", 1)
+            state[key.strip()] = value.strip()
+    return state
 
 
-def compute_progress(sections: list[Section], smart: dict[str, str]) -> Snapshot:
-    grouped: dict[str, list[Section]] = {d: [] for d in DOMAIN_WEIGHTS}
-    for section in sections:
-        domain = domain_for(section.id)
+def parse_task_sections(text: str) -> dict[str, dict[str, Any]]:
+    """Parse top-level and nested P# sections, returning leaves with state and parent."""
+    pattern = re.compile(r"^#{1,2} (P\d+(?:\.\d+)?)(?:\s|—|$)", re.MULTILINE)
+    sections: dict[str, dict[str, Any]] = {}
+    matches = list(pattern.finditer(text))
+    for i, match in enumerate(matches):
+        sid = match.group(1)
+        start = match.end()
+        end = matches[i + 1].start() if i + 1 < len(matches) else len(text)
+        window = text[start:end]
+        state_match = re.search(r"State: `([^`]+)`", window)
+        sections[sid] = {
+            "state": state_match.group(1) if state_match else "UNKNOWN",
+            "text": text[start:end],
+        }
+
+    # Determine children and leaves.
+    for sid in sections:
+        sections[sid]["children"] = [
+            s for s in sections if s != sid and s.startswith(sid + ".")
+        ]
+
+    leaves = {
+        sid: info
+        for sid, info in sections.items()
+        if not info["children"] and sid not in MILESTONE_IDS
+    }
+    return leaves
+
+
+def parse_issue_table(text: str) -> list[dict[str, str]]:
+    table_match = re.search(r"\|\s*ID\s*\|.*\n((?:\|[^\n]+\|\n?)+)", text)
+    if not table_match:
+        return []
+
+    rows = [
+        line
+        for line in table_match.group(1).strip().splitlines()
+        if line.startswith("|")
+    ]
+    issues: list[dict[str, str]] = []
+    for row in rows:
+        cells = [c.strip() for c in row.split("|")][1:-1]
+        if len(cells) < 6:
+            continue
+        if cells[0].startswith("-") or cells[0] in ("ID", "---"):
+            continue
+        issues.append(
+            {
+                "id": cells[0],
+                "priority": cells[1],
+                "area": cells[2],
+                "state": cells[3],
+                "evidence": cells[4],
+                "acceptance": cells[5],
+            }
+        )
+    return issues
+
+
+def state_factor(state: str) -> float:
+    return STATE_FACTORS.get(state.upper(), 0.0)
+
+
+def item_bucket(state: str) -> str:
+    s = state.upper()
+    if s == "COMPLETE":
+        return "complete"
+    if s in ("IN_PROGRESS", "STATIC_OWNER_COMPLETE", "CORE_COMPLETE"):
+        return "in_progress"
+    if s == "BLOCKED_EXTERNAL":
+        return "blocked_external"
+    if s in ("BLOCKED_INTERNAL", "DIAGNOSTIC_MODE"):
+        return "blocked_internal"
+    return "not_started"
+
+
+@dataclass
+class CapabilityItem:
+    id: str
+    domain: str
+    weight: float
+    state: str
+    factor: float
+    earned: float
+    bucket: str
+    evidence_level: str = "pending"
+    evidence_paths: list[str] = field(default_factory=list)
+    evidence_commands: list[str] = field(default_factory=list)
+    evidence_commit: str = "pending"
+    device_evidence: str = "NOT_EXERCISED"
+
+
+def build_capability_items(leaves: dict[str, dict[str, Any]], issues: list[dict[str, str]]) -> list[CapabilityItem]:
+    items: list[CapabilityItem] = []
+
+    # Count leaves per domain for equal weight distribution within a domain.
+    domain_counts: dict[str, int] = {}
+    for sid, info in leaves.items():
+        parent = sid.split(".")[0]
+        domain = DOMAIN_MAP.get(parent)
         if domain:
-            grouped[domain].append(section)
+            domain_counts[domain] = domain_counts.get(domain, 0) + 1
 
-    notes: list[str] = []
-    domain_scores: list[DomainScore] = []
-    project_progress = 0.0
-
-    for domain, weight in DOMAIN_WEIGHTS.items():
-        ds = grouped[domain]
-        if not ds:
-            score = 0.0
-            level = "NOT_EXERCISED"
-        else:
-            completions = [STATE_COMPLETION.get(s.state, 0.0) for s in ds]
-            score = sum(completions) / len(ds)
-            levels = [evidence_for(s) for s in ds]
-            level = min(levels, key=EVIDENCE_ORDER.index)
-            if any(s.state == "BLOCKED_EXTERNAL" for s in ds) and domain == "Device validation":
-                notes.append(f"{domain} is blocked by external evidence.")
-        domain_scores.append(
-            DomainScore(
-                name=domain,
-                weight=weight,
-                score=round(score * 100, 2),
-                evidence_level=level,
-                sections=[s.id for s in ds],
+    # Add leaf tasks.
+    for sid, info in leaves.items():
+        parent = sid.split(".")[0]
+        domain = DOMAIN_MAP.get(parent)
+        if not domain:
+            continue
+        if domain_counts[domain] == 0:
+            continue
+        weight = DOMAIN_WEIGHTS[domain] / domain_counts[domain]
+        state = info["state"].upper()
+        factor = state_factor(state)
+        items.append(
+            CapabilityItem(
+                id=sid,
+                domain=domain,
+                weight=round(weight, 2),
+                state=state,
+                factor=round(factor, 2),
+                earned=round(weight * factor, 2),
+                bucket=item_bucket(state),
+                evidence_commit="pending",
+                device_evidence="NOT_EXERCISED" if domain == "Device validation" else "",
             )
         )
-        project_progress += weight * score
 
-    # Machine progress: subtract the device domain contribution unless it is
-    # device-verified. This keeps signed RC / CI / ROM evidence while removing
-    # the 5 points that require actual device evidence.
-    device_index = next((i for i, d in enumerate(domain_scores) if d.name == "Device validation"), -1)
-    if device_index >= 0 and domain_scores[device_index].evidence_level != "DEVICE_VERIFIED":
-        machine_progress = project_progress - (DOMAIN_WEIGHTS["Device validation"] * (domain_scores[device_index].score / 100))
-    else:
-        machine_progress = project_progress
+    # Add the only device-validation issue as the domain item.
+    for issue in issues:
+        if issue["id"] == "DEVICE-001":
+            weight = DOMAIN_WEIGHTS["Device validation"]
+            state = issue["state"].upper()
+            factor = state_factor(state)
+            items.append(
+                CapabilityItem(
+                    id=issue["id"],
+                    domain="Device validation",
+                    weight=weight,
+                    state=state,
+                    factor=round(factor, 2),
+                    earned=round(weight * factor, 2),
+                    bucket=item_bucket(state),
+                    evidence_commit="pending",
+                    device_evidence="NOT_EXERCISED",
+                )
+            )
 
-    project_progress = round(project_progress, 2)
-    machine_progress = round(machine_progress, 2)
+    return items
 
-    verified_tree = verified_tree_from_head()
-    verified_mode = verified_mode_from_head()
 
-    return Snapshot(
-        audit_time=datetime.now(timezone.utc).isoformat(),
-        head=head_sha(),
-        tree=head_tree(),
-        verified_tree=verified_tree,
-        verified_mode=verified_mode,
-        ahead_of_main=ahead_of_main(),
-        checkpoint_count=int(smart.get("CheckpointCount", "0")),
-        project_progress=project_progress,
-        machine_progress=machine_progress,
-        stage=stage_for_score(project_progress),
-        domain_scores=domain_scores,
-        sections=sections,
-        notes=notes,
+def compute_progress(items: list[CapabilityItem]) -> dict[str, Any]:
+    buckets = {
+        "complete": 0,
+        "in_progress": 0,
+        "not_started": 0,
+        "blocked_internal": 0,
+        "blocked_external": 0,
+    }
+    for it in items:
+        buckets[it.bucket] = buckets.get(it.bucket, 0) + 1
+
+    total = sum(buckets.values())
+    if sum(buckets.values()) != total:
+        # Defensive; sum should equal total by construction.
+        pass
+
+    domain_scores: dict[str, dict[str, float]] = {}
+    for d in DOMAIN_WEIGHTS:
+        domain_items = [it for it in items if it.domain == d]
+        if not domain_items:
+            domain_scores[d] = {"weight": DOMAIN_WEIGHTS[d], "earned": 0.0, "percent": 0.0}
+            continue
+        earned = sum(it.earned for it in domain_items)
+        weight = DOMAIN_WEIGHTS[d]
+        domain_scores[d] = {
+            "weight": weight,
+            "earned": round(earned, 2),
+            "percent": round(earned / weight * 100, 1) if weight else 0.0,
+        }
+
+    project_total = sum(DOMAIN_WEIGHTS.values())
+    project_earned = sum(it.earned for it in items)
+    project_progress = round(project_earned / project_total * 100, 1) if project_total else 0.0
+
+    machine_items = [it for it in items if it.domain != "Device validation"]
+    machine_total = project_total - DOMAIN_WEIGHTS["Device validation"]
+    machine_earned = sum(it.earned for it in machine_items)
+    machine_progress = round(machine_earned / machine_total * 100, 1) if machine_total else 0.0
+
+    open_p0 = sum(
+        1
+        for it in items
+        if any(it.id.startswith(p) for p in ("P0", "BASELINE-", "VERIFY-")) and it.bucket != "complete"
+    )
+    open_p1 = sum(
+        1
+        for it in items
+        if any(it.id.startswith(p) for p in ("P1", "ARCH-", "DEVICE-")) and it.bucket != "complete"
     )
 
-
-def stage_for_score(score: float) -> str:
-    if score < 20:
-        return "FOUNDATION"
-    if score < 40:
-        return "CORE_RECONSTRUCTION"
-    if score < 60:
-        return "SYSTEM_HARDENING"
-    if score < 75:
-        return "INTEGRATION_AND_EVIDENCE"
-    if score < 90:
-        return "RELEASE_CANDIDATE_PREPARATION"
-    if score < 100:
-        return "EXTERNAL_VALIDATION"
-    return "PROJECT_COMPLETE"
-
-
-def snapshot_to_dict(snapshot: Snapshot) -> dict[str, Any]:
-    return asdict(snapshot)
-
-
-def render_markdown(snapshot: Snapshot) -> str:
-    lines = [
-        "# A13 Progress Snapshot",
-        "",
-        "```text",
-        f"AuditTime: {snapshot.audit_time}",
-        f"HEAD: {snapshot.head}",
-        f"Tree: {snapshot.tree}",
-        f"VerifiedTree: {snapshot.verified_tree or 'not recorded'}",
-        f"VerifiedMode: {snapshot.verified_mode or 'none'}",
-        f"AheadOfMain: {snapshot.ahead_of_main}",
-        f"CheckpointCount: {snapshot.checkpoint_count}",
-        f"ProjectProgress: {snapshot.project_progress}%",
-        f"MachineProgress: {snapshot.machine_progress}%",
-        f"Stage: {snapshot.stage}",
-        "```",
-        "",
-        "## Domain Scores",
-        "",
-        "| Domain | Weight | Score | Evidence | Sections |",
-        "|---|---:|---:|---|---|",
-    ]
-    for d in snapshot.domain_scores:
-        lines.append(
-            f"| {d.name} | {d.weight} | {d.score}% | {d.evidence_level} | {', '.join(d.sections)} |"
-        )
-    lines += ["", "## Section States", ""]
-    for s in snapshot.sections:
-        evidence = ", ".join(s.evidence) if s.evidence else "none"
-        lines.append(f"- **{s.id}** {s.title} — `{s.state}` ({evidence})")
-    if snapshot.notes:
-        lines += ["", "## Notes", ""]
-        for note in snapshot.notes:
-            lines.append(f"- {note}")
-    lines += [
-        "",
-        "---",
-        "",
-        "This snapshot is auto-generated by `tools/progress_snapshot.py`. "
-        "Do not edit percentages manually.",
-    ]
-    return "\n".join(lines) + "\n"
-
-
-def write_snapshot(snapshot: Snapshot) -> None:
-    JSON_FILE.parent.mkdir(parents=True, exist_ok=True)
-    JSON_FILE.write_text(
-        json.dumps(snapshot_to_dict(snapshot), indent=2, ensure_ascii=False) + "\n",
-        encoding="utf-8",
-    )
-    MD_FILE.write_text(render_markdown(snapshot), encoding="utf-8")
-
-
-def _semantic_equal(a: Any, b: Any) -> bool:
-    """Compare snapshots ignoring volatile provenance/time metadata."""
-    if isinstance(a, dict) and isinstance(b, dict):
-        for key in a:
-            if key in VOLATILE_FIELDS:
-                continue
-            if key not in b or not _semantic_equal(a[key], b[key]):
-                return False
-        for key in b:
-            if key in VOLATILE_FIELDS:
-                continue
-            if key not in a:
-                return False
-        return True
-    if isinstance(a, list) and isinstance(b, list):
-        return len(a) == len(b) and all(_semantic_equal(x, y) for x, y in zip(a, b))
-    return a == b
-
-
-def _parse_float_percent(value: str) -> float:
-    return float(value.strip().replace("%", ""))
-
-
-def _parse_int(value: str) -> int:
-    return int(value.strip())
-
-
-def parse_markdown_snapshot(text: str) -> dict[str, Any]:
-    """Parse the rendered Markdown snapshot into a dict comparable with JSON."""
-    result: dict[str, Any] = {
-        "audit_time": "",
-        "head": "",
-        "tree": "",
-        "verified_tree": None,
-        "verified_mode": None,
-        "ahead_of_main": 0,
-        "checkpoint_count": 0,
-        "project_progress": 0.0,
-        "machine_progress": 0.0,
-        "stage": "",
-        "domain_scores": [],
-        "sections": [],
-        "notes": [],
+    return {
+        "taskCounts": {
+            "total": total,
+            **buckets,
+        },
+        "domainScores": domain_scores,
+        "projectProgressPercent": project_progress,
+        "machineProgressPercent": machine_progress,
+        "openP0": open_p0,
+        "openP1": open_p1,
+        "externalBlocks": buckets["blocked_external"],
     }
 
-    # Metadata block
-    m = re.search(r"```text\n(.*?)\n```", text, re.S)
-    if m:
-        for line in m.group(1).splitlines():
-            if ":" not in line:
-                continue
-            key, _, value = line.partition(":")
-            key = key.strip()
-            value = value.strip()
-            if key == "AuditTime":
-                result["audit_time"] = value
-            elif key == "HEAD":
-                result["head"] = value
-            elif key == "Tree":
-                result["tree"] = value
-            elif key == "VerifiedTree":
-                result["verified_tree"] = None if value == "not recorded" else value
-            elif key == "VerifiedMode":
-                result["verified_mode"] = None if value == "none" else value
-            elif key == "AheadOfMain":
-                result["ahead_of_main"] = _parse_int(value) if value else 0
-            elif key == "CheckpointCount":
-                result["checkpoint_count"] = _parse_int(value) if value else 0
-            elif key == "ProjectProgress":
-                result["project_progress"] = _parse_float_percent(value)
-            elif key == "MachineProgress":
-                result["machine_progress"] = _parse_float_percent(value)
-            elif key == "Stage":
-                result["stage"] = value
 
-    # Domain scores table
-    domain_match = re.search(r"## Domain Scores\n\n(.*?)\n\n## Section States", text, re.S)
-    if domain_match:
-        for line in domain_match.group(1).splitlines():
-            if not line.startswith("|"):
-                continue
-            cells = [c.strip() for c in line.split("|")]
-            # Drop the leading/trailing empty cells produced by the outer pipes.
-            cells = cells[1:-1]
-            if not cells or cells[0] == "Domain" or cells[0].startswith("-"):
-                continue
-            if len(cells) < 5:
-                continue
-            result["domain_scores"].append(
-                {
-                    "name": cells[0],
-                    "weight": _parse_int(cells[1]),
-                    "score": _parse_float_percent(cells[2]),
-                    "evidence_level": cells[3],
-                    "sections": [s.strip() for s in cells[4].split(",") if s.strip()],
-                }
-            )
-
-    # Section states
-    section_match = re.search(r"## Section States\n\n(.*?)(?:\n\n## Notes|\n\n---|$)", text, re.S)
-    if section_match:
-        for line in section_match.group(1).splitlines():
-            m = re.match(r"- \*\*(?P<id>[^*]+)\*\* (?P<title>.*?) — `(?P<state>[^`]+)`(?: \((?P<evidence>.*)\))?", line)
-            if m:
-                evidence = m.group("evidence") or ""
-                result["sections"].append(
-                    {
-                        "id": m.group("id").strip(),
-                        "title": m.group("title").strip(),
-                        "state": m.group("state").strip(),
-                        "evidence": [e.strip() for e in evidence.split(",") if e.strip()] or ["none"],
-                    }
-                )
-
-    # Notes
-    notes_match = re.search(r"## Notes\n\n(.*?)\n\n---", text, re.S)
-    if notes_match:
-        for line in notes_match.group(1).splitlines():
-            if line.startswith("- "):
-                result["notes"].append(line[2:].strip())
-
-    return result
+def stage_from_progress(machine: float) -> str:
+    if machine < 30:
+        return "BASELINE_AND_CONTROL"
+    if machine < 60:
+        return "ARCHITECTURE_AND_ROUTING"
+    if machine < 80:
+        return "INTEGRATION_AND_EVIDENCE"
+    return "FINALIZATION_AND_DEVICE"
 
 
-def check_snapshot() -> bool:
-    snapshot = compute_progress(parse_task_state(), parse_smart())
-    if not JSON_FILE.exists() or not MD_FILE.exists():
-        return False
-    current = snapshot_to_dict(snapshot)
+def generate_snapshot(source_commit: str, source_tree: str) -> dict[str, Any]:
+    smart = parse_smart_state()
+    task_text = read_text(TASK_STATE)
+    leaves = parse_task_sections(task_text)
+    issues = parse_issue_table(task_text)
+    items = build_capability_items(leaves, issues)
+    progress = compute_progress(items)
 
-    stored_json = json.loads(JSON_FILE.read_text(encoding="utf-8"))
-    if not _semantic_equal(stored_json, current):
-        return False
+    verified_tree = smart.get("LastVerifiedTree", "pending")
+    if not verified_tree or verified_tree.endswith("^{tree}"):
+        verified_tree = "pending"
 
-    stored_md = parse_markdown_snapshot(MD_FILE.read_text(encoding="utf-8"))
-    return _semantic_equal(stored_md, current)
+    return {
+        "schemaVersion": 7,
+        "generatedAt": datetime.now(timezone.utc).astimezone().isoformat(),
+        "sourceCommit": source_commit,
+        "sourceTree": source_tree,
+        "verifiedTree": verified_tree,
+        "verifiedMode": smart.get("LastVerifiedMode", "pending"),
+        "ciState": smart.get("LastCIState", "NOT_CONFIGURED"),
+        "ciRun": smart.get("LastCIRun", ""),
+        "ciJob": smart.get("LastCIJob", ""),
+        "ciCommit": smart.get("LastCICommit", ""),
+        "projectProgress": progress["projectProgressPercent"],
+        "machineProgress": progress["machineProgressPercent"],
+        "stage": stage_from_progress(progress["machineProgressPercent"]),
+        "domainScores": progress["domainScores"],
+        "capabilityItems": [asdict(it) for it in items],
+        "openP0": progress["openP0"],
+        "openP1": progress["openP1"],
+        "externalBlocks": progress["externalBlocks"],
+        "notes": "v7 capability-scored snapshot; device domain excluded from machine progress.",
+    }
 
 
-def main() -> int:
-    parser = argparse.ArgumentParser(description="A13 v6 progress snapshot generator")
-    parser.add_argument("--check", action="store_true", help="Check current docs are up to date")
-    parser.add_argument("--write", action="store_true", help="Write progress docs")
-    args = parser.parse_args()
+def build_markdown(snapshot: dict[str, Any]) -> str:
+    md = ["# A13 Progress Current (v7)\n\n"]
+    md.append("```text\n")
+    md.append(f"GeneratedAt: {snapshot['generatedAt']}\n")
+    md.append(f"SourceCommit: {snapshot['sourceCommit']}\n")
+    md.append(f"SourceTree: {snapshot['sourceTree']}\n")
+    md.append(f"VerifiedTree: {snapshot['verifiedTree']}\n")
+    md.append(f"VerifiedMode: {snapshot['verifiedMode']}\n")
+    md.append(f"CIState: {snapshot['ciState']}\n")
+    md.append(f"CIRun: {snapshot['ciRun']}\n")
+    md.append(f"CIJob: {snapshot['ciJob']}\n")
+    md.append(f"CICommit: {snapshot['ciCommit']}\n")
+    md.append("```\n\n")
 
-    if args.check:
-        if check_snapshot():
-            print("A13 progress snapshot is up to date")
-            return 0
-        print("A13 progress snapshot is out of date (run --write)")
-        return 1
+    md.append("## Progress\n\n")
+    md.append(f"- ProjectProgress: {snapshot['projectProgress']}%\n")
+    md.append(f"- MachineProgress: {snapshot['machineProgress']}%\n")
+    md.append(f"- Stage: {snapshot['stage']}\n")
+    md.append(f"- OpenP0: {snapshot['openP0']}\n")
+    md.append(f"- OpenP1: {snapshot['openP1']}\n")
+    md.append(f"- ExternalBlocks: {snapshot['externalBlocks']}\n\n")
 
-    if args.write:
-        snapshot = compute_progress(parse_task_state(), parse_smart())
-        write_snapshot(snapshot)
-        print("A13 progress snapshot written")
-        print(f"ProjectProgress: {snapshot.project_progress}%")
-        print(f"MachineProgress: {snapshot.machine_progress}%")
-        print(f"Stage: {snapshot.stage}")
+    md.append("## Domain Scores\n\n")
+    md.append("| Domain | Weight | Earned | Percent |\n")
+    md.append("|---|---:|---:|---:|\n")
+    for domain, scores in snapshot["domainScores"].items():
+        md.append(f"| {domain} | {scores['weight']} | {scores['earned']} | {scores['percent']}% |\n")
+
+    md.append("\n## Capability Items\n\n")
+    md.append("| ID | Domain | Weight | State | Factor | Earned |\n")
+    md.append("|---|---|---|---:|---:|---:|\n")
+    for it in snapshot["capabilityItems"]:
+        md.append(
+            f"| {it['id']} | {it['domain']} | {it['weight']} | {it['state']} | {it['factor']} | {it['earned']} |\n"
+        )
+
+    md.append("\n## Notes\n\n")
+    md.append(f"{snapshot['notes']}\n")
+
+    return "".join(md)
+
+
+def normalize_markdown(md: str) -> str:
+    lines = []
+    for line in md.splitlines():
+        for key in (
+            "GeneratedAt",
+            "SourceCommit",
+            "SourceTree",
+            "VerifiedTree",
+            "VerifiedMode",
+            "CIState",
+            "CIRun",
+            "CIJob",
+            "CICommit",
+        ):
+            if re.match(rf"^\s*-?\s*{re.escape(key)}:\s", line):
+                line = f"{key}: <volatile>"
+                break
+        lines.append(line)
+    return "\n".join(lines)
+
+
+def volatile_fields() -> set[str]:
+    return {
+        "generatedAt",
+        "sourceCommit",
+        "sourceTree",
+        "verifiedTree",
+        "ciState",
+        "ciRun",
+        "ciJob",
+        "ciCommit",
+    }
+
+
+def check_snapshot(snapshot: dict[str, Any]) -> list[str]:
+    errors: list[str] = []
+    if not OUT_JSON.is_file() or not OUT_MD.is_file():
+        errors.append("Progress snapshot files are missing; run --write to generate")
+        return errors
+
+    try:
+        existing_json = json.loads(OUT_JSON.read_text(encoding="utf-8"))
+    except (json.JSONDecodeError, OSError) as e:
+        errors.append(f"Could not read existing {OUT_JSON}: {e}")
+        return errors
+
+    fresh = snapshot
+    ignore = volatile_fields()
+
+    for key in set(fresh.keys()) | set(existing_json.keys()):
+        if key in ignore:
+            continue
+        if key not in fresh:
+            errors.append(f"Generated snapshot missing key {key}")
+        elif key not in existing_json:
+            errors.append(f"Existing snapshot missing key {key}")
+        elif fresh[key] != existing_json[key]:
+            errors.append(f"Progress snapshot drift on {key}: generated differs from committed")
+
+    existing_md = OUT_MD.read_text(encoding="utf-8")
+    expected_md = build_markdown(snapshot)
+    if normalize_markdown(existing_md) != normalize_markdown(expected_md):
+        errors.append("Progress markdown does not match generated content")
+
+    return errors
+
+
+def main(argv: list[str] | None = None) -> int:
+    parser = argparse.ArgumentParser(description="Generate or check A13 v7 progress snapshot")
+    group = parser.add_mutually_exclusive_group()
+    group.add_argument("--write", action="store_true", help="write generated snapshot to disk")
+    group.add_argument("--check", action="store_true", help="check existing snapshot is fresh (read-only)")
+    group.add_argument("--print", action="store_true", help="print generated snapshot to stdout (read-only)")
+    args = parser.parse_args(argv)
+
+    if not (args.write or args.check or args.print):
+        parser.print_help()
+        return 2
+
+    source_commit = git_rev("HEAD")
+    source_tree = git_rev("HEAD^{tree}")
+    snapshot = generate_snapshot(source_commit, source_tree)
+
+    if args.print:
+        print(json.dumps(snapshot, indent=2))
         return 0
 
-    parser.print_help()
-    return 1
+    if args.check:
+        errors = check_snapshot(snapshot)
+        if errors:
+            print("Progress snapshot drift:")
+            for e in errors:
+                print(f"  - {e}")
+            return 1
+        print("Progress snapshot is fresh.")
+        return 0
+
+    if args.write:
+        OUT_JSON.parent.mkdir(parents=True, exist_ok=True)
+        with open(OUT_JSON, "w", encoding="utf-8", newline="\n") as f:
+            f.write(json.dumps(snapshot, indent=2))
+            f.write("\n")
+        with open(OUT_MD, "w", encoding="utf-8", newline="\n") as f:
+            f.write(build_markdown(snapshot))
+        print(f"Wrote {OUT_JSON}")
+        print(f"Wrote {OUT_MD}")
+        return 0
+
+    # Unreachable, but defensive.
+    return 2
 
 
 if __name__ == "__main__":
-    sys.exit(main())
+    raise SystemExit(main())

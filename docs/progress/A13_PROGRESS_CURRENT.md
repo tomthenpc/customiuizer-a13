@@ -1,54 +1,75 @@
-# A13 Progress Snapshot
+# A13 Progress Current (v7)
 
 ```text
-AuditTime: 2026-08-02T05:52:21.961248+00:00
-HEAD: 7c3b4fed03a26935eed0bce8310adf978cfd8195
-Tree: aec314c14dfcc788e3ada634da89602b61261882
-VerifiedTree: aec314c14dfcc788e3ada634da89602b61261882
+GeneratedAt: 2026-08-02T14:19:58.920754+08:00
+SourceCommit: 30210629ad1ce796acafaf36ba2742715da686e4
+SourceTree: f08ffee8e74c47bbd902c27a35ca07926f689c1c
+VerifiedTree: f08ffee8e74c47bbd902c27a35ca07926f689c1c
 VerifiedMode: full
-AheadOfMain: 74
-CheckpointCount: 10
-ProjectProgress: 20.75%
-MachineProgress: 20.75%
-Stage: CORE_RECONSTRUCTION
+CIState: PASS
+CIRun: https://github.com/tomthenpc/customiuizer-a13/actions/runs/30734917261
+CIJob: https://github.com/tomthenpc/customiuizer-a13/actions/runs/30734917261/job/91461860079
+CICommit: 2bedb218bfaae1e669abe3362a850aa7947a9cf0
 ```
+
+## Progress
+
+- ProjectProgress: 29.9%
+- MachineProgress: 31.5%
+- Stage: ARCHITECTURE_AND_ROUTING
+- OpenP0: 0
+- OpenP1: 3
+- ExternalBlocks: 1
 
 ## Domain Scores
 
-| Domain | Weight | Score | Evidence | Sections |
-|---|---:|---:|---|---|
-| Baseline and autonomous control | 8 | 50.0% | NOT_EXERCISED | P0, P11 |
-| Runtime architecture and Feature/Hook ownership | 22 | 62.5% | NOT_EXERCISED | P1, P2, P3, P4 |
-| Runtime safety, lifecycle and concurrency | 18 | 0.0% | NOT_EXERCISED | P5 |
-| Performance, memory, APK and R8 | 12 | 0.0% | NOT_EXERCISED | P6 |
-| ROM intelligence and compatibility evidence | 10 | 0.0% | NOT_EXERCISED | P8 |
-| Java/Kotlin boundary and maintainability | 8 | 0.0% | NOT_EXERCISED | P7 |
-| Build, CI, signing, artifact and release engineering | 12 | 25.0% | NOT_EXERCISED | P9, P12 |
-| Current documentation and provenance | 5 | 0.0% | NOT_EXERCISED | P10 |
-| Device validation | 5 | 0.0% | NOT_EXERCISED | P13 |
+| Domain | Weight | Earned | Percent |
+|---|---:|---:|---:|
+| Baseline and control | 8 | 8.0 | 100.0% |
+| Runtime architecture / routing / ownership | 22 | 16.51 | 75.0% |
+| Runtime safety / lifecycle / concurrency | 18 | 0.0 | 0.0% |
+| Performance / memory / APK / R8 | 12 | 0.0 | 0.0% |
+| ROM intelligence / compatibility | 10 | 0.0 | 0.0% |
+| Java / Kotlin boundary | 8 | 0.0 | 0.0% |
+| Build / CI / signing / artifacts | 12 | 5.4 | 45.0% |
+| Documentation / provenance | 5 | 0.0 | 0.0% |
+| Device validation | 5 | 0.0 | 0.0% |
 
-## Section States
+## Capability Items
 
-- **P0** — 锁定真实基线 — `COMPLETE` (NOT_EXERCISED)
-- **P1** — 单一事实源 — `COMPLETE` (NOT_EXERCISED)
-- **P2** — typed Feature Registry 全量收口 — `COMPLETE` (BUILD_VERIFIED)
-- **P3** — 全部生产 Hook 收口 — `IN_PROGRESS` (NOT_EXERCISED)
-- **P4** — 进程与 Installer — `TODO` (NOT_EXERCISED)
-- **P5** — Runtime safety — `TODO` (NOT_EXERCISED)
-- **P6** — 性能与内存 — `TODO` (NOT_EXERCISED)
-- **P7** — Java → Kotlin 最终收口 — `TODO` (NOT_EXERCISED)
-- **P8** — ROM intelligence — `TODO` (NOT_EXERCISED)
-- **P9** — 测试、CI 与构建 — `IN_PROGRESS` (BUILD_VERIFIED, CI_VERIFIED)
-- **P10** — 文档与 dead code — `TODO` (NOT_EXERCISED)
-- **P11** — 自主 discovery sweep — `TODO` (NOT_EXERCISED)
-- **P12** — MACHINE_COMPLETE — `TODO` (NOT_EXERCISED)
-- **P13** — DEVICE_VALIDATED — `BLOCKED_EXTERNAL` (NOT_EXERCISED)
-- **P14** — PROJECT_COMPLETE — `TODO` (NOT_EXERCISED)
+| ID | Domain | Weight | State | Factor | Earned |
+|---|---|---|---:|---:|---:|
+| P0.1 | Baseline and control | 2.0 | COMPLETE | 1.0 | 2.0 |
+| P0.2 | Baseline and control | 2.0 | COMPLETE | 1.0 | 2.0 |
+| P0.3 | Baseline and control | 2.0 | COMPLETE | 1.0 | 2.0 |
+| P0.4 | Baseline and control | 2.0 | COMPLETE | 1.0 | 2.0 |
+| P1.1 | Runtime architecture / routing / ownership | 3.67 | COMPLETE | 1.0 | 3.67 |
+| P1.2 | Runtime architecture / routing / ownership | 3.67 | COMPLETE | 1.0 | 3.67 |
+| P1.3 | Runtime architecture / routing / ownership | 3.67 | COMPLETE | 1.0 | 3.67 |
+| P2 | Runtime architecture / routing / ownership | 3.67 | COMPLETE | 1.0 | 3.67 |
+| P3 | Runtime architecture / routing / ownership | 3.67 | IN_PROGRESS | 0.5 | 1.83 |
+| P4 | Runtime architecture / routing / ownership | 3.67 | TODO | 0.0 | 0.0 |
+| P5.1 | Runtime safety / lifecycle / concurrency | 4.5 | UNKNOWN | 0.0 | 0.0 |
+| P5.2 | Runtime safety / lifecycle / concurrency | 4.5 | UNKNOWN | 0.0 | 0.0 |
+| P5.3 | Runtime safety / lifecycle / concurrency | 4.5 | UNKNOWN | 0.0 | 0.0 |
+| P5.4 | Runtime safety / lifecycle / concurrency | 4.5 | UNKNOWN | 0.0 | 0.0 |
+| P6.1 | Performance / memory / APK / R8 | 3.0 | UNKNOWN | 0.0 | 0.0 |
+| P6.2 | Performance / memory / APK / R8 | 3.0 | UNKNOWN | 0.0 | 0.0 |
+| P6.3 | Performance / memory / APK / R8 | 3.0 | UNKNOWN | 0.0 | 0.0 |
+| P6.4 | Performance / memory / APK / R8 | 3.0 | UNKNOWN | 0.0 | 0.0 |
+| P7.1 | Java / Kotlin boundary | 2.67 | UNKNOWN | 0.0 | 0.0 |
+| P7.2 | Java / Kotlin boundary | 2.67 | UNKNOWN | 0.0 | 0.0 |
+| P7.3 | Java / Kotlin boundary | 2.67 | UNKNOWN | 0.0 | 0.0 |
+| P8.1 | ROM intelligence / compatibility | 3.33 | UNKNOWN | 0.0 | 0.0 |
+| P8.2 | ROM intelligence / compatibility | 3.33 | UNKNOWN | 0.0 | 0.0 |
+| P8.3 | ROM intelligence / compatibility | 3.33 | UNKNOWN | 0.0 | 0.0 |
+| P9.1 | Build / CI / signing / artifacts | 3.0 | VERIFIED_BUILD | 0.85 | 2.55 |
+| P9.2 | Build / CI / signing / artifacts | 3.0 | VERIFIED_CI | 0.95 | 2.85 |
+| P9.3 | Build / CI / signing / artifacts | 3.0 | UNKNOWN | 0.0 | 0.0 |
+| P10 | Documentation / provenance | 5.0 | TODO | 0.0 | 0.0 |
+| P11 | Build / CI / signing / artifacts | 3.0 | TODO | 0.0 | 0.0 |
+| DEVICE-001 | Device validation | 5 | BLOCKED_EXTERNAL | 0.0 | 0.0 |
 
 ## Notes
 
-- Device validation is blocked by external evidence.
-
----
-
-This snapshot is auto-generated by `tools/progress_snapshot.py`. Do not edit percentages manually.
+v7 capability-scored snapshot; device domain excluded from machine progress.

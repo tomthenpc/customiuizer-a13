@@ -1,226 +1,488 @@
 {
-  "audit_time": "2026-08-02T05:52:21.961248+00:00",
-  "head": "7c3b4fed03a26935eed0bce8310adf978cfd8195",
-  "tree": "aec314c14dfcc788e3ada634da89602b61261882",
-  "verified_tree": "aec314c14dfcc788e3ada634da89602b61261882",
-  "verified_mode": "full",
-  "ahead_of_main": 74,
-  "checkpoint_count": 10,
-  "project_progress": 20.75,
-  "machine_progress": 20.75,
-  "stage": "CORE_RECONSTRUCTION",
-  "domain_scores": [
-    {
-      "name": "Baseline and autonomous control",
+  "schemaVersion": 7,
+  "generatedAt": "2026-08-02T14:19:58.920754+08:00",
+  "sourceCommit": "30210629ad1ce796acafaf36ba2742715da686e4",
+  "sourceTree": "f08ffee8e74c47bbd902c27a35ca07926f689c1c",
+  "verifiedTree": "f08ffee8e74c47bbd902c27a35ca07926f689c1c",
+  "verifiedMode": "full",
+  "ciState": "PASS",
+  "ciRun": "https://github.com/tomthenpc/customiuizer-a13/actions/runs/30734917261",
+  "ciJob": "https://github.com/tomthenpc/customiuizer-a13/actions/runs/30734917261/job/91461860079",
+  "ciCommit": "2bedb218bfaae1e669abe3362a850aa7947a9cf0",
+  "projectProgress": 29.9,
+  "machineProgress": 31.5,
+  "stage": "ARCHITECTURE_AND_ROUTING",
+  "domainScores": {
+    "Baseline and control": {
       "weight": 8,
-      "score": 50.0,
-      "evidence_level": "NOT_EXERCISED",
-      "sections": [
-        "P0",
-        "P11"
-      ]
+      "earned": 8.0,
+      "percent": 100.0
     },
-    {
-      "name": "Runtime architecture and Feature/Hook ownership",
+    "Runtime architecture / routing / ownership": {
       "weight": 22,
-      "score": 62.5,
-      "evidence_level": "NOT_EXERCISED",
-      "sections": [
-        "P1",
-        "P2",
-        "P3",
-        "P4"
-      ]
+      "earned": 16.51,
+      "percent": 75.0
     },
-    {
-      "name": "Runtime safety, lifecycle and concurrency",
+    "Runtime safety / lifecycle / concurrency": {
       "weight": 18,
-      "score": 0.0,
-      "evidence_level": "NOT_EXERCISED",
-      "sections": [
-        "P5"
-      ]
+      "earned": 0.0,
+      "percent": 0.0
     },
-    {
-      "name": "Performance, memory, APK and R8",
+    "Performance / memory / APK / R8": {
       "weight": 12,
-      "score": 0.0,
-      "evidence_level": "NOT_EXERCISED",
-      "sections": [
-        "P6"
-      ]
+      "earned": 0.0,
+      "percent": 0.0
     },
-    {
-      "name": "ROM intelligence and compatibility evidence",
+    "ROM intelligence / compatibility": {
       "weight": 10,
-      "score": 0.0,
-      "evidence_level": "NOT_EXERCISED",
-      "sections": [
-        "P8"
-      ]
+      "earned": 0.0,
+      "percent": 0.0
     },
-    {
-      "name": "Java/Kotlin boundary and maintainability",
+    "Java / Kotlin boundary": {
       "weight": 8,
-      "score": 0.0,
-      "evidence_level": "NOT_EXERCISED",
-      "sections": [
-        "P7"
-      ]
+      "earned": 0.0,
+      "percent": 0.0
     },
-    {
-      "name": "Build, CI, signing, artifact and release engineering",
+    "Build / CI / signing / artifacts": {
       "weight": 12,
-      "score": 25.0,
-      "evidence_level": "NOT_EXERCISED",
-      "sections": [
-        "P9",
-        "P12"
-      ]
+      "earned": 5.4,
+      "percent": 45.0
     },
-    {
-      "name": "Current documentation and provenance",
+    "Documentation / provenance": {
       "weight": 5,
-      "score": 0.0,
-      "evidence_level": "NOT_EXERCISED",
-      "sections": [
-        "P10"
-      ]
+      "earned": 0.0,
+      "percent": 0.0
     },
-    {
-      "name": "Device validation",
+    "Device validation": {
       "weight": 5,
-      "score": 0.0,
-      "evidence_level": "NOT_EXERCISED",
-      "sections": [
-        "P13"
-      ]
+      "earned": 0.0,
+      "percent": 0.0
     }
-  ],
-  "sections": [
+  },
+  "capabilityItems": [
     {
-      "id": "P0",
-      "title": "— 锁定真实基线",
+      "id": "P0.1",
+      "domain": "Baseline and control",
+      "weight": 2.0,
       "state": "COMPLETE",
-      "evidence": [
-        "NOT_EXERCISED"
-      ]
+      "factor": 1.0,
+      "earned": 2.0,
+      "bucket": "complete",
+      "evidence_level": "pending",
+      "evidence_paths": [],
+      "evidence_commands": [],
+      "evidence_commit": "pending",
+      "device_evidence": ""
     },
     {
-      "id": "P1",
-      "title": "— 单一事实源",
+      "id": "P0.2",
+      "domain": "Baseline and control",
+      "weight": 2.0,
       "state": "COMPLETE",
-      "evidence": [
-        "NOT_EXERCISED"
-      ]
+      "factor": 1.0,
+      "earned": 2.0,
+      "bucket": "complete",
+      "evidence_level": "pending",
+      "evidence_paths": [],
+      "evidence_commands": [],
+      "evidence_commit": "pending",
+      "device_evidence": ""
+    },
+    {
+      "id": "P0.3",
+      "domain": "Baseline and control",
+      "weight": 2.0,
+      "state": "COMPLETE",
+      "factor": 1.0,
+      "earned": 2.0,
+      "bucket": "complete",
+      "evidence_level": "pending",
+      "evidence_paths": [],
+      "evidence_commands": [],
+      "evidence_commit": "pending",
+      "device_evidence": ""
+    },
+    {
+      "id": "P0.4",
+      "domain": "Baseline and control",
+      "weight": 2.0,
+      "state": "COMPLETE",
+      "factor": 1.0,
+      "earned": 2.0,
+      "bucket": "complete",
+      "evidence_level": "pending",
+      "evidence_paths": [],
+      "evidence_commands": [],
+      "evidence_commit": "pending",
+      "device_evidence": ""
+    },
+    {
+      "id": "P1.1",
+      "domain": "Runtime architecture / routing / ownership",
+      "weight": 3.67,
+      "state": "COMPLETE",
+      "factor": 1.0,
+      "earned": 3.67,
+      "bucket": "complete",
+      "evidence_level": "pending",
+      "evidence_paths": [],
+      "evidence_commands": [],
+      "evidence_commit": "pending",
+      "device_evidence": ""
+    },
+    {
+      "id": "P1.2",
+      "domain": "Runtime architecture / routing / ownership",
+      "weight": 3.67,
+      "state": "COMPLETE",
+      "factor": 1.0,
+      "earned": 3.67,
+      "bucket": "complete",
+      "evidence_level": "pending",
+      "evidence_paths": [],
+      "evidence_commands": [],
+      "evidence_commit": "pending",
+      "device_evidence": ""
+    },
+    {
+      "id": "P1.3",
+      "domain": "Runtime architecture / routing / ownership",
+      "weight": 3.67,
+      "state": "COMPLETE",
+      "factor": 1.0,
+      "earned": 3.67,
+      "bucket": "complete",
+      "evidence_level": "pending",
+      "evidence_paths": [],
+      "evidence_commands": [],
+      "evidence_commit": "pending",
+      "device_evidence": ""
     },
     {
       "id": "P2",
-      "title": "— typed Feature Registry 全量收口",
+      "domain": "Runtime architecture / routing / ownership",
+      "weight": 3.67,
       "state": "COMPLETE",
-      "evidence": [
-        "BUILD_VERIFIED"
-      ]
+      "factor": 1.0,
+      "earned": 3.67,
+      "bucket": "complete",
+      "evidence_level": "pending",
+      "evidence_paths": [],
+      "evidence_commands": [],
+      "evidence_commit": "pending",
+      "device_evidence": ""
     },
     {
       "id": "P3",
-      "title": "— 全部生产 Hook 收口",
+      "domain": "Runtime architecture / routing / ownership",
+      "weight": 3.67,
       "state": "IN_PROGRESS",
-      "evidence": [
-        "NOT_EXERCISED"
-      ]
+      "factor": 0.5,
+      "earned": 1.83,
+      "bucket": "in_progress",
+      "evidence_level": "pending",
+      "evidence_paths": [],
+      "evidence_commands": [],
+      "evidence_commit": "pending",
+      "device_evidence": ""
     },
     {
       "id": "P4",
-      "title": "— 进程与 Installer",
+      "domain": "Runtime architecture / routing / ownership",
+      "weight": 3.67,
       "state": "TODO",
-      "evidence": [
-        "NOT_EXERCISED"
-      ]
+      "factor": 0.0,
+      "earned": 0.0,
+      "bucket": "not_started",
+      "evidence_level": "pending",
+      "evidence_paths": [],
+      "evidence_commands": [],
+      "evidence_commit": "pending",
+      "device_evidence": ""
     },
     {
-      "id": "P5",
-      "title": "— Runtime safety",
-      "state": "TODO",
-      "evidence": [
-        "NOT_EXERCISED"
-      ]
+      "id": "P5.1",
+      "domain": "Runtime safety / lifecycle / concurrency",
+      "weight": 4.5,
+      "state": "UNKNOWN",
+      "factor": 0.0,
+      "earned": 0.0,
+      "bucket": "not_started",
+      "evidence_level": "pending",
+      "evidence_paths": [],
+      "evidence_commands": [],
+      "evidence_commit": "pending",
+      "device_evidence": ""
     },
     {
-      "id": "P6",
-      "title": "— 性能与内存",
-      "state": "TODO",
-      "evidence": [
-        "NOT_EXERCISED"
-      ]
+      "id": "P5.2",
+      "domain": "Runtime safety / lifecycle / concurrency",
+      "weight": 4.5,
+      "state": "UNKNOWN",
+      "factor": 0.0,
+      "earned": 0.0,
+      "bucket": "not_started",
+      "evidence_level": "pending",
+      "evidence_paths": [],
+      "evidence_commands": [],
+      "evidence_commit": "pending",
+      "device_evidence": ""
     },
     {
-      "id": "P7",
-      "title": "— Java → Kotlin 最终收口",
-      "state": "TODO",
-      "evidence": [
-        "NOT_EXERCISED"
-      ]
+      "id": "P5.3",
+      "domain": "Runtime safety / lifecycle / concurrency",
+      "weight": 4.5,
+      "state": "UNKNOWN",
+      "factor": 0.0,
+      "earned": 0.0,
+      "bucket": "not_started",
+      "evidence_level": "pending",
+      "evidence_paths": [],
+      "evidence_commands": [],
+      "evidence_commit": "pending",
+      "device_evidence": ""
     },
     {
-      "id": "P8",
-      "title": "— ROM intelligence",
-      "state": "TODO",
-      "evidence": [
-        "NOT_EXERCISED"
-      ]
+      "id": "P5.4",
+      "domain": "Runtime safety / lifecycle / concurrency",
+      "weight": 4.5,
+      "state": "UNKNOWN",
+      "factor": 0.0,
+      "earned": 0.0,
+      "bucket": "not_started",
+      "evidence_level": "pending",
+      "evidence_paths": [],
+      "evidence_commands": [],
+      "evidence_commit": "pending",
+      "device_evidence": ""
     },
     {
-      "id": "P9",
-      "title": "— 测试、CI 与构建",
-      "state": "IN_PROGRESS",
-      "evidence": [
-        "BUILD_VERIFIED",
-        "CI_VERIFIED"
-      ]
+      "id": "P6.1",
+      "domain": "Performance / memory / APK / R8",
+      "weight": 3.0,
+      "state": "UNKNOWN",
+      "factor": 0.0,
+      "earned": 0.0,
+      "bucket": "not_started",
+      "evidence_level": "pending",
+      "evidence_paths": [],
+      "evidence_commands": [],
+      "evidence_commit": "pending",
+      "device_evidence": ""
+    },
+    {
+      "id": "P6.2",
+      "domain": "Performance / memory / APK / R8",
+      "weight": 3.0,
+      "state": "UNKNOWN",
+      "factor": 0.0,
+      "earned": 0.0,
+      "bucket": "not_started",
+      "evidence_level": "pending",
+      "evidence_paths": [],
+      "evidence_commands": [],
+      "evidence_commit": "pending",
+      "device_evidence": ""
+    },
+    {
+      "id": "P6.3",
+      "domain": "Performance / memory / APK / R8",
+      "weight": 3.0,
+      "state": "UNKNOWN",
+      "factor": 0.0,
+      "earned": 0.0,
+      "bucket": "not_started",
+      "evidence_level": "pending",
+      "evidence_paths": [],
+      "evidence_commands": [],
+      "evidence_commit": "pending",
+      "device_evidence": ""
+    },
+    {
+      "id": "P6.4",
+      "domain": "Performance / memory / APK / R8",
+      "weight": 3.0,
+      "state": "UNKNOWN",
+      "factor": 0.0,
+      "earned": 0.0,
+      "bucket": "not_started",
+      "evidence_level": "pending",
+      "evidence_paths": [],
+      "evidence_commands": [],
+      "evidence_commit": "pending",
+      "device_evidence": ""
+    },
+    {
+      "id": "P7.1",
+      "domain": "Java / Kotlin boundary",
+      "weight": 2.67,
+      "state": "UNKNOWN",
+      "factor": 0.0,
+      "earned": 0.0,
+      "bucket": "not_started",
+      "evidence_level": "pending",
+      "evidence_paths": [],
+      "evidence_commands": [],
+      "evidence_commit": "pending",
+      "device_evidence": ""
+    },
+    {
+      "id": "P7.2",
+      "domain": "Java / Kotlin boundary",
+      "weight": 2.67,
+      "state": "UNKNOWN",
+      "factor": 0.0,
+      "earned": 0.0,
+      "bucket": "not_started",
+      "evidence_level": "pending",
+      "evidence_paths": [],
+      "evidence_commands": [],
+      "evidence_commit": "pending",
+      "device_evidence": ""
+    },
+    {
+      "id": "P7.3",
+      "domain": "Java / Kotlin boundary",
+      "weight": 2.67,
+      "state": "UNKNOWN",
+      "factor": 0.0,
+      "earned": 0.0,
+      "bucket": "not_started",
+      "evidence_level": "pending",
+      "evidence_paths": [],
+      "evidence_commands": [],
+      "evidence_commit": "pending",
+      "device_evidence": ""
+    },
+    {
+      "id": "P8.1",
+      "domain": "ROM intelligence / compatibility",
+      "weight": 3.33,
+      "state": "UNKNOWN",
+      "factor": 0.0,
+      "earned": 0.0,
+      "bucket": "not_started",
+      "evidence_level": "pending",
+      "evidence_paths": [],
+      "evidence_commands": [],
+      "evidence_commit": "pending",
+      "device_evidence": ""
+    },
+    {
+      "id": "P8.2",
+      "domain": "ROM intelligence / compatibility",
+      "weight": 3.33,
+      "state": "UNKNOWN",
+      "factor": 0.0,
+      "earned": 0.0,
+      "bucket": "not_started",
+      "evidence_level": "pending",
+      "evidence_paths": [],
+      "evidence_commands": [],
+      "evidence_commit": "pending",
+      "device_evidence": ""
+    },
+    {
+      "id": "P8.3",
+      "domain": "ROM intelligence / compatibility",
+      "weight": 3.33,
+      "state": "UNKNOWN",
+      "factor": 0.0,
+      "earned": 0.0,
+      "bucket": "not_started",
+      "evidence_level": "pending",
+      "evidence_paths": [],
+      "evidence_commands": [],
+      "evidence_commit": "pending",
+      "device_evidence": ""
+    },
+    {
+      "id": "P9.1",
+      "domain": "Build / CI / signing / artifacts",
+      "weight": 3.0,
+      "state": "VERIFIED_BUILD",
+      "factor": 0.85,
+      "earned": 2.55,
+      "bucket": "not_started",
+      "evidence_level": "pending",
+      "evidence_paths": [],
+      "evidence_commands": [],
+      "evidence_commit": "pending",
+      "device_evidence": ""
+    },
+    {
+      "id": "P9.2",
+      "domain": "Build / CI / signing / artifacts",
+      "weight": 3.0,
+      "state": "VERIFIED_CI",
+      "factor": 0.95,
+      "earned": 2.85,
+      "bucket": "not_started",
+      "evidence_level": "pending",
+      "evidence_paths": [],
+      "evidence_commands": [],
+      "evidence_commit": "pending",
+      "device_evidence": ""
+    },
+    {
+      "id": "P9.3",
+      "domain": "Build / CI / signing / artifacts",
+      "weight": 3.0,
+      "state": "UNKNOWN",
+      "factor": 0.0,
+      "earned": 0.0,
+      "bucket": "not_started",
+      "evidence_level": "pending",
+      "evidence_paths": [],
+      "evidence_commands": [],
+      "evidence_commit": "pending",
+      "device_evidence": ""
     },
     {
       "id": "P10",
-      "title": "— 文档与 dead code",
+      "domain": "Documentation / provenance",
+      "weight": 5.0,
       "state": "TODO",
-      "evidence": [
-        "NOT_EXERCISED"
-      ]
+      "factor": 0.0,
+      "earned": 0.0,
+      "bucket": "not_started",
+      "evidence_level": "pending",
+      "evidence_paths": [],
+      "evidence_commands": [],
+      "evidence_commit": "pending",
+      "device_evidence": ""
     },
     {
       "id": "P11",
-      "title": "— 自主 discovery sweep",
+      "domain": "Build / CI / signing / artifacts",
+      "weight": 3.0,
       "state": "TODO",
-      "evidence": [
-        "NOT_EXERCISED"
-      ]
+      "factor": 0.0,
+      "earned": 0.0,
+      "bucket": "not_started",
+      "evidence_level": "pending",
+      "evidence_paths": [],
+      "evidence_commands": [],
+      "evidence_commit": "pending",
+      "device_evidence": ""
     },
     {
-      "id": "P12",
-      "title": "— MACHINE_COMPLETE",
-      "state": "TODO",
-      "evidence": [
-        "NOT_EXERCISED"
-      ]
-    },
-    {
-      "id": "P13",
-      "title": "— DEVICE_VALIDATED",
+      "id": "DEVICE-001",
+      "domain": "Device validation",
+      "weight": 5,
       "state": "BLOCKED_EXTERNAL",
-      "evidence": [
-        "NOT_EXERCISED"
-      ]
-    },
-    {
-      "id": "P14",
-      "title": "— PROJECT_COMPLETE",
-      "state": "TODO",
-      "evidence": [
-        "NOT_EXERCISED"
-      ]
+      "factor": 0.0,
+      "earned": 0.0,
+      "bucket": "blocked_external",
+      "evidence_level": "pending",
+      "evidence_paths": [],
+      "evidence_commands": [],
+      "evidence_commit": "pending",
+      "device_evidence": "NOT_EXERCISED"
     }
   ],
-  "notes": [
-    "Device validation is blocked by external evidence."
-  ]
+  "openP0": 0,
+  "openP1": 3,
+  "externalBlocks": 1,
+  "notes": "v7 capability-scored snapshot; device domain excluded from machine progress."
 }
