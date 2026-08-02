@@ -17,7 +17,7 @@
     {
       "fingerprint": "8c777c19745e54a4fb43dd8d",
       "path": "app/src/main/java/tv/withaibuild/customiuizer/installers/SystemUiInstaller.java",
-      "line": 60,
+      "line": 59,
       "snippet": "ModuleHelper.findAndHookMethod(\"com.android.systemui.SystemUIApplication\", lpparam.getClassLoader(), \"onCreate\", new MethodHook() {"
     },
     {
@@ -1119,111 +1119,111 @@
       "snippet": "ModuleHelper.findAndHookMethod(\"com.android.server.display.DisplayPowerController\", lpparam.classLoader, \"initialize\", object : MethodHook() {"
     },
     {
-      "fingerprint": "46ab1a2ee126153d71ce8520",
+      "fingerprint": "5be61e08401bde219ccf3867",
       "path": "app/src/main/java/tv/withaibuild/customiuizer/mods/SystemDisplayAndWindowHooks.kt",
-      "line": 57,
-      "snippet": "ModuleHelper.hookAllMethods(\"com.android.server.logcat.LogcatManagerService\", lpparam.classLoader, \"onLogAccessRequested\", object : MethodHook() {"
+      "line": 65,
+      "snippet": "ModuleHelper.hookAllMethods(\"com.android.server.logcat.LogcatManagerService\", lpparam.classLoader, \"onLogAccessRequested\", createNoAccessDeviceLogsHook())"
     },
     {
       "fingerprint": "94b2f43c48b2f66b297eb3cd",
       "path": "app/src/main/java/tv/withaibuild/customiuizer/mods/SystemDisplayAndWindowHooks.kt",
-      "line": 68,
+      "line": 71,
       "snippet": "ModuleHelper.hookAllMethods(\"com.android.server.power.PowerManagerService\", lpparam.classLoader, methodName, object : MethodHook() {"
     },
     {
       "fingerprint": "d51d43f490a8b5fcefd9d2fb",
       "path": "app/src/main/java/tv/withaibuild/customiuizer/mods/SystemDisplayAndWindowHooks.kt",
-      "line": 91,
+      "line": 94,
       "snippet": "ModuleHelper.findAndHookMethod(\"com.android.systemui.statusbar.phone.NotificationsQuickSettingsContainer\", lpparam.classLoader, \"onFinishInflate\", object : MethodHook() {"
     },
     {
       "fingerprint": "27b69612687148a707c59d03",
       "path": "app/src/main/java/tv/withaibuild/customiuizer/mods/SystemDisplayAndWindowHooks.kt",
-      "line": 134,
+      "line": 137,
       "snippet": "ModuleHelper.hookAllConstructors(\"com.android.systemui.statusbar.phone.MiuiNotificationPanelViewController\", lpparam.classLoader, object : MethodHook() {"
     },
     {
       "fingerprint": "2ed53acb90195ce46545a185",
       "path": "app/src/main/java/tv/withaibuild/customiuizer/mods/SystemDisplayAndWindowHooks.kt",
-      "line": 160,
+      "line": 163,
       "snippet": "ModuleHelper.findAndHookMethod(\"com.android.systemui.statusbar.NotificationShadeDepthController\\$updateBlurCallback\\$1\", lpparam.classLoader, \"doFrame\", Long::class.javaPrimitiveType, object : MethodHook() {"
     },
     {
       "fingerprint": "66424e697d7a7e0be52f972f",
       "path": "app/src/main/java/tv/withaibuild/customiuizer/mods/SystemDisplayAndWindowHooks.kt",
-      "line": 175,
+      "line": 178,
       "snippet": "ModuleHelper.findAndHookMethod(\"com.android.systemui.statusbar.policy.BlurUtilsExt\", lpparam.classLoader, \"applyBlurByRadius\", android.view.View::class.java, Int::class.javaPrimitiveType, object : MethodHook() {"
     },
     {
       "fingerprint": "3c70d7ab7505d92c4e62149d",
       "path": "app/src/main/java/tv/withaibuild/customiuizer/mods/SystemDisplayAndWindowHooks.kt",
-      "line": 185,
+      "line": 188,
       "snippet": "ModuleHelper.findAndHookMethod(\"com.android.systemui.controlcenter.phone.ControlPanelWindowManager\", lpparam.classLoader, \"setBlurRatio\", Float::class.javaPrimitiveType, Boolean::class.javaPrimitiveType, object : MethodHook() {"
     },
     {
       "fingerprint": "087eca32276a245fa91fccbf",
       "path": "app/src/main/java/tv/withaibuild/customiuizer/mods/SystemDisplayAndWindowHooks.kt",
-      "line": 318,
+      "line": 321,
       "snippet": "ModuleHelper.findAndHookMethod(abc, lpparam.classLoader, \"clampScreenBrightness\", Float::class.javaPrimitiveType, clampHook)"
     },
     {
       "fingerprint": "9d59912af27d520c406e3c97",
       "path": "app/src/main/java/tv/withaibuild/customiuizer/mods/SystemDisplayAndWindowHooks.kt",
-      "line": 319,
+      "line": 322,
       "snippet": "ModuleHelper.hookAllConstructors(abc, lpparam.classLoader, constructorHook)"
     },
     {
       "fingerprint": "da7c6b5d2390cebc380c5483",
       "path": "app/src/main/java/tv/withaibuild/customiuizer/mods/SystemDisplayAndWindowHooks.kt",
-      "line": 338,
+      "line": 341,
       "snippet": "ModuleHelper.findAndHookMethod(dpc, lpparam.classLoader, \"clampScreenBrightness\", Float::class.javaPrimitiveType, clampHook)"
     },
     {
       "fingerprint": "95c0c2f8a350bd8d264a10b6",
       "path": "app/src/main/java/tv/withaibuild/customiuizer/mods/SystemDisplayAndWindowHooks.kt",
-      "line": 339,
+      "line": 342,
       "snippet": "ModuleHelper.hookAllConstructors(dpc, lpparam.classLoader, constructorHook)"
     },
     {
       "fingerprint": "31cd60b4eb05769755ee3c53",
       "path": "app/src/main/java/tv/withaibuild/customiuizer/mods/SystemDisplayAndWindowHooks.kt",
-      "line": 355,
+      "line": 358,
       "snippet": "ModuleHelper.findAndHookMethod(\"com.android.server.policy.MiuiScreenOnProximityLock\", lpparam.classLoader, \"showHint\", HookerClassHelper.DO_NOTHING)"
     },
     {
       "fingerprint": "be2c2838696bb9816b5d2cba",
       "path": "app/src/main/java/tv/withaibuild/customiuizer/mods/SystemDisplayAndWindowHooks.kt",
-      "line": 356,
+      "line": 359,
       "snippet": "ModuleHelper.findAndHookMethod(\"com.android.server.policy.MiuiScreenOnProximityLock\", lpparam.classLoader, \"prepareHintWindow\", HookerClassHelper.DO_NOTHING)"
     },
     {
       "fingerprint": "f0942aa82a32bdde9af7e4fc",
       "path": "app/src/main/java/tv/withaibuild/customiuizer/mods/SystemDisplayAndWindowHooks.kt",
-      "line": 430,
+      "line": 433,
       "snippet": "ModuleHelper.findAndHookMethod(\"com.android.server.wm.ScreenRotationAnimationImpl\", lpparam.classLoader, \"createRotation180Enter\", animEnter)"
     },
     {
       "fingerprint": "a3ddd3acf60ad1299378f50c",
       "path": "app/src/main/java/tv/withaibuild/customiuizer/mods/SystemDisplayAndWindowHooks.kt",
-      "line": 431,
+      "line": 434,
       "snippet": "ModuleHelper.findAndHookMethod(\"com.android.server.wm.ScreenRotationAnimationImpl\", lpparam.classLoader, \"createRotation180Exit\", animExit)"
     },
     {
       "fingerprint": "7632926d8419315b63ecc3f8",
       "path": "app/src/main/java/tv/withaibuild/customiuizer/mods/SystemDisplayAndWindowHooks.kt",
-      "line": 432,
+      "line": 435,
       "snippet": "ModuleHelper.hookAllMethods(\"com.android.server.wm.ScreenRotationAnimationImpl\", lpparam.classLoader, \"createRotationEnter\", animEnter)"
     },
     {
       "fingerprint": "dbb2f7d01aa72db7d04ec5ad",
       "path": "app/src/main/java/tv/withaibuild/customiuizer/mods/SystemDisplayAndWindowHooks.kt",
-      "line": 433,
+      "line": 436,
       "snippet": "ModuleHelper.hookAllMethods(\"com.android.server.wm.ScreenRotationAnimationImpl\", lpparam.classLoader, \"createRotationEnterWithBackColor\", animEnter)"
     },
     {
       "fingerprint": "0cbf6834e6de9c30d8f51cd4",
       "path": "app/src/main/java/tv/withaibuild/customiuizer/mods/SystemDisplayAndWindowHooks.kt",
-      "line": 434,
+      "line": 437,
       "snippet": "ModuleHelper.hookAllMethods(\"com.android.server.wm.ScreenRotationAnimationImpl\", lpparam.classLoader, \"createRotationExit\", animExit)"
     },
     {
@@ -1383,105 +1383,105 @@
       "snippet": "ModuleHelper.hookAllMethods(\"com.miui.server.SecurityManagerService\", lpparam.classLoader, \"removeAccessControlPassLocked\", object : MethodHook() {"
     },
     {
-      "fingerprint": "f1bf465980d3df474e1c5f4f",
+      "fingerprint": "1bfc8a1bfc53ab78e421a1f1",
       "path": "app/src/main/java/tv/withaibuild/customiuizer/mods/SystemLockScreenMoreHooks.kt",
-      "line": 76,
-      "snippet": "ModuleHelper.findAndHookMethod(\"com.miui.server.SecurityManagerService\", lpparam.classLoader, \"addAccessControlPassForUser\", String::class.java, Int::class.javaPrimitiveType, object : MethodHook() {"
+      "line": 98,
+      "snippet": "ModuleHelper.findAndHookMethod(\"com.miui.server.SecurityManagerService\", lpparam.classLoader, \"addAccessControlPassForUser\", String::class.java, Int::class.javaPrimitiveType, createAddAccessControlPassForUserHook())"
     },
     {
-      "fingerprint": "ab5843ba078ffe886d17a222",
+      "fingerprint": "429ca0c485c353fb5ef92fc4",
       "path": "app/src/main/java/tv/withaibuild/customiuizer/mods/SystemLockScreenMoreHooks.kt",
-      "line": 86,
-      "snippet": "ModuleHelper.findAndHookMethod(\"com.miui.server.SecurityManagerService\", lpparam.classLoader, \"checkAccessControlPassLocked\", String::class.java, Intent::class.java, Int::class.javaPrimitiveType, object : MethodHook() {"
+      "line": 100,
+      "snippet": "ModuleHelper.findAndHookMethod(\"com.miui.server.SecurityManagerService\", lpparam.classLoader, \"checkAccessControlPassLocked\", String::class.java, Intent::class.java, Int::class.javaPrimitiveType, createCheckAccessControlPassLockedHook())"
     },
     {
       "fingerprint": "5b4db9de4221a75e173d3f43",
       "path": "app/src/main/java/tv/withaibuild/customiuizer/mods/SystemLockScreenMoreHooks.kt",
-      "line": 99,
+      "line": 105,
       "snippet": "ModuleHelper.hookAllMethods(\"com.miui.server.AccessController\", lpparam.classLoader, \"skipActivity\", object : MethodHook() {"
     },
     {
       "fingerprint": "8caf8d438bbf52bfb861c49c",
       "path": "app/src/main/java/tv/withaibuild/customiuizer/mods/SystemLockScreenMoreHooks.kt",
-      "line": 127,
+      "line": 133,
       "snippet": "ModuleHelper.hookAllMethods(\"com.android.keyguard.KeyguardClockSwitch\", lpparam.classLoader, \"setClockPlugin\", hideClockHook)"
     },
     {
       "fingerprint": "09b0217e1a38ddea9182e06f",
       "path": "app/src/main/java/tv/withaibuild/customiuizer/mods/SystemLockScreenMoreHooks.kt",
-      "line": 128,
+      "line": 134,
       "snippet": "ModuleHelper.findAndHookMethod(\"com.android.keyguard.KeyguardClockSwitch\", lpparam.classLoader, \"updateClockViews\", Boolean::class.javaPrimitiveType, Boolean::class.javaPrimitiveType, hideClockHook)"
     },
     {
       "fingerprint": "8cdbb69a926da779c6ac1540",
       "path": "app/src/main/java/tv/withaibuild/customiuizer/mods/SystemLockScreenMoreHooks.kt",
-      "line": 133,
+      "line": 139,
       "snippet": "ModuleHelper.findAndHookMethod(\"com.android.systemui.keyguard.KeyguardIndicationRotateTextViewController\", lpparam.classLoader, \"hasIndicationsExceptResting\", HookerClassHelper.returnConstant(true))"
     },
     {
       "fingerprint": "79be33d65f15d09d76882a5b",
       "path": "app/src/main/java/tv/withaibuild/customiuizer/mods/SystemLockScreenMoreHooks.kt",
-      "line": 138,
+      "line": 144,
       "snippet": "ModuleHelper.hookAllMethods(StatusBarCls, lpparam.classLoader, \"makeStatusBarView\", object : MethodHook() {"
     },
     {
       "fingerprint": "d0cca22274f8e7c198b8c1ac",
       "path": "app/src/main/java/tv/withaibuild/customiuizer/mods/SystemLockScreenMoreHooks.kt",
-      "line": 213,
+      "line": 219,
       "snippet": "ModuleHelper.findAndHookMethod(\"com.android.systemui.keyguard.KeyguardViewMediator\", lpparam.classLoader, \"handleKeyguardDone\", object : MethodHook() {"
     },
     {
       "fingerprint": "75b79f31e7fb67c9445b9a0c",
       "path": "app/src/main/java/tv/withaibuild/customiuizer/mods/SystemLockScreenMoreHooks.kt",
-      "line": 223,
+      "line": 229,
       "snippet": "ModuleHelper.findAndHookMethod(\"com.android.keyguard.KeyguardUpdateMonitor\", lpparam.classLoader, \"onFingerprintAuthenticated\", Int::class.javaPrimitiveType, Boolean::class.javaPrimitiveType, object : MethodHook() {"
     },
     {
       "fingerprint": "10a5a1f5e37f363764cca893",
       "path": "app/src/main/java/tv/withaibuild/customiuizer/mods/SystemLockScreenMoreHooks.kt",
-      "line": 229,
+      "line": 235,
       "snippet": "ModuleHelper.hookAllConstructors(\"com.android.systemui.keyguard.KeyguardSecurityContainerController\", lpparam.classLoader, object : MethodHook() {"
     },
     {
       "fingerprint": "6d3c338a1158258b2771f8db",
       "path": "app/src/main/java/tv/withaibuild/customiuizer/mods/SystemLockScreenMoreHooks.kt",
-      "line": 253,
+      "line": 259,
       "snippet": "ModuleHelper.findAndHookMethod(\"com.android.systemui.keyguard.KeyguardViewMediator\", lpparam.classLoader, \"doKeyguardLocked\", Bundle::class.java, object : MethodHook() {"
     },
     {
       "fingerprint": "a7300f3ced3d4de828137f52",
       "path": "app/src/main/java/tv/withaibuild/customiuizer/mods/SystemLockScreenMoreHooks.kt",
-      "line": 271,
+      "line": 277,
       "snippet": "ModuleHelper.findAndHookMethod(\"com.android.systemui.keyguard.KeyguardViewMediator\", lpparam.classLoader, \"setupLocked\", object : MethodHook() {"
     },
     {
       "fingerprint": "515017ed484d0e85a33c56bc",
       "path": "app/src/main/java/tv/withaibuild/customiuizer/mods/SystemLockScreenMoreHooks.kt",
-      "line": 339,
+      "line": 345,
       "snippet": "ModuleHelper.findAndHookMethod(\"com.android.keyguard.KeyguardSecurityModel\", lpparam.classLoader, \"getSecurityMode\", Int::class.javaPrimitiveType, object : MethodHook() {"
     },
     {
       "fingerprint": "338d28be5b93fd1888458b22",
       "path": "app/src/main/java/tv/withaibuild/customiuizer/mods/SystemLockScreenMoreHooks.kt",
-      "line": 363,
+      "line": 369,
       "snippet": "ModuleHelper.hookAllMethods(startClass, \"startFaceUnlock\", object : MethodHook() {"
     },
     {
       "fingerprint": "491d7cb19c1cd353ad74ee75",
       "path": "app/src/main/java/tv/withaibuild/customiuizer/mods/SystemLockScreenMoreHooks.kt",
-      "line": 381,
+      "line": 387,
       "snippet": "ModuleHelper.hookAllMethods(startClass, showMsgMethod.name, object : MethodHook() {"
     },
     {
       "fingerprint": "e21a99f8f55c4b7e36a1410e",
       "path": "app/src/main/java/tv/withaibuild/customiuizer/mods/SystemLockScreenMoreHooks.kt",
-      "line": 395,
+      "line": 401,
       "snippet": "ModuleHelper.hookAllConstructors(\"com.android.systemui.statusbar.policy.BluetoothControllerImpl\", lpparam.classLoader, object : MethodHook() {"
     },
     {
       "fingerprint": "13e2a64d53b94bf29faa42c4",
       "path": "app/src/main/java/tv/withaibuild/customiuizer/mods/SystemLockScreenMoreHooks.kt",
-      "line": 425,
+      "line": 431,
       "snippet": "ModuleHelper.findAndHookMethod(\"com.android.systemui.statusbar.policy.BluetoothControllerImpl\", lpparam.classLoader, \"updateConnected\", object : MethodHook() {"
     },
     {
@@ -1563,16 +1563,16 @@
       "snippet": "ModuleHelper.hookAllMethods(tileClass, lpparam.classLoader, \"handleClick\", object : MethodHook() {"
     },
     {
-      "fingerprint": "f86cd3ff23dea2abe256e1fc",
+      "fingerprint": "b1d95263d08ac7ba5c0db8d6",
       "path": "app/src/main/java/tv/withaibuild/customiuizer/mods/SystemNotificationAndShareHooks.kt",
-      "line": 255,
-      "snippet": "ModuleHelper.findAndHookMethod(\"com.android.server.notification.GroupHelper\", lpparam.classLoader, \"adjustAutogroupingSummary\", Int::class.javaPrimitiveType, String::class.java, String::class.java, Boolean::class.javaPrimitiveType, object : MethodHook() {"
+      "line": 282,
+      "snippet": "ModuleHelper.findAndHookMethod(\"com.android.server.notification.GroupHelper\", lpparam.classLoader, \"adjustAutogroupingSummary\", Int::class.javaPrimitiveType, String::class.java, String::class.java, Boolean::class.javaPrimitiveType, createAdjustAutogroupingSummaryHook())"
     },
     {
-      "fingerprint": "eed65527280eb49099bd6b4d",
+      "fingerprint": "791bdf3456224e9f31b209ca",
       "path": "app/src/main/java/tv/withaibuild/customiuizer/mods/SystemNotificationAndShareHooks.kt",
-      "line": 272,
-      "snippet": "ModuleHelper.findAndHookMethod(\"com.android.server.notification.GroupHelper\", lpparam.classLoader, \"adjustNotificationBundling\", List::class.java, Boolean::class.javaPrimitiveType, object : MethodHook() {"
+      "line": 284,
+      "snippet": "ModuleHelper.findAndHookMethod(\"com.android.server.notification.GroupHelper\", lpparam.classLoader, \"adjustNotificationBundling\", List::class.java, Boolean::class.javaPrimitiveType, createAdjustNotificationBundlingHook())"
     },
     {
       "fingerprint": "6521ae2d902c5e4dd453c230",
@@ -3399,285 +3399,285 @@
       "snippet": "ModuleHelper.hookAllMethods(fragCls, lpparam.classLoader, \"onActivityCreated\", object : MethodHook() {"
     },
     {
-      "fingerprint": "21152c039fae6d9d85f3de1f",
+      "fingerprint": "61806c5a7c49ade57a894ea4",
       "path": "app/src/main/java/tv/withaibuild/customiuizer/mods/Various.kt",
-      "line": 287,
-      "snippet": "ModuleHelper.findAndHookMethod(\"com.android.server.pm.PackageManagerServiceImpl\", lpparam.classLoader, \"canBeDisabled\", String::class.java, Int::class.javaPrimitiveType, object : MethodHook() {"
+      "line": 301,
+      "snippet": "ModuleHelper.findAndHookMethod(\"com.android.server.pm.PackageManagerServiceImpl\", lpparam.classLoader, \"canBeDisabled\", String::class.java, Int::class.javaPrimitiveType, createAppsDisableServiceHook())"
     },
     {
       "fingerprint": "781b5812974ad2a97efc1918",
       "path": "app/src/main/java/tv/withaibuild/customiuizer/mods/Various.kt",
-      "line": 303,
+      "line": 306,
       "snippet": "ModuleHelper.findAndHookMethod(\"com.miui.appmanager.ApplicationsDetailsActivity\", lpparam.classLoader, \"onCreateOptionsMenu\", Menu::class.java, object : MethodHook() {"
     },
     {
       "fingerprint": "b6504505e6d9622f5394b5f7",
       "path": "app/src/main/java/tv/withaibuild/customiuizer/mods/Various.kt",
-      "line": 332,
+      "line": 335,
       "snippet": "ModuleHelper.findAndHookMethod(\"com.miui.appmanager.ApplicationsDetailsActivity\", lpparam.classLoader, \"onOptionsItemSelected\", MenuItem::class.java, object : MethodHook() {"
     },
     {
       "fingerprint": "b4f847c166785fa142c0001d",
       "path": "app/src/main/java/tv/withaibuild/customiuizer/mods/Various.kt",
-      "line": 383,
+      "line": 386,
       "snippet": "ModuleHelper.hookMethod(mGetAppInfo[0], object : MethodHook() {"
     },
     {
       "fingerprint": "de4cb0659108e340cc2d6836",
       "path": "app/src/main/java/tv/withaibuild/customiuizer/mods/Various.kt",
-      "line": 394,
+      "line": 397,
       "snippet": "ModuleHelper.findAndHookMethod(\"com.miui.networkassistant.ui.fragment.ShowAppDetailFragment\", lpparam.classLoader, \"initFirewallData\", object : MethodHook() {"
     },
     {
       "fingerprint": "4395aa87565da63276facc0e",
       "path": "app/src/main/java/tv/withaibuild/customiuizer/mods/Various.kt",
-      "line": 401,
+      "line": 404,
       "snippet": "ModuleHelper.hookAllMethods(\"com.miui.networkassistant.service.FirewallService\", lpparam.classLoader, \"setSystemAppWifiRuleAllow\", HookerClassHelper.DO_NOTHING)"
     },
     {
       "fingerprint": "ee8e2fbafa442046d769fb3c",
       "path": "app/src/main/java/tv/withaibuild/customiuizer/mods/Various.kt",
-      "line": 407,
+      "line": 410,
       "snippet": "ModuleHelper.findAndHookMethod(\"com.miui.powerkeeper.provider.PowerKeeperConfigureManager\", lpparam.classLoader, \"pkgHasIcon\", String::class.java, HookerClassHelper.returnConstant(true))"
     },
     {
       "fingerprint": "e014f999e3a45ad16c2c1cac",
       "path": "app/src/main/java/tv/withaibuild/customiuizer/mods/Various.kt",
-      "line": 409,
+      "line": 412,
       "snippet": "ModuleHelper.findAndHookMethod(\"com.miui.powerkeeper.provider.PreSetGroup\", lpparam.classLoader, \"initGroup\", object : MethodHook() {"
     },
     {
       "fingerprint": "224ee204b7c5f28af1c193f7",
       "path": "app/src/main/java/tv/withaibuild/customiuizer/mods/Various.kt",
-      "line": 419,
+      "line": 422,
       "snippet": "ModuleHelper.findAndHookMethod(\"com.miui.powerkeeper.provider.PreSetApp\", lpparam.classLoader, \"isPreSetApp\", String::class.java, HookerClassHelper.returnConstant(false))"
     },
     {
       "fingerprint": "111971b0231e874022c0078d",
       "path": "app/src/main/java/tv/withaibuild/customiuizer/mods/Various.kt",
-      "line": 420,
+      "line": 423,
       "snippet": "ModuleHelper.hookAllMethods(\"com.miui.powerkeeper.utils.Utils\", lpparam.classLoader, \"pkgHasIcon\", HookerClassHelper.returnConstant(true))"
     },
     {
       "fingerprint": "5dbcedadf14f0ac30c70daff",
       "path": "app/src/main/java/tv/withaibuild/customiuizer/mods/Various.kt",
-      "line": 425,
+      "line": 428,
       "snippet": "ModuleHelper.hookAllMethods(\"com.miui.powerkeeper.utils.CommonAdapter\", lpparam.classLoader, \"addPowerSaveWhitelistApps\", HookerClassHelper.DO_NOTHING)"
     },
     {
       "fingerprint": "aca0c06a02149ac0d4022f61",
       "path": "app/src/main/java/tv/withaibuild/customiuizer/mods/Various.kt",
-      "line": 426,
+      "line": 429,
       "snippet": "ModuleHelper.hookAllMethods(\"com.miui.powerkeeper.millet.MilletPolicy\", lpparam.classLoader, \"dealSleepModeWhiteList\", object : MethodHook() {"
     },
     {
       "fingerprint": "41eeff720309502a8aab9d73",
       "path": "app/src/main/java/tv/withaibuild/customiuizer/mods/Various.kt",
-      "line": 434,
+      "line": 437,
       "snippet": "ModuleHelper.findAndHookMethod(\"com.miui.powerkeeper.statemachine.ForceDozeController\", lpparam.classLoader, \"restoreWhiteListAppsIfQuitForceIdle\", HookerClassHelper.DO_NOTHING)"
     },
     {
       "fingerprint": "09b0bd77883cb5b48d9c87c5",
       "path": "app/src/main/java/tv/withaibuild/customiuizer/mods/Various.kt",
-      "line": 479,
+      "line": 482,
       "snippet": "ModuleHelper.hookAllConstructors(regionSamplingHelper, object : MethodHook() {"
     },
     {
       "fingerprint": "ddc9fa91d3fee3bb14b068d6",
       "path": "app/src/main/java/tv/withaibuild/customiuizer/mods/Various.kt",
-      "line": 516,
+      "line": 519,
       "snippet": "ModuleHelper.findAndHookMethod(mOnTouchListener.javaClass, \"onTouch\", View::class.java, MotionEvent::class.java, object : MethodHook() {"
     },
     {
       "fingerprint": "fe481ec341125e28904406ae",
       "path": "app/src/main/java/tv/withaibuild/customiuizer/mods/Various.kt",
-      "line": 527,
+      "line": 530,
       "snippet": "ModuleHelper.findAndHookMethod(bg.javaClass, \"draw\", Canvas::class.java, object : MethodHook() {"
     },
     {
       "fingerprint": "0312a75582281c69414e2695",
       "path": "app/src/main/java/tv/withaibuild/customiuizer/mods/Various.kt",
-      "line": 544,
+      "line": 547,
       "snippet": "ModuleHelper.findAndHookMethod(regionSamplingHelper, \"onViewDetachedFromWindow\", View::class.java, object : MethodHook() {"
     },
     {
       "fingerprint": "a23a65a416a509637e9cc7a1",
       "path": "app/src/main/java/tv/withaibuild/customiuizer/mods/Various.kt",
-      "line": 567,
+      "line": 570,
       "snippet": "ModuleHelper.hookMethod(methods[0], object : MethodHook() {"
     },
     {
       "fingerprint": "d1419e07af48d466b8acbd5f",
       "path": "app/src/main/java/tv/withaibuild/customiuizer/mods/Various.kt",
-      "line": 586,
+      "line": 589,
       "snippet": "ModuleHelper.hookAllConstructors(handlerClass, object : MethodHook() {"
     },
     {
       "fingerprint": "a23a65a416a509637e9cc7a1",
       "path": "app/src/main/java/tv/withaibuild/customiuizer/mods/Various.kt",
-      "line": 595,
+      "line": 598,
       "snippet": "ModuleHelper.hookMethod(methods[0], object : MethodHook() {"
     },
     {
       "fingerprint": "dafbda950d1add0cabf607d6",
       "path": "app/src/main/java/tv/withaibuild/customiuizer/mods/Various.kt",
-      "line": 606,
+      "line": 609,
       "snippet": "ModuleHelper.findAndHookMethod(\"com.miui.privacyapps.ui.PrivacyAppsActivity\", lpparam.classLoader, \"onCreate\", Bundle::class.java, object : MethodHook() {"
     },
     {
       "fingerprint": "5dc808a7451e6a13e541f842",
       "path": "app/src/main/java/tv/withaibuild/customiuizer/mods/Various.kt",
-      "line": 631,
+      "line": 634,
       "snippet": "ModuleHelper.hookAllMethods(Settings.System::class.java, \"getInt\", settingHook)"
     },
     {
       "fingerprint": "2d1c4a175849de0328ad09de",
       "path": "app/src/main/java/tv/withaibuild/customiuizer/mods/Various.kt",
-      "line": 632,
+      "line": 635,
       "snippet": "ModuleHelper.hookAllMethods(Settings.Global::class.java, \"getString\", settingHook)"
     },
     {
       "fingerprint": "d696a5390a8ee2443b833a0a",
       "path": "app/src/main/java/tv/withaibuild/customiuizer/mods/Various.kt",
-      "line": 638,
+      "line": 641,
       "snippet": "ModuleHelper.findAndHookMethod(\"com.miui.appmanager.ApplicationsDetailsActivity\", lpparam.classLoader, \"initView\", object : MethodHook() {"
     },
     {
       "fingerprint": "7587b406480be68db0c1d2d1",
       "path": "app/src/main/java/tv/withaibuild/customiuizer/mods/Various.kt",
-      "line": 648,
+      "line": 651,
       "snippet": "ModuleHelper.findAndHookMethod(\"com.miui.appmanager.ApplicationsDetailsActivity\", lpparam.classLoader, \"onClick\", View::class.java, object : MethodHook() {"
     },
     {
       "fingerprint": "22eb8e94f14e3a7a9aa24128",
       "path": "app/src/main/java/tv/withaibuild/customiuizer/mods/Various.kt",
-      "line": 670,
+      "line": 673,
       "snippet": "ModuleHelper.findAndHookMethod(\"com.miui.securityscan.model.ModelFactory\", lpparam.classLoader, \"produceSystemGroupModel\", Context::class.java, skipScan)"
     },
     {
       "fingerprint": "df37d243b11ccb4416807b1b",
       "path": "app/src/main/java/tv/withaibuild/customiuizer/mods/Various.kt",
-      "line": 671,
+      "line": 674,
       "snippet": "ModuleHelper.findAndHookMethod(\"com.miui.securityscan.model.ModelFactory\", lpparam.classLoader, \"produceManualGroupModel\", Context::class.java, skipScan)"
     },
     {
       "fingerprint": "a980fa1783bf11d91ea21b48",
       "path": "app/src/main/java/tv/withaibuild/customiuizer/mods/Various.kt",
-      "line": 672,
+      "line": 675,
       "snippet": "ModuleHelper.findAndHookMethod(\"com.miui.common.customview.ScoreTextView\", lpparam.classLoader, \"setScore\", Int::class.javaPrimitiveType, object : MethodHook() {"
     },
     {
       "fingerprint": "1f0e1a1ac6d19948615e50e5",
       "path": "app/src/main/java/tv/withaibuild/customiuizer/mods/Various.kt",
-      "line": 677,
+      "line": 680,
       "snippet": "ModuleHelper.findAndHookMethod(ContentResolver::class.java, \"call\", Uri::class.java, String::class.java, String::class.java, Bundle::class.java, object : MethodHook() {"
     },
     {
       "fingerprint": "f7662e269747007b69e777ea",
       "path": "app/src/main/java/tv/withaibuild/customiuizer/mods/Various.kt",
-      "line": 689,
+      "line": 692,
       "snippet": "ModuleHelper.findAndHookMethod(\"com.miui.securityscan.ui.main.MainContentFrame\", lpparam.classLoader, \"onClick\", View::class.java, HookerClassHelper.DO_NOTHING)"
     },
     {
       "fingerprint": "1fdea63316917cf8ee42e2dc",
       "path": "app/src/main/java/tv/withaibuild/customiuizer/mods/Various.kt",
-      "line": 696,
+      "line": 699,
       "snippet": "ModuleHelper.findAndHookMethod(\"com.lbe.security.ui.ClipboardTipDialog\", lpparam.classLoader, \"customReadClipboardDialog\", Context::class.java, String::class.java, HookerClassHelper.returnConstant(false))"
     },
     {
       "fingerprint": "c02afb1de13c919e3f563eda",
       "path": "app/src/main/java/tv/withaibuild/customiuizer/mods/Various.kt",
-      "line": 698,
+      "line": 701,
       "snippet": "ModuleHelper.findAndHookMethod(\"com.lbe.security.ui.ClipboardTipDialog\", lpparam.classLoader, \"customReadClipboardDialog\", Context::class.java, String::class.java, HookerClassHelper.returnConstant(true))"
     },
     {
       "fingerprint": "f95583d94d9c8d1509d8dc87",
       "path": "app/src/main/java/tv/withaibuild/customiuizer/mods/Various.kt",
-      "line": 701,
+      "line": 704,
       "snippet": "ModuleHelper.hookAllMethods(securityPromptHandler, \"handleNewRequest\", object : MethodHook() {"
     },
     {
       "fingerprint": "1b8364ebe8594a7d19a99b5e",
       "path": "app/src/main/java/tv/withaibuild/customiuizer/mods/Various.kt",
-      "line": 747,
+      "line": 750,
       "snippet": "ModuleHelper.findAndHookMethod(handlerClass, \"handleMessage\", Message::class.java, object : MethodHook() {"
     },
     {
       "fingerprint": "d2619eda62c9356d25f93d76",
       "path": "app/src/main/java/tv/withaibuild/customiuizer/mods/Various.kt",
-      "line": 796,
+      "line": 799,
       "snippet": "ModuleHelper.findAndHookMethod(\"com.miui.permcenter.settings.PrivacyLabActivity\", lpparam.classLoader, \"onCreateFragment\", object : MethodHook() {"
     },
     {
       "fingerprint": "b6ef4c38338aa4636eaa0d78",
       "path": "app/src/main/java/tv/withaibuild/customiuizer/mods/Various.kt",
-      "line": 815,
+      "line": 818,
       "snippet": "ModuleHelper.findAndHookMethod(Settings.System::class.java, \"getStringForUser\", ContentResolver::class.java, String::class.java, Int::class.javaPrimitiveType, object : MethodHook() {"
     },
     {
       "fingerprint": "1aae5a34cb970c5544c21dfb",
       "path": "app/src/main/java/tv/withaibuild/customiuizer/mods/Various.kt",
-      "line": 827,
+      "line": 830,
       "snippet": "ModuleHelper.findAndHookMethod(\"com.android.server.alarm.AlarmManagerService\", lpparam.classLoader, \"onBootPhase\", Int::class.javaPrimitiveType, object : MethodHook() {"
     },
     {
       "fingerprint": "9b23a63b273df7ded60acfb8",
       "path": "app/src/main/java/tv/withaibuild/customiuizer/mods/Various.kt",
-      "line": 849,
+      "line": 852,
       "snippet": "ModuleHelper.findAndHookMethod(\"com.android.server.alarm.AlarmManagerService\", lpparam.classLoader, \"getNextAlarmClockImpl\", Int::class.javaPrimitiveType, object : MethodHook() {"
     },
     {
       "fingerprint": "93d737950aa68378bfba2d33",
       "path": "app/src/main/java/tv/withaibuild/customiuizer/mods/Various.kt",
-      "line": 864,
+      "line": 867,
       "snippet": "ModuleHelper.findAndHookMethod(\"com.android.incallui.InCallPresenter\", lpparam.classLoader, \"answerIncomingCall\", Context::class.java, String::class.java, Int::class.javaPrimitiveType, Boolean::class.javaPrimitiveType, object : MethodHook() {"
     },
     {
       "fingerprint": "786d9cfb9954294a3fd7e5bb",
       "path": "app/src/main/java/tv/withaibuild/customiuizer/mods/Various.kt",
-      "line": 882,
+      "line": 885,
       "snippet": "ModuleHelper.hookAllMethods(\"com.android.incallui.InCallPresenter\", lpparam.classLoader, \"startUi\", object : MethodHook() {"
     },
     {
       "fingerprint": "1064597fe9358f30c106c2f2",
       "path": "app/src/main/java/tv/withaibuild/customiuizer/mods/Various.kt",
-      "line": 908,
+      "line": 911,
       "snippet": "ModuleHelper.findAndHookMethod(\"com.android.incallui.InCallActivity\", lpparam.classLoader, \"onCreate\", Bundle::class.java, object : MethodHook() {"
     },
     {
       "fingerprint": "a23a65a416a509637e9cc7a1",
       "path": "app/src/main/java/tv/withaibuild/customiuizer/mods/Various.kt",
-      "line": 1002,
+      "line": 1005,
       "snippet": "ModuleHelper.hookMethod(methods[0], object : MethodHook() {"
     },
     {
       "fingerprint": "afe7db0c24d5bd9d2c7611c5",
       "path": "app/src/main/java/tv/withaibuild/customiuizer/mods/Various.kt",
-      "line": 1057,
+      "line": 1060,
       "snippet": "ModuleHelper.hookMethod(method, object : MethodHook() {"
     },
     {
       "fingerprint": "d801960e21a3c217bff4e1a3",
       "path": "app/src/main/java/tv/withaibuild/customiuizer/mods/Various.kt",
-      "line": 1101,
+      "line": 1104,
       "snippet": "ModuleHelper.findAndHookMethod(\"android.os.SystemProperties\", lpparam.classLoader, \"getBoolean\", String::class.java, Boolean::class.javaPrimitiveType, object : MethodHook() {"
     },
     {
       "fingerprint": "ecc99be84f0bdb4d876a029f",
       "path": "app/src/main/java/tv/withaibuild/customiuizer/mods/Various.kt",
-      "line": 1118,
+      "line": 1121,
       "snippet": "ModuleHelper.findAndHookMethod(cls, \"get\", String::class.java, object : MethodHook() {"
     },
     {
       "fingerprint": "864d03a11bc2fae3ad23313e",
       "path": "app/src/main/java/tv/withaibuild/customiuizer/mods/Various.kt",
-      "line": 1135,
+      "line": 1138,
       "snippet": "ModuleHelper.hookAllMethods(inputMethodServiceInjectorClass, \"addMiuiBottomView\", object : MethodHook() {"
     },
     {
       "fingerprint": "598db3ad21ac056d4aa96441",
       "path": "app/src/main/java/tv/withaibuild/customiuizer/mods/Various.kt",
-      "line": 1143,
+      "line": 1146,
       "snippet": "ModuleHelper.findAndHookMethod(inputMethodUtil, \"updateGestureLineEnable\", Context::class.java, object : MethodHook() {"
     }
   ]
