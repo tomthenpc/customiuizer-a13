@@ -2,7 +2,7 @@
 """Architecture invariants for the A13/A14 alignment."""
 import re
 import unittest
-from pathlib import Path
+from pathlib import Path, PurePosixPath
 REPO = Path(__file__).resolve().parent.parent.parent
 SRC = REPO / "app" / "src" / "main" / "java"
 MAIN = SRC / "tv" / "withaibuild" / "customiuizer" / "MainModule.java"
@@ -10,7 +10,7 @@ INPUT = SRC / "tv" / "withaibuild" / "customiuizer" / "installers" / "InputMetho
 UTILS = SRC / "tv" / "withaibuild" / "customiuizer" / "mods" / "utils"
 CATALOG = SRC / "tv" / "withaibuild" / "customiuizer" / "mods" / "catalog"
 def read(rel: str) -> str:
-    return (SRC / rel.replace("/", "\\")).read_text(encoding="utf-8")
+    return SRC.joinpath(*PurePosixPath(rel).parts).read_text(encoding="utf-8")
 class ArchitectureInvariantTest(unittest.TestCase):
     def test_main_module_delegates_input_method_to_installer(self):
         text = MAIN.read_text(encoding="utf-8")
@@ -107,8 +107,8 @@ class ArchitectureInvariantTest(unittest.TestCase):
         registry_ids = re.findall(r'id = "([^"]+)"', registry_text)
         adapted_ids = re.findall(r'id = "([^"]+)"', adapted_text)
         self.assertEqual(8, len(registry_ids), f"registry specs must contain exactly 8 ids: {registry_ids}")
-        self.assertEqual(19, len(adapted_ids), f"adapted specs must contain exactly 19 ids: {adapted_ids}")
-        self.assertEqual(27, len(registry_ids) + len(adapted_ids))
+        self.assertEqual(20, len(adapted_ids), f"adapted specs must contain exactly 20 ids: {adapted_ids}")
+        self.assertEqual(28, len(registry_ids) + len(adapted_ids))
         self.assertEqual(set(), set(registry_ids) & set(adapted_ids), "registry and adapted ids must be disjoint")
     def test_feature_dispatcher_routing_no_duplicate_paths(self):
         dispatcher = (REPO / "app" / "src" / "main" / "java" / "tv" / "withaibuild" / "customiuizer" / "mods" / "catalog" / "FeatureDispatcher.kt").read_text(encoding="utf-8")

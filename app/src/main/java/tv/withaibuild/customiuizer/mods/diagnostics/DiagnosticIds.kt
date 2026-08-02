@@ -49,4 +49,7 @@ object DiagnosticIds {
     const val NO_NETWORK_SPEED_SEPARATOR = "NO_NETWORK_SPEED_SEPARATOR"
     const val HIDE_ICONS_CLOCK = "HIDE_ICONS_CLOCK"
     const val NO_UNLOCK_ANIMATION = "NO_UNLOCK_ANIMATION"
+
+    /** Catalog expansion batch 4: SystemUI screenshot. */
+    const val TEMP_HIDE_OVERLAY_SYSTEMUI = "TEMP_HIDE_OVERLAY_SYSTEMUI"
 }

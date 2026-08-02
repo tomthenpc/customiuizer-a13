@@ -35,7 +35,8 @@ enum class FeatureId(val canonicalId: String) {
     ALL_ROTATIONS("allRotations"),
     NO_NETWORK_SPEED_SEPARATOR("noNetworkSpeedSeparator"),
     HIDE_ICONS_CLOCK("hideIconsClock"),
-    NO_UNLOCK_ANIMATION("noUnlockAnimation");
+    NO_UNLOCK_ANIMATION("noUnlockAnimation"),
+    TEMP_HIDE_OVERLAY_SYSTEMUI("tempHideOverlaySystemUI");
 
     companion object {
         private val byString: Map<String, FeatureId> = values().associateBy {

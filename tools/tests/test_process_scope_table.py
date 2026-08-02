@@ -8,14 +8,14 @@ be updated together with the implementation.
 """
 import re
 import unittest
-from pathlib import Path
+from pathlib import Path, PurePosixPath
 
 REPO = Path(__file__).resolve().parent.parent.parent
 SRC = REPO / "app" / "src" / "main" / "java"
 
 
 def read(rel: str) -> str:
-    return (SRC / rel.replace("/", "\\")).read_text(encoding="utf-8")
+    return SRC.joinpath(*PurePosixPath(rel).parts).read_text(encoding="utf-8")
 
 
 # package, process, expected scope

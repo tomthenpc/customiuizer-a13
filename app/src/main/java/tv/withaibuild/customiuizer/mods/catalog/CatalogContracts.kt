@@ -377,4 +377,20 @@ object CatalogContracts {
         )
     )
     }
+
+    // Catalog expansion batch 4: SystemUI screenshot
+    val tempHideOverlaySystemUI: HookTargetContract by lazy(kotlin.LazyThreadSafetyMode.NONE) { HookTargetContract(
+        featureId = "tempHideOverlaySystemUI",
+        requirements = listOf(
+            SingleTargetRequirement(
+                target = HookTargetSpec(
+                    id = "PipTaskOrganizer.onTaskAppeared",
+                    operation = HookOperation.ALL_METHODS_BY_NAME,
+                    className = "com.android.wm.shell.pip.PipTaskOrganizer",
+                    memberName = "onTaskAppeared"
+                )
+            )
+        )
+    )
+    }
 }

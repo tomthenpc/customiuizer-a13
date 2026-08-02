@@ -81,9 +81,7 @@ public final class SystemUiInstaller {
                 || MainModule.mPrefs.getBoolean("controls_volumecursor")
             ) GlobalActions.setupForegroundMonitor(lpparam);
 
-            if (MainModule.mPrefs.getBoolean("system_screenshot_overlay")) {
-                SystemUIScreenshotHooks.TempHideOverlaySystemUIHook(lpparam);
-            }
+            FeatureDispatcher.installById("tempHideOverlaySystemUI", systemuiRuntime);
 
             if (
                 MainModule.mPrefs.getBoolean("system_fivegtile")

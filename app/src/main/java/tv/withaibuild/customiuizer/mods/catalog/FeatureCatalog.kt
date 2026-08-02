@@ -7,6 +7,7 @@ import tv.withaibuild.customiuizer.mods.SystemAudioAndVolumeHooks
 import tv.withaibuild.customiuizer.mods.SystemAudioAndVisualAndMoreHooks
 import tv.withaibuild.customiuizer.mods.SystemDisplayAndWindowHooks
 import tv.withaibuild.customiuizer.mods.SystemLockScreenMoreHooks
+import tv.withaibuild.customiuizer.mods.SystemUIScreenshotHooks
 import tv.withaibuild.customiuizer.mods.SystemNotificationMoreHooks
 import tv.withaibuild.customiuizer.mods.SystemStatusBarClockAndMoreHooks
 import tv.withaibuild.customiuizer.mods.SystemStatusBarMoreHooks
@@ -972,6 +973,34 @@ object FeatureCatalog {
                 }
             },
             activationRestartTarget = RestartTarget.LAUNCHER_RESTART,
+            configReloadMode = ConfigReloadMode.NONE
+        ),
+        // Catalog expansion batch 4: SystemUI screenshot
+        FeatureSpec(
+            compatibilityPolicy = CompatibilityPolicy.CONTRACT_REQUIRED,
+            contract = CatalogContracts.tempHideOverlaySystemUI,
+            id = "tempHideOverlaySystemUI",
+            diagnosticId = DiagnosticIds.TEMP_HIDE_OVERLAY_SYSTEMUI,
+            processScope = ProcessScope.SYSTEM_UI,
+            installPhase = InstallPhase.PACKAGE_READY,
+            processTarget = ProcessTarget.SystemUI,
+            preferenceKeys = setOf("system_screenshot_overlay"),
+            condition = { prefs ->
+                prefs.getBoolean("system_screenshot_overlay", false)
+            },
+            installer = { runtime, compatResult ->
+                legacyInstall(
+                    runtime = runtime,
+                    compatResult = compatResult,
+                    contract = CatalogContracts.tempHideOverlaySystemUI,
+                    diagnosticId = DiagnosticIds.TEMP_HIDE_OVERLAY_SYSTEMUI
+                ) {
+                    SystemUIScreenshotHooks.TempHideOverlaySystemUIHook(
+                        runtime.lpparam as PackageReadyParam
+                    )
+                }
+            },
+            activationRestartTarget = RestartTarget.SYSTEMUI_RESTART,
             configReloadMode = ConfigReloadMode.NONE
         )
     ) }

@@ -9,11 +9,11 @@
 from __future__ import annotations
 import re
 import sys
-from pathlib import Path
+from pathlib import Path, PurePosixPath
 REPO_ROOT = Path(__file__).resolve().parent.parent
 SRC = REPO_ROOT / "app" / "src" / "main" / "java"
 def read(rel: str) -> str:
-    return (SRC / rel.replace("/", "\\")).read_text(encoding="utf-8")
+    return SRC.joinpath(*PurePosixPath(rel).parts).read_text(encoding="utf-8")
 def fail(msg: str, errors: list[str]) -> None:
     print(f"  {msg}")
     errors.append(msg)

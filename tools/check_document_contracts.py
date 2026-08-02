@@ -40,19 +40,41 @@ FORBIDDEN_PHRASES = [
 ]
 
 
-def is_ancestor(commit: str) -> bool:
-    """Return True if `commit` is an ancestor of HEAD."""
+def commit_exists(commit: str) -> tuple[bool, str | None]:
+    """Return (ok, error_code). HISTORY_UNAVAILABLE if object not present."""
     try:
         result = subprocess.run(
-            ["git", "merge-base", "--is-ancestor", commit, "HEAD"],
-            cwd=REPO_ROOT,
+            ["git", "-C", str(REPO_ROOT), "cat-file", "-e", commit],
             stdout=subprocess.PIPE,
             stderr=subprocess.PIPE,
             check=False,
         )
-        return result.returncode == 0
+        if result.returncode == 0:
+            return True, None
+        if "not a valid object" in (result.stderr.decode("utf-8", errors="replace") + result.stdout.decode("utf-8", errors="replace")):
+            return False, "HISTORY_UNAVAILABLE"
+        return False, "HISTORY_UNAVAILABLE"
     except Exception:
-        return False
+        return False, "HISTORY_UNAVAILABLE"
+
+
+def is_ancestor(commit: str) -> tuple[bool, str | None]:
+    """Return (ok, error_code). Error codes: HISTORY_UNAVAILABLE, NOT_ANCESTOR."""
+    exists, err = commit_exists(commit)
+    if not exists:
+        return False, err
+    try:
+        result = subprocess.run(
+            ["git", "-C", str(REPO_ROOT), "merge-base", "--is-ancestor", commit, "HEAD"],
+            stdout=subprocess.PIPE,
+            stderr=subprocess.PIPE,
+            check=False,
+        )
+        if result.returncode == 0:
+            return True, None
+        return False, "NOT_ANCESTOR"
+    except Exception:
+        return False, "HISTORY_UNAVAILABLE"
 
 
 def check() -> list[str]:
@@ -79,10 +101,12 @@ def check() -> list[str]:
             errors.append(f"{path}: missing metadata keys {sorted(missing)}")
             continue
 
-        if "EvidenceCommit" in metadata and not is_ancestor(metadata["EvidenceCommit"]):
-            errors.append(
-                f"{path}: EvidenceCommit {metadata['EvidenceCommit']} is not an ancestor of HEAD"
-            )
+        if "EvidenceCommit" in metadata:
+            ok, err = is_ancestor(metadata["EvidenceCommit"])
+            if not ok:
+                errors.append(
+                    f"{path}: EvidenceCommit {metadata['EvidenceCommit']} {err}"
+                )
 
         if metadata.get("DocumentKind") == "CURRENT":
             for phrase in FORBIDDEN_PHRASES:

@@ -5,10 +5,19 @@ from pathlib import Path
 
 class HookOwnershipInventoryCompletenessTest(unittest.TestCase):
     """
-    Mechanical gate for P1.3: every production `ModuleHelper` hook-helper call
-    site must be accounted for in `docs/audit/A13_HOOK_OWNERSHIP_INVENTORY.md`,
-    and the inventory must contain no UNKNOWN entries.
+    Mechanical gate for P1.3: every production hook call site must be accounted
+    for in `docs/audit/A13_HOOK_OWNERSHIP_INVENTORY.md`, and the inventory must
+    contain no UNKNOWN entries.
     """
+
+    HOOK_RE = re.compile(
+        r"\b(ModuleHelper|XposedHelpers|XposedBridge|HookerClassHelper)\s*\.\s*"
+        r"(findAndHookMethod|findAndHookConstructor|hookAllMethods|hookAllConstructors|hookMethod|hookAll)"
+        r"|\bfindAndHookMethod\s*\("
+        r"|\bhookAllMethods\s*\("
+        r"|\bhookAllConstructors\s*\(",
+        re.S,
+    )
 
     @property
     def repo_root(self) -> Path:
@@ -16,16 +25,12 @@ class HookOwnershipInventoryCompletenessTest(unittest.TestCase):
 
     def _scan_source_calls(self) -> dict[str, int]:
         src = self.repo_root / "app/src/main/java/tv/withaibuild/customiuizer"
-        pattern = re.compile(
-            r"ModuleHelper\.(findAndHookMethod|hookAllConstructors|hookAllMethods)",
-            re.IGNORECASE,
-        )
         calls: dict[str, int] = {}
         for f in src.rglob("*"):
             if f.suffix not in (".kt", ".java"):
                 continue
             text = f.read_text(encoding="utf-8", errors="replace")
-            count = len(pattern.findall(text))
+            count = len(self.HOOK_RE.findall(text))
             if count:
                 rel = str(f.relative_to(self.repo_root)).replace("\\", "/")
                 calls[rel] = count
@@ -39,15 +44,17 @@ class HookOwnershipInventoryCompletenessTest(unittest.TestCase):
         categories: set[str] = set()
         for line in text.splitlines():
             m = re.match(
-                r"^\| `([^`]+)` \| (\d+) \| ([^|]+) \| `([^`]+)` \|",
+                r"^\| `([^`]+)` \| (\d+) \| (\d+) \| (\d+) \| `([^`]+)` \|",
                 line,
             )
             if not m:
                 continue
-            file_path, count_str, _process, category = m.groups()
-            # Normalize to forward slashes and the form used by the source tree.
+            file_path, direct, _registry, _legacy, category = m.groups()
             file_path = file_path.replace("\\", "/")
-            counts[file_path] = int(count_str)
+            prefix = "tv/withaibuild/customiuizer/"
+            if file_path.startswith(prefix):
+                file_path = file_path[len(prefix):]
+            counts[file_path] = int(direct)
             categories.add(category.strip())
 
         return counts, categories
@@ -65,9 +72,6 @@ class HookOwnershipInventoryCompletenessTest(unittest.TestCase):
             f"Hook call total mismatch: source={source_total}, inventory={inventory_total}",
         )
 
-        # The inventory records paths relative to tv.withaibuild.customiuizer
-        # (e.g. 'mods/SystemUIStatusBarHooks.kt'); the source scan uses repo-root
-        # relative paths. Strip the common prefix for comparison.
         prefix = "app/src/main/java/tv/withaibuild/customiuizer/"
         source_keys = {k[len(prefix):] if k.startswith(prefix) else k for k in source_calls}
 

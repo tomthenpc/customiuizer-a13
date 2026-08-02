@@ -716,6 +716,27 @@ def check_main_module_architecture(path: Path, text: str) -> list[Finding]:
     return findings
 
 
+def check_tools_path_style() -> list[Finding]:
+    """Tools must use pathlib for cross-platform paths; no manual backslash conversion."""
+    findings: list[Finding] = []
+    pattern = re.compile(r'replace\s*\(\s*["\']/["\']\s*,\s*["\']\\\\["\']\s*\)')
+    for directory in (REPO_ROOT / "tools", REPO_ROOT / "tools" / "tests"):
+        if not directory.is_dir():
+            continue
+        for path in directory.rglob("*.py"):
+            text = path.read_text(encoding="utf-8", errors="replace")
+            for match in pattern.finditer(text):
+                findings.append(
+                    Finding(
+                        "tools-path-style",
+                        path,
+                        line_of(text, match.start()),
+                        "do not convert / to \\\\ manually; use pathlib/PurePosixPath",
+                    )
+                )
+    return findings
+
+
 RULES = (
     check_guard_framework_callbacks,
     check_guard_deferred_callbacks,
@@ -761,6 +782,7 @@ def main() -> int:
             findings.extend(rule(path, text))
     findings.extend(check_xposed_scope())
     findings.extend(check_preference_style_attr_completeness())
+    findings.extend(check_tools_path_style())
     if ABOUT_HEAD_FILE.is_file():
         about_text = ABOUT_HEAD_FILE.read_text(encoding="utf-8")
         findings.extend(check_about_text_wrapping(ABOUT_HEAD_FILE, about_text))
