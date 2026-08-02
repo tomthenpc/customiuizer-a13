@@ -1339,6 +1339,115 @@ object FeatureCatalog {
             },
             activationRestartTarget = RestartTarget.REBOOT,
             configReloadMode = ConfigReloadMode.NONE
+        ),
+        // Catalog expansion batch 8: SystemServer notification hooks
+        FeatureSpec(
+            compatibilityPolicy = CompatibilityPolicy.CONTRACT_REQUIRED,
+            contract = CatalogContracts.orientationLock,
+            id = "orientationLock",
+            diagnosticId = DiagnosticIds.ORIENTATION_LOCK,
+            processScope = ProcessScope.SYSTEM_SERVER,
+            installPhase = InstallPhase.SYSTEM_SERVER_STARTING,
+            processTarget = ProcessTarget.SystemServer,
+            preferenceKeys = setOf("system_orientationlock"),
+            condition = { prefs ->
+                prefs.getBoolean("system_orientationlock", false)
+            },
+            installer = { runtime, compatResult ->
+                legacyInstall(
+                    runtime = runtime,
+                    compatResult = compatResult,
+                    contract = CatalogContracts.orientationLock,
+                    diagnosticId = DiagnosticIds.ORIENTATION_LOCK
+                ) {
+                    SystemNotificationMoreHooks.OrientationLockHook(
+                        runtime.lpparam as SystemServerStartingParam
+                    )
+                }
+            },
+            activationRestartTarget = RestartTarget.REBOOT,
+            configReloadMode = ConfigReloadMode.NONE
+        ),
+        FeatureSpec(
+            compatibilityPolicy = CompatibilityPolicy.CONTRACT_REQUIRED,
+            contract = CatalogContracts.noDucking,
+            id = "noDucking",
+            diagnosticId = DiagnosticIds.NO_DUCKING,
+            processScope = ProcessScope.SYSTEM_SERVER,
+            installPhase = InstallPhase.SYSTEM_SERVER_STARTING,
+            processTarget = ProcessTarget.SystemServer,
+            preferenceKeys = setOf("system_noducking"),
+            condition = { prefs ->
+                prefs.getBoolean("system_noducking", false)
+            },
+            installer = { runtime, compatResult ->
+                legacyInstall(
+                    runtime = runtime,
+                    compatResult = compatResult,
+                    contract = CatalogContracts.noDucking,
+                    diagnosticId = DiagnosticIds.NO_DUCKING
+                ) {
+                    SystemNotificationMoreHooks.NoDuckingHook(
+                        runtime.lpparam as SystemServerStartingParam
+                    )
+                }
+            },
+            activationRestartTarget = RestartTarget.REBOOT,
+            configReloadMode = ConfigReloadMode.NONE
+        ),
+        FeatureSpec(
+            compatibilityPolicy = CompatibilityPolicy.CONTRACT_REQUIRED,
+            contract = CatalogContracts.disable72hStrongAuth,
+            id = "disable72hStrongAuth",
+            diagnosticId = DiagnosticIds.DISABLE_72H_STRONG_AUTH,
+            processScope = ProcessScope.SYSTEM_SERVER,
+            installPhase = InstallPhase.SYSTEM_SERVER_STARTING,
+            processTarget = ProcessTarget.SystemServer,
+            preferenceKeys = setOf("system_lockscreen_disable_strongauth_72h"),
+            condition = { prefs ->
+                prefs.getBoolean("system_lockscreen_disable_strongauth_72h", false)
+            },
+            installer = { runtime, compatResult ->
+                legacyInstall(
+                    runtime = runtime,
+                    compatResult = compatResult,
+                    contract = CatalogContracts.disable72hStrongAuth,
+                    diagnosticId = DiagnosticIds.DISABLE_72H_STRONG_AUTH
+                ) {
+                    SystemNotificationMoreHooks.Disable72hStrongAuthHook(
+                        runtime.lpparam as SystemServerStartingParam
+                    )
+                }
+            },
+            activationRestartTarget = RestartTarget.REBOOT,
+            configReloadMode = ConfigReloadMode.NONE
+        ),
+        FeatureSpec(
+            compatibilityPolicy = CompatibilityPolicy.CONTRACT_REQUIRED,
+            contract = CatalogContracts.disableAnyNotificationBlock,
+            id = "disableAnyNotificationBlock",
+            diagnosticId = DiagnosticIds.DISABLE_ANY_NOTIFICATION_BLOCK,
+            processScope = ProcessScope.SYSTEM_SERVER,
+            installPhase = InstallPhase.SYSTEM_SERVER_STARTING,
+            processTarget = ProcessTarget.SystemServer,
+            preferenceKeys = setOf("system_disableanynotif"),
+            condition = { prefs ->
+                prefs.getBoolean("system_disableanynotif", false)
+            },
+            installer = { runtime, compatResult ->
+                legacyInstall(
+                    runtime = runtime,
+                    compatResult = compatResult,
+                    contract = CatalogContracts.disableAnyNotificationBlock,
+                    diagnosticId = DiagnosticIds.DISABLE_ANY_NOTIFICATION_BLOCK
+                ) {
+                    SystemNotificationMoreHooks.DisableAnyNotificationBlockHook(
+                        runtime.lpparam as SystemServerStartingParam
+                    )
+                }
+            },
+            activationRestartTarget = RestartTarget.REBOOT,
+            configReloadMode = ConfigReloadMode.NONE
         )
     ) }
 

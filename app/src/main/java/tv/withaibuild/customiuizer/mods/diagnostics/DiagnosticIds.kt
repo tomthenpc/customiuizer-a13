@@ -70,4 +70,10 @@ object DiagnosticIds {
     const val REMOVE_ACT_START_CONFIRM = "REMOVE_ACT_START_CONFIRM"
     const val FORCE_CLOSE = "FORCE_CLOSE"
     const val DISABLE_SYSTEM_INTEGRITY = "DISABLE_SYSTEM_INTEGRITY"
+
+    /** Catalog expansion batch 8: SystemServer notification hooks. */
+    const val ORIENTATION_LOCK = "ORIENTATION_LOCK"
+    const val NO_DUCKING = "NO_DUCKING"
+    const val DISABLE_72H_STRONG_AUTH = "DISABLE_72H_STRONG_AUTH"
+    const val DISABLE_ANY_NOTIFICATION_BLOCK = "DISABLE_ANY_NOTIFICATION_BLOCK"
 }

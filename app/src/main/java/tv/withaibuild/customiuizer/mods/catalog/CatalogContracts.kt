@@ -19,6 +19,7 @@ object CatalogContracts {
 
     private val INT = Int::class.javaPrimitiveType!!
     private val BOOLEAN = Boolean::class.javaPrimitiveType!!
+    private val LONG = Long::class.javaPrimitiveType!!
 
     val screenDimTime: HookTargetContract by lazy(kotlin.LazyThreadSafetyMode.NONE) { HookTargetContract(
         featureId = "screenDimTime",
@@ -575,6 +576,77 @@ object CatalogContracts {
                     className = "android.util.apk.ApkSignatureVerifier",
                     memberName = "getMinimumSignatureSchemeVersionForTargetSdk",
                     parameterTypes = listOf(INT)
+                )
+            )
+        )
+    )
+    }
+
+    val orientationLock: HookTargetContract by lazy(kotlin.LazyThreadSafetyMode.NONE) { HookTargetContract(
+        featureId = "orientationLock",
+        requirements = listOf(
+            SingleTargetRequirement(
+                target = HookTargetSpec(
+                    id = "DisplayRotation.rotationForOrientation",
+                    operation = HookOperation.ALL_METHODS_BY_NAME,
+                    className = "com.android.server.wm.DisplayRotation",
+                    memberName = "rotationForOrientation"
+                )
+            )
+        )
+    )
+    }
+
+    val noDucking: HookTargetContract by lazy(kotlin.LazyThreadSafetyMode.NONE) { HookTargetContract(
+        featureId = "noDucking",
+        requirements = listOf(
+            SingleTargetRequirement(
+                target = HookTargetSpec(
+                    id = "FocusRequester.handleFocusLoss",
+                    operation = HookOperation.ALL_METHODS_BY_NAME,
+                    className = "com.android.server.audio.FocusRequester",
+                    memberName = "handleFocusLoss"
+                )
+            )
+        )
+    )
+    }
+
+    val disable72hStrongAuth: HookTargetContract by lazy(kotlin.LazyThreadSafetyMode.NONE) { HookTargetContract(
+        featureId = "disable72hStrongAuth",
+        requirements = listOf(
+            SingleTargetRequirement(
+                target = HookTargetSpec(
+                    id = "LockSettingsStrongAuth.rescheduleStrongAuthTimeoutAlarm",
+                    operation = HookOperation.EXACT_METHOD,
+                    className = "com.android.server.locksettings.LockSettingsStrongAuth",
+                    memberName = "rescheduleStrongAuthTimeoutAlarm",
+                    parameterTypes = listOf(LONG, INT)
+                )
+            )
+        )
+    )
+    }
+
+    val disableAnyNotificationBlock: HookTargetContract by lazy(kotlin.LazyThreadSafetyMode.NONE) { HookTargetContract(
+        featureId = "disableAnyNotificationBlock",
+        requirements = listOf(
+            SingleTargetRequirement(
+                target = HookTargetSpec(
+                    id = "NotificationChannel.isBlockable",
+                    operation = HookOperation.EXACT_METHOD,
+                    className = "android.app.NotificationChannel",
+                    memberName = "isBlockable",
+                    parameterTypes = emptyList()
+                )
+            ),
+            SingleTargetRequirement(
+                target = HookTargetSpec(
+                    id = "NotificationChannel.setBlockable",
+                    operation = HookOperation.EXACT_METHOD,
+                    className = "android.app.NotificationChannel",
+                    memberName = "setBlockable",
+                    parameterTypes = listOf(BOOLEAN)
                 )
             )
         )

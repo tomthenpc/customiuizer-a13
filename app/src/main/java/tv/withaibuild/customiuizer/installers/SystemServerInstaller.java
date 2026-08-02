@@ -56,12 +56,12 @@ public final class SystemServerInstaller {
         if (MainModule.mPrefs.getBoolean("system_securelock")) SystemLockScreenHooks.EnhancedSecurityHook(lpparam);
         if (MainModule.mPrefs.getBoolean("system_separatevolume")) SystemAudioAndVolumeHooks.NotificationVolumeServiceHook(lpparam);
         if (MainModule.mPrefs.getBoolean("system_downgrade")) FeatureDispatcher.installById("noVersionCheck", serverRuntime);
-        if (MainModule.mPrefs.getBoolean("system_orientationlock")) SystemNotificationMoreHooks.OrientationLockHook(lpparam);
-        if (MainModule.mPrefs.getBoolean("system_noducking")) SystemNotificationMoreHooks.NoDuckingHook(lpparam);
+        if (MainModule.mPrefs.getBoolean("system_orientationlock")) FeatureDispatcher.installById("orientationLock", serverRuntime);
+        if (MainModule.mPrefs.getBoolean("system_noducking")) FeatureDispatcher.installById("noDucking", serverRuntime);
         if (MainModule.mPrefs.getBoolean("system_cleanshare")) FeatureDispatcher.installById("cleanShareMenuService", serverRuntime);
         if (MainModule.mPrefs.getBoolean("system_cleanopenwith")) FeatureDispatcher.installById("cleanOpenWithMenuService", serverRuntime);
         FeatureDispatcher.installById("autoBrightnessRange", serverRuntime);
-        if (MainModule.mPrefs.getBoolean("system_lockscreen_disable_strongauth_72h")) SystemNotificationMoreHooks.Disable72hStrongAuthHook(lpparam);
+        if (MainModule.mPrefs.getBoolean("system_lockscreen_disable_strongauth_72h")) FeatureDispatcher.installById("disable72hStrongAuth", serverRuntime);
         if (MainModule.mPrefs.getBoolean("system_applock")) SystemLockScreenMoreHooks.AppLockHook(lpparam);
         if (MainModule.mPrefs.getBoolean("system_applock_skip")) SystemLockScreenMoreHooks.SkipAppLockHook(lpparam);
         if (MainModule.mPrefs.getBoolean("various_alarmcompat")) Various.AlarmCompatServiceHook(lpparam);
@@ -81,7 +81,7 @@ public final class SystemServerInstaller {
         if (MainModule.mPrefs.getBoolean("controls_fingerprintscreen")) Controls.FingerprintScreenOnHook(lpparam);
         if (MainModule.mPrefs.getBoolean("controls_fingerprintwake")) Controls.NoFingerprintWakeHook(lpparam);
         if (MainModule.mPrefs.getBoolean("various_disableapp")) Various.AppsDisableServiceHook(lpparam);
-        if (MainModule.mPrefs.getBoolean("system_disableanynotif")) SystemNotificationMoreHooks.DisableAnyNotificationBlockHook(lpparam);
+        if (MainModule.mPrefs.getBoolean("system_disableanynotif")) FeatureDispatcher.installById("disableAnyNotificationBlock", serverRuntime);
         if (MainModule.mPrefs.getStringAsInt("system_allrotations2", 1) > 1) FeatureDispatcher.installById("allRotations", serverRuntime);
         if (MainModule.mPrefs.getStringAsInt("system_nolightuponcharges", 1) > 1) FeatureDispatcher.installById("noLightUpOnCharge", serverRuntime);
         if (MainModule.mPrefs.getStringAsInt("system_autogroupnotif", 1) > 1) SystemNotificationAndShareHooks.AutoGroupNotificationsHook(lpparam);
