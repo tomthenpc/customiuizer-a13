@@ -88,19 +88,26 @@ Next:
 
 ## P0.1 仓库、分支与 Git
 
-State: `TODO`
+State: `COMPLETE`
 
 记录：
 
 ```text
-git rev-parse --show-toplevel
-git remote get-url origin
-git symbolic-ref --short HEAD
-git rev-parse HEAD
-git status --short
-git log -10 --oneline
-git rev-parse --abbrev-ref --symbolic-full-name @{u}
+git rev-parse --show-toplevel           -> C:/Users/tv/Downloads/Peengeek/customiuizer-a13-forDevin
+git remote get-url origin               -> https://github.com/tomthenpc/customiuizer-a13.git
+git symbolic-ref --short HEAD           -> devin/a13-rom-intelligence-audit
+git rev-parse HEAD                      -> 2e4e6fad56be816d2165f0135a08b93a8b949e90
+git status --short                      -> (clean)
+git log -5 --oneline                    -> 2e4e6fa chore: install final A13 autonomous control plane
+                                            eac3d0f Harden FeatureInstallRegistry: atomic claims, isolated conditions, explicit compatibility policies, split catalog lists and mechanical single-path invariants.
+                                            c62de4c refactor(catalog): migrate second batch canaries to FeatureInstallRegistry
+                                            789b3cc fix(runtime): harden registry boundaries before second canary batch
+                                            649b4c0 refactor(catalog): migrate statusBarClockTweak and autoBrightnessRange through registry
+git rev-parse --abbrev-ref --symbolic-full-name '@{u}'
+                                        -> origin/devin/a13-rom-intelligence-audit
 ```
+
+ unfinished Git markers: 无
 
 验收：
 
@@ -113,44 +120,53 @@ git rev-parse --abbrev-ref --symbolic-full-name @{u}
 
 ## P0.2 工具链
 
-State: `TODO`
+State: `COMPLETE`
 
 记录：
 
-- Windows / PowerShell；
-- JDK；
-- Python；
-- Gradle；
-- Android SDK；
-- Git；
-- 可用内存和磁盘；
-- 网络依赖；
-- GitHub/CI 可访问性。
+| 项 | 值 |
+|---|---|
+| OS | Windows (PowerShell) |
+| JDK | 17.0.12 (Oracle) |
+| Python | 3.14.3 |
+| Gradle | 8.9 (wrapper) |
+| Android SDK | C:\\Users\\tv\\Downloads\\Peengeek\\.tools\\android-sdk |
+| Git | 2.55.0.windows.3 |
+| RAM | ~13.7 GB |
+| 磁盘 | 113.9 GB / 511.0 GB 剩余 |
+| 网络依赖 | Gradle 依赖已解析，GitHub push 成功 |
+| GitHub/CI | origin 可达，分支存在并可推送 |
 
 ## P0.3 完整基线验证
 
-State: `TODO`
+State: `COMPLETE`
 
 ```powershell
 powershell -NoProfile -ExecutionPolicy Bypass -File .\scripts\verify.ps1 -Mode Full
 ```
 
-失败分类：
+退出码：0
+
+结果：
 
 ```text
-PRE_EXISTING
-NEW_CONTROL_PLANE
-ENVIRONMENT
-NETWORK
-PRODUCT_DECISION
-UNKNOWN
+- check-invariants: OK
+- check-compat-contracts: OK
+- compileDebugKotlin: OK
+- compileDebugJavaWithJavac: OK
+- testDebugUnitTest-all: OK (131 tests)
+- lintDebug: OK
+- assembleDebug: BUILD SUCCESSFUL
+- A13 VERIFICATION PASSED
 ```
 
-未知基线不得进行大规模重构。
+失败分类：无（全部通过）。
+
+未知基线：无。
 
 ## P0.4 生成完整基线 inventory
 
-State: `TODO`
+State: `IN_PROGRESS`
 
 生成：
 
