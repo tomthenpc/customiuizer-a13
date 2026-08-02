@@ -435,6 +435,15 @@ typed catalog 之外的 Hook 同样必须处理。
   - [x] batch 9: `EnhancedSecurity`, `AppLock`, `SkipAppLock`, `NoCallInterruption` (system_server, SYSTEM_SERVER_STARTING) — contract corrected, all hard/silent criticality verified
   - [x] batch 10: `RemoveSecure`, `NoSignatureVerify`, `NoDarkForce`, `StickyFloatingWindows` (system_server, SYSTEM_SERVER_STARTING) — contract corrected to match production hook calls
   - [x] batch 11: `AppsDisableService`, `NoAccessDeviceLogsRequest`, `AutoGroupNotifications`, `AppLockTimeout` (system_server, SYSTEM_SERVER_STARTING) — migrated with focused behavior tests
+  - [ ] batch 12: 剩余 system_server SYSTEM_SERVER_STARTING 直接调用：
+    - `TempHideOverlayAppHook` (system_screenshot_overlay)
+    - `OpenAppInFreeFormHook` (system_notify_openinfw / system_fw_forcein_actionsend / system_betterpopups_allowfloat)
+    - `NavBarActionsHook` / `PowerDoubleTapActionHook` (controls_backlong_action / controls_powerdt_action)
+    - `USBConfigHook` (system_defaultusb)
+    - `AlarmCompatServiceHook` (various_alarmcompat)
+    - `PowerKeyHook` / `FingerprintHapticFailureHook` / `FingerprintScreenOnHook` / `NoFingerprintWakeHook` / `FingerprintHapticSuccessHook` / `VolumeMediaButtonsHook`
+    - `SelectiveToastsHook` (system_blocktoasts)
+    - `MultiWindowPlusHook` / `NoFloatingWindowBlacklistHook` (system_fw_splitscreen / system_fw_noblacklist)
   - [ ] `system_separatevolume` 等跨 process 项按 LEGACY_EXCEPTION 登记
 - [ ] P3.3 登记不可迁移项为 LEGACY_EXCEPTION 并补充原因/owner/test；
 - [ ] P3.4 增加 inventory 机械门禁，防止 UNKNOWN/重复 ownership。
@@ -446,6 +455,16 @@ UNKNOWN production hook = 0
 orphan preference = 0
 unreachable installer = 0
 duplicate hook ownership = 0
+```
+
+批次 9/10/11 验证记录：
+
+```text
+- targeted tests: :app:testDebugUnitTest --tests CatalogBatch9And10ContractTest --tests Batch11BehaviorTest  PASS
+- powershell .\scripts\verify.ps1 -Mode Fast  PASS
+- powershell .\scripts\verify.ps1 -Mode Full  PASS
+- powershell .\scripts\verify.ps1 -Mode Final  PASS
+- GitHub CI A13 Fast CI run 30741425209  PASS (commit 66ad73b)
 ```
 
 ---
