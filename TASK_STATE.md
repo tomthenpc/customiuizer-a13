@@ -809,6 +809,8 @@ P0 后重建，但不得删除未解决问题。
 | 8 | `590421d` | v5 长期治理宪章融合：GOAL/AGENTS/constitution + checker | `scripts/verify.ps1 -Mode Fast` 通过 | qualifying |
 | 9 | `9fd9e10` | v6 控制状态修复：签名 source of truth + A13-ALG-002 + v6 governance docs | `scripts/verify.ps1 -Mode Final` 通过 | qualifying |
 | 10 | `7c3b4fe` | Fast CI 修复：跨平台路径 + full checkout + progress snapshot 忽略 volatile metadata | `python tools/verify.py full` + Fast CI 通过 | qualifying |
+| 11 | `eb0ba15` | 紧急修复 v2：fatal 边界、batch 12 args 安全与 focused callback 测试 | `gradlew :app:testDebugUnitTest` + Fast CI 通过 | qualifying |
+| 12 | `0894e99` | 修正 `LastVerifiedTree` 为已推送 commit 的真实 tree | Fast CI 通过 | bookkeeping |
 
 ---
 
