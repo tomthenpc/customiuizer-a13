@@ -9,7 +9,7 @@ LastQualifyingCheckpoint: 590421d
 LastLightSweepCommit: none
 LastStandardSweepCommit: none
 LastDeepSweepCommit: none
-LastFullVerificationCommit: ddcc662
+LastFullVerificationCommit: c3a01a6
 LastCIState: NOT_CONFIGURED
 LastCleanupCommit: 46db78c
 LastToolCreated: check_goal_constitution.py
