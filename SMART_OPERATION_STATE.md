@@ -20,7 +20,7 @@ LastFailureClass: CONTRACT_RUNTIME_PARITY
 CurrentObjective: P3
 CurrentObjectiveState: ACTIVE
 CurrentObjectiveStartEvidence: batch 9/10 contract/runtime parity audit; tools/check_hook_contract_parity.py covers batch 9/10/11
-NextObjectiveFirstAction: repair noSignatureVerify contract to cover all production hooks; verify all batch 9/10 contracts match production hook calls
+NextObjectiveFirstAction: expand stickyFloatingWindows contract to cover all production hook targets
 ResumeTask: repair batch 9/10 parity, complete batch 11, verify, push, inspect CI, continue batch 12
 DeepSweepDue: false
 LastVerifiedTree: 6feda5cbfbd782013a82b79362bae537cb84f80d
