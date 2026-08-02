@@ -9,7 +9,10 @@ import org.junit.Before
 import org.junit.Test
 import tv.withaibuild.customiuizer.mods.catalog.CompatibilityState
 import tv.withaibuild.customiuizer.mods.diagnostics.DiagnosticRecorder
+import tv.withaibuild.customiuizer.mods.diagnostics.InstallOutcome
+import tv.withaibuild.customiuizer.mods.diagnostics.ReasonCode
 import tv.withaibuild.customiuizer.mods.utils.FeatureInstallResult
+import tv.withaibuild.customiuizer.mods.utils.HookInstallResult
 import tv.withaibuild.customiuizer.mods.utils.InstallPhase
 import tv.withaibuild.customiuizer.mods.utils.ProcessScope
 import tv.withaibuild.customiuizer.utils.PrefMap
@@ -36,8 +39,15 @@ class FeatureInstallRegistryTest {
     private fun spec(
         id: String = "test",
         condition: (PrefMap<String, Any>) -> Boolean = { true },
-        compatibilityCheck: (FeatureRuntime) -> CompatibilityState = { CompatibilityState.COMPATIBLE },
-        installer: (FeatureRuntime) -> FeatureInstallResult = { FeatureInstallResult.Installed },
+        compatibilityCheck: (FeatureRuntime) -> CompatibilityResult = {
+            CompatibilityResult(
+                CompatibilityState.COMPATIBLE,
+                ReasonCode.PRIMARY_TARGET_FOUND,
+                null,
+                HookInstallResult.DISPATCHED
+            )
+        },
+        installer: (FeatureRuntime, HookInstallResult) -> FeatureInstallResult = { _, _ -> FeatureInstallResult.Installed },
         processScope: ProcessScope? = null,
         installPhase: InstallPhase? = null
     ): FeatureSpec = FeatureSpec(
@@ -58,7 +68,10 @@ class FeatureInstallRegistryTest {
     @Test
     fun disabledFeatureDoesNotCallFactory() {
         var called = 0
-        val s = spec(condition = { false }, installer = { called++; FeatureInstallResult.Installed })
+        val s = spec(
+            condition = { false },
+            installer = { _, _ -> called++; FeatureInstallResult.Installed }
+        )
         FeatureInstallRegistry.register(s)
 
         val result = FeatureInstallRegistry.installById("test", ProcessScope.SYSTEM_UI, InstallPhase.PACKAGE_READY, runtime())
@@ -70,7 +83,10 @@ class FeatureInstallRegistryTest {
     @Test
     fun wrongScopeDoesNotCallFactory() {
         var called = 0
-        val s = spec(processScope = ProcessScope.SYSTEM_UI, installer = { called++; FeatureInstallResult.Installed })
+        val s = spec(
+            processScope = ProcessScope.SYSTEM_UI,
+            installer = { _, _ -> called++; FeatureInstallResult.Installed }
+        )
         FeatureInstallRegistry.register(s)
 
         val result = FeatureInstallRegistry.installById("test", ProcessScope.LAUNCHER, InstallPhase.PACKAGE_READY, runtime())
@@ -82,7 +98,10 @@ class FeatureInstallRegistryTest {
     @Test
     fun wrongPhaseDoesNotCallFactory() {
         var called = 0
-        val s = spec(installPhase = InstallPhase.SYSTEMUI_POST_INIT, installer = { called++; FeatureInstallResult.Installed })
+        val s = spec(
+            installPhase = InstallPhase.SYSTEMUI_POST_INIT,
+            installer = { _, _ -> called++; FeatureInstallResult.Installed }
+        )
         FeatureInstallRegistry.register(s)
 
         val result = FeatureInstallRegistry.installById("test", ProcessScope.SYSTEM_UI, InstallPhase.PACKAGE_READY, runtime())
@@ -94,7 +113,17 @@ class FeatureInstallRegistryTest {
     @Test
     fun incompatibleDoesNotCallFactory() {
         var called = 0
-        val s = spec(compatibilityCheck = { CompatibilityState.INCOMPATIBLE }, installer = { called++; FeatureInstallResult.Installed })
+        val s = spec(
+            compatibilityCheck = {
+                CompatibilityResult(
+                    CompatibilityState.INCOMPATIBLE,
+                    ReasonCode.TARGET_NOT_FOUND,
+                    null,
+                    HookInstallResult()
+                )
+            },
+            installer = { _, _ -> called++; FeatureInstallResult.Installed }
+        )
         FeatureInstallRegistry.register(s)
 
         val result = FeatureInstallRegistry.installById("test", ProcessScope.SYSTEM_UI, InstallPhase.PACKAGE_READY, runtime())
@@ -106,7 +135,7 @@ class FeatureInstallRegistryTest {
     @Test
     fun firstInstallReturnsInstalledSecondReturnsAlreadyInstalled() {
         var called = 0
-        val s = spec(installer = { called++; FeatureInstallResult.Installed })
+        val s = spec(installer = { _, _ -> called++; FeatureInstallResult.Installed })
         FeatureInstallRegistry.register(s)
         val rt = runtime()
 
@@ -121,7 +150,7 @@ class FeatureInstallRegistryTest {
     @Test
     fun transientFailureAllowsRetry() {
         var fail = true
-        val s = spec(installer = {
+        val s = spec(installer = { _, _ ->
             if (fail) {
                 fail = false
                 FeatureInstallResult.FailedTransient("boom")
@@ -141,7 +170,7 @@ class FeatureInstallRegistryTest {
 
     @Test
     fun permanentFailureIsIdempotent() {
-        val s = spec(installer = { FeatureInstallResult.FailedPermanent("nope") })
+        val s = spec(installer = { _, _ -> FeatureInstallResult.FailedPermanent("nope") })
         FeatureInstallRegistry.register(s)
         val rt = runtime()
 
@@ -154,8 +183,8 @@ class FeatureInstallRegistryTest {
 
     @Test
     fun oneFailureDoesNotBlockAnotherFeature() {
-        val failing = spec(id = "failing", installer = { FeatureInstallResult.FailedTransient("boom") })
-        val working = spec(id = "working", installer = { FeatureInstallResult.Installed })
+        val failing = spec(id = "failing", installer = { _, _ -> FeatureInstallResult.FailedTransient("boom") })
+        val working = spec(id = "working", installer = { _, _ -> FeatureInstallResult.Installed })
         FeatureInstallRegistry.register(failing)
         FeatureInstallRegistry.register(working)
         val rt = runtime()
@@ -170,7 +199,7 @@ class FeatureInstallRegistryTest {
     @Test
     fun fatalErrorPropagatesAndDoesNotLeaveInstalling() {
         var seen = false
-        val s = spec(id = "fatal", installer = { throw OutOfMemoryError("oom") })
+        val s = spec(id = "fatal", installer = { _, _ -> throw OutOfMemoryError("oom") })
         FeatureInstallRegistry.register(s)
 
         assertThrows(OutOfMemoryError::class.java) {
@@ -183,5 +212,44 @@ class FeatureInstallRegistryTest {
         }
 
         assertTrue(seen)
+    }
+
+    @Test
+    fun eachLifecycleStateRecordedAtMostOnce() {
+        val s = spec(
+            id = "once",
+            installer = { _, _ -> FeatureInstallResult.Installed }
+        )
+        FeatureInstallRegistry.register(s)
+
+        FeatureInstallRegistry.installById("once", ProcessScope.SYSTEM_UI, InstallPhase.PACKAGE_READY, runtime())
+
+        val snapshot = DiagnosticRecorder.summarize()["once"]!!
+        val records = DiagnosticRecorder.summarize().values
+            .filter { it == snapshot }
+            .size
+        assertEquals("a single install attempt produces exactly one snapshot", 1, records)
+    }
+
+    @Test
+    fun incompatibleRecordedOnlyOnce() {
+        val s = spec(
+            id = "inconce",
+            compatibilityCheck = {
+                CompatibilityResult(
+                    CompatibilityState.INCOMPATIBLE,
+                    ReasonCode.TARGET_NOT_FOUND,
+                    null,
+                    HookInstallResult()
+                )
+            }
+        )
+        FeatureInstallRegistry.register(s)
+
+        FeatureInstallRegistry.installById("inconce", ProcessScope.SYSTEM_UI, InstallPhase.PACKAGE_READY, runtime())
+
+        val snapshot = DiagnosticRecorder.summarize()["inconce"]!!
+        assertEquals(CompatibilityState.INCOMPATIBLE, snapshot.compatibility)
+        assertEquals(InstallOutcome.FAILED, snapshot.installation)
     }
 }

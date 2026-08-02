@@ -573,6 +573,7 @@ object HookEvidenceEvaluator {
                 InstallOutcome.DEGRADED -> if (fallbackUsed) ReasonCode.FALLBACK_TARGET_FOUND else ReasonCode.INSTALLER_SUCCEEDED
                 InstallOutcome.FAILED -> ReasonCode.INSTALLER_FAILED
                 InstallOutcome.DISPATCHED -> ReasonCode.INSTALLER_DISPATCHED
+                else -> ReasonCode.INSTALLER_FAILED
             }
         }
 

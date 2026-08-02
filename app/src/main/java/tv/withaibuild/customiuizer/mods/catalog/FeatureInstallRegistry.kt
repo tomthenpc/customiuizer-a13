@@ -1,6 +1,6 @@
 package tv.withaibuild.customiuizer.mods.catalog
 
-
+import androidx.annotation.VisibleForTesting
 import tv.withaibuild.customiuizer.mods.diagnostics.DiagnosticIds
 import tv.withaibuild.customiuizer.mods.diagnostics.DiagnosticRecorder
 import tv.withaibuild.customiuizer.mods.diagnostics.EnabledState
@@ -15,19 +15,14 @@ import java.util.concurrent.ConcurrentHashMap
 /**
  * Unified, process-scoped feature install registry.
  *
- * The registry is the only production path that turns a [FeatureSpec] into a
- * [FeatureInstallResult]. It guards every install with:
- *
- * - id lookup
- * - per-process idempotency state
- * - preference condition
- * - process scope and install phase
- * - compatibility probe
- * - installer invocation
- * - diagnostic recording
+ * The registry is the sole owner of feature lifecycle diagnostics. It turns a
+ * [FeatureSpec] into a [FeatureInstallResult] while recording every relevant
+ * state transition through [DiagnosticRecorder].
  *
  * Fatal JVM errors ([OutOfMemoryError], [ThreadDeath], [VirtualMachineError])
- * are always rethrown. All other failures are isolated to the single feature.
+ * are always rethrown. All other failures are isolated to the single feature
+ * and conservatively treated as transient unless the installer explicitly
+ * returns [FeatureInstallResult.FailedPermanent].
  */
 object FeatureInstallRegistry {
 
@@ -75,7 +70,15 @@ object FeatureInstallRegistry {
         val stateKey = "${runtime.processName}#${spec.id}"
 
         when (val current = states[stateKey]) {
-            FeatureState.INSTALLED -> return FeatureInstallResult.AlreadyInstalled
+            FeatureState.INSTALLED -> {
+                DiagnosticRecorder.record(
+                    id = spec.diagnosticId,
+                    installation = InstallOutcome.ALREADY_INSTALLED,
+                    reasonCode = ReasonCode.ALREADY_INSTALLED,
+                    detail = spec.id
+                )
+                return FeatureInstallResult.AlreadyInstalled
+            }
             FeatureState.FAILED_PERMANENT -> return FeatureInstallResult.FailedPermanent("previous permanent failure")
             FeatureState.INSTALLING -> return FeatureInstallResult.FailedTransient("reentrant install")
             else -> {}
@@ -104,6 +107,7 @@ object FeatureInstallRegistry {
                 spec,
                 FeatureInstallResult.UnsupportedProcess(scope.name),
                 compatibility = CompatibilityState.INCOMPATIBLE,
+                installation = InstallOutcome.FAILED,
                 reasonCode = ReasonCode.TARGET_NOT_FOUND,
                 detail = "expected scope ${specProcessScope}, got $scope"
             )
@@ -136,68 +140,69 @@ object FeatureInstallRegistry {
             spec.compatibilityCheck(runtime)
         } catch (t: Throwable) {
             if (isFatal(t)) throw t
-            DiagnosticRecorder.record(
-                id = spec.diagnosticId,
+            return recordAndReturn(
+                spec,
+                FeatureInstallResult.Incompatible(t.message ?: "compatibility check threw"),
                 compatibility = CompatibilityState.INCOMPATIBLE,
                 installation = InstallOutcome.FAILED,
                 reasonCode = ReasonCode.TARGET_NOT_FOUND,
                 detail = t.message
             )
-            return FeatureInstallResult.Incompatible(t.message ?: "compatibility check threw")
         }
 
-        when (compatibility) {
+        DiagnosticRecorder.record(
+            id = spec.diagnosticId,
+            compatibility = compatibility.compatibility,
+            reasonCode = compatibility.reasonCode,
+            detail = compatibility.detail
+        )
+
+        when (compatibility.compatibility) {
             CompatibilityState.INCOMPATIBLE -> {
-                DiagnosticRecorder.record(
-                    id = spec.diagnosticId,
+                return recordAndReturn(
+                    spec,
+                    FeatureInstallResult.Incompatible("required target not compatible"),
+                    compatibility = CompatibilityState.INCOMPATIBLE,
                     installation = InstallOutcome.FAILED,
                     reasonCode = ReasonCode.TARGET_NOT_FOUND,
-                    detail = spec.id
+                    detail = compatibility.detail
                 )
-                return FeatureInstallResult.Incompatible("required target not compatible")
             }
-            CompatibilityState.DEGRADED -> {
-                // proceed but a failure is transient
-            }
+            CompatibilityState.DEGRADED,
             CompatibilityState.COMPATIBLE -> {
                 // proceed
             }
         }
 
         states[stateKey] = FeatureState.INSTALLING
+
         val result = try {
-            spec.installer(runtime)
+            spec.installer(runtime, compatibility.hookResult)
         } catch (t: Throwable) {
             if (isFatal(t)) {
-                states[stateKey] = FeatureState.FAILED_PERMANENT
+                states.remove(stateKey)
                 throw t
             }
-            FeatureInstallResult.FailedPermanent(t.message ?: "installer threw")
+            classifyThrownException(t)
         }
 
         val finalState = when (result) {
-            is FeatureInstallResult.Installed,
+            is FeatureInstallResult.Installed -> FeatureState.INSTALLED
             is FeatureInstallResult.AlreadyInstalled -> FeatureState.INSTALLED
             is FeatureInstallResult.FailedPermanent -> FeatureState.FAILED_PERMANENT
             else -> FeatureState.FAILED_TRANSIENT
         }
         states[stateKey] = finalState
 
-        val outcome = when (result) {
-            is FeatureInstallResult.Installed,
-            is FeatureInstallResult.AlreadyInstalled -> InstallOutcome.INSTALLED
-            is FeatureInstallResult.FailedTransient -> InstallOutcome.DEGRADED
-            else -> InstallOutcome.FAILED
-        }
-        val reasonCode = when (result) {
-            is FeatureInstallResult.Installed,
-            is FeatureInstallResult.AlreadyInstalled -> ReasonCode.INSTALLER_SUCCEEDED
-            is FeatureInstallResult.Disabled -> ReasonCode.PREFERENCE_DISABLED
+        val (outcome, reasonCode) = when (result) {
+            is FeatureInstallResult.Installed -> InstallOutcome.INSTALLED to ReasonCode.INSTALLER_SUCCEEDED
+            is FeatureInstallResult.AlreadyInstalled -> InstallOutcome.ALREADY_INSTALLED to ReasonCode.ALREADY_INSTALLED
+            is FeatureInstallResult.Disabled -> InstallOutcome.FAILED to ReasonCode.PREFERENCE_DISABLED
             is FeatureInstallResult.UnsupportedProcess,
             is FeatureInstallResult.WrongPhase,
-            is FeatureInstallResult.Incompatible -> ReasonCode.TARGET_NOT_FOUND
-            is FeatureInstallResult.FailedTransient,
-            is FeatureInstallResult.FailedPermanent -> ReasonCode.INSTALLER_FAILED
+            is FeatureInstallResult.Incompatible -> InstallOutcome.FAILED to ReasonCode.TARGET_NOT_FOUND
+            is FeatureInstallResult.FailedTransient -> InstallOutcome.FAILED to ReasonCode.TRANSIENT_INSTALLER_FAILED
+            is FeatureInstallResult.FailedPermanent -> InstallOutcome.FAILED to ReasonCode.PERMANENT_INSTALLER_FAILED
         }
         val detail = when (result) {
             is FeatureInstallResult.UnsupportedProcess -> result.scope
@@ -226,21 +231,49 @@ object FeatureInstallRegistry {
         reasonCode: ReasonCode,
         detail: String?
     ): FeatureInstallResult {
-        DiagnosticRecorder.record(
-            id = spec.diagnosticId,
-            compatibility = compatibility,
-            installation = installation,
-            reasonCode = reasonCode,
-            detail = detail
-        )
+        if (compatibility != null) {
+            DiagnosticRecorder.record(
+                id = spec.diagnosticId,
+                compatibility = compatibility,
+                reasonCode = reasonCode,
+                detail = detail
+            )
+        }
+        if (installation != null) {
+            DiagnosticRecorder.record(
+                id = spec.diagnosticId,
+                installation = installation,
+                reasonCode = reasonCode,
+                detail = detail
+            )
+        }
         return result
     }
 
-    /** Test-only reset of per-process install state. */
-    fun clear() {
-        states.clear()
-    }
+    /**
+     * Conservative classification for exceptions escaping the installer.
+     *
+     * - Class/member not found at install time usually means the target is not
+     *   yet prepared by the framework; allow a retry.
+     * - All other non-fatal exceptions are treated as transient to avoid a single
+     *   hiccup permanently disabling a feature.
+     */
+    private fun classifyThrownException(t: Throwable): FeatureInstallResult =
+        when (t) {
+            is ClassNotFoundException,
+            is NoClassDefFoundError,
+            is NoSuchMethodError,
+            is NoSuchFieldError ->
+                FeatureInstallResult.FailedTransient("${t.javaClass.simpleName}: ${t.message}")
+            else -> FeatureInstallResult.FailedTransient("${t.javaClass.simpleName}: ${t.message}")
+        }
 
     private fun isFatal(t: Throwable): Boolean =
         t is OutOfMemoryError || t is ThreadDeath || t is VirtualMachineError
+
+    /** Test-only reset of per-process install state. Production code must not call this. */
+    @VisibleForTesting
+    internal fun clear() {
+        states.clear()
+    }
 }

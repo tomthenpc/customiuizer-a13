@@ -38,7 +38,7 @@ object FeatureCatalog {
             processTarget = ProcessTarget.SystemServer,
             preferenceKeys = emptySet(),
             condition = { true },
-            installer = { runtime ->
+            installer = { runtime, compatResult ->
                 PackagePermissions.hook(runtime.lpparam as SystemServerStartingParam)
                 FeatureInstallResult.Installed
             },
@@ -62,7 +62,7 @@ object FeatureCatalog {
                 prefs.getBoolean("system_cc_hidedate") ||
                 prefs.getString("system_cc_dateformat", "").isNotEmpty()
             },
-            installer = { runtime ->
+            installer = { runtime, compatResult ->
                 SystemStatusBarClockAndMoreHooks.StatusBarClockTweakHook(
                     runtime.lpparam as PackageReadyParam
                 )
@@ -81,7 +81,7 @@ object FeatureCatalog {
             condition = { prefs ->
                 prefs.getBoolean("system_autobrightness", false)
             },
-            installer = { runtime ->
+            installer = { runtime, compatResult ->
                 run {
                     val (_, compatResult) = runtime.resolver.evaluateContract(
                         CanaryContracts.autoBrightnessRange,
@@ -113,13 +113,7 @@ object FeatureCatalog {
             condition = { prefs ->
                 prefs.getBoolean("system_vibration_amp", false)
             },
-            compatibilityCheck = { runtime ->
-                runtime.resolver.resolveFirstClass(
-                    DiagnosticIds.MUFFLED_VIBRATION,
-                    "com.android.server.VibratorService"
-                ).compatibility
-            },
-            installer = { runtime ->
+                        installer = { runtime, compatResult ->
                 SystemAudioAndVisualAndMoreHooks.MuffledVibrationHook(
                     runtime.lpparam as SystemServerStartingParam
                 )
@@ -138,13 +132,7 @@ object FeatureCatalog {
             condition = { prefs ->
                 prefs.getBoolean("system_hidemoreicon", false)
             },
-            compatibilityCheck = { runtime ->
-                runtime.resolver.resolveFirstClass(
-                    DiagnosticIds.NO_MORE_ICON,
-                    "com.android.systemui.statusbar.phone.NotificationIconAreaController"
-                ).compatibility
-            },
-            installer = { runtime ->
+                        installer = { runtime, compatResult ->
                 SystemNotificationMoreHooks.NoMoreIconHook(
                     runtime.lpparam as PackageReadyParam
                 )
@@ -162,13 +150,7 @@ object FeatureCatalog {
             condition = { prefs ->
                 prefs.getBoolean("system_batteryindicator", false)
             },
-            compatibilityCheck = { runtime ->
-                runtime.resolver.resolveFirstClass(
-                    DiagnosticIds.BATTERY_INDICATOR,
-                    "com.android.systemui.statusbar.phone.CentralSurfacesImpl"
-                ).compatibility
-            },
-            installer = { runtime ->
+                        installer = { runtime, compatResult ->
                 SystemUIBatteryHooks.BatteryIndicatorHook(
                     runtime.lpparam as PackageReadyParam
                 )
@@ -187,13 +169,7 @@ object FeatureCatalog {
             condition = { prefs ->
                 prefs.getBoolean("launcher_noclockhide", false)
             },
-            compatibilityCheck = { runtime ->
-                runtime.resolver.resolveFirstClass(
-                    DiagnosticIds.NO_CLOCK_HIDE,
-                    "com.miui.home.launcher.Launcher"
-                ).compatibility
-            },
-            installer = { runtime ->
+                        installer = { runtime, compatResult ->
                 LauncherSystemHooks.NoClockHideHook(
                     runtime.lpparam as PackageReadyParam
                 )
@@ -211,13 +187,7 @@ object FeatureCatalog {
             condition = { prefs ->
                 prefs.getBoolean("launcher_nowidgetonly", false)
             },
-            compatibilityCheck = { runtime ->
-                runtime.resolver.resolveFirstClass(
-                    DiagnosticIds.NO_WIDGET_ONLY,
-                    "com.miui.home.launcher.CellLayout"
-                ).compatibility
-            },
-            installer = { runtime ->
+                        installer = { runtime, compatResult ->
                 LauncherLayoutHooks.NoWidgetOnlyHook(
                     runtime.lpparam as PackageReadyParam
                 )
@@ -236,8 +206,7 @@ object FeatureCatalog {
             condition = { prefs ->
                 prefs.getInt("system_dimtime", 0) > 0
             },
-            compatibilityCheck = { _ -> CompatibilityState.COMPATIBLE },
-            installer = { runtime ->
+                        installer = { runtime, compatResult ->
                 SystemAudioAndVisualAndMoreHooks.ScreenDimTimeHook(
                     runtime.lpparam as SystemServerStartingParam
                 )
@@ -255,8 +224,7 @@ object FeatureCatalog {
             condition = { prefs ->
                 prefs.getBoolean("system_firstpress", false)
             },
-            compatibilityCheck = { _ -> CompatibilityState.COMPATIBLE },
-            installer = { runtime ->
+                        installer = { runtime, compatResult ->
                 SystemAudioAndVisualAndMoreHooks.FirstVolumePressHook(
                     runtime.lpparam as SystemServerStartingParam
                 )
@@ -275,8 +243,7 @@ object FeatureCatalog {
             condition = { prefs ->
                 prefs.getBoolean("system_networkindicator_wifi", false)
             },
-            compatibilityCheck = { _ -> CompatibilityState.COMPATIBLE },
-            installer = { runtime ->
+                        installer = { runtime, compatResult ->
                 SystemStatusBarMoreHooks.NetworkIndicatorWifi(
                     runtime.lpparam as PackageReadyParam
                 )
@@ -294,8 +261,7 @@ object FeatureCatalog {
             condition = { prefs ->
                 prefs.getBoolean("system_mutevisiblenotif", false)
             },
-            compatibilityCheck = { _ -> CompatibilityState.COMPATIBLE },
-            installer = { runtime ->
+                        installer = { runtime, compatResult ->
                 SystemNotificationMoreHooks.MuteVisibleNotificationsHook(
                     runtime.lpparam as PackageReadyParam
                 )
@@ -314,8 +280,7 @@ object FeatureCatalog {
             condition = { prefs ->
                 prefs.getBoolean("launcher_hidetitles", false)
             },
-            compatibilityCheck = { _ -> CompatibilityState.COMPATIBLE },
-            installer = { runtime ->
+                        installer = { runtime, compatResult ->
                 LauncherIconHooks.HideTitlesHook(
                     runtime.lpparam as PackageReadyParam
                 )
@@ -333,8 +298,7 @@ object FeatureCatalog {
             condition = { prefs ->
                 prefs.getBoolean("launcher_fixlaunch", false)
             },
-            compatibilityCheck = { _ -> CompatibilityState.COMPATIBLE },
-            installer = { runtime ->
+                        installer = { runtime, compatResult ->
                 LauncherSystemHooks.FixAppInfoLaunchHook(
                     runtime.lpparam as PackageReadyParam
                 )
@@ -353,8 +317,7 @@ object FeatureCatalog {
             condition = { prefs ->
                 prefs.getBoolean("system_hideproxywarn", false)
             },
-            compatibilityCheck = { _ -> CompatibilityState.COMPATIBLE },
-            installer = { runtime ->
+                        installer = { runtime, compatResult ->
                 SystemDisplayAndWindowHooks.HideProximityWarningHook(
                     runtime.lpparam as SystemServerStartingParam
                 )
@@ -372,8 +335,7 @@ object FeatureCatalog {
             condition = { prefs ->
                 prefs.getBoolean("system_clearalltasks", false)
             },
-            compatibilityCheck = { _ -> CompatibilityState.COMPATIBLE },
-            installer = { runtime ->
+                        installer = { runtime, compatResult ->
                 SystemAudioAndVisualAndMoreHooks.ClearAllTasksHook(
                     runtime.lpparam as SystemServerStartingParam
                 )
@@ -392,8 +354,7 @@ object FeatureCatalog {
             condition = { prefs ->
                 prefs.getBoolean("system_removedismiss", false)
             },
-            compatibilityCheck = { _ -> CompatibilityState.COMPATIBLE },
-            installer = { runtime ->
+                        installer = { runtime, compatResult ->
                 SystemUINotificationHooks.HideDismissViewHook(
                     runtime.lpparam as PackageReadyParam
                 )
@@ -411,8 +372,7 @@ object FeatureCatalog {
             condition = { prefs ->
                 prefs.getBoolean("system_hidelshint", false)
             },
-            compatibilityCheck = { _ -> CompatibilityState.COMPATIBLE },
-            installer = { runtime ->
+                        installer = { runtime, compatResult ->
                 SystemLockScreenMoreHooks.HideLockScreenHintHook(
                     runtime.lpparam as PackageReadyParam
                 )
@@ -431,8 +391,7 @@ object FeatureCatalog {
             condition = { prefs ->
                 prefs.getInt("launcher_folder_cols", 1) > 1
             },
-            compatibilityCheck = { _ -> CompatibilityState.COMPATIBLE },
-            installer = { runtime ->
+                        installer = { runtime, compatResult ->
                 LauncherFolderHooks.FolderColumnsHook(
                     runtime.lpparam as PackageReadyParam
                 )
@@ -450,8 +409,7 @@ object FeatureCatalog {
             condition = { prefs ->
                 prefs.getInt("launcher_titletopmargin", 0) > 0
             },
-            compatibilityCheck = { _ -> CompatibilityState.COMPATIBLE },
-            installer = { runtime ->
+                        installer = { runtime, compatResult ->
                 LauncherIconHooks.TitleTopMarginHook(
                     runtime.lpparam as PackageReadyParam
                 )
@@ -470,8 +428,7 @@ object FeatureCatalog {
             condition = { prefs ->
                 prefs.getStringAsInt("system_nolightuponcharges", 1) > 1
             },
-            compatibilityCheck = { _ -> CompatibilityState.COMPATIBLE },
-            installer = { runtime ->
+                        installer = { runtime, compatResult ->
                 SystemDisplayAndWindowHooks.NoLightUpOnChargeHook(
                     runtime.lpparam as SystemServerStartingParam
                 )
@@ -489,8 +446,7 @@ object FeatureCatalog {
             condition = { prefs ->
                 prefs.getStringAsInt("system_allrotations2", 1) > 1
             },
-            compatibilityCheck = { _ -> CompatibilityState.COMPATIBLE },
-            installer = { runtime ->
+                        installer = { runtime, compatResult ->
                 SystemAudioAndVisualAndMoreHooks.AllRotationsHook(
                     runtime.lpparam as SystemServerStartingParam
                 )
@@ -509,8 +465,7 @@ object FeatureCatalog {
             condition = { prefs ->
                 prefs.getBoolean("system_nonetspeedseparator", false)
             },
-            compatibilityCheck = { _ -> CompatibilityState.COMPATIBLE },
-            installer = { runtime ->
+                        installer = { runtime, compatResult ->
                 SystemUIStatusBarHooks.NoNetworkSpeedSeparatorHook(
                     runtime.lpparam as PackageReadyParam
                 )
@@ -528,8 +483,7 @@ object FeatureCatalog {
             condition = { prefs ->
                 prefs.getBoolean("system_statusbaricons_clock", false)
             },
-            compatibilityCheck = { _ -> CompatibilityState.COMPATIBLE },
-            installer = { runtime ->
+                        installer = { runtime, compatResult ->
                 SystemUIStatusBarHooks.HideIconsClockHook(
                     runtime.lpparam as PackageReadyParam
                 )
@@ -548,8 +502,7 @@ object FeatureCatalog {
             condition = { prefs ->
                 prefs.getBoolean("launcher_nounlockanim", false)
             },
-            compatibilityCheck = { _ -> CompatibilityState.COMPATIBLE },
-            installer = { runtime ->
+                        installer = { runtime, compatResult ->
                 LauncherAnimationHooks.NoUnlockAnimationHook(
                     runtime.lpparam as PackageReadyParam
                 )

@@ -31,7 +31,7 @@ sealed interface FeatureInstallResult {
         is UnsupportedProcess,
         is WrongPhase,
         is Incompatible -> InstallOutcome.FAILED
-        is FailedTransient -> InstallOutcome.DEGRADED
+        is FailedTransient -> InstallOutcome.FAILED
         is FailedPermanent -> InstallOutcome.FAILED
     }
 
