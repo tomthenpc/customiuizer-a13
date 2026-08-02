@@ -213,7 +213,35 @@ docs/audit/A13_BASELINE_INVENTORY.md
 
 ## P1.1 Feature identity
 
-State: `TODO`
+State: `COMPLETE`
+
+不变量：
+
+- `FeatureId` enum canonical ID 与 `FeatureCatalog.specs().id` 双向一一对应；
+- `FeatureId.fromString` 可解析所有 canonical/alias 形式；
+- canonical ID 和 `FeatureIdentity.normalizeLookupId` 后 ID 均唯一；
+- alias 不与其它 canonical ID 或 alias 冲突；
+- `diagnosticId` 非空、唯一，且已在 `DiagnosticIds` 中声明；
+- `CONTRACT_REQUIRED` 必须有 `contract`；
+- `FeatureCatalog` registry/legacy 并集无重叠；
+- `FeatureInstallRegistry.registerAll(FeatureCatalog.specs())` 不抛出冲突。
+
+实现：
+
+- 新增 `FeatureIdentityCompletenessTest.kt`（`app/src/test/.../mods/catalog/`），覆盖上述不变量。
+
+验证：
+
+```text
+- .\gradlew.bat :app:testDebugUnitTest --tests "tv.withaibuild.customiuizer.mods.catalog.FeatureIdentityCompletenessTest"
+  -> BUILD SUCCESSFUL (10 tests, 0 failed, 0 skipped)
+- powershell -NoProfile -ExecutionPolicy Bypass -File .\scripts\verify.ps1 -Mode Fast
+  -> A13 VERIFICATION PASSED (exit 0)
+- powershell -NoProfile -ExecutionPolicy Bypass -File .\scripts\verify.ps1 -Mode Full
+  -> A13 VERIFICATION PASSED (exit 0)
+- CI: 无仓库级 CI workflow；仅本地 verify
+- Device evidence: NOT_EXERCISED
+```
 
 验收：
 
