@@ -350,7 +350,7 @@ object FeatureInstallRegistry {
 
     private fun installationOutcome(result: FeatureInstallResult): Triple<InstallOutcome, ReasonCode, String?> {
         val outcome = when (result) {
-            is FeatureInstallResult.Installed -> InstallOutcome.INSTALLED
+            is FeatureInstallResult.Installed -> result.installSummary?.installation ?: InstallOutcome.INSTALLED
             is FeatureInstallResult.AlreadyInstalled -> InstallOutcome.ALREADY_INSTALLED
             is FeatureInstallResult.Disabled -> InstallOutcome.FAILED
             is FeatureInstallResult.UnsupportedProcess,
@@ -360,7 +360,7 @@ object FeatureInstallRegistry {
             is FeatureInstallResult.FailedPermanent -> InstallOutcome.FAILED
         }
         val reasonCode = when (result) {
-            is FeatureInstallResult.Installed -> ReasonCode.INSTALLER_SUCCEEDED
+            is FeatureInstallResult.Installed -> result.installSummary?.reasonCode ?: ReasonCode.INSTALLER_SUCCEEDED
             is FeatureInstallResult.AlreadyInstalled -> ReasonCode.ALREADY_INSTALLED
             is FeatureInstallResult.Disabled -> ReasonCode.PREFERENCE_DISABLED
             is FeatureInstallResult.UnsupportedProcess,

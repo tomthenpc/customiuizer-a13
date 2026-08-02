@@ -351,7 +351,7 @@ UNKNOWN
 
 # P2 — typed Feature Registry 全量收口
 
-State: `IN_PROGRESS`
+State: `COMPLETE`
 
 目标：
 
@@ -362,31 +362,38 @@ State: `IN_PROGRESS`
 - process-local idempotent state；
 - fatal error 继续抛出。
 
-按 process 分批：
+实现：
 
-1. system_server；
-2. SystemUI；
-3. Launcher；
-4. 其他目标。
+- `FeatureDispatcher.install` 全部路由到 `FeatureInstallRegistry`；
+- `FeatureCatalog` 为 17 个 legacy `FeatureSpec` 补齐 `processScope` / `installPhase`；
+- 新增 `legacyInstall` helper，将 legacy installer 包裹在 `HookInstaller.withSession` 中，生成 `InstallSummary`；
+- `FeatureInstallRegistry.installationOutcome` 从 `FeatureInstallResult.Installed.installSummary` 读取真实 `InstallOutcome` / `ReasonCode`，保留 `DEGRADED` / `DISPATCHED`；
+- `CatalogBatch1/2/3`、`FeatureDispatcherRegressionTest` 的 `setUp` 增加 `FeatureInstallRegistry.clearStatesForTesting()`，保证测试隔离。
 
-每个 Feature：
+文件：
 
-- [ ] 默认值保持
-- [ ] process 明确
-- [ ] phase 明确
-- [ ] contract/variant 明确
-- [ ] exact Hook call 保持
-- [ ] disabled test
-- [ ] wrong process test
-- [ ] wrong phase test
-- [ ] incompatible test
-- [ ] success test
-- [ ] idempotency test
-- [ ] transient/permanent failure test
-- [ ] fatal rethrow test
-- [ ] diagnostics test
-- [ ] legacy path removed
-- [ ] inventory updated
+```text
+app/src/main/java/tv/withaibuild/customiuizer/mods/catalog/FeatureCatalog.kt
+app/src/main/java/tv/withaibuild/customiuizer/mods/catalog/FeatureDispatcher.kt
+app/src/main/java/tv/withaibuild/customiuizer/mods/catalog/FeatureInstallRegistry.kt
+app/src/test/java/tv/withaibuild/customiuizer/mods/catalog/CatalogBatch1Test.kt
+app/src/test/java/tv/withaibuild/customiuizer/mods/catalog/CatalogBatch2Test.kt
+app/src/test/java/tv/withaibuild/customiuizer/mods/catalog/CatalogBatch3Test.kt
+app/src/test/java/tv/withaibuild/customiuizer/mods/catalog/FeatureDispatcherRegressionTest.kt
+```
+
+验证：
+
+```text
+- .\gradlew.bat :app:compileDebugKotlin
+  -> BUILD SUCCESSFUL
+- .\gradlew.bat :app:testDebugUnitTest
+  -> BUILD SUCCESSFUL
+- powershell -NoProfile -ExecutionPolicy Bypass -File .\scripts\verify.ps1 -Mode Fast
+  -> A13 VERIFICATION PASSED (exit 0)
+- powershell -NoProfile -ExecutionPolicy Bypass -File .\scripts\verify.ps1 -Mode Full
+  -> A13 VERIFICATION PASSED (exit 0)：134 Python tests、unit tests、lint、assembleDebug 全通过
+```
 
 完成条件：
 

@@ -43,7 +43,7 @@ import tv.withaibuild.customiuizer.utils.PrefMap
 object FeatureDispatcher {
 
     init {
-        FeatureInstallRegistry.registerAll(FeatureCatalog.registrySpecs())
+        FeatureInstallRegistry.registerAll(FeatureCatalog.specs())
     }
 
     @JvmStatic
@@ -68,37 +68,53 @@ object FeatureDispatcher {
         } else {
             install(feature, runtime)
         }
-    } catch (oom: OutOfMemoryError) {
-        throw oom
+    } catch (fatal: OutOfMemoryError) {
+        throw fatal
+    } catch (fatal: VirtualMachineError) {
+        throw fatal
+    } catch (fatal: ThreadDeath) {
+        throw fatal
     }
 
     @JvmStatic
-    fun install(feature: FeatureId, runtime: FeatureRuntime): Boolean = when (feature) {
-        FeatureId.PACKAGE_PERMISSIONS -> installPackagePermissions(runtime)
-        FeatureId.STATUS_BAR_CLOCK_TWEAK -> installStatusBarClockTweak(runtime)
-        FeatureId.AUTO_BRIGHTNESS_RANGE -> installAutoBrightnessRange(runtime)
-        FeatureId.MUFFLED_VIBRATION -> installMuffledVibration(runtime)
-        FeatureId.NO_MORE_ICON -> installNoMoreIcon(runtime)
-        FeatureId.BATTERY_INDICATOR -> installBatteryIndicator(runtime)
-        FeatureId.NO_CLOCK_HIDE -> installNoClockHide(runtime)
-        FeatureId.NO_WIDGET_ONLY -> installNoWidgetOnly(runtime)
-        FeatureId.SCREEN_DIM_TIME -> installScreenDimTime(runtime)
-        FeatureId.FIRST_VOLUME_PRESS -> installFirstVolumePress(runtime)
-        FeatureId.NETWORK_INDICATOR_WIFI -> installNetworkIndicatorWifi(runtime)
-        FeatureId.MUTE_VISIBLE_NOTIFICATIONS -> installMuteVisibleNotifications(runtime)
-        FeatureId.HIDE_LAUNCHER_TITLES -> installHideLauncherTitles(runtime)
-        FeatureId.FIX_APP_INFO_LAUNCH -> installFixAppInfoLaunch(runtime)
-        FeatureId.HIDE_PROXIMITY_WARNING -> installHideProximityWarning(runtime)
-        FeatureId.CLEAR_ALL_TASKS -> installClearAllTasks(runtime)
-        FeatureId.HIDE_DISMISS_VIEW -> installHideDismissView(runtime)
-        FeatureId.HIDE_LOCK_SCREEN_HINT -> installHideLockScreenHint(runtime)
-        FeatureId.FOLDER_COLUMNS -> installFolderColumns(runtime)
-        FeatureId.TITLE_TOP_MARGIN -> installTitleTopMargin(runtime)
-        FeatureId.NO_LIGHT_UP_ON_CHARGE -> installNoLightUpOnCharge(runtime)
-        FeatureId.ALL_ROTATIONS -> installAllRotations(runtime)
-        FeatureId.NO_NETWORK_SPEED_SEPARATOR -> installNoNetworkSpeedSeparator(runtime)
-        FeatureId.HIDE_ICONS_CLOCK -> installHideIconsClock(runtime)
-        FeatureId.NO_UNLOCK_ANIMATION -> installNoUnlockAnimation(runtime)
+    fun install(feature: FeatureId, runtime: FeatureRuntime): Boolean {
+        val spec = FeatureCatalog.specs().find { it.id == feature.canonicalId }
+        if (spec == null) {
+            DiagnosticRecorder.record(
+                id = DiagnosticIds.UNKNOWN_FEATURE_ID,
+                installation = InstallOutcome.FAILED,
+                reasonCode = ReasonCode.UNKNOWN,
+                detail = feature.canonicalId
+            )
+            return false
+        }
+
+        val scope = spec.processScope
+        val phase = spec.installPhase
+        if (scope == null || phase == null) {
+            DiagnosticRecorder.record(
+                id = spec.diagnosticId,
+                installation = InstallOutcome.FAILED,
+                reasonCode = ReasonCode.UNKNOWN,
+                detail = "missing processScope or installPhase for ${feature.canonicalId}"
+            )
+            return false
+        }
+
+        return try {
+            FeatureInstallRegistry.installById(
+                feature.canonicalId,
+                scope,
+                phase,
+                runtime
+            ).isActive
+        } catch (fatal: OutOfMemoryError) {
+            throw fatal
+        } catch (fatal: VirtualMachineError) {
+            throw fatal
+        } catch (fatal: ThreadDeath) {
+            throw fatal
+        }
     }
 
     private fun installPackagePermissions(runtime: FeatureRuntime): Boolean {

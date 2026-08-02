@@ -21,6 +21,7 @@ import tv.withaibuild.customiuizer.mods.diagnostics.DiagnosticIds
 import tv.withaibuild.customiuizer.mods.diagnostics.InstallOutcome
 import tv.withaibuild.customiuizer.mods.diagnostics.InstallSummary
 import tv.withaibuild.customiuizer.mods.utils.FeatureInstallResult
+import tv.withaibuild.customiuizer.mods.utils.HookInstallResult
 import tv.withaibuild.customiuizer.mods.utils.HookInstaller
 import tv.withaibuild.customiuizer.mods.utils.HookTargetContract
 import tv.withaibuild.customiuizer.mods.utils.InstallPhase
@@ -456,16 +457,24 @@ object FeatureCatalog {
             contract = CatalogContracts.screenDimTime,
             id = "screenDimTime",
             diagnosticId = DiagnosticIds.SCREEN_DIM_TIME,
+            processScope = ProcessScope.SYSTEM_SERVER,
+            installPhase = InstallPhase.SYSTEM_SERVER_STARTING,
             processTarget = ProcessTarget.SystemServer,
             preferenceKeys = setOf("system_dimtime"),
             condition = { prefs ->
                 prefs.getInt("system_dimtime", 0) > 0
             },
-                        installer = { runtime, compatResult ->
-                SystemAudioAndVisualAndMoreHooks.ScreenDimTimeHook(
-                    runtime.lpparam as SystemServerStartingParam
-                )
-                FeatureInstallResult.Installed()
+            installer = { runtime, compatResult ->
+                legacyInstall(
+                    runtime = runtime,
+                    compatResult = compatResult,
+                    contract = CatalogContracts.screenDimTime,
+                    diagnosticId = DiagnosticIds.SCREEN_DIM_TIME
+                ) {
+                    SystemAudioAndVisualAndMoreHooks.ScreenDimTimeHook(
+                        runtime.lpparam as SystemServerStartingParam
+                    )
+                }
             },
             activationRestartTarget = RestartTarget.REBOOT,
             configReloadMode = ConfigReloadMode.NONE
@@ -475,16 +484,24 @@ object FeatureCatalog {
             contract = CatalogContracts.firstVolumePress,
             id = "firstVolumePress",
             diagnosticId = DiagnosticIds.FIRST_VOLUME_PRESS,
+            processScope = ProcessScope.SYSTEM_SERVER,
+            installPhase = InstallPhase.SYSTEM_SERVER_STARTING,
             processTarget = ProcessTarget.SystemServer,
             preferenceKeys = setOf("system_firstpress"),
             condition = { prefs ->
                 prefs.getBoolean("system_firstpress", false)
             },
-                        installer = { runtime, compatResult ->
-                SystemAudioAndVisualAndMoreHooks.FirstVolumePressHook(
+            installer = { runtime, compatResult ->
+                legacyInstall(
+                    runtime = runtime,
+                    compatResult = compatResult,
+                    contract = CatalogContracts.firstVolumePress,
+                    diagnosticId = DiagnosticIds.FIRST_VOLUME_PRESS
+                ) {
+                    SystemAudioAndVisualAndMoreHooks.FirstVolumePressHook(
                     runtime.lpparam as SystemServerStartingParam
-                )
-                FeatureInstallResult.Installed()
+                    )
+                }
             },
             activationRestartTarget = RestartTarget.REBOOT,
             configReloadMode = ConfigReloadMode.NONE
@@ -495,16 +512,24 @@ object FeatureCatalog {
             contract = CatalogContracts.networkIndicatorWifi,
             id = "networkIndicatorWifi",
             diagnosticId = DiagnosticIds.NETWORK_INDICATOR_WIFI,
+            processScope = ProcessScope.SYSTEM_UI,
+            installPhase = InstallPhase.PACKAGE_READY,
             processTarget = ProcessTarget.SystemUI,
             preferenceKeys = setOf("system_networkindicator_wifi"),
             condition = { prefs ->
                 prefs.getBoolean("system_networkindicator_wifi", false)
             },
-                        installer = { runtime, compatResult ->
-                SystemStatusBarMoreHooks.NetworkIndicatorWifi(
+            installer = { runtime, compatResult ->
+                legacyInstall(
+                    runtime = runtime,
+                    compatResult = compatResult,
+                    contract = CatalogContracts.networkIndicatorWifi,
+                    diagnosticId = DiagnosticIds.NETWORK_INDICATOR_WIFI
+                ) {
+                    SystemStatusBarMoreHooks.NetworkIndicatorWifi(
                     runtime.lpparam as PackageReadyParam
-                )
-                FeatureInstallResult.Installed()
+                    )
+                }
             },
             activationRestartTarget = RestartTarget.SYSTEMUI_RESTART,
             configReloadMode = ConfigReloadMode.NONE
@@ -514,16 +539,24 @@ object FeatureCatalog {
             contract = CatalogContracts.muteVisibleNotifications,
             id = "muteVisibleNotifications",
             diagnosticId = DiagnosticIds.MUTE_VISIBLE_NOTIFICATIONS,
+            processScope = ProcessScope.SYSTEM_UI,
+            installPhase = InstallPhase.PACKAGE_READY,
             processTarget = ProcessTarget.SystemUI,
             preferenceKeys = setOf("system_mutevisiblenotif"),
             condition = { prefs ->
                 prefs.getBoolean("system_mutevisiblenotif", false)
             },
-                        installer = { runtime, compatResult ->
-                SystemNotificationMoreHooks.MuteVisibleNotificationsHook(
+            installer = { runtime, compatResult ->
+                legacyInstall(
+                    runtime = runtime,
+                    compatResult = compatResult,
+                    contract = CatalogContracts.muteVisibleNotifications,
+                    diagnosticId = DiagnosticIds.MUTE_VISIBLE_NOTIFICATIONS
+                ) {
+                    SystemNotificationMoreHooks.MuteVisibleNotificationsHook(
                     runtime.lpparam as PackageReadyParam
-                )
-                FeatureInstallResult.Installed()
+                    )
+                }
             },
             activationRestartTarget = RestartTarget.SYSTEMUI_RESTART,
             configReloadMode = ConfigReloadMode.NONE
@@ -534,16 +567,24 @@ object FeatureCatalog {
             contract = CatalogContracts.hideLauncherTitles,
             id = "hideLauncherTitles",
             diagnosticId = DiagnosticIds.HIDE_LAUNCHER_TITLES,
+            processScope = ProcessScope.LAUNCHER,
+            installPhase = InstallPhase.PACKAGE_READY,
             processTarget = ProcessTarget.Launcher,
             preferenceKeys = setOf("launcher_hidetitles"),
             condition = { prefs ->
                 prefs.getBoolean("launcher_hidetitles", false)
             },
-                        installer = { runtime, compatResult ->
-                LauncherIconHooks.HideTitlesHook(
+            installer = { runtime, compatResult ->
+                legacyInstall(
+                    runtime = runtime,
+                    compatResult = compatResult,
+                    contract = CatalogContracts.hideLauncherTitles,
+                    diagnosticId = DiagnosticIds.HIDE_LAUNCHER_TITLES
+                ) {
+                    LauncherIconHooks.HideTitlesHook(
                     runtime.lpparam as PackageReadyParam
-                )
-                FeatureInstallResult.Installed()
+                    )
+                }
             },
             activationRestartTarget = RestartTarget.LAUNCHER_RESTART,
             configReloadMode = ConfigReloadMode.NONE
@@ -553,16 +594,24 @@ object FeatureCatalog {
             contract = CatalogContracts.fixAppInfoLaunch,
             id = "fixAppInfoLaunch",
             diagnosticId = DiagnosticIds.FIX_APP_INFO_LAUNCH,
+            processScope = ProcessScope.LAUNCHER,
+            installPhase = InstallPhase.PACKAGE_READY,
             processTarget = ProcessTarget.Launcher,
             preferenceKeys = setOf("launcher_fixlaunch"),
             condition = { prefs ->
                 prefs.getBoolean("launcher_fixlaunch", false)
             },
-                        installer = { runtime, compatResult ->
-                LauncherSystemHooks.FixAppInfoLaunchHook(
+            installer = { runtime, compatResult ->
+                legacyInstall(
+                    runtime = runtime,
+                    compatResult = compatResult,
+                    contract = CatalogContracts.fixAppInfoLaunch,
+                    diagnosticId = DiagnosticIds.FIX_APP_INFO_LAUNCH
+                ) {
+                    LauncherSystemHooks.FixAppInfoLaunchHook(
                     runtime.lpparam as PackageReadyParam
-                )
-                FeatureInstallResult.Installed()
+                    )
+                }
             },
             activationRestartTarget = RestartTarget.LAUNCHER_RESTART,
             configReloadMode = ConfigReloadMode.NONE
@@ -573,16 +622,24 @@ object FeatureCatalog {
             contract = CatalogContracts.hideProximityWarning,
             id = "hideProximityWarning",
             diagnosticId = DiagnosticIds.HIDE_PROXIMITY_WARNING,
+            processScope = ProcessScope.SYSTEM_SERVER,
+            installPhase = InstallPhase.SYSTEM_SERVER_STARTING,
             processTarget = ProcessTarget.SystemServer,
             preferenceKeys = setOf("system_hideproxywarn"),
             condition = { prefs ->
                 prefs.getBoolean("system_hideproxywarn", false)
             },
-                        installer = { runtime, compatResult ->
-                SystemDisplayAndWindowHooks.HideProximityWarningHook(
+            installer = { runtime, compatResult ->
+                legacyInstall(
+                    runtime = runtime,
+                    compatResult = compatResult,
+                    contract = CatalogContracts.hideProximityWarning,
+                    diagnosticId = DiagnosticIds.HIDE_PROXIMITY_WARNING
+                ) {
+                    SystemDisplayAndWindowHooks.HideProximityWarningHook(
                     runtime.lpparam as SystemServerStartingParam
-                )
-                FeatureInstallResult.Installed()
+                    )
+                }
             },
             activationRestartTarget = RestartTarget.REBOOT,
             configReloadMode = ConfigReloadMode.NONE
@@ -592,16 +649,24 @@ object FeatureCatalog {
             contract = CatalogContracts.clearAllTasks,
             id = "clearAllTasks",
             diagnosticId = DiagnosticIds.CLEAR_ALL_TASKS,
+            processScope = ProcessScope.SYSTEM_SERVER,
+            installPhase = InstallPhase.SYSTEM_SERVER_STARTING,
             processTarget = ProcessTarget.SystemServer,
             preferenceKeys = setOf("system_clearalltasks"),
             condition = { prefs ->
                 prefs.getBoolean("system_clearalltasks", false)
             },
-                        installer = { runtime, compatResult ->
-                SystemAudioAndVisualAndMoreHooks.ClearAllTasksHook(
+            installer = { runtime, compatResult ->
+                legacyInstall(
+                    runtime = runtime,
+                    compatResult = compatResult,
+                    contract = CatalogContracts.clearAllTasks,
+                    diagnosticId = DiagnosticIds.CLEAR_ALL_TASKS
+                ) {
+                    SystemAudioAndVisualAndMoreHooks.ClearAllTasksHook(
                     runtime.lpparam as SystemServerStartingParam
-                )
-                FeatureInstallResult.Installed()
+                    )
+                }
             },
             activationRestartTarget = RestartTarget.REBOOT,
             configReloadMode = ConfigReloadMode.NONE
@@ -612,16 +677,24 @@ object FeatureCatalog {
             contract = CatalogContracts.hideDismissView,
             id = "hideDismissView",
             diagnosticId = DiagnosticIds.HIDE_DISMISS_VIEW,
+            processScope = ProcessScope.SYSTEM_UI,
+            installPhase = InstallPhase.PACKAGE_READY,
             processTarget = ProcessTarget.SystemUI,
             preferenceKeys = setOf("system_removedismiss"),
             condition = { prefs ->
                 prefs.getBoolean("system_removedismiss", false)
             },
-                        installer = { runtime, compatResult ->
-                SystemUINotificationHooks.HideDismissViewHook(
+            installer = { runtime, compatResult ->
+                legacyInstall(
+                    runtime = runtime,
+                    compatResult = compatResult,
+                    contract = CatalogContracts.hideDismissView,
+                    diagnosticId = DiagnosticIds.HIDE_DISMISS_VIEW
+                ) {
+                    SystemUINotificationHooks.HideDismissViewHook(
                     runtime.lpparam as PackageReadyParam
-                )
-                FeatureInstallResult.Installed()
+                    )
+                }
             },
             activationRestartTarget = RestartTarget.SYSTEMUI_RESTART,
             configReloadMode = ConfigReloadMode.NONE
@@ -631,16 +704,24 @@ object FeatureCatalog {
             contract = CatalogContracts.hideLockScreenHint,
             id = "hideLockScreenHint",
             diagnosticId = DiagnosticIds.HIDE_LOCK_SCREEN_HINT,
+            processScope = ProcessScope.SYSTEM_UI,
+            installPhase = InstallPhase.PACKAGE_READY,
             processTarget = ProcessTarget.SystemUI,
             preferenceKeys = setOf("system_hidelshint"),
             condition = { prefs ->
                 prefs.getBoolean("system_hidelshint", false)
             },
-                        installer = { runtime, compatResult ->
-                SystemLockScreenMoreHooks.HideLockScreenHintHook(
+            installer = { runtime, compatResult ->
+                legacyInstall(
+                    runtime = runtime,
+                    compatResult = compatResult,
+                    contract = CatalogContracts.hideLockScreenHint,
+                    diagnosticId = DiagnosticIds.HIDE_LOCK_SCREEN_HINT
+                ) {
+                    SystemLockScreenMoreHooks.HideLockScreenHintHook(
                     runtime.lpparam as PackageReadyParam
-                )
-                FeatureInstallResult.Installed()
+                    )
+                }
             },
             activationRestartTarget = RestartTarget.SYSTEMUI_RESTART,
             configReloadMode = ConfigReloadMode.NONE
@@ -651,16 +732,24 @@ object FeatureCatalog {
             contract = CatalogContracts.folderColumns,
             id = "folderColumns",
             diagnosticId = DiagnosticIds.FOLDER_COLUMNS,
+            processScope = ProcessScope.LAUNCHER,
+            installPhase = InstallPhase.PACKAGE_READY,
             processTarget = ProcessTarget.Launcher,
             preferenceKeys = setOf("launcher_folder_cols"),
             condition = { prefs ->
                 prefs.getInt("launcher_folder_cols", 1) > 1
             },
-                        installer = { runtime, compatResult ->
-                LauncherFolderHooks.FolderColumnsHook(
+            installer = { runtime, compatResult ->
+                legacyInstall(
+                    runtime = runtime,
+                    compatResult = compatResult,
+                    contract = CatalogContracts.folderColumns,
+                    diagnosticId = DiagnosticIds.FOLDER_COLUMNS
+                ) {
+                    LauncherFolderHooks.FolderColumnsHook(
                     runtime.lpparam as PackageReadyParam
-                )
-                FeatureInstallResult.Installed()
+                    )
+                }
             },
             activationRestartTarget = RestartTarget.LAUNCHER_RESTART,
             configReloadMode = ConfigReloadMode.NONE
@@ -670,16 +759,24 @@ object FeatureCatalog {
             contract = CatalogContracts.titleTopMargin,
             id = "titleTopMargin",
             diagnosticId = DiagnosticIds.TITLE_TOP_MARGIN,
+            processScope = ProcessScope.LAUNCHER,
+            installPhase = InstallPhase.PACKAGE_READY,
             processTarget = ProcessTarget.Launcher,
             preferenceKeys = setOf("launcher_titletopmargin"),
             condition = { prefs ->
                 prefs.getInt("launcher_titletopmargin", 0) > 0
             },
-                        installer = { runtime, compatResult ->
-                LauncherIconHooks.TitleTopMarginHook(
+            installer = { runtime, compatResult ->
+                legacyInstall(
+                    runtime = runtime,
+                    compatResult = compatResult,
+                    contract = CatalogContracts.titleTopMargin,
+                    diagnosticId = DiagnosticIds.TITLE_TOP_MARGIN
+                ) {
+                    LauncherIconHooks.TitleTopMarginHook(
                     runtime.lpparam as PackageReadyParam
-                )
-                FeatureInstallResult.Installed()
+                    )
+                }
             },
             activationRestartTarget = RestartTarget.LAUNCHER_RESTART,
             configReloadMode = ConfigReloadMode.NONE
@@ -690,16 +787,24 @@ object FeatureCatalog {
             contract = CatalogContracts.noLightUpOnCharge,
             id = "noLightUpOnCharge",
             diagnosticId = DiagnosticIds.NO_LIGHT_UP_ON_CHARGE,
+            processScope = ProcessScope.SYSTEM_SERVER,
+            installPhase = InstallPhase.SYSTEM_SERVER_STARTING,
             processTarget = ProcessTarget.SystemServer,
             preferenceKeys = setOf("system_nolightuponcharges"),
             condition = { prefs ->
                 prefs.getStringAsInt("system_nolightuponcharges", 1) > 1
             },
-                        installer = { runtime, compatResult ->
-                SystemDisplayAndWindowHooks.NoLightUpOnChargeHook(
+            installer = { runtime, compatResult ->
+                legacyInstall(
+                    runtime = runtime,
+                    compatResult = compatResult,
+                    contract = CatalogContracts.noLightUpOnCharge,
+                    diagnosticId = DiagnosticIds.NO_LIGHT_UP_ON_CHARGE
+                ) {
+                    SystemDisplayAndWindowHooks.NoLightUpOnChargeHook(
                     runtime.lpparam as SystemServerStartingParam
-                )
-                FeatureInstallResult.Installed()
+                    )
+                }
             },
             activationRestartTarget = RestartTarget.REBOOT,
             configReloadMode = ConfigReloadMode.NONE
@@ -709,16 +814,24 @@ object FeatureCatalog {
             contract = CatalogContracts.allRotations,
             id = "allRotations",
             diagnosticId = DiagnosticIds.ALL_ROTATIONS,
+            processScope = ProcessScope.SYSTEM_SERVER,
+            installPhase = InstallPhase.SYSTEM_SERVER_STARTING,
             processTarget = ProcessTarget.SystemServer,
             preferenceKeys = setOf("system_allrotations2"),
             condition = { prefs ->
                 prefs.getStringAsInt("system_allrotations2", 1) > 1
             },
-                        installer = { runtime, compatResult ->
-                SystemAudioAndVisualAndMoreHooks.AllRotationsHook(
+            installer = { runtime, compatResult ->
+                legacyInstall(
+                    runtime = runtime,
+                    compatResult = compatResult,
+                    contract = CatalogContracts.allRotations,
+                    diagnosticId = DiagnosticIds.ALL_ROTATIONS
+                ) {
+                    SystemAudioAndVisualAndMoreHooks.AllRotationsHook(
                     runtime.lpparam as SystemServerStartingParam
-                )
-                FeatureInstallResult.Installed()
+                    )
+                }
             },
             activationRestartTarget = RestartTarget.REBOOT,
             configReloadMode = ConfigReloadMode.NONE
@@ -729,16 +842,24 @@ object FeatureCatalog {
             contract = CatalogContracts.noNetworkSpeedSeparator,
             id = "noNetworkSpeedSeparator",
             diagnosticId = DiagnosticIds.NO_NETWORK_SPEED_SEPARATOR,
+            processScope = ProcessScope.SYSTEM_UI,
+            installPhase = InstallPhase.PACKAGE_READY,
             processTarget = ProcessTarget.SystemUI,
             preferenceKeys = setOf("system_nonetspeedseparator"),
             condition = { prefs ->
                 prefs.getBoolean("system_nonetspeedseparator", false)
             },
-                        installer = { runtime, compatResult ->
-                SystemUIStatusBarHooks.NoNetworkSpeedSeparatorHook(
+            installer = { runtime, compatResult ->
+                legacyInstall(
+                    runtime = runtime,
+                    compatResult = compatResult,
+                    contract = CatalogContracts.noNetworkSpeedSeparator,
+                    diagnosticId = DiagnosticIds.NO_NETWORK_SPEED_SEPARATOR
+                ) {
+                    SystemUIStatusBarHooks.NoNetworkSpeedSeparatorHook(
                     runtime.lpparam as PackageReadyParam
-                )
-                FeatureInstallResult.Installed()
+                    )
+                }
             },
             activationRestartTarget = RestartTarget.SYSTEMUI_RESTART,
             configReloadMode = ConfigReloadMode.NONE
@@ -748,16 +869,24 @@ object FeatureCatalog {
             contract = CatalogContracts.hideIconsClock,
             id = "hideIconsClock",
             diagnosticId = DiagnosticIds.HIDE_ICONS_CLOCK,
+            processScope = ProcessScope.SYSTEM_UI,
+            installPhase = InstallPhase.PACKAGE_READY,
             processTarget = ProcessTarget.SystemUI,
             preferenceKeys = setOf("system_statusbaricons_clock"),
             condition = { prefs ->
                 prefs.getBoolean("system_statusbaricons_clock", false)
             },
-                        installer = { runtime, compatResult ->
-                SystemUIStatusBarHooks.HideIconsClockHook(
+            installer = { runtime, compatResult ->
+                legacyInstall(
+                    runtime = runtime,
+                    compatResult = compatResult,
+                    contract = CatalogContracts.hideIconsClock,
+                    diagnosticId = DiagnosticIds.HIDE_ICONS_CLOCK
+                ) {
+                    SystemUIStatusBarHooks.HideIconsClockHook(
                     runtime.lpparam as PackageReadyParam
-                )
-                FeatureInstallResult.Installed()
+                    )
+                }
             },
             activationRestartTarget = RestartTarget.SYSTEMUI_RESTART,
             configReloadMode = ConfigReloadMode.NONE
@@ -768,21 +897,71 @@ object FeatureCatalog {
             contract = CatalogContracts.noUnlockAnimation,
             id = "noUnlockAnimation",
             diagnosticId = DiagnosticIds.NO_UNLOCK_ANIMATION,
+            processScope = ProcessScope.LAUNCHER,
+            installPhase = InstallPhase.PACKAGE_READY,
             processTarget = ProcessTarget.Launcher,
             preferenceKeys = setOf("launcher_nounlockanim"),
             condition = { prefs ->
                 prefs.getBoolean("launcher_nounlockanim", false)
             },
-                        installer = { runtime, compatResult ->
-                LauncherAnimationHooks.NoUnlockAnimationHook(
-                    runtime.lpparam as PackageReadyParam
-                )
-                FeatureInstallResult.Installed()
+            installer = { runtime, compatResult ->
+                legacyInstall(
+                    runtime = runtime,
+                    compatResult = compatResult,
+                    contract = CatalogContracts.noUnlockAnimation,
+                    diagnosticId = DiagnosticIds.NO_UNLOCK_ANIMATION
+                ) {
+                    LauncherAnimationHooks.NoUnlockAnimationHook(
+                        runtime.lpparam as PackageReadyParam
+                    )
+                }
             },
             activationRestartTarget = RestartTarget.LAUNCHER_RESTART,
             configReloadMode = ConfigReloadMode.NONE
         )
     ) }
+
+    /**
+     * Wrap a legacy installer in a [HookInstaller] session so that the install
+     * evidence (required/optional counts, fallback, reason code) is captured and
+     * surfaced through [FeatureInstallResult.Installed] for the registry.
+     */
+    private inline fun legacyInstall(
+        runtime: FeatureRuntime,
+        compatResult: HookInstallResult,
+        contract: HookTargetContract,
+        diagnosticId: String,
+        crossinline installer: () -> Unit
+    ): FeatureInstallResult {
+        val session = HookInstaller.withSession(
+            resolver = runtime.resolver,
+            contract = compatResult.resolvedContract ?: contract,
+            diagnosticId = diagnosticId,
+            classLoader = runtime.classLoader,
+            compatibilityResult = compatResult
+        ) {
+            installer()
+        }
+
+        return when (session.installation) {
+            InstallOutcome.INSTALLED,
+            InstallOutcome.DEGRADED,
+            InstallOutcome.DISPATCHED -> FeatureInstallResult.Installed(
+                InstallSummary(
+                    requiredInstalled = session.requiredInstalled,
+                    requiredTotal = session.requiredTotal,
+                    optionalInstalled = session.optionalInstalled,
+                    optionalTotal = session.optionalTotal,
+                    fallbackUsed = session.fallbackUsed,
+                    installation = session.installation ?: InstallOutcome.FAILED,
+                    reasonCode = session.reasonCode
+                )
+            )
+            else -> FeatureInstallResult.FailedTransient(
+                session.detail ?: "$diagnosticId session failed"
+            )
+        }
+    }
 
     /**
      * Build probe used by tests to prove that [registrySpecs] does not touch the

@@ -27,6 +27,7 @@ class CatalogBatch2Test {
     @Before
     fun setUp() {
         DiagnosticRecorder.reset()
+        FeatureInstallRegistry.clearStatesForTesting()
         logs.clear()
         DiagnosticRecorder.clock = { 0L }
         DiagnosticRecorder.logger = { logs += it }
