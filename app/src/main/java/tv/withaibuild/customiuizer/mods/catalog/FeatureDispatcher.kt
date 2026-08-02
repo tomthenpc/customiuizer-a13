@@ -30,7 +30,6 @@ import tv.withaibuild.customiuizer.mods.utils.HookInstaller
 import tv.withaibuild.customiuizer.mods.utils.HookTargetContract
 import tv.withaibuild.customiuizer.mods.utils.InstallPhase
 import tv.withaibuild.customiuizer.mods.utils.ProcessScope
-import tv.withaibuild.customiuizer.mods.utils.ProcessScopes
 import tv.withaibuild.customiuizer.mods.utils.XposedHelpers
 import tv.withaibuild.customiuizer.utils.PrefMap
 
@@ -44,7 +43,7 @@ import tv.withaibuild.customiuizer.utils.PrefMap
 object FeatureDispatcher {
 
     init {
-        FeatureInstallRegistry.registerAll(FeatureCatalog.specs())
+        FeatureInstallRegistry.registerAll(FeatureCatalog.registrySpecs())
     }
 
     @JvmStatic
@@ -103,34 +102,27 @@ object FeatureDispatcher {
     }
 
     private fun installPackagePermissions(runtime: FeatureRuntime): Boolean {
-        if (!ProcessTarget.SystemServer.matches(runtime.processName)) return false
-
         return FeatureInstallRegistry.installById(
             "packagePermissions",
-            ProcessScopes.resolve(runtime.processName, runtime.processName),
+            ProcessScope.SYSTEM_SERVER,
             InstallPhase.SYSTEM_SERVER_STARTING,
             runtime
         ).isActive
     }
 
     private fun installStatusBarClockTweak(runtime: FeatureRuntime): Boolean {
-        if (!ProcessTarget.SystemUI.matches(runtime.processName)) return false
-
         return FeatureInstallRegistry.installById(
             "statusBarClockTweak",
-            ProcessScopes.resolve(runtime.processName, runtime.processName),
+            ProcessScope.SYSTEM_UI,
             InstallPhase.PACKAGE_READY,
             runtime
         ).isActive
     }
 
     private fun installAutoBrightnessRange(runtime: FeatureRuntime): Boolean {
-        if (!ProcessTarget.SystemServer.matches(runtime.processName)) return false
-        if (!runtime.prefs.getBoolean("system_autobrightness", false)) return false
-
         return FeatureInstallRegistry.installById(
             "autoBrightnessRange",
-            ProcessScopes.resolve(runtime.processName, runtime.processName),
+            ProcessScope.SYSTEM_SERVER,
             InstallPhase.SYSTEM_SERVER_STARTING,
             runtime
         ).isActive

@@ -23,6 +23,8 @@ import tv.withaibuild.customiuizer.mods.diagnostics.InstallSummary
 import tv.withaibuild.customiuizer.mods.utils.FeatureInstallResult
 import tv.withaibuild.customiuizer.mods.utils.HookInstaller
 import tv.withaibuild.customiuizer.mods.utils.HookTargetContract
+import tv.withaibuild.customiuizer.mods.utils.InstallPhase
+import tv.withaibuild.customiuizer.mods.utils.ProcessScope
 import tv.withaibuild.customiuizer.utils.PrefMap
 
 /**
@@ -47,13 +49,15 @@ object FeatureCatalog {
             contract = CanaryContracts.packagePermissions,
             id = "packagePermissions",
             diagnosticId = DiagnosticIds.PACKAGE_PERMISSIONS,
+            processScope = ProcessScope.SYSTEM_SERVER,
+            installPhase = InstallPhase.SYSTEM_SERVER_STARTING,
             processTarget = ProcessTarget.SystemServer,
             preferenceKeys = emptySet(),
             condition = { true },
             installer = { runtime, compatResult ->
                 val session = HookInstaller.withSession(
                     resolver = runtime.resolver,
-                    contract = CanaryContracts.packagePermissions,
+                    contract = compatResult.resolvedContract ?: CanaryContracts.packagePermissions,
                     diagnosticId = DiagnosticIds.PACKAGE_PERMISSIONS,
                     classLoader = runtime.classLoader,
                     compatibilityResult = compatResult
@@ -85,6 +89,8 @@ object FeatureCatalog {
         FeatureSpec(
             id = "statusBarClockTweak",
             diagnosticId = DiagnosticIds.STATUSBAR_CLOCK_TWEAK,
+            processScope = ProcessScope.SYSTEM_UI,
+            installPhase = InstallPhase.PACKAGE_READY,
             processTarget = ProcessTarget.SystemUI,
             preferenceKeys = setOf(
                 "system_statusbar_clocktweak",
@@ -105,10 +111,16 @@ object FeatureCatalog {
                     contract,
                     DiagnosticIds.STATUSBAR_CLOCK_TWEAK
                 )
-                CompatibilityResult(compat, result.reasonCode, result.detail, result)
+                CompatibilityResult(
+                    compat,
+                    result.reasonCode,
+                    result.detail,
+                    result.copy(resolvedContract = contract)
+                )
             },
             installer = { runtime, compatResult ->
-                val contract = statusBarClockTweakContract(runtime.prefs)
+                val contract = compatResult.resolvedContract
+                    ?: statusBarClockTweakContract(runtime.prefs)
                 val session = HookInstaller.withSession(
                     resolver = runtime.resolver,
                     contract = contract,
@@ -147,6 +159,8 @@ object FeatureCatalog {
             contract = CanaryContracts.autoBrightnessRange,
             id = "autoBrightnessRange",
             diagnosticId = DiagnosticIds.AUTO_BRIGHTNESS_RANGE,
+            processScope = ProcessScope.SYSTEM_SERVER,
+            installPhase = InstallPhase.SYSTEM_SERVER_STARTING,
             processTarget = ProcessTarget.SystemServer,
             preferenceKeys = setOf("system_autobrightness"),
             condition = { prefs ->
@@ -166,7 +180,7 @@ object FeatureCatalog {
                 } else {
                     val session = HookInstaller.withSession(
                         resolver = runtime.resolver,
-                        contract = CanaryContracts.autoBrightnessRange,
+                        contract = compatResult.resolvedContract ?: CanaryContracts.autoBrightnessRange,
                         diagnosticId = DiagnosticIds.AUTO_BRIGHTNESS_RANGE,
                         classLoader = runtime.classLoader,
                         compatibilityResult = compatResult
@@ -607,6 +621,21 @@ object FeatureCatalog {
             configReloadMode = ConfigReloadMode.NONE
         )
     ) }
+
+    private val registryMigratedIds = setOf(
+        "packagePermissions",
+        "statusBarClockTweak",
+        "autoBrightnessRange"
+    )
+
+    /**
+     * Returns only the specs that have been migrated to the production
+     * [FeatureInstallRegistry]. Non-migrated catalog features remain routed
+     * through the legacy [FeatureDispatcher] paths.
+     */
+    @JvmStatic
+    fun registrySpecs(): List<FeatureSpec> =
+        auditSpecs.filter { it.id in registryMigratedIds }
 
     /**
      * Returns a snapshot of the specs for documentation and audit.

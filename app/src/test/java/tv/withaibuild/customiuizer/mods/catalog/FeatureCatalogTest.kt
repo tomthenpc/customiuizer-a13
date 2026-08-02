@@ -15,6 +15,9 @@ import tv.withaibuild.customiuizer.mods.diagnostics.DiagnosticIds
 import tv.withaibuild.customiuizer.mods.diagnostics.DiagnosticRecorder
 import tv.withaibuild.customiuizer.mods.diagnostics.InstallOutcome
 import tv.withaibuild.customiuizer.mods.diagnostics.ReasonCode
+import tv.withaibuild.customiuizer.mods.utils.FeatureInstallResult
+import tv.withaibuild.customiuizer.mods.utils.InstallPhase
+import tv.withaibuild.customiuizer.mods.utils.ProcessScope
 import tv.withaibuild.customiuizer.mods.utils.XposedHelpers
 import tv.withaibuild.customiuizer.utils.FakeXposedInterface
 import tv.withaibuild.customiuizer.utils.PrefMap
@@ -65,6 +68,204 @@ class FeatureCatalogTest {
         assertTrue(ProcessTarget.SystemUI.matches("com.android.systemui"))
         val systemui = runtime("com.android.systemui")
         assertFalse(FeatureDispatcher.installById("statusBarClockTweak", systemui))
+    }
+
+    @Test
+    fun packagePermissions_installsWithCorrectScopeAndPhase() {
+        val server = runtime("android")
+
+        val result = FeatureInstallRegistry.installById(
+            "packagePermissions",
+            ProcessScope.SYSTEM_SERVER,
+            InstallPhase.SYSTEM_SERVER_STARTING,
+            server
+        )
+
+        assertTrue("packagePermissions installs in system_server scope/phase", result.isActive)
+    }
+
+    @Test
+    fun packagePermissions_rejectsWrongScopeWithoutProbing() {
+        val server = runtime("android")
+
+        val result = FeatureInstallRegistry.installById(
+            "packagePermissions",
+            ProcessScope.SYSTEM_UI,
+            InstallPhase.SYSTEM_SERVER_STARTING,
+            server
+        )
+
+        assertTrue(result is FeatureInstallResult.UnsupportedProcess)
+        assertFalse(server.isResolverInitialized())
+    }
+
+    @Test
+    fun packagePermissions_rejectsWrongPhaseWithoutProbing() {
+        val server = runtime("android")
+
+        val result = FeatureInstallRegistry.installById(
+            "packagePermissions",
+            ProcessScope.SYSTEM_SERVER,
+            InstallPhase.PACKAGE_READY,
+            server
+        )
+
+        assertTrue(result is FeatureInstallResult.WrongPhase)
+        assertFalse(server.isResolverInitialized())
+    }
+
+    @Test
+    fun packagePermissions_rejectsWrongProcessNameWithoutProbing() {
+        val systemui = runtime("com.android.systemui")
+
+        val result = FeatureInstallRegistry.installById(
+            "packagePermissions",
+            ProcessScope.SYSTEM_SERVER,
+            InstallPhase.SYSTEM_SERVER_STARTING,
+            systemui
+        )
+
+        assertTrue(result is FeatureInstallResult.UnsupportedProcess)
+        assertFalse(systemui.isResolverInitialized())
+    }
+
+    @Test
+    fun statusBarClockTweak_rejectsWrongScopeWithoutProbing() {
+        val prefs = PrefMap<String, Any>()
+        prefs["pref_key_system_statusbar_clocktweak"] = true
+        val systemui = runtime("com.android.systemui", prefs)
+
+        val result = FeatureInstallRegistry.installById(
+            "statusBarClockTweak",
+            ProcessScope.SYSTEM_SERVER,
+            InstallPhase.PACKAGE_READY,
+            systemui
+        )
+
+        assertTrue(result is FeatureInstallResult.UnsupportedProcess)
+        assertFalse(systemui.isResolverInitialized())
+    }
+
+    @Test
+    fun statusBarClockTweak_rejectsWrongPhaseWithoutProbing() {
+        val prefs = PrefMap<String, Any>()
+        prefs["pref_key_system_statusbar_clocktweak"] = true
+        val systemui = runtime("com.android.systemui", prefs)
+
+        val result = FeatureInstallRegistry.installById(
+            "statusBarClockTweak",
+            ProcessScope.SYSTEM_UI,
+            InstallPhase.SYSTEM_SERVER_STARTING,
+            systemui
+        )
+
+        assertTrue(result is FeatureInstallResult.WrongPhase)
+        assertFalse(systemui.isResolverInitialized())
+    }
+
+    @Test
+    fun statusBarClockTweak_rejectsWrongProcessNameWithoutProbing() {
+        val prefs = PrefMap<String, Any>()
+        prefs["pref_key_system_statusbar_clocktweak"] = true
+        val server = runtime("android", prefs)
+
+        val result = FeatureInstallRegistry.installById(
+            "statusBarClockTweak",
+            ProcessScope.SYSTEM_UI,
+            InstallPhase.PACKAGE_READY,
+            server
+        )
+
+        assertTrue(result is FeatureInstallResult.UnsupportedProcess)
+        assertFalse(server.isResolverInitialized())
+    }
+
+    @Test
+    fun statusBarClockTweak_installsWithCorrectScopePhaseAndProcessName() {
+        val prefs = PrefMap<String, Any>()
+        prefs["pref_key_system_statusbar_clocktweak"] = true
+        val systemui = runtime("com.android.systemui", prefs)
+
+        val result = FeatureInstallRegistry.installById(
+            "statusBarClockTweak",
+            ProcessScope.SYSTEM_UI,
+            InstallPhase.PACKAGE_READY,
+            systemui
+        )
+
+        assertTrue(result.isActive)
+    }
+
+    @Test
+    fun autoBrightnessRange_rejectsWrongScopeWithoutProbing() {
+        val prefs = PrefMap<String, Any>()
+        prefs["pref_key_system_autobrightness"] = true
+        val server = runtime("android", prefs)
+
+        val result = FeatureInstallRegistry.installById(
+            "autoBrightnessRange",
+            ProcessScope.SYSTEM_UI,
+            InstallPhase.SYSTEM_SERVER_STARTING,
+            server
+        )
+
+        assertTrue(result is FeatureInstallResult.UnsupportedProcess)
+        assertFalse(server.isResolverInitialized())
+    }
+
+    @Test
+    fun autoBrightnessRange_rejectsWrongPhaseWithoutProbing() {
+        val prefs = PrefMap<String, Any>()
+        prefs["pref_key_system_autobrightness"] = true
+        val server = runtime("android", prefs)
+
+        val result = FeatureInstallRegistry.installById(
+            "autoBrightnessRange",
+            ProcessScope.SYSTEM_SERVER,
+            InstallPhase.PACKAGE_READY,
+            server
+        )
+
+        assertTrue(result is FeatureInstallResult.WrongPhase)
+        assertFalse(server.isResolverInitialized())
+    }
+
+    @Test
+    fun autoBrightnessRange_rejectsWrongProcessNameWithoutProbing() {
+        val prefs = PrefMap<String, Any>()
+        prefs["pref_key_system_autobrightness"] = true
+        val systemui = runtime("com.android.systemui", prefs)
+
+        val result = FeatureInstallRegistry.installById(
+            "autoBrightnessRange",
+            ProcessScope.SYSTEM_SERVER,
+            InstallPhase.SYSTEM_SERVER_STARTING,
+            systemui
+        )
+
+        assertTrue(result is FeatureInstallResult.UnsupportedProcess)
+        assertFalse(systemui.isResolverInitialized())
+    }
+
+    @Test
+    fun autoBrightnessRange_installsWithCorrectScopePhaseAndProcessName() {
+        val prefs = PrefMap<String, Any>()
+        prefs["pref_key_system_autobrightness"] = true
+        val server = runtime("android", prefs)
+
+        val result = FeatureInstallRegistry.installById(
+            "autoBrightnessRange",
+            ProcessScope.SYSTEM_SERVER,
+            InstallPhase.SYSTEM_SERVER_STARTING,
+            server
+        )
+
+        // The test classloader does not contain the display framework classes,
+        // so the install may degrade/incompatible, but the registry must accept
+        // the scope and phase and actually probe the contract.
+        assertFalse(result is FeatureInstallResult.UnsupportedProcess)
+        assertFalse(result is FeatureInstallResult.WrongPhase)
+        assertTrue(server.isResolverInitialized())
     }
 
     @Test
@@ -260,6 +461,50 @@ class FeatureCatalogTest {
             "noUnlockAnimation"
         )
         assertEquals(ids, FeatureCatalog.specs().map { it.id }.toSet())
+    }
+
+    @Test
+    fun registrySpecsContainsOnlyMigratedFeatures() {
+        val registryIds = FeatureCatalog.registrySpecs().map { it.id }.toSet()
+        val migrated = setOf("packagePermissions", "statusBarClockTweak", "autoBrightnessRange")
+
+        assertEquals("registry specs are limited to migrated features", migrated, registryIds)
+    }
+
+    @Test
+    fun registrySpecsDoesNotContainLegacyFeatures() {
+        val registryIds = FeatureCatalog.registrySpecs().map { it.id }.toSet()
+        val legacy = setOf("muffledVibration", "noMoreIcon", "batteryIndicator", "noClockHide", "noWidgetOnly")
+
+        assertTrue("legacy features are not pre-registered", legacy.none { it in registryIds })
+    }
+
+    @Test
+    fun registrySpecsHaveOneDispatcherEntry() {
+        val registryIds = FeatureCatalog.registrySpecs().map { it.id }.toSet()
+
+        for (id in registryIds) {
+            assertNotNull("registry feature $id has dispatcher entry", FeatureId.fromString(id))
+        }
+    }
+
+    @Test
+    fun registrySpecsHaveNoDuplicateCanonicalId() {
+        val ids = FeatureCatalog.registrySpecs().map { it.id }
+        assertEquals("canonical ids are unique", ids.size, ids.toSet().size)
+    }
+
+    @Test
+    fun allRegistrySpecsDeclareScopePhaseAndCompatibilityPolicy() {
+        for (spec in FeatureCatalog.registrySpecs()) {
+            assertNotNull("${spec.id} processScope", spec.processScope)
+            assertNotNull("${spec.id} installPhase", spec.installPhase)
+            assertTrue(
+                "${spec.id} compatibility policy is explicit",
+                spec.compatibilityPolicy == CompatibilityPolicy.CONTRACT_REQUIRED ||
+                spec.compatibilityPolicy == CompatibilityPolicy.CUSTOM
+            )
+        }
     }
 
     private fun newPackageReadyParam(packageName: String, classLoader: ClassLoader): PackageReadyParam {

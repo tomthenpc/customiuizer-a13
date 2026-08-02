@@ -20,7 +20,10 @@ enum class ConfigReloadMode { NONE, PARTIAL, FULL }
 /**
  * A strongly-typed, auditable feature definition.
  *
- * @param id Stable feature id used as the key by [FeatureInstallRegistry.installById].
+ * @param id Stable canonical feature id. This is the registry's real primary key.
+ * @param aliases Optional human-readable aliases that normalize to this canonical id.
+ *                Aliases are resolved case-insensitively and are rejected if they
+ *                collide with another canonical id or alias.
  * @param diagnosticId Diagnostic id used for [tv.withaibuild.customiuizer.mods.diagnostics.DiagnosticRecorder] snapshots.
  * @param processScope The [ProcessScope] in which the feature may be installed.
  * @param processTarget The host process where the feature is installed.
@@ -44,6 +47,7 @@ enum class ConfigReloadMode { NONE, PARTIAL, FULL }
 data class FeatureSpec(
     val contract: HookTargetContract? = null,
     val id: String,
+    val aliases: Set<String> = emptySet(),
     val diagnosticId: String,
     val processScope: ProcessScope? = null,
     val processTarget: ProcessTarget,
@@ -79,7 +83,12 @@ data class FeatureSpec(
                         contract,
                         diagnosticId
                     )
-                    CompatibilityResult(compat, result.reasonCode, result.detail, result)
+                    CompatibilityResult(
+                        compat,
+                        result.reasonCode,
+                        result.detail,
+                        result.copy(resolvedContract = contract)
+                    )
                 }
             }
         }

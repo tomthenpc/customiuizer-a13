@@ -3,18 +3,22 @@ package tv.withaibuild.customiuizer.mods.catalog
 import org.junit.After
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse
+import org.junit.Assert.assertNotNull
 import org.junit.Assert.assertThrows
 import org.junit.Assert.assertTrue
 import org.junit.Before
 import org.junit.Test
 import tv.withaibuild.customiuizer.mods.catalog.CompatibilityState
 import tv.withaibuild.customiuizer.mods.diagnostics.DiagnosticRecorder
+import tv.withaibuild.customiuizer.mods.diagnostics.EnabledState
 import tv.withaibuild.customiuizer.mods.diagnostics.InstallOutcome
 import tv.withaibuild.customiuizer.mods.diagnostics.ReasonCode
 import tv.withaibuild.customiuizer.mods.utils.FeatureInstallResult
 import tv.withaibuild.customiuizer.mods.utils.HookInstallResult
+import tv.withaibuild.customiuizer.mods.utils.HookTargetContract
 import tv.withaibuild.customiuizer.mods.utils.InstallPhase
 import tv.withaibuild.customiuizer.mods.utils.ProcessScope
+import tv.withaibuild.customiuizer.mods.catalog.RestartTarget
 import tv.withaibuild.customiuizer.utils.PrefMap
 
 class FeatureInstallRegistryTest {
@@ -22,13 +26,13 @@ class FeatureInstallRegistryTest {
     @Before
     fun setUp() {
         DiagnosticRecorder.reset()
-        FeatureInstallRegistry.clear()
+        FeatureInstallRegistry.resetForTesting()
     }
 
     @After
     fun tearDown() {
         DiagnosticRecorder.reset()
-        FeatureInstallRegistry.clear()
+        FeatureInstallRegistry.resetForTesting()
     }
 
     private fun runtime(processName: String = "test-${System.nanoTime()}"): FeatureRuntime {
@@ -38,6 +42,7 @@ class FeatureInstallRegistryTest {
 
     private fun spec(
         id: String = "test",
+        aliases: Set<String> = emptySet(),
         condition: (PrefMap<String, Any>) -> Boolean = { true },
         compatibilityCheck: (FeatureRuntime) -> CompatibilityResult = {
             CompatibilityResult(
@@ -53,6 +58,7 @@ class FeatureInstallRegistryTest {
     ): FeatureSpec = FeatureSpec(
         contract = null,
         id = id,
+        aliases = aliases,
         diagnosticId = id,
         processScope = processScope,
         processTarget = ProcessTarget.Any,
@@ -225,10 +231,139 @@ class FeatureInstallRegistryTest {
         FeatureInstallRegistry.installById("once", ProcessScope.SYSTEM_UI, InstallPhase.PACKAGE_READY, runtime())
 
         val snapshot = DiagnosticRecorder.summarize()["once"]!!
-        val records = DiagnosticRecorder.summarize().values
-            .filter { it == snapshot }
-            .size
-        assertEquals("a single install attempt produces exactly one snapshot", 1, records)
+        assertEquals("REQUESTED, COMPATIBLE and INSTALLED are three records", 3, snapshot.count)
+        assertEquals(CompatibilityState.COMPATIBLE, snapshot.compatibility)
+        assertEquals(InstallOutcome.INSTALLED, snapshot.installation)
+        assertEquals(EnabledState.REQUESTED, snapshot.enabled)
+    }
+
+    @Test
+    fun rejectsDifferentCanonicalIdsWithSameNormalizedForm() {
+        FeatureInstallRegistry.register(spec(id = "statusBarClockTweak"))
+
+        val thrown = assertThrows(IllegalArgumentException::class.java) {
+            FeatureInstallRegistry.register(spec(id = "statusbarclocktweak"))
+        }
+
+        assertTrue("mentions both canonical ids", thrown.message!!.contains("statusBarClockTweak"))
+        assertTrue("mentions the normalized collision", thrown.message!!.contains("statusbarclocktweak"))
+    }
+
+    @Test
+    fun rejectsCanonicalIdCollidingWithExistingAlias() {
+        FeatureInstallRegistry.register(spec(id = "statusbarclocktweak", aliases = setOf("status_bar_clock", "status bar clock")))
+
+        val thrown = assertThrows(IllegalArgumentException::class.java) {
+            FeatureInstallRegistry.register(spec(id = "status_bar_clock"))
+        }
+
+        assertTrue("mentions alias", thrown.message!!.contains("status_bar_clock"))
+    }
+
+    @Test
+    fun rejectsAliasMappingToDifferentCanonicalId() {
+        FeatureInstallRegistry.register(spec(id = "statusbarclocktweak"))
+
+        val thrown = assertThrows(IllegalArgumentException::class.java) {
+            FeatureInstallRegistry.register(spec(id = "otherClock", aliases = setOf("statusbarclocktweak")))
+        }
+
+        assertTrue("mentions colliding alias", thrown.message!!.contains("statusbarclocktweak"))
+    }
+
+    @Test
+    fun sameSpecRegisteredTwiceIsIdempotent() {
+        val s = spec(id = "idempotent")
+        FeatureInstallRegistry.register(s)
+        FeatureInstallRegistry.register(s)
+
+        assertEquals(FeatureInstallResult.Installed(), FeatureInstallRegistry.installById(
+            "idempotent", ProcessScope.SYSTEM_UI, InstallPhase.PACKAGE_READY, runtime()
+        ))
+    }
+
+    @Test
+    fun rejectsSameCanonicalIdWithDifferentSpec() {
+        FeatureInstallRegistry.register(spec(id = "samespec", condition = { true }))
+
+        val thrown = assertThrows(IllegalArgumentException::class.java) {
+            FeatureInstallRegistry.register(spec(id = "samespec", condition = { false }))
+        }
+
+        assertTrue(thrown.message!!.contains("samespec"))
+    }
+
+    @Test
+    fun resolvesCaseInsensitiveAndSpacedInputToCanonicalId() {
+        FeatureInstallRegistry.register(spec(id = "statusBarClockTweak"))
+
+        assertEquals(
+            FeatureInstallResult.Installed(),
+            FeatureInstallRegistry.installById("STATUS_BAR_CLOCK_TWEAK", ProcessScope.SYSTEM_UI, InstallPhase.PACKAGE_READY, runtime())
+        )
+        assertEquals(
+            FeatureInstallResult.Installed(),
+            FeatureInstallRegistry.installById("status bar clock tweak", ProcessScope.SYSTEM_UI, InstallPhase.PACKAGE_READY, runtime())
+        )
+    }
+
+    @Test
+    fun resolvesExplicitAliasToCanonicalId() {
+        FeatureInstallRegistry.register(spec(id = "statusBarClockTweak", aliases = setOf("status_bar_clock")))
+
+        assertEquals(
+            FeatureInstallResult.Installed(),
+            FeatureInstallRegistry.installById("status_bar_clock", ProcessScope.SYSTEM_UI, InstallPhase.PACKAGE_READY, runtime())
+        )
+    }
+
+    @Test
+    fun unknownAliasReturnsFailedPermanent() {
+        FeatureInstallRegistry.register(spec(id = "statusBarClockTweak"))
+
+        val result = FeatureInstallRegistry.installById(
+            "clockTweak", ProcessScope.SYSTEM_UI, InstallPhase.PACKAGE_READY, runtime()
+        )
+
+        assertTrue(result is FeatureInstallResult.FailedPermanent)
+    }
+
+    @Test
+    fun resolvedContractIsReusedBetweenCompatibilityAndInstaller() {
+        val contract = CanaryContracts.packagePermissions
+        var capturedContract: HookTargetContract? = null
+
+        val s = FeatureSpec(
+            id = "contractReuse",
+            diagnosticId = "contractReuse",
+            processTarget = ProcessTarget.Any,
+            preferenceKeys = emptySet(),
+            condition = { true },
+            compatibilityPolicy = CompatibilityPolicy.CUSTOM,
+            compatibilityCheck = {
+                capturedContract = contract
+                CompatibilityResult(
+                    CompatibilityState.COMPATIBLE,
+                    ReasonCode.PRIMARY_TARGET_FOUND,
+                    "contract built once",
+                    HookInstallResult(
+                        resolvedContract = contract,
+                        reasonCode = ReasonCode.PRIMARY_TARGET_FOUND,
+                        detail = "contract built once"
+                    )
+                )
+            },
+            installer = { _, compatResult ->
+                assertEquals("compatibility and installer must use the same contract", contract, compatResult.resolvedContract)
+                FeatureInstallResult.Installed()
+            },
+            activationRestartTarget = RestartTarget.NONE,
+            configReloadMode = ConfigReloadMode.NONE
+        )
+        FeatureInstallRegistry.register(s)
+
+        FeatureInstallRegistry.installById("contractReuse", ProcessScope.SYSTEM_UI, InstallPhase.PACKAGE_READY, runtime())
+        assertNotNull("compatibilityCheck built the contract", capturedContract)
     }
 
     @Test
@@ -249,7 +384,9 @@ class FeatureInstallRegistryTest {
         FeatureInstallRegistry.installById("inconce", ProcessScope.SYSTEM_UI, InstallPhase.PACKAGE_READY, runtime())
 
         val snapshot = DiagnosticRecorder.summarize()["inconce"]!!
+        assertEquals("REQUESTED, INCOMPATIBLE and INSTALLATION FAILED are three records", 3, snapshot.count)
         assertEquals(CompatibilityState.INCOMPATIBLE, snapshot.compatibility)
         assertEquals(InstallOutcome.FAILED, snapshot.installation)
+        assertEquals(EnabledState.REQUESTED, snapshot.enabled)
     }
 }
