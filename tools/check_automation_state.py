@@ -226,7 +226,7 @@ def check_task_state(findings: Findings) -> None:
     issues = parse_task_issues()
     for issue_id, issue in issues.items():
         state = issue["state"]
-        if state not in {"TODO", "IN_PROGRESS", "COMPLETE", "BLOCKED_EXTERNAL", "BLOCKED_INTERNAL"}:
+        if state not in {"TODO", "IN_PROGRESS", "COMPLETE", "BLOCKED_EXTERNAL", "BLOCKED_INTERNAL", "DEFERRED", "REJECTED"}:
             findings.add(f"TASK_STATE.md issue {issue_id} has unknown state: {state}")
 
     # Known stale issues from the v3 audit

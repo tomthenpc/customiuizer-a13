@@ -586,6 +586,10 @@ assembleDebug
 
 ## P9.2 CI
 
+State: `VERIFIED_CI`
+
+Evidence: `CI_VERIFIED`
+
 GitHub Actions：
 
 - push 到唯一授权分支；
@@ -755,6 +759,7 @@ P0 后重建，但不得删除未解决问题。
 | ARCH-001 | P1 | Feature lifecycle | COMPLETE | P2 已完成，全部 typed Feature 通过 `FeatureInstallRegistry` | inventory 后全量收口 |
 | DOC-001 | P2 | Docs | IN_PROGRESS | v4 文档契约检查器与 audit docs 已建立 | 代码与生成数据一致 |
 | GOAL-001 | P2 | Governance | TODO | v5 长期治理宪章已融合，但 SBOM/ROM packs/artifact provenance 尚未实现 | 随 P8-P14 逐步落地 |
+| A13-ARCH-TG-001 | P2 | Runtime | DEFERRED | A13_TELEGRAM_INSPIRED_LTS_RUNTIME_PROMPT_V1.md 已下发 | 完成 P3 核心收口后做现状审计，不直接写框架 |
 | DEVICE-001 | P1 | Device | BLOCKED_EXTERNAL | 无本轮真实日志 | 完成 P13 |
 
 ---
@@ -772,7 +777,7 @@ P0 后重建，但不得删除未解决问题。
 | 7 | `d939868` | A13-ALG-001：FeatureCatalog O(1) index 与命名修正 | `scripts/verify.ps1 -Mode Fast` 通过 | qualifying |
 | 8 | `590421d` | v5 长期治理宪章融合：GOAL/AGENTS/constitution + checker | `scripts/verify.ps1 -Mode Fast` 通过 | qualifying |
 | 9 | `9fd9e10` | v6 控制状态修复：签名 source of truth + A13-ALG-002 + v6 governance docs | `scripts/verify.ps1 -Mode Final` 通过 | qualifying |
-| 10 | `pending` | V6.1 Standard sweep：progress snapshot generator + exact-branch Fast CI | `python tools/verify.py full` 通过 | qualifying |
+| 10 | `7c3b4fe` | Fast CI 修复：跨平台路径 + full checkout + progress snapshot 忽略 volatile metadata | `python tools/verify.py full` + Fast CI 通过 | qualifying |
 
 ---
 

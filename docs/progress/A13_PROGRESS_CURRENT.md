@@ -1,12 +1,12 @@
 # A13 Progress Snapshot
 
 ```text
-AuditTime: 2026-08-02T05:44:03.352755+00:00
-HEAD: 6f840cb071eca5cac658d29af5af9b9a5afc447e
-Tree: 6d564387f68de925a783523968492a79830e0a85
-VerifiedTree: 6d564387f68de925a783523968492a79830e0a85
+AuditTime: 2026-08-02T05:52:21.961248+00:00
+HEAD: 7c3b4fed03a26935eed0bce8310adf978cfd8195
+Tree: aec314c14dfcc788e3ada634da89602b61261882
+VerifiedTree: aec314c14dfcc788e3ada634da89602b61261882
 VerifiedMode: full
-AheadOfMain: 73
+AheadOfMain: 74
 CheckpointCount: 10
 ProjectProgress: 20.75%
 MachineProgress: 20.75%
@@ -38,7 +38,7 @@ Stage: CORE_RECONSTRUCTION
 - **P6** — 性能与内存 — `TODO` (NOT_EXERCISED)
 - **P7** — Java → Kotlin 最终收口 — `TODO` (NOT_EXERCISED)
 - **P8** — ROM intelligence — `TODO` (NOT_EXERCISED)
-- **P9** — 测试、CI 与构建 — `IN_PROGRESS` (BUILD_VERIFIED)
+- **P9** — 测试、CI 与构建 — `IN_PROGRESS` (BUILD_VERIFIED, CI_VERIFIED)
 - **P10** — 文档与 dead code — `TODO` (NOT_EXERCISED)
 - **P11** — 自主 discovery sweep — `TODO` (NOT_EXERCISED)
 - **P12** — MACHINE_COMPLETE — `TODO` (NOT_EXERCISED)

@@ -1,10 +1,10 @@
 {
-  "audit_time": "2026-08-02T05:44:03.352755+00:00",
-  "head": "6f840cb071eca5cac658d29af5af9b9a5afc447e",
-  "tree": "6d564387f68de925a783523968492a79830e0a85",
-  "verified_tree": "6d564387f68de925a783523968492a79830e0a85",
+  "audit_time": "2026-08-02T05:52:21.961248+00:00",
+  "head": "7c3b4fed03a26935eed0bce8310adf978cfd8195",
+  "tree": "aec314c14dfcc788e3ada634da89602b61261882",
+  "verified_tree": "aec314c14dfcc788e3ada634da89602b61261882",
   "verified_mode": "full",
-  "ahead_of_main": 73,
+  "ahead_of_main": 74,
   "checkpoint_count": 10,
   "project_progress": 20.75,
   "machine_progress": 20.75,
@@ -175,7 +175,8 @@
       "title": "— 测试、CI 与构建",
       "state": "IN_PROGRESS",
       "evidence": [
-        "BUILD_VERIFIED"
+        "BUILD_VERIFIED",
+        "CI_VERIFIED"
       ]
     },
     {
