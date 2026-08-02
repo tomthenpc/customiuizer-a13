@@ -2,7 +2,8 @@
 """Compare production hook calls in legacy hook functions to their CatalogContracts definitions.
 
 Covers batches 9/10/11/12 by default. Detects MISSING_CONTRACT_TARGET, ORPHAN_CONTRACT_TARGET,
-CRITICALITY_MISMATCH, DUPLICATE_TARGET and UNPARSEABLE_HOOK_SURFACE.
+PARAMETER_TYPES_MISMATCH, UNRESOLVED_PARAMETER_TYPES, DUPLICATE_CONTRACT_TARGET, DUPLICATE_TARGET,
+CRITICALITY_MISMATCH and UNPARSEABLE_HOOK_SURFACE.
 """
 from __future__ import annotations
 
@@ -27,6 +28,10 @@ class ProductionTarget:
     hard: bool
     source: str
     line: int
+
+
+class TypeResolutionError(Exception):
+    """Raised when a Kotlin type expression cannot be normalized to a stable JVM name."""
 
 
 BATCH_FUNCTIONS: dict[str, dict[str, tuple[str, str]]] = {
@@ -257,12 +262,26 @@ def extract_production_targets(source_root: Path, rel_path: str, function_name: 
         if not args[-1].strip():
             # Missing callback means the call is malformed or the parser stopped early.
             param_exprs = []
-        parameter_types = tuple(resolve_type_expr(p.strip(), imports) for p in param_exprs)
+        parameter_types: list[str] = []
+        unresolved = False
+        for p in param_exprs:
+            expr = p.strip()
+            if not expr:
+                continue
+            try:
+                parameter_types.append(resolve_type_expr(expr, imports))
+            except TypeResolutionError as e:
+                unresolved = True
+                body_lines_before = body[:m.start()].count("\n")
+                abs_line = line + body_lines_before
+                errors.append(f"UNRESOLVED_PARAMETER_TYPES: {rel_path}:{abs_line}: {method} cannot resolve parameter type {expr}: {e}")
+        if unresolved:
+            continue
         key = TargetKey(
             class_name=unescape_string(class_name),
             member_name=member_name,
             operation=op,
-            parameter_types=parameter_types,
+            parameter_types=tuple(parameter_types),
         )
         # line is approximate; normalize to body-relative line
         body_lines_before = body[:m.start()].count("\n")
@@ -271,12 +290,53 @@ def extract_production_targets(source_root: Path, rel_path: str, function_name: 
     return targets, errors
 
 
-def parse_contract_targets(contracts_text: str, feature_id: str) -> dict[TargetKey, tuple[str, bool]]:
+def extract_balanced_expr(text: str, start: int) -> tuple[str, int] | None:
+    """Extract a Kotlin expression starting at `start` until the matching top-level comma or closing paren."""
+    i = start
+    while i < len(text) and text[i].isspace():
+        i += 1
+    if i >= len(text):
+        return None
+    depth = 0
+    in_string = False
+    escaped = False
+    start_i = i
+    while i < len(text):
+        ch = text[i]
+        if in_string:
+            if escaped:
+                escaped = False
+            elif ch == "\\":
+                escaped = True
+            elif ch == '"':
+                in_string = False
+            i += 1
+            continue
+        if ch == '"':
+            in_string = True
+            i += 1
+            continue
+        if ch in "([{":
+            depth += 1
+        elif ch in ")]}":
+            if depth == 0:
+                # top-level closing paren; expression ends before this
+                break
+            depth -= 1
+        elif ch == "," and depth == 0:
+            break
+        i += 1
+    return text[start_i:i].strip(), i
+
+
+def parse_contract_targets(contracts_text: str, feature_id: str) -> tuple[dict[TargetKey, tuple[str, bool]], list[str]]:
     """Extract SingleTargetRequirement blocks for the named contract.
 
     AnyOfRequirement candidates are intentionally out of scope for P3.2.1A.
+    Returns the target map and a list of diagnostic strings.
     """
     results: dict[TargetKey, tuple[str, bool]] = {}
+    errors: list[str] = []
     imports = parse_imports(contracts_text)
     # find the val <featureId>: HookTargetContract block
     block_re = re.compile(
@@ -285,7 +345,7 @@ def parse_contract_targets(contracts_text: str, feature_id: str) -> dict[TargetK
     )
     m = block_re.search(contracts_text)
     if not m:
-        return results
+        return results, errors
     start = m.start()
     open_pos = contracts_text.find("{", m.end() - 1)
     depth = 0
@@ -312,7 +372,7 @@ def parse_contract_targets(contracts_text: str, feature_id: str) -> dict[TargetK
                 end = i
                 break
     if end < 0:
-        return results
+        return results, errors
     block = contracts_text[open_pos + 1 : end]
 
     # parse SingleTargetRequirement blocks
@@ -331,24 +391,42 @@ def parse_contract_targets(contracts_text: str, feature_id: str) -> dict[TargetK
             member_name = "<constructors>"
         # Extract parameterTypes (default emptyList()).
         parameter_types_expr = "emptyList()"
-        pt_match = re.search(
-            r"\bparameterTypes\s*=\s*(listOf\s*\(.*?\)|emptyList\s*\(\))",
-            target_block,
-            re.DOTALL,
-        )
-        if pt_match:
-            parameter_types_expr = pt_match.group(1)
+        pt_pos = target_block.find("parameterTypes")
+        if pt_pos >= 0:
+            eq_pos = target_block.find("=", pt_pos)
+            if eq_pos >= 0:
+                extracted = extract_balanced_expr(target_block, eq_pos + 1)
+                if extracted:
+                    parameter_types_expr, _ = extracted
         optional = criticality == "OPTIONAL"
         if class_name and member_name and operation:
-            parameter_types = resolve_parameter_list(parameter_types_expr, imports)
+            parameter_types, pt_errors = resolve_parameter_list(parameter_types_expr, imports)
+            errors.extend(pt_errors)
+            if pt_errors:
+                # Cannot form a reliable TargetKey with unresolved parameter types.
+                continue
             key = TargetKey(
                 class_name=class_name,
                 member_name=member_name,
                 operation=operation,
                 parameter_types=parameter_types,
             )
-            results[key] = (criticality, optional)
-    return results
+            _record_contract_target(results, key, (criticality, optional), feature_id, errors)
+    return results, errors
+
+
+def _record_contract_target(
+    results: dict[TargetKey, tuple[str, bool]],
+    key: TargetKey,
+    value: tuple[str, bool],
+    feature_id: str,
+    errors: list[str],
+) -> None:
+    """Add a contract target, emitting DUPLICATE_CONTRACT_TARGET if it already exists."""
+    if key in results:
+        errors.append(f"DUPLICATE_CONTRACT_TARGET: {feature_id} has duplicate {key}")
+        return
+    results[key] = value
 
 
 def balanced_call_args(text: str, open_paren_pos: int) -> list[str] | None:
@@ -467,11 +545,89 @@ def _resolve_simple_name(simple: str, imports: dict[str, str]) -> str:
     return simple
 
 
+def _class_like(segment: str) -> bool:
+    """Heuristic: a Java type name usually starts with an uppercase letter.
+
+    This is intentionally conservative. Package names in the target ROM are
+    lower-case; a capitalized segment is treated as a class/outer-class name.
+    """
+    if not segment:
+        return False
+    # Treat segments containing '$' as already class-like.
+    if "$" in segment:
+        return True
+    return segment[0].isupper()
+
+
+def _to_jvm_canonical(name: str, imports: dict[str, str]) -> str:
+    """Convert a dot-separated Kotlin/Java class reference into a stable JVM name.
+
+    Resolution order:
+      1. explicit $ nested class separator
+      2. direct import/alias or builtin simple name
+      3. imported outer class plus nested suffix
+      4. unambiguous fully qualified package/class boundary
+
+    Package dots are preserved; only nested-class separators become '$'.
+    Ambiguous or unsupported references raise TypeResolutionError.
+    """
+    if not name:
+        raise TypeResolutionError("empty type reference")
+
+    # 1. explicit nested class separator
+    if "$" in name:
+        return name
+
+    # 2. direct import/alias or builtin simple name
+    if name in imports:
+        resolved = imports[name]
+        # The import fq may itself contain dots that need canonicalization
+        # (e.g. import android.provider.Settings.System).
+        return _to_jvm_canonical(resolved, imports) if "." in resolved and "$" not in resolved else resolved
+    if name in BUILTINS:
+        return BUILTINS[name]
+    if name in CONTRACT_CONSTANTS:
+        return CONTRACT_CONSTANTS[name]
+
+    # 3. imported outer class plus nested suffix
+    if "." in name:
+        base, _, rest = name.partition(".")
+        base_fq = _resolve_simple_name(base, imports)
+        if base_fq != base:
+            # base is an imported class; rest is a nested suffix
+            return base_fq + "$" + rest.replace(".", "$").replace("$$", "$")
+
+    # 4. unambiguous fully qualified package/class boundary
+    if "." in name:
+        segments = name.split(".")
+        n = len(segments)
+        # Find the leftmost index of the rightmost contiguous class-like suffix.
+        class_start = n - 1
+        while class_start >= 0 and _class_like(segments[class_start]):
+            class_start -= 1
+        class_start += 1
+        if class_start == n:
+            raise TypeResolutionError(f"no class-like segment in type reference: {name}")
+        # The package part must look like a package (all lower-case starts).
+        package_segments = segments[:class_start]
+        for seg in package_segments:
+            if _class_like(seg):
+                raise TypeResolutionError(f"ambiguous package segment in type reference: {name}")
+        if not package_segments:
+            # No package and no import; e.g. "Settings.System" without an import.
+            raise TypeResolutionError(f"ambiguous nested class without package or import: {name}")
+        class_chain = "$".join(segments[class_start:])
+        return ".".join(package_segments) + "." + class_chain
+
+    # simple name not resolvable
+    raise TypeResolutionError(f"unresolvable simple type reference: {name}")
+
+
 def resolve_type_expr(expr: str, imports: dict[str, str]) -> str:
     """Turn a Kotlin parameter type expression into a stable JVM canonical name."""
     expr = expr.strip().rstrip("!!").rstrip(".!!").strip()
     if not expr:
-        return ""
+        raise TypeResolutionError("empty type expression")
 
     # Contract local constant.
     if expr in CONTRACT_CONSTANTS:
@@ -490,34 +646,24 @@ def resolve_type_expr(expr: str, imports: dict[str, str]) -> str:
         primitive = class_m.group(2)
         if primitive:
             return PRIMITIVE_BY_WRAPPER.get(body, body.lower())
-        # Nested class shorthand from a base import, e.g. Settings.System
-        if "." in body:
-            base, _, rest = body.partition(".")
-            base_fq = _resolve_simple_name(base, imports)
-            if base_fq != base:
-                return base_fq + "$" + rest
-            return body.replace(".", "$")
-        return _resolve_simple_name(body, imports)
+        return _to_jvm_canonical(body, imports)
 
-    # Fully qualified name used directly without ::class.java.
-    if "." in expr or "$" in expr:
-        return expr.replace(".", "$").replace("$$", "$") if "$" not in expr else expr
-
-    return _resolve_simple_name(expr, imports)
+    # Fully qualified or simple name used directly without ::class.java.
+    return _to_jvm_canonical(expr, imports)
 
 
-def resolve_parameter_list(text: str, imports: dict[str, str]) -> tuple[str, ...]:
-    """Parse listOf(...) / emptyList() contents and return canonical types."""
+def resolve_parameter_list(text: str, imports: dict[str, str]) -> tuple[tuple[str, ...], list[str]]:
+    """Parse listOf(...) / emptyList() contents and return canonical types plus errors."""
+    errors: list[str] = []
     text = text.strip()
-    if text.startswith("emptyList()") or text.startswith("listOf()"):
-        return ()
+    if text == "emptyList()" or text == "listOf()":
+        return (), errors
     m = re.match(r"^listOf\s*\((.*)\)\s*$", text, re.DOTALL)
     if not m:
-        # Treat unknown list expression as empty and let callers report.
-        return ()
+        return (), [f"UNRESOLVED_PARAMETER_TYPES: unsupported parameterTypes expression: {text}"]
     inner = m.group(1).strip()
     if not inner:
-        return ()
+        return (), errors
     # Split by commas at top level (ignoring nested generics).
     parts: list[str] = []
     current = ""
@@ -535,7 +681,16 @@ def resolve_parameter_list(text: str, imports: dict[str, str]) -> tuple[str, ...
         current += ch
     if current.strip():
         parts.append(current.strip())
-    return tuple(resolve_type_expr(p, imports) for p in parts)
+
+    types: list[str] = []
+    for p in parts:
+        if not p:
+            continue
+        try:
+            types.append(resolve_type_expr(p, imports))
+        except TypeResolutionError as e:
+            errors.append(f"UNRESOLVED_PARAMETER_TYPES: cannot resolve {p}: {e}")
+    return tuple(types), errors
 
 
 def field(block: str, name: str) -> str | None:
@@ -564,12 +719,16 @@ def check_batch(
     for feature_id, (rel_path, function_name) in batch.items():
         prod_targets, parse_errors = extract_production_targets(source_root, rel_path, function_name)
         issues.extend(parse_errors)
-        contract_targets = parse_contract_targets(contracts_text, feature_id)
-        prod_keys = set()
+        contract_targets, contract_parse_errors = parse_contract_targets(contracts_text, feature_id)
+        issues.extend(contract_parse_errors)
+
+        prod_target_by_key: dict[TargetKey, ProductionTarget] = {}
+        prod_keys: set[TargetKey] = set()
         for pt in prod_targets:
             if pt.key in prod_keys:
                 issues.append(f"DUPLICATE_TARGET: {feature_id} production has duplicate {pt.key}")
             prod_keys.add(pt.key)
+            prod_target_by_key[pt.key] = pt
 
         contract_keys = set(contract_targets.keys())
 
@@ -583,28 +742,27 @@ def check_batch(
         for k in prod_keys:
             prod_by_base.setdefault(base(k), []).append(k)
 
-        missing = prod_keys - contract_keys
-        for k in missing:
-            pt = next(t for t in prod_targets if t.key == k)
-            b = base(k)
-            if b in contract_by_base:
-                contract_versions = [c.parameter_types for c in contract_by_base[b]]
-                issues.append(
-                    f"PARAMETER_TYPES_MISMATCH: {feature_id} {pt.source}: {b} production types {k.parameter_types} do not match contract types {contract_versions}"
-                )
+        # Compare overload signature sets per base. This keeps mismatch and orphan
+        # diagnostics disjoint: a same-base overload difference is exactly one
+        # PARAMETER_TYPES_MISMATCH, never an orphan variant.
+        all_bases = set(contract_by_base.keys()) | set(prod_by_base.keys())
+        for b in all_bases:
+            contract_versions = {c.parameter_types for c in contract_by_base.get(b, [])}
+            prod_versions = {p.parameter_types for p in prod_by_base.get(b, [])}
+            in_contract = b in contract_by_base
+            in_prod = b in prod_by_base
+            if in_contract and in_prod:
+                if contract_versions != prod_versions:
+                    issues.append(
+                        f"PARAMETER_TYPES_MISMATCH: {feature_id}: {b} production types {sorted(prod_versions)} do not match contract types {sorted(contract_versions)}"
+                    )
+            elif in_prod:
+                for k in prod_by_base[b]:
+                    pt = prod_target_by_key[k]
+                    issues.append(f"MISSING_CONTRACT_TARGET: {feature_id} {pt.source}: {k}")
             else:
-                issues.append(f"MISSING_CONTRACT_TARGET: {feature_id} {pt.source}: {k}")
-
-        orphan = contract_keys - prod_keys
-        for k in orphan:
-            b = base(k)
-            if b in prod_by_base:
-                prod_versions = [p.parameter_types for p in prod_by_base[b]]
-                issues.append(
-                    f"ORPHAN_PARAMETER_TYPES: {feature_id} contract {k} not found in production; production has {prod_versions}"
-                )
-            else:
-                issues.append(f"ORPHAN_CONTRACT_TARGET: {feature_id} contract has {k} not found in production")
+                for k in contract_by_base[b]:
+                    issues.append(f"ORPHAN_CONTRACT_TARGET: {feature_id} contract has {k} not found in production")
 
         for pt in prod_targets:
             if pt.key in contract_targets:
