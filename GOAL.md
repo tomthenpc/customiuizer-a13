@@ -63,7 +63,7 @@ devin/*
 - 不得 merge、rebase、force-push 或重写历史；
 - 不得创建 tag、GitHub Release 或自动合并 PR。
 
-达到 `PROJECT_COMPLETE` 后，Agent 也不得自动创建新分支。它必须停止并等待仓库所有者决定下一阶段。
+达到 `PROJECT_COMPLETE` 后，Agent 也不得自动创建新分支。它应记录最终证据、保持 exact branch、不 merge/tag/release、进入 CONTINUOUS_MAINTENANCE 并继续 evidence-driven 维护。
 
 ---
 
@@ -453,11 +453,12 @@ EXTERNAL_EVIDENCE_REQUIRED
 
 达到 `PROJECT_COMPLETE` 后：
 
-- Agent 输出最终证据报告；
-- Agent 停止；
+- Agent 记录最终证据报告；
 - Agent 不创建新分支；
 - Agent 不合并 `main`；
-- 等待仓库所有者下一条指令。
+- Agent 不 tag/release；
+- Agent 进入 CONTINUOUS_MAINTENANCE；
+- Agent 继续 evidence-driven maintenance。
 
 ---
 

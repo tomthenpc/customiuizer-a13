@@ -1,0 +1,1 @@
+len=484 type=<class 'str'> repr='# TASK_STATE\n\n# P0 — Base\n\nState: `COMPLETE`\n\n# P1 — One source\n\nState: `COMPLETE`\n\n# P2 — Registry\n'

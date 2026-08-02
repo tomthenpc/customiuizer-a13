@@ -125,30 +125,32 @@ MACHINE_COMPLETE 前必须：
 
 达到 PROJECT_COMPLETE 后：
 
-- 输出最终证据报告；
-- 不新建分支；
-- 不合并 main；
-- 不 tag/release；
-- 停止并等待仓库所有者。
+- 记录最终证据报告；
+- 保持 exact branch；
+- 不 merge/tag/release；
+- 进入 CONTINUOUS_MAINTENANCE；
+- 继续 evidence-driven maintenance。
 
 现在开始执行 P0.1，不要只返回计划。
 
-Smart continuous operation:
+Professional autonomous stewardship:
 
 - Read `SMART_CONTINUOUS_OPERATION.md` before selecting work.
-- Continue from the current `TASK_STATE.md`; never replace, initialize, summarize, or reset it.
+- Continue from the current `TASK_STATE.md`; never initialize or reset it.
 - Repository: `tomthenpc/customiuizer-a13`.
-- Only authorized branch: `devin/a13-rom-intelligence-audit` with exact matching.
-- Classify every change by risk and choose tests dynamically.
-- Write a focused Python or PowerShell tool when a deterministic check repeats, large inputs must be parsed, or manual grep can miss cases.
-- Convert repeated bugs into regression tests or static invariants.
-- Run Light sweeps after checkpoints, Standard sweeps every 3 checkpoints or phase completion, and Deep sweeps every 10 checkpoints or major architecture milestone.
-- Keep cadence in `SMART_OPERATION_STATE.md`, not in `TASK_STATE.md`.
-- Clean unrelated files only through evidence-gated Tier A/B/C rules; never use destructive Git cleanup and never delete user features or dynamic ROM/reflection resources on guesswork.
-- Inspect and repair CI after each push.
-- Adapt to memory and disk pressure instead of starting unnecessary heavy builds.
-- Do not ask the user to inspect code, branches, CI, or approve continuation.
-- Missing external evidence blocks only the exact dependent task.
-- Completion milestones transition to continuous maintenance; they are not stop conditions.
-- After interruption, resume from Git, `TASK_STATE.md`, and `SMART_OPERATION_STATE.md`.
+- Exact branch only: `devin/a13-rom-intelligence-audit`.
+- Reconcile TASK_STATE and SMART_OPERATION_STATE before each new objective.
+- Create and run `tools/check_automation_state.py`; duplicate keys, stale issues, false checkpoints, false sweeps, false CI, parent/child mismatch, and stop-rule conflicts must fail.
+- State-only commits do not increment CheckpointCount.
+- Select the next objective from the whole project by severity, dependency unlock, evidence confidence, blast radius, and verification cost.
+- Follow Russian systems-code discipline: explicit state, owner, process, phase, ClassLoader, bounded resources, short call chains, no speculative abstraction.
+- Choose tests dynamically by risk.
+- Write focused Python/PowerShell tools when repeated deterministic work justifies them.
+- Convert repeated defects into regression tests or static invariants.
+- Automatically delete only mechanically proven dead internal code in a separate revertable commit; user features, preferences, reflection/ROM targets and compatibility paths remain candidate-only.
+- Coordinate heavy A13/A14 builds through an advisory host lock and continue lighter work while the lock is busy.
+- CI state must be NOT_CONFIGURED/PENDING/PASS/FAIL/UNAVAILABLE; no workflow is NOT_CONFIGURED, not pending.
+- Do not ask the user for routine review or confirmation.
+- Completion milestones enter continuous maintenance; they do not stop execution.
+- After interruption, resume from the current Git state, TASK_STATE and SMART state.
 ```

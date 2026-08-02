@@ -255,6 +255,7 @@ if ($Mode -eq "Audit") {
 }
 
 $VerifyMode = if ($Mode -eq "Fast") { "fast" } else { "full" }
+Invoke-Native "Automation state checker" $Python.FilePath ($Python.Prefix + @("tools/check_automation_state.py"))
 Invoke-Native "Repository verifier ($VerifyMode)" $Python.FilePath ($Python.Prefix + @("tools/verify.py", $VerifyMode))
 
 if ($Mode -eq "Full" -or $Mode -eq "Final") {

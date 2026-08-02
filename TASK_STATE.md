@@ -721,11 +721,12 @@ DOCUMENTATION_CURRENT
 完成后：
 
 - 将 `OverallState` 改为 `PROJECT_COMPLETE`；
-- 输出最终报告；
+- 记录最终证据报告；
 - 不新建分支；
 - 不合并 main；
 - 不 tag/release；
-- 等待仓库所有者。
+- 进入 CONTINUOUS_MAINTENANCE；
+- 继续 evidence-driven maintenance。
 
 ---
 
@@ -735,9 +736,9 @@ P0 后重建，但不得删除未解决问题。
 
 | ID | Priority | Area | State | Evidence | Acceptance |
 |---|---|---|---|---|---|
-| BASELINE-001 | P0 | Git/branch | TODO | 当前 Agent 尚未记录 | 完成 P0.1 |
-| VERIFY-001 | P0 | Build | TODO | 最终控制层 Full 未运行 | 完成 P0.3 |
-| ARCH-001 | P1 | Feature lifecycle | TODO | Registry 与 legacy 路径并存 | inventory 后全量收口 |
+| BASELINE-001 | P0 | Git/branch | COMPLETE | P0.1 已记录仓库/分支/HEAD/upstream/Git 状态 | 完成 P0.1 |
+| VERIFY-001 | P0 | Build | COMPLETE | P0.3 运行 `scripts/verify.ps1 -Mode Full` 通过 | 完成 P0.3 |
+| ARCH-001 | P1 | Feature lifecycle | COMPLETE | P2 已完成，全部 typed Feature 通过 `FeatureInstallRegistry` | inventory 后全量收口 |
 | DOC-001 | P2 | Docs | TODO | 文档可能落后代码 | 代码与生成数据一致 |
 | DEVICE-001 | P1 | Device | BLOCKED_EXTERNAL | 无本轮真实日志 | 完成 P13 |
 
@@ -745,7 +746,9 @@ P0 后重建，但不得删除未解决问题。
 
 ## 5. Checkpoint
 
-尚无。
+| # | Commit | Task | Verification | State |
+|---|---|---|---|---|
+| 1 | `354e239` | P2 — typed Feature Registry 全量收口 | `scripts/verify.ps1 -Mode Full` 通过 | qualifying |
 
 ---
 
