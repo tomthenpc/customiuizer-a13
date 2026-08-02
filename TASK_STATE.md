@@ -254,7 +254,7 @@ State: `COMPLETE`
 
 ## P1.2 完整 Feature inventory
 
-State: `TODO`
+State: `COMPLETE`
 
 字段：
 
@@ -273,6 +273,27 @@ Restart/reload
 Registry state
 Tests
 Device evidence
+```
+
+不变量：
+
+- `A13_PROCESS_MATRIX.md` 必须包含 `FeatureCatalog` 中全部 25 个 catalog feature canonical id；
+- 过程矩阵每一行必须保持 15 列；
+- 新增 catalog feature 必须同步更新过程矩阵，否则 `test_feature_inventory.py` 失败。
+
+实现：
+
+- 新增 `tools/tests/test_feature_inventory.py`，机械校验 `docs/rom-intelligence/A13_PROCESS_MATRIX.md` 与 `FeatureCatalog.kt` 一致性。
+
+验证：
+
+```text
+- python -m unittest tools.tests.test_feature_inventory
+  -> OK (1 test)
+- powershell -NoProfile -ExecutionPolicy Bypass -File .\scripts\verify.ps1 -Mode Full
+  -> A13 VERIFICATION PASSED (exit 0), Python tool tests 132
+- CI: 无仓库级 CI workflow；仅本地 verify
+- Device evidence: NOT_EXERCISED
 ```
 
 ## P1.3 Hook ownership inventory
