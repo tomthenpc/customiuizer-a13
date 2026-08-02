@@ -72,26 +72,32 @@ object SystemLockScreenMoreHooks {
     }
 
     @JvmStatic
+    fun createAddAccessControlPassForUserHook(): MethodHook = object : MethodHook() {
+        override fun before(param: BeforeHookCallback) {
+            saveLastCheck(param.thisObject, param.args[0] as? String, param.args[1] as? Int ?: 0)
+        }
+
+        override fun after(param: AfterHookCallback) {
+            checkLastCheck(param.thisObject, param.args[1] as? Int ?: 0)
+        }
+    }
+
+    @JvmStatic
+    fun createCheckAccessControlPassLockedHook(): MethodHook = object : MethodHook() {
+        override fun before(param: BeforeHookCallback) {
+            saveLastCheck(param.thisObject, param.args[0] as? String, param.args[2] as? Int ?: 0)
+        }
+
+        override fun after(param: AfterHookCallback) {
+            checkLastCheck(param.thisObject, param.args[2] as? Int ?: 0)
+        }
+    }
+
+    @JvmStatic
     fun AppLockTimeoutHook(lpparam: SystemServerStartingParam) {
-        ModuleHelper.findAndHookMethod("com.miui.server.SecurityManagerService", lpparam.classLoader, "addAccessControlPassForUser", String::class.java, Int::class.javaPrimitiveType, object : MethodHook() {
-            override fun before(param: BeforeHookCallback) {
-                saveLastCheck(param.thisObject, param.args[0] as? String, param.args[1] as? Int ?: 0)
-            }
+        ModuleHelper.findAndHookMethod("com.miui.server.SecurityManagerService", lpparam.classLoader, "addAccessControlPassForUser", String::class.java, Int::class.javaPrimitiveType, createAddAccessControlPassForUserHook())
 
-            override fun after(param: AfterHookCallback) {
-                checkLastCheck(param.thisObject, param.args[1] as? Int ?: 0)
-            }
-        })
-
-        ModuleHelper.findAndHookMethod("com.miui.server.SecurityManagerService", lpparam.classLoader, "checkAccessControlPassLocked", String::class.java, Intent::class.java, Int::class.javaPrimitiveType, object : MethodHook() {
-            override fun before(param: BeforeHookCallback) {
-                saveLastCheck(param.thisObject, param.args[0] as? String, param.args[2] as? Int ?: 0)
-            }
-
-            override fun after(param: AfterHookCallback) {
-                checkLastCheck(param.thisObject, param.args[2] as? Int ?: 0)
-            }
-        })
+        ModuleHelper.findAndHookMethod("com.miui.server.SecurityManagerService", lpparam.classLoader, "checkAccessControlPassLocked", String::class.java, Intent::class.java, Int::class.javaPrimitiveType, createCheckAccessControlPassLockedHook())
     }
 
     @JvmStatic

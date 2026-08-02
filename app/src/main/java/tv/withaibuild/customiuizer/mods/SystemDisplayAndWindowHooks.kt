@@ -53,13 +53,16 @@ object SystemDisplayAndWindowHooks {
     }
 
     @JvmStatic
+    fun createNoAccessDeviceLogsHook(): MethodHook = object : MethodHook() {
+        override fun before(param: BeforeHookCallback) {
+            XposedHelpers.callMethod(param.thisObject, "declineRequest", param.args[0])
+            param.returnAndSkip(null)
+        }
+    }
+
+    @JvmStatic
     fun NoAccessDeviceLogsRequest(lpparam: SystemServerStartingParam) {
-        ModuleHelper.hookAllMethods("com.android.server.logcat.LogcatManagerService", lpparam.classLoader, "onLogAccessRequested", object : MethodHook() {
-            override fun before(param: BeforeHookCallback) {
-                XposedHelpers.callMethod(param.thisObject, "declineRequest", param.args[0])
-                param.returnAndSkip(null)
-            }
-        })
+        ModuleHelper.hookAllMethods("com.android.server.logcat.LogcatManagerService", lpparam.classLoader, "onLogAccessRequested", createNoAccessDeviceLogsHook())
     }
 
     @JvmStatic

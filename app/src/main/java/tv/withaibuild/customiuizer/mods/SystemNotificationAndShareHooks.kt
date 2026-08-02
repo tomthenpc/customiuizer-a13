@@ -251,30 +251,36 @@ object SystemNotificationAndShareHooks {
     }
 
     @JvmStatic
-    fun AutoGroupNotificationsHook(lpparam: SystemServerStartingParam) {
-        ModuleHelper.findAndHookMethod("com.android.server.notification.GroupHelper", lpparam.classLoader, "adjustAutogroupingSummary", Int::class.javaPrimitiveType, String::class.java, String::class.java, Boolean::class.javaPrimitiveType, object : MethodHook() {
-            @Suppress("UNCHECKED_CAST")
-            override fun before(param: BeforeHookCallback) {
-                val opt = MainModule.mPrefs.getString("system_autogroupnotif", "1").toInt()
-                if (opt == 2) {
-                    param.returnAndSkip(null)
-                    return
-                }
-                val mUngroupedNotifications = XposedHelpers.getObjectField(param.thisObject, "mUngroupedNotifications") as? Map<Int, Map<String, LinkedHashSet<String>>> ?: return
-                val obj = mUngroupedNotifications[param.getArg(0)]
-                if (obj != null) {
-                    val list = obj[param.getArg(1)]
-                    if (list != null && list.size < opt) param.returnAndSkip(null)
-                }
+    fun createAdjustAutogroupingSummaryHook(): MethodHook = object : MethodHook() {
+        @Suppress("UNCHECKED_CAST")
+        override fun before(param: BeforeHookCallback) {
+            val opt = MainModule.mPrefs.getString("system_autogroupnotif", "1").toInt()
+            if (opt == 2) {
+                param.returnAndSkip(null)
+                return
             }
-        })
+            val mUngroupedNotifications = XposedHelpers.getObjectField(param.thisObject, "mUngroupedNotifications") as? Map<Int, Map<String, LinkedHashSet<String>>> ?: return
+            val obj = mUngroupedNotifications[param.getArg(0)]
+            if (obj != null) {
+                val list = obj[param.getArg(1)]
+                if (list != null && list.size < opt) param.returnAndSkip(null)
+            }
+        }
+    }
 
-        ModuleHelper.findAndHookMethod("com.android.server.notification.GroupHelper", lpparam.classLoader, "adjustNotificationBundling", List::class.java, Boolean::class.javaPrimitiveType, object : MethodHook() {
-            override fun before(param: BeforeHookCallback) {
-                val list = param.getArg(0) as? List<*>
-                val opt = MainModule.mPrefs.getString("system_autogroupnotif", "1").toInt()
-                if (opt == 2 || (list != null && list.size < opt)) param.returnAndSkip(null)
-            }
-        })
+    @JvmStatic
+    fun createAdjustNotificationBundlingHook(): MethodHook = object : MethodHook() {
+        override fun before(param: BeforeHookCallback) {
+            val list = param.getArg(0) as? List<*>
+            val opt = MainModule.mPrefs.getString("system_autogroupnotif", "1").toInt()
+            if (opt == 2 || (list != null && list.size < opt)) param.returnAndSkip(null)
+        }
+    }
+
+    @JvmStatic
+    fun AutoGroupNotificationsHook(lpparam: SystemServerStartingParam) {
+        ModuleHelper.findAndHookMethod("com.android.server.notification.GroupHelper", lpparam.classLoader, "adjustAutogroupingSummary", Int::class.javaPrimitiveType, String::class.java, String::class.java, Boolean::class.javaPrimitiveType, createAdjustAutogroupingSummaryHook())
+
+        ModuleHelper.findAndHookMethod("com.android.server.notification.GroupHelper", lpparam.classLoader, "adjustNotificationBundling", List::class.java, Boolean::class.javaPrimitiveType, createAdjustNotificationBundlingHook())
     }
 }

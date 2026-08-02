@@ -65,7 +65,11 @@ enum class FeatureId(val canonicalId: String) {
     ROTATION_ANIMATION("rotationAnimation"),
     NOTIFICATION_VOLUME("notificationVolume"),
     SELECTIVE_VIBRATION("selectiveVibration"),
-    WALLPAPER_SCALE_LEVEL("wallpaperScaleLevel");
+    WALLPAPER_SCALE_LEVEL("wallpaperScaleLevel"),
+    APPS_DISABLE_SERVICE("appsDisableService"),
+    NO_ACCESS_DEVICE_LOGS_REQUEST("noAccessDeviceLogsRequest"),
+    AUTO_GROUP_NOTIFICATIONS("autoGroupNotifications"),
+    APP_LOCK_TIMEOUT("appLockTimeout");
 
     companion object {
         private val byString: Map<String, FeatureId> = values().associateBy {

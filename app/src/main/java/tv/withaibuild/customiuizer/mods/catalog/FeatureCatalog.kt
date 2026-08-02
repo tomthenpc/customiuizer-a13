@@ -11,8 +11,10 @@ import tv.withaibuild.customiuizer.mods.SystemFreeformAndMultiWindowHooks
 import tv.withaibuild.customiuizer.mods.SystemLockScreenHooks
 import tv.withaibuild.customiuizer.mods.SystemLockScreenMoreHooks
 import tv.withaibuild.customiuizer.mods.SystemUIScreenshotHooks
+import tv.withaibuild.customiuizer.mods.SystemNotificationAndShareHooks
 import tv.withaibuild.customiuizer.mods.SystemNotificationMoreHooks
 import tv.withaibuild.customiuizer.mods.SystemStatusBarClockAndMoreHooks
+import tv.withaibuild.customiuizer.mods.Various
 import tv.withaibuild.customiuizer.mods.SystemStatusBarMoreHooks
 import tv.withaibuild.customiuizer.mods.SystemShareAndOpenWithHooks
 import tv.withaibuild.customiuizer.mods.SystemSecurityAndSystemHooks
@@ -1798,6 +1800,115 @@ object FeatureCatalog {
                     diagnosticId = DiagnosticIds.WALLPAPER_SCALE_LEVEL
                 ) {
                     SystemNotificationMoreHooks.WallpaperScaleLevelHook(
+                        runtime.lpparam as SystemServerStartingParam
+                    )
+                }
+            },
+            activationRestartTarget = RestartTarget.REBOOT,
+            configReloadMode = ConfigReloadMode.NONE
+        ),
+        // Catalog expansion batch 12: Package, logcat, notification group and app lock timeout hooks
+        FeatureSpec(
+            compatibilityPolicy = CompatibilityPolicy.CONTRACT_REQUIRED,
+            contract = CatalogContracts.appsDisableService,
+            id = "appsDisableService",
+            diagnosticId = DiagnosticIds.APPS_DISABLE_SERVICE,
+            processScope = ProcessScope.SYSTEM_SERVER,
+            installPhase = InstallPhase.SYSTEM_SERVER_STARTING,
+            processTarget = ProcessTarget.SystemServer,
+            preferenceKeys = setOf("various_disableapp"),
+            condition = { prefs ->
+                prefs.getBoolean("various_disableapp", false)
+            },
+            installer = { runtime, compatResult ->
+                legacyInstall(
+                    runtime = runtime,
+                    compatResult = compatResult,
+                    contract = CatalogContracts.appsDisableService,
+                    diagnosticId = DiagnosticIds.APPS_DISABLE_SERVICE
+                ) {
+                    Various.AppsDisableServiceHook(
+                        runtime.lpparam as SystemServerStartingParam
+                    )
+                }
+            },
+            activationRestartTarget = RestartTarget.REBOOT,
+            configReloadMode = ConfigReloadMode.NONE
+        ),
+        FeatureSpec(
+            compatibilityPolicy = CompatibilityPolicy.CONTRACT_REQUIRED,
+            contract = CatalogContracts.noAccessDeviceLogsRequest,
+            id = "noAccessDeviceLogsRequest",
+            diagnosticId = DiagnosticIds.NO_ACCESS_DEVICE_LOGS_REQUEST,
+            processScope = ProcessScope.SYSTEM_SERVER,
+            installPhase = InstallPhase.SYSTEM_SERVER_STARTING,
+            processTarget = ProcessTarget.SystemServer,
+            preferenceKeys = setOf("various_disable_access_devicelogs"),
+            condition = { prefs ->
+                prefs.getBoolean("various_disable_access_devicelogs", false)
+            },
+            installer = { runtime, compatResult ->
+                legacyInstall(
+                    runtime = runtime,
+                    compatResult = compatResult,
+                    contract = CatalogContracts.noAccessDeviceLogsRequest,
+                    diagnosticId = DiagnosticIds.NO_ACCESS_DEVICE_LOGS_REQUEST
+                ) {
+                    SystemDisplayAndWindowHooks.NoAccessDeviceLogsRequest(
+                        runtime.lpparam as SystemServerStartingParam
+                    )
+                }
+            },
+            activationRestartTarget = RestartTarget.REBOOT,
+            configReloadMode = ConfigReloadMode.NONE
+        ),
+        FeatureSpec(
+            compatibilityPolicy = CompatibilityPolicy.CONTRACT_REQUIRED,
+            contract = CatalogContracts.autoGroupNotifications,
+            id = "autoGroupNotifications",
+            diagnosticId = DiagnosticIds.AUTO_GROUP_NOTIFICATIONS,
+            processScope = ProcessScope.SYSTEM_SERVER,
+            installPhase = InstallPhase.SYSTEM_SERVER_STARTING,
+            processTarget = ProcessTarget.SystemServer,
+            preferenceKeys = setOf("system_autogroupnotif"),
+            condition = { prefs ->
+                prefs.getStringAsInt("system_autogroupnotif", 1) > 1
+            },
+            installer = { runtime, compatResult ->
+                legacyInstall(
+                    runtime = runtime,
+                    compatResult = compatResult,
+                    contract = CatalogContracts.autoGroupNotifications,
+                    diagnosticId = DiagnosticIds.AUTO_GROUP_NOTIFICATIONS
+                ) {
+                    SystemNotificationAndShareHooks.AutoGroupNotificationsHook(
+                        runtime.lpparam as SystemServerStartingParam
+                    )
+                }
+            },
+            activationRestartTarget = RestartTarget.REBOOT,
+            configReloadMode = ConfigReloadMode.NONE
+        ),
+        FeatureSpec(
+            compatibilityPolicy = CompatibilityPolicy.CONTRACT_REQUIRED,
+            contract = CatalogContracts.appLockTimeout,
+            id = "appLockTimeout",
+            diagnosticId = DiagnosticIds.APP_LOCK_TIMEOUT,
+            processScope = ProcessScope.SYSTEM_SERVER,
+            installPhase = InstallPhase.SYSTEM_SERVER_STARTING,
+            processTarget = ProcessTarget.SystemServer,
+            preferenceKeys = setOf("system_applock_timeout"),
+            condition = { prefs ->
+                prefs.getInt("system_applock_timeout", 1) > 1
+            },
+            installer = { runtime, compatResult ->
+                legacyInstall(
+                    runtime = runtime,
+                    compatResult = compatResult,
+                    contract = CatalogContracts.appLockTimeout,
+                    diagnosticId = DiagnosticIds.APP_LOCK_TIMEOUT
+                ) {
+                    SystemLockScreenMoreHooks.AppLockTimeoutHook(
                         runtime.lpparam as SystemServerStartingParam
                     )
                 }

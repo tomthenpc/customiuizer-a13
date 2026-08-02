@@ -1,6 +1,7 @@
 package tv.withaibuild.customiuizer.mods.catalog
 
 import android.content.Context
+import android.content.Intent
 import tv.withaibuild.customiuizer.mods.utils.AnyOfRequirement
 import tv.withaibuild.customiuizer.mods.utils.Criticality
 import tv.withaibuild.customiuizer.mods.utils.HookOperation
@@ -664,7 +665,8 @@ object CatalogContracts {
                     operation = HookOperation.ALL_METHODS_BY_NAME,
                     className = "com.android.server.policy.PhoneWindowManager",
                     memberName = "interceptPowerKeyDown"
-                )
+                ),
+                criticality = Criticality.OPTIONAL
             ),
             SingleTargetRequirement(
                 target = HookTargetSpec(
@@ -747,8 +749,7 @@ object CatalogContracts {
                     className = "com.android.server.TelephonyRegistry",
                     memberName = "notifyCallState",
                     parameterTypes = listOf(INT, STRING)
-                ),
-                criticality = Criticality.OPTIONAL
+                )
             ),
             SingleTargetRequirement(
                 target = HookTargetSpec(
@@ -757,8 +758,7 @@ object CatalogContracts {
                     className = "com.android.server.TelephonyRegistry",
                     memberName = "notifyCallStateForPhoneId",
                     parameterTypes = listOf(INT, INT, INT, STRING)
-                ),
-                criticality = Criticality.OPTIONAL
+                )
             )
         )
     )
@@ -783,16 +783,14 @@ object CatalogContracts {
                     className = "com.android.server.wm.WindowSurfaceController",
                     memberName = "setSecure",
                     parameterTypes = listOf(BOOLEAN)
-                ),
-                criticality = Criticality.OPTIONAL
+                )
             ),
             SingleTargetRequirement(
                 target = HookTargetSpec(
                     id = "WindowSurfaceController.constructors",
                     operation = HookOperation.ALL_CONSTRUCTORS,
                     className = "com.android.server.wm.WindowSurfaceController"
-                ),
-                criticality = Criticality.OPTIONAL
+                )
             )
         )
     )
@@ -807,6 +805,61 @@ object CatalogContracts {
                     operation = HookOperation.ALL_METHODS_BY_NAME,
                     className = "android.content.pm.SigningDetails",
                     memberName = "checkCapability"
+                )
+            ),
+            SingleTargetRequirement(
+                target = HookTargetSpec(
+                    id = "StrictJarVerifier.constructors",
+                    operation = HookOperation.ALL_CONSTRUCTORS,
+                    className = "android.util.jar.StrictJarVerifier"
+                )
+            ),
+            SingleTargetRequirement(
+                target = HookTargetSpec(
+                    id = "StrictJarVerifier.verifyMessageDigest",
+                    operation = HookOperation.ALL_METHODS_BY_NAME,
+                    className = "android.util.jar.StrictJarVerifier",
+                    memberName = "verifyMessageDigest"
+                )
+            ),
+            SingleTargetRequirement(
+                target = HookTargetSpec(
+                    id = "StrictJarVerifier.verify",
+                    operation = HookOperation.ALL_METHODS_BY_NAME,
+                    className = "android.util.jar.StrictJarVerifier",
+                    memberName = "verify"
+                )
+            ),
+            SingleTargetRequirement(
+                target = HookTargetSpec(
+                    id = "PackageManagerServiceUtils.verifySignatures",
+                    operation = HookOperation.ALL_METHODS_BY_NAME,
+                    className = "com.android.server.pm.PackageManagerServiceUtils",
+                    memberName = "verifySignatures"
+                )
+            ),
+            SingleTargetRequirement(
+                target = HookTargetSpec(
+                    id = "InstallPackageHelper.doesSignatureMatchForPermissions",
+                    operation = HookOperation.ALL_METHODS_BY_NAME,
+                    className = "com.android.server.pm.InstallPackageHelper",
+                    memberName = "doesSignatureMatchForPermissions"
+                )
+            ),
+            SingleTargetRequirement(
+                target = HookTargetSpec(
+                    id = "InstallPackageHelper.cannotInstallWithBadPermissionGroups",
+                    operation = HookOperation.ALL_METHODS_BY_NAME,
+                    className = "com.android.server.pm.InstallPackageHelper",
+                    memberName = "cannotInstallWithBadPermissionGroups"
+                )
+            ),
+            SingleTargetRequirement(
+                target = HookTargetSpec(
+                    id = "PermissionManagerServiceImpl.shouldGrantPermissionBySignature",
+                    operation = HookOperation.ALL_METHODS_BY_NAME,
+                    className = "com.android.server.pm.permission.PermissionManagerServiceImpl",
+                    memberName = "shouldGrantPermissionBySignature"
                 )
             )
         )
@@ -842,8 +895,7 @@ object CatalogContracts {
                     className = "com.android.server.DarkModeAppSettingsInfo",
                     memberName = "getOverrideEnableValue",
                     parameterTypes = emptyList()
-                ),
-                criticality = Criticality.OPTIONAL
+                )
             )
         )
     )
@@ -945,6 +997,87 @@ object CatalogContracts {
                     id = "WallpaperController.constructors",
                     operation = HookOperation.ALL_CONSTRUCTORS,
                     className = "com.android.server.wm.WallpaperController"
+                )
+            )
+        )
+    )
+    }
+
+    val appsDisableService: HookTargetContract by lazy(kotlin.LazyThreadSafetyMode.NONE) { HookTargetContract(
+        featureId = "appsDisableService",
+        requirements = listOf(
+            SingleTargetRequirement(
+                target = HookTargetSpec(
+                    id = "PackageManagerServiceImpl.canBeDisabled",
+                    operation = HookOperation.EXACT_METHOD,
+                    className = "com.android.server.pm.PackageManagerServiceImpl",
+                    memberName = "canBeDisabled",
+                    parameterTypes = listOf(STRING, INT)
+                )
+            )
+        )
+    )
+    }
+
+    val noAccessDeviceLogsRequest: HookTargetContract by lazy(kotlin.LazyThreadSafetyMode.NONE) { HookTargetContract(
+        featureId = "noAccessDeviceLogsRequest",
+        requirements = listOf(
+            SingleTargetRequirement(
+                target = HookTargetSpec(
+                    id = "LogcatManagerService.onLogAccessRequested",
+                    operation = HookOperation.ALL_METHODS_BY_NAME,
+                    className = "com.android.server.logcat.LogcatManagerService",
+                    memberName = "onLogAccessRequested"
+                )
+            )
+        )
+    )
+    }
+
+    val autoGroupNotifications: HookTargetContract by lazy(kotlin.LazyThreadSafetyMode.NONE) { HookTargetContract(
+        featureId = "autoGroupNotifications",
+        requirements = listOf(
+            SingleTargetRequirement(
+                target = HookTargetSpec(
+                    id = "GroupHelper.adjustAutogroupingSummary",
+                    operation = HookOperation.EXACT_METHOD,
+                    className = "com.android.server.notification.GroupHelper",
+                    memberName = "adjustAutogroupingSummary",
+                    parameterTypes = listOf(INT, STRING, STRING, BOOLEAN)
+                )
+            ),
+            SingleTargetRequirement(
+                target = HookTargetSpec(
+                    id = "GroupHelper.adjustNotificationBundling",
+                    operation = HookOperation.EXACT_METHOD,
+                    className = "com.android.server.notification.GroupHelper",
+                    memberName = "adjustNotificationBundling",
+                    parameterTypes = listOf(List::class.java, BOOLEAN)
+                )
+            )
+        )
+    )
+    }
+
+    val appLockTimeout: HookTargetContract by lazy(kotlin.LazyThreadSafetyMode.NONE) { HookTargetContract(
+        featureId = "appLockTimeout",
+        requirements = listOf(
+            SingleTargetRequirement(
+                target = HookTargetSpec(
+                    id = "SecurityManagerService.addAccessControlPassForUser",
+                    operation = HookOperation.EXACT_METHOD,
+                    className = "com.miui.server.SecurityManagerService",
+                    memberName = "addAccessControlPassForUser",
+                    parameterTypes = listOf(STRING, INT)
+                )
+            ),
+            SingleTargetRequirement(
+                target = HookTargetSpec(
+                    id = "SecurityManagerService.checkAccessControlPassLocked",
+                    operation = HookOperation.EXACT_METHOD,
+                    className = "com.miui.server.SecurityManagerService",
+                    memberName = "checkAccessControlPassLocked",
+                    parameterTypes = listOf(STRING, Intent::class.java, INT)
                 )
             )
         )

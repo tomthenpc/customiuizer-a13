@@ -24,10 +24,31 @@ object FakeXposedInterface {
         ) as XposedInterface
     }
 
+    data class RecordedHook(
+        val executable: java.lang.reflect.Executable,
+        val hook: tv.withaibuild.customiuizer.mods.utils.HookerClassHelper.MethodHook
+    )
+
+    @JvmField
+    val recordedHooks = mutableListOf<RecordedHook>()
+
+    @JvmField
+    val interceptedExecutables = mutableListOf<java.lang.reflect.Executable>()
+
+    @JvmStatic
+    fun reset() {
+        recordedHooks.clear()
+        interceptedExecutables.clear()
+    }
+
     private class RootHandler(private val classLoader: ClassLoader) : InvocationHandler {
         override fun invoke(proxy: Any, method: Method, args: Array<out Any>?): Any? {
             return when (method.name) {
-                "hook", "hookClassInitializer" -> BuilderProxy.create(classLoader)
+                "hook", "hookClassInitializer" -> {
+                    val executable = args?.firstOrNull() as? java.lang.reflect.Executable
+                    if (executable != null) interceptedExecutables.add(executable)
+                    BuilderProxy.create(classLoader)
+                }
                 "getApiVersion" -> 102
                 "getFrameworkName" -> "fake"
                 "getFrameworkVersion" -> "0"
@@ -49,7 +70,14 @@ object FakeXposedInterface {
         override fun invoke(proxy: Any, method: Method, args: Array<out Any>?): Any? {
             return when (method.name) {
                 "setPriority", "setExceptionMode", "setId" -> proxy
-                "intercept" -> HookHandleProxy.create(proxy.javaClass.classLoader!!)
+                "intercept" -> {
+                    val executable = interceptedExecutables.removeLastOrNull()
+                    val hook = args?.firstOrNull() as? tv.withaibuild.customiuizer.mods.utils.HookerClassHelper.MethodHook
+                    if (executable != null && hook != null) {
+                        recordedHooks.add(RecordedHook(executable, hook))
+                    }
+                    HookHandleProxy.create(proxy.javaClass.classLoader!!)
+                }
                 else -> null
             }
         }

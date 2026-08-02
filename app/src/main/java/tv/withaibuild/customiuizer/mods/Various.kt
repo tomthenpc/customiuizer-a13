@@ -283,19 +283,22 @@ object Various {
     }
 
     @JvmStatic
-    fun AppsDisableServiceHook(lpparam: SystemServerStartingParam) {
-        ModuleHelper.findAndHookMethod("com.android.server.pm.PackageManagerServiceImpl", lpparam.classLoader, "canBeDisabled", String::class.java, Int::class.javaPrimitiveType, object : MethodHook() {
-            override fun after(param: AfterHookCallback) {
-                // Do not mask an exception thrown by the original PackageManager call;
-                // only override the result on a normal return path.
-                if (param.throwable != null) return
-                val pkgName = param.getArg(0) as? String ?: return
-                val canBeDisabled = param.result as? Boolean ?: return
-                if (!canBeDisabled && !MIUI_CORE_APPS.contains(pkgName)) {
-                    param.setResult(true)
-                }
+    fun createAppsDisableServiceHook(): MethodHook = object : MethodHook() {
+        override fun after(param: AfterHookCallback) {
+            // Do not mask an exception thrown by the original PackageManager call;
+            // only override the result on a normal return path.
+            if (param.throwable != null) return
+            val pkgName = param.getArg(0) as? String ?: return
+            val canBeDisabled = param.result as? Boolean ?: return
+            if (!canBeDisabled && !MIUI_CORE_APPS.contains(pkgName)) {
+                param.setResult(true)
             }
-        })
+        }
+    }
+
+    @JvmStatic
+    fun AppsDisableServiceHook(lpparam: SystemServerStartingParam) {
+        ModuleHelper.findAndHookMethod("com.android.server.pm.PackageManagerServiceImpl", lpparam.classLoader, "canBeDisabled", String::class.java, Int::class.javaPrimitiveType, createAppsDisableServiceHook())
     }
 
     @JvmStatic

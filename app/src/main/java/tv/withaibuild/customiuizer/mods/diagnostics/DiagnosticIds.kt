@@ -95,4 +95,10 @@ object DiagnosticIds {
     const val NOTIFICATION_VOLUME = "NOTIFICATION_VOLUME"
     const val SELECTIVE_VIBRATION = "SELECTIVE_VIBRATION"
     const val WALLPAPER_SCALE_LEVEL = "WALLPAPER_SCALE_LEVEL"
+
+    /** Catalog expansion batch 12: Package, logcat, notification group and app lock timeout hooks. */
+    const val APPS_DISABLE_SERVICE = "APPS_DISABLE_SERVICE"
+    const val NO_ACCESS_DEVICE_LOGS_REQUEST = "NO_ACCESS_DEVICE_LOGS_REQUEST"
+    const val AUTO_GROUP_NOTIFICATIONS = "AUTO_GROUP_NOTIFICATIONS"
+    const val APP_LOCK_TIMEOUT = "APP_LOCK_TIMEOUT"
 }

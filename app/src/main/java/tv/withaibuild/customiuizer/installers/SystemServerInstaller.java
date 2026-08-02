@@ -47,7 +47,7 @@ public final class SystemServerInstaller {
         if (MainModule.mPrefs.getInt("controls_powerdt_action", 1) > 1 || MainModule.mPrefs.getBoolean("controls_volumedowndt_torch")) Controls.PowerDoubleTapActionHook(lpparam);
         if (MainModule.mPrefs.getInt("system_screenanim_duration", 0) > 0) FeatureDispatcher.installById("screenAnim", serverRuntime);
         if (MainModule.mPrefs.getInt("system_volumesteps", 0) > 0) FeatureDispatcher.installById("volumeSteps", serverRuntime);
-        if (MainModule.mPrefs.getInt("system_applock_timeout", 1) > 1) SystemLockScreenMoreHooks.AppLockTimeoutHook(lpparam);
+        if (MainModule.mPrefs.getInt("system_applock_timeout", 1) > 1) FeatureDispatcher.installById("appLockTimeout", serverRuntime);
         if (MainModule.mPrefs.getInt("system_dimtime", 0) > 0) FeatureDispatcher.installById("screenDimTime", serverRuntime);
         if (MainModule.mPrefs.getInt("system_toasttime", 0) > 0) FeatureDispatcher.installById("toastTime", serverRuntime);
         if (!"none".equals(MainModule.mPrefs.getString("system_defaultusb", "none"))) SystemSettingsMoreHooks.USBConfigHook(lpparam);
@@ -80,11 +80,11 @@ public final class SystemServerInstaller {
         if (MainModule.mPrefs.getBoolean("controls_fingerprintfailure")) Controls.FingerprintHapticFailureHook(lpparam);
         if (MainModule.mPrefs.getBoolean("controls_fingerprintscreen")) Controls.FingerprintScreenOnHook(lpparam);
         if (MainModule.mPrefs.getBoolean("controls_fingerprintwake")) Controls.NoFingerprintWakeHook(lpparam);
-        if (MainModule.mPrefs.getBoolean("various_disableapp")) Various.AppsDisableServiceHook(lpparam);
+        if (MainModule.mPrefs.getBoolean("various_disableapp")) FeatureDispatcher.installById("appsDisableService", serverRuntime);
         if (MainModule.mPrefs.getBoolean("system_disableanynotif")) FeatureDispatcher.installById("disableAnyNotificationBlock", serverRuntime);
         if (MainModule.mPrefs.getStringAsInt("system_allrotations2", 1) > 1) FeatureDispatcher.installById("allRotations", serverRuntime);
         if (MainModule.mPrefs.getStringAsInt("system_nolightuponcharges", 1) > 1) FeatureDispatcher.installById("noLightUpOnCharge", serverRuntime);
-        if (MainModule.mPrefs.getStringAsInt("system_autogroupnotif", 1) > 1) SystemNotificationAndShareHooks.AutoGroupNotificationsHook(lpparam);
+        if (MainModule.mPrefs.getStringAsInt("system_autogroupnotif", 1) > 1) FeatureDispatcher.installById("autoGroupNotifications", serverRuntime);
         if (MainModule.mPrefs.getStringAsInt("system_vibration", 1) > 1) FeatureDispatcher.installById("selectiveVibration", serverRuntime);
         if (MainModule.mPrefs.getStringAsInt("system_blocktoasts", 1) > 1) SystemStatusBarAndClockHooks.SelectiveToastsHook(lpparam);
         if (MainModule.mPrefs.getStringAsInt("system_rotateanim", 1) > 1) FeatureDispatcher.installById("rotationAnimation", serverRuntime);
@@ -95,7 +95,7 @@ public final class SystemServerInstaller {
         if (MainModule.mPrefs.getBoolean("system_fw_splitscreen")) SystemFreeformAndMultiWindowHooks.MultiWindowPlusHook(lpparam);
         if (MainModule.mPrefs.getBoolean("system_fw_noblacklist")) SystemFreeformAndMultiWindowHooks.NoFloatingWindowBlacklistHook(lpparam);
         if (MainModule.mPrefs.getBoolean("various_disable_access_devicelogs")) {
-            SystemDisplayAndWindowHooks.NoAccessDeviceLogsRequest(lpparam);
+            FeatureDispatcher.installById("noAccessDeviceLogsRequest", serverRuntime);
         }
         if (MainModule.mPrefs.getInt("system_other_wallpaper_scale", 6) > 6) FeatureDispatcher.installById("wallpaperScaleLevel", serverRuntime);
     }
