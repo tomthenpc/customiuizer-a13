@@ -763,7 +763,7 @@ P0 后重建，但不得删除未解决问题。
 | 3 | `37e8f1a` | P3.1 — refresh hook ownership inventory from typed catalog | `scripts/verify.ps1 -Mode Fast` 通过 | qualifying |
 | 4 | `1cbc4db` | P3.2 — migrate `system_volumesteps` to typed `volumeSteps` | `scripts/verify.ps1 -Mode Fast` 通过 | qualifying |
 | 5 | `182ee03` | P3.2 — migrate `system_toasttime` to typed `toastTime` | `scripts/verify.ps1 -Mode Fast` 通过 | qualifying |
-| 6 | `pending` | v4 审计融合：文档契约检查器 + v4 audit docs | `scripts/verify.ps1 -Mode Fast` 通过 | qualifying |
+| 6 | `44602f7` | v4 审计融合：文档契约检查器 + v4 audit docs | `scripts/verify.ps1 -Mode Fast` 通过 | qualifying |
 
 ---
 
