@@ -3,6 +3,7 @@ package tv.withaibuild.customiuizer.installers;
 import java.util.Map;
 
 import io.github.libxposed.api.XposedModuleInterface.SystemServerStartingParam;
+import tv.withaibuild.customiuizer.mods.utils.XposedHelpers;
 import tv.withaibuild.customiuizer.MainModule;
 import tv.withaibuild.customiuizer.mods.Controls;
 import tv.withaibuild.customiuizer.mods.GlobalActions;
@@ -100,7 +101,7 @@ public final class SystemServerInstaller {
         if (MainModule.mPrefs.getInt("system_other_wallpaper_scale", 6) > 6) FeatureDispatcher.installById("wallpaperScaleLevel", serverRuntime);
     }
 
-    private static boolean needGlobalActions() {
+    static boolean needGlobalActions() {
         try {
             for (Map.Entry<String, Object> entry : MainModule.mPrefs.entrySet()) {
                 String key = entry.getKey();
@@ -109,12 +110,19 @@ public final class SystemServerInstaller {
                     return true;
                 }
             }
+            if (MainModule.mPrefs.getStringAsInt("controls_volumemedia_up", 0) > 0 || MainModule.mPrefs.getStringAsInt("controls_volumemedia_down", 0) > 0) {
+                return !MainModule.mPrefs.getStringSet("controls_mediaplayer_apps").isEmpty();
+            }
+            return false;
         } catch (Throwable t) {
-            if (t instanceof OutOfMemoryError) throw (OutOfMemoryError) t;
+            if (t instanceof VirtualMachineError) {
+                throw (VirtualMachineError) t;
+            }
+            if (t instanceof ThreadDeath) {
+                throw (ThreadDeath) t;
+            }
+            XposedHelpers.log(t);
+            return false;
         }
-        if (MainModule.mPrefs.getStringAsInt("controls_volumemedia_up", 0) > 0 || MainModule.mPrefs.getStringAsInt("controls_volumemedia_down", 0) > 0) {
-            return !MainModule.mPrefs.getStringSet("controls_mediaplayer_apps").isEmpty();
-        }
-        return false;
     }
 }

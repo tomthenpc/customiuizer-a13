@@ -168,12 +168,30 @@ def check_smart_state(path: Path, raw_text: str, repo_root: Path) -> list[str]:
 
     # LastCIState is a remote fact; do not claim PASS without a real CI run.
     if ci == "PASS":
-        for key in ("LastCIRun", "LastCIJob", "LastCICommit"):
+        for key in ("LastCIRun", "LastCIJob"):
             value = state.get(key, "")
             if not value or value.lower() == "pending":
                 errors.append(f"SMART_OPERATION_STATE LastCIState=PASS but {key} is missing")
-            elif key == "LastCICommit" and value.lower() != "pending" and not git_object_exists(value, repo_root):
-                errors.append(f"SMART_OPERATION_STATE LastCIState=PASS but {key} does not resolve: {value}")
+
+        ci_commit = state.get("LastCICommit", "")
+        if not ci_commit or ci_commit.lower() == "pending":
+            errors.append("SMART_OPERATION_STATE LastCIState=PASS but LastCICommit is missing")
+        elif ci_commit.lower() != "pending":
+            if not git_object_exists(ci_commit, repo_root):
+                errors.append(f"SMART_OPERATION_STATE LastCIState=PASS but LastCICommit does not resolve: {ci_commit}")
+            else:
+                # PASS must reference a commit that is an ancestor of the current HEAD.
+                # State-only bookkeeping commits therefore record the previously-verified
+                # qualifying commit without re-breaking governance.
+                result = subprocess.run(
+                    ["git", "merge-base", "--is-ancestor", ci_commit, "HEAD"],
+                    cwd=repo_root,
+                    capture_output=True,
+                    text=True,
+                )
+                if result.returncode != 0:
+                    errors.append("SMART_OPERATION_STATE LastCIState=PASS but LastCICommit is not an ancestor of the current HEAD")
+
         for workflow in ("a13-fast-ci.yml",):
             wf = repo_root / ".github" / "workflows" / workflow
             if not wf.is_file():

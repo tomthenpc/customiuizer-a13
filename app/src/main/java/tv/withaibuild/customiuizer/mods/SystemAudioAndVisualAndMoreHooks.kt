@@ -629,12 +629,13 @@ object SystemAudioAndVisualAndMoreHooks {
         val flagIndex = 2
         ModuleHelper.hookAllConstructors("com.android.server.wm.WindowSurfaceController", lpparam.classLoader, object : MethodHook() {
             override fun before(param: BeforeHookCallback) {
-                val windowType = param.args[4] as? Int ?: return
+                if (param.args.size <= 4) return
+                val windowType = param.args.getOrNull(4) as? Int ?: return
                 if (windowType != WindowManager.LayoutParams.TYPE_PHONE
                     && windowType != WindowManager.LayoutParams.TYPE_SYSTEM_OVERLAY
                     && windowType != WindowManager.LayoutParams.TYPE_SYSTEM_ALERT
                     && windowType != WindowManager.LayoutParams.TYPE_APPLICATION_OVERLAY) return
-                var flags = param.args[flagIndex] as? Int ?: return
+                var flags = param.args.getOrNull(flagIndex) as? Int ?: return
                 val skipFlag = 64
                 flags = flags or skipFlag
                 param.args[flagIndex] = flags

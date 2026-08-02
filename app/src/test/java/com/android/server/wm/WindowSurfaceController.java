@@ -6,4 +6,8 @@ package com.android.server.wm;
  */
 public class WindowSurfaceController {
     public WindowSurfaceController() {}
+
+    public WindowSurfaceController(Object a, Object b, int flags, Object d, int windowType) {}
+
+    public void setSecure(boolean secure) {}
 }

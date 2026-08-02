@@ -101,7 +101,8 @@ object SystemSecurityAndSystemHooks {
         })
         ModuleHelper.hookAllConstructors("com.android.server.wm.WindowSurfaceController", lpparam.classLoader, object : MethodHook() {
             override fun before(param: BeforeHookCallback) {
-                var flags = param.args[2] as? Int ?: return
+                if (param.args.size <= 2) return
+                var flags = param.args.getOrNull(2) as? Int ?: return
                 val secureFlag = 128
                 flags = flags and secureFlag.inv()
                 param.args[2] = flags

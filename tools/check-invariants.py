@@ -391,14 +391,14 @@ def check_installer_oom_boundary(path: Path, text: str) -> list[Finding]:
     )
     for match in pattern.finditer(text):
         body, _ = block_at(text, match.end())
-        if "OutOfMemoryError" in body and re.search(r"\bthrow\b", body):
+        if ("OutOfMemoryError" in body or "VirtualMachineError" in body) and re.search(r"\bthrow\b", body):
             continue
         findings.append(
             Finding(
                 "installer-oom-boundary",
                 path,
                 line_of(text, match.start()),
-                "Throwable catch must explicitly rethrow OutOfMemoryError",
+                "Throwable catch must explicitly rethrow OutOfMemoryError or VirtualMachineError",
             )
         )
     return findings
