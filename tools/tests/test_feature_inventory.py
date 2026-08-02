@@ -97,9 +97,9 @@ class FeatureInventoryCompletenessTest(unittest.TestCase):
             f"A13_PROCESS_MATRIX.md has ids not in FeatureCatalog: {extra_in_matrix}",
         )
         self.assertEqual(
-            29,
+            30,
             len(matrix_ids),
-            "A13_PROCESS_MATRIX.md must list exactly the 29 catalog feature ids",
+            "A13_PROCESS_MATRIX.md must list exactly the 30 catalog feature ids",
         )
 
 
