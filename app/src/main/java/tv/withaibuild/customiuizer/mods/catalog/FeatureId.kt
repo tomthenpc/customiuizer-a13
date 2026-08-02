@@ -29,6 +29,7 @@ enum class FeatureId(val canonicalId: String) {
     HIDE_LOCK_SCREEN_HINT("hideLockScreenHint"),
     FOLDER_COLUMNS("folderColumns"),
     TITLE_TOP_MARGIN("titleTopMargin"),
+    VOLUME_STEPS("volumeSteps"),
     NO_LIGHT_UP_ON_CHARGE("noLightUpOnCharge"),
     ALL_ROTATIONS("allRotations"),
     NO_NETWORK_SPEED_SEPARATOR("noNetworkSpeedSeparator"),

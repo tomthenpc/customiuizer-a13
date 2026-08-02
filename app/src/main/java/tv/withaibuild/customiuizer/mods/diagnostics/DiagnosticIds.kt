@@ -42,6 +42,7 @@ object DiagnosticIds {
     const val TITLE_TOP_MARGIN = "TITLE_TOP_MARGIN"
 
     /** Catalog expansion batch 3. */
+    const val VOLUME_STEPS = "VOLUME_STEPS"
     const val NO_LIGHT_UP_ON_CHARGE = "NO_LIGHT_UP_ON_CHARGE"
     const val ALL_ROTATIONS = "ALL_ROTATIONS"
     const val NO_NETWORK_SPEED_SEPARATOR = "NO_NETWORK_SPEED_SEPARATOR"

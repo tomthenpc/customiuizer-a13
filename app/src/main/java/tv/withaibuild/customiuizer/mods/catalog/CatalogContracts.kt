@@ -133,6 +133,22 @@ object CatalogContracts {
     }
 
     // Catalog expansion batch 2: system_server
+    val volumeSteps: HookTargetContract by lazy(kotlin.LazyThreadSafetyMode.NONE) { HookTargetContract(
+        featureId = "volumeSteps",
+        requirements = listOf(
+            SingleTargetRequirement(
+                target = HookTargetSpec(
+                    id = "AudioService.createStreamStates",
+                    operation = HookOperation.EXACT_METHOD,
+                    className = "com.android.server.audio.AudioService",
+                    memberName = "createStreamStates",
+                    parameterTypes = emptyList()
+                )
+            )
+        )
+    )
+    }
+
     val hideProximityWarning: HookTargetContract by lazy(kotlin.LazyThreadSafetyMode.NONE) { HookTargetContract(
         featureId = "hideProximityWarning",
         requirements = listOf(

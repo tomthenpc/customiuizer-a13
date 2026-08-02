@@ -444,6 +444,7 @@ class FeatureCatalogTest {
             "noWidgetOnly",
             "screenDimTime",
             "firstVolumePress",
+            "volumeSteps",
             "networkIndicatorWifi",
             "muteVisibleNotifications",
             "hideLauncherTitles",
@@ -527,9 +528,9 @@ class FeatureCatalogTest {
     fun specsBuildsCompleteCatalogWithoutDoubleCounting() {
         FeatureCatalog.CatalogBuildProbe.reset()
         val specs = FeatureCatalog.specs()
-        assertEquals(25, specs.size)
+        assertEquals(26, specs.size)
         assertEquals("specs builds the 8 registry specs once", 8, FeatureCatalog.CatalogBuildProbe.registrySpecsBuilt)
-        assertEquals("specs builds the 17 legacy specs once", 17, FeatureCatalog.CatalogBuildProbe.legacySpecsBuilt)
+        assertEquals("specs builds the 18 legacy specs once", 18, FeatureCatalog.CatalogBuildProbe.legacySpecsBuilt)
     }
 
     @Test
@@ -543,9 +544,9 @@ class FeatureCatalogTest {
         val registryMigrated = registryIds.size
         val dispatcherLegacy = legacyIds.size
 
-        assertEquals("catalog total", 25, catalogTotal)
+        assertEquals("catalog total", 26, catalogTotal)
         assertEquals("registry migrated", 8, registryMigrated)
-        assertEquals("dispatcher legacy", 17, dispatcherLegacy)
+        assertEquals("dispatcher legacy", 18, dispatcherLegacy)
 
         assertTrue("registry ids are a subset of catalog ids", registryIds.all { it in catalogIds })
         assertEquals("dispatcher ids match catalog ids", catalogIds, dispatcherIds)

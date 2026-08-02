@@ -133,8 +133,8 @@ class ArchitectureInvariantTest(unittest.TestCase):
         legacy_ids = re.findall(r'id = "([^"]+)"', legacy_text)
 
         self.assertEqual(8, len(registry_ids), f"registry specs must contain exactly 8 ids: {registry_ids}")
-        self.assertEqual(17, len(legacy_ids), f"legacy specs must contain exactly 17 ids: {legacy_ids}")
-        self.assertEqual(25, len(registry_ids) + len(legacy_ids))
+        self.assertEqual(18, len(legacy_ids), f"legacy specs must contain exactly 18 ids: {legacy_ids}")
+        self.assertEqual(26, len(registry_ids) + len(legacy_ids))
         self.assertEqual(set(), set(registry_ids) & set(legacy_ids), "registry and legacy ids must be disjoint")
 
     def test_feature_dispatcher_routing_no_duplicate_paths(self):

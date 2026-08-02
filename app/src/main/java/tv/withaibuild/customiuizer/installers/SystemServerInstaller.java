@@ -48,7 +48,7 @@ public final class SystemServerInstaller {
             MainModule.mPrefs.getInt("controls_menulong_action", 1) > 1) Controls.NavBarActionsHook(lpparam);
         if (MainModule.mPrefs.getInt("controls_powerdt_action", 1) > 1 || MainModule.mPrefs.getBoolean("controls_volumedowndt_torch")) Controls.PowerDoubleTapActionHook(lpparam);
         if (MainModule.mPrefs.getInt("system_screenanim_duration", 0) > 0) SystemDisplayAndWindowHooks.ScreenAnimHook(lpparam);
-        if (MainModule.mPrefs.getInt("system_volumesteps", 0) > 0) SystemAudioAndVolumeHooks.VolumeStepsHook(lpparam);
+        if (MainModule.mPrefs.getInt("system_volumesteps", 0) > 0) FeatureDispatcher.installById("volumeSteps", serverRuntime);
         if (MainModule.mPrefs.getInt("system_applock_timeout", 1) > 1) SystemLockScreenMoreHooks.AppLockTimeoutHook(lpparam);
         if (MainModule.mPrefs.getInt("system_dimtime", 0) > 0) FeatureDispatcher.installById("screenDimTime", serverRuntime);
         if (MainModule.mPrefs.getInt("system_toasttime", 0) > 0) SystemAudioAndVisualAndMoreHooks.ToastTimeHook(lpparam);
