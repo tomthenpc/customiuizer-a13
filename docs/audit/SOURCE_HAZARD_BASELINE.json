@@ -1,0 +1,4095 @@
+{
+  "schema": 1,
+  "fingerprints": [
+    "02b2243ef2360a1a8ec8",
+    "02df9e259d0a8593fbf6",
+    "0334e1efb630e91bdb87",
+    "03d6b3d5caa36c4f1aa8",
+    "03d6b3d5caa36c4f1aa8",
+    "03d6b3d5caa36c4f1aa8",
+    "04b2c20d82f1e862e114",
+    "04b2c20d82f1e862e114",
+    "04de8395bcda7710a2b3",
+    "082b3f2fb2310a57fa50",
+    "08863fb724d3da99a801",
+    "08863fb724d3da99a801",
+    "09112714c1323354ff11",
+    "094c3b5371f20d8d8f35",
+    "0987c7a8cd790d3a007a",
+    "0987c7a8cd790d3a007a",
+    "0987c7a8cd790d3a007a",
+    "0987c7a8cd790d3a007a",
+    "0987c7a8cd790d3a007a",
+    "0987c7a8cd790d3a007a",
+    "0b1c569a0aeacc6fd4a4",
+    "0b35715d1be1cbc2eb48",
+    "0bbde282fb097704022c",
+    "0db4399e3dea5150c370",
+    "0db9492d3dd8f508cc25",
+    "0ddd77585f15b0fe2b77",
+    "100c1046ef5ac9848715",
+    "112cb0a5f5c0d03823ba",
+    "1145300ac2aa958210e0",
+    "1145300ac2aa958210e0",
+    "1540eec8ac6e38bbfb30",
+    "172f25e7e8f198bd7660",
+    "18b7133fdfe9dd3d4481",
+    "1b2abc7ebac4c881ead8",
+    "1b536cb65c04ebcaa290",
+    "1cec8a44ab7c55514a97",
+    "1d64b0ece756a87e62f8",
+    "1d871f70098eed510c45",
+    "1dc872b1eeca59edea27",
+    "1e78b040093838a599b4",
+    "1f8f7ce1827445197a6b",
+    "2098907b493e8027a5e8",
+    "20ec53a5cd7e6c9a2a19",
+    "2119b1ccd8f3be23c6ec",
+    "223fddd8e227584ae67b",
+    "22baba5274454a3fa9fe",
+    "2497c7f4196ae5cdf98b",
+    "2497c7f4196ae5cdf98b",
+    "2497c7f4196ae5cdf98b",
+    "2497c7f4196ae5cdf98b",
+    "2497c7f4196ae5cdf98b",
+    "266ba396cca52aa7d44a",
+    "266ba396cca52aa7d44a",
+    "266ba396cca52aa7d44a",
+    "266ba396cca52aa7d44a",
+    "266ba396cca52aa7d44a",
+    "266ba396cca52aa7d44a",
+    "266ba396cca52aa7d44a",
+    "266ba396cca52aa7d44a",
+    "26c89cb142502230d6fb",
+    "283cdc15ddb00197c37e",
+    "283cdc15ddb00197c37e",
+    "283cdc15ddb00197c37e",
+    "297c0ada017bca83600b",
+    "297c0ada017bca83600b",
+    "29e93bfe887875eba2f1",
+    "29e93bfe887875eba2f1",
+    "2a0cf2b110002393482b",
+    "2a0cf2b110002393482b",
+    "2a0cf2b110002393482b",
+    "2a0cf2b110002393482b",
+    "2a0cf2b110002393482b",
+    "2a0cf2b110002393482b",
+    "2a0cf2b110002393482b",
+    "2a0cf2b110002393482b",
+    "2a0cf2b110002393482b",
+    "2a0cf2b110002393482b",
+    "2a0cf2b110002393482b",
+    "2a0cf2b110002393482b",
+    "2a0cf2b110002393482b",
+    "2a1ef484afd2fd663f79",
+    "2a7ebcef70cc8db4358c",
+    "2a7ebcef70cc8db4358c",
+    "2b528b0c906b0f325c3c",
+    "2bf5f18476eccc80efea",
+    "2c1718bb7efea189f721",
+    "2c1718bb7efea189f721",
+    "2c90b0c66385a0618127",
+    "2dfd31cf1cf98d526b3b",
+    "2ecc7d91e4f923a9f5be",
+    "2f310c9e79550e98ae73",
+    "2f3ba4def686cbe53ac2",
+    "2f3ba4def686cbe53ac2",
+    "2f89eeae021531a20cc2",
+    "2f92acaf21d774c5cd14",
+    "306c4860cd69e3bd186a",
+    "313181deefa64ef98056",
+    "31625a23920ef3f2c210",
+    "323b6d4266f87ededdf3",
+    "3260656b904a3ae351b3",
+    "338e17f6ba6e5fdc8f70",
+    "338e17f6ba6e5fdc8f70",
+    "338e17f6ba6e5fdc8f70",
+    "338e17f6ba6e5fdc8f70",
+    "338e17f6ba6e5fdc8f70",
+    "338e17f6ba6e5fdc8f70",
+    "3507557087662a7745c0",
+    "3507557087662a7745c0",
+    "37c0a6229b40b1b5b701",
+    "37c0a6229b40b1b5b701",
+    "37c0a6229b40b1b5b701",
+    "38704540edc57d485495",
+    "38ed623f49aaa80e439d",
+    "3a12b07d9d5d3ad4decf",
+    "3a66edc26b01135fc72f",
+    "3a66edc26b01135fc72f",
+    "3b9987782bfe9d8ff2b9",
+    "3bd073ee958c80be1f40",
+    "3bf78acf0083dbac8d48",
+    "3c9f583478f1306beacd",
+    "3cac290f6f474a444ada",
+    "3cac290f6f474a444ada",
+    "3cc5980c0383b0a0e592",
+    "3d57353478b3e61843e2",
+    "3e26c7d43e4220d58ba8",
+    "3e26c7d43e4220d58ba8",
+    "3e26c7d43e4220d58ba8",
+    "3e26c7d43e4220d58ba8",
+    "3e26c7d43e4220d58ba8",
+    "400695693b1c6ab4ba6b",
+    "4110d5d3a7194705b751",
+    "4167595f35983ca94145",
+    "42dc6f6d3cfcb1d290bd",
+    "43af9d949b6e070f6662",
+    "43af9d949b6e070f6662",
+    "43af9d949b6e070f6662",
+    "43af9d949b6e070f6662",
+    "43cdca82bc986644a2fa",
+    "4401b2174c4ef1c489ee",
+    "4440608dec5ee6a1c434",
+    "4440608dec5ee6a1c434",
+    "464386d06575e57cc455",
+    "46682e0d64ea37a107eb",
+    "46682e0d64ea37a107eb",
+    "472e953f73b024de2332",
+    "478b44399885e5d768e5",
+    "47da7dad486c833188b8",
+    "47da7dad486c833188b8",
+    "47fd13a053cd85b7e14c",
+    "480658f2acea332dbe75",
+    "482caeb493fcf35db9d3",
+    "4a3f453f8701a02a3980",
+    "4b3edc05c002170b477e",
+    "4bc977c0abb7e01eafaa",
+    "4bc977c0abb7e01eafaa",
+    "4bc977c0abb7e01eafaa",
+    "4bc977c0abb7e01eafaa",
+    "4bc977c0abb7e01eafaa",
+    "4c940cf5cedfb19424c8",
+    "4e4174b0bcac92c92e02",
+    "4e6c02b3704aa14471ca",
+    "4e852e3a1fea1595c290",
+    "4eeedbd638ea40d541a7",
+    "4f76fa01bbc5ae1a559e",
+    "4f76fa01bbc5ae1a559e",
+    "4f76fa01bbc5ae1a559e",
+    "50a5fb9ca1bf78692433",
+    "5151c9f99364ad247926",
+    "51e7a4b89b8f5495928a",
+    "52c5a757b73b3c46b7db",
+    "52ca4e50be037bb1687e",
+    "52e9e403b1c870892370",
+    "532ac7e36218ec1f8a21",
+    "532ac7e36218ec1f8a21",
+    "532ac7e36218ec1f8a21",
+    "5343e8e12d424063780e",
+    "542b3899c4435a4b21f7",
+    "54ee7dc4b81441bc1fb3",
+    "56d8da360cfc62863119",
+    "576b8cb70666377262f9",
+    "58b810fedbf798ec0869",
+    "5bfbf53777f6d8bccb5f",
+    "5d611f6a72677f18db86",
+    "5d76ef433a5818f61ebd",
+    "5ec0e380471cc2d54937",
+    "5f0112083d34d892a20d",
+    "5f0112083d34d892a20d",
+    "5f8385fc4d50ff07a17a",
+    "62a82efa534ff06f6e8c",
+    "632b251b0d4231db4951",
+    "6350537ed5e418cd0886",
+    "63d83e30463c7d811336",
+    "645acaabebf234201021",
+    "648c56a0bcab5ef373a3",
+    "649a7cee83dffa3d7899",
+    "652cfa838de6134a5a84",
+    "659c13c9f4cc7a66212e",
+    "6643c4103ddbc196a971",
+    "671bac5e379bab5cab3c",
+    "6781864fe9190dad4fc4",
+    "67ef0251e8fd79447dda",
+    "67f5303883c2d2da4f1b",
+    "68c992b696dd4a45f3be",
+    "68c992b696dd4a45f3be",
+    "6a28194579d085a39edb",
+    "6a4211675541e6b84755",
+    "6a60ad6a9693b3047110",
+    "6b073734db7365f6c353",
+    "6b277793cfbdc0bb1d72",
+    "6cb5c1c6332b48c1a252",
+    "6cf60e878ac5e9b29e30",
+    "6e376fbd98e26b115e46",
+    "6e88759c768b2cf072c9",
+    "6e88759c768b2cf072c9",
+    "6f250d69d2a2e23d5bec",
+    "6f427b5f140bb2cba54a",
+    "6f575e47da9aaf913b39",
+    "6fb50aa89d886ffea5c2",
+    "70118018f8534d4e3ac3",
+    "70118018f8534d4e3ac3",
+    "70118018f8534d4e3ac3",
+    "70118018f8534d4e3ac3",
+    "706307495e7d50738d97",
+    "70a8faac4236b21d9607",
+    "70a8faac4236b21d9607",
+    "70a8faac4236b21d9607",
+    "70d6fe63ea775f60f804",
+    "712907ba2ea223303ae4",
+    "7269804f81dec00f235d",
+    "7269804f81dec00f235d",
+    "7269804f81dec00f235d",
+    "7269804f81dec00f235d",
+    "7269804f81dec00f235d",
+    "7269804f81dec00f235d",
+    "733a611a4a086c06a2fc",
+    "733a611a4a086c06a2fc",
+    "76f5489ab6251cddf9e6",
+    "774f0e551d7fa5a07191",
+    "782ce0ff6249e51e20de",
+    "78494fd016fff2f96892",
+    "7870f1e2dadb988f75fa",
+    "789a7205901a96aa7b7e",
+    "79ecadefce4fb7492823",
+    "7bdd322f60ace65202c0",
+    "7bf0ccb77bbc0abf34fd",
+    "7c7c089e18e9cd4858cc",
+    "7f7da64d5bec762a97ec",
+    "80369baa70efae39721d",
+    "806470112e494db1f1ce",
+    "80ef3d3433f84ae72b9d",
+    "8384939bc3ea487e2e45",
+    "86a3bb006107b425b16e",
+    "86a3ccf15300503421b7",
+    "86a3ccf15300503421b7",
+    "86a3ccf15300503421b7",
+    "86a3ccf15300503421b7",
+    "86a3ccf15300503421b7",
+    "88afe7fb8ff46d8d2953",
+    "8a5137cbf5dcb9c4df45",
+    "8a62239483597d42b3a1",
+    "8adb4a683f0e20a886cf",
+    "8bb136fa994c7fbcf504",
+    "8ed5341fe759c28dc330",
+    "8ed5341fe759c28dc330",
+    "8ed5341fe759c28dc330",
+    "8ed5341fe759c28dc330",
+    "90325688d8ef1c12ac4f",
+    "91e9c34a5617113f0097",
+    "92aacee7820fa6b53e0b",
+    "92f83e8de51fe61f6e4f",
+    "930fad3b4a4b0a349f73",
+    "934ad4f477247bce25d4",
+    "934ad4f477247bce25d4",
+    "93e92dcc7b93ab5cb881",
+    "93e92dcc7b93ab5cb881",
+    "957f6ad7497f7199c049",
+    "9685d90dec8ec7cbe897",
+    "96e1cc065f98844d0fa5",
+    "97e8ac3ed646b015f61d",
+    "98c6da76ad8a04bfa992",
+    "98f4b3ec35617d5a0e79",
+    "9918bc094ddd80690a20",
+    "9918bc094ddd80690a20",
+    "99259b9e984d6baa5b8d",
+    "9a05f5e5e60580f5e35d",
+    "9a161dca8f77e96cda3d",
+    "9a4d07ab16faa09b60ca",
+    "9bb57f76d227e2691736",
+    "9bc5b5aa71a344731401",
+    "9becb9bca045d696e958",
+    "9c925af08e531eb7c142",
+    "9cd3c43f196c97559572",
+    "9dd88f3c7e9b35aadf7a",
+    "9f143a6f8d566994ae66",
+    "9f143a6f8d566994ae66",
+    "9f143a6f8d566994ae66",
+    "9fe49d210c41366e75fd",
+    "a25ac755424affe5740e",
+    "a2b35eafc4d2699b9b24",
+    "a2b35eafc4d2699b9b24",
+    "a43a321c61d513cacae2",
+    "a478eb9306692d155637",
+    "a49b27ec385842c440f7",
+    "a49b27ec385842c440f7",
+    "a49b27ec385842c440f7",
+    "a49b27ec385842c440f7",
+    "a49b27ec385842c440f7",
+    "a49b27ec385842c440f7",
+    "a49b27ec385842c440f7",
+    "a49b27ec385842c440f7",
+    "a49b27ec385842c440f7",
+    "a49b27ec385842c440f7",
+    "a49b27ec385842c440f7",
+    "a49b27ec385842c440f7",
+    "a4b5318943ee9385e348",
+    "a4b5318943ee9385e348",
+    "a5598abf34b24f915a7a",
+    "a6278d8800d85abbceec",
+    "a652f08b415c304c013f",
+    "a652f08b415c304c013f",
+    "a6d353f43035259b1a16",
+    "a79317e0f1eec3be6780",
+    "a94ea60b1d6b36c732dd",
+    "a94ea60b1d6b36c732dd",
+    "a94ea60b1d6b36c732dd",
+    "a94ea60b1d6b36c732dd",
+    "a94ea60b1d6b36c732dd",
+    "a95519aefc9e79ef11fb",
+    "aaebcb3dada64dac82ed",
+    "ab9766b4a82edb8a1e14",
+    "ab9766b4a82edb8a1e14",
+    "ab9766b4a82edb8a1e14",
+    "abe518c5dd350e486592",
+    "acd9fdff44cf23f431bd",
+    "ad248e7a390352635e27",
+    "ad248e7a390352635e27",
+    "ad248e7a390352635e27",
+    "ad248e7a390352635e27",
+    "ad248e7a390352635e27",
+    "ad248e7a390352635e27",
+    "ad3f87cf43681ae9525d",
+    "ad3f87cf43681ae9525d",
+    "ad3f87cf43681ae9525d",
+    "ad3f87cf43681ae9525d",
+    "ad3f87cf43681ae9525d",
+    "ad3f87cf43681ae9525d",
+    "add3648f2f14f773f413",
+    "aef5ecf03421943f783d",
+    "aef5ecf03421943f783d",
+    "aef5ecf03421943f783d",
+    "afaf10045c20c696a3ed",
+    "b06727bea77690c1b34e",
+    "b06727bea77690c1b34e",
+    "b182398528f55f6b60f4",
+    "b245041168175e31444e",
+    "b27752edb852d14cc540",
+    "b27752edb852d14cc540",
+    "b27752edb852d14cc540",
+    "b2cf605ae105f776a258",
+    "b312754d3ae5ffbf2433",
+    "b387e76460a7e22212d9",
+    "b3c24457058c34afa98b",
+    "b3c24457058c34afa98b",
+    "b4d98eebcbdac2f49cd9",
+    "b5b0f3142f38bab3d78c",
+    "b5b7a403999bbecaa1ff",
+    "b6dbef2df1787ffef45a",
+    "b840a0eb0e4cc61e478e",
+    "b840a0eb0e4cc61e478e",
+    "b840a0eb0e4cc61e478e",
+    "b840a0eb0e4cc61e478e",
+    "babfd4ba0a647db0d4fe",
+    "babfd4ba0a647db0d4fe",
+    "babfd4ba0a647db0d4fe",
+    "babfd4ba0a647db0d4fe",
+    "babfd4ba0a647db0d4fe",
+    "babfd4ba0a647db0d4fe",
+    "babfd4ba0a647db0d4fe",
+    "babfd4ba0a647db0d4fe",
+    "babfd4ba0a647db0d4fe",
+    "babfd4ba0a647db0d4fe",
+    "babfd4ba0a647db0d4fe",
+    "babfd4ba0a647db0d4fe",
+    "babfd4ba0a647db0d4fe",
+    "babfd4ba0a647db0d4fe",
+    "babfd4ba0a647db0d4fe",
+    "bb3d7c5ba8731e466530",
+    "bd2de9920d9de75bb963",
+    "bde6c83d0fce9b5112f2",
+    "bf09c79e2a178c8b30db",
+    "c099d0777fbcb454e52a",
+    "c0a3a6e18321189edbaf",
+    "c0ce5f242cfb7d5ee113",
+    "c0ce5f242cfb7d5ee113",
+    "c0ce5f242cfb7d5ee113",
+    "c0ede6a7d723d64c5faf",
+    "c201a94ec197e25dfc0c",
+    "c2f6fb30225607a1963b",
+    "c442050a4ee352365204",
+    "c4c87cf1d20b23d2b92a",
+    "c4c87cf1d20b23d2b92a",
+    "c4f482bcefedfeb275ce",
+    "c50caa48a3d1e89c9281",
+    "c5ba9f12f6fc5a30fe12",
+    "c6a447e65e253fdc0234",
+    "c720e618d6c6487145ce",
+    "c720e618d6c6487145ce",
+    "c77a539e13952ad5c672",
+    "c77a539e13952ad5c672",
+    "c77a539e13952ad5c672",
+    "c7da78adeb985ddba806",
+    "c7da78adeb985ddba806",
+    "c80d8a74a5599dc8af43",
+    "c820b16e2bda8743c546",
+    "c8640cf6194f69eea78f",
+    "ca65c19b3c352542fa8e",
+    "caa7aeba39ae531595b8",
+    "cac192b283181b870dff",
+    "cb705b4206af12f3a420",
+    "cb705b4206af12f3a420",
+    "cb9f92113e1d6834dd1a",
+    "cbe397fbe52d61351f14",
+    "ccb5e4f5ed9e499f8c6d",
+    "ccb5e4f5ed9e499f8c6d",
+    "ccb5e4f5ed9e499f8c6d",
+    "cd1cab4cd2c6b6eb82e0",
+    "cf993adfc81495e3f701",
+    "cfa3866dca2080ac3fbf",
+    "cfa3866dca2080ac3fbf",
+    "d3dd62605482775f1043",
+    "d44b56a63ab3b2a317c8",
+    "d55272e998797b10ed3d",
+    "d5a8ad925af49c43c937",
+    "d6de1462bfa619cf59d5",
+    "d6e39d1a5ff2ad4dbd3b",
+    "d7407313a25d60591550",
+    "d98f55f238958943eeba",
+    "da2cac35703981dc1ac8",
+    "da2dae3ecf4c3e51fc4d",
+    "da2dae3ecf4c3e51fc4d",
+    "da2dae3ecf4c3e51fc4d",
+    "da44237d104350331966",
+    "daf48708eadbc9066fd1",
+    "db429700c249a7142e2e",
+    "db9f41699ab047f03e16",
+    "dc3cb29b6b0fbb70bbb3",
+    "dcad7fc292bab63db1ba",
+    "dd133f7cb49e79577c22",
+    "dd1e75b376a896b09499",
+    "dd95f2ceb50965a98e7f",
+    "dd95f2ceb50965a98e7f",
+    "ddd7e6044d0dd451daca",
+    "e02a39c3d466896b210e",
+    "e319f2f54d93e6a9a22d",
+    "e5c4bdcab0dfcc60b2f2",
+    "e868d5ae3782a027a4ab",
+    "e868d5ae3782a027a4ab",
+    "e974f7b52b87704d5064",
+    "e9977fa12a4baffbd2fc",
+    "e9977fa12a4baffbd2fc",
+    "e9977fa12a4baffbd2fc",
+    "e9977fa12a4baffbd2fc",
+    "e9977fa12a4baffbd2fc",
+    "eb7eef88b7260aa2edc4",
+    "edb35be7d9ae027e7cf6",
+    "ee101ecd00cafb7667b8",
+    "ee960a826299f2706638",
+    "ee960a826299f2706638",
+    "ee960a826299f2706638",
+    "efae16abd9ce40013132",
+    "efc973d473ff948cfb90",
+    "f011348ae6a98e539bb7",
+    "f011348ae6a98e539bb7",
+    "f011348ae6a98e539bb7",
+    "f011348ae6a98e539bb7",
+    "f011348ae6a98e539bb7",
+    "f011348ae6a98e539bb7",
+    "f011348ae6a98e539bb7",
+    "f011348ae6a98e539bb7",
+    "f011348ae6a98e539bb7",
+    "f011348ae6a98e539bb7",
+    "f141855740e12a2a7563",
+    "f34525ee37bdca3159e5",
+    "f345db0ac3c136994159",
+    "f37dd0dd67baf27a3913",
+    "f5a5d024631abd47a6dc",
+    "f5a5d024631abd47a6dc",
+    "f5a5d024631abd47a6dc",
+    "f5b89127cd5e0cba0fc6",
+    "f5f258d9453284ed76a5",
+    "f5f258d9453284ed76a5",
+    "f7ddb7b6fd684f01a058",
+    "f7f2ee2c66c833c06da9",
+    "f8ea78a4037c7c90d2c7",
+    "f8ea78a4037c7c90d2c7",
+    "f8ea78a4037c7c90d2c7",
+    "f92b6e312a3f6ffc8aa7",
+    "f968636764b61ab51b6a",
+    "fa877708de379068b0d9",
+    "fa877708de379068b0d9",
+    "fae1d8c8921ea84c2a8f",
+    "fb18a2164eeff5d7a7eb",
+    "fc6e0e8540296f89e98a",
+    "fcca32b86013582751f0",
+    "fe0d14ab081b9cd2dcb0",
+    "fe4e180ac7ae233a17b2",
+    "fe4e180ac7ae233a17b2",
+    "fe97c4558a14899526b7",
+    "ff8368dbc0288cd35bd9",
+    "ff8368dbc0288cd35bd9",
+    "ff8368dbc0288cd35bd9"
+  ],
+  "findings": [
+    {
+      "rule": "PRINT_STACK_TRACE",
+      "path": "app/src/main/java/tv/withaibuild/customiuizer/AboutFragment.kt",
+      "line": 50,
+      "snippet": ".printStackTrace(",
+      "fingerprint": "d7407313a25d60591550"
+    },
+    {
+      "rule": "CATCH_THROWABLE_NO_FATAL",
+      "path": "app/src/main/java/tv/withaibuild/customiuizer/AboutFragment.kt",
+      "line": 49,
+      "snippet": "catch (e: Throwable) { e.printStackTrace() ",
+      "fingerprint": "67ef0251e8fd79447dda"
+    },
+    {
+      "rule": "PRINT_STACK_TRACE",
+      "path": "app/src/main/java/tv/withaibuild/customiuizer/Credentials.kt",
+      "line": 47,
+      "snippet": ".printStackTrace(",
+      "fingerprint": "6fb50aa89d886ffea5c2"
+    },
+    {
+      "rule": "CATCH_THROWABLE_NO_FATAL",
+      "path": "app/src/main/java/tv/withaibuild/customiuizer/Credentials.kt",
+      "line": 35,
+      "snippet": "catch (e: Throwable) { val authIntent = km.createConfirmDeviceCredentialIntent( getString(R.string.credentials_unlock), getString(R.string.dummy) ) ",
+      "fingerprint": "51e7a4b89b8f5495928a"
+    },
+    {
+      "rule": "CATCH_THROWABLE_NO_FATAL",
+      "path": "app/src/main/java/tv/withaibuild/customiuizer/Credentials.kt",
+      "line": 46,
+      "snippet": "catch (t: Throwable) { t.printStackTrace() ",
+      "fingerprint": "1d871f70098eed510c45"
+    },
+    {
+      "rule": "STATIC_STRONG_ANDROID_OWNER",
+      "path": "app/src/main/java/tv/withaibuild/customiuizer/installers/SystemUiInstaller.java",
+      "line": 53,
+      "snippet": " Context mContext =",
+      "fingerprint": "4401b2174c4ef1c489ee"
+    },
+    {
+      "rule": "PRINT_STACK_TRACE",
+      "path": "app/src/main/java/tv/withaibuild/customiuizer/MainActivity.kt",
+      "line": 91,
+      "snippet": ".printStackTrace(",
+      "fingerprint": "5151c9f99364ad247926"
+    },
+    {
+      "rule": "CATCH_THROWABLE_NO_FATAL",
+      "path": "app/src/main/java/tv/withaibuild/customiuizer/MainActivity.kt",
+      "line": 90,
+      "snippet": "catch (t: Throwable) { t.printStackTrace() ",
+      "fingerprint": "9a05f5e5e60580f5e35d"
+    },
+    {
+      "rule": "STATIC_STRONG_ANDROID_OWNER",
+      "path": "app/src/main/java/tv/withaibuild/customiuizer/MainFragment.kt",
+      "line": 59,
+      "snippet": " @JvmField var inSearchView =",
+      "fingerprint": "02df9e259d0a8593fbf6"
+    },
+    {
+      "rule": "STATIC_STRONG_ANDROID_OWNER",
+      "path": "app/src/main/java/tv/withaibuild/customiuizer/MainFragment.kt",
+      "line": 113,
+      "snippet": " val searchView =",
+      "fingerprint": "cac192b283181b870dff"
+    },
+    {
+      "rule": "CATCH_THROWABLE_NO_FATAL",
+      "path": "app/src/main/java/tv/withaibuild/customiuizer/mods/compat/RomEnvironmentDiagnostics.kt",
+      "line": 21,
+      "snippet": "catch (_: Throwable) { // Diagnostic recording is best-effort metadata. A recording failure must never // prevent the feature installer from continuing. ",
+      "fingerprint": "54ee7dc4b81441bc1fb3"
+    },
+    {
+      "rule": "STATIC_STRONG_ANDROID_OWNER",
+      "path": "app/src/main/java/tv/withaibuild/customiuizer/mods/Controls.kt",
+      "line": 53,
+      "snippet": " private var sScreenOnContext: Context? =",
+      "fingerprint": "306c4860cd69e3bd186a"
+    },
+    {
+      "rule": "STATIC_STRONG_ANDROID_OWNER",
+      "path": "app/src/main/java/tv/withaibuild/customiuizer/mods/Controls.kt",
+      "line": 54,
+      "snippet": " private var sPowerContext: Context? =",
+      "fingerprint": "52ca4e50be037bb1687e"
+    },
+    {
+      "rule": "STATIC_STRONG_ANDROID_OWNER",
+      "path": "app/src/main/java/tv/withaibuild/customiuizer/mods/Controls.kt",
+      "line": 80,
+      "snippet": " private var sVolumeContext: Context? =",
+      "fingerprint": "6f427b5f140bb2cba54a"
+    },
+    {
+      "rule": "STATIC_STRONG_ANDROID_OWNER",
+      "path": "app/src/main/java/tv/withaibuild/customiuizer/mods/Controls.kt",
+      "line": 144,
+      "snippet": " val mContext =",
+      "fingerprint": "2a0cf2b110002393482b"
+    },
+    {
+      "rule": "STATIC_STRONG_ANDROID_OWNER",
+      "path": "app/src/main/java/tv/withaibuild/customiuizer/mods/Controls.kt",
+      "line": 172,
+      "snippet": " val mContext =",
+      "fingerprint": "2a0cf2b110002393482b"
+    },
+    {
+      "rule": "STATIC_STRONG_ANDROID_OWNER",
+      "path": "app/src/main/java/tv/withaibuild/customiuizer/mods/Controls.kt",
+      "line": 234,
+      "snippet": " val mContext =",
+      "fingerprint": "2a0cf2b110002393482b"
+    },
+    {
+      "rule": "STATIC_STRONG_ANDROID_OWNER",
+      "path": "app/src/main/java/tv/withaibuild/customiuizer/mods/Controls.kt",
+      "line": 291,
+      "snippet": " val mContext =",
+      "fingerprint": "2a0cf2b110002393482b"
+    },
+    {
+      "rule": "STATIC_STRONG_ANDROID_OWNER",
+      "path": "app/src/main/java/tv/withaibuild/customiuizer/mods/Controls.kt",
+      "line": 353,
+      "snippet": " val mContext =",
+      "fingerprint": "2a0cf2b110002393482b"
+    },
+    {
+      "rule": "STATIC_STRONG_ANDROID_OWNER",
+      "path": "app/src/main/java/tv/withaibuild/customiuizer/mods/Controls.kt",
+      "line": 504,
+      "snippet": " val mContext =",
+      "fingerprint": "2a0cf2b110002393482b"
+    },
+    {
+      "rule": "STATIC_STRONG_ANDROID_OWNER",
+      "path": "app/src/main/java/tv/withaibuild/customiuizer/mods/Controls.kt",
+      "line": 585,
+      "snippet": " private var miuiPWMContext: Context? =",
+      "fingerprint": "92aacee7820fa6b53e0b"
+    },
+    {
+      "rule": "STATIC_STRONG_ANDROID_OWNER",
+      "path": "app/src/main/java/tv/withaibuild/customiuizer/mods/Controls.kt",
+      "line": 620,
+      "snippet": " val mFocusedWindow =",
+      "fingerprint": "f5f258d9453284ed76a5"
+    },
+    {
+      "rule": "STATIC_STRONG_ANDROID_OWNER",
+      "path": "app/src/main/java/tv/withaibuild/customiuizer/mods/Controls.kt",
+      "line": 670,
+      "snippet": " val mFocusedWindow =",
+      "fingerprint": "f5f258d9453284ed76a5"
+    },
+    {
+      "rule": "STATIC_STRONG_ANDROID_OWNER",
+      "path": "app/src/main/java/tv/withaibuild/customiuizer/mods/Controls.kt",
+      "line": 679,
+      "snippet": " val mContext =",
+      "fingerprint": "2a0cf2b110002393482b"
+    },
+    {
+      "rule": "STATIC_STRONG_ANDROID_OWNER",
+      "path": "app/src/main/java/tv/withaibuild/customiuizer/mods/Controls.kt",
+      "line": 717,
+      "snippet": " val mContext =",
+      "fingerprint": "2a0cf2b110002393482b"
+    },
+    {
+      "rule": "STATIC_STRONG_ANDROID_OWNER",
+      "path": "app/src/main/java/tv/withaibuild/customiuizer/mods/Controls.kt",
+      "line": 724,
+      "snippet": " val mContext =",
+      "fingerprint": "2a0cf2b110002393482b"
+    },
+    {
+      "rule": "STATIC_STRONG_ANDROID_OWNER",
+      "path": "app/src/main/java/tv/withaibuild/customiuizer/mods/Controls.kt",
+      "line": 731,
+      "snippet": " private var basePWMContext: Context? =",
+      "fingerprint": "9dd88f3c7e9b35aadf7a"
+    },
+    {
+      "rule": "STATIC_STRONG_ANDROID_OWNER",
+      "path": "app/src/main/java/tv/withaibuild/customiuizer/mods/Controls.kt",
+      "line": 826,
+      "snippet": " val mContext =",
+      "fingerprint": "2a0cf2b110002393482b"
+    },
+    {
+      "rule": "STATIC_STRONG_ANDROID_OWNER",
+      "path": "app/src/main/java/tv/withaibuild/customiuizer/mods/Controls.kt",
+      "line": 854,
+      "snippet": " val mContext =",
+      "fingerprint": "2a0cf2b110002393482b"
+    },
+    {
+      "rule": "STATIC_STRONG_ANDROID_OWNER",
+      "path": "app/src/main/java/tv/withaibuild/customiuizer/mods/Controls.kt",
+      "line": 928,
+      "snippet": " val mNavigationBarView =",
+      "fingerprint": "2098907b493e8027a5e8"
+    },
+    {
+      "rule": "STATIC_STRONG_ANDROID_OWNER",
+      "path": "app/src/main/java/tv/withaibuild/customiuizer/mods/Controls.kt",
+      "line": 944,
+      "snippet": " val mContext =",
+      "fingerprint": "2a0cf2b110002393482b"
+    },
+    {
+      "rule": "STATIC_STRONG_ANDROID_OWNER",
+      "path": "app/src/main/java/tv/withaibuild/customiuizer/mods/Controls.kt",
+      "line": 978,
+      "snippet": " val mContext =",
+      "fingerprint": "2a0cf2b110002393482b"
+    },
+    {
+      "rule": "EMPTY_CATCH",
+      "path": "app/src/main/java/tv/withaibuild/customiuizer/mods/diagnostics/DiagnosticRecorder.kt",
+      "line": 114,
+      "snippet": "catch (_: Throwable) { // fallback logger must not block the installation path }",
+      "fingerprint": "7c7c089e18e9cd4858cc"
+    },
+    {
+      "rule": "EMPTY_CATCH",
+      "path": "app/src/main/java/tv/withaibuild/customiuizer/mods/diagnostics/DiagnosticRecorder.kt",
+      "line": 123,
+      "snippet": "catch (_: Throwable) { // logger failure must not block the installation path }",
+      "fingerprint": "79ecadefce4fb7492823"
+    },
+    {
+      "rule": "CATCH_THROWABLE_NO_FATAL",
+      "path": "app/src/main/java/tv/withaibuild/customiuizer/mods/diagnostics/DiagnosticRecorder.kt",
+      "line": 109,
+      "snippet": "catch (t: Throwable) { try { XposedHelpers.log(\"Diagnostic logger failed: ${t.message",
+      "fingerprint": "db429700c249a7142e2e"
+    },
+    {
+      "rule": "CATCH_THROWABLE_NO_FATAL",
+      "path": "app/src/main/java/tv/withaibuild/customiuizer/mods/diagnostics/DiagnosticRecorder.kt",
+      "line": 114,
+      "snippet": "catch (_: Throwable) { // fallback logger must not block the installation path ",
+      "fingerprint": "f5b89127cd5e0cba0fc6"
+    },
+    {
+      "rule": "CATCH_THROWABLE_NO_FATAL",
+      "path": "app/src/main/java/tv/withaibuild/customiuizer/mods/diagnostics/DiagnosticRecorder.kt",
+      "line": 123,
+      "snippet": "catch (_: Throwable) { // logger failure must not block the installation path ",
+      "fingerprint": "f7f2ee2c66c833c06da9"
+    },
+    {
+      "rule": "STATIC_STRONG_ANDROID_OWNER",
+      "path": "app/src/main/java/tv/withaibuild/customiuizer/mods/GlobalActions.kt",
+      "line": 66,
+      "snippet": " private var mGlobalReceiverContext: Context? =",
+      "fingerprint": "86a3bb006107b425b16e"
+    },
+    {
+      "rule": "STATIC_STRONG_ANDROID_OWNER",
+      "path": "app/src/main/java/tv/withaibuild/customiuizer/mods/GlobalActions.kt",
+      "line": 67,
+      "snippet": " private var mSBReceiverContext: Context? =",
+      "fingerprint": "4eeedbd638ea40d541a7"
+    },
+    {
+      "rule": "STATIC_STRONG_ANDROID_OWNER",
+      "path": "app/src/main/java/tv/withaibuild/customiuizer/mods/GlobalActions.kt",
+      "line": 398,
+      "snippet": " val mDialogView =",
+      "fingerprint": "26c89cb142502230d6fb"
+    },
+    {
+      "rule": "STATIC_STRONG_ANDROID_OWNER",
+      "path": "app/src/main/java/tv/withaibuild/customiuizer/mods/GlobalActions.kt",
+      "line": 688,
+      "snippet": " val mContext =",
+      "fingerprint": "ccb5e4f5ed9e499f8c6d"
+    },
+    {
+      "rule": "STATIC_STRONG_ANDROID_OWNER",
+      "path": "app/src/main/java/tv/withaibuild/customiuizer/mods/GlobalActions.kt",
+      "line": 745,
+      "snippet": " val mContext =",
+      "fingerprint": "ccb5e4f5ed9e499f8c6d"
+    },
+    {
+      "rule": "STATIC_STRONG_ANDROID_OWNER",
+      "path": "app/src/main/java/tv/withaibuild/customiuizer/mods/GlobalActions.kt",
+      "line": 750,
+      "snippet": " val mTopActivity =",
+      "fingerprint": "648c56a0bcab5ef373a3"
+    },
+    {
+      "rule": "STATIC_STRONG_ANDROID_OWNER",
+      "path": "app/src/main/java/tv/withaibuild/customiuizer/mods/GlobalActions.kt",
+      "line": 783,
+      "snippet": " val mGlobalContext =",
+      "fingerprint": "c0ede6a7d723d64c5faf"
+    },
+    {
+      "rule": "STATIC_STRONG_ANDROID_OWNER",
+      "path": "app/src/main/java/tv/withaibuild/customiuizer/mods/GlobalActions.kt",
+      "line": 830,
+      "snippet": " val mContext =",
+      "fingerprint": "ccb5e4f5ed9e499f8c6d"
+    },
+    {
+      "rule": "STATIC_STRONG_ANDROID_OWNER",
+      "path": "app/src/main/java/tv/withaibuild/customiuizer/mods/GlobalActions.kt",
+      "line": 897,
+      "snippet": " val mStatusBarContext =",
+      "fingerprint": "4167595f35983ca94145"
+    },
+    {
+      "rule": "STATIC_STRONG_ANDROID_OWNER",
+      "path": "app/src/main/java/tv/withaibuild/customiuizer/mods/LauncherFolderHooks.kt",
+      "line": 60,
+      "snippet": " val mBackgroundView =",
+      "fingerprint": "0db9492d3dd8f508cc25"
+    },
+    {
+      "rule": "STATIC_STRONG_ANDROID_OWNER",
+      "path": "app/src/main/java/tv/withaibuild/customiuizer/mods/LauncherFolderHooks.kt",
+      "line": 85,
+      "snippet": " val contentView =",
+      "fingerprint": "3d57353478b3e61843e2"
+    },
+    {
+      "rule": "STATIC_STRONG_ANDROID_OWNER",
+      "path": "app/src/main/java/tv/withaibuild/customiuizer/mods/LauncherGestureHooks.kt",
+      "line": 29,
+      "snippet": " private var mHotSeatContext: Context? =",
+      "fingerprint": "782ce0ff6249e51e20de"
+    },
+    {
+      "rule": "STATIC_STRONG_ANDROID_OWNER",
+      "path": "app/src/main/java/tv/withaibuild/customiuizer/mods/LauncherGestureHooks.kt",
+      "line": 37,
+      "snippet": " val helperContext =",
+      "fingerprint": "cfa3866dca2080ac3fbf"
+    },
+    {
+      "rule": "STATIC_STRONG_ANDROID_OWNER",
+      "path": "app/src/main/java/tv/withaibuild/customiuizer/mods/LauncherGestureHooks.kt",
+      "line": 143,
+      "snippet": " val helperContext =",
+      "fingerprint": "cfa3866dca2080ac3fbf"
+    },
+    {
+      "rule": "STATIC_STRONG_ANDROID_OWNER",
+      "path": "app/src/main/java/tv/withaibuild/customiuizer/mods/LauncherGestureHooks.kt",
+      "line": 188,
+      "snippet": " val launcherActivity =",
+      "fingerprint": "4440608dec5ee6a1c434"
+    },
+    {
+      "rule": "STATIC_STRONG_ANDROID_OWNER",
+      "path": "app/src/main/java/tv/withaibuild/customiuizer/mods/LauncherGestureHooks.kt",
+      "line": 198,
+      "snippet": " val launcherActivity =",
+      "fingerprint": "4440608dec5ee6a1c434"
+    },
+    {
+      "rule": "STATIC_STRONG_ANDROID_OWNER",
+      "path": "app/src/main/java/tv/withaibuild/customiuizer/mods/LauncherGestureHooks.kt",
+      "line": 220,
+      "snippet": " val mNavStubView =",
+      "fingerprint": "1d64b0ece756a87e62f8"
+    },
+    {
+      "rule": "STATIC_STRONG_ANDROID_OWNER",
+      "path": "app/src/main/java/tv/withaibuild/customiuizer/mods/LauncherGestureHooks.kt",
+      "line": 263,
+      "snippet": " val mContext: Context =",
+      "fingerprint": "a79317e0f1eec3be6780"
+    },
+    {
+      "rule": "STATIC_STRONG_ANDROID_OWNER",
+      "path": "app/src/main/java/tv/withaibuild/customiuizer/mods/LauncherGestureHooks.kt",
+      "line": 438,
+      "snippet": " val mContext =",
+      "fingerprint": "80ef3d3433f84ae72b9d"
+    },
+    {
+      "rule": "STATIC_STRONG_ANDROID_OWNER",
+      "path": "app/src/main/java/tv/withaibuild/customiuizer/mods/LauncherIconHooks.kt",
+      "line": 72,
+      "snippet": " val buddyIconView =",
+      "fingerprint": "76f5489ab6251cddf9e6"
+    },
+    {
+      "rule": "STATIC_STRONG_ANDROID_OWNER",
+      "path": "app/src/main/java/tv/withaibuild/customiuizer/mods/LauncherLayoutHooks.kt",
+      "line": 33,
+      "snippet": " val navView =",
+      "fingerprint": "47fd13a053cd85b7e14c"
+    },
+    {
+      "rule": "STATIC_STRONG_ANDROID_OWNER",
+      "path": "app/src/main/java/tv/withaibuild/customiuizer/mods/LauncherLayoutHooks.kt",
+      "line": 73,
+      "snippet": " val mContext =",
+      "fingerprint": "8bb136fa994c7fbcf504"
+    },
+    {
+      "rule": "STATIC_STRONG_ANDROID_OWNER",
+      "path": "app/src/main/java/tv/withaibuild/customiuizer/mods/LauncherSystemHooks.kt",
+      "line": 123,
+      "snippet": " val mContext =",
+      "fingerprint": "1e78b040093838a599b4"
+    },
+    {
+      "rule": "STATIC_STRONG_ANDROID_OWNER",
+      "path": "app/src/main/java/tv/withaibuild/customiuizer/mods/LauncherSystemHooks.kt",
+      "line": 189,
+      "snippet": " val taskView =",
+      "fingerprint": "d5a8ad925af49c43c937"
+    },
+    {
+      "rule": "CATCH_THROWABLE_NO_FATAL",
+      "path": "app/src/main/java/tv/withaibuild/customiuizer/mods/PackagePermissions.kt",
+      "line": 85,
+      "snippet": "catch (t: Throwable) { XposedHelpers.log(t) ",
+      "fingerprint": "52e9e403b1c870892370"
+    },
+    {
+      "rule": "STATIC_STRONG_ANDROID_OWNER",
+      "path": "app/src/main/java/tv/withaibuild/customiuizer/mods/SystemAudioAndVisualAndMoreHooks.kt",
+      "line": 355,
+      "snippet": " val mContext =",
+      "fingerprint": "338e17f6ba6e5fdc8f70"
+    },
+    {
+      "rule": "STATIC_STRONG_ANDROID_OWNER",
+      "path": "app/src/main/java/tv/withaibuild/customiuizer/mods/SystemAudioAndVisualAndMoreHooks.kt",
+      "line": 469,
+      "snippet": " val mContext =",
+      "fingerprint": "338e17f6ba6e5fdc8f70"
+    },
+    {
+      "rule": "STATIC_STRONG_ANDROID_OWNER",
+      "path": "app/src/main/java/tv/withaibuild/customiuizer/mods/SystemAudioAndVisualAndMoreHooks.kt",
+      "line": 505,
+      "snippet": " val mContext =",
+      "fingerprint": "338e17f6ba6e5fdc8f70"
+    },
+    {
+      "rule": "STATIC_STRONG_ANDROID_OWNER",
+      "path": "app/src/main/java/tv/withaibuild/customiuizer/mods/SystemAudioAndVisualAndMoreHooks.kt",
+      "line": 562,
+      "snippet": " val sliderView =",
+      "fingerprint": "70d6fe63ea775f60f804"
+    },
+    {
+      "rule": "STATIC_STRONG_ANDROID_OWNER",
+      "path": "app/src/main/java/tv/withaibuild/customiuizer/mods/SystemAudioAndVisualAndMoreHooks.kt",
+      "line": 599,
+      "snippet": " val mContext =",
+      "fingerprint": "338e17f6ba6e5fdc8f70"
+    },
+    {
+      "rule": "STATIC_STRONG_ANDROID_OWNER",
+      "path": "app/src/main/java/tv/withaibuild/customiuizer/mods/SystemAudioAndVisualAndMoreHooks.kt",
+      "line": 686,
+      "snippet": " var bottom0: View? =",
+      "fingerprint": "18b7133fdfe9dd3d4481"
+    },
+    {
+      "rule": "STATIC_STRONG_ANDROID_OWNER",
+      "path": "app/src/main/java/tv/withaibuild/customiuizer/mods/SystemAudioAndVisualAndMoreHooks.kt",
+      "line": 687,
+      "snippet": " var bottom2: View? =",
+      "fingerprint": "6b073734db7365f6c353"
+    },
+    {
+      "rule": "STATIC_STRONG_ANDROID_OWNER",
+      "path": "app/src/main/java/tv/withaibuild/customiuizer/mods/SystemAudioAndVisualAndMoreHooks.kt",
+      "line": 752,
+      "snippet": " val mContext =",
+      "fingerprint": "338e17f6ba6e5fdc8f70"
+    },
+    {
+      "rule": "STATIC_STRONG_ANDROID_OWNER",
+      "path": "app/src/main/java/tv/withaibuild/customiuizer/mods/SystemAudioAndVisualAndMoreHooks.kt",
+      "line": 809,
+      "snippet": " val mContext =",
+      "fingerprint": "338e17f6ba6e5fdc8f70"
+    },
+    {
+      "rule": "STATIC_STRONG_ANDROID_OWNER",
+      "path": "app/src/main/java/tv/withaibuild/customiuizer/mods/SystemAudioAndVisualAndMoreHooks.kt",
+      "line": 827,
+      "snippet": " val wallpaperDrawable: Drawable? =",
+      "fingerprint": "2c90b0c66385a0618127"
+    },
+    {
+      "rule": "CATCH_THROWABLE_NO_FATAL",
+      "path": "app/src/main/java/tv/withaibuild/customiuizer/mods/SystemAudioAndVisualAndMoreHooks.kt",
+      "line": 831,
+      "snippet": "catch (ignore: Throwable) { null ",
+      "fingerprint": "bf09c79e2a178c8b30db"
+    },
+    {
+      "rule": "CATCH_THROWABLE_NO_FATAL",
+      "path": "app/src/main/java/tv/withaibuild/customiuizer/mods/SystemAudioAndVolumeHooks.kt",
+      "line": 129,
+      "snippet": "catch (t: Throwable) { XposedHelpers.log(\"NotificationVolumeSettingsHook\", \"Unable to find class/method in Settings to hook\") ",
+      "fingerprint": "4b3edc05c002170b477e"
+    },
+    {
+      "rule": "EMPTY_CATCH",
+      "path": "app/src/main/java/tv/withaibuild/customiuizer/mods/SystemChargingAndWallpaperHooks.kt",
+      "line": 47,
+      "snippet": "catch (ign: Throwable) { }",
+      "fingerprint": "2c1718bb7efea189f721"
+    },
+    {
+      "rule": "EMPTY_CATCH",
+      "path": "app/src/main/java/tv/withaibuild/customiuizer/mods/SystemChargingAndWallpaperHooks.kt",
+      "line": 51,
+      "snippet": "catch (ign: Throwable) { }",
+      "fingerprint": "2c1718bb7efea189f721"
+    },
+    {
+      "rule": "EMPTY_CATCH",
+      "path": "app/src/main/java/tv/withaibuild/customiuizer/mods/SystemChargingAndWallpaperHooks.kt",
+      "line": 100,
+      "snippet": "catch (ignore: Throwable) { }",
+      "fingerprint": "c8640cf6194f69eea78f"
+    },
+    {
+      "rule": "STATIC_STRONG_ANDROID_OWNER",
+      "path": "app/src/main/java/tv/withaibuild/customiuizer/mods/SystemChargingAndWallpaperHooks.kt",
+      "line": 93,
+      "snippet": " val mContext =",
+      "fingerprint": "480658f2acea332dbe75"
+    },
+    {
+      "rule": "CATCH_THROWABLE_NO_FATAL",
+      "path": "app/src/main/java/tv/withaibuild/customiuizer/mods/SystemChargingAndWallpaperHooks.kt",
+      "line": 47,
+      "snippet": "catch (ign: Throwable) { ",
+      "fingerprint": "934ad4f477247bce25d4"
+    },
+    {
+      "rule": "CATCH_THROWABLE_NO_FATAL",
+      "path": "app/src/main/java/tv/withaibuild/customiuizer/mods/SystemChargingAndWallpaperHooks.kt",
+      "line": 51,
+      "snippet": "catch (ign: Throwable) { ",
+      "fingerprint": "934ad4f477247bce25d4"
+    },
+    {
+      "rule": "CATCH_THROWABLE_NO_FATAL",
+      "path": "app/src/main/java/tv/withaibuild/customiuizer/mods/SystemChargingAndWallpaperHooks.kt",
+      "line": 100,
+      "snippet": "catch (ignore: Throwable) { ",
+      "fingerprint": "671bac5e379bab5cab3c"
+    },
+    {
+      "rule": "CATCH_THROWABLE_NO_FATAL",
+      "path": "app/src/main/java/tv/withaibuild/customiuizer/mods/SystemChargingAndWallpaperHooks.kt",
+      "line": 168,
+      "snippet": "catch (t: Throwable) { XposedHelpers.log(t) ",
+      "fingerprint": "dc3cb29b6b0fbb70bbb3"
+    },
+    {
+      "rule": "EMPTY_CATCH",
+      "path": "app/src/main/java/tv/withaibuild/customiuizer/mods/SystemDisplayAndWindowHooks.kt",
+      "line": 31,
+      "snippet": "catch (ignore: Throwable) {}",
+      "fingerprint": "dd133f7cb49e79577c22"
+    },
+    {
+      "rule": "STATIC_STRONG_ANDROID_OWNER",
+      "path": "app/src/main/java/tv/withaibuild/customiuizer/mods/SystemDisplayAndWindowHooks.kt",
+      "line": 136,
+      "snippet": " val mView =",
+      "fingerprint": "cb9f92113e1d6834dd1a"
+    },
+    {
+      "rule": "STATIC_STRONG_ANDROID_OWNER",
+      "path": "app/src/main/java/tv/withaibuild/customiuizer/mods/SystemDisplayAndWindowHooks.kt",
+      "line": 137,
+      "snippet": " val mContext =",
+      "fingerprint": "c4c87cf1d20b23d2b92a"
+    },
+    {
+      "rule": "STATIC_STRONG_ANDROID_OWNER",
+      "path": "app/src/main/java/tv/withaibuild/customiuizer/mods/SystemDisplayAndWindowHooks.kt",
+      "line": 209,
+      "snippet": " val mContext =",
+      "fingerprint": "c4c87cf1d20b23d2b92a"
+    },
+    {
+      "rule": "CATCH_THROWABLE_NO_FATAL",
+      "path": "app/src/main/java/tv/withaibuild/customiuizer/mods/SystemDisplayAndWindowHooks.kt",
+      "line": 31,
+      "snippet": "catch (ignore: Throwable) {",
+      "fingerprint": "1f8f7ce1827445197a6b"
+    },
+    {
+      "rule": "CATCH_THROWABLE_NO_FATAL",
+      "path": "app/src/main/java/tv/withaibuild/customiuizer/mods/SystemDisplayAndWindowHooks.kt",
+      "line": 197,
+      "snippet": "catch (t1: Throwable) { try { XposedHelpers.findClass(\"com.android.keyguard.charge.MiuiChargeController\", lpparam.classLoader) ",
+      "fingerprint": "afaf10045c20c696a3ed"
+    },
+    {
+      "rule": "CATCH_THROWABLE_NO_FATAL",
+      "path": "app/src/main/java/tv/withaibuild/customiuizer/mods/SystemDisplayAndWindowHooks.kt",
+      "line": 200,
+      "snippet": "catch (t2: Throwable) { XposedHelpers.log(t1) XposedHelpers.log(t2) return ",
+      "fingerprint": "caa7aeba39ae531595b8"
+    },
+    {
+      "rule": "STATIC_STRONG_ANDROID_OWNER",
+      "path": "app/src/main/java/tv/withaibuild/customiuizer/mods/SystemFreeformAndMultiWindowHooks.kt",
+      "line": 144,
+      "snippet": " val mContext =",
+      "fingerprint": "266ba396cca52aa7d44a"
+    },
+    {
+      "rule": "STATIC_STRONG_ANDROID_OWNER",
+      "path": "app/src/main/java/tv/withaibuild/customiuizer/mods/SystemFreeformAndMultiWindowHooks.kt",
+      "line": 184,
+      "snippet": " val mContext =",
+      "fingerprint": "266ba396cca52aa7d44a"
+    },
+    {
+      "rule": "STATIC_STRONG_ANDROID_OWNER",
+      "path": "app/src/main/java/tv/withaibuild/customiuizer/mods/SystemFreeformAndMultiWindowHooks.kt",
+      "line": 202,
+      "snippet": " val mContext: Context? =",
+      "fingerprint": "659c13c9f4cc7a66212e"
+    },
+    {
+      "rule": "STATIC_STRONG_ANDROID_OWNER",
+      "path": "app/src/main/java/tv/withaibuild/customiuizer/mods/SystemFreeformAndMultiWindowHooks.kt",
+      "line": 241,
+      "snippet": " val mContext =",
+      "fingerprint": "266ba396cca52aa7d44a"
+    },
+    {
+      "rule": "STATIC_STRONG_ANDROID_OWNER",
+      "path": "app/src/main/java/tv/withaibuild/customiuizer/mods/SystemFreeformAndMultiWindowHooks.kt",
+      "line": 259,
+      "snippet": " val mContext =",
+      "fingerprint": "266ba396cca52aa7d44a"
+    },
+    {
+      "rule": "STATIC_STRONG_ANDROID_OWNER",
+      "path": "app/src/main/java/tv/withaibuild/customiuizer/mods/SystemFreeformAndMultiWindowHooks.kt",
+      "line": 294,
+      "snippet": " val mContext =",
+      "fingerprint": "266ba396cca52aa7d44a"
+    },
+    {
+      "rule": "STATIC_STRONG_ANDROID_OWNER",
+      "path": "app/src/main/java/tv/withaibuild/customiuizer/mods/SystemFreeformAndMultiWindowHooks.kt",
+      "line": 312,
+      "snippet": " val mContext =",
+      "fingerprint": "266ba396cca52aa7d44a"
+    },
+    {
+      "rule": "STATIC_STRONG_ANDROID_OWNER",
+      "path": "app/src/main/java/tv/withaibuild/customiuizer/mods/SystemFreeformAndMultiWindowHooks.kt",
+      "line": 321,
+      "snippet": " val mContext =",
+      "fingerprint": "266ba396cca52aa7d44a"
+    },
+    {
+      "rule": "STATIC_STRONG_ANDROID_OWNER",
+      "path": "app/src/main/java/tv/withaibuild/customiuizer/mods/SystemFreeformAndMultiWindowHooks.kt",
+      "line": 361,
+      "snippet": " val mContext =",
+      "fingerprint": "266ba396cca52aa7d44a"
+    },
+    {
+      "rule": "STATIC_STRONG_ANDROID_OWNER",
+      "path": "app/src/main/java/tv/withaibuild/customiuizer/mods/SystemFreeformAndMultiWindowHooks.kt",
+      "line": 405,
+      "snippet": " val mMenuItemMultiWindow =",
+      "fingerprint": "e5c4bdcab0dfcc60b2f2"
+    },
+    {
+      "rule": "STATIC_STRONG_ANDROID_OWNER",
+      "path": "app/src/main/java/tv/withaibuild/customiuizer/mods/SystemFreeformAndMultiWindowHooks.kt",
+      "line": 406,
+      "snippet": " val mMenuItemSmallWindow =",
+      "fingerprint": "ee101ecd00cafb7667b8"
+    },
+    {
+      "rule": "CATCH_THROWABLE_NO_FATAL",
+      "path": "app/src/main/java/tv/withaibuild/customiuizer/mods/SystemFreeformAndMultiWindowHooks.kt",
+      "line": 102,
+      "snippet": "catch (ignore: Throwable) { XposedHelpers.log(ignore) ",
+      "fingerprint": "98f4b3ec35617d5a0e79"
+    },
+    {
+      "rule": "CATCH_THROWABLE_NO_FATAL",
+      "path": "app/src/main/java/tv/withaibuild/customiuizer/mods/SystemFreeformAndMultiWindowHooks.kt",
+      "line": 204,
+      "snippet": "catch (ignore: Throwable) { val mService = XposedHelpers.getObjectField(param.args[0], \"mService\") XposedHelpers.getObjectField(mService, \"mContext\") as? Context ",
+      "fingerprint": "c820b16e2bda8743c546"
+    },
+    {
+      "rule": "CATCH_THROWABLE_NO_FATAL",
+      "path": "app/src/main/java/tv/withaibuild/customiuizer/mods/SystemFreeformAndMultiWindowHooks.kt",
+      "line": 216,
+      "snippet": "catch (t: Throwable) { XposedHelpers.log(t) ",
+      "fingerprint": "400695693b1c6ab4ba6b"
+    },
+    {
+      "rule": "STATIC_STRONG_ANDROID_OWNER",
+      "path": "app/src/main/java/tv/withaibuild/customiuizer/mods/SystemLockScreenHooks.kt",
+      "line": 117,
+      "snippet": " val mPWMContext =",
+      "fingerprint": "c7da78adeb985ddba806"
+    },
+    {
+      "rule": "STATIC_STRONG_ANDROID_OWNER",
+      "path": "app/src/main/java/tv/withaibuild/customiuizer/mods/SystemLockScreenHooks.kt",
+      "line": 132,
+      "snippet": " val mPWMContext =",
+      "fingerprint": "c7da78adeb985ddba806"
+    },
+    {
+      "rule": "STATIC_STRONG_ANDROID_OWNER",
+      "path": "app/src/main/java/tv/withaibuild/customiuizer/mods/SystemLockScreenMoreHooks.kt",
+      "line": 232,
+      "snippet": " val mContext =",
+      "fingerprint": "0987c7a8cd790d3a007a"
+    },
+    {
+      "rule": "STATIC_STRONG_ANDROID_OWNER",
+      "path": "app/src/main/java/tv/withaibuild/customiuizer/mods/SystemLockScreenMoreHooks.kt",
+      "line": 256,
+      "snippet": " val mContext =",
+      "fingerprint": "0987c7a8cd790d3a007a"
+    },
+    {
+      "rule": "STATIC_STRONG_ANDROID_OWNER",
+      "path": "app/src/main/java/tv/withaibuild/customiuizer/mods/SystemLockScreenMoreHooks.kt",
+      "line": 274,
+      "snippet": " val mContext =",
+      "fingerprint": "0987c7a8cd790d3a007a"
+    },
+    {
+      "rule": "STATIC_STRONG_ANDROID_OWNER",
+      "path": "app/src/main/java/tv/withaibuild/customiuizer/mods/SystemLockScreenMoreHooks.kt",
+      "line": 344,
+      "snippet": " val mContext =",
+      "fingerprint": "0987c7a8cd790d3a007a"
+    },
+    {
+      "rule": "STATIC_STRONG_ANDROID_OWNER",
+      "path": "app/src/main/java/tv/withaibuild/customiuizer/mods/SystemLockScreenMoreHooks.kt",
+      "line": 398,
+      "snippet": " val mContext =",
+      "fingerprint": "0987c7a8cd790d3a007a"
+    },
+    {
+      "rule": "STATIC_STRONG_ANDROID_OWNER",
+      "path": "app/src/main/java/tv/withaibuild/customiuizer/mods/SystemLockScreenMoreHooks.kt",
+      "line": 427,
+      "snippet": " val mContext =",
+      "fingerprint": "0987c7a8cd790d3a007a"
+    },
+    {
+      "rule": "CATCH_THROWABLE_NO_FATAL",
+      "path": "app/src/main/java/tv/withaibuild/customiuizer/mods/SystemLockScreenMoreHooks.kt",
+      "line": 185,
+      "snippet": "catch (t: Throwable) { XposedHelpers.log(t) ",
+      "fingerprint": "f8ea78a4037c7c90d2c7"
+    },
+    {
+      "rule": "CATCH_THROWABLE_NO_FATAL",
+      "path": "app/src/main/java/tv/withaibuild/customiuizer/mods/SystemLockScreenMoreHooks.kt",
+      "line": 238,
+      "snippet": "catch (t: Throwable) { XposedHelpers.log(t) ",
+      "fingerprint": "f8ea78a4037c7c90d2c7"
+    },
+    {
+      "rule": "CATCH_THROWABLE_NO_FATAL",
+      "path": "app/src/main/java/tv/withaibuild/customiuizer/mods/SystemLockScreenMoreHooks.kt",
+      "line": 323,
+      "snippet": "catch (t: Throwable) { XposedHelpers.log(t) ",
+      "fingerprint": "f8ea78a4037c7c90d2c7"
+    },
+    {
+      "rule": "STATIC_STRONG_ANDROID_OWNER",
+      "path": "app/src/main/java/tv/withaibuild/customiuizer/mods/SystemNotificationAndShareHooks.kt",
+      "line": 113,
+      "snippet": " val hybridNotificationView =",
+      "fingerprint": "8a62239483597d42b3a1"
+    },
+    {
+      "rule": "STATIC_STRONG_ANDROID_OWNER",
+      "path": "app/src/main/java/tv/withaibuild/customiuizer/mods/SystemNotificationAndShareHooks.kt",
+      "line": 114,
+      "snippet": " val mTitleView =",
+      "fingerprint": "3bd073ee958c80be1f40"
+    },
+    {
+      "rule": "STATIC_STRONG_ANDROID_OWNER",
+      "path": "app/src/main/java/tv/withaibuild/customiuizer/mods/SystemNotificationAndShareHooks.kt",
+      "line": 115,
+      "snippet": " val mTextView =",
+      "fingerprint": "da2cac35703981dc1ac8"
+    },
+    {
+      "rule": "STATIC_STRONG_ANDROID_OWNER",
+      "path": "app/src/main/java/tv/withaibuild/customiuizer/mods/SystemNotificationAndShareHooks.kt",
+      "line": 130,
+      "snippet": " val mContext =",
+      "fingerprint": "c77a539e13952ad5c672"
+    },
+    {
+      "rule": "STATIC_STRONG_ANDROID_OWNER",
+      "path": "app/src/main/java/tv/withaibuild/customiuizer/mods/SystemNotificationAndShareHooks.kt",
+      "line": 182,
+      "snippet": " val mContext =",
+      "fingerprint": "c77a539e13952ad5c672"
+    },
+    {
+      "rule": "STATIC_STRONG_ANDROID_OWNER",
+      "path": "app/src/main/java/tv/withaibuild/customiuizer/mods/SystemNotificationAndShareHooks.kt",
+      "line": 210,
+      "snippet": " val mView =",
+      "fingerprint": "efae16abd9ce40013132"
+    },
+    {
+      "rule": "STATIC_STRONG_ANDROID_OWNER",
+      "path": "app/src/main/java/tv/withaibuild/customiuizer/mods/SystemNotificationAndShareHooks.kt",
+      "line": 240,
+      "snippet": " val mContext =",
+      "fingerprint": "c77a539e13952ad5c672"
+    },
+    {
+      "rule": "STATIC_STRONG_ANDROID_OWNER",
+      "path": "app/src/main/java/tv/withaibuild/customiuizer/mods/SystemNotificationMoreHooks.kt",
+      "line": 74,
+      "snippet": " val mContext =",
+      "fingerprint": "4f76fa01bbc5ae1a559e"
+    },
+    {
+      "rule": "STATIC_STRONG_ANDROID_OWNER",
+      "path": "app/src/main/java/tv/withaibuild/customiuizer/mods/SystemNotificationMoreHooks.kt",
+      "line": 171,
+      "snippet": " val menuView =",
+      "fingerprint": "e319f2f54d93e6a9a22d"
+    },
+    {
+      "rule": "STATIC_STRONG_ANDROID_OWNER",
+      "path": "app/src/main/java/tv/withaibuild/customiuizer/mods/SystemNotificationMoreHooks.kt",
+      "line": 422,
+      "snippet": " val mContext =",
+      "fingerprint": "4f76fa01bbc5ae1a559e"
+    },
+    {
+      "rule": "STATIC_STRONG_ANDROID_OWNER",
+      "path": "app/src/main/java/tv/withaibuild/customiuizer/mods/SystemNotificationMoreHooks.kt",
+      "line": 463,
+      "snippet": " val mContext =",
+      "fingerprint": "4f76fa01bbc5ae1a559e"
+    },
+    {
+      "rule": "STATIC_STRONG_ANDROID_OWNER",
+      "path": "app/src/main/java/tv/withaibuild/customiuizer/mods/SystemSettingsAndConnectivityHooks.kt",
+      "line": 58,
+      "snippet": " val messageView =",
+      "fingerprint": "712907ba2ea223303ae4"
+    },
+    {
+      "rule": "CATCH_THROWABLE_NO_FATAL",
+      "path": "app/src/main/java/tv/withaibuild/customiuizer/mods/SystemSettingsAndConnectivityHooks.kt",
+      "line": 99,
+      "snippet": "catch (e: Throwable) { XposedHelpers.getObjectField(param.thisObject, \"mCarrierText\") as? TextView ",
+      "fingerprint": "daf48708eadbc9066fd1"
+    },
+    {
+      "rule": "EMPTY_CATCH",
+      "path": "app/src/main/java/tv/withaibuild/customiuizer/mods/SystemSettingsMoreHooks.kt",
+      "line": 75,
+      "snippet": "catch (t: Throwable) { }",
+      "fingerprint": "7870f1e2dadb988f75fa"
+    },
+    {
+      "rule": "STATIC_STRONG_ANDROID_OWNER",
+      "path": "app/src/main/java/tv/withaibuild/customiuizer/mods/SystemSettingsMoreHooks.kt",
+      "line": 31,
+      "snippet": " val mContext =",
+      "fingerprint": "f345db0ac3c136994159"
+    },
+    {
+      "rule": "CATCH_THROWABLE_NO_FATAL",
+      "path": "app/src/main/java/tv/withaibuild/customiuizer/mods/SystemSettingsMoreHooks.kt",
+      "line": 45,
+      "snippet": "catch (t: Throwable) { XposedHelpers.log(t) ",
+      "fingerprint": "04b2c20d82f1e862e114"
+    },
+    {
+      "rule": "CATCH_THROWABLE_NO_FATAL",
+      "path": "app/src/main/java/tv/withaibuild/customiuizer/mods/SystemSettingsMoreHooks.kt",
+      "line": 50,
+      "snippet": "catch (t: Throwable) { XposedHelpers.log(t) ",
+      "fingerprint": "04b2c20d82f1e862e114"
+    },
+    {
+      "rule": "CATCH_THROWABLE_NO_FATAL",
+      "path": "app/src/main/java/tv/withaibuild/customiuizer/mods/SystemSettingsMoreHooks.kt",
+      "line": 75,
+      "snippet": "catch (t: Throwable) { ",
+      "fingerprint": "789a7205901a96aa7b7e"
+    },
+    {
+      "rule": "EMPTY_CATCH",
+      "path": "app/src/main/java/tv/withaibuild/customiuizer/mods/SystemShareAndOpenWithHooks.kt",
+      "line": 73,
+      "snippet": "catch (ignore: Throwable) {}",
+      "fingerprint": "aef5ecf03421943f783d"
+    },
+    {
+      "rule": "EMPTY_CATCH",
+      "path": "app/src/main/java/tv/withaibuild/customiuizer/mods/SystemShareAndOpenWithHooks.kt",
+      "line": 123,
+      "snippet": "catch (ignore: Throwable) {}",
+      "fingerprint": "aef5ecf03421943f783d"
+    },
+    {
+      "rule": "EMPTY_CATCH",
+      "path": "app/src/main/java/tv/withaibuild/customiuizer/mods/SystemShareAndOpenWithHooks.kt",
+      "line": 199,
+      "snippet": "catch (ignore: Throwable) {}",
+      "fingerprint": "aef5ecf03421943f783d"
+    },
+    {
+      "rule": "STATIC_STRONG_ANDROID_OWNER",
+      "path": "app/src/main/java/tv/withaibuild/customiuizer/mods/SystemShareAndOpenWithHooks.kt",
+      "line": 30,
+      "snippet": " val mContext =",
+      "fingerprint": "43af9d949b6e070f6662"
+    },
+    {
+      "rule": "STATIC_STRONG_ANDROID_OWNER",
+      "path": "app/src/main/java/tv/withaibuild/customiuizer/mods/SystemShareAndOpenWithHooks.kt",
+      "line": 34,
+      "snippet": " val mRootView =",
+      "fingerprint": "46682e0d64ea37a107eb"
+    },
+    {
+      "rule": "STATIC_STRONG_ANDROID_OWNER",
+      "path": "app/src/main/java/tv/withaibuild/customiuizer/mods/SystemShareAndOpenWithHooks.kt",
+      "line": 63,
+      "snippet": " val mContext =",
+      "fingerprint": "43af9d949b6e070f6662"
+    },
+    {
+      "rule": "STATIC_STRONG_ANDROID_OWNER",
+      "path": "app/src/main/java/tv/withaibuild/customiuizer/mods/SystemShareAndOpenWithHooks.kt",
+      "line": 150,
+      "snippet": " val mContext =",
+      "fingerprint": "43af9d949b6e070f6662"
+    },
+    {
+      "rule": "STATIC_STRONG_ANDROID_OWNER",
+      "path": "app/src/main/java/tv/withaibuild/customiuizer/mods/SystemShareAndOpenWithHooks.kt",
+      "line": 156,
+      "snippet": " val mRootView =",
+      "fingerprint": "46682e0d64ea37a107eb"
+    },
+    {
+      "rule": "STATIC_STRONG_ANDROID_OWNER",
+      "path": "app/src/main/java/tv/withaibuild/customiuizer/mods/SystemShareAndOpenWithHooks.kt",
+      "line": 184,
+      "snippet": " val mContext =",
+      "fingerprint": "43af9d949b6e070f6662"
+    },
+    {
+      "rule": "CATCH_THROWABLE_NO_FATAL",
+      "path": "app/src/main/java/tv/withaibuild/customiuizer/mods/SystemShareAndOpenWithHooks.kt",
+      "line": 73,
+      "snippet": "catch (ignore: Throwable) {",
+      "fingerprint": "03d6b3d5caa36c4f1aa8"
+    },
+    {
+      "rule": "CATCH_THROWABLE_NO_FATAL",
+      "path": "app/src/main/java/tv/withaibuild/customiuizer/mods/SystemShareAndOpenWithHooks.kt",
+      "line": 77,
+      "snippet": "catch (t: Throwable) { if (t !is BadParcelableException) XposedHelpers.log(t) ",
+      "fingerprint": "e868d5ae3782a027a4ab"
+    },
+    {
+      "rule": "CATCH_THROWABLE_NO_FATAL",
+      "path": "app/src/main/java/tv/withaibuild/customiuizer/mods/SystemShareAndOpenWithHooks.kt",
+      "line": 123,
+      "snippet": "catch (ignore: Throwable) {",
+      "fingerprint": "03d6b3d5caa36c4f1aa8"
+    },
+    {
+      "rule": "CATCH_THROWABLE_NO_FATAL",
+      "path": "app/src/main/java/tv/withaibuild/customiuizer/mods/SystemShareAndOpenWithHooks.kt",
+      "line": 199,
+      "snippet": "catch (ignore: Throwable) {",
+      "fingerprint": "03d6b3d5caa36c4f1aa8"
+    },
+    {
+      "rule": "CATCH_THROWABLE_NO_FATAL",
+      "path": "app/src/main/java/tv/withaibuild/customiuizer/mods/SystemShareAndOpenWithHooks.kt",
+      "line": 204,
+      "snippet": "catch (t: Throwable) { if (t !is BadParcelableException) XposedHelpers.log(t) ",
+      "fingerprint": "e868d5ae3782a027a4ab"
+    },
+    {
+      "rule": "STATIC_STRONG_ANDROID_OWNER",
+      "path": "app/src/main/java/tv/withaibuild/customiuizer/mods/SystemStatusBarAndClockHooks.kt",
+      "line": 73,
+      "snippet": " val mDecorContext =",
+      "fingerprint": "c6a447e65e253fdc0234"
+    },
+    {
+      "rule": "STATIC_STRONG_ANDROID_OWNER",
+      "path": "app/src/main/java/tv/withaibuild/customiuizer/mods/SystemStatusBarAndClockHooks.kt",
+      "line": 74,
+      "snippet": " val mActivityContext =",
+      "fingerprint": "0bbde282fb097704022c"
+    },
+    {
+      "rule": "STATIC_STRONG_ANDROID_OWNER",
+      "path": "app/src/main/java/tv/withaibuild/customiuizer/mods/SystemStatusBarAndClockHooks.kt",
+      "line": 75,
+      "snippet": " val mContext =",
+      "fingerprint": "38704540edc57d485495"
+    },
+    {
+      "rule": "STATIC_STRONG_ANDROID_OWNER",
+      "path": "app/src/main/java/tv/withaibuild/customiuizer/mods/SystemStatusBarAndClockHooks.kt",
+      "line": 84,
+      "snippet": " val mActivity =",
+      "fingerprint": "6a4211675541e6b84755"
+    },
+    {
+      "rule": "CATCH_THROWABLE_NO_FATAL",
+      "path": "app/src/main/java/tv/withaibuild/customiuizer/mods/SystemStatusBarAndClockHooks.kt",
+      "line": 182,
+      "snippet": "catch (t: Throwable) { XposedHelpers.log(t) false ",
+      "fingerprint": "b4d98eebcbdac2f49cd9"
+    },
+    {
+      "rule": "STATIC_STRONG_ANDROID_OWNER",
+      "path": "app/src/main/java/tv/withaibuild/customiuizer/mods/SystemStatusBarClockAndMoreHooks.kt",
+      "line": 59,
+      "snippet": " val mContext =",
+      "fingerprint": "f5a5d024631abd47a6dc"
+    },
+    {
+      "rule": "STATIC_STRONG_ANDROID_OWNER",
+      "path": "app/src/main/java/tv/withaibuild/customiuizer/mods/SystemStatusBarClockAndMoreHooks.kt",
+      "line": 68,
+      "snippet": " val controllerContext =",
+      "fingerprint": "4a3f453f8701a02a3980"
+    },
+    {
+      "rule": "STATIC_STRONG_ANDROID_OWNER",
+      "path": "app/src/main/java/tv/withaibuild/customiuizer/mods/SystemStatusBarClockAndMoreHooks.kt",
+      "line": 127,
+      "snippet": " val hideDateView =",
+      "fingerprint": "db9f41699ab047f03e16"
+    },
+    {
+      "rule": "STATIC_STRONG_ANDROID_OWNER",
+      "path": "app/src/main/java/tv/withaibuild/customiuizer/mods/SystemStatusBarClockAndMoreHooks.kt",
+      "line": 157,
+      "snippet": " val mContext =",
+      "fingerprint": "f5a5d024631abd47a6dc"
+    },
+    {
+      "rule": "STATIC_STRONG_ANDROID_OWNER",
+      "path": "app/src/main/java/tv/withaibuild/customiuizer/mods/SystemStatusBarClockAndMoreHooks.kt",
+      "line": 343,
+      "snippet": " val chipDrawable =",
+      "fingerprint": "a43a321c61d513cacae2"
+    },
+    {
+      "rule": "STATIC_STRONG_ANDROID_OWNER",
+      "path": "app/src/main/java/tv/withaibuild/customiuizer/mods/SystemStatusBarClockAndMoreHooks.kt",
+      "line": 621,
+      "snippet": " val mContext =",
+      "fingerprint": "f5a5d024631abd47a6dc"
+    },
+    {
+      "rule": "EMPTY_CATCH",
+      "path": "app/src/main/java/tv/withaibuild/customiuizer/mods/SystemStatusBarMoreHooks.kt",
+      "line": 66,
+      "snippet": "catch (ignore: Throwable) {}",
+      "fingerprint": "c201a94ec197e25dfc0c"
+    },
+    {
+      "rule": "STATIC_STRONG_ANDROID_OWNER",
+      "path": "app/src/main/java/tv/withaibuild/customiuizer/mods/SystemStatusBarMoreHooks.kt",
+      "line": 30,
+      "snippet": " val mBatteryIconView =",
+      "fingerprint": "f968636764b61ab51b6a"
+    },
+    {
+      "rule": "STATIC_STRONG_ANDROID_OWNER",
+      "path": "app/src/main/java/tv/withaibuild/customiuizer/mods/SystemStatusBarMoreHooks.kt",
+      "line": 43,
+      "snippet": " val mBatteryView =",
+      "fingerprint": "70a8faac4236b21d9607"
+    },
+    {
+      "rule": "STATIC_STRONG_ANDROID_OWNER",
+      "path": "app/src/main/java/tv/withaibuild/customiuizer/mods/SystemStatusBarMoreHooks.kt",
+      "line": 49,
+      "snippet": " val mBatteryView =",
+      "fingerprint": "70a8faac4236b21d9607"
+    },
+    {
+      "rule": "STATIC_STRONG_ANDROID_OWNER",
+      "path": "app/src/main/java/tv/withaibuild/customiuizer/mods/SystemStatusBarMoreHooks.kt",
+      "line": 57,
+      "snippet": " val mBatteryPercentMarkView =",
+      "fingerprint": "d98f55f238958943eeba"
+    },
+    {
+      "rule": "STATIC_STRONG_ANDROID_OWNER",
+      "path": "app/src/main/java/tv/withaibuild/customiuizer/mods/SystemStatusBarMoreHooks.kt",
+      "line": 61,
+      "snippet": " val mBatteryChargingView =",
+      "fingerprint": "323b6d4266f87ededdf3"
+    },
+    {
+      "rule": "STATIC_STRONG_ANDROID_OWNER",
+      "path": "app/src/main/java/tv/withaibuild/customiuizer/mods/SystemStatusBarMoreHooks.kt",
+      "line": 64,
+      "snippet": " val mBatteryChargingInView =",
+      "fingerprint": "d3dd62605482775f1043"
+    },
+    {
+      "rule": "STATIC_STRONG_ANDROID_OWNER",
+      "path": "app/src/main/java/tv/withaibuild/customiuizer/mods/SystemStatusBarMoreHooks.kt",
+      "line": 69,
+      "snippet": " val mBatteryView =",
+      "fingerprint": "70a8faac4236b21d9607"
+    },
+    {
+      "rule": "STATIC_STRONG_ANDROID_OWNER",
+      "path": "app/src/main/java/tv/withaibuild/customiuizer/mods/SystemStatusBarMoreHooks.kt",
+      "line": 71,
+      "snippet": " val percentView =",
+      "fingerprint": "f141855740e12a2a7563"
+    },
+    {
+      "rule": "STATIC_STRONG_ANDROID_OWNER",
+      "path": "app/src/main/java/tv/withaibuild/customiuizer/mods/SystemStatusBarMoreHooks.kt",
+      "line": 90,
+      "snippet": " val mContext =",
+      "fingerprint": "297c0ada017bca83600b"
+    },
+    {
+      "rule": "STATIC_STRONG_ANDROID_OWNER",
+      "path": "app/src/main/java/tv/withaibuild/customiuizer/mods/SystemStatusBarMoreHooks.kt",
+      "line": 118,
+      "snippet": " val mContext =",
+      "fingerprint": "297c0ada017bca83600b"
+    },
+    {
+      "rule": "STATIC_STRONG_ANDROID_OWNER",
+      "path": "app/src/main/java/tv/withaibuild/customiuizer/mods/SystemStatusBarMoreHooks.kt",
+      "line": 230,
+      "snippet": " val hideWifiActivity =",
+      "fingerprint": "fb18a2164eeff5d7a7eb"
+    },
+    {
+      "rule": "STATIC_STRONG_ANDROID_OWNER",
+      "path": "app/src/main/java/tv/withaibuild/customiuizer/mods/SystemStatusBarMoreHooks.kt",
+      "line": 232,
+      "snippet": " val mWifiActivityView =",
+      "fingerprint": "52c5a757b73b3c46b7db"
+    },
+    {
+      "rule": "CATCH_THROWABLE_NO_FATAL",
+      "path": "app/src/main/java/tv/withaibuild/customiuizer/mods/SystemStatusBarMoreHooks.kt",
+      "line": 66,
+      "snippet": "catch (ignore: Throwable) {",
+      "fingerprint": "92f83e8de51fe61f6e4f"
+    },
+    {
+      "rule": "CATCH_THROWABLE_NO_FATAL",
+      "path": "app/src/main/java/tv/withaibuild/customiuizer/mods/SystemStatusBarMoreHooks.kt",
+      "line": 95,
+      "snippet": "catch (t: Throwable) { null ",
+      "fingerprint": "930fad3b4a4b0a349f73"
+    },
+    {
+      "rule": "CATCH_THROWABLE_NO_FATAL",
+      "path": "app/src/main/java/tv/withaibuild/customiuizer/mods/SystemStatusBarMoreHooks.kt",
+      "line": 108,
+      "snippet": "catch (t: Throwable) { XposedHelpers.log(t) ",
+      "fingerprint": "6a28194579d085a39edb"
+    },
+    {
+      "rule": "STATIC_STRONG_ANDROID_OWNER",
+      "path": "app/src/main/java/tv/withaibuild/customiuizer/mods/SystemUIBatteryHooks.kt",
+      "line": 29,
+      "snippet": " val mContext =",
+      "fingerprint": "56d8da360cfc62863119"
+    },
+    {
+      "rule": "STATIC_STRONG_ANDROID_OWNER",
+      "path": "app/src/main/java/tv/withaibuild/customiuizer/mods/SystemUIBatteryHooks.kt",
+      "line": 31,
+      "snippet": " val mStatusBarWindow =",
+      "fingerprint": "6f250d69d2a2e23d5bec"
+    },
+    {
+      "rule": "STATIC_STRONG_ANDROID_OWNER",
+      "path": "app/src/main/java/tv/withaibuild/customiuizer/mods/SystemUIBatteryHooks.kt",
+      "line": 108,
+      "snippet": " val batteryView =",
+      "fingerprint": "2ecc7d91e4f923a9f5be"
+    },
+    {
+      "rule": "STATIC_STRONG_ANDROID_OWNER",
+      "path": "app/src/main/java/tv/withaibuild/customiuizer/mods/SystemUIBatteryHooks.kt",
+      "line": 109,
+      "snippet": " val mBatteryTextDigitView =",
+      "fingerprint": "acd9fdff44cf23f431bd"
+    },
+    {
+      "rule": "STATIC_STRONG_ANDROID_OWNER",
+      "path": "app/src/main/java/tv/withaibuild/customiuizer/mods/SystemUIBatteryHooks.kt",
+      "line": 110,
+      "snippet": " val mBatteryPercentView =",
+      "fingerprint": "6e376fbd98e26b115e46"
+    },
+    {
+      "rule": "STATIC_STRONG_ANDROID_OWNER",
+      "path": "app/src/main/java/tv/withaibuild/customiuizer/mods/SystemUIBatteryHooks.kt",
+      "line": 111,
+      "snippet": " val mBatteryPercentMarkView =",
+      "fingerprint": "09112714c1323354ff11"
+    },
+    {
+      "rule": "EMPTY_CATCH",
+      "path": "app/src/main/java/tv/withaibuild/customiuizer/mods/SystemUIControlCenterHooks.kt",
+      "line": 466,
+      "snippet": "catch (_: Throwable) {}",
+      "fingerprint": "c442050a4ee352365204"
+    },
+    {
+      "rule": "STATIC_STRONG_ANDROID_OWNER",
+      "path": "app/src/main/java/tv/withaibuild/customiuizer/mods/SystemUIControlCenterHooks.kt",
+      "line": 192,
+      "snippet": " val mWindow =",
+      "fingerprint": "47da7dad486c833188b8"
+    },
+    {
+      "rule": "STATIC_STRONG_ANDROID_OWNER",
+      "path": "app/src/main/java/tv/withaibuild/customiuizer/mods/SystemUIControlCenterHooks.kt",
+      "line": 203,
+      "snippet": " val mWindow =",
+      "fingerprint": "47da7dad486c833188b8"
+    },
+    {
+      "rule": "STATIC_STRONG_ANDROID_OWNER",
+      "path": "app/src/main/java/tv/withaibuild/customiuizer/mods/SystemUIControlCenterHooks.kt",
+      "line": 275,
+      "snippet": " val mContext =",
+      "fingerprint": "7269804f81dec00f235d"
+    },
+    {
+      "rule": "STATIC_STRONG_ANDROID_OWNER",
+      "path": "app/src/main/java/tv/withaibuild/customiuizer/mods/SystemUIControlCenterHooks.kt",
+      "line": 461,
+      "snippet": " val tileView =",
+      "fingerprint": "f92b6e312a3f6ffc8aa7"
+    },
+    {
+      "rule": "STATIC_STRONG_ANDROID_OWNER",
+      "path": "app/src/main/java/tv/withaibuild/customiuizer/mods/SystemUIControlCenterHooks.kt",
+      "line": 493,
+      "snippet": " val mContext =",
+      "fingerprint": "7269804f81dec00f235d"
+    },
+    {
+      "rule": "STATIC_STRONG_ANDROID_OWNER",
+      "path": "app/src/main/java/tv/withaibuild/customiuizer/mods/SystemUIControlCenterHooks.kt",
+      "line": 516,
+      "snippet": " val mContext =",
+      "fingerprint": "7269804f81dec00f235d"
+    },
+    {
+      "rule": "STATIC_STRONG_ANDROID_OWNER",
+      "path": "app/src/main/java/tv/withaibuild/customiuizer/mods/SystemUIControlCenterHooks.kt",
+      "line": 551,
+      "snippet": " val mContext =",
+      "fingerprint": "7269804f81dec00f235d"
+    },
+    {
+      "rule": "STATIC_STRONG_ANDROID_OWNER",
+      "path": "app/src/main/java/tv/withaibuild/customiuizer/mods/SystemUIControlCenterHooks.kt",
+      "line": 562,
+      "snippet": " val mContext =",
+      "fingerprint": "7269804f81dec00f235d"
+    },
+    {
+      "rule": "STATIC_STRONG_ANDROID_OWNER",
+      "path": "app/src/main/java/tv/withaibuild/customiuizer/mods/SystemUIControlCenterHooks.kt",
+      "line": 602,
+      "snippet": " val mContext: Context =",
+      "fingerprint": "c4f482bcefedfeb275ce"
+    },
+    {
+      "rule": "STATIC_STRONG_ANDROID_OWNER",
+      "path": "app/src/main/java/tv/withaibuild/customiuizer/mods/SystemUIControlCenterHooks.kt",
+      "line": 765,
+      "snippet": " val mStatusBarWindow =",
+      "fingerprint": "3a12b07d9d5d3ad4decf"
+    },
+    {
+      "rule": "STATIC_STRONG_ANDROID_OWNER",
+      "path": "app/src/main/java/tv/withaibuild/customiuizer/mods/SystemUIControlCenterHooks.kt",
+      "line": 782,
+      "snippet": " val mContext =",
+      "fingerprint": "7269804f81dec00f235d"
+    },
+    {
+      "rule": "STATIC_STRONG_ANDROID_OWNER",
+      "path": "app/src/main/java/tv/withaibuild/customiuizer/mods/SystemUIControlCenterHooks.kt",
+      "line": 790,
+      "snippet": " val windowView =",
+      "fingerprint": "fa877708de379068b0d9"
+    },
+    {
+      "rule": "STATIC_STRONG_ANDROID_OWNER",
+      "path": "app/src/main/java/tv/withaibuild/customiuizer/mods/SystemUIControlCenterHooks.kt",
+      "line": 825,
+      "snippet": " val mDialogView =",
+      "fingerprint": "0b35715d1be1cbc2eb48"
+    },
+    {
+      "rule": "STATIC_STRONG_ANDROID_OWNER",
+      "path": "app/src/main/java/tv/withaibuild/customiuizer/mods/SystemUIControlCenterHooks.kt",
+      "line": 826,
+      "snippet": " val windowView =",
+      "fingerprint": "fa877708de379068b0d9"
+    },
+    {
+      "rule": "STATIC_STRONG_ANDROID_OWNER",
+      "path": "app/src/main/java/tv/withaibuild/customiuizer/mods/SystemUIControlCenterHooks.kt",
+      "line": 880,
+      "snippet": " val hideDateView =",
+      "fingerprint": "a25ac755424affe5740e"
+    },
+    {
+      "rule": "STATIC_STRONG_ANDROID_OWNER",
+      "path": "app/src/main/java/tv/withaibuild/customiuizer/mods/SystemUIControlCenterHooks.kt",
+      "line": 882,
+      "snippet": " val dateView =",
+      "fingerprint": "bde6c83d0fce9b5112f2"
+    },
+    {
+      "rule": "STATIC_STRONG_ANDROID_OWNER",
+      "path": "app/src/main/java/tv/withaibuild/customiuizer/mods/SystemUIControlCenterHooks.kt",
+      "line": 887,
+      "snippet": " val fixClockView =",
+      "fingerprint": "ca65c19b3c352542fa8e"
+    },
+    {
+      "rule": "STATIC_STRONG_ANDROID_OWNER",
+      "path": "app/src/main/java/tv/withaibuild/customiuizer/mods/SystemUIControlCenterHooks.kt",
+      "line": 889,
+      "snippet": " val clockView =",
+      "fingerprint": "733a611a4a086c06a2fc"
+    },
+    {
+      "rule": "STATIC_STRONG_ANDROID_OWNER",
+      "path": "app/src/main/java/tv/withaibuild/customiuizer/mods/SystemUIControlCenterHooks.kt",
+      "line": 892,
+      "snippet": " val headerView =",
+      "fingerprint": "532ac7e36218ec1f8a21"
+    },
+    {
+      "rule": "STATIC_STRONG_ANDROID_OWNER",
+      "path": "app/src/main/java/tv/withaibuild/customiuizer/mods/SystemUIControlCenterHooks.kt",
+      "line": 907,
+      "snippet": " val headerView =",
+      "fingerprint": "532ac7e36218ec1f8a21"
+    },
+    {
+      "rule": "STATIC_STRONG_ANDROID_OWNER",
+      "path": "app/src/main/java/tv/withaibuild/customiuizer/mods/SystemUIControlCenterHooks.kt",
+      "line": 909,
+      "snippet": " var iconView =",
+      "fingerprint": "5ec0e380471cc2d54937"
+    },
+    {
+      "rule": "STATIC_STRONG_ANDROID_OWNER",
+      "path": "app/src/main/java/tv/withaibuild/customiuizer/mods/SystemUIControlCenterHooks.kt",
+      "line": 921,
+      "snippet": " val clockView =",
+      "fingerprint": "733a611a4a086c06a2fc"
+    },
+    {
+      "rule": "STATIC_STRONG_ANDROID_OWNER",
+      "path": "app/src/main/java/tv/withaibuild/customiuizer/mods/SystemUIControlCenterHooks.kt",
+      "line": 970,
+      "snippet": " val headerView =",
+      "fingerprint": "532ac7e36218ec1f8a21"
+    },
+    {
+      "rule": "STATIC_STRONG_ANDROID_OWNER",
+      "path": "app/src/main/java/tv/withaibuild/customiuizer/mods/SystemUIControlCenterHooks.kt",
+      "line": 1018,
+      "snippet": " val controlCenterWindowView =",
+      "fingerprint": "d6de1462bfa619cf59d5"
+    },
+    {
+      "rule": "STATIC_STRONG_ANDROID_OWNER",
+      "path": "app/src/main/java/tv/withaibuild/customiuizer/mods/SystemUIControlCenterHooks.kt",
+      "line": 1042,
+      "snippet": " val headView =",
+      "fingerprint": "1b536cb65c04ebcaa290"
+    },
+    {
+      "rule": "STATIC_STRONG_ANDROID_OWNER",
+      "path": "app/src/main/java/tv/withaibuild/customiuizer/mods/SystemUIControlCenterHooks.kt",
+      "line": 1050,
+      "snippet": " var stepView =",
+      "fingerprint": "b312754d3ae5ffbf2433"
+    },
+    {
+      "rule": "STATIC_STRONG_ANDROID_OWNER",
+      "path": "app/src/main/java/tv/withaibuild/customiuizer/mods/SystemUIControlCenterHooks.kt",
+      "line": 1086,
+      "snippet": " val pluginContext =",
+      "fingerprint": "6cb5c1c6332b48c1a252"
+    },
+    {
+      "rule": "STATIC_STRONG_ANDROID_OWNER",
+      "path": "app/src/main/java/tv/withaibuild/customiuizer/mods/SystemUIControlCenterHooks.kt",
+      "line": 1092,
+      "snippet": " val mView =",
+      "fingerprint": "a4b5318943ee9385e348"
+    },
+    {
+      "rule": "STATIC_STRONG_ANDROID_OWNER",
+      "path": "app/src/main/java/tv/withaibuild/customiuizer/mods/SystemUIControlCenterHooks.kt",
+      "line": 1094,
+      "snippet": " val btTileView =",
+      "fingerprint": "283cdc15ddb00197c37e"
+    },
+    {
+      "rule": "STATIC_STRONG_ANDROID_OWNER",
+      "path": "app/src/main/java/tv/withaibuild/customiuizer/mods/SystemUIControlCenterHooks.kt",
+      "line": 1104,
+      "snippet": " val mView =",
+      "fingerprint": "a4b5318943ee9385e348"
+    },
+    {
+      "rule": "STATIC_STRONG_ANDROID_OWNER",
+      "path": "app/src/main/java/tv/withaibuild/customiuizer/mods/SystemUIControlCenterHooks.kt",
+      "line": 1109,
+      "snippet": " val btTileView =",
+      "fingerprint": "283cdc15ddb00197c37e"
+    },
+    {
+      "rule": "STATIC_STRONG_ANDROID_OWNER",
+      "path": "app/src/main/java/tv/withaibuild/customiuizer/mods/SystemUIControlCenterHooks.kt",
+      "line": 1167,
+      "snippet": " val btTileView =",
+      "fingerprint": "283cdc15ddb00197c37e"
+    },
+    {
+      "rule": "CATCH_THROWABLE_NO_FATAL",
+      "path": "app/src/main/java/tv/withaibuild/customiuizer/mods/SystemUIControlCenterHooks.kt",
+      "line": 163,
+      "snippet": "catch (e: Throwable) { XposedHelpers.getObjectField(param.getThisObject(), \"mSafetyWarning\") as? Boolean ?: false ",
+      "fingerprint": "c2f6fb30225607a1963b"
+    },
+    {
+      "rule": "CATCH_THROWABLE_NO_FATAL",
+      "path": "app/src/main/java/tv/withaibuild/customiuizer/mods/SystemUIControlCenterHooks.kt",
+      "line": 218,
+      "snippet": "catch (t: Throwable) { XposedHelpers.log(t) ",
+      "fingerprint": "3b9987782bfe9d8ff2b9"
+    },
+    {
+      "rule": "CATCH_THROWABLE_NO_FATAL",
+      "path": "app/src/main/java/tv/withaibuild/customiuizer/mods/SystemUIControlCenterHooks.kt",
+      "line": 466,
+      "snippet": "catch (_: Throwable) {",
+      "fingerprint": "2a1ef484afd2fd663f79"
+    },
+    {
+      "rule": "CATCH_THROWABLE_NO_FATAL",
+      "path": "app/src/main/java/tv/withaibuild/customiuizer/mods/SystemUIControlCenterHooks.kt",
+      "line": 743,
+      "snippet": "catch (err: Throwable) { XposedHelpers.log(err) ",
+      "fingerprint": "dcad7fc292bab63db1ba"
+    },
+    {
+      "rule": "EMPTY_CATCH",
+      "path": "app/src/main/java/tv/withaibuild/customiuizer/mods/SystemUILockScreenHooks.kt",
+      "line": 487,
+      "snippet": "catch (_: Throwable) {}",
+      "fingerprint": "b2cf605ae105f776a258"
+    },
+    {
+      "rule": "STATIC_STRONG_ANDROID_OWNER",
+      "path": "app/src/main/java/tv/withaibuild/customiuizer/mods/SystemUILockScreenHooks.kt",
+      "line": 56,
+      "snippet": " val mContext =",
+      "fingerprint": "a49b27ec385842c440f7"
+    },
+    {
+      "rule": "STATIC_STRONG_ANDROID_OWNER",
+      "path": "app/src/main/java/tv/withaibuild/customiuizer/mods/SystemUILockScreenHooks.kt",
+      "line": 90,
+      "snippet": " val mContext =",
+      "fingerprint": "a49b27ec385842c440f7"
+    },
+    {
+      "rule": "STATIC_STRONG_ANDROID_OWNER",
+      "path": "app/src/main/java/tv/withaibuild/customiuizer/mods/SystemUILockScreenHooks.kt",
+      "line": 139,
+      "snippet": " val mContext =",
+      "fingerprint": "a49b27ec385842c440f7"
+    },
+    {
+      "rule": "STATIC_STRONG_ANDROID_OWNER",
+      "path": "app/src/main/java/tv/withaibuild/customiuizer/mods/SystemUILockScreenHooks.kt",
+      "line": 161,
+      "snippet": " val mContext =",
+      "fingerprint": "a49b27ec385842c440f7"
+    },
+    {
+      "rule": "STATIC_STRONG_ANDROID_OWNER",
+      "path": "app/src/main/java/tv/withaibuild/customiuizer/mods/SystemUILockScreenHooks.kt",
+      "line": 186,
+      "snippet": " val icon: Drawable? =",
+      "fingerprint": "d44b56a63ab3b2a317c8"
+    },
+    {
+      "rule": "STATIC_STRONG_ANDROID_OWNER",
+      "path": "app/src/main/java/tv/withaibuild/customiuizer/mods/SystemUILockScreenHooks.kt",
+      "line": 217,
+      "snippet": " val bmpDrawable =",
+      "fingerprint": "9fe49d210c41366e75fd"
+    },
+    {
+      "rule": "STATIC_STRONG_ANDROID_OWNER",
+      "path": "app/src/main/java/tv/withaibuild/customiuizer/mods/SystemUILockScreenHooks.kt",
+      "line": 244,
+      "snippet": " val mContext =",
+      "fingerprint": "a49b27ec385842c440f7"
+    },
+    {
+      "rule": "STATIC_STRONG_ANDROID_OWNER",
+      "path": "app/src/main/java/tv/withaibuild/customiuizer/mods/SystemUILockScreenHooks.kt",
+      "line": 246,
+      "snippet": " val flashlightDrawable =",
+      "fingerprint": "97e8ac3ed646b015f61d"
+    },
+    {
+      "rule": "STATIC_STRONG_ANDROID_OWNER",
+      "path": "app/src/main/java/tv/withaibuild/customiuizer/mods/SystemUILockScreenHooks.kt",
+      "line": 268,
+      "snippet": " val mContext =",
+      "fingerprint": "a49b27ec385842c440f7"
+    },
+    {
+      "rule": "STATIC_STRONG_ANDROID_OWNER",
+      "path": "app/src/main/java/tv/withaibuild/customiuizer/mods/SystemUILockScreenHooks.kt",
+      "line": 292,
+      "snippet": " val mLeftAffordanceView =",
+      "fingerprint": "c0ce5f242cfb7d5ee113"
+    },
+    {
+      "rule": "STATIC_STRONG_ANDROID_OWNER",
+      "path": "app/src/main/java/tv/withaibuild/customiuizer/mods/SystemUILockScreenHooks.kt",
+      "line": 307,
+      "snippet": " val mLeftAffordanceView =",
+      "fingerprint": "c0ce5f242cfb7d5ee113"
+    },
+    {
+      "rule": "STATIC_STRONG_ANDROID_OWNER",
+      "path": "app/src/main/java/tv/withaibuild/customiuizer/mods/SystemUILockScreenHooks.kt",
+      "line": 317,
+      "snippet": " val mLeftAffordanceView =",
+      "fingerprint": "c0ce5f242cfb7d5ee113"
+    },
+    {
+      "rule": "STATIC_STRONG_ANDROID_OWNER",
+      "path": "app/src/main/java/tv/withaibuild/customiuizer/mods/SystemUILockScreenHooks.kt",
+      "line": 327,
+      "snippet": " val mContext =",
+      "fingerprint": "a49b27ec385842c440f7"
+    },
+    {
+      "rule": "STATIC_STRONG_ANDROID_OWNER",
+      "path": "app/src/main/java/tv/withaibuild/customiuizer/mods/SystemUILockScreenHooks.kt",
+      "line": 336,
+      "snippet": " val mNotificationPanelView =",
+      "fingerprint": "c099d0777fbcb454e52a"
+    },
+    {
+      "rule": "STATIC_STRONG_ANDROID_OWNER",
+      "path": "app/src/main/java/tv/withaibuild/customiuizer/mods/SystemUILockScreenHooks.kt",
+      "line": 354,
+      "snippet": " val mContext =",
+      "fingerprint": "a49b27ec385842c440f7"
+    },
+    {
+      "rule": "STATIC_STRONG_ANDROID_OWNER",
+      "path": "app/src/main/java/tv/withaibuild/customiuizer/mods/SystemUILockScreenHooks.kt",
+      "line": 376,
+      "snippet": " val mContext =",
+      "fingerprint": "a49b27ec385842c440f7"
+    },
+    {
+      "rule": "STATIC_STRONG_ANDROID_OWNER",
+      "path": "app/src/main/java/tv/withaibuild/customiuizer/mods/SystemUILockScreenHooks.kt",
+      "line": 378,
+      "snippet": " val mIconView =",
+      "fingerprint": "b06727bea77690c1b34e"
+    },
+    {
+      "rule": "STATIC_STRONG_ANDROID_OWNER",
+      "path": "app/src/main/java/tv/withaibuild/customiuizer/mods/SystemUILockScreenHooks.kt",
+      "line": 394,
+      "snippet": " val mPreView =",
+      "fingerprint": "7bf0ccb77bbc0abf34fd"
+    },
+    {
+      "rule": "STATIC_STRONG_ANDROID_OWNER",
+      "path": "app/src/main/java/tv/withaibuild/customiuizer/mods/SystemUILockScreenHooks.kt",
+      "line": 397,
+      "snippet": " val mBackgroundView =",
+      "fingerprint": "1145300ac2aa958210e0"
+    },
+    {
+      "rule": "STATIC_STRONG_ANDROID_OWNER",
+      "path": "app/src/main/java/tv/withaibuild/customiuizer/mods/SystemUILockScreenHooks.kt",
+      "line": 416,
+      "snippet": " val mIconView =",
+      "fingerprint": "b06727bea77690c1b34e"
+    },
+    {
+      "rule": "STATIC_STRONG_ANDROID_OWNER",
+      "path": "app/src/main/java/tv/withaibuild/customiuizer/mods/SystemUILockScreenHooks.kt",
+      "line": 436,
+      "snippet": " val mContext =",
+      "fingerprint": "a49b27ec385842c440f7"
+    },
+    {
+      "rule": "STATIC_STRONG_ANDROID_OWNER",
+      "path": "app/src/main/java/tv/withaibuild/customiuizer/mods/SystemUILockScreenHooks.kt",
+      "line": 443,
+      "snippet": " val mBackgroundView =",
+      "fingerprint": "1145300ac2aa958210e0"
+    },
+    {
+      "rule": "STATIC_STRONG_ANDROID_OWNER",
+      "path": "app/src/main/java/tv/withaibuild/customiuizer/mods/SystemUILockScreenHooks.kt",
+      "line": 503,
+      "snippet": " val mContext =",
+      "fingerprint": "a49b27ec385842c440f7"
+    },
+    {
+      "rule": "STATIC_STRONG_ANDROID_OWNER",
+      "path": "app/src/main/java/tv/withaibuild/customiuizer/mods/SystemUILockScreenHooks.kt",
+      "line": 526,
+      "snippet": " val mControlPanelContentView =",
+      "fingerprint": "472e953f73b024de2332"
+    },
+    {
+      "rule": "STATIC_STRONG_ANDROID_OWNER",
+      "path": "app/src/main/java/tv/withaibuild/customiuizer/mods/SystemUILockScreenHooks.kt",
+      "line": 596,
+      "snippet": " val mContext =",
+      "fingerprint": "a49b27ec385842c440f7"
+    },
+    {
+      "rule": "CATCH_THROWABLE_NO_FATAL",
+      "path": "app/src/main/java/tv/withaibuild/customiuizer/mods/SystemUILockScreenHooks.kt",
+      "line": 101,
+      "snippet": "catch (e: Throwable) { XposedHelpers.callMethod(panel, \"updateThemeBackgroundVisibility\") ",
+      "fingerprint": "f34525ee37bdca3159e5"
+    },
+    {
+      "rule": "CATCH_THROWABLE_NO_FATAL",
+      "path": "app/src/main/java/tv/withaibuild/customiuizer/mods/SystemUILockScreenHooks.kt",
+      "line": 487,
+      "snippet": "catch (_: Throwable) {",
+      "fingerprint": "9becb9bca045d696e958"
+    },
+    {
+      "rule": "CATCH_THROWABLE_NO_FATAL",
+      "path": "app/src/main/java/tv/withaibuild/customiuizer/mods/SystemUILockScreenHooks.kt",
+      "line": 543,
+      "snippet": "catch (t: Throwable) { XposedHelpers.log(t) ",
+      "fingerprint": "9918bc094ddd80690a20"
+    },
+    {
+      "rule": "CATCH_THROWABLE_NO_FATAL",
+      "path": "app/src/main/java/tv/withaibuild/customiuizer/mods/SystemUILockScreenHooks.kt",
+      "line": 619,
+      "snippet": "catch (t: Throwable) { XposedHelpers.log(t) ",
+      "fingerprint": "9918bc094ddd80690a20"
+    },
+    {
+      "rule": "STATIC_STRONG_ANDROID_OWNER",
+      "path": "app/src/main/java/tv/withaibuild/customiuizer/mods/SystemUIMonitorAndTileHooks.kt",
+      "line": 38,
+      "snippet": " val mContext =",
+      "fingerprint": "9f143a6f8d566994ae66"
+    },
+    {
+      "rule": "STATIC_STRONG_ANDROID_OWNER",
+      "path": "app/src/main/java/tv/withaibuild/customiuizer/mods/SystemUIMonitorAndTileHooks.kt",
+      "line": 79,
+      "snippet": " val mContext =",
+      "fingerprint": "9f143a6f8d566994ae66"
+    },
+    {
+      "rule": "STATIC_STRONG_ANDROID_OWNER",
+      "path": "app/src/main/java/tv/withaibuild/customiuizer/mods/SystemUIMonitorAndTileHooks.kt",
+      "line": 92,
+      "snippet": " val mContext =",
+      "fingerprint": "9f143a6f8d566994ae66"
+    },
+    {
+      "rule": "STATIC_STRONG_ANDROID_OWNER",
+      "path": "app/src/main/java/tv/withaibuild/customiuizer/mods/SystemUINotificationHooks.kt",
+      "line": 36,
+      "snippet": " val mDismissView =",
+      "fingerprint": "fc6e0e8540296f89e98a"
+    },
+    {
+      "rule": "STATIC_STRONG_ANDROID_OWNER",
+      "path": "app/src/main/java/tv/withaibuild/customiuizer/mods/SystemUINotificationHooks.kt",
+      "line": 64,
+      "snippet": " val mContext =",
+      "fingerprint": "70118018f8534d4e3ac3"
+    },
+    {
+      "rule": "STATIC_STRONG_ANDROID_OWNER",
+      "path": "app/src/main/java/tv/withaibuild/customiuizer/mods/SystemUINotificationHooks.kt",
+      "line": 172,
+      "snippet": " val mContext =",
+      "fingerprint": "70118018f8534d4e3ac3"
+    },
+    {
+      "rule": "STATIC_STRONG_ANDROID_OWNER",
+      "path": "app/src/main/java/tv/withaibuild/customiuizer/mods/SystemUINotificationHooks.kt",
+      "line": 228,
+      "snippet": " val mContext =",
+      "fingerprint": "70118018f8534d4e3ac3"
+    },
+    {
+      "rule": "STATIC_STRONG_ANDROID_OWNER",
+      "path": "app/src/main/java/tv/withaibuild/customiuizer/mods/SystemUINotificationHooks.kt",
+      "line": 268,
+      "snippet": " val scrContext =",
+      "fingerprint": "706307495e7d50738d97"
+    },
+    {
+      "rule": "STATIC_STRONG_ANDROID_OWNER",
+      "path": "app/src/main/java/tv/withaibuild/customiuizer/mods/SystemUINotificationHooks.kt",
+      "line": 269,
+      "snippet": " val mContext =",
+      "fingerprint": "70118018f8534d4e3ac3"
+    },
+    {
+      "rule": "CATCH_THROWABLE_NO_FATAL",
+      "path": "app/src/main/java/tv/withaibuild/customiuizer/mods/SystemUINotificationHooks.kt",
+      "line": 98,
+      "snippet": "catch (t: Throwable) { XposedHelpers.log(t) ",
+      "fingerprint": "8a5137cbf5dcb9c4df45"
+    },
+    {
+      "rule": "STATIC_STRONG_ANDROID_OWNER",
+      "path": "app/src/main/java/tv/withaibuild/customiuizer/mods/SystemUIScreenshotHooks.kt",
+      "line": 24,
+      "snippet": " val mContext =",
+      "fingerprint": "6cf60e878ac5e9b29e30"
+    },
+    {
+      "rule": "STATIC_STRONG_ANDROID_OWNER",
+      "path": "app/src/main/java/tv/withaibuild/customiuizer/mods/SystemUIStatusBarHooks.kt",
+      "line": 329,
+      "snippet": " val mContext =",
+      "fingerprint": "f011348ae6a98e539bb7"
+    },
+    {
+      "rule": "STATIC_STRONG_ANDROID_OWNER",
+      "path": "app/src/main/java/tv/withaibuild/customiuizer/mods/SystemUIStatusBarHooks.kt",
+      "line": 338,
+      "snippet": " val iconView =",
+      "fingerprint": "86a3ccf15300503421b7"
+    },
+    {
+      "rule": "STATIC_STRONG_ANDROID_OWNER",
+      "path": "app/src/main/java/tv/withaibuild/customiuizer/mods/SystemUIStatusBarHooks.kt",
+      "line": 352,
+      "snippet": " val mContext =",
+      "fingerprint": "f011348ae6a98e539bb7"
+    },
+    {
+      "rule": "STATIC_STRONG_ANDROID_OWNER",
+      "path": "app/src/main/java/tv/withaibuild/customiuizer/mods/SystemUIStatusBarHooks.kt",
+      "line": 364,
+      "snippet": " val iconView =",
+      "fingerprint": "86a3ccf15300503421b7"
+    },
+    {
+      "rule": "STATIC_STRONG_ANDROID_OWNER",
+      "path": "app/src/main/java/tv/withaibuild/customiuizer/mods/SystemUIStatusBarHooks.kt",
+      "line": 396,
+      "snippet": " val nsView =",
+      "fingerprint": "4110d5d3a7194705b751"
+    },
+    {
+      "rule": "STATIC_STRONG_ANDROID_OWNER",
+      "path": "app/src/main/java/tv/withaibuild/customiuizer/mods/SystemUIStatusBarHooks.kt",
+      "line": 424,
+      "snippet": " val iconTextView =",
+      "fingerprint": "3cac290f6f474a444ada"
+    },
+    {
+      "rule": "STATIC_STRONG_ANDROID_OWNER",
+      "path": "app/src/main/java/tv/withaibuild/customiuizer/mods/SystemUIStatusBarHooks.kt",
+      "line": 464,
+      "snippet": " val iconView =",
+      "fingerprint": "86a3ccf15300503421b7"
+    },
+    {
+      "rule": "STATIC_STRONG_ANDROID_OWNER",
+      "path": "app/src/main/java/tv/withaibuild/customiuizer/mods/SystemUIStatusBarHooks.kt",
+      "line": 492,
+      "snippet": " val iconView =",
+      "fingerprint": "86a3ccf15300503421b7"
+    },
+    {
+      "rule": "STATIC_STRONG_ANDROID_OWNER",
+      "path": "app/src/main/java/tv/withaibuild/customiuizer/mods/SystemUIStatusBarHooks.kt",
+      "line": 530,
+      "snippet": " val sbView =",
+      "fingerprint": "ab9766b4a82edb8a1e14"
+    },
+    {
+      "rule": "STATIC_STRONG_ANDROID_OWNER",
+      "path": "app/src/main/java/tv/withaibuild/customiuizer/mods/SystemUIStatusBarHooks.kt",
+      "line": 531,
+      "snippet": " val mContext =",
+      "fingerprint": "f011348ae6a98e539bb7"
+    },
+    {
+      "rule": "STATIC_STRONG_ANDROID_OWNER",
+      "path": "app/src/main/java/tv/withaibuild/customiuizer/mods/SystemUIStatusBarHooks.kt",
+      "line": 625,
+      "snippet": " val iconView =",
+      "fingerprint": "86a3ccf15300503421b7"
+    },
+    {
+      "rule": "STATIC_STRONG_ANDROID_OWNER",
+      "path": "app/src/main/java/tv/withaibuild/customiuizer/mods/SystemUIStatusBarHooks.kt",
+      "line": 633,
+      "snippet": " val mDripNetworkSpeedView =",
+      "fingerprint": "b27752edb852d14cc540"
+    },
+    {
+      "rule": "STATIC_STRONG_ANDROID_OWNER",
+      "path": "app/src/main/java/tv/withaibuild/customiuizer/mods/SystemUIStatusBarHooks.kt",
+      "line": 700,
+      "snippet": " val mContext =",
+      "fingerprint": "f011348ae6a98e539bb7"
+    },
+    {
+      "rule": "STATIC_STRONG_ANDROID_OWNER",
+      "path": "app/src/main/java/tv/withaibuild/customiuizer/mods/SystemUIStatusBarHooks.kt",
+      "line": 727,
+      "snippet": " val mContext =",
+      "fingerprint": "f011348ae6a98e539bb7"
+    },
+    {
+      "rule": "STATIC_STRONG_ANDROID_OWNER",
+      "path": "app/src/main/java/tv/withaibuild/customiuizer/mods/SystemUIStatusBarHooks.kt",
+      "line": 788,
+      "snippet": " val resetImageDrawable =",
+      "fingerprint": "67f5303883c2d2da4f1b"
+    },
+    {
+      "rule": "STATIC_STRONG_ANDROID_OWNER",
+      "path": "app/src/main/java/tv/withaibuild/customiuizer/mods/SystemUIStatusBarHooks.kt",
+      "line": 825,
+      "snippet": " val mobileView =",
+      "fingerprint": "b245041168175e31444e"
+    },
+    {
+      "rule": "STATIC_STRONG_ANDROID_OWNER",
+      "path": "app/src/main/java/tv/withaibuild/customiuizer/mods/SystemUIStatusBarHooks.kt",
+      "line": 826,
+      "snippet": " val mContext =",
+      "fingerprint": "f011348ae6a98e539bb7"
+    },
+    {
+      "rule": "STATIC_STRONG_ANDROID_OWNER",
+      "path": "app/src/main/java/tv/withaibuild/customiuizer/mods/SystemUIStatusBarHooks.kt",
+      "line": 1039,
+      "snippet": " val mDripNetworkSpeedView =",
+      "fingerprint": "b27752edb852d14cc540"
+    },
+    {
+      "rule": "STATIC_STRONG_ANDROID_OWNER",
+      "path": "app/src/main/java/tv/withaibuild/customiuizer/mods/SystemUIStatusBarHooks.kt",
+      "line": 1048,
+      "snippet": " val mDripNetworkSpeedView =",
+      "fingerprint": "b27752edb852d14cc540"
+    },
+    {
+      "rule": "STATIC_STRONG_ANDROID_OWNER",
+      "path": "app/src/main/java/tv/withaibuild/customiuizer/mods/SystemUIStatusBarHooks.kt",
+      "line": 1086,
+      "snippet": " val sbView =",
+      "fingerprint": "ab9766b4a82edb8a1e14"
+    },
+    {
+      "rule": "STATIC_STRONG_ANDROID_OWNER",
+      "path": "app/src/main/java/tv/withaibuild/customiuizer/mods/SystemUIStatusBarHooks.kt",
+      "line": 1087,
+      "snippet": " val mContext =",
+      "fingerprint": "f011348ae6a98e539bb7"
+    },
+    {
+      "rule": "STATIC_STRONG_ANDROID_OWNER",
+      "path": "app/src/main/java/tv/withaibuild/customiuizer/mods/SystemUIStatusBarHooks.kt",
+      "line": 1089,
+      "snippet": " val mClockView =",
+      "fingerprint": "9bc5b5aa71a344731401"
+    },
+    {
+      "rule": "STATIC_STRONG_ANDROID_OWNER",
+      "path": "app/src/main/java/tv/withaibuild/customiuizer/mods/SystemUIStatusBarHooks.kt",
+      "line": 1095,
+      "snippet": " val spaceView =",
+      "fingerprint": "38ed623f49aaa80e439d"
+    },
+    {
+      "rule": "STATIC_STRONG_ANDROID_OWNER",
+      "path": "app/src/main/java/tv/withaibuild/customiuizer/mods/SystemUIStatusBarHooks.kt",
+      "line": 1118,
+      "snippet": " val sbView =",
+      "fingerprint": "ab9766b4a82edb8a1e14"
+    },
+    {
+      "rule": "STATIC_STRONG_ANDROID_OWNER",
+      "path": "app/src/main/java/tv/withaibuild/customiuizer/mods/SystemUIStatusBarHooks.kt",
+      "line": 1285,
+      "snippet": " val iconTextView =",
+      "fingerprint": "3cac290f6f474a444ada"
+    },
+    {
+      "rule": "STATIC_STRONG_ANDROID_OWNER",
+      "path": "app/src/main/java/tv/withaibuild/customiuizer/mods/SystemUIStatusBarHooks.kt",
+      "line": 1428,
+      "snippet": " val mContext =",
+      "fingerprint": "f011348ae6a98e539bb7"
+    },
+    {
+      "rule": "STATIC_STRONG_ANDROID_OWNER",
+      "path": "app/src/main/java/tv/withaibuild/customiuizer/mods/SystemUIStatusBarHooks.kt",
+      "line": 1703,
+      "snippet": " val mContext =",
+      "fingerprint": "f011348ae6a98e539bb7"
+    },
+    {
+      "rule": "STATIC_STRONG_ANDROID_OWNER",
+      "path": "app/src/main/java/tv/withaibuild/customiuizer/mods/SystemUIStatusBarHooks.kt",
+      "line": 1770,
+      "snippet": " val mContext =",
+      "fingerprint": "f011348ae6a98e539bb7"
+    },
+    {
+      "rule": "STATIC_STRONG_ANDROID_OWNER",
+      "path": "app/src/main/java/tv/withaibuild/customiuizer/mods/SystemUIStatusBarHooks.kt",
+      "line": 1822,
+      "snippet": " val hideMobileActivity =",
+      "fingerprint": "645acaabebf234201021"
+    },
+    {
+      "rule": "CATCH_THROWABLE_NO_FATAL",
+      "path": "app/src/main/java/tv/withaibuild/customiuizer/mods/SystemUIStatusBarHooks.kt",
+      "line": 1249,
+      "snippet": "catch (t: Throwable) { null ",
+      "fingerprint": "2bf5f18476eccc80efea"
+    },
+    {
+      "rule": "CATCH_THROWABLE_NO_FATAL",
+      "path": "app/src/main/java/tv/withaibuild/customiuizer/mods/SystemUIStatusBarHooks.kt",
+      "line": 1333,
+      "snippet": "catch (t: Throwable) { if (isFirst) { XposedHelpers.log(\"CustoMIUIzer NetSpeed\", \"initNetSpeedStyle failed: ${t.javaClass.name",
+      "fingerprint": "b182398528f55f6b60f4"
+    },
+    {
+      "rule": "CATCH_THROWABLE_NO_FATAL",
+      "path": "app/src/main/java/tv/withaibuild/customiuizer/mods/SystemUIStatusBarHooks.kt",
+      "line": 1560,
+      "snippet": "catch (t: Throwable) { XposedHelpers.log(t) false ",
+      "fingerprint": "c50caa48a3d1e89c9281"
+    },
+    {
+      "rule": "CATCH_THROWABLE_NO_FATAL",
+      "path": "app/src/main/java/tv/withaibuild/customiuizer/mods/SystemUIStatusBarHooks.kt",
+      "line": 1671,
+      "snippet": "catch (t: Throwable) { XposedHelpers.log(t) \"\" ",
+      "fingerprint": "223fddd8e227584ae67b"
+    },
+    {
+      "rule": "STATIC_STRONG_ANDROID_OWNER",
+      "path": "app/src/main/java/tv/withaibuild/customiuizer/mods/utils/DeviceInfoMonitor.kt",
+      "line": 198,
+      "snippet": " val applicationContext =",
+      "fingerprint": "98c6da76ad8a04bfa992"
+    },
+    {
+      "rule": "CATCH_THROWABLE_NO_FATAL",
+      "path": "app/src/main/java/tv/withaibuild/customiuizer/mods/utils/DeviceInfoMonitor.kt",
+      "line": 431,
+      "snippet": "catch (_: Throwable) { null ",
+      "fingerprint": "b3c24457058c34afa98b"
+    },
+    {
+      "rule": "CATCH_THROWABLE_NO_FATAL",
+      "path": "app/src/main/java/tv/withaibuild/customiuizer/mods/utils/DeviceInfoMonitor.kt",
+      "line": 444,
+      "snippet": "catch (_: Throwable) { null ",
+      "fingerprint": "b3c24457058c34afa98b"
+    },
+    {
+      "rule": "CATCH_THROWABLE_NO_FATAL",
+      "path": "app/src/main/java/tv/withaibuild/customiuizer/mods/utils/HookInstaller.kt",
+      "line": 159,
+      "snippet": "catch (_: Throwable) { null ",
+      "fingerprint": "957f6ad7497f7199c049"
+    },
+    {
+      "rule": "STATIC_STRONG_ANDROID_OWNER",
+      "path": "app/src/main/java/tv/withaibuild/customiuizer/mods/utils/LockScreenAlbumArtController.kt",
+      "line": 214,
+      "snippet": " val applicationContext =",
+      "fingerprint": "2f310c9e79550e98ae73"
+    },
+    {
+      "rule": "STATIC_STRONG_ANDROID_OWNER",
+      "path": "app/src/main/java/tv/withaibuild/customiuizer/mods/utils/LockScreenAlbumArtController.kt",
+      "line": 630,
+      "snippet": " val currentView =",
+      "fingerprint": "3cc5980c0383b0a0e592"
+    },
+    {
+      "rule": "STATIC_STRONG_ANDROID_OWNER",
+      "path": "app/src/main/java/tv/withaibuild/customiuizer/mods/utils/LockScreenAlbumArtController.kt",
+      "line": 631,
+      "snippet": " val currentDrawable =",
+      "fingerprint": "cd1cab4cd2c6b6eb82e0"
+    },
+    {
+      "rule": "CATCH_THROWABLE_NO_FATAL",
+      "path": "app/src/main/java/tv/withaibuild/customiuizer/mods/utils/LockScreenAlbumArtController.kt",
+      "line": 357,
+      "snippet": "catch (failure: Throwable) { XposedHelpers.log(failure) null ",
+      "fingerprint": "6781864fe9190dad4fc4"
+    },
+    {
+      "rule": "STATIC_STRONG_ANDROID_OWNER",
+      "path": "app/src/main/java/tv/withaibuild/customiuizer/mods/utils/ModuleHelper.java",
+      "line": 60,
+      "snippet": " public static Context mModuleContext =",
+      "fingerprint": "4c940cf5cedfb19424c8"
+    },
+    {
+      "rule": "STATIC_STRONG_ANDROID_OWNER",
+      "path": "app/src/main/java/tv/withaibuild/customiuizer/mods/utils/ModuleHelper.java",
+      "line": 674,
+      "snippet": " Context applicationContext =",
+      "fingerprint": "094c3b5371f20d8d8f35"
+    },
+    {
+      "rule": "STATIC_STRONG_ANDROID_OWNER",
+      "path": "app/src/main/java/tv/withaibuild/customiuizer/mods/utils/ModuleHelper.java",
+      "line": 988,
+      "snippet": " Context moduleContext =",
+      "fingerprint": "efc973d473ff948cfb90"
+    },
+    {
+      "rule": "EMPTY_CATCH",
+      "path": "app/src/main/java/tv/withaibuild/customiuizer/mods/utils/ResourceHooks.java",
+      "line": 291,
+      "snippet": "catch (Throwable ignored) {}",
+      "fingerprint": "cb705b4206af12f3a420"
+    },
+    {
+      "rule": "EMPTY_CATCH",
+      "path": "app/src/main/java/tv/withaibuild/customiuizer/mods/utils/ResourceHooks.java",
+      "line": 360,
+      "snippet": "catch (Throwable ignored) {}",
+      "fingerprint": "cb705b4206af12f3a420"
+    },
+    {
+      "rule": "STATIC_STRONG_ANDROID_OWNER",
+      "path": "app/src/main/java/tv/withaibuild/customiuizer/mods/utils/ResourceHooks.java",
+      "line": 121,
+      "snippet": " Context mContext =",
+      "fingerprint": "08863fb724d3da99a801"
+    },
+    {
+      "rule": "STATIC_STRONG_ANDROID_OWNER",
+      "path": "app/src/main/java/tv/withaibuild/customiuizer/mods/utils/ResourceHooks.java",
+      "line": 320,
+      "snippet": " Context mContext =",
+      "fingerprint": "08863fb724d3da99a801"
+    },
+    {
+      "rule": "STATIC_STRONG_ANDROID_OWNER",
+      "path": "app/src/main/java/tv/withaibuild/customiuizer/mods/utils/StepCounterController.kt",
+      "line": 174,
+      "snippet": " private var sContext: Context? =",
+      "fingerprint": "edb35be7d9ae027e7cf6"
+    },
+    {
+      "rule": "STATIC_STRONG_ANDROID_OWNER",
+      "path": "app/src/main/java/tv/withaibuild/customiuizer/mods/utils/StepCounterController.kt",
+      "line": 197,
+      "snippet": " val appContext =",
+      "fingerprint": "ddd7e6044d0dd451daca"
+    },
+    {
+      "rule": "STATIC_STRONG_ANDROID_OWNER",
+      "path": "app/src/main/java/tv/withaibuild/customiuizer/mods/utils/StepCounterController.kt",
+      "line": 413,
+      "snippet": " val capturedContext =",
+      "fingerprint": "fcca32b86013582751f0"
+    },
+    {
+      "rule": "CATCH_THROWABLE_NO_FATAL",
+      "path": "app/src/main/java/tv/withaibuild/customiuizer/mods/utils/StepCounterController.kt",
+      "line": 443,
+      "snippet": "catch (t: Throwable) { XposedHelpers.log(\"StepCounterController\", \"querySteps failed: ${t.javaClass.name",
+      "fingerprint": "5343e8e12d424063780e"
+    },
+    {
+      "rule": "CATCH_THROWABLE_NO_FATAL",
+      "path": "app/src/main/java/tv/withaibuild/customiuizer/mods/utils/StepCounterController.kt",
+      "line": 478,
+      "snippet": "catch (t: Throwable) { XposedHelpers.log(\"StepCounterController\", \"uiHandler.post failed: ${t.javaClass.name",
+      "fingerprint": "42dc6f6d3cfcb1d290bd"
+    },
+    {
+      "rule": "EMPTY_CATCH",
+      "path": "app/src/main/java/tv/withaibuild/customiuizer/mods/utils/XposedHelpers.java",
+      "line": 396,
+      "snippet": "catch (NoSuchFieldException ignored) { }",
+      "fingerprint": "bd2de9920d9de75bb963"
+    },
+    {
+      "rule": "EMPTY_CATCH",
+      "path": "app/src/main/java/tv/withaibuild/customiuizer/mods/utils/XposedHelpers.java",
+      "line": 528,
+      "snippet": "catch (NoSuchMethodException ignored) { }",
+      "fingerprint": "58b810fedbf798ec0869"
+    },
+    {
+      "rule": "EMPTY_CATCH",
+      "path": "app/src/main/java/tv/withaibuild/customiuizer/mods/utils/XposedHelpers.java",
+      "line": 607,
+      "snippet": "catch (NoSuchMethodError ignored) { }",
+      "fingerprint": "dd95f2ceb50965a98e7f"
+    },
+    {
+      "rule": "EMPTY_CATCH",
+      "path": "app/src/main/java/tv/withaibuild/customiuizer/mods/utils/XposedHelpers.java",
+      "line": 884,
+      "snippet": "catch (NoSuchMethodError ignored) { }",
+      "fingerprint": "dd95f2ceb50965a98e7f"
+    },
+    {
+      "rule": "EMPTY_CATCH",
+      "path": "app/src/main/java/tv/withaibuild/customiuizer/mods/Various.kt",
+      "line": 104,
+      "snippet": "catch (_: Throwable) { }",
+      "fingerprint": "6e88759c768b2cf072c9"
+    },
+    {
+      "rule": "EMPTY_CATCH",
+      "path": "app/src/main/java/tv/withaibuild/customiuizer/mods/Various.kt",
+      "line": 806,
+      "snippet": "catch (_: Throwable) { }",
+      "fingerprint": "6e88759c768b2cf072c9"
+    },
+    {
+      "rule": "STATIC_STRONG_ANDROID_OWNER",
+      "path": "app/src/main/java/tv/withaibuild/customiuizer/mods/Various.kt",
+      "line": 610,
+      "snippet": " val gridView =",
+      "fingerprint": "5f8385fc4d50ff07a17a"
+    },
+    {
+      "rule": "STATIC_STRONG_ANDROID_OWNER",
+      "path": "app/src/main/java/tv/withaibuild/customiuizer/mods/Various.kt",
+      "line": 753,
+      "snippet": " val batteryView =",
+      "fingerprint": "649a7cee83dffa3d7899"
+    },
+    {
+      "rule": "STATIC_STRONG_ANDROID_OWNER",
+      "path": "app/src/main/java/tv/withaibuild/customiuizer/mods/Various.kt",
+      "line": 830,
+      "snippet": " val mContext =",
+      "fingerprint": "37c0a6229b40b1b5b701"
+    },
+    {
+      "rule": "STATIC_STRONG_ANDROID_OWNER",
+      "path": "app/src/main/java/tv/withaibuild/customiuizer/mods/Various.kt",
+      "line": 851,
+      "snippet": " val mContext =",
+      "fingerprint": "37c0a6229b40b1b5b701"
+    },
+    {
+      "rule": "STATIC_STRONG_ANDROID_OWNER",
+      "path": "app/src/main/java/tv/withaibuild/customiuizer/mods/Various.kt",
+      "line": 885,
+      "snippet": " val mContext =",
+      "fingerprint": "37c0a6229b40b1b5b701"
+    },
+    {
+      "rule": "STATIC_STRONG_ANDROID_OWNER",
+      "path": "app/src/main/java/tv/withaibuild/customiuizer/mods/Various.kt",
+      "line": 1046,
+      "snippet": " val installActivity =",
+      "fingerprint": "6350537ed5e418cd0886"
+    },
+    {
+      "rule": "CATCH_THROWABLE_NO_FATAL",
+      "path": "app/src/main/java/tv/withaibuild/customiuizer/mods/Various.kt",
+      "line": 104,
+      "snippet": "catch (_: Throwable) { ",
+      "fingerprint": "93e92dcc7b93ab5cb881"
+    },
+    {
+      "rule": "CATCH_THROWABLE_NO_FATAL",
+      "path": "app/src/main/java/tv/withaibuild/customiuizer/mods/Various.kt",
+      "line": 147,
+      "snippet": "catch (t: Throwable) { XposedHelpers.log(t) ",
+      "fingerprint": "4bc977c0abb7e01eafaa"
+    },
+    {
+      "rule": "CATCH_THROWABLE_NO_FATAL",
+      "path": "app/src/main/java/tv/withaibuild/customiuizer/mods/Various.kt",
+      "line": 188,
+      "snippet": "catch (t: Throwable) { XposedHelpers.log(t) ",
+      "fingerprint": "4bc977c0abb7e01eafaa"
+    },
+    {
+      "rule": "CATCH_THROWABLE_NO_FATAL",
+      "path": "app/src/main/java/tv/withaibuild/customiuizer/mods/Various.kt",
+      "line": 195,
+      "snippet": "catch (t: Throwable) { XposedHelpers.log(t) ",
+      "fingerprint": "4bc977c0abb7e01eafaa"
+    },
+    {
+      "rule": "CATCH_THROWABLE_NO_FATAL",
+      "path": "app/src/main/java/tv/withaibuild/customiuizer/mods/Various.kt",
+      "line": 206,
+      "snippet": "catch (t: Throwable) { XposedHelpers.log(t) return@post ",
+      "fingerprint": "22baba5274454a3fa9fe"
+    },
+    {
+      "rule": "CATCH_THROWABLE_NO_FATAL",
+      "path": "app/src/main/java/tv/withaibuild/customiuizer/mods/Various.kt",
+      "line": 257,
+      "snippet": "catch (t: Throwable) { XposedHelpers.log(\"AppsDefaultSortHook\", t.message) ",
+      "fingerprint": "3260656b904a3ae351b3"
+    },
+    {
+      "rule": "CATCH_THROWABLE_NO_FATAL",
+      "path": "app/src/main/java/tv/withaibuild/customiuizer/mods/Various.kt",
+      "line": 280,
+      "snippet": "catch (t: Throwable) { XposedHelpers.log(t) ",
+      "fingerprint": "4bc977c0abb7e01eafaa"
+    },
+    {
+      "rule": "CATCH_THROWABLE_NO_FATAL",
+      "path": "app/src/main/java/tv/withaibuild/customiuizer/mods/Various.kt",
+      "line": 317,
+      "snippet": "catch (_: Throwable) { return ",
+      "fingerprint": "4e852e3a1fea1595c290"
+    },
+    {
+      "rule": "CATCH_THROWABLE_NO_FATAL",
+      "path": "app/src/main/java/tv/withaibuild/customiuizer/mods/Various.kt",
+      "line": 535,
+      "snippet": "catch (t: Throwable) { XposedHelpers.log(t) ",
+      "fingerprint": "4bc977c0abb7e01eafaa"
+    },
+    {
+      "rule": "CATCH_THROWABLE_NO_FATAL",
+      "path": "app/src/main/java/tv/withaibuild/customiuizer/mods/Various.kt",
+      "line": 806,
+      "snippet": "catch (_: Throwable) { ",
+      "fingerprint": "93e92dcc7b93ab5cb881"
+    },
+    {
+      "rule": "CATCH_THROWABLE_NO_FATAL",
+      "path": "app/src/main/java/tv/withaibuild/customiuizer/mods/Various.kt",
+      "line": 1071,
+      "snippet": "catch (_: Throwable) { null ",
+      "fingerprint": "abe518c5dd350e486592"
+    },
+    {
+      "rule": "EMPTY_CATCH",
+      "path": "app/src/main/java/tv/withaibuild/customiuizer/PreferenceFragmentBase.kt",
+      "line": 288,
+      "snippet": "catch (_: Throwable) {}",
+      "fingerprint": "0334e1efb630e91bdb87"
+    },
+    {
+      "rule": "PRINT_STACK_TRACE",
+      "path": "app/src/main/java/tv/withaibuild/customiuizer/PreferenceFragmentBase.kt",
+      "line": 247,
+      "snippet": ".printStackTrace(",
+      "fingerprint": "3e26c7d43e4220d58ba8"
+    },
+    {
+      "rule": "PRINT_STACK_TRACE",
+      "path": "app/src/main/java/tv/withaibuild/customiuizer/PreferenceFragmentBase.kt",
+      "line": 357,
+      "snippet": ".printStackTrace(",
+      "fingerprint": "3e26c7d43e4220d58ba8"
+    },
+    {
+      "rule": "PRINT_STACK_TRACE",
+      "path": "app/src/main/java/tv/withaibuild/customiuizer/PreferenceFragmentBase.kt",
+      "line": 368,
+      "snippet": ".printStackTrace(",
+      "fingerprint": "3e26c7d43e4220d58ba8"
+    },
+    {
+      "rule": "PRINT_STACK_TRACE",
+      "path": "app/src/main/java/tv/withaibuild/customiuizer/PreferenceFragmentBase.kt",
+      "line": 407,
+      "snippet": ".printStackTrace(",
+      "fingerprint": "3e26c7d43e4220d58ba8"
+    },
+    {
+      "rule": "PRINT_STACK_TRACE",
+      "path": "app/src/main/java/tv/withaibuild/customiuizer/PreferenceFragmentBase.kt",
+      "line": 417,
+      "snippet": ".printStackTrace(",
+      "fingerprint": "3e26c7d43e4220d58ba8"
+    },
+    {
+      "rule": "STATIC_STRONG_ANDROID_OWNER",
+      "path": "app/src/main/java/tv/withaibuild/customiuizer/PreferenceFragmentBase.kt",
+      "line": 37,
+      "snippet": " private var actContext: Context? =",
+      "fingerprint": "1b2abc7ebac4c881ead8"
+    },
+    {
+      "rule": "STATIC_STRONG_ANDROID_OWNER",
+      "path": "app/src/main/java/tv/withaibuild/customiuizer/PreferenceFragmentBase.kt",
+      "line": 258,
+      "snippet": " val renderView =",
+      "fingerprint": "3a66edc26b01135fc72f"
+    },
+    {
+      "rule": "STATIC_STRONG_ANDROID_OWNER",
+      "path": "app/src/main/java/tv/withaibuild/customiuizer/PreferenceFragmentBase.kt",
+      "line": 264,
+      "snippet": " val renderView =",
+      "fingerprint": "3a66edc26b01135fc72f"
+    },
+    {
+      "rule": "CATCH_THROWABLE_NO_FATAL",
+      "path": "app/src/main/java/tv/withaibuild/customiuizer/PreferenceFragmentBase.kt",
+      "line": 246,
+      "snippet": "catch (t: Throwable) { t.printStackTrace() ",
+      "fingerprint": "3bf78acf0083dbac8d48"
+    },
+    {
+      "rule": "CATCH_THROWABLE_NO_FATAL",
+      "path": "app/src/main/java/tv/withaibuild/customiuizer/PreferenceFragmentBase.kt",
+      "line": 288,
+      "snippet": "catch (_: Throwable) {",
+      "fingerprint": "fae1d8c8921ea84c2a8f"
+    },
+    {
+      "rule": "CATCH_THROWABLE_NO_FATAL",
+      "path": "app/src/main/java/tv/withaibuild/customiuizer/PreferenceFragmentBase.kt",
+      "line": 356,
+      "snippet": "catch (e: Throwable) { e.printStackTrace() AlertDialog.Builder(getValidContext()) .setTitle(R.string.warning) .setMessage(getString(R.string.storage_cannot_backup) + \"\\n\"",
+      "fingerprint": "1cec8a44ab7c55514a97"
+    },
+    {
+      "rule": "CATCH_THROWABLE_NO_FATAL",
+      "path": "app/src/main/java/tv/withaibuild/customiuizer/PreferenceFragmentBase.kt",
+      "line": 367,
+      "snippet": "catch (ex: Throwable) { ex.printStackTrace() ",
+      "fingerprint": "68c992b696dd4a45f3be"
+    },
+    {
+      "rule": "CATCH_THROWABLE_NO_FATAL",
+      "path": "app/src/main/java/tv/withaibuild/customiuizer/PreferenceFragmentBase.kt",
+      "line": 406,
+      "snippet": "catch (t: Throwable) { t.printStackTrace() AlertDialog.Builder(act) .setTitle(R.string.warning) .setMessage(R.string.storage_cannot_restore) .setPositiveButton(android.R.",
+      "fingerprint": "90325688d8ef1c12ac4f"
+    },
+    {
+      "rule": "CATCH_THROWABLE_NO_FATAL",
+      "path": "app/src/main/java/tv/withaibuild/customiuizer/PreferenceFragmentBase.kt",
+      "line": 416,
+      "snippet": "catch (ex: Throwable) { ex.printStackTrace() ",
+      "fingerprint": "68c992b696dd4a45f3be"
+    },
+    {
+      "rule": "STATIC_STRONG_ANDROID_OWNER",
+      "path": "app/src/main/java/tv/withaibuild/customiuizer/prefs/PreferenceCategoryEx.kt",
+      "line": 44,
+      "snippet": " val finalView =",
+      "fingerprint": "542b3899c4435a4b21f7"
+    },
+    {
+      "rule": "STATIC_STRONG_ANDROID_OWNER",
+      "path": "app/src/main/java/tv/withaibuild/customiuizer/prefs/PreferenceEx.kt",
+      "line": 52,
+      "snippet": " val summaryView =",
+      "fingerprint": "2dfd31cf1cf98d526b3b"
+    },
+    {
+      "rule": "PRINT_STACK_TRACE",
+      "path": "app/src/main/java/tv/withaibuild/customiuizer/prefs/SeekBarPreference.kt",
+      "line": 268,
+      "snippet": ".printStackTrace(",
+      "fingerprint": "c5ba9f12f6fc5a30fe12"
+    },
+    {
+      "rule": "STATIC_STRONG_ANDROID_OWNER",
+      "path": "app/src/main/java/tv/withaibuild/customiuizer/prefs/SeekBarPreference.kt",
+      "line": 116,
+      "snippet": " val summaryView =",
+      "fingerprint": "9685d90dec8ec7cbe897"
+    },
+    {
+      "rule": "STATIC_STRONG_ANDROID_OWNER",
+      "path": "app/src/main/java/tv/withaibuild/customiuizer/prefs/SeekBarPreference.kt",
+      "line": 123,
+      "snippet": " val noteView =",
+      "fingerprint": "9bb57f76d227e2691736"
+    },
+    {
+      "rule": "STATIC_STRONG_ANDROID_OWNER",
+      "path": "app/src/main/java/tv/withaibuild/customiuizer/prefs/SeekBarPreference.kt",
+      "line": 247,
+      "snippet": " val valueView =",
+      "fingerprint": "6f575e47da9aaf913b39"
+    },
+    {
+      "rule": "PRINT_STACK_TRACE",
+      "path": "app/src/main/java/tv/withaibuild/customiuizer/prefs/SpinnerEx.kt",
+      "line": 46,
+      "snippet": ".printStackTrace(",
+      "fingerprint": "63d83e30463c7d811336"
+    },
+    {
+      "rule": "STATIC_STRONG_ANDROID_OWNER",
+      "path": "app/src/main/java/tv/withaibuild/customiuizer/prefs/SpinnerEx.kt",
+      "line": 42,
+      "snippet": " val popupWindow =",
+      "fingerprint": "2f92acaf21d774c5cd14"
+    },
+    {
+      "rule": "CATCH_THROWABLE_NO_FATAL",
+      "path": "app/src/main/java/tv/withaibuild/customiuizer/prefs/SpinnerEx.kt",
+      "line": 45,
+      "snippet": "catch (e: Throwable) { e.printStackTrace() ",
+      "fingerprint": "d55272e998797b10ed3d"
+    },
+    {
+      "rule": "PRINT_STACK_TRACE",
+      "path": "app/src/main/java/tv/withaibuild/customiuizer/PrefsProvider.kt",
+      "line": 51,
+      "snippet": ".printStackTrace(",
+      "fingerprint": "5d76ef433a5818f61ebd"
+    },
+    {
+      "rule": "CATCH_THROWABLE_NO_FATAL",
+      "path": "app/src/main/java/tv/withaibuild/customiuizer/PrefsProvider.kt",
+      "line": 50,
+      "snippet": "catch (t: Throwable) { t.printStackTrace() ",
+      "fingerprint": "50a5fb9ca1bf78692433"
+    },
+    {
+      "rule": "PRINT_STACK_TRACE",
+      "path": "app/src/main/java/tv/withaibuild/customiuizer/qs/AutoRotateService.kt",
+      "line": 54,
+      "snippet": ".printStackTrace(",
+      "fingerprint": "5f0112083d34d892a20d"
+    },
+    {
+      "rule": "PRINT_STACK_TRACE",
+      "path": "app/src/main/java/tv/withaibuild/customiuizer/qs/AutoRotateService.kt",
+      "line": 62,
+      "snippet": ".printStackTrace(",
+      "fingerprint": "5f0112083d34d892a20d"
+    },
+    {
+      "rule": "CATCH_THROWABLE_NO_FATAL",
+      "path": "app/src/main/java/tv/withaibuild/customiuizer/qs/AutoRotateService.kt",
+      "line": 53,
+      "snippet": "catch (t: Throwable) { t.printStackTrace() ",
+      "fingerprint": "5bfbf53777f6d8bccb5f"
+    },
+    {
+      "rule": "CATCH_THROWABLE_NO_FATAL",
+      "path": "app/src/main/java/tv/withaibuild/customiuizer/qs/AutoRotateService.kt",
+      "line": 61,
+      "snippet": "catch (t: Throwable) { t.printStackTrace() 0 ",
+      "fingerprint": "da44237d104350331966"
+    },
+    {
+      "rule": "CATCH_THROWABLE_NO_FATAL",
+      "path": "app/src/main/java/tv/withaibuild/customiuizer/SubFragment.kt",
+      "line": 260,
+      "snippet": "catch (e: Throwable) { Log.e(\"miuizer\", \"Cannot save sub preference!\") ",
+      "fingerprint": "43cdca82bc986644a2fa"
+    },
+    {
+      "rule": "CATCH_THROWABLE_NO_FATAL",
+      "path": "app/src/main/java/tv/withaibuild/customiuizer/SubFragment.kt",
+      "line": 280,
+      "snippet": "catch (e: Throwable) { Log.e(\"miuizer\", \"Cannot load sub preference!\") ",
+      "fingerprint": "8384939bc3ea487e2e45"
+    },
+    {
+      "rule": "PRINT_STACK_TRACE",
+      "path": "app/src/main/java/tv/withaibuild/customiuizer/SubFragmentWithSearch.kt",
+      "line": 53,
+      "snippet": ".printStackTrace(",
+      "fingerprint": "0db4399e3dea5150c370"
+    },
+    {
+      "rule": "STATIC_STRONG_ANDROID_OWNER",
+      "path": "app/src/main/java/tv/withaibuild/customiuizer/SubFragmentWithSearch.kt",
+      "line": 61,
+      "snippet": " val searchView =",
+      "fingerprint": "2f89eeae021531a20cc2"
+    },
+    {
+      "rule": "CATCH_THROWABLE_NO_FATAL",
+      "path": "app/src/main/java/tv/withaibuild/customiuizer/SubFragmentWithSearch.kt",
+      "line": 52,
+      "snippet": "catch (t: Throwable) { t.printStackTrace() ",
+      "fingerprint": "96e1cc065f98844d0fa5"
+    },
+    {
+      "rule": "EMPTY_CATCH",
+      "path": "app/src/main/java/tv/withaibuild/customiuizer/subs/ActivitySelector.kt",
+      "line": 83,
+      "snippet": "catch (_: Throwable) {}",
+      "fingerprint": "7f7da64d5bec762a97ec"
+    },
+    {
+      "rule": "THREAD_SLEEP",
+      "path": "app/src/main/java/tv/withaibuild/customiuizer/subs/ActivitySelector.kt",
+      "line": 82,
+      "snippet": "Thread.sleep(",
+      "fingerprint": "313181deefa64ef98056"
+    },
+    {
+      "rule": "PRINT_STACK_TRACE",
+      "path": "app/src/main/java/tv/withaibuild/customiuizer/subs/ActivitySelector.kt",
+      "line": 100,
+      "snippet": ".printStackTrace(",
+      "fingerprint": "a95519aefc9e79ef11fb"
+    },
+    {
+      "rule": "CATCH_THROWABLE_NO_FATAL",
+      "path": "app/src/main/java/tv/withaibuild/customiuizer/subs/ActivitySelector.kt",
+      "line": 83,
+      "snippet": "catch (_: Throwable) {",
+      "fingerprint": "c0a3a6e18321189edbaf"
+    },
+    {
+      "rule": "CATCH_THROWABLE_NO_FATAL",
+      "path": "app/src/main/java/tv/withaibuild/customiuizer/subs/ActivitySelector.kt",
+      "line": 99,
+      "snippet": "catch (e: Throwable) { e.printStackTrace() ",
+      "fingerprint": "b5b7a403999bbecaa1ff"
+    },
+    {
+      "rule": "EMPTY_CATCH",
+      "path": "app/src/main/java/tv/withaibuild/customiuizer/subs/AppSelector.kt",
+      "line": 274,
+      "snippet": "catch (_: Throwable) { }",
+      "fingerprint": "a478eb9306692d155637"
+    },
+    {
+      "rule": "THREAD_SLEEP",
+      "path": "app/src/main/java/tv/withaibuild/customiuizer/subs/AppSelector.kt",
+      "line": 273,
+      "snippet": "Thread.sleep(",
+      "fingerprint": "0ddd77585f15b0fe2b77"
+    },
+    {
+      "rule": "PRINT_STACK_TRACE",
+      "path": "app/src/main/java/tv/withaibuild/customiuizer/subs/AppSelector.kt",
+      "line": 199,
+      "snippet": ".printStackTrace(",
+      "fingerprint": "da2dae3ecf4c3e51fc4d"
+    },
+    {
+      "rule": "PRINT_STACK_TRACE",
+      "path": "app/src/main/java/tv/withaibuild/customiuizer/subs/AppSelector.kt",
+      "line": 224,
+      "snippet": ".printStackTrace(",
+      "fingerprint": "da2dae3ecf4c3e51fc4d"
+    },
+    {
+      "rule": "PRINT_STACK_TRACE",
+      "path": "app/src/main/java/tv/withaibuild/customiuizer/subs/AppSelector.kt",
+      "line": 292,
+      "snippet": ".printStackTrace(",
+      "fingerprint": "da2dae3ecf4c3e51fc4d"
+    },
+    {
+      "rule": "STATIC_STRONG_ANDROID_OWNER",
+      "path": "app/src/main/java/tv/withaibuild/customiuizer/subs/AppSelector.kt",
+      "line": 34,
+      "snippet": " private var isActivity =",
+      "fingerprint": "7bdd322f60ace65202c0"
+    },
+    {
+      "rule": "CATCH_THROWABLE_NO_FATAL",
+      "path": "app/src/main/java/tv/withaibuild/customiuizer/subs/AppSelector.kt",
+      "line": 274,
+      "snippet": "catch (_: Throwable) { ",
+      "fingerprint": "112cb0a5f5c0d03823ba"
+    },
+    {
+      "rule": "CATCH_THROWABLE_NO_FATAL",
+      "path": "app/src/main/java/tv/withaibuild/customiuizer/subs/AppSelector.kt",
+      "line": 291,
+      "snippet": "catch (e: Throwable) { e.printStackTrace() ",
+      "fingerprint": "0b1c569a0aeacc6fd4a4"
+    },
+    {
+      "rule": "EMPTY_CATCH",
+      "path": "app/src/main/java/tv/withaibuild/customiuizer/subs/BTList.kt",
+      "line": 171,
+      "snippet": "catch (_: Throwable) {}",
+      "fingerprint": "9cd3c43f196c97559572"
+    },
+    {
+      "rule": "STATIC_STRONG_ANDROID_OWNER",
+      "path": "app/src/main/java/tv/withaibuild/customiuizer/subs/BTList.kt",
+      "line": 40,
+      "snippet": " var mAppContext: Context? =",
+      "fingerprint": "e974f7b52b87704d5064"
+    },
+    {
+      "rule": "STATIC_STRONG_ANDROID_OWNER",
+      "path": "app/src/main/java/tv/withaibuild/customiuizer/subs/BTList.kt",
+      "line": 104,
+      "snippet": " val fetch: View =",
+      "fingerprint": "9c925af08e531eb7c142"
+    },
+    {
+      "rule": "CATCH_THROWABLE_NO_FATAL",
+      "path": "app/src/main/java/tv/withaibuild/customiuizer/subs/BTList.kt",
+      "line": 171,
+      "snippet": "catch (_: Throwable) {",
+      "fingerprint": "e02a39c3d466896b210e"
+    },
+    {
+      "rule": "STATIC_STRONG_ANDROID_OWNER",
+      "path": "app/src/main/java/tv/withaibuild/customiuizer/subs/CategorySelector.kt",
+      "line": 42,
+      "snippet": " val mainFragment =",
+      "fingerprint": "652cfa838de6134a5a84"
+    },
+    {
+      "rule": "EMPTY_CATCH",
+      "path": "app/src/main/java/tv/withaibuild/customiuizer/subs/ColorSelector.kt",
+      "line": 136,
+      "snippet": "catch (_: IllegalArgumentException) {}",
+      "fingerprint": "9a161dca8f77e96cda3d"
+    },
+    {
+      "rule": "STATIC_STRONG_ANDROID_OWNER",
+      "path": "app/src/main/java/tv/withaibuild/customiuizer/subs/ColorSelector.kt",
+      "line": 24,
+      "snippet": " private var selectedColorView: View? =",
+      "fingerprint": "576b8cb70666377262f9"
+    },
+    {
+      "rule": "STATIC_STRONG_ANDROID_OWNER",
+      "path": "app/src/main/java/tv/withaibuild/customiuizer/subs/MultiAction.kt",
+      "line": 171,
+      "snippet": " val textView =",
+      "fingerprint": "b6dbef2df1787ffef45a"
+    },
+    {
+      "rule": "PRINT_STACK_TRACE",
+      "path": "app/src/main/java/tv/withaibuild/customiuizer/subs/ShortcutSelector.kt",
+      "line": 76,
+      "snippet": ".printStackTrace(",
+      "fingerprint": "a652f08b415c304c013f"
+    },
+    {
+      "rule": "PRINT_STACK_TRACE",
+      "path": "app/src/main/java/tv/withaibuild/customiuizer/subs/ShortcutSelector.kt",
+      "line": 95,
+      "snippet": ".printStackTrace(",
+      "fingerprint": "a652f08b415c304c013f"
+    },
+    {
+      "rule": "STATIC_STRONG_ANDROID_OWNER",
+      "path": "app/src/main/java/tv/withaibuild/customiuizer/subs/ShortcutSelector.kt",
+      "line": 72,
+      "snippet": " val mContext =",
+      "fingerprint": "464386d06575e57cc455"
+    },
+    {
+      "rule": "CATCH_THROWABLE_NO_FATAL",
+      "path": "app/src/main/java/tv/withaibuild/customiuizer/subs/ShortcutSelector.kt",
+      "line": 75,
+      "snippet": "catch (t: Throwable) { t.printStackTrace() ",
+      "fingerprint": "3507557087662a7745c0"
+    },
+    {
+      "rule": "CATCH_THROWABLE_NO_FATAL",
+      "path": "app/src/main/java/tv/withaibuild/customiuizer/subs/ShortcutSelector.kt",
+      "line": 94,
+      "snippet": "catch (t: Throwable) { t.printStackTrace() ",
+      "fingerprint": "3507557087662a7745c0"
+    },
+    {
+      "rule": "PRINT_STACK_TRACE",
+      "path": "app/src/main/java/tv/withaibuild/customiuizer/subs/SortableList.kt",
+      "line": 65,
+      "snippet": ".printStackTrace(",
+      "fingerprint": "62a82efa534ff06f6e8c"
+    },
+    {
+      "rule": "CATCH_THROWABLE_NO_FATAL",
+      "path": "app/src/main/java/tv/withaibuild/customiuizer/subs/SortableList.kt",
+      "line": 64,
+      "snippet": "catch (e: Throwable) { e.printStackTrace() ",
+      "fingerprint": "774f0e551d7fa5a07191"
+    },
+    {
+      "rule": "PRINT_STACK_TRACE",
+      "path": "app/src/main/java/tv/withaibuild/customiuizer/subs/System.kt",
+      "line": 262,
+      "snippet": ".printStackTrace(",
+      "fingerprint": "d6e39d1a5ff2ad4dbd3b"
+    },
+    {
+      "rule": "CATCH_THROWABLE_NO_FATAL",
+      "path": "app/src/main/java/tv/withaibuild/customiuizer/subs/System.kt",
+      "line": 261,
+      "snippet": "catch (t: Throwable) { t.printStackTrace() ",
+      "fingerprint": "80369baa70efae39721d"
+    },
+    {
+      "rule": "CATCH_THROWABLE_NO_FATAL",
+      "path": "app/src/main/java/tv/withaibuild/customiuizer/subs/System_AirplaneModeConfig.kt",
+      "line": 66,
+      "snippet": "catch (t: Throwable) { mutableListOf() ",
+      "fingerprint": "2f3ba4def686cbe53ac2"
+    },
+    {
+      "rule": "CATCH_THROWABLE_NO_FATAL",
+      "path": "app/src/main/java/tv/withaibuild/customiuizer/subs/System_AirplaneModeConfig.kt",
+      "line": 71,
+      "snippet": "catch (t: Throwable) { mutableListOf() ",
+      "fingerprint": "2f3ba4def686cbe53ac2"
+    },
+    {
+      "rule": "CATCH_THROWABLE_NO_FATAL",
+      "path": "app/src/main/java/tv/withaibuild/customiuizer/subs/Various.kt",
+      "line": 43,
+      "snippet": "catch (e: Throwable) { val pref = findPreference<Preference>(\"pref_key_various_miuiinstaller\") as? CheckBoxPreferenceEx pref?.isChecked = false pref?.setUnsupported(true) pref?.setSummary(R.stri",
+      "fingerprint": "add3648f2f14f773f413"
+    },
+    {
+      "rule": "STATIC_STRONG_ANDROID_OWNER",
+      "path": "app/src/main/java/tv/withaibuild/customiuizer/subs/WebPage.kt",
+      "line": 26,
+      "snippet": " val webView =",
+      "fingerprint": "a2b35eafc4d2699b9b24"
+    },
+    {
+      "rule": "STATIC_STRONG_ANDROID_OWNER",
+      "path": "app/src/main/java/tv/withaibuild/customiuizer/subs/WebPage.kt",
+      "line": 41,
+      "snippet": " val webView =",
+      "fingerprint": "a2b35eafc4d2699b9b24"
+    },
+    {
+      "rule": "EMPTY_CATCH",
+      "path": "app/src/main/java/tv/withaibuild/customiuizer/subs/WiFiList.kt",
+      "line": 86,
+      "snippet": "catch (ignore: Throwable) { }",
+      "fingerprint": "8adb4a683f0e20a886cf"
+    },
+    {
+      "rule": "EMPTY_CATCH",
+      "path": "app/src/main/java/tv/withaibuild/customiuizer/subs/WiFiList.kt",
+      "line": 201,
+      "snippet": "catch (_: Throwable) {}",
+      "fingerprint": "806470112e494db1f1ce"
+    },
+    {
+      "rule": "STATIC_STRONG_ANDROID_OWNER",
+      "path": "app/src/main/java/tv/withaibuild/customiuizer/subs/WiFiList.kt",
+      "line": 44,
+      "snippet": " var mAppContext: Context? =",
+      "fingerprint": "78494fd016fff2f96892"
+    },
+    {
+      "rule": "STATIC_STRONG_ANDROID_OWNER",
+      "path": "app/src/main/java/tv/withaibuild/customiuizer/subs/WiFiList.kt",
+      "line": 123,
+      "snippet": " val location: View =",
+      "fingerprint": "082b3f2fb2310a57fa50"
+    },
+    {
+      "rule": "CATCH_THROWABLE_NO_FATAL",
+      "path": "app/src/main/java/tv/withaibuild/customiuizer/subs/WiFiList.kt",
+      "line": 86,
+      "snippet": "catch (ignore: Throwable) { ",
+      "fingerprint": "6643c4103ddbc196a971"
+    },
+    {
+      "rule": "CATCH_THROWABLE_NO_FATAL",
+      "path": "app/src/main/java/tv/withaibuild/customiuizer/subs/WiFiList.kt",
+      "line": 171,
+      "snippet": "catch (t: Throwable) { false ",
+      "fingerprint": "02b2243ef2360a1a8ec8"
+    },
+    {
+      "rule": "CATCH_THROWABLE_NO_FATAL",
+      "path": "app/src/main/java/tv/withaibuild/customiuizer/subs/WiFiList.kt",
+      "line": 201,
+      "snippet": "catch (_: Throwable) {",
+      "fingerprint": "cf993adfc81495e3f701"
+    },
+    {
+      "rule": "STATIC_STRONG_ANDROID_OWNER",
+      "path": "app/src/main/java/tv/withaibuild/customiuizer/utils/AppDataAdapter.kt",
+      "line": 327,
+      "snippet": " val container: View =",
+      "fingerprint": "482caeb493fcf35db9d3"
+    },
+    {
+      "rule": "PRINT_STACK_TRACE",
+      "path": "app/src/main/java/tv/withaibuild/customiuizer/utils/AppHelper.kt",
+      "line": 335,
+      "snippet": ".printStackTrace(",
+      "fingerprint": "6a60ad6a9693b3047110"
+    },
+    {
+      "rule": "STATIC_STRONG_ANDROID_OWNER",
+      "path": "app/src/main/java/tv/withaibuild/customiuizer/utils/AppHelper.kt",
+      "line": 227,
+      "snippet": " val mContext =",
+      "fingerprint": "f37dd0dd67baf27a3913"
+    },
+    {
+      "rule": "CATCH_THROWABLE_NO_FATAL",
+      "path": "app/src/main/java/tv/withaibuild/customiuizer/utils/AppHelper.kt",
+      "line": 103,
+      "snippet": "catch (t: Throwable) { false ",
+      "fingerprint": "c720e618d6c6487145ce"
+    },
+    {
+      "rule": "CATCH_THROWABLE_NO_FATAL",
+      "path": "app/src/main/java/tv/withaibuild/customiuizer/utils/AppHelper.kt",
+      "line": 116,
+      "snippet": "catch (t: Throwable) { mirrorDirty = true; return ",
+      "fingerprint": "2a7ebcef70cc8db4358c"
+    },
+    {
+      "rule": "CATCH_THROWABLE_NO_FATAL",
+      "path": "app/src/main/java/tv/withaibuild/customiuizer/utils/AppHelper.kt",
+      "line": 117,
+      "snippet": "catch (t: Throwable) { mirrorDirty = true; return ",
+      "fingerprint": "2a7ebcef70cc8db4358c"
+    },
+    {
+      "rule": "CATCH_THROWABLE_NO_FATAL",
+      "path": "app/src/main/java/tv/withaibuild/customiuizer/utils/AppHelper.kt",
+      "line": 145,
+      "snippet": "catch (t: Throwable) { false ",
+      "fingerprint": "c720e618d6c6487145ce"
+    },
+    {
+      "rule": "CATCH_THROWABLE_NO_FATAL",
+      "path": "app/src/main/java/tv/withaibuild/customiuizer/utils/AppHelper.kt",
+      "line": 229,
+      "snippet": "catch (t: Throwable) { context ",
+      "fingerprint": "100c1046ef5ac9848715"
+    },
+    {
+      "rule": "CATCH_THROWABLE_NO_FATAL",
+      "path": "app/src/main/java/tv/withaibuild/customiuizer/utils/AppHelper.kt",
+      "line": 334,
+      "snippet": "catch (t: Throwable) { t.printStackTrace() null ",
+      "fingerprint": "3c9f583478f1306beacd"
+    },
+    {
+      "rule": "STATIC_STRONG_ANDROID_OWNER",
+      "path": "app/src/main/java/tv/withaibuild/customiuizer/utils/AppLocaleController.kt",
+      "line": 249,
+      "snippet": " var current: Context? =",
+      "fingerprint": "2b528b0c906b0f325c3c"
+    },
+    {
+      "rule": "CATCH_THROWABLE_NO_FATAL",
+      "path": "app/src/main/java/tv/withaibuild/customiuizer/utils/AppLocaleController.kt",
+      "line": 135,
+      "snippet": "catch (t: Throwable) { Log.e(TAG, \"LocaleManager rejected the locale list\", t) false ",
+      "fingerprint": "a5598abf34b24f915a7a"
+    },
+    {
+      "rule": "CATCH_THROWABLE_NO_FATAL",
+      "path": "app/src/main/java/tv/withaibuild/customiuizer/utils/AppLocaleController.kt",
+      "line": 152,
+      "snippet": "catch (t: Throwable) { Log.w(TAG, \"Unable to read application locales\", t) LocaleListCompat.getEmptyLocaleList() ",
+      "fingerprint": "20ec53a5cd7e6c9a2a19"
+    },
+    {
+      "rule": "CATCH_THROWABLE_NO_FATAL",
+      "path": "app/src/main/java/tv/withaibuild/customiuizer/utils/AppLocaleController.kt",
+      "line": 166,
+      "snippet": "catch (t: Throwable) { Log.w(TAG, \"Unable to build application locale list\", t) LocaleListCompat.getEmptyLocaleList() ",
+      "fingerprint": "b5b0f3142f38bab3d78c"
+    },
+    {
+      "rule": "CATCH_THROWABLE_NO_FATAL",
+      "path": "app/src/main/java/tv/withaibuild/customiuizer/utils/AudioVisualizer.kt",
+      "line": 357,
+      "snippet": "catch (t: Throwable) { XposedHelpers.log(t) ",
+      "fingerprint": "ad3f87cf43681ae9525d"
+    },
+    {
+      "rule": "CATCH_THROWABLE_NO_FATAL",
+      "path": "app/src/main/java/tv/withaibuild/customiuizer/utils/AudioVisualizer.kt",
+      "line": 448,
+      "snippet": "catch (t: Throwable) { XposedHelpers.log(t) ",
+      "fingerprint": "ad3f87cf43681ae9525d"
+    },
+    {
+      "rule": "CATCH_THROWABLE_NO_FATAL",
+      "path": "app/src/main/java/tv/withaibuild/customiuizer/utils/AudioVisualizer.kt",
+      "line": 481,
+      "snippet": "catch (t: Throwable) { XposedHelpers.log(t) ",
+      "fingerprint": "ad3f87cf43681ae9525d"
+    },
+    {
+      "rule": "CATCH_THROWABLE_NO_FATAL",
+      "path": "app/src/main/java/tv/withaibuild/customiuizer/utils/AudioVisualizer.kt",
+      "line": 601,
+      "snippet": "catch (_: Throwable) { return ",
+      "fingerprint": "4e6c02b3704aa14471ca"
+    },
+    {
+      "rule": "CATCH_THROWABLE_NO_FATAL",
+      "path": "app/src/main/java/tv/withaibuild/customiuizer/utils/AudioVisualizer.kt",
+      "line": 687,
+      "snippet": "catch (t: Throwable) { XposedHelpers.log(t) null ",
+      "fingerprint": "fe4e180ac7ae233a17b2"
+    },
+    {
+      "rule": "CATCH_THROWABLE_NO_FATAL",
+      "path": "app/src/main/java/tv/withaibuild/customiuizer/utils/AudioVisualizer.kt",
+      "line": 709,
+      "snippet": "catch (t: Throwable) { XposedHelpers.log(t) ",
+      "fingerprint": "ad3f87cf43681ae9525d"
+    },
+    {
+      "rule": "CATCH_THROWABLE_NO_FATAL",
+      "path": "app/src/main/java/tv/withaibuild/customiuizer/utils/AudioVisualizer.kt",
+      "line": 716,
+      "snippet": "catch (t: Throwable) { XposedHelpers.log(t) ",
+      "fingerprint": "ad3f87cf43681ae9525d"
+    },
+    {
+      "rule": "CATCH_THROWABLE_NO_FATAL",
+      "path": "app/src/main/java/tv/withaibuild/customiuizer/utils/AudioVisualizer.kt",
+      "line": 739,
+      "snippet": "catch (t: Throwable) { XposedHelpers.log(t) null ",
+      "fingerprint": "fe4e180ac7ae233a17b2"
+    },
+    {
+      "rule": "CATCH_THROWABLE_NO_FATAL",
+      "path": "app/src/main/java/tv/withaibuild/customiuizer/utils/AudioVisualizer.kt",
+      "line": 763,
+      "snippet": "catch (t: Throwable) { XposedHelpers.log(t) ",
+      "fingerprint": "ad3f87cf43681ae9525d"
+    },
+    {
+      "rule": "EMPTY_CATCH",
+      "path": "app/src/main/java/tv/withaibuild/customiuizer/utils/BatteryIndicator.kt",
+      "line": 365,
+      "snippet": "catch (ignored: Throwable) { }",
+      "fingerprint": "91e9c34a5617113f0097"
+    },
+    {
+      "rule": "CATCH_THROWABLE_NO_FATAL",
+      "path": "app/src/main/java/tv/withaibuild/customiuizer/utils/BatteryIndicator.kt",
+      "line": 169,
+      "snippet": "catch (t: Throwable) { XposedHelpers.log(t) ",
+      "fingerprint": "ee960a826299f2706638"
+    },
+    {
+      "rule": "CATCH_THROWABLE_NO_FATAL",
+      "path": "app/src/main/java/tv/withaibuild/customiuizer/utils/BatteryIndicator.kt",
+      "line": 365,
+      "snippet": "catch (ignored: Throwable) { ",
+      "fingerprint": "f7ddb7b6fd684f01a058"
+    },
+    {
+      "rule": "CATCH_THROWABLE_NO_FATAL",
+      "path": "app/src/main/java/tv/withaibuild/customiuizer/utils/BatteryIndicator.kt",
+      "line": 405,
+      "snippet": "catch (t: Throwable) { XposedHelpers.log(t) ",
+      "fingerprint": "ee960a826299f2706638"
+    },
+    {
+      "rule": "CATCH_THROWABLE_NO_FATAL",
+      "path": "app/src/main/java/tv/withaibuild/customiuizer/utils/BatteryIndicator.kt",
+      "line": 487,
+      "snippet": "catch (t: Throwable) { XposedHelpers.log(t) ",
+      "fingerprint": "ee960a826299f2706638"
+    },
+    {
+      "rule": "EMPTY_CATCH",
+      "path": "app/src/main/java/tv/withaibuild/customiuizer/utils/BitmapCachedLoader.kt",
+      "line": 108,
+      "snippet": "catch (_: PackageManager.NameNotFoundException) { }",
+      "fingerprint": "29e93bfe887875eba2f1"
+    },
+    {
+      "rule": "EMPTY_CATCH",
+      "path": "app/src/main/java/tv/withaibuild/customiuizer/utils/BitmapCachedLoader.kt",
+      "line": 121,
+      "snippet": "catch (_: PackageManager.NameNotFoundException) { }",
+      "fingerprint": "29e93bfe887875eba2f1"
+    },
+    {
+      "rule": "STATIC_STRONG_ANDROID_OWNER",
+      "path": "app/src/main/java/tv/withaibuild/customiuizer/utils/BitmapCachedLoader.kt",
+      "line": 147,
+      "snippet": " val imageView =",
+      "fingerprint": "bb3d7c5ba8731e466530"
+    },
+    {
+      "rule": "CATCH_THROWABLE_NO_FATAL",
+      "path": "app/src/main/java/tv/withaibuild/customiuizer/utils/BitmapCachedLoader.kt",
+      "line": 80,
+      "snippet": "catch (t: Throwable) { Log.w(TAG, \"Icon load failed\", t) null ",
+      "fingerprint": "eb7eef88b7260aa2edc4"
+    },
+    {
+      "rule": "CATCH_THROWABLE_NO_FATAL",
+      "path": "app/src/main/java/tv/withaibuild/customiuizer/utils/BitmapCachedLoader.kt",
+      "line": 140,
+      "snippet": "catch (t: Throwable) { Log.w(TAG, \"Unable to apply app icon\", t) ",
+      "fingerprint": "88afe7fb8ff46d8d2953"
+    },
+    {
+      "rule": "EMPTY_CATCH",
+      "path": "app/src/main/java/tv/withaibuild/customiuizer/utils/Helpers.kt",
+      "line": 325,
+      "snippet": "catch (ignore: Throwable) {}",
+      "fingerprint": "a94ea60b1d6b36c732dd"
+    },
+    {
+      "rule": "EMPTY_CATCH",
+      "path": "app/src/main/java/tv/withaibuild/customiuizer/utils/Helpers.kt",
+      "line": 526,
+      "snippet": "catch (ignore: Throwable) {}",
+      "fingerprint": "a94ea60b1d6b36c732dd"
+    },
+    {
+      "rule": "EMPTY_CATCH",
+      "path": "app/src/main/java/tv/withaibuild/customiuizer/utils/Helpers.kt",
+      "line": 563,
+      "snippet": "catch (ignore: Throwable) {}",
+      "fingerprint": "a94ea60b1d6b36c732dd"
+    },
+    {
+      "rule": "EMPTY_CATCH",
+      "path": "app/src/main/java/tv/withaibuild/customiuizer/utils/Helpers.kt",
+      "line": 609,
+      "snippet": "catch (ignore: Throwable) {}",
+      "fingerprint": "a94ea60b1d6b36c732dd"
+    },
+    {
+      "rule": "EMPTY_CATCH",
+      "path": "app/src/main/java/tv/withaibuild/customiuizer/utils/Helpers.kt",
+      "line": 664,
+      "snippet": "catch (ignore: Throwable) {}",
+      "fingerprint": "a94ea60b1d6b36c732dd"
+    },
+    {
+      "rule": "PRINT_STACK_TRACE",
+      "path": "app/src/main/java/tv/withaibuild/customiuizer/utils/Helpers.kt",
+      "line": 269,
+      "snippet": ".printStackTrace(",
+      "fingerprint": "babfd4ba0a647db0d4fe"
+    },
+    {
+      "rule": "PRINT_STACK_TRACE",
+      "path": "app/src/main/java/tv/withaibuild/customiuizer/utils/Helpers.kt",
+      "line": 352,
+      "snippet": ".printStackTrace(",
+      "fingerprint": "babfd4ba0a647db0d4fe"
+    },
+    {
+      "rule": "PRINT_STACK_TRACE",
+      "path": "app/src/main/java/tv/withaibuild/customiuizer/utils/Helpers.kt",
+      "line": 461,
+      "snippet": ".printStackTrace(",
+      "fingerprint": "babfd4ba0a647db0d4fe"
+    },
+    {
+      "rule": "PRINT_STACK_TRACE",
+      "path": "app/src/main/java/tv/withaibuild/customiuizer/utils/Helpers.kt",
+      "line": 485,
+      "snippet": ".printStackTrace(",
+      "fingerprint": "babfd4ba0a647db0d4fe"
+    },
+    {
+      "rule": "PRINT_STACK_TRACE",
+      "path": "app/src/main/java/tv/withaibuild/customiuizer/utils/Helpers.kt",
+      "line": 494,
+      "snippet": ".printStackTrace(",
+      "fingerprint": "babfd4ba0a647db0d4fe"
+    },
+    {
+      "rule": "PRINT_STACK_TRACE",
+      "path": "app/src/main/java/tv/withaibuild/customiuizer/utils/Helpers.kt",
+      "line": 528,
+      "snippet": ".printStackTrace(",
+      "fingerprint": "babfd4ba0a647db0d4fe"
+    },
+    {
+      "rule": "PRINT_STACK_TRACE",
+      "path": "app/src/main/java/tv/withaibuild/customiuizer/utils/Helpers.kt",
+      "line": 565,
+      "snippet": ".printStackTrace(",
+      "fingerprint": "babfd4ba0a647db0d4fe"
+    },
+    {
+      "rule": "PRINT_STACK_TRACE",
+      "path": "app/src/main/java/tv/withaibuild/customiuizer/utils/Helpers.kt",
+      "line": 611,
+      "snippet": ".printStackTrace(",
+      "fingerprint": "babfd4ba0a647db0d4fe"
+    },
+    {
+      "rule": "PRINT_STACK_TRACE",
+      "path": "app/src/main/java/tv/withaibuild/customiuizer/utils/Helpers.kt",
+      "line": 666,
+      "snippet": ".printStackTrace(",
+      "fingerprint": "babfd4ba0a647db0d4fe"
+    },
+    {
+      "rule": "PRINT_STACK_TRACE",
+      "path": "app/src/main/java/tv/withaibuild/customiuizer/utils/Helpers.kt",
+      "line": 686,
+      "snippet": ".printStackTrace(",
+      "fingerprint": "babfd4ba0a647db0d4fe"
+    },
+    {
+      "rule": "PRINT_STACK_TRACE",
+      "path": "app/src/main/java/tv/withaibuild/customiuizer/utils/Helpers.kt",
+      "line": 693,
+      "snippet": ".printStackTrace(",
+      "fingerprint": "babfd4ba0a647db0d4fe"
+    },
+    {
+      "rule": "PRINT_STACK_TRACE",
+      "path": "app/src/main/java/tv/withaibuild/customiuizer/utils/Helpers.kt",
+      "line": 713,
+      "snippet": ".printStackTrace(",
+      "fingerprint": "babfd4ba0a647db0d4fe"
+    },
+    {
+      "rule": "PRINT_STACK_TRACE",
+      "path": "app/src/main/java/tv/withaibuild/customiuizer/utils/Helpers.kt",
+      "line": 720,
+      "snippet": ".printStackTrace(",
+      "fingerprint": "babfd4ba0a647db0d4fe"
+    },
+    {
+      "rule": "PRINT_STACK_TRACE",
+      "path": "app/src/main/java/tv/withaibuild/customiuizer/utils/Helpers.kt",
+      "line": 835,
+      "snippet": ".printStackTrace(",
+      "fingerprint": "babfd4ba0a647db0d4fe"
+    },
+    {
+      "rule": "PRINT_STACK_TRACE",
+      "path": "app/src/main/java/tv/withaibuild/customiuizer/utils/Helpers.kt",
+      "line": 960,
+      "snippet": ".printStackTrace(",
+      "fingerprint": "babfd4ba0a647db0d4fe"
+    },
+    {
+      "rule": "STATIC_STRONG_ANDROID_OWNER",
+      "path": "app/src/main/java/tv/withaibuild/customiuizer/utils/Helpers.kt",
+      "line": 265,
+      "snippet": " val currentFocusedView =",
+      "fingerprint": "c80d8a74a5599dc8af43"
+    },
+    {
+      "rule": "CATCH_THROWABLE_NO_FATAL",
+      "path": "app/src/main/java/tv/withaibuild/customiuizer/utils/Helpers.kt",
+      "line": 139,
+      "snippet": "catch (t: Throwable) { false ",
+      "fingerprint": "1dc872b1eeca59edea27"
+    },
+    {
+      "rule": "CATCH_THROWABLE_NO_FATAL",
+      "path": "app/src/main/java/tv/withaibuild/customiuizer/utils/Helpers.kt",
+      "line": 177,
+      "snippet": "catch (t: Throwable) { checkbox.setButtonDrawable(R.drawable.btn_checkbox) ",
+      "fingerprint": "632b251b0d4231db4951"
+    },
+    {
+      "rule": "CATCH_THROWABLE_NO_FATAL",
+      "path": "app/src/main/java/tv/withaibuild/customiuizer/utils/Helpers.kt",
+      "line": 253,
+      "snippet": "catch (t: Throwable) { if (!silent) Toast.makeText(act, R.string.various_hiddenfeatures_not_found, Toast.LENGTH_LONG).show() false ",
+      "fingerprint": "04de8395bcda7710a2b3"
+    },
+    {
+      "rule": "CATCH_THROWABLE_NO_FATAL",
+      "path": "app/src/main/java/tv/withaibuild/customiuizer/utils/Helpers.kt",
+      "line": 268,
+      "snippet": "catch (t: Throwable) { t.printStackTrace() ",
+      "fingerprint": "2497c7f4196ae5cdf98b"
+    },
+    {
+      "rule": "CATCH_THROWABLE_NO_FATAL",
+      "path": "app/src/main/java/tv/withaibuild/customiuizer/utils/Helpers.kt",
+      "line": 325,
+      "snippet": "catch (ignore: Throwable) {",
+      "fingerprint": "e9977fa12a4baffbd2fc"
+    },
+    {
+      "rule": "CATCH_THROWABLE_NO_FATAL",
+      "path": "app/src/main/java/tv/withaibuild/customiuizer/utils/Helpers.kt",
+      "line": 351,
+      "snippet": "catch (t: Throwable) { t.printStackTrace() ",
+      "fingerprint": "2497c7f4196ae5cdf98b"
+    },
+    {
+      "rule": "CATCH_THROWABLE_NO_FATAL",
+      "path": "app/src/main/java/tv/withaibuild/customiuizer/utils/Helpers.kt",
+      "line": 460,
+      "snippet": "catch (t: Throwable) { t.printStackTrace() 1.0f ",
+      "fingerprint": "dd1e75b376a896b09499"
+    },
+    {
+      "rule": "CATCH_THROWABLE_NO_FATAL",
+      "path": "app/src/main/java/tv/withaibuild/customiuizer/utils/Helpers.kt",
+      "line": 484,
+      "snippet": "catch (t: Throwable) { t.printStackTrace() ",
+      "fingerprint": "2497c7f4196ae5cdf98b"
+    },
+    {
+      "rule": "CATCH_THROWABLE_NO_FATAL",
+      "path": "app/src/main/java/tv/withaibuild/customiuizer/utils/Helpers.kt",
+      "line": 493,
+      "snippet": "catch (t: Throwable) { t.printStackTrace() null ",
+      "fingerprint": "4e4174b0bcac92c92e02"
+    },
+    {
+      "rule": "CATCH_THROWABLE_NO_FATAL",
+      "path": "app/src/main/java/tv/withaibuild/customiuizer/utils/Helpers.kt",
+      "line": 526,
+      "snippet": "catch (ignore: Throwable) {",
+      "fingerprint": "e9977fa12a4baffbd2fc"
+    },
+    {
+      "rule": "CATCH_THROWABLE_NO_FATAL",
+      "path": "app/src/main/java/tv/withaibuild/customiuizer/utils/Helpers.kt",
+      "line": 527,
+      "snippet": "catch (e: Throwable) { e.printStackTrace() ",
+      "fingerprint": "ff8368dbc0288cd35bd9"
+    },
+    {
+      "rule": "CATCH_THROWABLE_NO_FATAL",
+      "path": "app/src/main/java/tv/withaibuild/customiuizer/utils/Helpers.kt",
+      "line": 563,
+      "snippet": "catch (ignore: Throwable) {",
+      "fingerprint": "e9977fa12a4baffbd2fc"
+    },
+    {
+      "rule": "CATCH_THROWABLE_NO_FATAL",
+      "path": "app/src/main/java/tv/withaibuild/customiuizer/utils/Helpers.kt",
+      "line": 564,
+      "snippet": "catch (t: Throwable) { t.printStackTrace() ",
+      "fingerprint": "2497c7f4196ae5cdf98b"
+    },
+    {
+      "rule": "CATCH_THROWABLE_NO_FATAL",
+      "path": "app/src/main/java/tv/withaibuild/customiuizer/utils/Helpers.kt",
+      "line": 609,
+      "snippet": "catch (ignore: Throwable) {",
+      "fingerprint": "e9977fa12a4baffbd2fc"
+    },
+    {
+      "rule": "CATCH_THROWABLE_NO_FATAL",
+      "path": "app/src/main/java/tv/withaibuild/customiuizer/utils/Helpers.kt",
+      "line": 610,
+      "snippet": "catch (e: Throwable) { e.printStackTrace() ",
+      "fingerprint": "ff8368dbc0288cd35bd9"
+    },
+    {
+      "rule": "CATCH_THROWABLE_NO_FATAL",
+      "path": "app/src/main/java/tv/withaibuild/customiuizer/utils/Helpers.kt",
+      "line": 664,
+      "snippet": "catch (ignore: Throwable) {",
+      "fingerprint": "e9977fa12a4baffbd2fc"
+    },
+    {
+      "rule": "CATCH_THROWABLE_NO_FATAL",
+      "path": "app/src/main/java/tv/withaibuild/customiuizer/utils/Helpers.kt",
+      "line": 665,
+      "snippet": "catch (e: Throwable) { e.printStackTrace() ",
+      "fingerprint": "ff8368dbc0288cd35bd9"
+    },
+    {
+      "rule": "CATCH_THROWABLE_NO_FATAL",
+      "path": "app/src/main/java/tv/withaibuild/customiuizer/utils/Helpers.kt",
+      "line": 685,
+      "snippet": "catch (e: Throwable) { e.printStackTrace() null ",
+      "fingerprint": "8ed5341fe759c28dc330"
+    },
+    {
+      "rule": "CATCH_THROWABLE_NO_FATAL",
+      "path": "app/src/main/java/tv/withaibuild/customiuizer/utils/Helpers.kt",
+      "line": 692,
+      "snippet": "catch (e: Throwable) { e.printStackTrace() null ",
+      "fingerprint": "8ed5341fe759c28dc330"
+    },
+    {
+      "rule": "CATCH_THROWABLE_NO_FATAL",
+      "path": "app/src/main/java/tv/withaibuild/customiuizer/utils/Helpers.kt",
+      "line": 712,
+      "snippet": "catch (e: Throwable) { e.printStackTrace() null ",
+      "fingerprint": "8ed5341fe759c28dc330"
+    },
+    {
+      "rule": "CATCH_THROWABLE_NO_FATAL",
+      "path": "app/src/main/java/tv/withaibuild/customiuizer/utils/Helpers.kt",
+      "line": 719,
+      "snippet": "catch (e: Throwable) { e.printStackTrace() null ",
+      "fingerprint": "8ed5341fe759c28dc330"
+    },
+    {
+      "rule": "CATCH_THROWABLE_NO_FATAL",
+      "path": "app/src/main/java/tv/withaibuild/customiuizer/utils/Helpers.kt",
+      "line": 764,
+      "snippet": "catch (t: Throwable) { null ",
+      "fingerprint": "31625a23920ef3f2c210"
+    },
+    {
+      "rule": "CATCH_THROWABLE_NO_FATAL",
+      "path": "app/src/main/java/tv/withaibuild/customiuizer/utils/Helpers.kt",
+      "line": 834,
+      "snippet": "catch (t: Throwable) { t.printStackTrace() ",
+      "fingerprint": "2497c7f4196ae5cdf98b"
+    },
+    {
+      "rule": "CATCH_THROWABLE_NO_FATAL",
+      "path": "app/src/main/java/tv/withaibuild/customiuizer/utils/Helpers.kt",
+      "line": 916,
+      "snippet": "catch (t: Throwable) { vibrator.vibrate(200L) ",
+      "fingerprint": "fe0d14ab081b9cd2dcb0"
+    },
+    {
+      "rule": "CATCH_THROWABLE_NO_FATAL",
+      "path": "app/src/main/java/tv/withaibuild/customiuizer/utils/Helpers.kt",
+      "line": 931,
+      "snippet": "catch (t: Throwable) { LongArray(0) ",
+      "fingerprint": "2119b1ccd8f3be23c6ec"
+    },
+    {
+      "rule": "CATCH_THROWABLE_NO_FATAL",
+      "path": "app/src/main/java/tv/withaibuild/customiuizer/utils/Helpers.kt",
+      "line": 959,
+      "snippet": "catch (t: Throwable) { t.printStackTrace() false ",
+      "fingerprint": "a6278d8800d85abbceec"
+    },
+    {
+      "rule": "PRINT_STACK_TRACE",
+      "path": "app/src/main/java/tv/withaibuild/customiuizer/utils/HookUtils.kt",
+      "line": 102,
+      "snippet": ".printStackTrace(",
+      "fingerprint": "ad248e7a390352635e27"
+    },
+    {
+      "rule": "PRINT_STACK_TRACE",
+      "path": "app/src/main/java/tv/withaibuild/customiuizer/utils/HookUtils.kt",
+      "line": 338,
+      "snippet": ".printStackTrace(",
+      "fingerprint": "ad248e7a390352635e27"
+    },
+    {
+      "rule": "PRINT_STACK_TRACE",
+      "path": "app/src/main/java/tv/withaibuild/customiuizer/utils/HookUtils.kt",
+      "line": 363,
+      "snippet": ".printStackTrace(",
+      "fingerprint": "ad248e7a390352635e27"
+    },
+    {
+      "rule": "PRINT_STACK_TRACE",
+      "path": "app/src/main/java/tv/withaibuild/customiuizer/utils/HookUtils.kt",
+      "line": 370,
+      "snippet": ".printStackTrace(",
+      "fingerprint": "ad248e7a390352635e27"
+    },
+    {
+      "rule": "PRINT_STACK_TRACE",
+      "path": "app/src/main/java/tv/withaibuild/customiuizer/utils/HookUtils.kt",
+      "line": 390,
+      "snippet": ".printStackTrace(",
+      "fingerprint": "ad248e7a390352635e27"
+    },
+    {
+      "rule": "PRINT_STACK_TRACE",
+      "path": "app/src/main/java/tv/withaibuild/customiuizer/utils/HookUtils.kt",
+      "line": 397,
+      "snippet": ".printStackTrace(",
+      "fingerprint": "ad248e7a390352635e27"
+    },
+    {
+      "rule": "CATCH_THROWABLE_NO_FATAL",
+      "path": "app/src/main/java/tv/withaibuild/customiuizer/utils/HookUtils.kt",
+      "line": 101,
+      "snippet": "catch (t: Throwable) { t.printStackTrace() false ",
+      "fingerprint": "6b277793cfbdc0bb1d72"
+    },
+    {
+      "rule": "CATCH_THROWABLE_NO_FATAL",
+      "path": "app/src/main/java/tv/withaibuild/customiuizer/utils/HookUtils.kt",
+      "line": 337,
+      "snippet": "catch (t: Throwable) { t.printStackTrace() 1.0f ",
+      "fingerprint": "172f25e7e8f198bd7660"
+    },
+    {
+      "rule": "CATCH_THROWABLE_NO_FATAL",
+      "path": "app/src/main/java/tv/withaibuild/customiuizer/utils/HookUtils.kt",
+      "line": 362,
+      "snippet": "catch (e: Throwable) { e.printStackTrace() null ",
+      "fingerprint": "b840a0eb0e4cc61e478e"
+    },
+    {
+      "rule": "CATCH_THROWABLE_NO_FATAL",
+      "path": "app/src/main/java/tv/withaibuild/customiuizer/utils/HookUtils.kt",
+      "line": 369,
+      "snippet": "catch (e: Throwable) { e.printStackTrace() null ",
+      "fingerprint": "b840a0eb0e4cc61e478e"
+    },
+    {
+      "rule": "CATCH_THROWABLE_NO_FATAL",
+      "path": "app/src/main/java/tv/withaibuild/customiuizer/utils/HookUtils.kt",
+      "line": 389,
+      "snippet": "catch (e: Throwable) { e.printStackTrace() null ",
+      "fingerprint": "b840a0eb0e4cc61e478e"
+    },
+    {
+      "rule": "CATCH_THROWABLE_NO_FATAL",
+      "path": "app/src/main/java/tv/withaibuild/customiuizer/utils/HookUtils.kt",
+      "line": 396,
+      "snippet": "catch (e: Throwable) { e.printStackTrace() null ",
+      "fingerprint": "b840a0eb0e4cc61e478e"
+    },
+    {
+      "rule": "PRINT_STACK_TRACE",
+      "path": "app/src/main/java/tv/withaibuild/customiuizer/utils/LockedAppAdapter.kt",
+      "line": 52,
+      "snippet": ".printStackTrace(",
+      "fingerprint": "5d611f6a72677f18db86"
+    },
+    {
+      "rule": "STATIC_STRONG_ANDROID_OWNER",
+      "path": "app/src/main/java/tv/withaibuild/customiuizer/utils/LockedAppAdapter.kt",
+      "line": 25,
+      "snippet": " private val ctx: Context =",
+      "fingerprint": "478b44399885e5d768e5"
+    },
+    {
+      "rule": "PRINT_STACK_TRACE",
+      "path": "app/src/main/java/tv/withaibuild/customiuizer/utils/PreferenceAdapter.kt",
+      "line": 80,
+      "snippet": ".printStackTrace(",
+      "fingerprint": "1540eec8ac6e38bbfb30"
+    },
+    {
+      "rule": "STATIC_STRONG_ANDROID_OWNER",
+      "path": "app/src/main/java/tv/withaibuild/customiuizer/utils/PreferenceAdapter.kt",
+      "line": 77,
+      "snippet": " val drawable: Drawable? =",
+      "fingerprint": "fe97c4558a14899526b7"
+    },
+    {
+      "rule": "CATCH_THROWABLE_NO_FATAL",
+      "path": "app/src/main/java/tv/withaibuild/customiuizer/utils/PreferenceAdapter.kt",
+      "line": 79,
+      "snippet": "catch (t: Throwable) { t.printStackTrace() ",
+      "fingerprint": "99259b9e984d6baa5b8d"
+    },
+    {
+      "rule": "PRINT_STACK_TRACE",
+      "path": "app/src/main/java/tv/withaibuild/customiuizer/utils/PrivacyAppAdapter.kt",
+      "line": 52,
+      "snippet": ".printStackTrace(",
+      "fingerprint": "cbe397fbe52d61351f14"
+    },
+    {
+      "rule": "STATIC_STRONG_ANDROID_OWNER",
+      "path": "app/src/main/java/tv/withaibuild/customiuizer/utils/PrivacyAppAdapter.kt",
+      "line": 25,
+      "snippet": " private val ctx: Context =",
+      "fingerprint": "a6d353f43035259b1a16"
+    },
+    {
+      "rule": "STATIC_STRONG_ANDROID_OWNER",
+      "path": "app/src/main/java/tv/withaibuild/customiuizer/utils/ResolveInfoAdapter.kt",
+      "line": 21,
+      "snippet": " private val ctx: Context =",
+      "fingerprint": "b387e76460a7e22212d9"
+    },
+    {
+      "rule": "STATIC_STRONG_ANDROID_OWNER",
+      "path": "app/src/main/java/tv/withaibuild/customiuizer/utils/SortableListView.kt",
+      "line": 48,
+      "snippet": " private var mSnapshotBackgroundForOverUpperBound: Drawable? =",
+      "fingerprint": "9a4d07ab16faa09b60ca"
+    },
+    {
+      "rule": "STATIC_STRONG_ANDROID_OWNER",
+      "path": "app/src/main/java/tv/withaibuild/customiuizer/utils/SortableListView.kt",
+      "line": 49,
+      "snippet": " private var mSnapshotShadow: Drawable? =",
+      "fingerprint": "aaebcb3dada64dac82ed"
+    }
+  ]
+}

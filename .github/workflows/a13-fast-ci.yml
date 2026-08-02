@@ -1,5 +1,8 @@
 name: A13 Fast CI
 
+permissions:
+  contents: read
+
 on:
   push:
     branches:
@@ -15,6 +18,7 @@ concurrency:
 jobs:
   fast:
     runs-on: ubuntu-latest
+    timeout-minutes: 30
     steps:
       - name: Checkout
         uses: actions/checkout@v4
@@ -57,6 +61,14 @@ jobs:
           ./gradlew :app:compileDebugKotlin
           ./gradlew :app:compileDebugJavaWithJavac
           ./gradlew :app:testDebugUnitTest
+
+      - name: Brutal suite (read-only gates)
+        run: |
+          python tools/catalog_contract_probe.py --catalog app/src/main/java/tv/withaibuild/customiuizer/mods/catalog/FeatureCatalog.kt --feature-id app/src/main/java/tv/withaibuild/customiuizer/mods/catalog/FeatureId.kt --diagnostic-ids app/src/main/java/tv/withaibuild/customiuizer/mods/diagnostics/DiagnosticIds.kt --matrix docs/rom-intelligence/A13_PROCESS_MATRIX.md
+          python tools/ci_contract_scan.py --expected-branch devin/a13-rom-intelligence-audit --default-branch main
+          python tools/source_hazard_scan.py --path app/src/main/java
+          python tools/hook_surface_probe.py
+          python tools/brutal_test_runner.py --config tools/brutal_test_config.json hermeticity
 
       - name: Lint and safe debug build
         run: |
