@@ -30,9 +30,9 @@ class FeatureInventoryCompletenessTest(unittest.TestCase):
             re.DOTALL,
         )
         self.assertEqual(
-            29,
+            30,
             len(blocks),
-            "Expected 29 FeatureSpec declarations in FeatureCatalog.kt",
+            "Expected 30 FeatureSpec declarations in FeatureCatalog.kt",
         )
 
         ids = set()
