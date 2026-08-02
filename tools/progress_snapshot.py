@@ -434,6 +434,7 @@ def volatile_fields() -> set[str]:
         "sourceCommit",
         "sourceTree",
         "verifiedTree",
+        "verifiedMode",
         "ciState",
         "ciRun",
         "ciJob",
