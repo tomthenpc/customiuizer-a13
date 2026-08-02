@@ -2,7 +2,7 @@
 
 ```text
 Mode: PROFESSIONAL_AUTONOMOUS_STEWARDSHIP
-CheckpointCount: 14
+CheckpointCount: 15
 CheckpointsSinceStandardSweep: 1
 CheckpointsSinceDeepSweep: 0
 LastQualifyingCheckpoint: HEAD
@@ -11,9 +11,9 @@ LastStandardSweepCommit: HEAD
 LastDeepSweepCommit: HEAD
 LastFullVerificationCommit: HEAD
 LastCIState: PASS
-LastCIRun: https://github.com/tomthenpc/customiuizer-a13/actions/runs/30737642726
-LastCIJob: https://github.com/tomthenpc/customiuizer-a13/actions/runs/30737642726/job/91469251983
-LastCICommit: 801860e1c4afda8d035e4f09531679685c4cde21
+LastCIRun: https://github.com/tomthenpc/customiuizer-a13/actions/runs/30741425209
+LastCIJob: https://github.com/tomthenpc/customiuizer-a13/actions/runs/30741425209/job/91479453395
+LastCICommit: 66ad73b9e96019a2424d92ba193e2fa2cc1a35ab
 LastCleanupCommit: HEAD
 LastToolCreated: tools/audit_hook_ownership.py
 LastFailureClass: none
@@ -23,9 +23,9 @@ CurrentObjectiveStartEvidence: git grep -n "fun HideStatusBarBeforeScreenshotHoo
 NextObjectiveFirstAction: continue P3.2 batch migration of remaining legacy hooks
 ResumeTask: P3 — 全部生产 Hook 收口; P3.2 batch 9/10 contract correction + batch 11 (appsDisableService, noAccessDeviceLogsRequest, autoGroupNotifications, appLockTimeout) migrated; next: continue batch 12
 DeepSweepDue: false
-LastVerifiedTree: fef4056643ad50d02e981058e18dd9740943ef66
+LastVerifiedTree: 66cb28f5e4f7a774ec424e5d0e53edfc79d4173b
 LastVerifiedMode: Final
-LastVerifiedAt: 2026-08-02T17:10:00+08:00
+LastVerifiedAt: 2026-08-02T17:27:00+08:00
 LastVerifiedCommandsDigest: powershell -NoProfile -ExecutionPolicy Bypass -File .\scripts\verify.ps1 -Mode Fast; powershell -NoProfile -ExecutionPolicy Bypass -File .\scripts\verify.ps1 -Mode Full
 ```
 
