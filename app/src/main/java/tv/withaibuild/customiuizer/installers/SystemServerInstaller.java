@@ -53,7 +53,7 @@ public final class SystemServerInstaller {
         if (!"none".equals(MainModule.mPrefs.getString("system_defaultusb", "none"))) SystemSettingsMoreHooks.USBConfigHook(lpparam);
         if (MainModule.mPrefs.getBoolean("system_removesecure")) SystemSecurityAndSystemHooks.RemoveSecureHook(lpparam);
         if (MainModule.mPrefs.getBoolean("system_remove_startactconfirm")) FeatureDispatcher.installById("removeActStartConfirm", serverRuntime);
-        if (MainModule.mPrefs.getBoolean("system_securelock")) SystemLockScreenHooks.EnhancedSecurityHook(lpparam);
+        if (MainModule.mPrefs.getBoolean("system_securelock")) FeatureDispatcher.installById("enhancedSecurity", serverRuntime);
         if (MainModule.mPrefs.getBoolean("system_separatevolume")) SystemAudioAndVolumeHooks.NotificationVolumeServiceHook(lpparam);
         if (MainModule.mPrefs.getBoolean("system_downgrade")) FeatureDispatcher.installById("noVersionCheck", serverRuntime);
         if (MainModule.mPrefs.getBoolean("system_orientationlock")) FeatureDispatcher.installById("orientationLock", serverRuntime);
@@ -62,10 +62,10 @@ public final class SystemServerInstaller {
         if (MainModule.mPrefs.getBoolean("system_cleanopenwith")) FeatureDispatcher.installById("cleanOpenWithMenuService", serverRuntime);
         FeatureDispatcher.installById("autoBrightnessRange", serverRuntime);
         if (MainModule.mPrefs.getBoolean("system_lockscreen_disable_strongauth_72h")) FeatureDispatcher.installById("disable72hStrongAuth", serverRuntime);
-        if (MainModule.mPrefs.getBoolean("system_applock")) SystemLockScreenMoreHooks.AppLockHook(lpparam);
-        if (MainModule.mPrefs.getBoolean("system_applock_skip")) SystemLockScreenMoreHooks.SkipAppLockHook(lpparam);
+        if (MainModule.mPrefs.getBoolean("system_applock")) FeatureDispatcher.installById("appLock", serverRuntime);
+        if (MainModule.mPrefs.getBoolean("system_applock_skip")) FeatureDispatcher.installById("skipAppLock", serverRuntime);
         if (MainModule.mPrefs.getBoolean("various_alarmcompat")) Various.AlarmCompatServiceHook(lpparam);
-        if (MainModule.mPrefs.getBoolean("system_ignorecalls")) SystemAudioAndVisualAndMoreHooks.NoCallInterruptionHook(lpparam);
+        if (MainModule.mPrefs.getBoolean("system_ignorecalls")) FeatureDispatcher.installById("noCallInterruption", serverRuntime);
         if (MainModule.mPrefs.getBoolean("system_forceclose")) FeatureDispatcher.installById("forceClose", serverRuntime);
         if (MainModule.mPrefs.getBoolean("system_hideproxywarn")) FeatureDispatcher.installById("hideProximityWarning", serverRuntime);
         if (MainModule.mPrefs.getBoolean("system_firstpress")) FeatureDispatcher.installById("firstVolumePress", serverRuntime);

@@ -52,7 +52,11 @@ enum class FeatureId(val canonicalId: String) {
     ORIENTATION_LOCK("orientationLock"),
     NO_DUCKING("noDucking"),
     DISABLE_72H_STRONG_AUTH("disable72hStrongAuth"),
-    DISABLE_ANY_NOTIFICATION_BLOCK("disableAnyNotificationBlock");
+    DISABLE_ANY_NOTIFICATION_BLOCK("disableAnyNotificationBlock"),
+    ENHANCED_SECURITY("enhancedSecurity"),
+    APP_LOCK("appLock"),
+    SKIP_APP_LOCK("skipAppLock"),
+    NO_CALL_INTERRUPTION("noCallInterruption");
 
     companion object {
         private val byString: Map<String, FeatureId> = values().associateBy {

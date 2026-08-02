@@ -76,4 +76,10 @@ object DiagnosticIds {
     const val NO_DUCKING = "NO_DUCKING"
     const val DISABLE_72H_STRONG_AUTH = "DISABLE_72H_STRONG_AUTH"
     const val DISABLE_ANY_NOTIFICATION_BLOCK = "DISABLE_ANY_NOTIFICATION_BLOCK"
+
+    /** Catalog expansion batch 9: Lock screen and call interruption hooks. */
+    const val ENHANCED_SECURITY = "ENHANCED_SECURITY"
+    const val APP_LOCK = "APP_LOCK"
+    const val SKIP_APP_LOCK = "SKIP_APP_LOCK"
+    const val NO_CALL_INTERRUPTION = "NO_CALL_INTERRUPTION"
 }

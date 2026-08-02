@@ -20,6 +20,7 @@ object CatalogContracts {
     private val INT = Int::class.javaPrimitiveType!!
     private val BOOLEAN = Boolean::class.javaPrimitiveType!!
     private val LONG = Long::class.javaPrimitiveType!!
+    private val STRING = String::class.java
 
     val screenDimTime: HookTargetContract by lazy(kotlin.LazyThreadSafetyMode.NONE) { HookTargetContract(
         featureId = "screenDimTime",
@@ -648,6 +649,115 @@ object CatalogContracts {
                     memberName = "setBlockable",
                     parameterTypes = listOf(BOOLEAN)
                 )
+            )
+        )
+    )
+    }
+
+    val enhancedSecurity: HookTargetContract by lazy(kotlin.LazyThreadSafetyMode.NONE) { HookTargetContract(
+        featureId = "enhancedSecurity",
+        requirements = listOf(
+            SingleTargetRequirement(
+                target = HookTargetSpec(
+                    id = "PhoneWindowManager.interceptPowerKeyDown",
+                    operation = HookOperation.ALL_METHODS_BY_NAME,
+                    className = "com.android.server.policy.PhoneWindowManager",
+                    memberName = "interceptPowerKeyDown"
+                )
+            ),
+            SingleTargetRequirement(
+                target = HookTargetSpec(
+                    id = "PhoneWindowManager.powerLongPress",
+                    operation = HookOperation.ALL_METHODS_BY_NAME,
+                    className = "com.android.server.policy.PhoneWindowManager",
+                    memberName = "powerLongPress"
+                ),
+                criticality = Criticality.OPTIONAL
+            ),
+            SingleTargetRequirement(
+                target = HookTargetSpec(
+                    id = "PhoneWindowManager.showGlobalActions",
+                    operation = HookOperation.EXACT_METHOD,
+                    className = "com.android.server.policy.PhoneWindowManager",
+                    memberName = "showGlobalActions",
+                    parameterTypes = emptyList()
+                ),
+                criticality = Criticality.OPTIONAL
+            ),
+            SingleTargetRequirement(
+                target = HookTargetSpec(
+                    id = "PhoneWindowManager.showGlobalActionsInternal",
+                    operation = HookOperation.EXACT_METHOD,
+                    className = "com.android.server.policy.PhoneWindowManager",
+                    memberName = "showGlobalActionsInternal",
+                    parameterTypes = emptyList()
+                ),
+                criticality = Criticality.OPTIONAL
+            )
+        )
+    )
+    }
+
+    val appLock: HookTargetContract by lazy(kotlin.LazyThreadSafetyMode.NONE) { HookTargetContract(
+        featureId = "appLock",
+        requirements = listOf(
+            SingleTargetRequirement(
+                target = HookTargetSpec(
+                    id = "SecurityManagerService.removeAccessControlPassLocked",
+                    operation = HookOperation.ALL_METHODS_BY_NAME,
+                    className = "com.miui.server.SecurityManagerService",
+                    memberName = "removeAccessControlPassLocked"
+                )
+            )
+        )
+    )
+    }
+
+    val skipAppLock: HookTargetContract by lazy(kotlin.LazyThreadSafetyMode.NONE) { HookTargetContract(
+        featureId = "skipAppLock",
+        requirements = listOf(
+            SingleTargetRequirement(
+                target = HookTargetSpec(
+                    id = "AccessController.skipActivity",
+                    operation = HookOperation.ALL_METHODS_BY_NAME,
+                    className = "com.miui.server.AccessController",
+                    memberName = "skipActivity"
+                )
+            )
+        )
+    )
+    }
+
+    val noCallInterruption: HookTargetContract by lazy(kotlin.LazyThreadSafetyMode.NONE) { HookTargetContract(
+        featureId = "noCallInterruption",
+        requirements = listOf(
+            SingleTargetRequirement(
+                target = HookTargetSpec(
+                    id = "AudioService.requestAudioFocus",
+                    operation = HookOperation.ALL_METHODS_BY_NAME,
+                    className = "com.android.server.audio.AudioService",
+                    memberName = "requestAudioFocus"
+                )
+            ),
+            SingleTargetRequirement(
+                target = HookTargetSpec(
+                    id = "TelephonyRegistry.notifyCallState",
+                    operation = HookOperation.EXACT_METHOD,
+                    className = "com.android.server.TelephonyRegistry",
+                    memberName = "notifyCallState",
+                    parameterTypes = listOf(INT, STRING)
+                ),
+                criticality = Criticality.OPTIONAL
+            ),
+            SingleTargetRequirement(
+                target = HookTargetSpec(
+                    id = "TelephonyRegistry.notifyCallStateForPhoneId",
+                    operation = HookOperation.EXACT_METHOD,
+                    className = "com.android.server.TelephonyRegistry",
+                    memberName = "notifyCallStateForPhoneId",
+                    parameterTypes = listOf(INT, INT, INT, STRING)
+                ),
+                criticality = Criticality.OPTIONAL
             )
         )
     )

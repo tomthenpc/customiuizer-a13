@@ -7,6 +7,7 @@ import tv.withaibuild.customiuizer.mods.SystemAudioAndVolumeHooks
 import tv.withaibuild.customiuizer.mods.SystemAudioAndVisualAndMoreHooks
 import tv.withaibuild.customiuizer.mods.SystemChargingAndWallpaperHooks
 import tv.withaibuild.customiuizer.mods.SystemDisplayAndWindowHooks
+import tv.withaibuild.customiuizer.mods.SystemLockScreenHooks
 import tv.withaibuild.customiuizer.mods.SystemLockScreenMoreHooks
 import tv.withaibuild.customiuizer.mods.SystemUIScreenshotHooks
 import tv.withaibuild.customiuizer.mods.SystemNotificationMoreHooks
@@ -1442,6 +1443,115 @@ object FeatureCatalog {
                     diagnosticId = DiagnosticIds.DISABLE_ANY_NOTIFICATION_BLOCK
                 ) {
                     SystemNotificationMoreHooks.DisableAnyNotificationBlockHook(
+                        runtime.lpparam as SystemServerStartingParam
+                    )
+                }
+            },
+            activationRestartTarget = RestartTarget.REBOOT,
+            configReloadMode = ConfigReloadMode.NONE
+        ),
+        // Catalog expansion batch 9: Lock screen and call interruption hooks
+        FeatureSpec(
+            compatibilityPolicy = CompatibilityPolicy.CONTRACT_REQUIRED,
+            contract = CatalogContracts.enhancedSecurity,
+            id = "enhancedSecurity",
+            diagnosticId = DiagnosticIds.ENHANCED_SECURITY,
+            processScope = ProcessScope.SYSTEM_SERVER,
+            installPhase = InstallPhase.SYSTEM_SERVER_STARTING,
+            processTarget = ProcessTarget.SystemServer,
+            preferenceKeys = setOf("system_securelock"),
+            condition = { prefs ->
+                prefs.getBoolean("system_securelock", false)
+            },
+            installer = { runtime, compatResult ->
+                legacyInstall(
+                    runtime = runtime,
+                    compatResult = compatResult,
+                    contract = CatalogContracts.enhancedSecurity,
+                    diagnosticId = DiagnosticIds.ENHANCED_SECURITY
+                ) {
+                    SystemLockScreenHooks.EnhancedSecurityHook(
+                        runtime.lpparam as SystemServerStartingParam
+                    )
+                }
+            },
+            activationRestartTarget = RestartTarget.REBOOT,
+            configReloadMode = ConfigReloadMode.NONE
+        ),
+        FeatureSpec(
+            compatibilityPolicy = CompatibilityPolicy.CONTRACT_REQUIRED,
+            contract = CatalogContracts.appLock,
+            id = "appLock",
+            diagnosticId = DiagnosticIds.APP_LOCK,
+            processScope = ProcessScope.SYSTEM_SERVER,
+            installPhase = InstallPhase.SYSTEM_SERVER_STARTING,
+            processTarget = ProcessTarget.SystemServer,
+            preferenceKeys = setOf("system_applock"),
+            condition = { prefs ->
+                prefs.getBoolean("system_applock", false)
+            },
+            installer = { runtime, compatResult ->
+                legacyInstall(
+                    runtime = runtime,
+                    compatResult = compatResult,
+                    contract = CatalogContracts.appLock,
+                    diagnosticId = DiagnosticIds.APP_LOCK
+                ) {
+                    SystemLockScreenMoreHooks.AppLockHook(
+                        runtime.lpparam as SystemServerStartingParam
+                    )
+                }
+            },
+            activationRestartTarget = RestartTarget.REBOOT,
+            configReloadMode = ConfigReloadMode.NONE
+        ),
+        FeatureSpec(
+            compatibilityPolicy = CompatibilityPolicy.CONTRACT_REQUIRED,
+            contract = CatalogContracts.skipAppLock,
+            id = "skipAppLock",
+            diagnosticId = DiagnosticIds.SKIP_APP_LOCK,
+            processScope = ProcessScope.SYSTEM_SERVER,
+            installPhase = InstallPhase.SYSTEM_SERVER_STARTING,
+            processTarget = ProcessTarget.SystemServer,
+            preferenceKeys = setOf("system_applock_skip", "system_applock_skip_activities"),
+            condition = { prefs ->
+                prefs.getBoolean("system_applock_skip", false)
+            },
+            installer = { runtime, compatResult ->
+                legacyInstall(
+                    runtime = runtime,
+                    compatResult = compatResult,
+                    contract = CatalogContracts.skipAppLock,
+                    diagnosticId = DiagnosticIds.SKIP_APP_LOCK
+                ) {
+                    SystemLockScreenMoreHooks.SkipAppLockHook(
+                        runtime.lpparam as SystemServerStartingParam
+                    )
+                }
+            },
+            activationRestartTarget = RestartTarget.REBOOT,
+            configReloadMode = ConfigReloadMode.NONE
+        ),
+        FeatureSpec(
+            compatibilityPolicy = CompatibilityPolicy.CONTRACT_REQUIRED,
+            contract = CatalogContracts.noCallInterruption,
+            id = "noCallInterruption",
+            diagnosticId = DiagnosticIds.NO_CALL_INTERRUPTION,
+            processScope = ProcessScope.SYSTEM_SERVER,
+            installPhase = InstallPhase.SYSTEM_SERVER_STARTING,
+            processTarget = ProcessTarget.SystemServer,
+            preferenceKeys = setOf("system_ignorecalls", "system_ignorecalls_apps"),
+            condition = { prefs ->
+                prefs.getBoolean("system_ignorecalls", false)
+            },
+            installer = { runtime, compatResult ->
+                legacyInstall(
+                    runtime = runtime,
+                    compatResult = compatResult,
+                    contract = CatalogContracts.noCallInterruption,
+                    diagnosticId = DiagnosticIds.NO_CALL_INTERRUPTION
+                ) {
+                    SystemAudioAndVisualAndMoreHooks.NoCallInterruptionHook(
                         runtime.lpparam as SystemServerStartingParam
                     )
                 }
