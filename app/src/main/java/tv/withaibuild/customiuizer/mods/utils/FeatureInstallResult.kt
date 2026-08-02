@@ -2,6 +2,7 @@ package tv.withaibuild.customiuizer.mods.utils
 
 import tv.withaibuild.customiuizer.mods.diagnostics.DiagnosticState
 import tv.withaibuild.customiuizer.mods.diagnostics.InstallOutcome
+import tv.withaibuild.customiuizer.mods.diagnostics.InstallSummary
 
 /**
  * Outcome of installing a single feature.
@@ -15,7 +16,7 @@ sealed interface FeatureInstallResult {
     val isActive: Boolean
         get() = this is Installed || this is AlreadyInstalled
 
-    data object Installed : FeatureInstallResult
+    data class Installed(val installSummary: InstallSummary? = null) : FeatureInstallResult
     data object AlreadyInstalled : FeatureInstallResult
     data object Disabled : FeatureInstallResult
     data class UnsupportedProcess(val scope: String? = null) : FeatureInstallResult

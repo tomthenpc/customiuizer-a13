@@ -47,7 +47,7 @@ class FeatureInstallRegistryTest {
                 HookInstallResult.DISPATCHED
             )
         },
-        installer: (FeatureRuntime, HookInstallResult) -> FeatureInstallResult = { _, _ -> FeatureInstallResult.Installed },
+        installer: (FeatureRuntime, HookInstallResult) -> FeatureInstallResult = { _, _ -> FeatureInstallResult.Installed() },
         processScope: ProcessScope? = null,
         installPhase: InstallPhase? = null
     ): FeatureSpec = FeatureSpec(
@@ -70,7 +70,7 @@ class FeatureInstallRegistryTest {
         var called = 0
         val s = spec(
             condition = { false },
-            installer = { _, _ -> called++; FeatureInstallResult.Installed }
+            installer = { _, _ -> called++; FeatureInstallResult.Installed() }
         )
         FeatureInstallRegistry.register(s)
 
@@ -85,7 +85,7 @@ class FeatureInstallRegistryTest {
         var called = 0
         val s = spec(
             processScope = ProcessScope.SYSTEM_UI,
-            installer = { _, _ -> called++; FeatureInstallResult.Installed }
+            installer = { _, _ -> called++; FeatureInstallResult.Installed() }
         )
         FeatureInstallRegistry.register(s)
 
@@ -100,7 +100,7 @@ class FeatureInstallRegistryTest {
         var called = 0
         val s = spec(
             installPhase = InstallPhase.SYSTEMUI_POST_INIT,
-            installer = { _, _ -> called++; FeatureInstallResult.Installed }
+            installer = { _, _ -> called++; FeatureInstallResult.Installed() }
         )
         FeatureInstallRegistry.register(s)
 
@@ -122,7 +122,7 @@ class FeatureInstallRegistryTest {
                     HookInstallResult()
                 )
             },
-            installer = { _, _ -> called++; FeatureInstallResult.Installed }
+            installer = { _, _ -> called++; FeatureInstallResult.Installed() }
         )
         FeatureInstallRegistry.register(s)
 
@@ -135,14 +135,14 @@ class FeatureInstallRegistryTest {
     @Test
     fun firstInstallReturnsInstalledSecondReturnsAlreadyInstalled() {
         var called = 0
-        val s = spec(installer = { _, _ -> called++; FeatureInstallResult.Installed })
+        val s = spec(installer = { _, _ -> called++; FeatureInstallResult.Installed() })
         FeatureInstallRegistry.register(s)
         val rt = runtime()
 
         val first = FeatureInstallRegistry.installById("test", ProcessScope.SYSTEM_UI, InstallPhase.PACKAGE_READY, rt)
         val second = FeatureInstallRegistry.installById("test", ProcessScope.SYSTEM_UI, InstallPhase.PACKAGE_READY, rt)
 
-        assertEquals(FeatureInstallResult.Installed, first)
+        assertEquals(FeatureInstallResult.Installed(), first)
         assertEquals(FeatureInstallResult.AlreadyInstalled, second)
         assertEquals(1, called)
     }
@@ -155,7 +155,7 @@ class FeatureInstallRegistryTest {
                 fail = false
                 FeatureInstallResult.FailedTransient("boom")
             } else {
-                FeatureInstallResult.Installed
+                FeatureInstallResult.Installed()
             }
         })
         FeatureInstallRegistry.register(s)
@@ -165,7 +165,7 @@ class FeatureInstallRegistryTest {
         val second = FeatureInstallRegistry.installById("test", ProcessScope.SYSTEM_UI, InstallPhase.PACKAGE_READY, rt)
 
         assertTrue(first is FeatureInstallResult.FailedTransient)
-        assertEquals(FeatureInstallResult.Installed, second)
+        assertEquals(FeatureInstallResult.Installed(), second)
     }
 
     @Test
@@ -184,7 +184,7 @@ class FeatureInstallRegistryTest {
     @Test
     fun oneFailureDoesNotBlockAnotherFeature() {
         val failing = spec(id = "failing", installer = { _, _ -> FeatureInstallResult.FailedTransient("boom") })
-        val working = spec(id = "working", installer = { _, _ -> FeatureInstallResult.Installed })
+        val working = spec(id = "working", installer = { _, _ -> FeatureInstallResult.Installed() })
         FeatureInstallRegistry.register(failing)
         FeatureInstallRegistry.register(working)
         val rt = runtime()
@@ -193,7 +193,7 @@ class FeatureInstallRegistryTest {
         val r2 = FeatureInstallRegistry.installById("working", ProcessScope.SYSTEM_UI, InstallPhase.PACKAGE_READY, rt)
 
         assertTrue(r1 is FeatureInstallResult.FailedTransient)
-        assertEquals(FeatureInstallResult.Installed, r2)
+        assertEquals(FeatureInstallResult.Installed(), r2)
     }
 
     @Test
@@ -218,7 +218,7 @@ class FeatureInstallRegistryTest {
     fun eachLifecycleStateRecordedAtMostOnce() {
         val s = spec(
             id = "once",
-            installer = { _, _ -> FeatureInstallResult.Installed }
+            installer = { _, _ -> FeatureInstallResult.Installed() }
         )
         FeatureInstallRegistry.register(s)
 

@@ -56,7 +56,7 @@ object FeatureDispatcher {
     ): FeatureRuntime = FeatureRuntime(processName, lpparam, classLoader, prefs)
 
     @JvmStatic
-    fun installById(featureId: String, runtime: FeatureRuntime): Boolean {
+    fun installById(featureId: String, runtime: FeatureRuntime): Boolean = try {
         val feature = FeatureId.fromString(featureId)
         if (feature == null) {
             DiagnosticRecorder.record(
@@ -65,9 +65,12 @@ object FeatureDispatcher {
                 reasonCode = ReasonCode.UNKNOWN,
                 detail = featureId
             )
-            return false
+            false
+        } else {
+            install(feature, runtime)
         }
-        return install(feature, runtime)
+    } catch (oom: OutOfMemoryError) {
+        throw oom
     }
 
     @JvmStatic
@@ -112,59 +115,25 @@ object FeatureDispatcher {
 
     private fun installStatusBarClockTweak(runtime: FeatureRuntime): Boolean {
         if (!ProcessTarget.SystemUI.matches(runtime.processName)) return false
-        val statusBarClockTweakEnabled = runtime.prefs.getBoolean("system_statusbar_clocktweak")
-        val controlCenterClockTweakEnabled = runtime.prefs.getBoolean("system_cc_clocktweak")
-        val hideControlCenterDate = runtime.prefs.getBoolean("system_cc_hidedate")
-        if (!statusBarClockTweakEnabled &&
-            !controlCenterClockTweakEnabled &&
-            !hideControlCenterDate &&
-            runtime.prefs.getString("system_cc_dateformat", "").isEmpty()
-        ) {
-            return false
-        }
 
-        recordRequested(DiagnosticIds.STATUSBAR_CLOCK_TWEAK)
-        return installWithContract(
-            DiagnosticIds.STATUSBAR_CLOCK_TWEAK,
-            runtime,
-            CanaryContracts.statusBarClockTweakForInstall(
-                statusBarClockTweakEnabled,
-                controlCenterClockTweakEnabled,
-                hideControlCenterDate
-            )
-        ) {
-            SystemStatusBarClockAndMoreHooks.StatusBarClockTweakHook(
-                runtime.lpparam as PackageReadyParam
-            )
-            InstallOutcome.DISPATCHED
-        }
+        return FeatureInstallRegistry.installById(
+            "statusBarClockTweak",
+            ProcessScopes.resolve(runtime.processName, runtime.processName),
+            InstallPhase.PACKAGE_READY,
+            runtime
+        ).isActive
     }
 
     private fun installAutoBrightnessRange(runtime: FeatureRuntime): Boolean {
         if (!ProcessTarget.SystemServer.matches(runtime.processName)) return false
         if (!runtime.prefs.getBoolean("system_autobrightness", false)) return false
 
-        recordRequested(DiagnosticIds.AUTO_BRIGHTNESS_RANGE)
-        return installWithContractVariant(
-            DiagnosticIds.AUTO_BRIGHTNESS_RANGE,
-            runtime,
-            CanaryContracts.autoBrightnessRange
-        ) { selectedVariant ->
-            val variant = when (selectedVariant.id) {
-                "automatic_brightness_controller" ->
-                    AutoBrightnessVariant.AUTOMATIC_BRIGHTNESS_CONTROLLER
-                "display_power_controller" ->
-                    AutoBrightnessVariant.DISPLAY_POWER_CONTROLLER
-                else -> throw IllegalArgumentException(
-                    "Unknown autoBrightnessRange variant: ${selectedVariant.id}"
-                )
-            }
-            SystemDisplayAndWindowHooks.AutoBrightnessRangeHook(
-                runtime.lpparam as SystemServerStartingParam,
-                variant
-            )
-            InstallOutcome.DISPATCHED
-        }
+        return FeatureInstallRegistry.installById(
+            "autoBrightnessRange",
+            ProcessScopes.resolve(runtime.processName, runtime.processName),
+            InstallPhase.SYSTEM_SERVER_STARTING,
+            runtime
+        ).isActive
     }
 
     private fun installMuffledVibration(runtime: FeatureRuntime): Boolean {

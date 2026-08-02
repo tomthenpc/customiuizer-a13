@@ -56,18 +56,19 @@ def check_auto_brightness(errors: list[str]) -> None:
 
 
 def check_dispatcher(errors: list[str]) -> None:
-    text = read("tv/withaibuild/customiuizer/mods/catalog/FeatureDispatcher.kt")
-    if "installWithContractVariant(" not in text:
+    dispatcher = read("tv/withaibuild/customiuizer/mods/catalog/FeatureDispatcher.kt")
+    catalog = read("tv/withaibuild/customiuizer/mods/catalog/FeatureCatalog.kt")
+    if "installWithContractVariant(" not in dispatcher:
         fail("FeatureDispatcher.installWithContractVariant missing", errors)
     if not re.search(
         r"AutoBrightnessRangeHook\([^)]*runtime\.lpparam[^)]*variant[^)]*\)",
-        text,
+        catalog,
         re.S,
     ):
         fail("AutoBrightnessRangeHook is not called with a variant argument", errors)
-    if "catch (oom: OutOfMemoryError)" not in text:
+    if "catch (oom: OutOfMemoryError)" not in dispatcher:
         fail("FeatureDispatcher does not catch and rethrow OutOfMemoryError", errors)
-    if text.count("catch (oom: OutOfMemoryError)") < 2:
+    if dispatcher.count("catch (oom: OutOfMemoryError)") < 2:
         fail("FeatureDispatcher should rethrow OOM in at least two boundaries", errors)
 
 

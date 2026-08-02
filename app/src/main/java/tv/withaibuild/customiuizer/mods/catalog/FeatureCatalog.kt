@@ -19,8 +19,11 @@ import tv.withaibuild.customiuizer.mods.LauncherLayoutHooks
 import tv.withaibuild.customiuizer.mods.LauncherSystemHooks
 import tv.withaibuild.customiuizer.mods.diagnostics.DiagnosticIds
 import tv.withaibuild.customiuizer.mods.diagnostics.InstallOutcome
+import tv.withaibuild.customiuizer.mods.diagnostics.InstallSummary
 import tv.withaibuild.customiuizer.mods.utils.FeatureInstallResult
 import tv.withaibuild.customiuizer.mods.utils.HookInstaller
+import tv.withaibuild.customiuizer.mods.utils.HookTargetContract
+import tv.withaibuild.customiuizer.utils.PrefMap
 
 /**
  * Static, type-safe feature directory.
@@ -31,6 +34,13 @@ import tv.withaibuild.customiuizer.mods.utils.HookInstaller
  * requested.
  */
 object FeatureCatalog {
+
+    private fun statusBarClockTweakContract(prefs: PrefMap<String, Any>): HookTargetContract {
+        val statusBar = prefs.getBoolean("system_statusbar_clocktweak")
+        val controlCenter = prefs.getBoolean("system_cc_clocktweak")
+        val hideDate = prefs.getBoolean("system_cc_hidedate")
+        return CanaryContracts.statusBarClockTweakForInstall(statusBar, controlCenter, hideDate)
+    }
 
     private val auditSpecs by lazy(LazyThreadSafetyMode.NONE) { listOf(
         FeatureSpec(
@@ -53,7 +63,17 @@ object FeatureCatalog {
                 when (session.installation) {
                     InstallOutcome.INSTALLED,
                     InstallOutcome.DEGRADED,
-                    InstallOutcome.DISPATCHED -> FeatureInstallResult.Installed
+                    InstallOutcome.DISPATCHED -> FeatureInstallResult.Installed(
+                        InstallSummary(
+                            requiredInstalled = session.requiredInstalled,
+                            requiredTotal = session.requiredTotal,
+                            optionalInstalled = session.optionalInstalled,
+                            optionalTotal = session.optionalTotal,
+                            fallbackUsed = session.fallbackUsed,
+                            installation = session.installation ?: InstallOutcome.FAILED,
+                            reasonCode = session.reasonCode
+                        )
+                    )
                     else -> FeatureInstallResult.FailedTransient(
                         session.detail ?: "packagePermissions session failed"
                     )
@@ -63,7 +83,6 @@ object FeatureCatalog {
             configReloadMode = ConfigReloadMode.NONE
         ),
         FeatureSpec(
-            contract = CanaryContracts.statusBarClockTweak,
             id = "statusBarClockTweak",
             diagnosticId = DiagnosticIds.STATUSBAR_CLOCK_TWEAK,
             processTarget = ProcessTarget.SystemUI,
@@ -79,11 +98,46 @@ object FeatureCatalog {
                 prefs.getBoolean("system_cc_hidedate") ||
                 prefs.getString("system_cc_dateformat", "").isNotEmpty()
             },
-            installer = { runtime, compatResult ->
-                SystemStatusBarClockAndMoreHooks.StatusBarClockTweakHook(
-                    runtime.lpparam as PackageReadyParam
+            compatibilityPolicy = CompatibilityPolicy.CUSTOM,
+            compatibilityCheck = { runtime ->
+                val contract = statusBarClockTweakContract(runtime.prefs)
+                val (compat, result) = runtime.resolver.evaluateContract(
+                    contract,
+                    DiagnosticIds.STATUSBAR_CLOCK_TWEAK
                 )
-                FeatureInstallResult.Installed
+                CompatibilityResult(compat, result.reasonCode, result.detail, result)
+            },
+            installer = { runtime, compatResult ->
+                val contract = statusBarClockTweakContract(runtime.prefs)
+                val session = HookInstaller.withSession(
+                    resolver = runtime.resolver,
+                    contract = contract,
+                    diagnosticId = DiagnosticIds.STATUSBAR_CLOCK_TWEAK,
+                    classLoader = runtime.classLoader,
+                    compatibilityResult = compatResult
+                ) {
+                    SystemStatusBarClockAndMoreHooks.StatusBarClockTweakHook(
+                        runtime.lpparam as PackageReadyParam
+                    )
+                }
+                when (session.installation) {
+                    InstallOutcome.INSTALLED,
+                    InstallOutcome.DEGRADED,
+                    InstallOutcome.DISPATCHED -> FeatureInstallResult.Installed(
+                        InstallSummary(
+                            requiredInstalled = session.requiredInstalled,
+                            requiredTotal = session.requiredTotal,
+                            optionalInstalled = session.optionalInstalled,
+                            optionalTotal = session.optionalTotal,
+                            fallbackUsed = session.fallbackUsed,
+                            installation = session.installation ?: InstallOutcome.FAILED,
+                            reasonCode = session.reasonCode
+                        )
+                    )
+                    else -> FeatureInstallResult.FailedTransient(
+                        session.detail ?: "statusBarClockTweak session failed"
+                    )
+                }
             },
             activationRestartTarget = RestartTarget.SYSTEMUI_RESTART,
             configReloadMode = ConfigReloadMode.PARTIAL
@@ -99,19 +153,47 @@ object FeatureCatalog {
                 prefs.getBoolean("system_autobrightness", false)
             },
             installer = { runtime, compatResult ->
-                run {
-                    val variant = when (compatResult.selectedVariant?.id) {
-                        "automatic_brightness_controller" ->
-                            SystemDisplayAndWindowHooks.AutoBrightnessVariant.AUTOMATIC_BRIGHTNESS_CONTROLLER
-                        "display_power_controller" ->
-                            SystemDisplayAndWindowHooks.AutoBrightnessVariant.DISPLAY_POWER_CONTROLLER
-                        else -> null
-                    } ?: return@run FeatureInstallResult.Incompatible("no selectable autoBrightness variant")
-                    SystemDisplayAndWindowHooks.AutoBrightnessRangeHook(
-                        runtime.lpparam as SystemServerStartingParam,
-                        variant
-                    )
-                    FeatureInstallResult.Installed
+                val variant = when (compatResult.selectedVariant?.id) {
+                    "automatic_brightness_controller" ->
+                        SystemDisplayAndWindowHooks.AutoBrightnessVariant.AUTOMATIC_BRIGHTNESS_CONTROLLER
+                    "display_power_controller" ->
+                        SystemDisplayAndWindowHooks.AutoBrightnessVariant.DISPLAY_POWER_CONTROLLER
+                    else -> null
+                }
+
+                if (variant == null) {
+                    FeatureInstallResult.Incompatible("no selectable autoBrightness variant")
+                } else {
+                    val session = HookInstaller.withSession(
+                        resolver = runtime.resolver,
+                        contract = CanaryContracts.autoBrightnessRange,
+                        diagnosticId = DiagnosticIds.AUTO_BRIGHTNESS_RANGE,
+                        classLoader = runtime.classLoader,
+                        compatibilityResult = compatResult
+                    ) {
+                        SystemDisplayAndWindowHooks.AutoBrightnessRangeHook(
+                            runtime.lpparam as SystemServerStartingParam,
+                            variant
+                        )
+                    }
+                    when (session.installation) {
+                        InstallOutcome.INSTALLED,
+                        InstallOutcome.DEGRADED,
+                        InstallOutcome.DISPATCHED -> FeatureInstallResult.Installed(
+                            InstallSummary(
+                                requiredInstalled = session.requiredInstalled,
+                                requiredTotal = session.requiredTotal,
+                                optionalInstalled = session.optionalInstalled,
+                                optionalTotal = session.optionalTotal,
+                                fallbackUsed = session.fallbackUsed,
+                                installation = session.installation ?: InstallOutcome.FAILED,
+                                reasonCode = session.reasonCode
+                            )
+                        )
+                        else -> FeatureInstallResult.FailedTransient(
+                            session.detail ?: "autoBrightnessRange session failed"
+                        )
+                    }
                 }
             },
             activationRestartTarget = RestartTarget.REBOOT,
@@ -130,7 +212,7 @@ object FeatureCatalog {
                 SystemAudioAndVisualAndMoreHooks.MuffledVibrationHook(
                     runtime.lpparam as SystemServerStartingParam
                 )
-                FeatureInstallResult.Installed
+                FeatureInstallResult.Installed()
             },
             activationRestartTarget = RestartTarget.REBOOT,
             configReloadMode = ConfigReloadMode.NONE
@@ -149,7 +231,7 @@ object FeatureCatalog {
                 SystemNotificationMoreHooks.NoMoreIconHook(
                     runtime.lpparam as PackageReadyParam
                 )
-                FeatureInstallResult.Installed
+                FeatureInstallResult.Installed()
             },
             activationRestartTarget = RestartTarget.SYSTEMUI_RESTART,
             configReloadMode = ConfigReloadMode.NONE
@@ -167,7 +249,7 @@ object FeatureCatalog {
                 SystemUIBatteryHooks.BatteryIndicatorHook(
                     runtime.lpparam as PackageReadyParam
                 )
-                FeatureInstallResult.Installed
+                FeatureInstallResult.Installed()
             },
             activationRestartTarget = RestartTarget.SYSTEMUI_RESTART,
             configReloadMode = ConfigReloadMode.NONE
@@ -186,7 +268,7 @@ object FeatureCatalog {
                 LauncherSystemHooks.NoClockHideHook(
                     runtime.lpparam as PackageReadyParam
                 )
-                FeatureInstallResult.Installed
+                FeatureInstallResult.Installed()
             },
             activationRestartTarget = RestartTarget.LAUNCHER_RESTART,
             configReloadMode = ConfigReloadMode.NONE
@@ -204,7 +286,7 @@ object FeatureCatalog {
                 LauncherLayoutHooks.NoWidgetOnlyHook(
                     runtime.lpparam as PackageReadyParam
                 )
-                FeatureInstallResult.Installed
+                FeatureInstallResult.Installed()
             },
             activationRestartTarget = RestartTarget.LAUNCHER_RESTART,
             configReloadMode = ConfigReloadMode.NONE
@@ -223,7 +305,7 @@ object FeatureCatalog {
                 SystemAudioAndVisualAndMoreHooks.ScreenDimTimeHook(
                     runtime.lpparam as SystemServerStartingParam
                 )
-                FeatureInstallResult.Installed
+                FeatureInstallResult.Installed()
             },
             activationRestartTarget = RestartTarget.REBOOT,
             configReloadMode = ConfigReloadMode.NONE
@@ -241,7 +323,7 @@ object FeatureCatalog {
                 SystemAudioAndVisualAndMoreHooks.FirstVolumePressHook(
                     runtime.lpparam as SystemServerStartingParam
                 )
-                FeatureInstallResult.Installed
+                FeatureInstallResult.Installed()
             },
             activationRestartTarget = RestartTarget.REBOOT,
             configReloadMode = ConfigReloadMode.NONE
@@ -260,7 +342,7 @@ object FeatureCatalog {
                 SystemStatusBarMoreHooks.NetworkIndicatorWifi(
                     runtime.lpparam as PackageReadyParam
                 )
-                FeatureInstallResult.Installed
+                FeatureInstallResult.Installed()
             },
             activationRestartTarget = RestartTarget.SYSTEMUI_RESTART,
             configReloadMode = ConfigReloadMode.NONE
@@ -278,7 +360,7 @@ object FeatureCatalog {
                 SystemNotificationMoreHooks.MuteVisibleNotificationsHook(
                     runtime.lpparam as PackageReadyParam
                 )
-                FeatureInstallResult.Installed
+                FeatureInstallResult.Installed()
             },
             activationRestartTarget = RestartTarget.SYSTEMUI_RESTART,
             configReloadMode = ConfigReloadMode.NONE
@@ -297,7 +379,7 @@ object FeatureCatalog {
                 LauncherIconHooks.HideTitlesHook(
                     runtime.lpparam as PackageReadyParam
                 )
-                FeatureInstallResult.Installed
+                FeatureInstallResult.Installed()
             },
             activationRestartTarget = RestartTarget.LAUNCHER_RESTART,
             configReloadMode = ConfigReloadMode.NONE
@@ -315,7 +397,7 @@ object FeatureCatalog {
                 LauncherSystemHooks.FixAppInfoLaunchHook(
                     runtime.lpparam as PackageReadyParam
                 )
-                FeatureInstallResult.Installed
+                FeatureInstallResult.Installed()
             },
             activationRestartTarget = RestartTarget.LAUNCHER_RESTART,
             configReloadMode = ConfigReloadMode.NONE
@@ -334,7 +416,7 @@ object FeatureCatalog {
                 SystemDisplayAndWindowHooks.HideProximityWarningHook(
                     runtime.lpparam as SystemServerStartingParam
                 )
-                FeatureInstallResult.Installed
+                FeatureInstallResult.Installed()
             },
             activationRestartTarget = RestartTarget.REBOOT,
             configReloadMode = ConfigReloadMode.NONE
@@ -352,7 +434,7 @@ object FeatureCatalog {
                 SystemAudioAndVisualAndMoreHooks.ClearAllTasksHook(
                     runtime.lpparam as SystemServerStartingParam
                 )
-                FeatureInstallResult.Installed
+                FeatureInstallResult.Installed()
             },
             activationRestartTarget = RestartTarget.REBOOT,
             configReloadMode = ConfigReloadMode.NONE
@@ -371,7 +453,7 @@ object FeatureCatalog {
                 SystemUINotificationHooks.HideDismissViewHook(
                     runtime.lpparam as PackageReadyParam
                 )
-                FeatureInstallResult.Installed
+                FeatureInstallResult.Installed()
             },
             activationRestartTarget = RestartTarget.SYSTEMUI_RESTART,
             configReloadMode = ConfigReloadMode.NONE
@@ -389,7 +471,7 @@ object FeatureCatalog {
                 SystemLockScreenMoreHooks.HideLockScreenHintHook(
                     runtime.lpparam as PackageReadyParam
                 )
-                FeatureInstallResult.Installed
+                FeatureInstallResult.Installed()
             },
             activationRestartTarget = RestartTarget.SYSTEMUI_RESTART,
             configReloadMode = ConfigReloadMode.NONE
@@ -408,7 +490,7 @@ object FeatureCatalog {
                 LauncherFolderHooks.FolderColumnsHook(
                     runtime.lpparam as PackageReadyParam
                 )
-                FeatureInstallResult.Installed
+                FeatureInstallResult.Installed()
             },
             activationRestartTarget = RestartTarget.LAUNCHER_RESTART,
             configReloadMode = ConfigReloadMode.NONE
@@ -426,7 +508,7 @@ object FeatureCatalog {
                 LauncherIconHooks.TitleTopMarginHook(
                     runtime.lpparam as PackageReadyParam
                 )
-                FeatureInstallResult.Installed
+                FeatureInstallResult.Installed()
             },
             activationRestartTarget = RestartTarget.LAUNCHER_RESTART,
             configReloadMode = ConfigReloadMode.NONE
@@ -445,7 +527,7 @@ object FeatureCatalog {
                 SystemDisplayAndWindowHooks.NoLightUpOnChargeHook(
                     runtime.lpparam as SystemServerStartingParam
                 )
-                FeatureInstallResult.Installed
+                FeatureInstallResult.Installed()
             },
             activationRestartTarget = RestartTarget.REBOOT,
             configReloadMode = ConfigReloadMode.NONE
@@ -463,7 +545,7 @@ object FeatureCatalog {
                 SystemAudioAndVisualAndMoreHooks.AllRotationsHook(
                     runtime.lpparam as SystemServerStartingParam
                 )
-                FeatureInstallResult.Installed
+                FeatureInstallResult.Installed()
             },
             activationRestartTarget = RestartTarget.REBOOT,
             configReloadMode = ConfigReloadMode.NONE
@@ -482,7 +564,7 @@ object FeatureCatalog {
                 SystemUIStatusBarHooks.NoNetworkSpeedSeparatorHook(
                     runtime.lpparam as PackageReadyParam
                 )
-                FeatureInstallResult.Installed
+                FeatureInstallResult.Installed()
             },
             activationRestartTarget = RestartTarget.SYSTEMUI_RESTART,
             configReloadMode = ConfigReloadMode.NONE
@@ -500,7 +582,7 @@ object FeatureCatalog {
                 SystemUIStatusBarHooks.HideIconsClockHook(
                     runtime.lpparam as PackageReadyParam
                 )
-                FeatureInstallResult.Installed
+                FeatureInstallResult.Installed()
             },
             activationRestartTarget = RestartTarget.SYSTEMUI_RESTART,
             configReloadMode = ConfigReloadMode.NONE
@@ -519,7 +601,7 @@ object FeatureCatalog {
                 LauncherAnimationHooks.NoUnlockAnimationHook(
                     runtime.lpparam as PackageReadyParam
                 )
-                FeatureInstallResult.Installed
+                FeatureInstallResult.Installed()
             },
             activationRestartTarget = RestartTarget.LAUNCHER_RESTART,
             configReloadMode = ConfigReloadMode.NONE

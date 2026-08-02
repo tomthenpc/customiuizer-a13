@@ -85,12 +85,6 @@ object FeatureInstallRegistry {
         }
 
         if (!spec.condition(runtime.prefs)) {
-            DiagnosticRecorder.record(
-                id = spec.diagnosticId,
-                enabled = EnabledState.DISABLED,
-                reasonCode = ReasonCode.PREFERENCE_DISABLED,
-                detail = spec.id
-            )
             return FeatureInstallResult.Disabled
         }
 
@@ -217,7 +211,8 @@ object FeatureInstallRegistry {
             id = spec.diagnosticId,
             installation = outcome,
             reasonCode = reasonCode,
-            detail = detail
+            detail = detail,
+            installSummary = (result as? FeatureInstallResult.Installed)?.installSummary
         )
 
         return result
