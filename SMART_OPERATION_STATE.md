@@ -23,7 +23,7 @@ CurrentObjectiveStartEvidence: A13_CODE_ERROR_REPAIR_PROMPT_V2; fatal boundary, 
 NextObjectiveFirstAction: strengthen check_hook_contract_parity.py for signature-level parity and AnyOf semantics
 ResumeTask: emergency repair v2 in progress; code guards and callback tests done; parity/progress/hazard tools and CI allowlist remaining
 DeepSweepDue: false
-LastVerifiedTree: 3ea485254cdc69c46b8c6b8dedd294c2cc0d09f5
+LastVerifiedTree: daa94cafc0bf2b9befaf56cb2fb7d7899085692c
 LastVerifiedMode: Fast
 LastVerifiedAt: 2026-08-02T22:05:00+08:00
 LastVerifiedCommandsDigest: cmd /c gradlew.bat :app:testDebugUnitTest; powershell -NoProfile -ExecutionPolicy Bypass -File .\scripts\verify.ps1 -Mode Fast
