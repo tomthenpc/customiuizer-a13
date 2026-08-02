@@ -2,26 +2,26 @@
 
 ```text
 Mode: PROFESSIONAL_AUTONOMOUS_STEWARDSHIP
-CheckpointCount: 10
+CheckpointCount: 13
 CheckpointsSinceStandardSweep: 0
 CheckpointsSinceDeepSweep: 0
 LastQualifyingCheckpoint: HEAD
 LastLightSweepCommit: none
 LastStandardSweepCommit: HEAD
-LastDeepSweepCommit: 8b3fb1ed36b1556e8b1fbcaccf57c30b1012ff59
+LastDeepSweepCommit: HEAD
 LastFullVerificationCommit: HEAD
 LastCIState: PASS
-LastCIRun: https://github.com/tomthenpc/customiuizer-a13/actions/runs/30736470562
-LastCIJob: https://github.com/tomthenpc/customiuizer-a13/actions/runs/30736470562/job/91466032726
-LastCICommit: 814f5325a1f8c1aa00e7e8451a94b3a23b802239
+LastCIRun: https://github.com/tomthenpc/customiuizer-a13/actions/runs/30737642726
+LastCIJob: https://github.com/tomthenpc/customiuizer-a13/actions/runs/30737642726/job/91469251983
+LastCICommit: 801860e1c4afda8d035e4f09531679685c4cde21
 LastCleanupCommit: HEAD
 LastToolCreated: tools/audit_hook_ownership.py
 LastFailureClass: none
 CurrentObjective: P3
 CurrentObjectiveState: ACTIVE
 CurrentObjectiveStartEvidence: git grep -n "fun HideStatusBarBeforeScreenshotHook"; python tools/audit_hook_ownership.py; python tools/verify.py full
-NextObjectiveFirstAction: python tools/verify.ps1 -Mode Full
-ResumeTask: P3 — 全部生产 Hook 收口; P3.3 first batch: SystemChargingAndWallpaperHooks, SystemUIScreenshotHooks, SystemShareAndOpenWithHooks
+NextObjectiveFirstAction: continue P3.2 batch migration of remaining legacy hooks
+ResumeTask: P3 — 全部生产 Hook 收口; P3.2 batch 5+6 complete (CleanShareMenu, CleanOpenWith, ChargingInfo, SetLockscreenWallpaper); next: continue migrating remaining 168 legacy direct hook calls
 DeepSweepDue: false
 LastVerifiedTree: dc7dc8b194cd103e1712f43dea00a71c46a89afb
 LastVerifiedMode: Full

@@ -426,6 +426,12 @@ typed catalog 之外的 Hook 同样必须处理。
 - [~] P3.2 迁移可直接归类的 legacy hook 到 Registry（按 process/phase 分批）；
   - [x] `system_volumesteps` → `volumeSteps` FeatureSpec (system_server, SYSTEM_SERVER_STARTING)
   - [x] `system_toasttime` → `toastTime` FeatureSpec (system_server, SYSTEM_SERVER_STARTING)
+  - [x] `system_hidestatusbar_whenscreenshot` → `hideStatusBarBeforeScreenshot` FeatureSpec (systemui, PACKAGE_READY)
+  - [x] `controls_hidenavbar_whenscreenshot` → `hideNavBarBeforeScreenshot` FeatureSpec (systemui, PACKAGE_READY)
+  - [x] `system_cleanshare` → `cleanShareMenu` + `cleanShareMenuService` FeatureSpec (android PACKAGE_READY + system_server SYSTEM_SERVER_STARTING)
+  - [x] `system_cleanopenwith` → `cleanOpenWithMenu` + `cleanOpenWithMenuService` FeatureSpec (android PACKAGE_READY + system_server SYSTEM_SERVER_STARTING)
+  - [x] `system_charginginfo` → `chargingInfo` FeatureSpec (systemui, PACKAGE_READY)
+  - [x] `system_lswallpaper` → `setLockscreenWallpaper` FeatureSpec (system_server, SYSTEM_SERVER_STARTING)
   - [ ] `system_separatevolume` 等跨 process 项按 LEGACY_EXCEPTION 登记
 - [ ] P3.3 登记不可迁移项为 LEGACY_EXCEPTION 并补充原因/owner/test；
 - [ ] P3.4 增加 inventory 机械门禁，防止 UNKNOWN/重复 ownership。
