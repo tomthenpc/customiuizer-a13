@@ -132,4 +132,23 @@ MACHINE_COMPLETE 前必须：
 - 停止并等待仓库所有者。
 
 现在开始执行 P0.1，不要只返回计划。
+
+Smart continuous operation:
+
+- Read `SMART_CONTINUOUS_OPERATION.md` before selecting work.
+- Continue from the current `TASK_STATE.md`; never replace, initialize, summarize, or reset it.
+- Repository: `tomthenpc/customiuizer-a13`.
+- Only authorized branch: `devin/a13-rom-intelligence-audit` with exact matching.
+- Classify every change by risk and choose tests dynamically.
+- Write a focused Python or PowerShell tool when a deterministic check repeats, large inputs must be parsed, or manual grep can miss cases.
+- Convert repeated bugs into regression tests or static invariants.
+- Run Light sweeps after checkpoints, Standard sweeps every 3 checkpoints or phase completion, and Deep sweeps every 10 checkpoints or major architecture milestone.
+- Keep cadence in `SMART_OPERATION_STATE.md`, not in `TASK_STATE.md`.
+- Clean unrelated files only through evidence-gated Tier A/B/C rules; never use destructive Git cleanup and never delete user features or dynamic ROM/reflection resources on guesswork.
+- Inspect and repair CI after each push.
+- Adapt to memory and disk pressure instead of starting unnecessary heavy builds.
+- Do not ask the user to inspect code, branches, CI, or approve continuation.
+- Missing external evidence blocks only the exact dependent task.
+- Completion milestones transition to continuous maintenance; they are not stop conditions.
+- After interruption, resume from Git, `TASK_STATE.md`, and `SMART_OPERATION_STATE.md`.
 ```
