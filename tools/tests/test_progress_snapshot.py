@@ -7,6 +7,7 @@ import os
 import tempfile
 import unittest
 from pathlib import Path
+from unittest.mock import patch
 
 # Import the module under test with a configurable repo root.
 import tools.progress_snapshot as ps
@@ -133,6 +134,90 @@ CheckpointCount: 1
         data = json.loads(json_text)
         self.assertEqual(snapshot1.project_progress, data["project_progress"])
         self.assertEqual(snapshot1.machine_progress, data["machine_progress"])
+
+    def _baseline_task(self) -> str:
+        return """# P0 — baseline
+
+State: `COMPLETE`
+
+# P1 — arch
+
+State: `COMPLETE`
+
+# P3 — hook
+
+State: `IN_PROGRESS`
+"""
+
+    def _baseline_smart(self) -> str:
+        return """# Smart
+
+```text
+CheckpointCount: 5
+```
+"""
+
+    def test_check_snapshot_ignores_volatile_fields(self) -> None:
+        """Simulate a no-op commit: only provenance metadata changes."""
+        self._write_files(self._baseline_smart(), self._baseline_task())
+        os.chdir(self.tmpdir)
+        snapshot = ps.compute_progress(ps.parse_task_state(), ps.parse_smart())
+        ps.write_snapshot(snapshot)
+        with patch.object(ps, "ahead_of_main", return_value=99), patch.object(ps, "head_sha", return_value="deadbeef" * 5):
+            self.assertTrue(ps.check_snapshot())
+
+    def test_check_snapshot_fails_on_task_state_change(self) -> None:
+        self._write_files(self._baseline_smart(), self._baseline_task())
+        os.chdir(self.tmpdir)
+        snapshot = ps.compute_progress(ps.parse_task_state(), ps.parse_smart())
+        ps.write_snapshot(snapshot)
+        new_task = self._baseline_task().replace("State: `IN_PROGRESS`", "State: `COMPLETE`", 1)
+        ps.TASK_FILE.write_text(new_task, encoding="utf-8")
+        self.assertFalse(ps.check_snapshot())
+
+    def test_check_snapshot_fails_on_checkpoint_count_change(self) -> None:
+        self._write_files(self._baseline_smart(), self._baseline_task())
+        os.chdir(self.tmpdir)
+        snapshot = ps.compute_progress(ps.parse_task_state(), ps.parse_smart())
+        ps.write_snapshot(snapshot)
+        ps.SMART_FILE.write_text("""# Smart\n\n```text\nCheckpointCount: 99\n```\n""", encoding="utf-8")
+        self.assertFalse(ps.check_snapshot())
+
+    def test_check_snapshot_fails_on_domain_evidence_change(self) -> None:
+        self._write_files(self._baseline_smart(), self._baseline_task())
+        os.chdir(self.tmpdir)
+        snapshot = ps.compute_progress(ps.parse_task_state(), ps.parse_smart())
+        ps.write_snapshot(snapshot)
+        new_task = self._baseline_task().replace("# P0 — baseline", "# P0 — baseline\n\nEvidence: `CI_VERIFIED`")
+        ps.TASK_FILE.write_text(new_task, encoding="utf-8")
+        self.assertFalse(ps.check_snapshot())
+
+    def test_markdown_check_snapshot_ignores_volatile_fields(self) -> None:
+        self._write_files(self._baseline_smart(), self._baseline_task())
+        os.chdir(self.tmpdir)
+        snapshot = ps.compute_progress(ps.parse_task_state(), ps.parse_smart())
+        ps.write_snapshot(snapshot)
+        md = ps.MD_FILE.read_text(encoding="utf-8")
+        ps.MD_FILE.write_text(
+            md.replace(f"AheadOfMain: {snapshot.ahead_of_main}", "AheadOfMain: 9999")
+            .replace(f"HEAD: {snapshot.head}", "HEAD: 0000000000000000000000000000000000000000"),
+            encoding="utf-8",
+        )
+        self.assertTrue(ps.check_snapshot())
+
+    def test_markdown_check_snapshot_fails_on_manual_body_drift(self) -> None:
+        self._write_files(self._baseline_smart(), self._baseline_task())
+        os.chdir(self.tmpdir)
+        snapshot = ps.compute_progress(ps.parse_task_state(), ps.parse_smart())
+        ps.write_snapshot(snapshot)
+        md = ps.MD_FILE.read_text(encoding="utf-8")
+        # Tamper with the section state and the progress percentage.
+        ps.MD_FILE.write_text(
+            md.replace("`IN_PROGRESS`", "`COMPLETE`", 1)
+            .replace(f"ProjectProgress: {snapshot.project_progress}%", "ProjectProgress: 99.99%"),
+            encoding="utf-8",
+        )
+        self.assertFalse(ps.check_snapshot())
 
 
 if __name__ == "__main__":

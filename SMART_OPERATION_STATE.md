@@ -10,10 +10,10 @@ LastLightSweepCommit: none
 LastStandardSweepCommit: HEAD
 LastDeepSweepCommit: none
 LastFullVerificationCommit: HEAD
-LastCIState: PENDING
+LastCIState: FAIL
 LastCleanupCommit: HEAD
 LastToolCreated: tools/audit_hook_ownership.py
-LastFailureClass: none
+LastFailureClass: CI_GENERATED_DRIFT
 CurrentObjective: P3.3 — refresh Hook ownership and classify remaining production hooks
 ResumeTask: P3 — 全部生产 Hook 收口; P3.3 first batch: SystemChargingAndWallpaperHooks, SystemUIScreenshotHooks, SystemShareAndOpenWithHooks
 LastVerifiedTree: derived

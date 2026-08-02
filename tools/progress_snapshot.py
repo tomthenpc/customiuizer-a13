@@ -59,6 +59,18 @@ DOMAIN_PATTERNS = [
 
 EVIDENCE_ORDER = ["NOT_EXERCISED", "STATIC_PROVEN", "BUILD_VERIFIED", "CI_VERIFIED", "DEVICE_VERIFIED"]
 
+# Snapshot metadata that only depends on the current commit/time and must not
+# trigger a freshness failure. The semantic payload (progress, sections, scores)
+# is what --check validates.
+VOLATILE_FIELDS = {
+    "audit_time",
+    "head",
+    "tree",
+    "verified_tree",
+    "verified_mode",
+    "ahead_of_main",
+}
+
 STATE_COMPLETION = {
     "TODO": 0.0,
     "BLOCKED_INTERNAL": 0.0,
@@ -394,15 +406,15 @@ def write_snapshot(snapshot: Snapshot) -> None:
 
 
 def _semantic_equal(a: Any, b: Any) -> bool:
-    """Compare snapshots ignoring volatile audit-time metadata."""
+    """Compare snapshots ignoring volatile provenance/time metadata."""
     if isinstance(a, dict) and isinstance(b, dict):
         for key in a:
-            if key in ("audit_time", "head", "tree", "verified_tree", "verified_mode"):
+            if key in VOLATILE_FIELDS:
                 continue
             if key not in b or not _semantic_equal(a[key], b[key]):
                 return False
         for key in b:
-            if key in ("audit_time", "head", "tree", "verified_tree", "verified_mode"):
+            if key in VOLATILE_FIELDS:
                 continue
             if key not in a:
                 return False
@@ -412,13 +424,123 @@ def _semantic_equal(a: Any, b: Any) -> bool:
     return a == b
 
 
+def _parse_float_percent(value: str) -> float:
+    return float(value.strip().replace("%", ""))
+
+
+def _parse_int(value: str) -> int:
+    return int(value.strip())
+
+
+def parse_markdown_snapshot(text: str) -> dict[str, Any]:
+    """Parse the rendered Markdown snapshot into a dict comparable with JSON."""
+    result: dict[str, Any] = {
+        "audit_time": "",
+        "head": "",
+        "tree": "",
+        "verified_tree": None,
+        "verified_mode": None,
+        "ahead_of_main": 0,
+        "checkpoint_count": 0,
+        "project_progress": 0.0,
+        "machine_progress": 0.0,
+        "stage": "",
+        "domain_scores": [],
+        "sections": [],
+        "notes": [],
+    }
+
+    # Metadata block
+    m = re.search(r"```text\n(.*?)\n```", text, re.S)
+    if m:
+        for line in m.group(1).splitlines():
+            if ":" not in line:
+                continue
+            key, _, value = line.partition(":")
+            key = key.strip()
+            value = value.strip()
+            if key == "AuditTime":
+                result["audit_time"] = value
+            elif key == "HEAD":
+                result["head"] = value
+            elif key == "Tree":
+                result["tree"] = value
+            elif key == "VerifiedTree":
+                result["verified_tree"] = None if value == "not recorded" else value
+            elif key == "VerifiedMode":
+                result["verified_mode"] = None if value == "none" else value
+            elif key == "AheadOfMain":
+                result["ahead_of_main"] = _parse_int(value) if value else 0
+            elif key == "CheckpointCount":
+                result["checkpoint_count"] = _parse_int(value) if value else 0
+            elif key == "ProjectProgress":
+                result["project_progress"] = _parse_float_percent(value)
+            elif key == "MachineProgress":
+                result["machine_progress"] = _parse_float_percent(value)
+            elif key == "Stage":
+                result["stage"] = value
+
+    # Domain scores table
+    domain_match = re.search(r"## Domain Scores\n\n(.*?)\n\n## Section States", text, re.S)
+    if domain_match:
+        for line in domain_match.group(1).splitlines():
+            if not line.startswith("|"):
+                continue
+            cells = [c.strip() for c in line.split("|")]
+            # Drop the leading/trailing empty cells produced by the outer pipes.
+            cells = cells[1:-1]
+            if not cells or cells[0] == "Domain" or cells[0].startswith("-"):
+                continue
+            if len(cells) < 5:
+                continue
+            result["domain_scores"].append(
+                {
+                    "name": cells[0],
+                    "weight": _parse_int(cells[1]),
+                    "score": _parse_float_percent(cells[2]),
+                    "evidence_level": cells[3],
+                    "sections": [s.strip() for s in cells[4].split(",") if s.strip()],
+                }
+            )
+
+    # Section states
+    section_match = re.search(r"## Section States\n\n(.*?)(?:\n\n## Notes|\n\n---|$)", text, re.S)
+    if section_match:
+        for line in section_match.group(1).splitlines():
+            m = re.match(r"- \*\*(?P<id>[^*]+)\*\* (?P<title>.*?) — `(?P<state>[^`]+)`(?: \((?P<evidence>.*)\))?", line)
+            if m:
+                evidence = m.group("evidence") or ""
+                result["sections"].append(
+                    {
+                        "id": m.group("id").strip(),
+                        "title": m.group("title").strip(),
+                        "state": m.group("state").strip(),
+                        "evidence": [e.strip() for e in evidence.split(",") if e.strip()] or ["none"],
+                    }
+                )
+
+    # Notes
+    notes_match = re.search(r"## Notes\n\n(.*?)\n\n---", text, re.S)
+    if notes_match:
+        for line in notes_match.group(1).splitlines():
+            if line.startswith("- "):
+                result["notes"].append(line[2:].strip())
+
+    return result
+
+
 def check_snapshot() -> bool:
     snapshot = compute_progress(parse_task_state(), parse_smart())
     if not JSON_FILE.exists() or not MD_FILE.exists():
         return False
-    stored = json.loads(JSON_FILE.read_text(encoding="utf-8"))
     current = snapshot_to_dict(snapshot)
-    return _semantic_equal(stored, current)
+
+    stored_json = json.loads(JSON_FILE.read_text(encoding="utf-8"))
+    if not _semantic_equal(stored_json, current):
+        return False
+
+    stored_md = parse_markdown_snapshot(MD_FILE.read_text(encoding="utf-8"))
+    return _semantic_equal(stored_md, current)
 
 
 def main() -> int:
