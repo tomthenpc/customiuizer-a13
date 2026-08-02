@@ -811,6 +811,7 @@ P0 后重建，但不得删除未解决问题。
 | 10 | `7c3b4fe` | Fast CI 修复：跨平台路径 + full checkout + progress snapshot 忽略 volatile metadata | `python tools/verify.py full` + Fast CI 通过 | qualifying |
 | 11 | `eb0ba15` | 紧急修复 v2：fatal 边界、batch 12 args 安全与 focused callback 测试 | `gradlew :app:testDebugUnitTest` + Fast CI 通过 | qualifying |
 | 12 | `0894e99` | 修正 `LastVerifiedTree` 为已推送 commit 的真实 tree | Fast CI 通过 | bookkeeping |
+| 13 | `8a5fa11` | 修正 `LastVerifiedTree` 为 `0894e99` 的 tree 对象（避免不存在 tree） | Fast CI 通过 | bookkeeping |
 
 ---
 
