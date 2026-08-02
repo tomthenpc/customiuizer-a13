@@ -156,6 +156,13 @@ def check_progress_snapshot() -> int:
     )
 
 
+def check_hook_contract_parity() -> int:
+    return run(
+        [find_python(), str(REPO_ROOT / "tools" / "check_hook_contract_parity.py")],
+        "check-hook-contract-parity",
+    )
+
+
 def compile_debug() -> int:
     gradle = gradle_cmd()
     return run([gradle, ":app:compileDebugKotlin"], "compileDebugKotlin")
@@ -190,6 +197,8 @@ def fast_mode(pattern: str | None, skip_android: bool) -> int:
         return 1
     if check_goal_constitution() != 0:
         return 1
+    if check_hook_contract_parity() != 0:
+        return 1
     if check_progress_snapshot() != 0:
         return 1
     if skip_android:
@@ -214,6 +223,8 @@ def full_mode() -> int:
     if check_document_contracts() != 0:
         return 1
     if check_goal_constitution() != 0:
+        return 1
+    if check_hook_contract_parity() != 0:
         return 1
     if check_progress_snapshot() != 0:
         return 1

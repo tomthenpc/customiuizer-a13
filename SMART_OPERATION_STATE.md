@@ -15,18 +15,18 @@ LastCIRun: https://github.com/tomthenpc/customiuizer-a13/actions/runs/3074142520
 LastCIJob: https://github.com/tomthenpc/customiuizer-a13/actions/runs/30741425209/job/91479453395
 LastCICommit: 66ad73b9e96019a2424d92ba193e2fa2cc1a35ab
 LastCleanupCommit: HEAD
-LastToolCreated: tools/audit_hook_ownership.py
-LastFailureClass: none
+LastToolCreated: tools/check_hook_contract_parity.py
+LastFailureClass: CONTRACT_RUNTIME_PARITY
 CurrentObjective: P3
 CurrentObjectiveState: ACTIVE
-CurrentObjectiveStartEvidence: git grep -n "fun HideStatusBarBeforeScreenshotHook"; python tools/audit_hook_ownership.py; python tools/verify.py full
-NextObjectiveFirstAction: continue P3.2 batch migration of remaining legacy hooks
-ResumeTask: P3 — 全部生产 Hook 收口; P3.2 batch 9/10 contract correction + batch 11 (appsDisableService, noAccessDeviceLogsRequest, autoGroupNotifications, appLockTimeout) migrated; next: continue batch 12
+CurrentObjectiveStartEvidence: batch 9/10 contract/runtime parity audit; tools/check_hook_contract_parity.py covers batch 9/10/11
+NextObjectiveFirstAction: repair noSignatureVerify contract to cover all production hooks; verify all batch 9/10 contracts match production hook calls
+ResumeTask: repair batch 9/10 parity, complete batch 11, verify, push, inspect CI, continue batch 12
 DeepSweepDue: false
-LastVerifiedTree: 66cb28f5e4f7a774ec424e5d0e53edfc79d4173b
-LastVerifiedMode: Final
-LastVerifiedAt: 2026-08-02T17:27:00+08:00
-LastVerifiedCommandsDigest: powershell -NoProfile -ExecutionPolicy Bypass -File .\scripts\verify.ps1 -Mode Fast; powershell -NoProfile -ExecutionPolicy Bypass -File .\scripts\verify.ps1 -Mode Full
+LastVerifiedTree: 6feda5cbfbd782013a82b79362bae537cb84f80d
+LastVerifiedMode: Full
+LastVerifiedAt: 2026-08-02T17:31:00+08:00
+LastVerifiedCommandsDigest: python tools/check_hook_contract_parity.py; powershell -NoProfile -ExecutionPolicy Bypass -File .\scripts\verify.ps1 -Mode Fast; powershell -NoProfile -ExecutionPolicy Bypass -File .\scripts\verify.ps1 -Mode Full
 ```
 
 本文件只记录执行节奏，不保存、替代或重置产品任务。

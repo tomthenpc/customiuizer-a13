@@ -911,6 +911,54 @@ object CatalogContracts {
                     className = "com.android.server.wm.ActivityStarterInjector",
                     memberName = "modifyLaunchActivityOptionIfNeed"
                 )
+            ),
+            SingleTargetRequirement(
+                target = HookTargetSpec(
+                    id = "ActivityTaskSupervisor.startActivityFromRecents",
+                    operation = HookOperation.ALL_METHODS_BY_NAME,
+                    className = "com.android.server.wm.ActivityTaskSupervisor",
+                    memberName = "startActivityFromRecents"
+                )
+            ),
+            SingleTargetRequirement(
+                target = HookTargetSpec(
+                    id = "MiuiFreeFormGestureController\$FreeFormReceiver.onReceive",
+                    operation = HookOperation.EXACT_METHOD,
+                    className = "com.android.server.wm.MiuiFreeFormGestureController\$FreeFormReceiver",
+                    memberName = "onReceive"
+                )
+            ),
+            SingleTargetRequirement(
+                target = HookTargetSpec(
+                    id = "MiuiFreeFormGestureController.notifyFullScreenWidnowModeStart",
+                    operation = HookOperation.ALL_METHODS_BY_NAME,
+                    className = "com.android.server.wm.MiuiFreeFormGestureController",
+                    memberName = "notifyFullScreenWidnowModeStart"
+                )
+            ),
+            SingleTargetRequirement(
+                target = HookTargetSpec(
+                    id = "ActivityTaskManagerService.launchSmallFreeFormWindow",
+                    operation = HookOperation.ALL_METHODS_BY_NAME,
+                    className = "com.android.server.wm.ActivityTaskManagerService",
+                    memberName = "launchSmallFreeFormWindow"
+                )
+            ),
+            SingleTargetRequirement(
+                target = HookTargetSpec(
+                    id = "ActivityTaskManagerService.onSystemReady",
+                    operation = HookOperation.EXACT_METHOD,
+                    className = "com.android.server.wm.ActivityTaskManagerService",
+                    memberName = "onSystemReady"
+                )
+            ),
+            SingleTargetRequirement(
+                target = HookTargetSpec(
+                    id = "ActivityTaskManagerService.resizeTask",
+                    operation = HookOperation.ALL_METHODS_BY_NAME,
+                    className = "com.android.server.wm.ActivityTaskManagerService",
+                    memberName = "resizeTask"
+                )
             )
         )
     )

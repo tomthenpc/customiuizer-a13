@@ -136,7 +136,15 @@ class CatalogBatch9And10ContractTest {
     fun stickyFloatingWindowsMatchesProductionTarget() {
         val contract = contractFor("stickyFloatingWindows")
         assertEquals(
-            setOf("ActivityStarterInjector.modifyLaunchActivityOptionIfNeed"),
+            setOf(
+                "ActivityStarterInjector.modifyLaunchActivityOptionIfNeed",
+                "ActivityTaskSupervisor.startActivityFromRecents",
+                "MiuiFreeFormGestureController\$FreeFormReceiver.onReceive",
+                "MiuiFreeFormGestureController.notifyFullScreenWidnowModeStart",
+                "ActivityTaskManagerService.launchSmallFreeFormWindow",
+                "ActivityTaskManagerService.onSystemReady",
+                "ActivityTaskManagerService.resizeTask"
+            ),
             requiredIds(contract)
         )
         assertTrue("stickyFloatingWindows has no optional targets", optionalIds(contract).isEmpty())
