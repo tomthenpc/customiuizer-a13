@@ -89,12 +89,14 @@ object SystemAudioAndVisualAndMoreHooks {
     fun NoCallInterruptionHook(lpparam: SystemServerStartingParam) {
         ModuleHelper.hookAllMethods("com.android.server.audio.AudioService", lpparam.classLoader, "requestAudioFocus", object : MethodHook() {
             override fun before(param: BeforeHookCallback) {
+                if (param.args.size <= 4) return
                 if ("AudioFocus_For_Phone_Ring_And_Calls" == param.args[4] && audioFocusPkg != null &&
                     MainModule.mPrefs.getStringSet("system_ignorecalls_apps").contains(audioFocusPkg))
                     param.returnAndSkip(1)
             }
 
             override fun after(param: AfterHookCallback) {
+                if (param.args.size <= 5) return
                 val res = param.result as? Int ?: return
                 if (res != AudioManager.AUDIOFOCUS_REQUEST_FAILED && "AudioFocus_For_Phone_Ring_And_Calls" != param.args[4])
                     audioFocusPkg = param.args[5] as? String

@@ -100,4 +100,44 @@ class SystemServerInstallerTest {
         MainModule.mPrefs = prefs
         assertTrue("action preference greater than 1 triggers global actions", SystemServerInstaller.needGlobalActions())
     }
+
+    @Test
+    fun needGlobalActions_mediaFallbackTrueWithPlayerApps() {
+        val prefs = PrefMap<String, Any>()
+        prefs["controls_volumemedia_up"] = 1
+        prefs["controls_mediaplayer_apps"] = setOf("com.spotify.music")
+        MainModule.mPrefs = prefs
+        assertTrue("media key enabled with player apps triggers global actions", SystemServerInstaller.needGlobalActions())
+    }
+
+    @Test
+    fun needGlobalActions_mediaFallbackFalseWithoutPlayerApps() {
+        val prefs = PrefMap<String, Any>()
+        prefs["controls_volumemedia_up"] = 1
+        prefs["controls_mediaplayer_apps"] = setOf<String>()
+        MainModule.mPrefs = prefs
+        assertFalse("media key enabled without player apps does not trigger global actions", SystemServerInstaller.needGlobalActions())
+    }
+
+    @Test
+    fun needGlobalActions_mediaFallbackPreservedWhenPreferencesThrow() {
+        val prefs = PrefMap<String, Any>()
+        val mediaPlayers = setOf("com.spotify.music")
+        val backing = mutableMapOf(
+            "pref_key_controls_volumemedia_up" to 1,
+            "pref_key_controls_mediaplayer_apps" to mediaPlayers
+        )
+        val throwingMap = object : MutableMap<String, Any> by backing {
+            @Suppress("UNCHECKED_CAST")
+            override val entries: MutableSet<MutableMap.MutableEntry<String, Any>>
+                get() = throw RuntimeException("entry iteration failed")
+        }
+        val stateField = PrefMap::class.java.getDeclaredField("state")
+        stateField.isAccessible = true
+        @Suppress("UNCHECKED_CAST")
+        val ref = stateField.get(prefs) as AtomicReference<Map<String, Any>>
+        ref.set(throwingMap)
+        MainModule.mPrefs = prefs
+        assertTrue("media fallback runs even when entrySet threw", SystemServerInstaller.needGlobalActions())
+    }
 }

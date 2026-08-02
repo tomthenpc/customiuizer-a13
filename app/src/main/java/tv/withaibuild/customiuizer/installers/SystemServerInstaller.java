@@ -110,19 +110,27 @@ public final class SystemServerInstaller {
                     return true;
                 }
             }
+        } catch (Throwable t) {
+            rethrowIfFatal(t);
+            XposedHelpers.log(t);
+        }
+        try {
             if (MainModule.mPrefs.getStringAsInt("controls_volumemedia_up", 0) > 0 || MainModule.mPrefs.getStringAsInt("controls_volumemedia_down", 0) > 0) {
                 return !MainModule.mPrefs.getStringSet("controls_mediaplayer_apps").isEmpty();
             }
-            return false;
         } catch (Throwable t) {
-            if (t instanceof VirtualMachineError) {
-                throw (VirtualMachineError) t;
-            }
-            if (t instanceof ThreadDeath) {
-                throw (ThreadDeath) t;
-            }
+            rethrowIfFatal(t);
             XposedHelpers.log(t);
-            return false;
+        }
+        return false;
+    }
+
+    private static void rethrowIfFatal(Throwable t) {
+        if (t instanceof VirtualMachineError) {
+            throw (VirtualMachineError) t;
+        }
+        if (t instanceof ThreadDeath) {
+            throw (ThreadDeath) t;
         }
     }
 }

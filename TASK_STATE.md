@@ -789,6 +789,9 @@ P0 后重建，但不得删除未解决问题。
 | GOAL-001 | P2 | Governance | TODO | v5 长期治理宪章已融合，但 SBOM/ROM packs/artifact provenance 尚未实现 | 随 P8-P14 逐步落地 |
 | A13-ARCH-TG-001 | P2 | Runtime | DEFERRED | A13_TELEGRAM_INSPIRED_LTS_RUNTIME_PROMPT_V1.md 已下发 | 完成 P3 核心收口后做现状审计，不直接写框架 |
 | DEVICE-001 | P1 | Device | BLOCKED_EXTERNAL | 无本轮真实日志 | 完成 P13 |
+| REPAIR-V2-001 | P1 | Contract parity | IN_PROGRESS | A13_CODE_ERROR_REPAIR_PROMPT_V2 要求参数类型、AnyOf、错误类和变异测试 | 完成参数类型/AnyOf 校验强化（父 P3）|
+| REPAIR-V2-002 | P2 | Tool contract | TODO | SHARED_TOOL_REPAIR_CONTRACT_V2 要求 progress_snapshot.py 与 source_hazard_scan.py 同步 | 两工具通过工具契约验收 |
+| REPAIR-V2-003 | P2 | CI governance | TODO | 状态文件 CI 接受清单收紧，防止仅状态提交误报 PASS | 更新 check_automation_state.py 通过新清单 |
 
 ---
 

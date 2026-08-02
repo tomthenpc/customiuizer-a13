@@ -167,6 +167,7 @@ object SystemFreeformAndMultiWindowHooks {
 
         ModuleHelper.hookAllMethods("com.android.server.wm.ActivityStarter", lpparam.classLoader, "executeRequest", object : MethodHook() {
             override fun before(param: BeforeHookCallback) {
+                if (param.args.isEmpty()) return
                 val request = param.args[0]
                 val intent = XposedHelpers.getObjectField(request, "intent") as? Intent ?: return
                 val safeOptions = XposedHelpers.getObjectField(request, "activityOptions")
