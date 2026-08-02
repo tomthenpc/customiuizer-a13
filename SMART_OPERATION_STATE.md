@@ -9,23 +9,23 @@ LastQualifyingCheckpoint: HEAD
 LastLightSweepCommit: none
 LastStandardSweepCommit: HEAD
 LastDeepSweepCommit: HEAD
-LastFullVerificationCommit: HEAD
+LastFullVerificationCommit: 4ed46e797b0abfe5d7e8c617aef35b5592bfa46b
 LastCIState: PASS
-LastCIRun: https://github.com/tomthenpc/customiuizer-a13/actions/runs/30743708762
-LastCIJob: https://github.com/tomthenpc/customiuizer-a13/actions/runs/30743708762/job/91485538041
-LastCICommit: 6a2bfa9dc0a7989f69a25801a672ff66697d3c12
+LastCIRun: https://github.com/tomthenpc/customiuizer-a13/actions/runs/30747010962
+LastCIJob: https://github.com/tomthenpc/customiuizer-a13/actions/runs/30747010962/job/91494207583
+LastCICommit: 4ed46e797b0abfe5d7e8c617aef35b5592bfa46b
 LastCleanupCommit: HEAD
 LastToolCreated: tools/check_hook_contract_parity.py
 LastFailureClass: none
 CurrentObjective: P3
 CurrentObjectiveState: ACTIVE
-CurrentObjectiveStartEvidence: batch 9/10 contract/runtime parity audit; tools/check_hook_contract_parity.py covers batch 9/10/11
-NextObjectiveFirstAction: migrate the next batch 12 legacy hook to the typed catalog
-ResumeTask: batch 12 migration resumed; first feature tempHideOverlayApp and openAppInFreeForm moved to catalog
+CurrentObjectiveStartEvidence: A13_CODE_ERROR_REPAIR_PROMPT_V2; fatal boundary and constructor args safety fixed
+NextObjectiveFirstAction: strengthen check_hook_contract_parity.py for signature-level parity
+ResumeTask: emergency repair v2 in progress; fatal boundary and TempHideOverlayApp callback tests done
 DeepSweepDue: false
-LastVerifiedTree: 0b4e3ed411225543c90ef7d9ec2d5982c6d7c127
+LastVerifiedTree: c58e65ef3ee5bacc4b3fad6e969ba9906042d55e
 LastVerifiedMode: Full
-LastVerifiedAt: 2026-08-02T18:10:00+08:00
+LastVerifiedAt: 2026-08-02T20:20:00+08:00
 LastVerifiedCommandsDigest: python tools/check_hook_contract_parity.py; powershell -NoProfile -ExecutionPolicy Bypass -File .\scripts\verify.ps1 -Mode Fast; powershell -NoProfile -ExecutionPolicy Bypass -File .\scripts\verify.ps1 -Mode Full
 ```
 
