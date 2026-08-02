@@ -1,0 +1,19 @@
+P3.2: migrate 4 SystemServer security hooks to typed catalog
+
+- noVersionCheck: SYSTEM_SERVER / SYSTEM_SERVER_STARTING, targets
+  com.android.server.pm.PackageManagerServiceUtils.checkDowngrade (ALL_METHODS_BY_NAME)
+- removeActStartConfirm: SYSTEM_SERVER / SYSTEM_SERVER_STARTING, targets
+  com.miui.server.SecurityManagerService.checkAllowStartActivity (ALL_METHODS_BY_NAME)
+- forceClose: SYSTEM_SERVER / SYSTEM_SERVER_STARTING, targets
+  com.android.server.policy.BaseMiuiPhoneWindowManager constructors (ALL_CONSTRUCTORS)
+- disableSystemIntegrity: SYSTEM_SERVER / SYSTEM_SERVER_STARTING, targets
+  android.util.apk.ApkSignatureVerifier.getMinimumSignatureSchemeVersionForTargetSdk(int) (EXACT_METHOD)
+
+Replace direct hook calls in SystemServerInstaller with
+FeatureDispatcher.installById.
+
+Update FeatureCatalogTest, test_architecture_invariants,
+test_feature_inventory and A13_PROCESS_MATRIX counts (40 catalog, 32
+adapted, 8 registry).
+
+Verification: verify.ps1 -Mode Fast -> A13 VERIFICATION PASSED
