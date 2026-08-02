@@ -51,7 +51,7 @@ public final class SystemServerInstaller {
         if (MainModule.mPrefs.getInt("system_dimtime", 0) > 0) FeatureDispatcher.installById("screenDimTime", serverRuntime);
         if (MainModule.mPrefs.getInt("system_toasttime", 0) > 0) FeatureDispatcher.installById("toastTime", serverRuntime);
         if (!"none".equals(MainModule.mPrefs.getString("system_defaultusb", "none"))) SystemSettingsMoreHooks.USBConfigHook(lpparam);
-        if (MainModule.mPrefs.getBoolean("system_removesecure")) SystemSecurityAndSystemHooks.RemoveSecureHook(lpparam);
+        if (MainModule.mPrefs.getBoolean("system_removesecure")) FeatureDispatcher.installById("removeSecure", serverRuntime);
         if (MainModule.mPrefs.getBoolean("system_remove_startactconfirm")) FeatureDispatcher.installById("removeActStartConfirm", serverRuntime);
         if (MainModule.mPrefs.getBoolean("system_securelock")) FeatureDispatcher.installById("enhancedSecurity", serverRuntime);
         if (MainModule.mPrefs.getBoolean("system_separatevolume")) SystemAudioAndVolumeHooks.NotificationVolumeServiceHook(lpparam);
@@ -69,12 +69,12 @@ public final class SystemServerInstaller {
         if (MainModule.mPrefs.getBoolean("system_forceclose")) FeatureDispatcher.installById("forceClose", serverRuntime);
         if (MainModule.mPrefs.getBoolean("system_hideproxywarn")) FeatureDispatcher.installById("hideProximityWarning", serverRuntime);
         if (MainModule.mPrefs.getBoolean("system_firstpress")) FeatureDispatcher.installById("firstVolumePress", serverRuntime);
-        if (MainModule.mPrefs.getBoolean("system_apksign")) SystemSecurityAndSystemHooks.NoSignatureVerifyServiceHook(lpparam);
+        if (MainModule.mPrefs.getBoolean("system_apksign")) FeatureDispatcher.installById("noSignatureVerify", serverRuntime);
         if (MainModule.mPrefs.getBoolean("system_disableintegrity")) FeatureDispatcher.installById("disableSystemIntegrity", serverRuntime);
         FeatureDispatcher.installById("muffledVibration", serverRuntime);
         if (MainModule.mPrefs.getBoolean("system_clearalltasks")) FeatureDispatcher.installById("clearAllTasks", serverRuntime);
-        if (MainModule.mPrefs.getBoolean("system_nodarkforce")) SystemSecurityAndSystemHooks.NoDarkForceHook(lpparam);
-        if (MainModule.mPrefs.getBoolean("system_fw_sticky")) SystemFreeformAndMultiWindowHooks.StickyFloatingWindowsHook(lpparam);
+        if (MainModule.mPrefs.getBoolean("system_nodarkforce")) FeatureDispatcher.installById("noDarkForce", serverRuntime);
+        if (MainModule.mPrefs.getBoolean("system_fw_sticky")) FeatureDispatcher.installById("stickyFloatingWindows", serverRuntime);
         if (MainModule.mPrefs.getBoolean("system_lswallpaper")) FeatureDispatcher.installById("setLockscreenWallpaper", serverRuntime);
         if (MainModule.mPrefs.getBoolean("controls_powerflash")) Controls.PowerKeyHook(lpparam);
         if (MainModule.mPrefs.getBoolean("controls_fingerprintfailure")) Controls.FingerprintHapticFailureHook(lpparam);

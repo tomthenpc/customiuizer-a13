@@ -107,8 +107,8 @@ class ArchitectureInvariantTest(unittest.TestCase):
         registry_ids = re.findall(r'id = "([^"]+)"', registry_text)
         adapted_ids = re.findall(r'id = "([^"]+)"', adapted_text)
         self.assertEqual(8, len(registry_ids), f"registry specs must contain exactly 8 ids: {registry_ids}")
-        self.assertEqual(40, len(adapted_ids), f"adapted specs must contain exactly 40 ids: {adapted_ids}")
-        self.assertEqual(48, len(registry_ids) + len(adapted_ids))
+        self.assertEqual(44, len(adapted_ids), f"adapted specs must contain exactly 44 ids: {adapted_ids}")
+        self.assertEqual(52, len(registry_ids) + len(adapted_ids))
         self.assertEqual(set(), set(registry_ids) & set(adapted_ids), "registry and adapted ids must be disjoint")
     def test_feature_dispatcher_routing_no_duplicate_paths(self):
         dispatcher = (REPO / "app" / "src" / "main" / "java" / "tv" / "withaibuild" / "customiuizer" / "mods" / "catalog" / "FeatureDispatcher.kt").read_text(encoding="utf-8")

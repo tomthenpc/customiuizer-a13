@@ -1,5 +1,6 @@
 package tv.withaibuild.customiuizer.mods.catalog
 
+import android.content.Context
 import tv.withaibuild.customiuizer.mods.utils.AnyOfRequirement
 import tv.withaibuild.customiuizer.mods.utils.Criticality
 import tv.withaibuild.customiuizer.mods.utils.HookOperation
@@ -758,6 +759,106 @@ object CatalogContracts {
                     parameterTypes = listOf(INT, INT, INT, STRING)
                 ),
                 criticality = Criticality.OPTIONAL
+            )
+        )
+    )
+    }
+
+    val removeSecure: HookTargetContract by lazy(kotlin.LazyThreadSafetyMode.NONE) { HookTargetContract(
+        featureId = "removeSecure",
+        requirements = listOf(
+            SingleTargetRequirement(
+                target = HookTargetSpec(
+                    id = "WindowState.isSecureLocked",
+                    operation = HookOperation.EXACT_METHOD,
+                    className = "com.android.server.wm.WindowState",
+                    memberName = "isSecureLocked",
+                    parameterTypes = emptyList()
+                )
+            ),
+            SingleTargetRequirement(
+                target = HookTargetSpec(
+                    id = "WindowSurfaceController.setSecure",
+                    operation = HookOperation.EXACT_METHOD,
+                    className = "com.android.server.wm.WindowSurfaceController",
+                    memberName = "setSecure",
+                    parameterTypes = listOf(BOOLEAN)
+                ),
+                criticality = Criticality.OPTIONAL
+            ),
+            SingleTargetRequirement(
+                target = HookTargetSpec(
+                    id = "WindowSurfaceController.constructors",
+                    operation = HookOperation.ALL_CONSTRUCTORS,
+                    className = "com.android.server.wm.WindowSurfaceController"
+                ),
+                criticality = Criticality.OPTIONAL
+            )
+        )
+    )
+    }
+
+    val noSignatureVerify: HookTargetContract by lazy(kotlin.LazyThreadSafetyMode.NONE) { HookTargetContract(
+        featureId = "noSignatureVerify",
+        requirements = listOf(
+            SingleTargetRequirement(
+                target = HookTargetSpec(
+                    id = "SigningDetails.checkCapability",
+                    operation = HookOperation.ALL_METHODS_BY_NAME,
+                    className = "android.content.pm.SigningDetails",
+                    memberName = "checkCapability"
+                )
+            )
+        )
+    )
+    }
+
+    val noDarkForce: HookTargetContract by lazy(kotlin.LazyThreadSafetyMode.NONE) { HookTargetContract(
+        featureId = "noDarkForce",
+        requirements = listOf(
+            SingleTargetRequirement(
+                target = HookTargetSpec(
+                    id = "UiModeManagerService.setForceDark",
+                    operation = HookOperation.EXACT_METHOD,
+                    className = "com.android.server.UiModeManagerService",
+                    memberName = "setForceDark",
+                    parameterTypes = listOf(Context::class.java)
+                ),
+                criticality = Criticality.OPTIONAL
+            ),
+            SingleTargetRequirement(
+                target = HookTargetSpec(
+                    id = "SecurityManagerService.getAppDarkModeForUser",
+                    operation = HookOperation.EXACT_METHOD,
+                    className = "com.miui.server.SecurityManagerService",
+                    memberName = "getAppDarkModeForUser",
+                    parameterTypes = listOf(STRING, INT)
+                )
+            ),
+            SingleTargetRequirement(
+                target = HookTargetSpec(
+                    id = "DarkModeAppSettingsInfo.getOverrideEnableValue",
+                    operation = HookOperation.EXACT_METHOD,
+                    className = "com.android.server.DarkModeAppSettingsInfo",
+                    memberName = "getOverrideEnableValue",
+                    parameterTypes = emptyList()
+                ),
+                criticality = Criticality.OPTIONAL
+            )
+        )
+    )
+    }
+
+    val stickyFloatingWindows: HookTargetContract by lazy(kotlin.LazyThreadSafetyMode.NONE) { HookTargetContract(
+        featureId = "stickyFloatingWindows",
+        requirements = listOf(
+            SingleTargetRequirement(
+                target = HookTargetSpec(
+                    id = "ActivityStarterInjector.modifyLaunchActivityOptionIfNeed",
+                    operation = HookOperation.ALL_METHODS_BY_NAME,
+                    className = "com.android.server.wm.ActivityStarterInjector",
+                    memberName = "modifyLaunchActivityOptionIfNeed"
+                )
             )
         )
     )

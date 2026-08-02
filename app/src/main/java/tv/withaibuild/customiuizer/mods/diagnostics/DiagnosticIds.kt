@@ -82,4 +82,10 @@ object DiagnosticIds {
     const val APP_LOCK = "APP_LOCK"
     const val SKIP_APP_LOCK = "SKIP_APP_LOCK"
     const val NO_CALL_INTERRUPTION = "NO_CALL_INTERRUPTION"
+
+    /** Catalog expansion batch 10: Security and floating window hooks. */
+    const val REMOVE_SECURE = "REMOVE_SECURE"
+    const val NO_SIGNATURE_VERIFY = "NO_SIGNATURE_VERIFY"
+    const val NO_DARK_FORCE = "NO_DARK_FORCE"
+    const val STICKY_FLOATING_WINDOWS = "STICKY_FLOATING_WINDOWS"
 }

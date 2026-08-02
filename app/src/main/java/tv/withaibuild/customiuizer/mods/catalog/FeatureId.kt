@@ -56,7 +56,11 @@ enum class FeatureId(val canonicalId: String) {
     ENHANCED_SECURITY("enhancedSecurity"),
     APP_LOCK("appLock"),
     SKIP_APP_LOCK("skipAppLock"),
-    NO_CALL_INTERRUPTION("noCallInterruption");
+    NO_CALL_INTERRUPTION("noCallInterruption"),
+    REMOVE_SECURE("removeSecure"),
+    NO_SIGNATURE_VERIFY("noSignatureVerify"),
+    NO_DARK_FORCE("noDarkForce"),
+    STICKY_FLOATING_WINDOWS("stickyFloatingWindows");
 
     companion object {
         private val byString: Map<String, FeatureId> = values().associateBy {

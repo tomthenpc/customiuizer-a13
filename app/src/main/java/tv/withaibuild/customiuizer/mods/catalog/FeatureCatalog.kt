@@ -7,6 +7,7 @@ import tv.withaibuild.customiuizer.mods.SystemAudioAndVolumeHooks
 import tv.withaibuild.customiuizer.mods.SystemAudioAndVisualAndMoreHooks
 import tv.withaibuild.customiuizer.mods.SystemChargingAndWallpaperHooks
 import tv.withaibuild.customiuizer.mods.SystemDisplayAndWindowHooks
+import tv.withaibuild.customiuizer.mods.SystemFreeformAndMultiWindowHooks
 import tv.withaibuild.customiuizer.mods.SystemLockScreenHooks
 import tv.withaibuild.customiuizer.mods.SystemLockScreenMoreHooks
 import tv.withaibuild.customiuizer.mods.SystemUIScreenshotHooks
@@ -1552,6 +1553,115 @@ object FeatureCatalog {
                     diagnosticId = DiagnosticIds.NO_CALL_INTERRUPTION
                 ) {
                     SystemAudioAndVisualAndMoreHooks.NoCallInterruptionHook(
+                        runtime.lpparam as SystemServerStartingParam
+                    )
+                }
+            },
+            activationRestartTarget = RestartTarget.REBOOT,
+            configReloadMode = ConfigReloadMode.NONE
+        ),
+        // Catalog expansion batch 10: Security and floating window hooks
+        FeatureSpec(
+            compatibilityPolicy = CompatibilityPolicy.CONTRACT_REQUIRED,
+            contract = CatalogContracts.removeSecure,
+            id = "removeSecure",
+            diagnosticId = DiagnosticIds.REMOVE_SECURE,
+            processScope = ProcessScope.SYSTEM_SERVER,
+            installPhase = InstallPhase.SYSTEM_SERVER_STARTING,
+            processTarget = ProcessTarget.SystemServer,
+            preferenceKeys = setOf("system_removesecure"),
+            condition = { prefs ->
+                prefs.getBoolean("system_removesecure", false)
+            },
+            installer = { runtime, compatResult ->
+                legacyInstall(
+                    runtime = runtime,
+                    compatResult = compatResult,
+                    contract = CatalogContracts.removeSecure,
+                    diagnosticId = DiagnosticIds.REMOVE_SECURE
+                ) {
+                    SystemSecurityAndSystemHooks.RemoveSecureHook(
+                        runtime.lpparam as SystemServerStartingParam
+                    )
+                }
+            },
+            activationRestartTarget = RestartTarget.REBOOT,
+            configReloadMode = ConfigReloadMode.NONE
+        ),
+        FeatureSpec(
+            compatibilityPolicy = CompatibilityPolicy.CONTRACT_REQUIRED,
+            contract = CatalogContracts.noSignatureVerify,
+            id = "noSignatureVerify",
+            diagnosticId = DiagnosticIds.NO_SIGNATURE_VERIFY,
+            processScope = ProcessScope.SYSTEM_SERVER,
+            installPhase = InstallPhase.SYSTEM_SERVER_STARTING,
+            processTarget = ProcessTarget.SystemServer,
+            preferenceKeys = setOf("system_apksign"),
+            condition = { prefs ->
+                prefs.getBoolean("system_apksign", false)
+            },
+            installer = { runtime, compatResult ->
+                legacyInstall(
+                    runtime = runtime,
+                    compatResult = compatResult,
+                    contract = CatalogContracts.noSignatureVerify,
+                    diagnosticId = DiagnosticIds.NO_SIGNATURE_VERIFY
+                ) {
+                    SystemSecurityAndSystemHooks.NoSignatureVerifyServiceHook(
+                        runtime.lpparam as SystemServerStartingParam
+                    )
+                }
+            },
+            activationRestartTarget = RestartTarget.REBOOT,
+            configReloadMode = ConfigReloadMode.NONE
+        ),
+        FeatureSpec(
+            compatibilityPolicy = CompatibilityPolicy.CONTRACT_REQUIRED,
+            contract = CatalogContracts.noDarkForce,
+            id = "noDarkForce",
+            diagnosticId = DiagnosticIds.NO_DARK_FORCE,
+            processScope = ProcessScope.SYSTEM_SERVER,
+            installPhase = InstallPhase.SYSTEM_SERVER_STARTING,
+            processTarget = ProcessTarget.SystemServer,
+            preferenceKeys = setOf("system_nodarkforce"),
+            condition = { prefs ->
+                prefs.getBoolean("system_nodarkforce", false)
+            },
+            installer = { runtime, compatResult ->
+                legacyInstall(
+                    runtime = runtime,
+                    compatResult = compatResult,
+                    contract = CatalogContracts.noDarkForce,
+                    diagnosticId = DiagnosticIds.NO_DARK_FORCE
+                ) {
+                    SystemSecurityAndSystemHooks.NoDarkForceHook(
+                        runtime.lpparam as SystemServerStartingParam
+                    )
+                }
+            },
+            activationRestartTarget = RestartTarget.REBOOT,
+            configReloadMode = ConfigReloadMode.NONE
+        ),
+        FeatureSpec(
+            compatibilityPolicy = CompatibilityPolicy.CONTRACT_REQUIRED,
+            contract = CatalogContracts.stickyFloatingWindows,
+            id = "stickyFloatingWindows",
+            diagnosticId = DiagnosticIds.STICKY_FLOATING_WINDOWS,
+            processScope = ProcessScope.SYSTEM_SERVER,
+            installPhase = InstallPhase.SYSTEM_SERVER_STARTING,
+            processTarget = ProcessTarget.SystemServer,
+            preferenceKeys = setOf("system_fw_sticky"),
+            condition = { prefs ->
+                prefs.getBoolean("system_fw_sticky", false)
+            },
+            installer = { runtime, compatResult ->
+                legacyInstall(
+                    runtime = runtime,
+                    compatResult = compatResult,
+                    contract = CatalogContracts.stickyFloatingWindows,
+                    diagnosticId = DiagnosticIds.STICKY_FLOATING_WINDOWS
+                ) {
+                    SystemFreeformAndMultiWindowHooks.StickyFloatingWindowsHook(
                         runtime.lpparam as SystemServerStartingParam
                     )
                 }
