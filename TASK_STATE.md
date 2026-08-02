@@ -298,7 +298,7 @@ Device evidence
 
 ## P1.3 Hook ownership inventory
 
-State: `TODO`
+State: `COMPLETE`
 
 所有生产 Hook 归类：
 
@@ -308,6 +308,39 @@ INSTALLER_INFRASTRUCTURE
 LEGACY_EXCEPTION
 DEAD_CANDIDATE
 UNKNOWN
+```
+
+不变量：
+
+- 所有 `ModuleHelper.findAndHookMethod` / `hookAllConstructors` / `hookAllMethods` 调用点必须落入 `A13_HOOK_OWNERSHIP_INVENTORY.md`；
+- `UNKNOWN` 必须为 0；
+- source 与 inventory 总调用数一致；
+- inventory 中文件必须在 source 中存在，反之亦然。
+
+实现：
+
+- 新增 `docs/audit/A13_HOOK_OWNERSHIP_INVENTORY.md`，包含 41 个文件、630 个调用点、分类、进程和说明；
+- 新增 `tools/tests/test_hook_ownership_inventory.py` 机械校验 source 与 inventory 一致性。
+
+分类结果：
+
+```text
+- REGISTRY_FEATURE:     8 files / 163 calls (~25.9 %)
+- INSTALLER_INFRASTRUCTURE: 6 files / 7 calls (~1.1 %)
+- LEGACY_EXCEPTION:    27 files / 460 calls (~73.0 %)
+- DEAD_CANDIDATE:      0
+- UNKNOWN:             0
+```
+
+验证：
+
+```text
+- python -m unittest tools.tests.test_hook_ownership_inventory
+  -> OK (2 tests)
+- powershell -NoProfile -ExecutionPolicy Bypass -File .\scripts\verify.ps1 -Mode Full
+  -> A13 VERIFICATION PASSED (exit 0), Python tool tests 134
+- CI: 无仓库级 CI workflow；仅本地 verify
+- Device evidence: NOT_EXERCISED
 ```
 
 最终 `UNKNOWN = 0`。

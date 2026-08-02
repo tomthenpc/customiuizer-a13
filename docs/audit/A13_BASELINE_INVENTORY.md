@@ -48,13 +48,19 @@ Package/process categories:
 
 - `FeatureDispatcher.install*` calls in installers: 25 (one per catalog feature).
 - `FeatureInstallRegistry` references in source: 16.
-- `ModuleHelper.(findAndHookMethod|hookAllConstructors|hookAllMethods)` text matches in `mods/`: 627 (includes `*Silently` variants and direct callback declarations).
+- `ModuleHelper.(findAndHookMethod|hookAllConstructors|hookAllMethods)` text matches in production: **630** (includes `*Silently` variants and direct callback declarations).
+- Detailed per-file inventory and ownership: `docs/audit/A13_HOOK_OWNERSHIP_INVENTORY.md`.
+- Classification summary:
+  - `REGISTRY_FEATURE` — 8 files / 163 calls (~25.9 %)
+  - `INSTALLER_INFRASTRUCTURE` — 6 files / 7 calls (~1.1 %)
+  - `LEGACY_EXCEPTION` — 27 files / 460 calls (~73.0 %)
+  - `DEAD_CANDIDATE` — 0
+  - `UNKNOWN` — 0
 - Installer infrastructure hook sites:
   - `SystemUiInstaller.java` — `SystemUIApplication.onCreate` bootstrap
   - `LauncherInstaller.java` — `Application.attach` bootstrap
   - `GenericAppInstaller.java` — `Application.attach` bootstrap
-- Untyped hook work remains in `SystemUIStatusBarHooks.kt`, `SystemUINotificationHooks.kt`, `LauncherSystemHooks.kt`, `Controls.kt`, `GlobalActions.kt`, `Various.kt`, etc.
-- Classification: `INSTALLER_INFRASTRUCTURE` for bootstrap, `LEGACY_EXCEPTION` for catalog features not yet migrated, 0 `UNKNOWN`/`DEAD` candidates.
+- Untyped hook work remains in `SystemUIStatusBarHooks.kt`, `SystemUIControlCenterHooks.kt`, `Various.kt`, `Controls.kt`, `GlobalActions.kt`, etc.
 
 ---
 
