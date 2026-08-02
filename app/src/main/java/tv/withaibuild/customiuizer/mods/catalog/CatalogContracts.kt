@@ -483,4 +483,41 @@ object CatalogContracts {
         )
     )
     }
+
+    val chargingInfo: HookTargetContract by lazy(kotlin.LazyThreadSafetyMode.NONE) { HookTargetContract(
+        featureId = "chargingInfo",
+        requirements = listOf(
+            SingleTargetRequirement(
+                target = HookTargetSpec(
+                    id = "ChargeUtils.getChargingHintText",
+                    operation = HookOperation.ALL_METHODS_BY_NAME,
+                    className = "com.android.keyguard.charge.ChargeUtils",
+                    memberName = "getChargingHintText"
+                )
+            ),
+            SingleTargetRequirement(
+                target = HookTargetSpec(
+                    id = "KeyguardIndicationTextView.constructors",
+                    operation = HookOperation.ALL_CONSTRUCTORS,
+                    className = "com.android.systemui.statusbar.phone.KeyguardIndicationTextView"
+                )
+            )
+        )
+    )
+    }
+
+    val setLockscreenWallpaper: HookTargetContract by lazy(kotlin.LazyThreadSafetyMode.NONE) { HookTargetContract(
+        featureId = "setLockscreenWallpaper",
+        requirements = listOf(
+            SingleTargetRequirement(
+                target = HookTargetSpec(
+                    id = "WallpaperManagerService.setWallpaper",
+                    operation = HookOperation.ALL_METHODS_BY_NAME,
+                    className = "com.android.server.wallpaper.WallpaperManagerService",
+                    memberName = "setWallpaper"
+                )
+            )
+        )
+    )
+    }
 }

@@ -10,7 +10,6 @@ import tv.withaibuild.customiuizer.mods.Controls;
 import tv.withaibuild.customiuizer.mods.GlobalActions;
 import tv.withaibuild.customiuizer.mods.SystemAudioAndVisualAndMoreHooks;
 import tv.withaibuild.customiuizer.mods.SystemAudioAndVolumeHooks;
-import tv.withaibuild.customiuizer.mods.SystemChargingAndWallpaperHooks;
 import tv.withaibuild.customiuizer.mods.SystemDisplayAndWindowHooks;
 import tv.withaibuild.customiuizer.mods.SystemFreeformAndMultiWindowHooks;
 import tv.withaibuild.customiuizer.mods.SystemLockScreenHooks;
@@ -225,7 +224,7 @@ public final class SystemUiInstaller {
             if (MainModule.mPrefs.getBoolean("system_taptounlock")) SystemAudioAndVisualAndMoreHooks.TapToUnlockHook(lpparam);
             if (MainModule.mPrefs.getBoolean("system_nosos")) SystemSecurityAndSystemHooks.NoSOSHook(lpparam);
             if (MainModule.mPrefs.getBoolean("system_morenotif")) SystemNotificationMoreHooks.MoreNotificationsHook(lpparam);
-            if (MainModule.mPrefs.getBoolean("system_charginginfo")) SystemChargingAndWallpaperHooks.ChargingInfoHook(lpparam);
+            if (MainModule.mPrefs.getBoolean("system_charginginfo")) FeatureDispatcher.installById("chargingInfo", systemuiRuntime);
             if (MainModule.mPrefs.getBoolean("system_secureqs")) SystemUILockScreenHooks.SecureQSTilesHook(lpparam);
             if (MainModule.mPrefs.getBoolean("system_mutevisiblenotif")) FeatureDispatcher.installById("muteVisibleNotifications", systemuiRuntime);
             if (MainModule.mPrefs.getBoolean("system_statusbaricons_battery1")) SystemStatusBarMoreHooks.HideIconsBattery1Hook(lpparam);

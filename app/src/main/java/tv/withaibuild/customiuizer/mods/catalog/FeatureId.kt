@@ -42,7 +42,9 @@ enum class FeatureId(val canonicalId: String) {
     CLEAN_SHARE_MENU("cleanShareMenu"),
     CLEAN_SHARE_MENU_SERVICE("cleanShareMenuService"),
     CLEAN_OPEN_WITH_MENU("cleanOpenWithMenu"),
-    CLEAN_OPEN_WITH_MENU_SERVICE("cleanOpenWithMenuService");
+    CLEAN_OPEN_WITH_MENU_SERVICE("cleanOpenWithMenuService"),
+    CHARGING_INFO("chargingInfo"),
+    SET_LOCKSCREEN_WALLPAPER("setLockscreenWallpaper");
 
     companion object {
         private val byString: Map<String, FeatureId> = values().associateBy {

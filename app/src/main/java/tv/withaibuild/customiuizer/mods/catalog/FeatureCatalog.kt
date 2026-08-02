@@ -5,6 +5,7 @@ import io.github.libxposed.api.XposedModuleInterface.SystemServerStartingParam
 import tv.withaibuild.customiuizer.mods.PackagePermissions
 import tv.withaibuild.customiuizer.mods.SystemAudioAndVolumeHooks
 import tv.withaibuild.customiuizer.mods.SystemAudioAndVisualAndMoreHooks
+import tv.withaibuild.customiuizer.mods.SystemChargingAndWallpaperHooks
 import tv.withaibuild.customiuizer.mods.SystemDisplayAndWindowHooks
 import tv.withaibuild.customiuizer.mods.SystemLockScreenMoreHooks
 import tv.withaibuild.customiuizer.mods.SystemUIScreenshotHooks
@@ -1160,6 +1161,68 @@ object FeatureCatalog {
                     diagnosticId = DiagnosticIds.CLEAN_OPEN_WITH_MENU_SERVICE
                 ) {
                     SystemShareAndOpenWithHooks.CleanOpenWithMenuServiceHook(
+                        runtime.lpparam as SystemServerStartingParam
+                    )
+                }
+            },
+            activationRestartTarget = RestartTarget.REBOOT,
+            configReloadMode = ConfigReloadMode.NONE
+        ),
+        // Catalog expansion batch 6: Charging info and lockscreen wallpaper
+        FeatureSpec(
+            compatibilityPolicy = CompatibilityPolicy.CONTRACT_REQUIRED,
+            contract = CatalogContracts.chargingInfo,
+            id = "chargingInfo",
+            diagnosticId = DiagnosticIds.CHARGING_INFO,
+            processScope = ProcessScope.SYSTEM_UI,
+            installPhase = InstallPhase.PACKAGE_READY,
+            processTarget = ProcessTarget.SystemUI,
+            preferenceKeys = setOf(
+                "system_charginginfo",
+                "system_charginginfo_current",
+                "system_charginginfo_voltage",
+                "system_charginginfo_wattage",
+                "system_charginginfo_temp",
+                "system_charginginfo_view"
+            ),
+            condition = { prefs ->
+                prefs.getBoolean("system_charginginfo", false)
+            },
+            installer = { runtime, compatResult ->
+                legacyInstall(
+                    runtime = runtime,
+                    compatResult = compatResult,
+                    contract = CatalogContracts.chargingInfo,
+                    diagnosticId = DiagnosticIds.CHARGING_INFO
+                ) {
+                    SystemChargingAndWallpaperHooks.ChargingInfoHook(
+                        runtime.lpparam as PackageReadyParam
+                    )
+                }
+            },
+            activationRestartTarget = RestartTarget.SYSTEMUI_RESTART,
+            configReloadMode = ConfigReloadMode.NONE
+        ),
+        FeatureSpec(
+            compatibilityPolicy = CompatibilityPolicy.CONTRACT_REQUIRED,
+            contract = CatalogContracts.setLockscreenWallpaper,
+            id = "setLockscreenWallpaper",
+            diagnosticId = DiagnosticIds.SET_LOCKSCREEN_WALLPAPER,
+            processScope = ProcessScope.SYSTEM_SERVER,
+            installPhase = InstallPhase.SYSTEM_SERVER_STARTING,
+            processTarget = ProcessTarget.SystemServer,
+            preferenceKeys = setOf("system_lswallpaper"),
+            condition = { prefs ->
+                prefs.getBoolean("system_lswallpaper", false)
+            },
+            installer = { runtime, compatResult ->
+                legacyInstall(
+                    runtime = runtime,
+                    compatResult = compatResult,
+                    contract = CatalogContracts.setLockscreenWallpaper,
+                    diagnosticId = DiagnosticIds.SET_LOCKSCREEN_WALLPAPER
+                ) {
+                    SystemChargingAndWallpaperHooks.SetLockscreenWallpaperHook(
                         runtime.lpparam as SystemServerStartingParam
                     )
                 }

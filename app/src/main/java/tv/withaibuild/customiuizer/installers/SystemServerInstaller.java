@@ -8,7 +8,6 @@ import tv.withaibuild.customiuizer.mods.Controls;
 import tv.withaibuild.customiuizer.mods.GlobalActions;
 import tv.withaibuild.customiuizer.mods.SystemAudioAndVisualAndMoreHooks;
 import tv.withaibuild.customiuizer.mods.SystemAudioAndVolumeHooks;
-import tv.withaibuild.customiuizer.mods.SystemChargingAndWallpaperHooks;
 import tv.withaibuild.customiuizer.mods.SystemDisplayAndWindowHooks;
 import tv.withaibuild.customiuizer.mods.SystemFreeformAndMultiWindowHooks;
 import tv.withaibuild.customiuizer.mods.SystemLockScreenHooks;
@@ -76,7 +75,7 @@ public final class SystemServerInstaller {
         if (MainModule.mPrefs.getBoolean("system_clearalltasks")) FeatureDispatcher.installById("clearAllTasks", serverRuntime);
         if (MainModule.mPrefs.getBoolean("system_nodarkforce")) SystemSecurityAndSystemHooks.NoDarkForceHook(lpparam);
         if (MainModule.mPrefs.getBoolean("system_fw_sticky")) SystemFreeformAndMultiWindowHooks.StickyFloatingWindowsHook(lpparam);
-        if (MainModule.mPrefs.getBoolean("system_lswallpaper")) SystemChargingAndWallpaperHooks.SetLockscreenWallpaperHook(lpparam);
+        if (MainModule.mPrefs.getBoolean("system_lswallpaper")) FeatureDispatcher.installById("setLockscreenWallpaper", serverRuntime);
         if (MainModule.mPrefs.getBoolean("controls_powerflash")) Controls.PowerKeyHook(lpparam);
         if (MainModule.mPrefs.getBoolean("controls_fingerprintfailure")) Controls.FingerprintHapticFailureHook(lpparam);
         if (MainModule.mPrefs.getBoolean("controls_fingerprintscreen")) Controls.FingerprintScreenOnHook(lpparam);

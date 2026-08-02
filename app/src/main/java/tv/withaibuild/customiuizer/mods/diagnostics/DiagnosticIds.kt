@@ -60,4 +60,8 @@ object DiagnosticIds {
     const val CLEAN_SHARE_MENU_SERVICE = "CLEAN_SHARE_MENU_SERVICE"
     const val CLEAN_OPEN_WITH_MENU = "CLEAN_OPEN_WITH_MENU"
     const val CLEAN_OPEN_WITH_MENU_SERVICE = "CLEAN_OPEN_WITH_MENU_SERVICE"
+
+    /** Catalog expansion batch 6: Charging info and lockscreen wallpaper. */
+    const val CHARGING_INFO = "CHARGING_INFO"
+    const val SET_LOCKSCREEN_WALLPAPER = "SET_LOCKSCREEN_WALLPAPER"
 }
