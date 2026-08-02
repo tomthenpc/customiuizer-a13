@@ -863,4 +863,91 @@ object CatalogContracts {
         )
     )
     }
+
+    val screenAnim: HookTargetContract by lazy(kotlin.LazyThreadSafetyMode.NONE) { HookTargetContract(
+        featureId = "screenAnim",
+        requirements = listOf(
+            SingleTargetRequirement(
+                target = HookTargetSpec(
+                    id = "DisplayPowerController.initialize",
+                    operation = HookOperation.EXACT_METHOD,
+                    className = "com.android.server.display.DisplayPowerController",
+                    memberName = "initialize",
+                    parameterTypes = emptyList()
+                )
+            )
+        )
+    )
+    }
+
+    val rotationAnimation: HookTargetContract by lazy(kotlin.LazyThreadSafetyMode.NONE) { HookTargetContract(
+        featureId = "rotationAnimation",
+        requirements = listOf(
+            SingleTargetRequirement(
+                target = HookTargetSpec(
+                    id = "AppTransitionInjector.createAnimation",
+                    operation = HookOperation.ALL_METHODS_BY_NAME,
+                    className = "com.android.server.wm.AppTransitionInjector",
+                    memberName = "createAnimation"
+                )
+            )
+        )
+    )
+    }
+
+    val notificationVolume: HookTargetContract by lazy(kotlin.LazyThreadSafetyMode.NONE) { HookTargetContract(
+        featureId = "notificationVolume",
+        requirements = listOf(
+            SingleTargetRequirement(
+                target = HookTargetSpec(
+                    id = "AudioService.updateStreamVolumeAlias",
+                    operation = HookOperation.EXACT_METHOD,
+                    className = "com.android.server.audio.AudioService",
+                    memberName = "updateStreamVolumeAlias",
+                    parameterTypes = listOf(BOOLEAN, STRING)
+                )
+            ),
+            SingleTargetRequirement(
+                target = HookTargetSpec(
+                    id = "AudioService.VolumeStreamState.readSettings",
+                    operation = HookOperation.EXACT_METHOD,
+                    className = "com.android.server.audio.AudioService\$VolumeStreamState",
+                    memberName = "readSettings",
+                    parameterTypes = emptyList()
+                ),
+                criticality = Criticality.OPTIONAL
+            )
+        )
+    )
+    }
+
+    val selectiveVibration: HookTargetContract by lazy(kotlin.LazyThreadSafetyMode.NONE) { HookTargetContract(
+        featureId = "selectiveVibration",
+        requirements = listOf(
+            SingleTargetRequirement(
+                target = HookTargetSpec(
+                    id = "VibratorManagerService.systemReady",
+                    operation = HookOperation.EXACT_METHOD,
+                    className = "com.android.server.vibrator.VibratorManagerService",
+                    memberName = "systemReady",
+                    parameterTypes = emptyList()
+                )
+            )
+        )
+    )
+    }
+
+    val wallpaperScaleLevel: HookTargetContract by lazy(kotlin.LazyThreadSafetyMode.NONE) { HookTargetContract(
+        featureId = "wallpaperScaleLevel",
+        requirements = listOf(
+            SingleTargetRequirement(
+                target = HookTargetSpec(
+                    id = "WallpaperController.constructors",
+                    operation = HookOperation.ALL_CONSTRUCTORS,
+                    className = "com.android.server.wm.WallpaperController"
+                )
+            )
+        )
+    )
+    }
 }

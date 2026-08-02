@@ -60,7 +60,12 @@ enum class FeatureId(val canonicalId: String) {
     REMOVE_SECURE("removeSecure"),
     NO_SIGNATURE_VERIFY("noSignatureVerify"),
     NO_DARK_FORCE("noDarkForce"),
-    STICKY_FLOATING_WINDOWS("stickyFloatingWindows");
+    STICKY_FLOATING_WINDOWS("stickyFloatingWindows"),
+    SCREEN_ANIM("screenAnim"),
+    ROTATION_ANIMATION("rotationAnimation"),
+    NOTIFICATION_VOLUME("notificationVolume"),
+    SELECTIVE_VIBRATION("selectiveVibration"),
+    WALLPAPER_SCALE_LEVEL("wallpaperScaleLevel");
 
     companion object {
         private val byString: Map<String, FeatureId> = values().associateBy {

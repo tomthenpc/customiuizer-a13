@@ -88,4 +88,11 @@ object DiagnosticIds {
     const val NO_SIGNATURE_VERIFY = "NO_SIGNATURE_VERIFY"
     const val NO_DARK_FORCE = "NO_DARK_FORCE"
     const val STICKY_FLOATING_WINDOWS = "STICKY_FLOATING_WINDOWS"
+
+    /** Catalog expansion batch 11: Display, audio and notification hooks. */
+    const val SCREEN_ANIM = "SCREEN_ANIM"
+    const val ROTATION_ANIMATION = "ROTATION_ANIMATION"
+    const val NOTIFICATION_VOLUME = "NOTIFICATION_VOLUME"
+    const val SELECTIVE_VIBRATION = "SELECTIVE_VIBRATION"
+    const val WALLPAPER_SCALE_LEVEL = "WALLPAPER_SCALE_LEVEL"
 }

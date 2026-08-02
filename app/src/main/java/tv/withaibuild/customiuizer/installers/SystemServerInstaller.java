@@ -45,7 +45,7 @@ public final class SystemServerInstaller {
             MainModule.mPrefs.getInt("controls_homelong_action", 1) > 1 ||
             MainModule.mPrefs.getInt("controls_menulong_action", 1) > 1) Controls.NavBarActionsHook(lpparam);
         if (MainModule.mPrefs.getInt("controls_powerdt_action", 1) > 1 || MainModule.mPrefs.getBoolean("controls_volumedowndt_torch")) Controls.PowerDoubleTapActionHook(lpparam);
-        if (MainModule.mPrefs.getInt("system_screenanim_duration", 0) > 0) SystemDisplayAndWindowHooks.ScreenAnimHook(lpparam);
+        if (MainModule.mPrefs.getInt("system_screenanim_duration", 0) > 0) FeatureDispatcher.installById("screenAnim", serverRuntime);
         if (MainModule.mPrefs.getInt("system_volumesteps", 0) > 0) FeatureDispatcher.installById("volumeSteps", serverRuntime);
         if (MainModule.mPrefs.getInt("system_applock_timeout", 1) > 1) SystemLockScreenMoreHooks.AppLockTimeoutHook(lpparam);
         if (MainModule.mPrefs.getInt("system_dimtime", 0) > 0) FeatureDispatcher.installById("screenDimTime", serverRuntime);
@@ -54,7 +54,7 @@ public final class SystemServerInstaller {
         if (MainModule.mPrefs.getBoolean("system_removesecure")) FeatureDispatcher.installById("removeSecure", serverRuntime);
         if (MainModule.mPrefs.getBoolean("system_remove_startactconfirm")) FeatureDispatcher.installById("removeActStartConfirm", serverRuntime);
         if (MainModule.mPrefs.getBoolean("system_securelock")) FeatureDispatcher.installById("enhancedSecurity", serverRuntime);
-        if (MainModule.mPrefs.getBoolean("system_separatevolume")) SystemAudioAndVolumeHooks.NotificationVolumeServiceHook(lpparam);
+        if (MainModule.mPrefs.getBoolean("system_separatevolume")) FeatureDispatcher.installById("notificationVolume", serverRuntime);
         if (MainModule.mPrefs.getBoolean("system_downgrade")) FeatureDispatcher.installById("noVersionCheck", serverRuntime);
         if (MainModule.mPrefs.getBoolean("system_orientationlock")) FeatureDispatcher.installById("orientationLock", serverRuntime);
         if (MainModule.mPrefs.getBoolean("system_noducking")) FeatureDispatcher.installById("noDucking", serverRuntime);
@@ -85,9 +85,9 @@ public final class SystemServerInstaller {
         if (MainModule.mPrefs.getStringAsInt("system_allrotations2", 1) > 1) FeatureDispatcher.installById("allRotations", serverRuntime);
         if (MainModule.mPrefs.getStringAsInt("system_nolightuponcharges", 1) > 1) FeatureDispatcher.installById("noLightUpOnCharge", serverRuntime);
         if (MainModule.mPrefs.getStringAsInt("system_autogroupnotif", 1) > 1) SystemNotificationAndShareHooks.AutoGroupNotificationsHook(lpparam);
-        if (MainModule.mPrefs.getStringAsInt("system_vibration", 1) > 1) SystemNotificationMoreHooks.SelectiveVibrationHook(lpparam);
+        if (MainModule.mPrefs.getStringAsInt("system_vibration", 1) > 1) FeatureDispatcher.installById("selectiveVibration", serverRuntime);
         if (MainModule.mPrefs.getStringAsInt("system_blocktoasts", 1) > 1) SystemStatusBarAndClockHooks.SelectiveToastsHook(lpparam);
-        if (MainModule.mPrefs.getStringAsInt("system_rotateanim", 1) > 1) SystemDisplayAndWindowHooks.RotationAnimationHook(lpparam);
+        if (MainModule.mPrefs.getStringAsInt("system_rotateanim", 1) > 1) FeatureDispatcher.installById("rotationAnimation", serverRuntime);
         if (MainModule.mPrefs.getStringAsInt("controls_fingerprintsuccess", 1) > 1) Controls.FingerprintHapticSuccessHook(lpparam);
         if (MainModule.mPrefs.getStringAsInt("controls_volumemedia_up", 0) > 0 ||
             MainModule.mPrefs.getStringAsInt("controls_volumemedia_down", 0) > 0) Controls.VolumeMediaButtonsHook(lpparam);
@@ -97,7 +97,7 @@ public final class SystemServerInstaller {
         if (MainModule.mPrefs.getBoolean("various_disable_access_devicelogs")) {
             SystemDisplayAndWindowHooks.NoAccessDeviceLogsRequest(lpparam);
         }
-        if (MainModule.mPrefs.getInt("system_other_wallpaper_scale", 6) > 6) SystemNotificationMoreHooks.WallpaperScaleLevelHook(lpparam);
+        if (MainModule.mPrefs.getInt("system_other_wallpaper_scale", 6) > 6) FeatureDispatcher.installById("wallpaperScaleLevel", serverRuntime);
     }
 
     private static boolean needGlobalActions() {

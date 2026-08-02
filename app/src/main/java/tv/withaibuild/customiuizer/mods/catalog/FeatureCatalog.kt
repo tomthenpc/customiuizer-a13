@@ -1668,6 +1668,142 @@ object FeatureCatalog {
             },
             activationRestartTarget = RestartTarget.REBOOT,
             configReloadMode = ConfigReloadMode.NONE
+        ),
+        // Catalog expansion batch 11: Display, audio and notification hooks
+        FeatureSpec(
+            compatibilityPolicy = CompatibilityPolicy.CONTRACT_REQUIRED,
+            contract = CatalogContracts.screenAnim,
+            id = "screenAnim",
+            diagnosticId = DiagnosticIds.SCREEN_ANIM,
+            processScope = ProcessScope.SYSTEM_SERVER,
+            installPhase = InstallPhase.SYSTEM_SERVER_STARTING,
+            processTarget = ProcessTarget.SystemServer,
+            preferenceKeys = setOf("system_screenanim_duration"),
+            condition = { prefs ->
+                prefs.getInt("system_screenanim_duration", 0) > 0
+            },
+            installer = { runtime, compatResult ->
+                legacyInstall(
+                    runtime = runtime,
+                    compatResult = compatResult,
+                    contract = CatalogContracts.screenAnim,
+                    diagnosticId = DiagnosticIds.SCREEN_ANIM
+                ) {
+                    SystemDisplayAndWindowHooks.ScreenAnimHook(
+                        runtime.lpparam as SystemServerStartingParam
+                    )
+                }
+            },
+            activationRestartTarget = RestartTarget.REBOOT,
+            configReloadMode = ConfigReloadMode.NONE
+        ),
+        FeatureSpec(
+            compatibilityPolicy = CompatibilityPolicy.CONTRACT_REQUIRED,
+            contract = CatalogContracts.rotationAnimation,
+            id = "rotationAnimation",
+            diagnosticId = DiagnosticIds.ROTATION_ANIMATION,
+            processScope = ProcessScope.SYSTEM_SERVER,
+            installPhase = InstallPhase.SYSTEM_SERVER_STARTING,
+            processTarget = ProcessTarget.SystemServer,
+            preferenceKeys = setOf("system_rotateanim"),
+            condition = { prefs ->
+                prefs.getStringAsInt("system_rotateanim", 1) > 1
+            },
+            installer = { runtime, compatResult ->
+                legacyInstall(
+                    runtime = runtime,
+                    compatResult = compatResult,
+                    contract = CatalogContracts.rotationAnimation,
+                    diagnosticId = DiagnosticIds.ROTATION_ANIMATION
+                ) {
+                    SystemDisplayAndWindowHooks.RotationAnimationHook(
+                        runtime.lpparam as SystemServerStartingParam
+                    )
+                }
+            },
+            activationRestartTarget = RestartTarget.REBOOT,
+            configReloadMode = ConfigReloadMode.NONE
+        ),
+        FeatureSpec(
+            compatibilityPolicy = CompatibilityPolicy.CONTRACT_REQUIRED,
+            contract = CatalogContracts.notificationVolume,
+            id = "notificationVolume",
+            diagnosticId = DiagnosticIds.NOTIFICATION_VOLUME,
+            processScope = ProcessScope.SYSTEM_SERVER,
+            installPhase = InstallPhase.SYSTEM_SERVER_STARTING,
+            processTarget = ProcessTarget.SystemServer,
+            preferenceKeys = setOf("system_separatevolume"),
+            condition = { prefs ->
+                prefs.getBoolean("system_separatevolume", false)
+            },
+            installer = { runtime, compatResult ->
+                legacyInstall(
+                    runtime = runtime,
+                    compatResult = compatResult,
+                    contract = CatalogContracts.notificationVolume,
+                    diagnosticId = DiagnosticIds.NOTIFICATION_VOLUME
+                ) {
+                    SystemAudioAndVolumeHooks.NotificationVolumeServiceHook(
+                        runtime.lpparam as SystemServerStartingParam
+                    )
+                }
+            },
+            activationRestartTarget = RestartTarget.REBOOT,
+            configReloadMode = ConfigReloadMode.NONE
+        ),
+        FeatureSpec(
+            compatibilityPolicy = CompatibilityPolicy.CONTRACT_REQUIRED,
+            contract = CatalogContracts.selectiveVibration,
+            id = "selectiveVibration",
+            diagnosticId = DiagnosticIds.SELECTIVE_VIBRATION,
+            processScope = ProcessScope.SYSTEM_SERVER,
+            installPhase = InstallPhase.SYSTEM_SERVER_STARTING,
+            processTarget = ProcessTarget.SystemServer,
+            preferenceKeys = setOf("system_vibration", "system_vibration_apps"),
+            condition = { prefs ->
+                prefs.getStringAsInt("system_vibration", 1) > 1
+            },
+            installer = { runtime, compatResult ->
+                legacyInstall(
+                    runtime = runtime,
+                    compatResult = compatResult,
+                    contract = CatalogContracts.selectiveVibration,
+                    diagnosticId = DiagnosticIds.SELECTIVE_VIBRATION
+                ) {
+                    SystemNotificationMoreHooks.SelectiveVibrationHook(
+                        runtime.lpparam as SystemServerStartingParam
+                    )
+                }
+            },
+            activationRestartTarget = RestartTarget.REBOOT,
+            configReloadMode = ConfigReloadMode.NONE
+        ),
+        FeatureSpec(
+            compatibilityPolicy = CompatibilityPolicy.CONTRACT_REQUIRED,
+            contract = CatalogContracts.wallpaperScaleLevel,
+            id = "wallpaperScaleLevel",
+            diagnosticId = DiagnosticIds.WALLPAPER_SCALE_LEVEL,
+            processScope = ProcessScope.SYSTEM_SERVER,
+            installPhase = InstallPhase.SYSTEM_SERVER_STARTING,
+            processTarget = ProcessTarget.SystemServer,
+            preferenceKeys = setOf("system_other_wallpaper_scale"),
+            condition = { prefs ->
+                prefs.getInt("system_other_wallpaper_scale", 6) > 6
+            },
+            installer = { runtime, compatResult ->
+                legacyInstall(
+                    runtime = runtime,
+                    compatResult = compatResult,
+                    contract = CatalogContracts.wallpaperScaleLevel,
+                    diagnosticId = DiagnosticIds.WALLPAPER_SCALE_LEVEL
+                ) {
+                    SystemNotificationMoreHooks.WallpaperScaleLevelHook(
+                        runtime.lpparam as SystemServerStartingParam
+                    )
+                }
+            },
+            activationRestartTarget = RestartTarget.REBOOT,
+            configReloadMode = ConfigReloadMode.NONE
         )
     ) }
 
