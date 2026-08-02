@@ -407,18 +407,25 @@ unknown typed identity = 0
 
 # P3 — 全部生产 Hook 收口
 
-State: `TODO`
+State: `IN_PROGRESS`
 
 typed catalog 之外的 Hook 同样必须处理。
 
 任务：
 
-- 审计 HookBuilder、Hooker、resource hook 和反射安装入口；
-- 业务 Feature 迁入 Registry；
-- bootstrap/lifecycle 归入 Installer infrastructure；
-- 无法迁移项登记 `LEGACY_EXCEPTION`；
-- exception 必须有原因、owner、process、phase、test 和退出条件；
-- dead code 仅在机械证据和所有者批准后删除。
+- [ ] 审计 HookBuilder、Hooker、resource hook 和反射安装入口；
+- [ ] 业务 Feature 迁入 Registry；
+- [ ] bootstrap/lifecycle 归入 Installer infrastructure；
+- [ ] 无法迁移项登记 `LEGACY_EXCEPTION`；
+- [ ] exception 必须有原因、owner、process、phase、test 和退出条件；
+- [ ] dead code 仅在机械证据和所有者批准后删除。
+
+子任务：
+
+- [ ] P3.1 刷新 Hook ownership inventory（根据 FeatureCatalog 调用关系重新分类）；
+- [ ] P3.2 迁移可直接归类的 legacy hook 到 Registry（按 process/phase 分批）；
+- [ ] P3.3 登记不可迁移项为 LEGACY_EXCEPTION 并补充原因/owner/test；
+- [ ] P3.4 增加 inventory 机械门禁，防止 UNKNOWN/重复 ownership。
 
 完成条件：
 
