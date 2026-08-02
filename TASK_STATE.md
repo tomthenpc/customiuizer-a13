@@ -735,7 +735,7 @@ DOCUMENTATION_CURRENT
 - 不新建分支；
 - 不合并 main；
 - 不 tag/release；
-- 进入 CONTINUOUS_MAINTENANCE；
+- 进入 `LTS`（参见 `docs/governance/LONG_HORIZON_CONSTITUTION.md`）；
 - 继续 evidence-driven maintenance。
 
 ---
@@ -750,6 +750,7 @@ P0 后重建，但不得删除未解决问题。
 | VERIFY-001 | P0 | Build | COMPLETE | P0.3 运行 `scripts/verify.ps1 -Mode Full` 通过 | 完成 P0.3 |
 | ARCH-001 | P1 | Feature lifecycle | COMPLETE | P2 已完成，全部 typed Feature 通过 `FeatureInstallRegistry` | inventory 后全量收口 |
 | DOC-001 | P2 | Docs | IN_PROGRESS | v4 文档契约检查器与 audit docs 已建立 | 代码与生成数据一致 |
+| GOAL-001 | P2 | Governance | TODO | v5 长期治理宪章已融合，但 SBOM/ROM packs/artifact provenance 尚未实现 | 随 P8-P14 逐步落地 |
 | DEVICE-001 | P1 | Device | BLOCKED_EXTERNAL | 无本轮真实日志 | 完成 P13 |
 
 ---
@@ -765,6 +766,7 @@ P0 后重建，但不得删除未解决问题。
 | 5 | `182ee03` | P3.2 — migrate `system_toasttime` to typed `toastTime` | `scripts/verify.ps1 -Mode Fast` 通过 | qualifying |
 | 6 | `44602f7` | v4 审计融合：文档契约检查器 + v4 audit docs | `scripts/verify.ps1 -Mode Fast` 通过 | qualifying |
 | 7 | `d939868` | A13-ALG-001：FeatureCatalog O(1) index 与命名修正 | `scripts/verify.ps1 -Mode Fast` 通过 | qualifying |
+| 8 | `pending` | v5 长期治理宪章融合：GOAL/AGENTS/constitution + checker | `scripts/verify.ps1 -Mode Fast` 通过 | qualifying |
 
 ---
 

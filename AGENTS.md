@@ -532,7 +532,7 @@ NOT_EXERCISED
 
 ## 18. Professional autonomous stewardship
 
-执行自治统一由 [`SMART_CONTINUOUS_OPERATION.md`](SMART_CONTINUOUS_OPERATION.md) 定义。
+执行自治统一由 [`SMART_OPERATION_STATE.md`](SMART_OPERATION_STATE.md) 定义。
 
 ```text
 Repository: tomthenpc/customiuizer-a13
@@ -550,7 +550,7 @@ AutoResume: true
 规则：
 
 - `PROJECT_COMPLETE` 是证据里程碑，不是主动停止条件；
-- 里程碑后留在当前精确分支进入 `CONTINUOUS_MAINTENANCE`；
+- 里程碑后留在当前精确分支进入 `LTS`（由 `docs/governance/LONG_HORIZON_CONSTITUTION.md` 定义）；
 - 不要求用户检查代码、commit、CI、分支或批准继续；
 - 每轮先执行 control-state reconciliation；
 - 只有 qualifying work 才增加 checkpoint；

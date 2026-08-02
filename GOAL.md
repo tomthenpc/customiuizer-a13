@@ -63,7 +63,7 @@ devin/*
 - 不得 merge、rebase、force-push 或重写历史；
 - 不得创建 tag、GitHub Release 或自动合并 PR。
 
-达到 `PROJECT_COMPLETE` 后，Agent 也不得自动创建新分支。它应记录最终证据、保持 exact branch、不 merge/tag/release、进入 CONTINUOUS_MAINTENANCE 并继续 evidence-driven 维护。
+达到 `PROJECT_COMPLETE` 后，Agent 也不得自动创建新分支。它应记录最终证据、保持 exact branch、不 merge/tag/release、进入 `LTS`（由 `docs/governance/LONG_HORIZON_CONSTITUTION.md` 定义）并继续 evidence-driven 维护。
 
 ---
 
@@ -536,3 +536,65 @@ powershell -NoProfile -ExecutionPolicy Bypass -File .\scripts\verify.ps1 -Mode F
 ```powershell
 powershell -NoProfile -ExecutionPolicy Bypass -File .\scripts\verify.ps1 -Mode Final
 ```
+
+---
+
+## 8. 长期治理与生命周期
+
+A13 的长期产品身份：
+
+```text
+ProductRole: ANDROID_13_LTS_REFERENCE
+PrimaryPlatform: MIUI 14 / Android 13
+SecondaryPlatform: HyperOS 1 / Android 13 contract-guarded
+DevelopmentPolicy: STABILITY_FIRST
+FeaturePolicy: FREEZE_BY_DEFAULT
+CompatibilityPolicy: EVIDENCE_TIERED
+```
+
+A13 不只是把旧项目重构完，而是成为 Android 13 时代长期稳定、行为可追溯、低成本、可恢复构建的 CustoMIUIzer 基准实现。即使原开发环境消失，仍能从源码、锁定工具链、ROM 样本、契约、测试和证据重建其行为。
+
+`PROJECT_COMPLETE` 后进入 `LTS`，默认 `FREEZE_BY_DEFAULT`。允许：
+
+- P0/P1 修复；
+- MIUI14/HyperOS1 A13 兼容补丁；
+- 生命周期和性能修复；
+- 构建链恢复；
+- 诊断和测试；
+- 所有者明确批准的小功能。
+
+禁止：
+
+- broad new feature；
+- UI redesign；
+- speculative abstraction；
+- version expansion。
+
+新功能必须回答：为什么属于 Android 13 LTS、为什么不能放到 A14/未来仓库、长期维护成本、disabled path 成本、ROM/ClassLoader 风险、device verification plan。
+
+## 9. 稳定性与性能预算
+
+建立 `A13_BEHAVIOR_CONTRACT` 覆盖：stable Feature ID、preference key、default、restart/reload semantics、user-visible result、legacy behavior oracle、failure/degradation behavior、supported ROM tier。
+
+创建 versioned `A13_PREFERENCE_SCHEMA`：所有 key 分类、默认值不可静默变化、alias/migration 明确、无效 key 不自动删除、删除需 owner approval、旧备份导入有测试、配置回退有说明、UI 与 runtime key 一致。
+
+性能预算：disabled Feature 不创建业务对象、Hook、Receiver、Observer、task、reflection；热路径无临时 Regex、args array copy、重复 reflection、I/O、blocking、无界缓存。首次建立基线后写入 `A13_PERFORMANCE_CONTRACT`。
+
+## 10. 发布、退役与跨版本传承
+
+发布阶段：
+
+```text
+MACHINE_CANDIDATE
+DEVICE_CANDIDATE
+SIGNED_RC
+OWNER_APPROVED_RELEASE
+```
+
+Agent 只可达到前三项。每个 RC 记录 commit、schema versions、supported devices/ROM、known limitations、artifact hash、signing identity summary、rollback instructions、preference migration、device evidence。
+
+A13 必须输出未来迁移资产：architecture contract、feature semantics、preference schema、process/target matrix、ROM sample schema、regression corpus、release metadata schema、bootstrap checklist。
+
+未来 A15/HyperOS2 等必须新建仓库，A13/A14 不承担其运行支持。
+
+退役目标：A13 最终允许进入 `ARCHIVE_READY`，条件包括最终可复现构建、最终 signed RC 记录、主要 MIUI14 设备证据、HyperOS1 A13 证据等级明确、全部 known limitations、最终 ROM packs、preference schema、behavior contracts、successor reference、无 secret、final SBOM、恢复构建手册。`ARCHIVED` 后不得继续宣称 ACTIVE/LTS。
