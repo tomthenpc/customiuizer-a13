@@ -9,7 +9,7 @@ LastQualifyingCheckpoint: 44602f7
 LastLightSweepCommit: none
 LastStandardSweepCommit: none
 LastDeepSweepCommit: none
-LastFullVerificationCommit: 354e239
+LastFullVerificationCommit: ddcc662
 LastCIState: NOT_CONFIGURED
 LastCleanupCommit: 46db78c
 LastToolCreated: check_document_contracts.py
