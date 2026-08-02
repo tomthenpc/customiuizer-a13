@@ -23,9 +23,9 @@ CurrentObjectiveStartEvidence: git grep -n "fun HideStatusBarBeforeScreenshotHoo
 NextObjectiveFirstAction: continue P3.2 batch migration of remaining legacy hooks
 ResumeTask: P3 — 全部生产 Hook 收口; P3.2 batch 9/10 contract correction + batch 11 (appsDisableService, noAccessDeviceLogsRequest, autoGroupNotifications, appLockTimeout) migrated; next: continue batch 12
 DeepSweepDue: false
-LastVerifiedTree: c2fa8ae62e6c93614f529b1b6801bc5c0581b406
-LastVerifiedMode: Full
-LastVerifiedAt: 2026-08-02T17:06:00+08:00
+LastVerifiedTree: fef4056643ad50d02e981058e18dd9740943ef66
+LastVerifiedMode: Final
+LastVerifiedAt: 2026-08-02T17:10:00+08:00
 LastVerifiedCommandsDigest: powershell -NoProfile -ExecutionPolicy Bypass -File .\scripts\verify.ps1 -Mode Fast; powershell -NoProfile -ExecutionPolicy Bypass -File .\scripts\verify.ps1 -Mode Full
 ```
 
