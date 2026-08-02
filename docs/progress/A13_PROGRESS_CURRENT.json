@@ -1,16 +1,16 @@
 {
   "schemaVersion": 7,
-  "generatedAt": "2026-08-02T20:13:48.699214+08:00",
-  "sourceCommit": "4ed46e797b0abfe5d7e8c617aef35b5592bfa46b",
-  "sourceTree": "c58e65ef3ee5bacc4b3fad6e969ba9906042d55e",
-  "verifiedTree": "c58e65ef3ee5bacc4b3fad6e969ba9906042d55e",
-  "verifiedMode": "Full",
+  "generatedAt": "2026-08-02T21:43:18.199220+08:00",
+  "sourceCommit": "0715ac123ee02ed2ac0b1bb4ea202bece9db5263",
+  "sourceTree": "4f0d905565d5b8db16c2497887627a479efbe679",
+  "verifiedTree": "daa94cafc0bf2b9befaf56cb2fb7d7899085692c",
+  "verifiedMode": "Fast",
   "ciState": "PASS",
-  "ciRun": "https://github.com/tomthenpc/customiuizer-a13/actions/runs/30747010962",
-  "ciJob": "https://github.com/tomthenpc/customiuizer-a13/actions/runs/30747010962/job/91494207583",
-  "ciCommit": "4ed46e797b0abfe5d7e8c617aef35b5592bfa46b",
-  "projectProgress": 29.9,
-  "machineProgress": 31.5,
+  "ciRun": "https://github.com/tomthenpc/customiuizer-a13/actions/runs/30749148393",
+  "ciJob": "https://github.com/tomthenpc/customiuizer-a13/actions/runs/30749148393/job/91499938126",
+  "ciCommit": "0894e999f178c74c9a09bcf8362495aedafc5283",
+  "projectProgress": 31.8,
+  "machineProgress": 33.4,
   "stage": "ARCHITECTURE_AND_ROUTING",
   "domainScores": {
     "Baseline and control": {
@@ -20,8 +20,8 @@
     },
     "Runtime architecture / routing / ownership": {
       "weight": 22,
-      "earned": 16.51,
-      "percent": 75.0
+      "earned": 18.35,
+      "percent": 83.4
     },
     "Runtime safety / lifecycle / concurrency": {
       "weight": 18,
@@ -173,13 +173,13 @@
       "device_evidence": ""
     },
     {
-      "id": "P3",
+      "id": "P3.5",
       "domain": "Runtime architecture / routing / ownership",
       "weight": 3.67,
-      "state": "IN_PROGRESS",
-      "factor": 0.5,
-      "earned": 1.83,
-      "bucket": "in_progress",
+      "state": "COMPLETE",
+      "factor": 1.0,
+      "earned": 3.67,
+      "bucket": "complete",
       "evidence_level": "pending",
       "evidence_paths": [],
       "evidence_commands": [],

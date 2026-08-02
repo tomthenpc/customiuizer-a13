@@ -10,6 +10,9 @@ Exits non-zero on:
 - stale issue-queue entries
 - empty checkpoint section
 - stop-rule conflicts between GOAL.md / AGENTS.md / SMART_CONTINUOUS_OPERATION.md
+- missing or malformed A13 Devin Local Skill files
+- A14 repository/branch/skill references in A13 Skill files
+- control-plane documents that do not declare atomic Task Slice boundaries
 """
 
 from __future__ import annotations
@@ -58,6 +61,28 @@ SMART_REQUIRED_KEYS = {
 }
 VALID_CI_STATES = {"NOT_CONFIGURED", "PENDING", "PASS", "FAIL", "UNAVAILABLE"}
 VALID_OBJECTIVE_STATES = {"ACTIVE", "PAUSED", "BLOCKED", "COMPLETE"}
+
+REQUIRED_SKILLS = {
+    "a13-safe-implementation": Path(".agents/skills/a13-safe-implementation/SKILL.md"),
+    "a13-independent-review": Path(".agents/skills/a13-independent-review/SKILL.md"),
+}
+
+# A14 references that must not appear in A13 Skill or control documents.
+A14_FORBIDDEN = [
+    "customiuizer-a14",
+    "a14-safe-implementation",
+    "a14-independent-review",
+    "a14-rom-intelligence",
+    "devin/a14-",
+    "a14-devin",
+]
+
+OLD_CONTINUATION_PHRASES = [
+    "自动进入下一闭环",
+    "自动进入下一任务",
+    "不要主动停止",
+    "达到任务后继续下一任务",
+]
 
 
 def read_text(path: Path) -> str:
@@ -424,8 +449,73 @@ def check_current_objective(smart_text: str, task_text: str) -> list[str]:
     return errors
 
 
+def check_control_plane_invariants(repo_root: Path) -> list[str]:
+    """Verify A13 Devin Local Skill files and control-plane documents."""
+    errors: list[str] = []
+
+    # Skill files: existence, frontmatter name, user-only trigger, no A14 refs.
+    for name, rel_path in REQUIRED_SKILLS.items():
+        skill_path = repo_root / rel_path
+        if not skill_path.is_file():
+            errors.append(f"Missing A13 skill file: {rel_path.as_posix()}")
+            continue
+        text = read_text(skill_path)
+        if f"name: {name}" not in text:
+            errors.append(f"A13 skill {rel_path.as_posix()} missing or wrong frontmatter name: {name}")
+        if 'triggers: ["user"]' not in text:
+            errors.append(f"A13 skill {rel_path.as_posix()} missing triggers: [\"user\"]")
+        for phrase in A14_FORBIDDEN:
+            if phrase.lower() in text.lower():
+                errors.append(f"A13 skill {rel_path.as_posix()} contains A14 reference: {phrase}")
+
+    # AGENTS.md session model.
+    agents_path = repo_root / "AGENTS.md"
+    if agents_path.is_file():
+        agents_text = read_text(agents_path)
+        if "Task Slice" not in agents_text or "结束当前 Implementer 会话" not in agents_text:
+            errors.append("AGENTS.md does not declare single-session Task Slice boundary")
+        if "R2、R3、R4" not in agents_text or "a13-independent-review" not in agents_text:
+            errors.append("AGENTS.md does not declare independent review for R2/R3/R4")
+        for phrase in OLD_CONTINUATION_PHRASES:
+            if phrase in agents_text:
+                errors.append(f"AGENTS.md still contains old same-session continuation phrase: {phrase}")
+    else:
+        errors.append("Missing AGENTS.md")
+
+    # SMART_CONTINUOUS_OPERATION.md atomic slice fields.
+    smart_op_path = repo_root / "SMART_CONTINUOUS_OPERATION.md"
+    if smart_op_path.is_file():
+        smart_text = read_text(smart_op_path)
+        if "SessionMode: ATOMIC_TASK_SLICE" not in smart_text:
+            errors.append("SMART_CONTINUOUS_OPERATION.md missing SessionMode: ATOMIC_TASK_SLICE")
+        if "AutoStartNextSlice: false" not in smart_text:
+            errors.append("SMART_CONTINUOUS_OPERATION.md missing AutoStartNextSlice: false")
+        if "AutoStartNextSlice: true" in smart_text:
+            errors.append("SMART_CONTINUOUS_OPERATION.md contains AutoStartNextSlice: true")
+        if "结束当前会话是成功边界" not in smart_text:
+            errors.append("SMART_CONTINUOUS_OPERATION.md missing handoff session-end boundary")
+    else:
+        errors.append("Missing SMART_CONTINUOUS_OPERATION.md")
+
+    # DEVIN_START_PROMPT.md short skill launcher.
+    devin_path = repo_root / "DEVIN_START_PROMPT.md"
+    if devin_path.is_file():
+        devin_text = read_text(devin_path)
+        if "@skills:a13-safe-implementation" not in devin_text or "@skills:a13-independent-review" not in devin_text:
+            errors.append("DEVIN_START_PROMPT.md missing A13 skill invocation examples")
+        if len(devin_text) > 3000:
+            errors.append("DEVIN_START_PROMPT.md is too large; expected short skill launcher")
+        for phrase in ("持续到 MACHINE_COMPLETE", "自动进入下一任务", "自己修改、自己运行、自己测试"):
+            if phrase in devin_text:
+                errors.append(f"DEVIN_START_PROMPT.md still contains old giant-prompt phrase: {phrase}")
+    else:
+        errors.append("Missing DEVIN_START_PROMPT.md")
+
+    return errors
+
+
 def main() -> int:
-    parser = argparse.ArgumentParser(description="A14 control-state reconciliation")
+    parser = argparse.ArgumentParser(description="A13 control-state reconciliation")
     parser.add_argument("--repo-root", type=Path, default=REPO_ROOT)
     args = parser.parse_args()
     repo_root = args.repo_root
@@ -475,6 +565,7 @@ def main() -> int:
         "SMART_CONTINUOUS_OPERATION.md": read_text(smart_op_path) if smart_op_path.exists() else "",
     }
     all_errors.extend(check_stop_conflicts(texts))
+    all_errors.extend(check_control_plane_invariants(repo_root))
 
     if all_errors:
         print("CONTROL-STATE INVARIANT VIOLATIONS:")

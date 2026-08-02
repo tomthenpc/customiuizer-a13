@@ -8,14 +8,17 @@ AuthorizedBranch: devin/a13-rom-intelligence-audit
 BranchMode: EXACT_LOCK
 PlatformTarget: MIUI 14 / Android 13；HyperOS 1 / Android 13 仅 contract-guarded
 OperationMode: PROFESSIONAL_AUTONOMOUS_STEWARDSHIP
+SessionMode: ATOMIC_TASK_SLICE
+IndependentReviewRequired: R2_R3_R4
+AutoResumeWithinSlice: true
+AutoStartNextSlice: false
+ProjectContinuity: MULTI_SESSION
+ContextHandoffThreshold: 70_PERCENT
 PlanningMode: EVIDENCE_DRIVEN_GLOBAL
 TestSelectionMode: RISK_ADAPTIVE
 ToolCreationMode: AUTO_WHEN_REPEATABLE
 CleanupMode: PROOF_GATED_AUTONOMOUS
 StateMode: MACHINE_RECONCILED
-HumanReviewRequired: false
-RoutineConfirmationRequired: false
-AutoResume: true
 ExternalEvidencePolicy: NON_BLOCKING
 ```
 
@@ -58,11 +61,11 @@ Agent 是当前分支的专业项目维护者，不只是任务执行器。
 11. 在中断后自动恢复；
 12. 不要求用户进行日常检查。
 
-## 3. No voluntary stop, no artificial churn
+## 3. No voluntary stop within a slice, no artificial churn
 
-不得因为以下情况停止：
+在同一个 Task Slice 内，不得因为以下情况停止：
 
-- 任务或阶段完成；
+- 子任务或阶段完成；
 - Fast、Full、Final 或 CI 通过；
 - 当前没有 P0/P1；
 - 当前任务队列暂时为空；
@@ -70,7 +73,7 @@ Agent 是当前分支的专业项目维护者，不只是任务执行器。
 - 缺少手机、ROM、日志或签名；
 - 用户没有检查最新 commit。
 
-但“不停止”不等于制造改动。
+但“不停止”不等于制造改动，也不等于在 handoff 后继续选择下一目标。
 
 禁止：
 
@@ -79,7 +82,10 @@ Agent 是当前分支的专业项目维护者，不只是任务执行器。
 - 无基线进行性能优化；
 - 为保持活跃制造文档 churn；
 - 把同一代码在不同抽象间来回搬运；
-- 删除功能、测试或兼容路径来制造进展。
+- 删除功能、测试或兼容路径来制造进展；
+- 在 handoff 后继续选择下一目标。
+
+完成 Task Slice、qualifying checkpoint、exact CI 检查和 handoff 后，结束当前会话是成功边界，不是项目停止。新目标必须在新的 Implementer 会话开始。同一上下文不得同时作为唯一 Implementer 和唯一 Reviewer。
 
 没有合理代码变更时，继续验证、审计、测试增强、生成证据、CI、ROM 差异和维护分析。
 
@@ -200,24 +206,20 @@ Acceptance
 
 ```text
 reconcile state
-→ refresh global project map
-→ select objective
-→ prove original behavior
-→ define invariant
-→ inspect full call chain and Git history
-→ design smallest safe patch
-→ implement explicit code
-→ create/extend tests
-→ create tool when automation is justified
-→ run risk-adaptive verification
-→ inspect diff and generated outputs
-→ run cleanup evidence scan
-→ update TASK_STATE and SMART state
-→ qualifying commit
+→ read one Task Slice
+→ implement one atomic objective
+→ focused/mutation/risk-tier verification
+→ one qualifying engineering checkpoint
 → push exact branch
-→ inspect/fix CI
-→ next objective
+→ inspect exact checkpoint CI
+→ write handoff
+→ end current Implementer session
+→ start fresh Reviewer session
+→ approve or return findings
+→ start next Task Slice in another fresh session
 ```
+
+禁止在 handoff 后继续选择下一目标。
 
 不得只返回计划。
 

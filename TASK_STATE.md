@@ -444,6 +444,7 @@ typed catalog 之外的 Hook 同样必须处理。
     - [ ] `SelectiveToastsHook` (system_blocktoasts)
     - [ ] `MultiWindowPlusHook` / `NoFloatingWindowBlacklistHook` (system_fw_splitscreen / system_fw_noblacklist)
   - [ ] `system_separatevolume` 等跨 process 项按 LEGACY_EXCEPTION 登记
+- [x] P3.5 A13 Devin Local 控制面迁移：安装本地 Skill、采用原子 Task Slice、独立 Reviewer 流程、更新控制文档与 checker/mutation tests
 - [ ] P3.3 登记不可迁移项为 LEGACY_EXCEPTION 并补充原因/owner/test；
 - [ ] P3.4 增加 inventory 机械门禁，防止 UNKNOWN/重复 ownership。
 
@@ -465,6 +466,79 @@ duplicate hook ownership = 0
 - powershell .\scripts\verify.ps1 -Mode Full  PASS
 - powershell .\scripts\verify.ps1 -Mode Final  待当前工程 checkpoint 提交后重跑
 - GitHub CI A13 Fast CI run 30741425209  PASS (commit 66ad73b)
+```
+
+---
+
+## P3.5 A13 Devin Local 控制面迁移
+
+State: `COMPLETE`
+
+文件：
+
+```text
+AGENTS.md
+SMART_CONTINUOUS_OPERATION.md
+DEVIN_START_PROMPT.md
+INSTALL_A13_CONTROL_PLANE.md
+tools/check_automation_state.py
+tools/tests/test_check_automation_state.py
+.agents/skills/a13-safe-implementation/SKILL.md
+.agents/skills/a13-independent-review/SKILL.md
+docs/process/A13_CONTROL_PLANE_MIGRATION.md
+docs/process/A13_DEVIN_LOCAL_SKILLS.md
+docs/process/A13_RISK_GATE_MATRIX.md
+docs/process/templates/A13_SESSION_HANDOFF_TEMPLATE.md
+docs/process/templates/A13_TASK_SLICE_TEMPLATE.md
+```
+
+原始行为：
+
+```text
+AGENTS.md / SMART_CONTINUOUS_OPERATION.md 要求同一会话长时连续自治，
+DEVIN_START_PROMPT.md 为巨型启动指令，
+无显式 repository Skill 边界，
+无独立 Reviewer 会话，
+无 A13 技能文件保护检查。
+```
+
+不变量：
+
+```text
+仓库/分支 EXACT_LOCK 不变；
+技术规则（fatal、Hook、ABI、俄式系统代码、disabled-path、验证设备证据）不变；
+GOAL.md、scripts/verify.ps1 不改；
+app/src/main 生产代码不改；
+控制面迁移后恢复保护，后续不得自行重写控制层。
+```
+
+实现：
+
+```text
+安装 .agents/skills/a13-safe-implementation 与 a13-independent-review（triggers: ["user"]）；
+AGENTS.md 改为单会话一个原子 Task Slice、显式 Skill 调用优先级、handoff 后结束会话；
+SMART_CONTINUOUS_OPERATION.md 改为 SessionMode: ATOMIC_TASK_SLICE、AutoStartNextSlice: false、MULTI_SESSION 连续性；
+DEVIN_START_PROMPT.md 改为简短 Skill 启动入口；
+INSTALL_A13_CONTROL_PLANE.md 增加 Skill 文件路径与调用方式；
+tools/check_automation_state.py 增加 control-plane invariants 与 A14 引用检查；
+tools/tests/test_check_automation_state.py 增加 mutation 测试（AutoStartNextSlice true、missing triggers）。
+```
+
+验证：
+
+```text
+python -m unittest discover -s tools/tests -p "test_*.py"  -> OK
+python tools/check_automation_state.py                       -> pass
+python tools/check-invariants.py                             -> pass
+powershell -NoProfile -ExecutionPolicy Bypass -File .\scripts\verify.ps1 -Mode Fast -> pass
+```
+
+风险：
+
+```text
+- 未继续 parity/AnyOf/callback/progress/hazard/普通 P3 任务，留给后续 a13-safe-implementation 会话；
+- 受保护文档规则已按本次所有者授权临时更新，完成后恢复保护；
+- 新 checkpoint 的 CI 状态将在 handoff 中记录。
 ```
 
 ---

@@ -1,21 +1,21 @@
 # A13 Progress Current (v7)
 
 ```text
-GeneratedAt: 2026-08-02T20:13:48.699214+08:00
-SourceCommit: 4ed46e797b0abfe5d7e8c617aef35b5592bfa46b
-SourceTree: c58e65ef3ee5bacc4b3fad6e969ba9906042d55e
-VerifiedTree: c58e65ef3ee5bacc4b3fad6e969ba9906042d55e
-VerifiedMode: Full
+GeneratedAt: 2026-08-02T21:43:18.199220+08:00
+SourceCommit: 0715ac123ee02ed2ac0b1bb4ea202bece9db5263
+SourceTree: 4f0d905565d5b8db16c2497887627a479efbe679
+VerifiedTree: daa94cafc0bf2b9befaf56cb2fb7d7899085692c
+VerifiedMode: Fast
 CIState: PASS
-CIRun: https://github.com/tomthenpc/customiuizer-a13/actions/runs/30747010962
-CIJob: https://github.com/tomthenpc/customiuizer-a13/actions/runs/30747010962/job/91494207583
-CICommit: 4ed46e797b0abfe5d7e8c617aef35b5592bfa46b
+CIRun: https://github.com/tomthenpc/customiuizer-a13/actions/runs/30749148393
+CIJob: https://github.com/tomthenpc/customiuizer-a13/actions/runs/30749148393/job/91499938126
+CICommit: 0894e999f178c74c9a09bcf8362495aedafc5283
 ```
 
 ## Progress
 
-- ProjectProgress: 29.9%
-- MachineProgress: 31.5%
+- ProjectProgress: 31.8%
+- MachineProgress: 33.4%
 - Stage: ARCHITECTURE_AND_ROUTING
 - OpenP0: 0
 - OpenP1: 3
@@ -26,7 +26,7 @@ CICommit: 4ed46e797b0abfe5d7e8c617aef35b5592bfa46b
 | Domain | Weight | Earned | Percent |
 |---|---:|---:|---:|
 | Baseline and control | 8 | 8.0 | 100.0% |
-| Runtime architecture / routing / ownership | 22 | 16.51 | 75.0% |
+| Runtime architecture / routing / ownership | 22 | 18.35 | 83.4% |
 | Runtime safety / lifecycle / concurrency | 18 | 0.0 | 0.0% |
 | Performance / memory / APK / R8 | 12 | 0.0 | 0.0% |
 | ROM intelligence / compatibility | 10 | 0.0 | 0.0% |
@@ -47,7 +47,7 @@ CICommit: 4ed46e797b0abfe5d7e8c617aef35b5592bfa46b
 | P1.2 | Runtime architecture / routing / ownership | 3.67 | COMPLETE | 1.0 | 3.67 |
 | P1.3 | Runtime architecture / routing / ownership | 3.67 | COMPLETE | 1.0 | 3.67 |
 | P2 | Runtime architecture / routing / ownership | 3.67 | COMPLETE | 1.0 | 3.67 |
-| P3 | Runtime architecture / routing / ownership | 3.67 | IN_PROGRESS | 0.5 | 1.83 |
+| P3.5 | Runtime architecture / routing / ownership | 3.67 | COMPLETE | 1.0 | 3.67 |
 | P4 | Runtime architecture / routing / ownership | 3.67 | TODO | 0.0 | 0.0 |
 | P5.1 | Runtime safety / lifecycle / concurrency | 4.5 | UNKNOWN | 0.0 | 0.0 |
 | P5.2 | Runtime safety / lifecycle / concurrency | 4.5 | UNKNOWN | 0.0 | 0.0 |

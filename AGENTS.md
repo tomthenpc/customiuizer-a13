@@ -47,10 +47,11 @@
 ## 3. 指令优先级
 
 1. 仓库所有者最新明确指令；
-2. `GOAL.md`；
-3. 本文件；
-4. `TASK_STATE.md`；
-5. 其他文档和代码注释。
+2. 显式调用的 repository Skill 和 Task Slice；
+3. `GOAL.md`；
+4. 本文件其他长期规则；
+5. `TASK_STATE.md`；
+6. 其他文档和代码注释。
 
 发现冲突时：
 
@@ -117,6 +118,9 @@ INSTALL_A13_CONTROL_PLANE.md
 scripts/verify.ps1
 ```
 
+本次迁移由仓库所有者明确授权。
+完成后恢复保护，后续不得自行重写控制层。
+
 允许持续更新：
 
 ```text
@@ -129,11 +133,11 @@ TASK_STATE.md
 
 ## 6. 自治执行循环
 
-每个闭环：
+每个闭环只完成一个批准的 A13 Task Slice：
 
 1. 读取最新 `TASK_STATE.md`。
 2. 检查仓库、分支、HEAD、upstream、status 和 unfinished Git operation。
-3. 选择最高优先级、未阻塞、可独立验收的最小任务。
+3. 读取显式调用的 repository Skill 和 Task Slice；无 Skill 时不自行选择第二目标。
 4. 读取完整调用链、偏好默认值、process、phase、contract、diagnostics、tests 和相关历史。
 5. 在 `TASK_STATE.md` 写出行为不变量、风险和验收方法。
 6. 实施最小、完整、可回滚修改。
@@ -154,8 +158,13 @@ powershell -NoProfile -ExecutionPolicy Bypass -File .\scripts\verify.ps1 -Mode F
 11. 更新 `TASK_STATE.md`，记录命令、退出码、测试、风险和下一任务。
 12. 创建小而完整的 checkpoint commit。
 13. 只推送到授权分支。
-14. 读取 GitHub CI；失败则分析日志、修复并重跑。
-15. 自动进入下一闭环。
+14. 检查该工程 checkpoint 的 GitHub CI；失败则分析日志、修复并重跑。
+15. 写 A13 handoff。
+16. 结束当前 Implementer 会话。
+
+R2、R3、R4 变更必须在新的独立上下文中调用 `a13-independent-review` Skill。
+
+下一 Task Slice 在新的 Implementer 会话开始。"持续自治"表示跨多个新会话的项目连续性，不是一个上下文无限执行。
 
 不要只返回计划。不要等待常规确认。
 
@@ -539,16 +548,27 @@ Repository: tomthenpc/customiuizer-a13
 AuthorizedBranch: devin/a13-rom-intelligence-audit
 BranchMode: EXACT_LOCK
 OperationMode: PROFESSIONAL_AUTONOMOUS_STEWARDSHIP
+SessionMode: ATOMIC_TASK_SLICE
+IndependentReviewRequired: R2_R3_R4
+AutoResumeWithinSlice: true
+AutoStartNextSlice: false
+ProjectContinuity: MULTI_SESSION
+ContextHandoffThreshold: 70_PERCENT
 StateMode: MACHINE_RECONCILED
-HumanReviewRequired: false
-RoutineConfirmationRequired: false
-AutoResume: true
 ```
 
 本节替换旧“停止规则”和旧 `## Smart continuous operation`，不得同时保留冲突版本。
 
 规则：
 
+- 项目连续推进发生在多个独立会话之间；
+- 仓库所有者显式调用 `a13-safe-implementation` Skill 后，该 Skill 是当前会话的最新明确执行范围；
+- 当前 Implementer 会话只允许完成一个批准的 A13 Task Slice：一个原子目标、一个 qualifying engineering checkpoint、检查该 checkpoint 的 CI、写 A13 handoff、结束当前会话；
+- R2、R3、R4 变更必须在新的独立上下文中调用 `a13-independent-review` Skill；
+- Reviewer 会话不得修改生产代码；
+- 完成 Task Slice、qualifying checkpoint、exact CI 检查和 handoff 后，结束当前会话是成功边界，不是项目停止；
+- 新目标必须在新的 Implementer 会话开始；
+- 同一上下文不得同时作为唯一 Implementer 和唯一 Reviewer；
 - `PROJECT_COMPLETE` 是证据里程碑，不是主动停止条件；
 - 里程碑后留在当前精确分支进入 `LTS`（由 `docs/governance/LONG_HORIZON_CONSTITUTION.md` 定义）；
 - 不要求用户检查代码、commit、CI、分支或批准继续；

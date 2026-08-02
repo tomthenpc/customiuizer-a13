@@ -1,4 +1,5 @@
 import textwrap
+import tempfile
 import unittest
 from pathlib import Path
 
@@ -172,6 +173,179 @@ class FixtureRegressionTests(unittest.TestCase):
         block = checker.parse_smart_state(text)
         _, errors = checker.smart_state_dict(block)
         self.assertIn("SMART_OPERATION_STATE duplicate key: LastStandardSweepCommit", errors)
+
+
+class ControlPlaneInvariantTests(unittest.TestCase):
+    def _make_repo(
+        self,
+        smart_text: str,
+        safe_skill_text: str,
+        review_skill_text: str,
+        devin_text: str,
+    ) -> Path:
+        tmp = Path(tempfile.mkdtemp())
+        (tmp / ".agents" / "skills" / "a13-safe-implementation").mkdir(parents=True)
+        (tmp / ".agents" / "skills" / "a13-independent-review").mkdir(parents=True)
+        (tmp / ".agents" / "skills" / "a13-safe-implementation" / "SKILL.md").write_text(
+            safe_skill_text, encoding="utf-8"
+        )
+        (tmp / ".agents" / "skills" / "a13-independent-review" / "SKILL.md").write_text(
+            review_skill_text, encoding="utf-8"
+        )
+        (tmp / "AGENTS.md").write_text(
+            "一个 Task Slice\n结束当前 Implementer 会话\nR2、R3、R4\na13-independent-review\n",
+            encoding="utf-8",
+        )
+        (tmp / "SMART_CONTINUOUS_OPERATION.md").write_text(smart_text, encoding="utf-8")
+        (tmp / "DEVIN_START_PROMPT.md").write_text(devin_text, encoding="utf-8")
+        return tmp
+
+    def test_control_plane_passes(self):
+        smart = textwrap.dedent(
+            """
+            SessionMode: ATOMIC_TASK_SLICE
+            IndependentReviewRequired: R2_R3_R4
+            AutoResumeWithinSlice: true
+            AutoStartNextSlice: false
+            ProjectContinuity: MULTI_SESSION
+            ContextHandoffThreshold: 70_PERCENT
+            完成 Task Slice、qualifying checkpoint、exact CI 检查和 handoff 后，
+            结束当前会话是成功边界，不是项目停止。
+            """
+        )
+        safe = textwrap.dedent(
+            """
+            ---
+            name: a13-safe-implementation
+            description: Implement exactly one approved atomic slice in tomthenpc/customiuizer-a13.
+            argument-hint: <task-slice-path>
+            triggers: ["user"]
+            ---
+            """
+        )
+        review = textwrap.dedent(
+            """
+            ---
+            name: a13-independent-review
+            description: Independently red-team one completed A13 atomic slice.
+            argument-hint: <base-sha> <head-sha> <task-slice-path>
+            triggers: ["user"]
+            ---
+            """
+        )
+        devin = textwrap.dedent(
+            """
+            # A13 Devin Local 启动入口
+
+            @skills:a13-safe-implementation docs/process/tasks/<task-file>.md
+            @skills:a13-independent-review <base-sha> <head-sha> docs/process/tasks/<task-file>.md
+            """
+        )
+        repo = self._make_repo(smart, safe, review, devin)
+        errors = checker.check_control_plane_invariants(repo)
+        self.assertEqual(errors, [], f"Unexpected control-plane errors: {errors}")
+
+    def test_autostart_next_slice_true_fails(self):
+        """Mutation: AutoStartNextSlice: false -> true must fail."""
+        smart = textwrap.dedent(
+            """
+            SessionMode: ATOMIC_TASK_SLICE
+            AutoStartNextSlice: true
+            完成 Task Slice、qualifying checkpoint、exact CI 检查和 handoff 后，
+            结束当前会话是成功边界，不是项目停止。
+            """
+        )
+        safe = textwrap.dedent(
+            """
+            ---
+            name: a13-safe-implementation
+            triggers: ["user"]
+            ---
+            """
+        )
+        review = textwrap.dedent(
+            """
+            ---
+            name: a13-independent-review
+            triggers: ["user"]
+            ---
+            """
+        )
+        devin = "@skills:a13-safe-implementation\n@skills:a13-independent-review\n"
+        repo = self._make_repo(smart, safe, review, devin)
+        errors = checker.check_control_plane_invariants(repo)
+        self.assertTrue(
+            any("AutoStartNextSlice: true" in e for e in errors),
+            f"Expected AutoStartNextSlice: true violation, got: {errors}",
+        )
+
+    def test_missing_triggers_fails(self):
+        """Mutation: delete triggers: [\"user\"] from a skill must fail."""
+        smart = textwrap.dedent(
+            """
+            SessionMode: ATOMIC_TASK_SLICE
+            AutoStartNextSlice: false
+            完成 Task Slice、qualifying checkpoint、exact CI 检查和 handoff 后，
+            结束当前会话是成功边界，不是项目停止。
+            """
+        )
+        safe = textwrap.dedent(
+            """
+            ---
+            name: a13-safe-implementation
+            ---
+            """
+        )
+        review = textwrap.dedent(
+            """
+            ---
+            name: a13-independent-review
+            triggers: ["user"]
+            ---
+            """
+        )
+        devin = "@skills:a13-safe-implementation\n@skills:a13-independent-review\n"
+        repo = self._make_repo(smart, safe, review, devin)
+        errors = checker.check_control_plane_invariants(repo)
+        self.assertTrue(
+            any('missing triggers: ["user"]' in e for e in errors),
+            f"Expected missing triggers violation, got: {errors}",
+        )
+
+    def test_a14_reference_in_skill_fails(self):
+        """A14 skill name in an A13 skill file must fail."""
+        smart = textwrap.dedent(
+            """
+            SessionMode: ATOMIC_TASK_SLICE
+            AutoStartNextSlice: false
+            完成 Task Slice、qualifying checkpoint、exact CI 检查和 handoff 后，
+            结束当前会话是成功边界，不是项目停止。
+            """
+        )
+        safe = textwrap.dedent(
+            """
+            ---
+            name: a13-safe-implementation
+            triggers: ["user"]
+            description: Also applies to a14-safe-implementation.
+            ---
+            """
+        )
+        review = textwrap.dedent(
+            """
+            ---
+            name: a13-independent-review
+            triggers: ["user"]
+            ---
+            """
+        )
+        devin = "@skills:a13-safe-implementation\n@skills:a13-independent-review\n"
+        repo = self._make_repo(smart, safe, review, devin)
+        errors = checker.check_control_plane_invariants(repo)
+        self.assertTrue(
+            any("A14 reference" in e for e in errors),
+            f"Expected A14 reference violation, got: {errors}",
+        )
 
 
 if __name__ == "__main__":
