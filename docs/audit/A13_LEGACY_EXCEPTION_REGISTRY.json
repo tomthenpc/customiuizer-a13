@@ -1,0 +1,535 @@
+{
+  "schemaVersion": 1,
+  "generatedAt": "2026-08-03T07:13:12+00:00",
+  "sourceCommit": "564be89397a60f71b7575295d6d9b525a56f52dd",
+  "totalLegacyCallSites": 514,
+  "totalLegacyGroups": 205,
+  "firstBatchSize": 20,
+  "records": [
+    {
+      "id": "0e3a84c087f21f22",
+      "status": "ACTIVE",
+      "owner": "BluetoothTileStyleHook",
+      "sourceFile": "tv/withaibuild/customiuizer/mods/SystemUIControlCenterHooks.kt",
+      "entrypoint": "BluetoothTileStyleHook",
+      "process": "system_ui",
+      "phase": "OTHER",
+      "preferenceKeys": [],
+      "reasonCode": "OTHER_REVIEW_REQUIRED",
+      "reason": "Legacy hook calls not yet owned by the typed Feature catalog; requires independent review to determine the correct logical owner and migration path.",
+      "coveredCallSites": [
+        "tv/withaibuild/customiuizer/mods/SystemUIControlCenterHooks.kt:1084:BluetoothTileStyleHook",
+        "tv/withaibuild/customiuizer/mods/SystemUIControlCenterHooks.kt:1090:BluetoothTileStyleHook",
+        "tv/withaibuild/customiuizer/mods/SystemUIControlCenterHooks.kt:1154:BluetoothTileStyleHook",
+        "tv/withaibuild/customiuizer/mods/SystemUIControlCenterHooks.kt:1155:BluetoothTileStyleHook",
+        "tv/withaibuild/customiuizer/mods/SystemUIControlCenterHooks.kt:1163:BluetoothTileStyleHook",
+        "tv/withaibuild/customiuizer/mods/SystemUIControlCenterHooks.kt:1173:BluetoothTileStyleHook"
+      ],
+      "hookTargets": [],
+      "testEvidence": [
+        "tools/tests/test_legacy_exception_registry.py"
+      ],
+      "exitCondition": "Migrate to typed FeatureSpec or remove after owner review in a subsequent P3.3 batch."
+    },
+    {
+      "id": "0f79160e1fa2eff0",
+      "status": "ACTIVE",
+      "owner": "ScreenshotConfigHook",
+      "sourceFile": "tv/withaibuild/customiuizer/mods/SystemAudioAndVisualAndMoreHooks.kt",
+      "entrypoint": "ScreenshotConfigHook",
+      "process": "system_server",
+      "phase": "OTHER",
+      "preferenceKeys": [],
+      "reasonCode": "OTHER_REVIEW_REQUIRED",
+      "reason": "Legacy hook calls not yet owned by the typed Feature catalog; requires independent review to determine the correct logical owner and migration path.",
+      "coveredCallSites": [
+        "tv/withaibuild/customiuizer/mods/SystemAudioAndVisualAndMoreHooks.kt:422:ScreenshotConfigHook",
+        "tv/withaibuild/customiuizer/mods/SystemAudioAndVisualAndMoreHooks.kt:436:ScreenshotConfigHook",
+        "tv/withaibuild/customiuizer/mods/SystemAudioAndVisualAndMoreHooks.kt:469:ScreenshotConfigHook",
+        "tv/withaibuild/customiuizer/mods/SystemAudioAndVisualAndMoreHooks.kt:481:ScreenshotConfigHook",
+        "tv/withaibuild/customiuizer/mods/SystemAudioAndVisualAndMoreHooks.kt:482:ScreenshotConfigHook",
+        "tv/withaibuild/customiuizer/mods/SystemAudioAndVisualAndMoreHooks.kt:488:ScreenshotConfigHook"
+      ],
+      "hookTargets": [],
+      "testEvidence": [
+        "tools/tests/test_legacy_exception_registry.py"
+      ],
+      "exitCondition": "Migrate to typed FeatureSpec or remove after owner review in a subsequent P3.3 batch."
+    },
+    {
+      "id": "15e2c2d098066360",
+      "status": "ACTIVE",
+      "owner": "AddCustomTileHook",
+      "sourceFile": "tv/withaibuild/customiuizer/mods/SystemUIMonitorAndTileHooks.kt",
+      "entrypoint": "AddCustomTileHook",
+      "process": "system_ui",
+      "phase": "OTHER",
+      "preferenceKeys": [],
+      "reasonCode": "OTHER_REVIEW_REQUIRED",
+      "reason": "Legacy hook calls not yet owned by the typed Feature catalog; requires independent review to determine the correct logical owner and migration path.",
+      "coveredCallSites": [
+        "tv/withaibuild/customiuizer/mods/SystemUIMonitorAndTileHooks.kt:128:AddCustomTileHook",
+        "tv/withaibuild/customiuizer/mods/SystemUIMonitorAndTileHooks.kt:141:AddCustomTileHook",
+        "tv/withaibuild/customiuizer/mods/SystemUIMonitorAndTileHooks.kt:172:AddCustomTileHook",
+        "tv/withaibuild/customiuizer/mods/SystemUIMonitorAndTileHooks.kt:33:AddCustomTileHook",
+        "tv/withaibuild/customiuizer/mods/SystemUIMonitorAndTileHooks.kt:52:AddCustomTileHook",
+        "tv/withaibuild/customiuizer/mods/SystemUIMonitorAndTileHooks.kt:66:AddCustomTileHook",
+        "tv/withaibuild/customiuizer/mods/SystemUIMonitorAndTileHooks.kt:76:AddCustomTileHook",
+        "tv/withaibuild/customiuizer/mods/SystemUIMonitorAndTileHooks.kt:87:AddCustomTileHook"
+      ],
+      "hookTargets": [],
+      "testEvidence": [
+        "tools/tests/test_legacy_exception_registry.py"
+      ],
+      "exitCondition": "Migrate to typed FeatureSpec or remove after owner review in a subsequent P3.3 batch."
+    },
+    {
+      "id": "1b80293145012679",
+      "status": "ACTIVE",
+      "owner": "NoScreenLockHook",
+      "sourceFile": "tv/withaibuild/customiuizer/mods/SystemLockScreenMoreHooks.kt",
+      "entrypoint": "NoScreenLockHook",
+      "process": "system_server",
+      "phase": "OTHER",
+      "preferenceKeys": [],
+      "reasonCode": "OTHER_REVIEW_REQUIRED",
+      "reason": "Legacy hook calls not yet owned by the typed Feature catalog; requires independent review to determine the correct logical owner and migration path.",
+      "coveredCallSites": [
+        "tv/withaibuild/customiuizer/mods/SystemLockScreenMoreHooks.kt:219:NoScreenLockHook",
+        "tv/withaibuild/customiuizer/mods/SystemLockScreenMoreHooks.kt:229:NoScreenLockHook",
+        "tv/withaibuild/customiuizer/mods/SystemLockScreenMoreHooks.kt:235:NoScreenLockHook",
+        "tv/withaibuild/customiuizer/mods/SystemLockScreenMoreHooks.kt:259:NoScreenLockHook",
+        "tv/withaibuild/customiuizer/mods/SystemLockScreenMoreHooks.kt:277:NoScreenLockHook",
+        "tv/withaibuild/customiuizer/mods/SystemLockScreenMoreHooks.kt:345:NoScreenLockHook",
+        "tv/withaibuild/customiuizer/mods/SystemLockScreenMoreHooks.kt:369:NoScreenLockHook",
+        "tv/withaibuild/customiuizer/mods/SystemLockScreenMoreHooks.kt:387:NoScreenLockHook",
+        "tv/withaibuild/customiuizer/mods/SystemLockScreenMoreHooks.kt:401:NoScreenLockHook",
+        "tv/withaibuild/customiuizer/mods/SystemLockScreenMoreHooks.kt:431:NoScreenLockHook"
+      ],
+      "hookTargets": [],
+      "testEvidence": [
+        "tools/tests/test_legacy_exception_registry.py"
+      ],
+      "exitCondition": "Migrate to typed FeatureSpec or remove after owner review in a subsequent P3.3 batch."
+    },
+    {
+      "id": "26eec4b837a70aab",
+      "status": "ACTIVE",
+      "owner": "SwipeAndStopActionHook",
+      "sourceFile": "tv/withaibuild/customiuizer/mods/LauncherGestureHooks.kt",
+      "entrypoint": "SwipeAndStopActionHook",
+      "process": "launcher",
+      "phase": "OTHER",
+      "preferenceKeys": [],
+      "reasonCode": "OTHER_REVIEW_REQUIRED",
+      "reason": "Legacy hook calls not yet owned by the typed Feature catalog; requires independent review to determine the correct logical owner and migration path.",
+      "coveredCallSites": [
+        "tv/withaibuild/customiuizer/mods/LauncherGestureHooks.kt:417:SwipeAndStopActionHook",
+        "tv/withaibuild/customiuizer/mods/LauncherGestureHooks.kt:420:SwipeAndStopActionHook",
+        "tv/withaibuild/customiuizer/mods/LauncherGestureHooks.kt:428:SwipeAndStopActionHook",
+        "tv/withaibuild/customiuizer/mods/LauncherGestureHooks.kt:433:SwipeAndStopActionHook",
+        "tv/withaibuild/customiuizer/mods/LauncherGestureHooks.kt:434:SwipeAndStopActionHook"
+      ],
+      "hookTargets": [],
+      "testEvidence": [
+        "tools/tests/test_legacy_exception_registry.py"
+      ],
+      "exitCondition": "Migrate to typed FeatureSpec or remove after owner review in a subsequent P3.3 batch."
+    },
+    {
+      "id": "3609cadb2fa0bb00",
+      "status": "ACTIVE",
+      "owner": "FSGesturesHook",
+      "sourceFile": "tv/withaibuild/customiuizer/mods/LauncherGestureHooks.kt",
+      "entrypoint": "FSGesturesHook",
+      "process": "launcher",
+      "phase": "OTHER",
+      "preferenceKeys": [],
+      "reasonCode": "OTHER_REVIEW_REQUIRED",
+      "reason": "Legacy hook calls not yet owned by the typed Feature catalog; requires independent review to determine the correct logical owner and migration path.",
+      "coveredCallSites": [
+        "tv/withaibuild/customiuizer/mods/LauncherGestureHooks.kt:207:FSGesturesHook",
+        "tv/withaibuild/customiuizer/mods/LauncherGestureHooks.kt:209:FSGesturesHook",
+        "tv/withaibuild/customiuizer/mods/LauncherGestureHooks.kt:216:FSGesturesHook",
+        "tv/withaibuild/customiuizer/mods/LauncherGestureHooks.kt:230:FSGesturesHook",
+        "tv/withaibuild/customiuizer/mods/LauncherGestureHooks.kt:244:FSGesturesHook"
+      ],
+      "hookTargets": [],
+      "testEvidence": [
+        "tools/tests/test_legacy_exception_registry.py"
+      ],
+      "exitCondition": "Migrate to typed FeatureSpec or remove after owner review in a subsequent P3.3 batch."
+    },
+    {
+      "id": "3913032ce1822717",
+      "status": "ACTIVE",
+      "owner": "AudioVisualizerHook",
+      "sourceFile": "tv/withaibuild/customiuizer/mods/SystemAudioAndVisualAndMoreHooks.kt",
+      "entrypoint": "AudioVisualizerHook",
+      "process": "system_server",
+      "phase": "OTHER",
+      "preferenceKeys": [],
+      "reasonCode": "OTHER_REVIEW_REQUIRED",
+      "reason": "Legacy hook calls not yet owned by the typed Feature catalog; requires independent review to determine the correct logical owner and migration path.",
+      "coveredCallSites": [
+        "tv/withaibuild/customiuizer/mods/SystemAudioAndVisualAndMoreHooks.kt:751:AudioVisualizerHook",
+        "tv/withaibuild/customiuizer/mods/SystemAudioAndVisualAndMoreHooks.kt:776:AudioVisualizerHook",
+        "tv/withaibuild/customiuizer/mods/SystemAudioAndVisualAndMoreHooks.kt:782:AudioVisualizerHook",
+        "tv/withaibuild/customiuizer/mods/SystemAudioAndVisualAndMoreHooks.kt:788:AudioVisualizerHook",
+        "tv/withaibuild/customiuizer/mods/SystemAudioAndVisualAndMoreHooks.kt:799:AudioVisualizerHook",
+        "tv/withaibuild/customiuizer/mods/SystemAudioAndVisualAndMoreHooks.kt:809:AudioVisualizerHook"
+      ],
+      "hookTargets": [],
+      "testEvidence": [
+        "tools/tests/test_legacy_exception_registry.py"
+      ],
+      "exitCondition": "Migrate to typed FeatureSpec or remove after owner review in a subsequent P3.3 batch."
+    },
+    {
+      "id": "46a7ff46149f0466",
+      "status": "ACTIVE",
+      "owner": "ColorizeNotificationCardHook",
+      "sourceFile": "tv/withaibuild/customiuizer/mods/SystemNotificationAndShareHooks.kt",
+      "entrypoint": "ColorizeNotificationCardHook",
+      "process": "system_server",
+      "phase": "OTHER",
+      "preferenceKeys": [],
+      "reasonCode": "OTHER_REVIEW_REQUIRED",
+      "reason": "Legacy hook calls not yet owned by the typed Feature catalog; requires independent review to determine the correct logical owner and migration path.",
+      "coveredCallSites": [
+        "tv/withaibuild/customiuizer/mods/SystemNotificationAndShareHooks.kt:103:ColorizeNotificationCardHook",
+        "tv/withaibuild/customiuizer/mods/SystemNotificationAndShareHooks.kt:109:ColorizeNotificationCardHook",
+        "tv/withaibuild/customiuizer/mods/SystemNotificationAndShareHooks.kt:122:ColorizeNotificationCardHook",
+        "tv/withaibuild/customiuizer/mods/SystemNotificationAndShareHooks.kt:197:ColorizeNotificationCardHook",
+        "tv/withaibuild/customiuizer/mods/SystemNotificationAndShareHooks.kt:198:ColorizeNotificationCardHook",
+        "tv/withaibuild/customiuizer/mods/SystemNotificationAndShareHooks.kt:199:ColorizeNotificationCardHook",
+        "tv/withaibuild/customiuizer/mods/SystemNotificationAndShareHooks.kt:48:ColorizeNotificationCardHook",
+        "tv/withaibuild/customiuizer/mods/SystemNotificationAndShareHooks.kt:65:ColorizeNotificationCardHook",
+        "tv/withaibuild/customiuizer/mods/SystemNotificationAndShareHooks.kt:78:ColorizeNotificationCardHook",
+        "tv/withaibuild/customiuizer/mods/SystemNotificationAndShareHooks.kt:95:ColorizeNotificationCardHook"
+      ],
+      "hookTargets": [],
+      "testEvidence": [
+        "tools/tests/test_legacy_exception_registry.py"
+      ],
+      "exitCondition": "Migrate to typed FeatureSpec or remove after owner review in a subsequent P3.3 batch."
+    },
+    {
+      "id": "478966603f38fabb",
+      "status": "ACTIVE",
+      "owner": "DualRowSignalHook",
+      "sourceFile": "tv/withaibuild/customiuizer/mods/SystemUIStatusBarHooks.kt",
+      "entrypoint": "DualRowSignalHook",
+      "process": "system_ui",
+      "phase": "OTHER",
+      "preferenceKeys": [],
+      "reasonCode": "OTHER_REVIEW_REQUIRED",
+      "reason": "Legacy hook calls not yet owned by the typed Feature catalog; requires independent review to determine the correct logical owner and migration path.",
+      "coveredCallSites": [
+        "tv/withaibuild/customiuizer/mods/SystemUIStatusBarHooks.kt:695:DualRowSignalHook",
+        "tv/withaibuild/customiuizer/mods/SystemUIStatusBarHooks.kt:722:DualRowSignalHook",
+        "tv/withaibuild/customiuizer/mods/SystemUIStatusBarHooks.kt:786:DualRowSignalHook",
+        "tv/withaibuild/customiuizer/mods/SystemUIStatusBarHooks.kt:787:DualRowSignalHook",
+        "tv/withaibuild/customiuizer/mods/SystemUIStatusBarHooks.kt:817:DualRowSignalHook",
+        "tv/withaibuild/customiuizer/mods/SystemUIStatusBarHooks.kt:823:DualRowSignalHook"
+      ],
+      "hookTargets": [],
+      "testEvidence": [
+        "tools/tests/test_legacy_exception_registry.py"
+      ],
+      "exitCondition": "Migrate to typed FeatureSpec or remove after owner review in a subsequent P3.3 batch."
+    },
+    {
+      "id": "567fc0883efd42e9",
+      "status": "ACTIVE",
+      "owner": "LockScreenShortcutHook",
+      "sourceFile": "tv/withaibuild/customiuizer/mods/SystemUILockScreenHooks.kt",
+      "entrypoint": "LockScreenShortcutHook",
+      "process": "system_ui",
+      "phase": "OTHER",
+      "preferenceKeys": [],
+      "reasonCode": "OTHER_REVIEW_REQUIRED",
+      "reason": "Legacy hook calls not yet owned by the typed Feature catalog; requires independent review to determine the correct logical owner and migration path.",
+      "coveredCallSites": [
+        "tv/withaibuild/customiuizer/mods/SystemUILockScreenHooks.kt:239:LockScreenShortcutHook",
+        "tv/withaibuild/customiuizer/mods/SystemUILockScreenHooks.kt:257:LockScreenShortcutHook",
+        "tv/withaibuild/customiuizer/mods/SystemUILockScreenHooks.kt:277:LockScreenShortcutHook",
+        "tv/withaibuild/customiuizer/mods/SystemUILockScreenHooks.kt:290:LockScreenShortcutHook",
+        "tv/withaibuild/customiuizer/mods/SystemUILockScreenHooks.kt:305:LockScreenShortcutHook",
+        "tv/withaibuild/customiuizer/mods/SystemUILockScreenHooks.kt:314:LockScreenShortcutHook",
+        "tv/withaibuild/customiuizer/mods/SystemUILockScreenHooks.kt:325:LockScreenShortcutHook",
+        "tv/withaibuild/customiuizer/mods/SystemUILockScreenHooks.kt:351:LockScreenShortcutHook",
+        "tv/withaibuild/customiuizer/mods/SystemUILockScreenHooks.kt:364:LockScreenShortcutHook",
+        "tv/withaibuild/customiuizer/mods/SystemUILockScreenHooks.kt:374:LockScreenShortcutHook",
+        "tv/withaibuild/customiuizer/mods/SystemUILockScreenHooks.kt:414:LockScreenShortcutHook",
+        "tv/withaibuild/customiuizer/mods/SystemUILockScreenHooks.kt:426:LockScreenShortcutHook",
+        "tv/withaibuild/customiuizer/mods/SystemUILockScreenHooks.kt:451:LockScreenShortcutHook",
+        "tv/withaibuild/customiuizer/mods/SystemUILockScreenHooks.kt:463:LockScreenShortcutHook"
+      ],
+      "hookTargets": [],
+      "testEvidence": [
+        "tools/tests/test_legacy_exception_registry.py"
+      ],
+      "exitCondition": "Migrate to typed FeatureSpec or remove after owner review in a subsequent P3.3 batch."
+    },
+    {
+      "id": "7b7ea159edc5c2da",
+      "status": "ACTIVE",
+      "owner": "DisableAnyNotificationHook",
+      "sourceFile": "tv/withaibuild/customiuizer/mods/SystemNotificationMoreHooks.kt",
+      "entrypoint": "DisableAnyNotificationHook",
+      "process": "system_server",
+      "phase": "OTHER",
+      "preferenceKeys": [],
+      "reasonCode": "OTHER_REVIEW_REQUIRED",
+      "reason": "Legacy hook calls not yet owned by the typed Feature catalog; requires independent review to determine the correct logical owner and migration path.",
+      "coveredCallSites": [
+        "tv/withaibuild/customiuizer/mods/SystemNotificationMoreHooks.kt:274:DisableAnyNotificationHook",
+        "tv/withaibuild/customiuizer/mods/SystemNotificationMoreHooks.kt:280:DisableAnyNotificationHook",
+        "tv/withaibuild/customiuizer/mods/SystemNotificationMoreHooks.kt:281:DisableAnyNotificationHook",
+        "tv/withaibuild/customiuizer/mods/SystemNotificationMoreHooks.kt:282:DisableAnyNotificationHook",
+        "tv/withaibuild/customiuizer/mods/SystemNotificationMoreHooks.kt:283:DisableAnyNotificationHook",
+        "tv/withaibuild/customiuizer/mods/SystemNotificationMoreHooks.kt:284:DisableAnyNotificationHook"
+      ],
+      "hookTargets": [],
+      "testEvidence": [
+        "tools/tests/test_legacy_exception_registry.py"
+      ],
+      "exitCondition": "Migrate to typed FeatureSpec or remove after owner review in a subsequent P3.3 batch."
+    },
+    {
+      "id": "80f2914e5a1eb1ee",
+      "status": "ACTIVE",
+      "owner": "MonitorDeviceInfoHook",
+      "sourceFile": "tv/withaibuild/customiuizer/mods/SystemUIStatusBarHooks.kt",
+      "entrypoint": "MonitorDeviceInfoHook",
+      "process": "system_ui",
+      "phase": "OTHER",
+      "preferenceKeys": [],
+      "reasonCode": "OTHER_REVIEW_REQUIRED",
+      "reason": "Legacy hook calls not yet owned by the typed Feature catalog; requires independent review to determine the correct logical owner and migration path.",
+      "coveredCallSites": [
+        "tv/withaibuild/customiuizer/mods/SystemUIStatusBarHooks.kt:306:MonitorDeviceInfoHook",
+        "tv/withaibuild/customiuizer/mods/SystemUIStatusBarHooks.kt:323:MonitorDeviceInfoHook",
+        "tv/withaibuild/customiuizer/mods/SystemUIStatusBarHooks.kt:350:MonitorDeviceInfoHook",
+        "tv/withaibuild/customiuizer/mods/SystemUIStatusBarHooks.kt:373:MonitorDeviceInfoHook",
+        "tv/withaibuild/customiuizer/mods/SystemUIStatusBarHooks.kt:382:MonitorDeviceInfoHook",
+        "tv/withaibuild/customiuizer/mods/SystemUIStatusBarHooks.kt:394:MonitorDeviceInfoHook"
+      ],
+      "hookTargets": [],
+      "testEvidence": [
+        "tools/tests/test_legacy_exception_registry.py"
+      ],
+      "exitCondition": "Migrate to typed FeatureSpec or remove after owner review in a subsequent P3.3 batch."
+    },
+    {
+      "id": "92731487b6b64830",
+      "status": "ACTIVE",
+      "owner": "DisableFloatingWindowBlacklistHook",
+      "sourceFile": "tv/withaibuild/customiuizer/mods/SystemFreeformAndMultiWindowHooks.kt",
+      "entrypoint": "DisableFloatingWindowBlacklistHook",
+      "process": "system_server",
+      "phase": "OTHER",
+      "preferenceKeys": [],
+      "reasonCode": "OTHER_REVIEW_REQUIRED",
+      "reason": "Legacy hook calls not yet owned by the typed Feature catalog; requires independent review to determine the correct logical owner and migration path.",
+      "coveredCallSites": [
+        "tv/withaibuild/customiuizer/mods/SystemFreeformAndMultiWindowHooks.kt:430:DisableFloatingWindowBlacklistHook",
+        "tv/withaibuild/customiuizer/mods/SystemFreeformAndMultiWindowHooks.kt:431:DisableFloatingWindowBlacklistHook",
+        "tv/withaibuild/customiuizer/mods/SystemFreeformAndMultiWindowHooks.kt:432:DisableFloatingWindowBlacklistHook",
+        "tv/withaibuild/customiuizer/mods/SystemFreeformAndMultiWindowHooks.kt:433:DisableFloatingWindowBlacklistHook",
+        "tv/withaibuild/customiuizer/mods/SystemFreeformAndMultiWindowHooks.kt:434:DisableFloatingWindowBlacklistHook",
+        "tv/withaibuild/customiuizer/mods/SystemFreeformAndMultiWindowHooks.kt:441:DisableFloatingWindowBlacklistHook",
+        "tv/withaibuild/customiuizer/mods/SystemFreeformAndMultiWindowHooks.kt:442:DisableFloatingWindowBlacklistHook"
+      ],
+      "hookTargets": [],
+      "testEvidence": [
+        "tools/tests/test_legacy_exception_registry.py"
+      ],
+      "exitCondition": "Migrate to typed FeatureSpec or remove after owner review in a subsequent P3.3 batch."
+    },
+    {
+      "id": "a2b5a070b2d386ed",
+      "status": "ACTIVE",
+      "owner": "StatusBarIconsPositionAdjustHook",
+      "sourceFile": "tv/withaibuild/customiuizer/mods/SystemUIStatusBarHooks.kt",
+      "entrypoint": "StatusBarIconsPositionAdjustHook",
+      "process": "system_ui",
+      "phase": "OTHER",
+      "preferenceKeys": [],
+      "reasonCode": "OTHER_REVIEW_REQUIRED",
+      "reason": "Legacy hook calls not yet owned by the typed Feature catalog; requires independent review to determine the correct logical owner and migration path.",
+      "coveredCallSites": [
+        "tv/withaibuild/customiuizer/mods/SystemUIStatusBarHooks.kt:1005:StatusBarIconsPositionAdjustHook",
+        "tv/withaibuild/customiuizer/mods/SystemUIStatusBarHooks.kt:1017:StatusBarIconsPositionAdjustHook",
+        "tv/withaibuild/customiuizer/mods/SystemUIStatusBarHooks.kt:1034:StatusBarIconsPositionAdjustHook",
+        "tv/withaibuild/customiuizer/mods/SystemUIStatusBarHooks.kt:1057:StatusBarIconsPositionAdjustHook",
+        "tv/withaibuild/customiuizer/mods/SystemUIStatusBarHooks.kt:1064:StatusBarIconsPositionAdjustHook",
+        "tv/withaibuild/customiuizer/mods/SystemUIStatusBarHooks.kt:889:StatusBarIconsPositionAdjustHook",
+        "tv/withaibuild/customiuizer/mods/SystemUIStatusBarHooks.kt:905:StatusBarIconsPositionAdjustHook",
+        "tv/withaibuild/customiuizer/mods/SystemUIStatusBarHooks.kt:921:StatusBarIconsPositionAdjustHook",
+        "tv/withaibuild/customiuizer/mods/SystemUIStatusBarHooks.kt:949:StatusBarIconsPositionAdjustHook",
+        "tv/withaibuild/customiuizer/mods/SystemUIStatusBarHooks.kt:987:StatusBarIconsPositionAdjustHook",
+        "tv/withaibuild/customiuizer/mods/SystemUIStatusBarHooks.kt:995:StatusBarIconsPositionAdjustHook"
+      ],
+      "hookTargets": [],
+      "testEvidence": [
+        "tools/tests/test_legacy_exception_registry.py"
+      ],
+      "exitCondition": "Migrate to typed FeatureSpec or remove after owner review in a subsequent P3.3 batch."
+    },
+    {
+      "id": "abb40f0c9344bfac",
+      "status": "ACTIVE",
+      "owner": "UnlockGridsHook",
+      "sourceFile": "tv/withaibuild/customiuizer/mods/LauncherLayoutHooks.kt",
+      "entrypoint": "UnlockGridsHook",
+      "process": "launcher",
+      "phase": "OTHER",
+      "preferenceKeys": [],
+      "reasonCode": "OTHER_REVIEW_REQUIRED",
+      "reason": "Legacy hook calls not yet owned by the typed Feature catalog; requires independent review to determine the correct logical owner and migration path.",
+      "coveredCallSites": [
+        "tv/withaibuild/customiuizer/mods/LauncherLayoutHooks.kt:144:UnlockGridsHook",
+        "tv/withaibuild/customiuizer/mods/LauncherLayoutHooks.kt:145:UnlockGridsHook",
+        "tv/withaibuild/customiuizer/mods/LauncherLayoutHooks.kt:146:UnlockGridsHook",
+        "tv/withaibuild/customiuizer/mods/LauncherLayoutHooks.kt:152:UnlockGridsHook",
+        "tv/withaibuild/customiuizer/mods/LauncherLayoutHooks.kt:161:UnlockGridsHook",
+        "tv/withaibuild/customiuizer/mods/LauncherLayoutHooks.kt:178:UnlockGridsHook",
+        "tv/withaibuild/customiuizer/mods/LauncherLayoutHooks.kt:184:UnlockGridsHook",
+        "tv/withaibuild/customiuizer/mods/LauncherLayoutHooks.kt:187:UnlockGridsHook"
+      ],
+      "hookTargets": [],
+      "testEvidence": [
+        "tools/tests/test_legacy_exception_registry.py"
+      ],
+      "exitCondition": "Migrate to typed FeatureSpec or remove after owner review in a subsequent P3.3 batch."
+    },
+    {
+      "id": "b4dc3dadda4a78aa",
+      "status": "ACTIVE",
+      "owner": "TitleFontSizeHook",
+      "sourceFile": "tv/withaibuild/customiuizer/mods/LauncherIconHooks.kt",
+      "entrypoint": "TitleFontSizeHook",
+      "process": "launcher",
+      "phase": "OTHER",
+      "preferenceKeys": [],
+      "reasonCode": "OTHER_REVIEW_REQUIRED",
+      "reason": "Legacy hook calls not yet owned by the typed Feature catalog; requires independent review to determine the correct logical owner and migration path.",
+      "coveredCallSites": [
+        "tv/withaibuild/customiuizer/mods/LauncherIconHooks.kt:226:TitleFontSizeHook",
+        "tv/withaibuild/customiuizer/mods/LauncherIconHooks.kt:234:TitleFontSizeHook",
+        "tv/withaibuild/customiuizer/mods/LauncherIconHooks.kt:241:TitleFontSizeHook",
+        "tv/withaibuild/customiuizer/mods/LauncherIconHooks.kt:251:TitleFontSizeHook",
+        "tv/withaibuild/customiuizer/mods/LauncherIconHooks.kt:259:TitleFontSizeHook"
+      ],
+      "hookTargets": [],
+      "testEvidence": [
+        "tools/tests/test_legacy_exception_registry.py"
+      ],
+      "exitCondition": "Migrate to typed FeatureSpec or remove after owner review in a subsequent P3.3 batch."
+    },
+    {
+      "id": "b98143bfc119147a",
+      "status": "ACTIVE",
+      "owner": "StickyFloatingWindowsLauncherHook",
+      "sourceFile": "tv/withaibuild/customiuizer/mods/LauncherSystemHooks.kt",
+      "entrypoint": "StickyFloatingWindowsLauncherHook",
+      "process": "launcher",
+      "phase": "OTHER",
+      "preferenceKeys": [],
+      "reasonCode": "OTHER_REVIEW_REQUIRED",
+      "reason": "Legacy hook calls not yet owned by the typed Feature catalog; requires independent review to determine the correct logical owner and migration path.",
+      "coveredCallSites": [
+        "tv/withaibuild/customiuizer/mods/LauncherSystemHooks.kt:120:StickyFloatingWindowsLauncherHook",
+        "tv/withaibuild/customiuizer/mods/LauncherSystemHooks.kt:147:StickyFloatingWindowsLauncherHook",
+        "tv/withaibuild/customiuizer/mods/LauncherSystemHooks.kt:167:StickyFloatingWindowsLauncherHook",
+        "tv/withaibuild/customiuizer/mods/LauncherSystemHooks.kt:176:StickyFloatingWindowsLauncherHook",
+        "tv/withaibuild/customiuizer/mods/LauncherSystemHooks.kt:185:StickyFloatingWindowsLauncherHook"
+      ],
+      "hookTargets": [],
+      "testEvidence": [
+        "tools/tests/test_legacy_exception_registry.py"
+      ],
+      "exitCondition": "Migrate to typed FeatureSpec or remove after owner review in a subsequent P3.3 batch."
+    },
+    {
+      "id": "cfe333c096e1c39e",
+      "status": "ACTIVE",
+      "owner": "RenameShortcutsHook",
+      "sourceFile": "tv/withaibuild/customiuizer/mods/LauncherIconHooks.kt",
+      "entrypoint": "RenameShortcutsHook",
+      "process": "launcher",
+      "phase": "OTHER",
+      "preferenceKeys": [],
+      "reasonCode": "OTHER_REVIEW_REQUIRED",
+      "reason": "Legacy hook calls not yet owned by the typed Feature catalog; requires independent review to determine the correct logical owner and migration path.",
+      "coveredCallSites": [
+        "tv/withaibuild/customiuizer/mods/LauncherIconHooks.kt:102:RenameShortcutsHook",
+        "tv/withaibuild/customiuizer/mods/LauncherIconHooks.kt:109:RenameShortcutsHook",
+        "tv/withaibuild/customiuizer/mods/LauncherIconHooks.kt:115:RenameShortcutsHook",
+        "tv/withaibuild/customiuizer/mods/LauncherIconHooks.kt:40:RenameShortcutsHook",
+        "tv/withaibuild/customiuizer/mods/LauncherIconHooks.kt:87:RenameShortcutsHook",
+        "tv/withaibuild/customiuizer/mods/LauncherIconHooks.kt:95:RenameShortcutsHook"
+      ],
+      "hookTargets": [],
+      "testEvidence": [
+        "tools/tests/test_legacy_exception_registry.py"
+      ],
+      "exitCondition": "Migrate to typed FeatureSpec or remove after owner review in a subsequent P3.3 batch."
+    },
+    {
+      "id": "dffe62510e3a32a2",
+      "status": "ACTIVE",
+      "owner": "HomescreenSwipesHook",
+      "sourceFile": "tv/withaibuild/customiuizer/mods/LauncherGestureHooks.kt",
+      "entrypoint": "HomescreenSwipesHook",
+      "process": "launcher",
+      "phase": "OTHER",
+      "preferenceKeys": [],
+      "reasonCode": "OTHER_REVIEW_REQUIRED",
+      "reason": "Legacy hook calls not yet owned by the typed Feature catalog; requires independent review to determine the correct logical owner and migration path.",
+      "coveredCallSites": [
+        "tv/withaibuild/customiuizer/mods/LauncherGestureHooks.kt:102:HomescreenSwipesHook",
+        "tv/withaibuild/customiuizer/mods/LauncherGestureHooks.kt:107:HomescreenSwipesHook",
+        "tv/withaibuild/customiuizer/mods/LauncherGestureHooks.kt:33:HomescreenSwipesHook",
+        "tv/withaibuild/customiuizer/mods/LauncherGestureHooks.kt:61:HomescreenSwipesHook",
+        "tv/withaibuild/customiuizer/mods/LauncherGestureHooks.kt:67:HomescreenSwipesHook",
+        "tv/withaibuild/customiuizer/mods/LauncherGestureHooks.kt:74:HomescreenSwipesHook",
+        "tv/withaibuild/customiuizer/mods/LauncherGestureHooks.kt:81:HomescreenSwipesHook",
+        "tv/withaibuild/customiuizer/mods/LauncherGestureHooks.kt:87:HomescreenSwipesHook",
+        "tv/withaibuild/customiuizer/mods/LauncherGestureHooks.kt:92:HomescreenSwipesHook",
+        "tv/withaibuild/customiuizer/mods/LauncherGestureHooks.kt:97:HomescreenSwipesHook"
+      ],
+      "hookTargets": [],
+      "testEvidence": [
+        "tools/tests/test_legacy_exception_registry.py"
+      ],
+      "exitCondition": "Migrate to typed FeatureSpec or remove after owner review in a subsequent P3.3 batch."
+    },
+    {
+      "id": "e2e5ba4bbe2b35a7",
+      "status": "ACTIVE",
+      "owner": "HideNavBarHook",
+      "sourceFile": "tv/withaibuild/customiuizer/mods/LauncherLayoutHooks.kt",
+      "entrypoint": "HideNavBarHook",
+      "process": "launcher",
+      "phase": "OTHER",
+      "preferenceKeys": [],
+      "reasonCode": "OTHER_REVIEW_REQUIRED",
+      "reason": "Legacy hook calls not yet owned by the typed Feature catalog; requires independent review to determine the correct logical owner and migration path.",
+      "coveredCallSites": [
+        "tv/withaibuild/customiuizer/mods/LauncherLayoutHooks.kt:25:HideNavBarHook",
+        "tv/withaibuild/customiuizer/mods/LauncherLayoutHooks.kt:30:HideNavBarHook",
+        "tv/withaibuild/customiuizer/mods/LauncherLayoutHooks.kt:31:HideNavBarHook",
+        "tv/withaibuild/customiuizer/mods/LauncherLayoutHooks.kt:46:HideNavBarHook",
+        "tv/withaibuild/customiuizer/mods/LauncherLayoutHooks.kt:57:HideNavBarHook"
+      ],
+      "hookTargets": [],
+      "testEvidence": [
+        "tools/tests/test_legacy_exception_registry.py"
+      ],
+      "exitCondition": "Migrate to typed FeatureSpec or remove after owner review in a subsequent P3.3 batch."
+    }
+  ]
+}
