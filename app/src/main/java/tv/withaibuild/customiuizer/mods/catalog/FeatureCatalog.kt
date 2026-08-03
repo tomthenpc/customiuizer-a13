@@ -13,6 +13,7 @@ import tv.withaibuild.customiuizer.mods.SystemLockScreenMoreHooks
 import tv.withaibuild.customiuizer.mods.SystemUIScreenshotHooks
 import tv.withaibuild.customiuizer.mods.SystemNotificationAndShareHooks
 import tv.withaibuild.customiuizer.mods.SystemNotificationMoreHooks
+import tv.withaibuild.customiuizer.mods.SystemStatusBarAndClockHooks
 import tv.withaibuild.customiuizer.mods.SystemStatusBarClockAndMoreHooks
 import tv.withaibuild.customiuizer.mods.Various
 import tv.withaibuild.customiuizer.mods.SystemStatusBarMoreHooks
@@ -1965,6 +1966,34 @@ object FeatureCatalog {
                     diagnosticId = DiagnosticIds.OPEN_APP_IN_FREE_FORM
                 ) {
                     SystemFreeformAndMultiWindowHooks.OpenAppInFreeFormHook(
+                        runtime.lpparam as SystemServerStartingParam
+                    )
+                }
+            },
+            activationRestartTarget = RestartTarget.REBOOT,
+            configReloadMode = ConfigReloadMode.NONE
+        ),
+        // Catalog expansion batch 12 (continued): notification hooks.
+        FeatureSpec(
+            compatibilityPolicy = CompatibilityPolicy.CONTRACT_REQUIRED,
+            contract = CatalogContracts.selectiveToasts,
+            id = "selectiveToasts",
+            diagnosticId = DiagnosticIds.SELECTIVE_TOASTS,
+            processScope = ProcessScope.SYSTEM_SERVER,
+            installPhase = InstallPhase.SYSTEM_SERVER_STARTING,
+            processTarget = ProcessTarget.SystemServer,
+            preferenceKeys = setOf("system_blocktoasts"),
+            condition = { prefs ->
+                prefs.getStringAsInt("system_blocktoasts", 1) > 1
+            },
+            installer = { runtime, compatResult ->
+                legacyInstall(
+                    runtime = runtime,
+                    compatResult = compatResult,
+                    contract = CatalogContracts.selectiveToasts,
+                    diagnosticId = DiagnosticIds.SELECTIVE_TOASTS
+                ) {
+                    SystemStatusBarAndClockHooks.SelectiveToastsHook(
                         runtime.lpparam as SystemServerStartingParam
                     )
                 }

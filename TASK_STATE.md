@@ -442,7 +442,7 @@ typed catalog 之外的 Hook 同样必须处理。
     - [x] `TempHideOverlayAppHook` (system_screenshot_overlay) → `tempHideOverlayApp` FeatureSpec
     - [x] `OpenAppInFreeFormHook` (system_notify_openinfw / system_fw_forcein_actionsend / system_betterpopups_allowfloat) → `openAppInFreeForm` FeatureSpec
     - [ ] `NavBarActionsHook` / `PowerDoubleTapActionHook` (controls_backlong_action / controls_powerdt_action)
-    - [ ] `SelectiveToastsHook` (system_blocktoasts)
+    - [x] `SelectiveToastsHook` (system_blocktoasts) → `selectiveToasts` FeatureSpec (P3.2.2 完成)
     - [ ] `MultiWindowPlusHook` / `NoFloatingWindowBlacklistHook` (system_fw_splitscreen / system_fw_noblacklist)
   - [ ] `system_separatevolume` 等跨 process 项按 LEGACY_EXCEPTION 登记
 - [x] P3.5 A13 Devin Local 控制面迁移：安装本地 Skill、采用原子 Task Slice、独立 Reviewer 流程、更新控制文档与 checker/mutation tests

@@ -1170,4 +1170,19 @@ object CatalogContracts {
         )
     )
     }
+
+    val selectiveToasts: HookTargetContract by lazy(kotlin.LazyThreadSafetyMode.NONE) { HookTargetContract(
+        featureId = "selectiveToasts",
+        requirements = listOf(
+            SingleTargetRequirement(
+                target = HookTargetSpec(
+                    id = "NotificationManagerService.tryShowToast",
+                    operation = HookOperation.ALL_METHODS_BY_NAME,
+                    className = "com.android.server.notification.NotificationManagerService",
+                    memberName = "tryShowToast"
+                )
+            )
+        )
+    )
+    }
 }

@@ -100,4 +100,22 @@ class Batch12BehaviorTest {
         assertTrue("openAppInFreeForm second install is AlreadyInstalled", FeatureDispatcher.installById("openAppInFreeForm", server))
     }
 
+    @Test
+    fun selectiveToasts_disabledPathDoesNotExecuteInstaller() {
+        val prefs = PrefMap<String, Any>()
+        val server = runtime(prefs)
+
+        assertFalse("selectiveToasts disabled", FeatureDispatcher.installById("selectiveToasts", server))
+    }
+
+    @Test
+    fun selectiveToasts_installsWhenEnabled() {
+        val prefs = PrefMap<String, Any>()
+        prefs["system_blocktoasts"] = "2"
+        val server = runtime(prefs)
+
+        assertTrue("selectiveToasts first install", FeatureDispatcher.installById("selectiveToasts", server))
+        assertTrue("selectiveToasts second install is AlreadyInstalled", FeatureDispatcher.installById("selectiveToasts", server))
+    }
+
 }

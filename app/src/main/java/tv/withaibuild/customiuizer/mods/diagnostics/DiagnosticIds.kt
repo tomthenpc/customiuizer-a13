@@ -102,7 +102,8 @@ object DiagnosticIds {
     const val AUTO_GROUP_NOTIFICATIONS = "AUTO_GROUP_NOTIFICATIONS"
     const val APP_LOCK_TIMEOUT = "APP_LOCK_TIMEOUT"
 
-    /** Catalog expansion batch 12 (continued): screenshot overlay and freeform hooks. */
+    /** Catalog expansion batch 12 (continued): screenshot overlay, freeform and notification hooks. */
     const val TEMP_HIDE_OVERLAY_APP = "TEMP_HIDE_OVERLAY_APP"
     const val OPEN_APP_IN_FREE_FORM = "OPEN_APP_IN_FREE_FORM"
+    const val SELECTIVE_TOASTS = "SELECTIVE_TOASTS"
 }

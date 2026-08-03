@@ -17,7 +17,6 @@ import tv.withaibuild.customiuizer.mods.SystemNotificationAndShareHooks;
 import tv.withaibuild.customiuizer.mods.SystemNotificationMoreHooks;
 import tv.withaibuild.customiuizer.mods.SystemSecurityAndSystemHooks;
 import tv.withaibuild.customiuizer.mods.SystemSettingsMoreHooks;
-import tv.withaibuild.customiuizer.mods.SystemStatusBarAndClockHooks;
 import tv.withaibuild.customiuizer.mods.Various;
 import tv.withaibuild.customiuizer.mods.catalog.FeatureDispatcher;
 import tv.withaibuild.customiuizer.mods.catalog.FeatureRuntime;
@@ -87,7 +86,7 @@ public final class SystemServerInstaller {
         if (MainModule.mPrefs.getStringAsInt("system_nolightuponcharges", 1) > 1) FeatureDispatcher.installById("noLightUpOnCharge", serverRuntime);
         if (MainModule.mPrefs.getStringAsInt("system_autogroupnotif", 1) > 1) FeatureDispatcher.installById("autoGroupNotifications", serverRuntime);
         if (MainModule.mPrefs.getStringAsInt("system_vibration", 1) > 1) FeatureDispatcher.installById("selectiveVibration", serverRuntime);
-        if (MainModule.mPrefs.getStringAsInt("system_blocktoasts", 1) > 1) SystemStatusBarAndClockHooks.SelectiveToastsHook(lpparam);
+        if (MainModule.mPrefs.getStringAsInt("system_blocktoasts", 1) > 1) FeatureDispatcher.installById("selectiveToasts", serverRuntime);
         if (MainModule.mPrefs.getStringAsInt("system_rotateanim", 1) > 1) FeatureDispatcher.installById("rotationAnimation", serverRuntime);
         if (MainModule.mPrefs.getStringAsInt("controls_fingerprintsuccess", 1) > 1) Controls.FingerprintHapticSuccessHook(lpparam);
         if (MainModule.mPrefs.getStringAsInt("controls_volumemedia_up", 0) > 0 ||
