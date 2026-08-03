@@ -447,8 +447,8 @@ typed catalog 之外的 Hook 同样必须处理。
   - [x] `system_separatevolume`、`system_defaultusb` 等首批跨 process 项已按 LEGACY_EXCEPTION 登记（4 条 curated records，CROSS_PROCESS 原因）
 - [x] P3.5 A13 Devin Local 控制面迁移：安装本地 Skill、采用原子 Task Slice、独立 Reviewer 流程、更新控制文档与 checker/mutation tests
 - [~] P3.3 登记不可迁移项为 LEGACY_EXCEPTION 并补充原因/owner/test；
-  - [x] P3.3A 机器可读 registry schema/validator/首批 4 条 curated records 完成，R1 完整性修复完成，state: `R2_REVIEW_REQUIRED`
-  - [ ] P3.3B/C/D/E 继续登记剩余 logical owners
+  - [x] P3.3A 机器可读 registry schema/validator/首批 4 条 curated records 完成，R1 完整性修复完成，state: `APPROVED / COMPLETE`
+  - [-] P3.3B/C/D/E 继续登记剩余 logical owners (P3.3B: `READY_NOT_STARTED`)
   - [ ] P3.3 整体完成需全部 205 logical owner groups 已登记并验证
 - [ ] P3.4 增加 inventory 机械门禁，防止 UNKNOWN/重复 ownership。
 
@@ -647,7 +647,11 @@ Next: 继续 P3.3 登记 LEGACY_EXCEPTION 与 P3.4 inventory 门禁
 
 ## P3.3A LEGACY_EXCEPTION 登记基础
 
-State: `R2_REVIEW_REQUIRED`
+State: `APPROVED / COMPLETE`
+R2 Decision: `APPROVE`
+R2 review target HEAD: `3b1fd330ad4f4e1d46fd926c6ca3b2d781fb538d`
+Engineering checkpoint: `f72baa77fe8a8a6c3e2a2ba2ca9cabd90048e419`
+Verified tree: `d0667253d17972c926fa43cfe38f031450819635`
 
 文件：
 
@@ -745,7 +749,7 @@ Push: `origin/devin/a13-rom-intelligence-audit`
 - registry 中的 hookTargets 为手工摘录，需随 ROM 版本变化由 contract parity 工具持续校验。
 ```
 
-Next: P3.3A R2 independent review (`a13-independent-review` Skill) 必须给出 `APPROVE` 才能开始 P3.3B；P3.4 与 toolchain 升级继续阻塞。
+Next: P3.3A approved; P3.3B may start as a new atomic implementation Task Slice; P3.3C/D/E and P3.4 remain planned but not started; toolchain upgrades remain blocked.
 
 ---
 
