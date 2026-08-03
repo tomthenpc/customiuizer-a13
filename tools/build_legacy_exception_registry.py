@@ -4,12 +4,12 @@
 Usage:
     python tools/build_legacy_exception_registry.py --build
     python tools/build_legacy_exception_registry.py --check
+    python tools/build_legacy_exception_registry.py --census
 
-The registry is deliberately conservative: the first batch only contains
-legacy call sites that are not in typed-catalog installer functions and are
-grouped by (sourceFile, enclosingFunction).  Process/phase and preference keys
-are intentionally minimal; later P3.3 batches will refine them with owner
-review.
+The registry is intentionally conservative.  It is composed of a stable
+per-call census plus a curated first batch of LEGACY_EXCEPTION records.
+Each record corresponds to a logical owner (process + preference + entrypoint)
+and lists the exact legacy call sites it covers.
 """
 
 from __future__ import annotations
@@ -17,23 +17,22 @@ from __future__ import annotations
 import argparse
 import hashlib
 import json
-import re
 import sys
 from collections import defaultdict
+from datetime import datetime, timezone
 from pathlib import Path
 
-# Re-use classification constants from the ownership auditor
 from audit_hook_ownership import (
     HOOK_RE,
     SOURCE_ROOT,
     classify_file,
-    extract_typed_installers,
     file_typed_functions,
     nearest_function,
 )
 
 REPO_ROOT = Path(__file__).resolve().parent.parent
 OUT_FILE = REPO_ROOT / "docs" / "audit" / "A13_LEGACY_EXCEPTION_REGISTRY.json"
+CENSUS_FILE = REPO_ROOT / "docs" / "audit" / "A13_HOOK_CALL_SITE_CENSUS.json"
 
 ALLOWED_PROCESS = {
     "system_server",
@@ -67,31 +66,121 @@ ALLOWED_REASON_CODE = {
     "OTHER_REVIEW_REQUIRED",
 }
 
+FIRST_BATCH_SEEDS: list[dict] = [
+    {
+        "id": "legacy-separatevolume-systemui",
+        "owner": "MIUIVolumeDialogHook",
+        "sourceFile": "tv/withaibuild/customiuizer/mods/SystemUIControlCenterHooks.kt",
+        "entrypoint": "MIUIVolumeDialogHook",
+        "process": "system_ui",
+        "phase": "PACKAGE_READY",
+        "preferenceKeys": ["system_separatevolume", "system_separatevolume_slider"],
+        "reasonCode": "CROSS_PROCESS",
+        "reason": (
+            "The separate volume stream feature routes to SystemUI "
+            "(MiuiVolumeDialog / volume plugin) as well as to system_server audio "
+            "(NotificationVolumeServiceHook is already typed in FeatureCatalog). "
+            "There is currently no typed cross-process owner that covers the "
+            "SystemUI side of the split."
+        ),
+        "ownedFunctions": {"MIUIVolumeDialogHook", "SingleNotificationSliderHook"},
+        "hookTargets": [
+            "com.android.systemui.shared.plugins.PluginInstance$Factory#getClassLoader",
+            "com.android.systemui.miui.volume.MiuiVolumeDialogImpl#addColumn",
+            "com.android.systemui.miui.volume.Util#isNotificationSingle",
+        ],
+        "testEvidence": ["tools/tests/test_legacy_exception_registry.py"],
+        "exitCondition": (
+            "Migrate to a typed FeatureSpec with cross-process SystemUI routing "
+            "when the installer can dispatch to both system_server and SystemUI "
+            "(P3.3C)."
+        ),
+    },
+    {
+        "id": "legacy-separatevolume-settings",
+        "owner": "NotificationVolumeSettingsHook",
+        "sourceFile": "tv/withaibuild/customiuizer/mods/SystemAudioAndVolumeHooks.kt",
+        "entrypoint": "NotificationVolumeSettingsHook",
+        "process": "per_app",
+        "phase": "PACKAGE_READY",
+        "preferenceKeys": ["system_separatevolume"],
+        "reasonCode": "CROSS_PROCESS",
+        "reason": (
+            "The Settings app variant of the separate volume stream feature is "
+            "installed from the Settings installer and is not yet represented as a "
+            "typed FeatureSpec, while the system_server audio side is already in the "
+            "catalog."
+        ),
+        "ownedFunctions": {"NotificationVolumeSettingsHook"},
+        "hookTargets": [
+            "com.android.settings.MiuiSoundSettings#onCreate",
+        ],
+        "testEvidence": ["tools/tests/test_legacy_exception_registry.py"],
+        "exitCondition": (
+            "Merge into a per-app FeatureSpec for com.android.settings when the "
+            "Settings installer is replaced by the typed registry (P3.3C)."
+        ),
+    },
+    {
+        "id": "legacy-usbconfig-system",
+        "owner": "USBConfigHook",
+        "sourceFile": "tv/withaibuild/customiuizer/mods/SystemSettingsMoreHooks.kt",
+        "entrypoint": "USBConfigHook",
+        "process": "system_server",
+        "phase": "SYSTEM_SERVER_STARTING",
+        "preferenceKeys": ["system_defaultusb", "system_defaultusb_unsecure"],
+        "reasonCode": "CROSS_PROCESS",
+        "reason": (
+            "USB default configuration must run in system_server (PowerManager / "
+            "UsbDeviceManager) and has no typed Feature owner. The feature spans "
+            "both system_server and the Settings app, so the split cannot be "
+            "expressed as a single catalog entry today."
+        ),
+        "ownedFunctions": {"USBConfigHook"},
+        "hookTargets": [
+            "com.android.server.power.PowerManagerService#systemReady",
+            "com.android.server.usb.UsbDeviceManager$UsbHandler#isUsbDataTransferActive",
+            "com.android.server.usb.UsbDeviceManager$UsbHandler#handleMessage",
+        ],
+        "testEvidence": ["tools/tests/test_legacy_exception_registry.py"],
+        "exitCondition": (
+            "Create a typed system_server FeatureSpec for USB default mode and "
+            "expose a cross-process contract for the Settings variant (P3.3C)."
+        ),
+    },
+    {
+        "id": "legacy-usbconfig-settings",
+        "owner": "USBConfigSettingsHook",
+        "sourceFile": "tv/withaibuild/customiuizer/mods/SystemSettingsMoreHooks.kt",
+        "entrypoint": "USBConfigSettingsHook",
+        "process": "per_app",
+        "phase": "PACKAGE_READY",
+        "preferenceKeys": ["system_defaultusb"],
+        "reasonCode": "CROSS_PROCESS",
+        "reason": (
+            "The Settings app side of USB default configuration is installed from "
+            "the Settings installer and lacks a typed per-app Feature owner. It "
+            "shares the system_defaultusb preference with the system_server hook."
+        ),
+        "ownedFunctions": {"USBConfigSettingsHook"},
+        "hookTargets": [
+            "com.android.settings.connecteddevice.usb.UsbModeChooserReceiver#onReceive",
+        ],
+        "testEvidence": ["tools/tests/test_legacy_exception_registry.py"],
+        "exitCondition": (
+            "Merge into a per-app FeatureSpec for com.android.settings when the "
+            "Settings installer is replaced by the typed registry (P3.3C)."
+        ),
+    },
+]
+
 
 def _stable_call_id(rel: str, line: int, func: str) -> str:
-    """Stable call-site identity: repository-relative path, line, enclosing function."""
     return f"{rel}:{line}:{func}"
 
 
-def _generate_record_id(rel: str, func: str) -> str:
-    """Generate a short, unique, filesystem-safe record id."""
-    raw = f"{rel}::{func}"
-    return hashlib.sha256(raw.encode("utf-8")).hexdigest()[:16]
-
-
-def _infer_process(rel: str) -> str:
-    """Infer process scope from the file path.  Conservative defaults to other."""
-    if "SystemUI" in rel or "SystemUi" in rel:
-        return "system_ui"
-    if "Launcher" in rel:
-        return "launcher"
-    if rel.startswith("tv/withaibuild/customiuizer/mods/System"):
-        return "system_server"
-    if "ResourceHooks" in rel:
-        return "resource"
-    if "Various" in rel:
-        return "per_app"
-    return "other"
+def _generate_record_id(seed_id: str) -> str:
+    return hashlib.sha256(seed_id.encode("utf-8")).hexdigest()[:16]
 
 
 def scan_legacy_call_sites() -> list[dict]:
@@ -134,41 +223,78 @@ def scan_legacy_call_sites() -> list[dict]:
     return sites
 
 
-def build_registry(sites: list[dict], first_batch_size: int = 20) -> dict:
-    """Group legacy call sites and build a minimal first batch of records."""
+def build_census(sites: list[dict]) -> dict:
+    categories = ["REGISTRY_FEATURE", "INSTALLER_INFRASTRUCTURE", "API_BRIDGE", "LEGACY_EXCEPTION", "UNKNOWN"]
+    counts = {cat: 0 for cat in categories}
+    for s in sites:
+        counts[s["category"]] += 1
+
+    entries = [
+        {
+            "callId": _stable_call_id(s["rel"], s["line"], s["function"]),
+            "sourceFile": s["rel"],
+            "line": s["line"],
+            "function": s["function"],
+            "category": s["category"],
+        }
+        for s in sorted(sites, key=lambda x: (x["rel"], x["line"], x["function"]))
+    ]
+
+    groups: dict[tuple[str, str], int] = defaultdict(int)
+    for s in sites:
+        if s["category"] == "LEGACY_EXCEPTION":
+            groups[(s["rel"], s["function"])] += 1
+
+    return {
+        "schemaVersion": 1,
+        "generatedAt": datetime.now(timezone.utc).replace(microsecond=0).isoformat(),
+        "sourceCommit": _git_head(),
+        "totalCallSites": len(sites),
+        "categoryCounts": counts,
+        "distinctLegacyGroups": len(groups),
+        "entries": entries,
+    }
+
+
+def build_registry(sites: list[dict]) -> dict:
     legacy = [s for s in sites if s["category"] == "LEGACY_EXCEPTION"]
 
-    # Group by (sourceFile, function)
     groups: dict[tuple[str, str], list[dict]] = defaultdict(list)
     for s in legacy:
         groups[(s["rel"], s["function"])].append(s)
 
-    # Sort groups deterministically by size then path; take the first batch.
-    sorted_groups = sorted(
-        groups.items(),
-        key=lambda kv: (-len(kv[1]), kv[0][0], kv[0][1]),
-    )
+    site_index: dict[tuple[str, str], list[dict]] = defaultdict(list)
+    for s in legacy:
+        site_index[(s["rel"], s["function"])].append(s)
 
     records: list[dict] = []
-    for (rel, func), calls in sorted_groups[:first_batch_size]:
-        record_id = _generate_record_id(rel, func)
-        covered = [_stable_call_id(s["rel"], s["line"], s["function"]) for s in calls]
+    for seed in FIRST_BATCH_SEEDS:
+        rel = seed["sourceFile"]
+        funcs = seed.get("ownedFunctions", {seed["entrypoint"]})
+        covered: list[str] = []
+        for func in funcs:
+            for s in site_index.get((rel, func), []):
+                covered.append(_stable_call_id(s["rel"], s["line"], s["function"]))
+
+        record_id = _generate_record_id(seed["id"])
         records.append(
             {
                 "id": record_id,
                 "status": "ACTIVE",
-                "owner": func,
-                "sourceFile": rel,
-                "entrypoint": func,
-                "process": _infer_process(rel),
-                "phase": "OTHER",
-                "preferenceKeys": [],
-                "reasonCode": "OTHER_REVIEW_REQUIRED",
-                "reason": "Legacy hook calls not yet owned by the typed Feature catalog; requires independent review to determine the correct logical owner and migration path.",
-                "coveredCallSites": sorted(covered),
-                "hookTargets": [],
-                "testEvidence": ["tools/tests/test_legacy_exception_registry.py"],
-                "exitCondition": "Migrate to typed FeatureSpec or remove after owner review in a subsequent P3.3 batch.",
+                "owner": seed["owner"],
+                "sourceFile": seed["sourceFile"],
+                "entrypoint": seed["entrypoint"],
+                "process": seed["process"],
+                "phase": seed["phase"],
+                "preferenceKeys": seed["preferenceKeys"],
+                "reasonCode": seed["reasonCode"],
+                "reason": seed["reason"],
+                "coveredCallSites": sorted(
+                    covered, key=lambda c: (c.split(":")[0], int(c.split(":")[1]), c.split(":")[2])
+                ),
+                "hookTargets": seed["hookTargets"],
+                "testEvidence": seed["testEvidence"],
+                "exitCondition": seed["exitCondition"],
             }
         )
 
@@ -176,7 +302,7 @@ def build_registry(sites: list[dict], first_batch_size: int = 20) -> dict:
 
     return {
         "schemaVersion": 1,
-        "generatedAt": None,  # set by writer
+        "generatedAt": None,
         "sourceCommit": None,
         "totalLegacyCallSites": len(legacy),
         "totalLegacyGroups": len(groups),
@@ -186,7 +312,6 @@ def build_registry(sites: list[dict], first_batch_size: int = 20) -> dict:
 
 
 def validate(registry: dict, strict: bool = True) -> list[str]:
-    """Validate registry records and return a list of error messages."""
     errors: list[str] = []
 
     records = registry.get("records", [])
@@ -195,7 +320,6 @@ def validate(registry: dict, strict: bool = True) -> list[str]:
     typed_owned: set[str] = set()
     infra_calls: set[str] = set()
 
-    # First, scan source to know which calls are typed/infra.
     for s in scan_legacy_call_sites():
         call_id = _stable_call_id(s["rel"], s["line"], s["function"])
         if s["category"] == "REGISTRY_FEATURE":
@@ -218,6 +342,7 @@ def validate(registry: dict, strict: bool = True) -> list[str]:
             "coveredCallSites",
             "testEvidence",
             "exitCondition",
+            "hookTargets",
         ):
             if field not in rec:
                 errors.append(f"{prefix}: missing field '{field}'")
@@ -228,7 +353,7 @@ def validate(registry: dict, strict: bool = True) -> list[str]:
             errors.append(f"{prefix}: sourceFile is empty")
         if not rec.get("exitCondition"):
             errors.append(f"{prefix}: exitCondition is empty")
-        if rec.get("exitCondition") == "never":
+        if rec.get("exitCondition", "").lower() == "never":
             errors.append(f"{prefix}: exitCondition must not be 'never'")
 
         if rec.get("process") not in ALLOWED_PROCESS:
@@ -284,11 +409,28 @@ def validate(registry: dict, strict: bool = True) -> list[str]:
     return errors
 
 
+def _git_head() -> str | None:
+    import subprocess
+    try:
+        result = subprocess.run(
+            ["git", "rev-parse", "HEAD"],
+            cwd=REPO_ROOT,
+            capture_output=True,
+            text=True,
+            encoding="utf-8",
+            errors="replace",
+        )
+        return result.stdout.strip() if result.returncode == 0 else None
+    except FileNotFoundError:
+        return None
+
+
 def main() -> int:
     parser = argparse.ArgumentParser()
     group = parser.add_mutually_exclusive_group(required=True)
     group.add_argument("--build", action="store_true", help="write the registry")
     group.add_argument("--check", action="store_true", help="validate the existing registry")
+    group.add_argument("--census", action="store_true", help="write the call site census")
     args = parser.parse_args()
 
     if args.check:
@@ -305,17 +447,22 @@ def main() -> int:
         print(f"Registry valid: {len(registry.get('records', []))} records")
         return 0
 
-    # build
-    sites = scan_legacy_call_sites()
-    registry = build_registry(sites, first_batch_size=20)
+    if args.census:
+        census = build_census(scan_legacy_call_sites())
+        CENSUS_FILE.parent.mkdir(parents=True, exist_ok=True)
+        with CENSUS_FILE.open("w", encoding="utf-8", newline="\n") as f:
+            json.dump(census, f, indent=2, ensure_ascii=False)
+            f.write("\n")
+        print(f"Wrote {CENSUS_FILE}")
+        return 0
 
-    git_out = run_git_output(["rev-parse", "HEAD"])
-    if git_out:
-        registry["sourceCommit"] = git_out.strip()
-    from datetime import datetime, timezone
-    registry["generatedAt"] = (
-        datetime.now(timezone.utc).replace(microsecond=0).isoformat()
-    )
+    sites = scan_legacy_call_sites()
+    registry = build_registry(sites)
+
+    head = _git_head()
+    if head:
+        registry["sourceCommit"] = head
+    registry["generatedAt"] = datetime.now(timezone.utc).replace(microsecond=0).isoformat()
 
     errors = validate(registry)
     if errors:
@@ -333,22 +480,6 @@ def main() -> int:
     print(f"  total legacy groups:     {registry['totalLegacyGroups']}")
     print(f"  first batch records:     {registry['firstBatchSize']}")
     return 0
-
-
-def run_git_output(args: list[str]) -> str | None:
-    import subprocess
-    try:
-        result = subprocess.run(
-            ["git", *args],
-            cwd=REPO_ROOT,
-            capture_output=True,
-            text=True,
-            encoding="utf-8",
-            errors="replace",
-        )
-        return result.stdout if result.returncode == 0 else None
-    except FileNotFoundError:
-        return None
 
 
 if __name__ == "__main__":
