@@ -15,12 +15,15 @@ and lists the exact legacy call sites it covers.
 from __future__ import annotations
 
 import argparse
+import copy
 import hashlib
 import json
+import re
+import subprocess
 import sys
 from collections import defaultdict
 from datetime import datetime, timezone
-from pathlib import Path
+from pathlib import Path, PurePosixPath
 
 from audit_hook_ownership import (
     HOOK_RE,
@@ -183,6 +186,58 @@ def _generate_record_id(seed_id: str) -> str:
     return hashlib.sha256(seed_id.encode("utf-8")).hexdigest()[:16]
 
 
+def _git_head() -> str | None:
+    try:
+        result = subprocess.run(
+            ["git", "rev-parse", "HEAD"],
+            cwd=REPO_ROOT,
+            capture_output=True,
+            text=True,
+            encoding="utf-8",
+            errors="replace",
+        )
+        return result.stdout.strip() if result.returncode == 0 else None
+    except FileNotFoundError:
+        return None
+
+
+def _git_tree(tree_path: str) -> str | None:
+    try:
+        result = subprocess.run(
+            ["git", "rev-parse", f"HEAD:{tree_path}"],
+            cwd=REPO_ROOT,
+            capture_output=True,
+            text=True,
+            encoding="utf-8",
+            errors="replace",
+        )
+        return result.stdout.strip() if result.returncode == 0 else None
+    except FileNotFoundError:
+        return None
+
+
+def _source_tree_digest() -> str | None:
+    return _git_tree("app/src/main/java")
+
+
+def _generator_version() -> str:
+    src = Path(__file__).read_bytes()
+    return hashlib.sha256(src).hexdigest()[:16]
+
+
+def _legacy_call_ids(sites: list[dict]) -> set[str]:
+    return {
+        _stable_call_id(s["rel"], s["line"], s["function"])
+        for s in sites
+        if s["category"] == "LEGACY_EXCEPTION"
+    }
+
+
+def _input_digest(legacy_call_ids: set[str]) -> str:
+    payload = "\n".join(sorted(legacy_call_ids)) + "\n"
+    return hashlib.sha256(payload.encode("utf-8")).hexdigest()
+
+
 def scan_legacy_call_sites() -> list[dict]:
     typed_funcs = file_typed_functions()
     sites: list[dict] = []
@@ -256,8 +311,31 @@ def build_census(sites: list[dict]) -> dict:
     }
 
 
+def _census_sets(sites: list[dict]) -> tuple[set[str], dict[str, set[str]], dict[str, set[str]], set[str], set[str]]:
+    """Return (all_legacy_call_ids, file_calls, file_functions, typed_owned, infra_calls)."""
+    all_legacy: set[str] = set()
+    file_calls: dict[str, set[str]] = defaultdict(set)
+    file_functions: dict[str, set[str]] = defaultdict(set)
+    typed_owned: set[str] = set()
+    infra_calls: set[str] = set()
+
+    for s in sites:
+        call_id = _stable_call_id(s["rel"], s["line"], s["function"])
+        if s["category"] == "LEGACY_EXCEPTION":
+            all_legacy.add(call_id)
+            file_calls[s["rel"]].add(call_id)
+            file_functions[s["rel"]].add(s["function"])
+        elif s["category"] == "REGISTRY_FEATURE":
+            typed_owned.add(call_id)
+        elif s["category"] in ("API_BRIDGE", "INSTALLER_INFRASTRUCTURE"):
+            infra_calls.add(call_id)
+
+    return all_legacy, file_calls, file_functions, typed_owned, infra_calls
+
+
 def build_registry(sites: list[dict]) -> dict:
     legacy = [s for s in sites if s["category"] == "LEGACY_EXCEPTION"]
+    all_legacy_ids = _legacy_call_ids(sites)
 
     groups: dict[tuple[str, str], list[dict]] = defaultdict(list)
     for s in legacy:
@@ -286,14 +364,14 @@ def build_registry(sites: list[dict]) -> dict:
                 "entrypoint": seed["entrypoint"],
                 "process": seed["process"],
                 "phase": seed["phase"],
-                "preferenceKeys": seed["preferenceKeys"],
+                "preferenceKeys": sorted(seed["preferenceKeys"]),
                 "reasonCode": seed["reasonCode"],
                 "reason": seed["reason"],
                 "coveredCallSites": sorted(
                     covered, key=lambda c: (c.split(":")[0], int(c.split(":")[1]), c.split(":")[2])
                 ),
-                "hookTargets": seed["hookTargets"],
-                "testEvidence": seed["testEvidence"],
+                "hookTargets": sorted(seed["hookTargets"]),
+                "testEvidence": sorted(seed["testEvidence"]),
                 "exitCondition": seed["exitCondition"],
             }
         )
@@ -302,13 +380,121 @@ def build_registry(sites: list[dict]) -> dict:
 
     return {
         "schemaVersion": 1,
-        "generatedAt": None,
-        "sourceCommit": None,
+        "inputDigest": _input_digest(all_legacy_ids),
         "totalLegacyCallSites": len(legacy),
         "totalLegacyGroups": len(groups),
         "firstBatchSize": len(records),
         "records": records,
     }
+
+
+def validate_repo_relative_posix_path(value: str) -> list[str]:
+    """Validate a repository-relative POSIX path. Return a list of error messages."""
+    errors: list[str] = []
+    if not isinstance(value, str):
+        return ["INVALID_SOURCE_FILE_PATH: sourceFile is not a string"]
+    if not value:
+        return ["INVALID_SOURCE_FILE_PATH: sourceFile is empty"]
+
+    if "\\" in value:
+        errors.append("INVALID_SOURCE_FILE_PATH: sourceFile contains backslash (must use POSIX '/')")
+    if re.match(r"^[A-Za-z]:", value):
+        errors.append("INVALID_SOURCE_FILE_PATH: sourceFile contains a Windows drive letter")
+    if value.startswith("//") or value.startswith("\\\\"):
+        errors.append("INVALID_SOURCE_FILE_PATH: sourceFile is a UNC path")
+    if value.startswith("/"):
+        errors.append("INVALID_SOURCE_FILE_PATH: sourceFile is an absolute POSIX path")
+
+    try:
+        p = PurePosixPath(value)
+    except Exception as exc:
+        errors.append(f"INVALID_SOURCE_FILE_PATH: cannot parse as POSIX path: {exc}")
+        return errors
+
+    if p.as_posix() != value:
+        errors.append("INVALID_SOURCE_FILE_PATH: sourceFile is not normalized (duplicate or dangling separators)")
+    if "." in p.parts:
+        errors.append("INVALID_SOURCE_FILE_PATH: sourceFile contains '.' segment")
+    if ".." in p.parts:
+        errors.append("INVALID_SOURCE_FILE_PATH: sourceFile contains '..' segment")
+    if p.is_absolute():
+        errors.append("INVALID_SOURCE_FILE_PATH: sourceFile is absolute after normalization")
+
+    return errors
+
+
+def _validate_hook_targets(prefix: str, hook_targets: object) -> list[str]:
+    errors: list[str] = []
+    if hook_targets is None:
+        return [f"{prefix}: missing hookTargets"]
+    if not isinstance(hook_targets, list):
+        return [f"{prefix}: hookTargets is not a list"]
+    if len(hook_targets) == 0:
+        errors.append(f"{prefix}: hookTargets is empty")
+
+    seen: set[str] = set()
+    for t in hook_targets:
+        if not isinstance(t, str):
+            errors.append(f"{prefix}: hookTargets contains non-string element")
+            continue
+        trimmed = t.strip()
+        if not trimmed:
+            errors.append(f"{prefix}: hookTargets contains empty or whitespace-only target")
+        elif t != trimmed:
+            errors.append(f"{prefix}: hookTargets target '{t}' has leading or trailing whitespace")
+        if trimmed in seen:
+            errors.append(f"{prefix}: hookTargets contains duplicate target '{trimmed}'")
+        seen.add(trimmed)
+
+    return errors
+
+
+def _validate_covered_call_sites(
+    prefix: str,
+    covered: object,
+    legacy_call_ids: set[str],
+    typed_owned: set[str],
+    infra_calls: set[str],
+    seen_calls: set[str],
+) -> list[str]:
+    errors: list[str] = []
+    if covered is None:
+        return [f"{prefix}: missing coveredCallSites"]
+    if not isinstance(covered, list):
+        return [f"{prefix}: coveredCallSites is not a list"]
+    if len(covered) == 0:
+        errors.append(f"{prefix}: coveredCallSites is empty")
+
+    for call_id in covered:
+        if not isinstance(call_id, str):
+            errors.append(f"{prefix}: coveredCallSites contains non-string element")
+            continue
+        if not call_id.strip():
+            errors.append(f"{prefix}: coveredCallSites contains empty or whitespace-only call id")
+            continue
+
+        parts = call_id.split(":")
+        if len(parts) != 3 or not parts[0] or not parts[2] or not parts[1].isdigit():
+            errors.append(f"{prefix}: coveredCallSites contains malformed call id '{call_id}'")
+            continue
+
+        if call_id in seen_calls:
+            errors.append(f"{prefix}: call site {call_id} is covered by more than one record")
+            continue
+        seen_calls.add(call_id)
+
+        if call_id in typed_owned:
+            errors.append(f"{prefix}: typed-catalog owned call {call_id} cannot be legacy")
+        elif call_id in infra_calls:
+            errors.append(
+                f"{prefix}: API_BRIDGE/INSTALLER_INFRASTRUCTURE call {call_id} cannot be business exception"
+            )
+        elif call_id not in legacy_call_ids:
+            errors.append(
+                f"{prefix}: covered call site {call_id} is not present in the current LEGACY_EXCEPTION census"
+            )
+
+    return errors
 
 
 def validate(registry: dict, strict: bool = True) -> list[str]:
@@ -317,15 +503,9 @@ def validate(registry: dict, strict: bool = True) -> list[str]:
     records = registry.get("records", [])
     seen_ids: set[str] = set()
     seen_calls: set[str] = set()
-    typed_owned: set[str] = set()
-    infra_calls: set[str] = set()
 
-    for s in scan_legacy_call_sites():
-        call_id = _stable_call_id(s["rel"], s["line"], s["function"])
-        if s["category"] == "REGISTRY_FEATURE":
-            typed_owned.add(call_id)
-        elif s["category"] in ("API_BRIDGE", "INSTALLER_INFRASTRUCTURE"):
-            infra_calls.add(call_id)
+    sites = scan_legacy_call_sites()
+    all_legacy, file_legacy_calls, file_legacy_functions, typed_owned, infra_calls = _census_sets(sites)
 
     for idx, rec in enumerate(records):
         prefix = f"record[{idx}] ({rec.get('id', '?')})"
@@ -377,52 +557,149 @@ def validate(registry: dict, strict: bool = True) -> list[str]:
             errors.append(f"{prefix}: duplicate id '{rid}'")
         seen_ids.add(rid)
 
+        # sourceFile path validation
         source_file = rec.get("sourceFile", "")
-        if not source_file:
-            continue
-        path = SOURCE_ROOT / source_file
-        if not path.exists():
-            errors.append(f"{prefix}: sourceFile does not exist '{source_file}'")
-        else:
-            text = path.read_text(encoding="utf-8")
-            if rec.get("entrypoint") and rec["entrypoint"] not in text:
-                errors.append(
-                    f"{prefix}: entrypoint function '{rec['entrypoint']}' not found in {source_file}"
-                )
+        if source_file:
+            path_errors = validate_repo_relative_posix_path(source_file)
+            for pe in path_errors:
+                errors.append(f"{prefix}: {pe}")
 
-        for call_id in rec.get("coveredCallSites", []):
-            if call_id in seen_calls:
-                errors.append(f"{prefix}: call site {call_id} is covered by more than one record")
-            seen_calls.add(call_id)
-            if call_id in typed_owned:
-                errors.append(f"{prefix}: typed-catalog owned call {call_id} cannot be legacy")
-            if call_id in infra_calls:
-                errors.append(
-                    f"{prefix}: API_BRIDGE/INSTALLER_INFRASTRUCTURE call {call_id} cannot be business exception"
-                )
-            parts = call_id.split(":")
-            if len(parts) != 3:
-                errors.append(f"{prefix}: malformed call site id '{call_id}'")
+            if not path_errors:
+                path = SOURCE_ROOT / source_file
+                if not path.exists():
+                    errors.append(f"{prefix}: sourceFile does not exist '{source_file}'")
+                else:
+                    text = path.read_text(encoding="utf-8")
+                    if rec.get("entrypoint") and rec["entrypoint"] not in text:
+                        errors.append(
+                            f"{prefix}: entrypoint function '{rec['entrypoint']}' not found in {source_file}"
+                        )
+
+        # hookTargets validation
+        hook_errors = _validate_hook_targets(prefix, rec.get("hookTargets"))
+        errors.extend(hook_errors)
+
+        # coveredCallSites validation
+        covered_errors = _validate_covered_call_sites(
+            prefix,
+            rec.get("coveredCallSites"),
+            all_legacy,
+            typed_owned,
+            infra_calls,
+            seen_calls,
+        )
+        errors.extend(covered_errors)
+
+        # whole-file / whole-function gate
+        covered = rec.get("coveredCallSites")
+        if isinstance(covered, list) and source_file and source_file not in (None, ""):
+            record_calls: set[str] = set()
+            for call_id in covered:
+                if isinstance(call_id, str) and len(call_id.split(":")) == 3:
+                    record_calls.add(call_id)
+
+            file_calls = file_legacy_calls.get(source_file, set())
+            file_funcs = file_legacy_functions.get(source_file, set())
+            # Whole-file/whole-function is only abusive when the file has more than
+            # one legacy logical owner. A file with a single legacy function is
+            # allowed to be covered by one record.
+            if len(file_funcs) > 1:
+                if file_calls and record_calls == file_calls:
+                    errors.append(
+                        f"{prefix}: WHOLE_FILE_LEGACY_EXCEPTION_FORBIDDEN: record covers all "
+                        f"{len(file_calls)} legacy call sites in {source_file}"
+                    )
+                else:
+                    record_funcs = {cid.split(":")[2] for cid in record_calls}
+                    if file_funcs and record_funcs == file_funcs:
+                        errors.append(
+                            f"{prefix}: WHOLE_FILE_LEGACY_EXCEPTION_FORBIDDEN: record covers all "
+                            f"legacy functions in {source_file}"
+                        )
+
+    # all-legacy batch gate
+    if all_legacy:
+        union_covered: set[str] = set()
+        for rec in records:
+            covered = rec.get("coveredCallSites")
+            if isinstance(covered, list):
+                for call_id in covered:
+                    if isinstance(call_id, str):
+                        union_covered.add(call_id)
+        if union_covered == all_legacy:
+            errors.append(
+                f"ALL_LEGACY_CALLS_BATCH_FORBIDDEN: first batch covers all "
+                f"{len(all_legacy)} legacy call sites"
+            )
 
     if strict and errors:
         return errors
     return errors
 
 
-def _git_head() -> str | None:
-    import subprocess
-    try:
-        result = subprocess.run(
-            ["git", "rev-parse", "HEAD"],
-            cwd=REPO_ROOT,
-            capture_output=True,
-            text=True,
-            encoding="utf-8",
-            errors="replace",
-        )
-        return result.stdout.strip() if result.returncode == 0 else None
-    except FileNotFoundError:
-        return None
+def _canonical(registry: dict) -> dict:
+    """Return a canonical copy of the registry with volatile provenance removed."""
+    reg = copy.deepcopy(registry)
+    for key in ("generatedAt", "sourceCommit", "sourceTree", "generatorVersion"):
+        reg.pop(key, None)
+
+    records = reg.get("records", [])
+    for rec in records:
+        for field in ("preferenceKeys", "hookTargets", "testEvidence", "coveredCallSites"):
+            if isinstance(rec.get(field), list):
+                rec[field] = sorted(rec[field])
+    reg["records"] = sorted(records, key=lambda r: r.get("id", ""))
+    return reg
+
+
+def canonical_diff(expected: dict, actual: dict) -> list[str]:
+    """Return human-readable differences between two canonical registries."""
+    e = _canonical(expected)
+    a = _canonical(actual)
+    errors: list[str] = []
+
+    top_fields = ("schemaVersion", "totalLegacyCallSites", "totalLegacyGroups", "firstBatchSize", "inputDigest")
+    for f in top_fields:
+        if a.get(f) != e.get(f):
+            errors.append(
+                f"REGISTRY_STALE: top-level '{f}' differs: expected {e.get(f)!r}, actual {a.get(f)!r}"
+            )
+
+    e_records = {r["id"]: r for r in e.get("records", [])}
+    a_records = {r["id"]: r for r in a.get("records", [])}
+    e_ids = set(e_records)
+    a_ids = set(a_records)
+
+    for rid in sorted(e_ids - a_ids):
+        errors.append(f"REGISTRY_STALE: expected record {rid} is missing in committed registry")
+    for rid in sorted(a_ids - e_ids):
+        errors.append(f"REGISTRY_STALE: unexpected record {rid} in committed registry")
+
+    for rid in sorted(e_ids & a_ids):
+        er = e_records[rid]
+        ar = a_records[rid]
+        for f in sorted(er.keys()):
+            if f not in ar:
+                errors.append(f"REGISTRY_STALE: record {rid}: missing field '{f}'")
+                continue
+            if er[f] != ar[f]:
+                # Keep the diff readable: stringify a short preview.
+                ev = er[f]
+                av = ar[f]
+                if isinstance(ev, list) and isinstance(av, list):
+                    errors.append(
+                        f"REGISTRY_STALE: record {rid}: field '{f}' differs "
+                        f"(expected length {len(ev)}, actual length {len(av)})"
+                    )
+                else:
+                    errors.append(
+                        f"REGISTRY_STALE: record {rid}: field '{f}' differs: expected {ev!r}, actual {av!r}"
+                    )
+        for f in sorted(ar.keys()):
+            if f not in er:
+                errors.append(f"REGISTRY_STALE: record {rid}: extra field '{f}'")
+
+    return errors
 
 
 def main() -> int:
@@ -439,12 +716,22 @@ def main() -> int:
             return 1
         with OUT_FILE.open("r", encoding="utf-8") as f:
             registry = json.load(f)
+
         errors = validate(registry)
         if errors:
             for e in errors:
                 print(f"ERROR: {e}", file=sys.stderr)
             return 1
-        print(f"Registry valid: {len(registry.get('records', []))} records")
+
+        sites = scan_legacy_call_sites()
+        expected = build_registry(sites)
+        diffs = canonical_diff(expected, registry)
+        if diffs:
+            for d in diffs:
+                print(f"STALE: {d}", file=sys.stderr)
+            return 1
+
+        print(f"Registry canonical and up-to-date: {len(registry.get('records', []))} records")
         return 0
 
     if args.census:
@@ -462,6 +749,10 @@ def main() -> int:
     head = _git_head()
     if head:
         registry["sourceCommit"] = head
+    source_tree = _source_tree_digest()
+    if source_tree:
+        registry["sourceTree"] = source_tree
+    registry["generatorVersion"] = _generator_version()
     registry["generatedAt"] = datetime.now(timezone.utc).replace(microsecond=0).isoformat()
 
     errors = validate(registry)

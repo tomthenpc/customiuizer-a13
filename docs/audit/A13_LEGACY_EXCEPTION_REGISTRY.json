@@ -1,7 +1,6 @@
 {
   "schemaVersion": 1,
-  "generatedAt": "2026-08-03T07:35:21+00:00",
-  "sourceCommit": "0ed10187f210956ef287fbfb6ba48954ce0f40ab",
+  "inputDigest": "f06dc0650e32702fbe8646edfc880d747dd6da2a51d0603f5599a1b89777bc72",
   "totalLegacyCallSites": 514,
   "totalLegacyGroups": 205,
   "firstBatchSize": 4,
@@ -52,9 +51,9 @@
         "tv/withaibuild/customiuizer/mods/SystemUIControlCenterHooks.kt:250:SingleNotificationSliderHook"
       ],
       "hookTargets": [
-        "com.android.systemui.shared.plugins.PluginInstance$Factory#getClassLoader",
         "com.android.systemui.miui.volume.MiuiVolumeDialogImpl#addColumn",
-        "com.android.systemui.miui.volume.Util#isNotificationSingle"
+        "com.android.systemui.miui.volume.Util#isNotificationSingle",
+        "com.android.systemui.shared.plugins.PluginInstance$Factory#getClassLoader"
       ],
       "testEvidence": [
         "tools/tests/test_legacy_exception_registry.py"
@@ -107,13 +106,17 @@
       ],
       "hookTargets": [
         "com.android.server.power.PowerManagerService#systemReady",
-        "com.android.server.usb.UsbDeviceManager$UsbHandler#isUsbDataTransferActive",
-        "com.android.server.usb.UsbDeviceManager$UsbHandler#handleMessage"
+        "com.android.server.usb.UsbDeviceManager$UsbHandler#handleMessage",
+        "com.android.server.usb.UsbDeviceManager$UsbHandler#isUsbDataTransferActive"
       ],
       "testEvidence": [
         "tools/tests/test_legacy_exception_registry.py"
       ],
       "exitCondition": "Create a typed system_server FeatureSpec for USB default mode and expose a cross-process contract for the Settings variant (P3.3C)."
     }
-  ]
+  ],
+  "sourceCommit": "d289a05e7de4665eb6af62b6ec8739961207c948",
+  "sourceTree": "3c99e89a99f32263ed34402765ce5c11eb4d9de1",
+  "generatorVersion": "1c11f925977b3abd",
+  "generatedAt": "2026-08-03T08:31:34+00:00"
 }
