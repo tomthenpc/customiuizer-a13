@@ -69,6 +69,34 @@ ALLOWED_REASON_CODE = {
     "OTHER_REVIEW_REQUIRED",
 }
 
+ALLOWED_ACTIVATION_MODES = {
+    "UNCONDITIONAL",
+    "ANY_OF",
+}
+
+ALLOWED_PREDICATE_KINDS = {
+    "BOOLEAN_KEY_TRUE",
+    "INT_KEY_GT",
+    "DYNAMIC_SUFFIX_INT_GT",
+    "FIXED_INT_ANY_GT_AND_NONEMPTY_SET",
+}
+
+PREDICATE_REQUIRED_FIELDS: dict[str, set[str]] = {
+    "BOOLEAN_KEY_TRUE": {"key"},
+    "INT_KEY_GT": {"key", "thresholdExclusive"},
+    "DYNAMIC_SUFFIX_INT_GT": {"keySuffix", "thresholdExclusive", "valueType"},
+    "FIXED_INT_ANY_GT_AND_NONEMPTY_SET": {"integerKeys", "thresholdExclusive", "requiredNonEmptySetKey"},
+}
+
+PREDICATE_ALLOWED_FIELDS: dict[str, set[str]] = {
+    "BOOLEAN_KEY_TRUE": {"kind", "key"},
+    "INT_KEY_GT": {"kind", "key", "thresholdExclusive"},
+    "DYNAMIC_SUFFIX_INT_GT": {"kind", "keySuffix", "thresholdExclusive", "valueType"},
+    "FIXED_INT_ANY_GT_AND_NONEMPTY_SET": {"kind", "integerKeys", "thresholdExclusive", "requiredNonEmptySetKey"},
+}
+
+ALLOWED_VALUE_TYPES = {"INTEGER"}
+
 LEGACY_EXCEPTION_SEEDS: list[dict] = [
     {
         "id": "legacy-separatevolume-systemui",
@@ -188,41 +216,43 @@ LEGACY_EXCEPTION_SEEDS: list[dict] = [
         "process": "system_server",
         "phase": "SYSTEM_SERVER_STARTING",
         "preferenceKeys": [
-            "controls_backlong_action",
-            "controls_fingerprint2_action",
-            "controls_fingerprintlong_action",
-            "controls_fsg_assist_left_action",
-            "controls_fsg_assist_right_action",
-            "controls_fsg_swipeandstop_action",
-            "controls_homelong_action",
-            "controls_menulong_action",
-            "controls_navbarleft_action",
-            "controls_navbarleftlong_action",
-            "controls_navbarright_action",
-            "controls_navbarrightlong_action",
-            "controls_powerdt_action",
             "controls_volumemedia_down",
             "controls_volumemedia_up",
-            "launcher_doubletap_action",
-            "launcher_pinch_action",
-            "launcher_shake_action",
-            "launcher_spread_action",
-            "launcher_swipedown_action",
-            "launcher_swipeleft_action",
-            "launcher_swiperight_action",
-            "launcher_swipeup_action",
-            "system_cc_custom_clock_action",
-            "system_lockscreenshortcuts_right_action",
+            "controls_mediaplayer_apps",
         ],
+        "activationContract": {
+            "mode": "ANY_OF",
+            "predicates": [
+                {
+                    "kind": "DYNAMIC_SUFFIX_INT_GT",
+                    "keySuffix": "_action",
+                    "thresholdExclusive": 1,
+                    "valueType": "INTEGER",
+                },
+                {
+                    "kind": "FIXED_INT_ANY_GT_AND_NONEMPTY_SET",
+                    "integerKeys": ["controls_volumemedia_up", "controls_volumemedia_down"],
+                    "thresholdExclusive": 0,
+                    "requiredNonEmptySetKey": "controls_mediaplayer_apps",
+                },
+            ],
+        },
         "reasonCode": "LIFECYCLE_BOOTSTRAP",
         "reason": (
             "GlobalActions.setupGlobalActions is installed at SYSTEM_SERVER_STARTING "
-            "when needGlobalActions() detects any configured action preference "
-            "(key ending with _action) or media volume controls with a non-empty "
-            "player app list. It hooks AccessibilityManagerService construction and "
+            "when the installer activation predicate is satisfied. The predicate is a "
+            "disjunction: (A) any SharedPreferences entry whose key ends with '_action' "
+            "and whose runtime value is an Integer greater than 1, or (B) any of the "
+            "media volume shortcut keys (controls_volumemedia_up / "
+            "controls_volumemedia_down) is greater than 0 and the media player app set "
+            "(controls_mediaplayer_apps) is non-empty. The fixed literal keys needed by "
+            "the activation predicate are listed in preferenceKeys; the dynamic "
+            "'_action' key domain is expressed by the DYNAMIC_SUFFIX_INT_GT "
+            "activationContract and is not enumerated in preferenceKeys. It hooks "
+            "AccessibilityManagerService construction and "
             "BaseMiuiPhoneWindowManager#initInternal to register cross-process "
-            "broadcast receivers before the system finishes booting. There is no "
-            "single typed FeatureSpec that owns both the lifecycle bootstrap and the "
+            "broadcast receivers before the system finishes booting. There is no single "
+            "typed FeatureSpec that owns both the lifecycle bootstrap and the "
             "cross-process action dispatch surface today."
         ),
         "ownedFunctions": {"setupGlobalActions"},
@@ -251,14 +281,19 @@ LEGACY_EXCEPTION_SEEDS: list[dict] = [
         "process": "system_ui",
         "phase": "PACKAGE_READY",
         "preferenceKeys": [],
+        "activationContract": {
+            "mode": "UNCONDITIONAL",
+        },
         "reasonCode": "CROSS_PROCESS",
         "reason": (
             "GlobalActions.setupStatusBar is installed unconditionally when the "
-            "SystemUI package is ready. It hooks CentralSurfacesImpl#start to "
-            "register a status-bar broadcast receiver that handles cross-process "
-            "actions (expand notifications, toggle GPS, etc.). It cannot be a single "
-            "typed Feature today because the receiver covers multiple unrelated "
-            "actions and spans the SystemUI lifecycle."
+            "SystemUI package is ready (com.android.systemui). It hooks "
+            "CentralSurfacesImpl#start to register a status-bar broadcast receiver "
+            "that handles cross-process actions (expand notifications, toggle GPS, "
+            "etc.). It cannot be a single typed Feature today because the receiver "
+            "covers multiple unrelated actions and spans the SystemUI lifecycle. "
+            "The activationContract is UNCONDITIONAL and preferenceKeys is empty "
+            "because there is no per-user preference gate."
         ),
         "ownedFunctions": {"setupStatusBar"},
         "hookTargets": [
@@ -280,14 +315,38 @@ LEGACY_EXCEPTION_SEEDS: list[dict] = [
         "process": "system_ui",
         "phase": "PACKAGE_READY",
         "preferenceKeys": ["various_showcallui", "controls_volumecursor"],
+        "activationContract": {
+            "mode": "ANY_OF",
+            "predicates": [
+                {
+                    "kind": "INT_KEY_GT",
+                    "key": "various_showcallui",
+                    "thresholdExclusive": 0,
+                },
+                {
+                    "kind": "BOOLEAN_KEY_TRUE",
+                    "key": "controls_volumecursor",
+                },
+            ],
+        },
+        "callSiteConditions": {
+            "tv/withaibuild/customiuizer/mods/GlobalActions.kt:759:setupForegroundMonitor": {
+                "kind": "INT_KEY_GT",
+                "key": "various_showcallui",
+                "thresholdExclusive": 0,
+            },
+        },
         "reasonCode": "CROSS_PROCESS",
         "reason": (
             "GlobalActions.setupForegroundMonitor is installed in SystemUI when "
-            "various_showcallui is enabled or controls_volumecursor is enabled. It "
-            "observes the foreground package and fullscreen state and writes them "
-            "into Settings.Global for cross-process consumption. The observer spans "
-            "NetworkSpeedController construction, MiuiActivityUtil, and "
-            "StatusBarStateControllerImpl, so it has no single typed owner today."
+            "various_showcallui is greater than 0 or controls_volumecursor is true. "
+            "It observes the foreground package and fullscreen state and writes them "
+            "into Settings.Global for cross-process consumption. The first two hooks "
+            "(NetworkSpeedController construction and MiuiActivityUtil#updateTopActivity) "
+            "are installed whenever the entrypoint is called; the third hook "
+            "(StatusBarStateControllerImpl#setSystemBarAttributes) is installed only "
+            "inside the various_showcallui > 0 branch and therefore has a per-call-site "
+            "condition."
         ),
         "ownedFunctions": {"setupForegroundMonitor"},
         "hookTargets": [
@@ -312,13 +371,24 @@ LEGACY_EXCEPTION_SEEDS: list[dict] = [
         "process": "system_server",
         "phase": "SYSTEM_SERVER_STARTING",
         "preferenceKeys": ["various_alarmcompat", "various_alarmcompat_apps"],
+        "activationContract": {
+            "mode": "ANY_OF",
+            "predicates": [
+                {
+                    "kind": "BOOLEAN_KEY_TRUE",
+                    "key": "various_alarmcompat",
+                },
+            ],
+        },
         "reasonCode": "LIFECYCLE_BOOTSTRAP",
         "reason": (
             "AlarmCompatServiceHook is installed at SYSTEM_SERVER_STARTING when "
-            "various_alarmcompat is enabled. It hooks AlarmManagerService#onBootPhase "
+            "various_alarmcompat is true. It hooks AlarmManagerService#onBootPhase "
             "(phase 500) to register a ContentObserver for next_alarm_clock_formatted "
             "and AlarmManagerService#getNextAlarmClockImpl to return a synthetic "
-            "alarm for selected apps. The feature is tied to the ROM-specific "
+            "alarm for selected apps. The various_alarmcompat_apps key is a runtime "
+            "allowlist configuration used inside the hooked functions, not the "
+            "installer activation gate. The feature is tied to the ROM-specific "
             "AlarmManagerService lifecycle and cannot be expressed as a typed "
             "Feature today."
         ),
@@ -343,6 +413,31 @@ def _stable_call_id(rel: str, line: int, func: str) -> str:
 
 def _generate_record_id(seed_id: str) -> str:
     return hashlib.sha256(seed_id.encode("utf-8")).hexdigest()[:16]
+
+
+def _canonical_activation_contract(contract: dict) -> dict:
+    """Return a deterministic, deep copy of an activation contract."""
+    if not isinstance(contract, dict):
+        return contract
+    canonical = copy.deepcopy(contract)
+    if canonical.get("mode") == "UNCONDITIONAL":
+        canonical.pop("predicates", None)
+        return canonical
+    predicates = canonical.get("predicates", [])
+    if isinstance(predicates, list):
+        for p in predicates:
+            if isinstance(p, dict) and "integerKeys" in p and isinstance(p["integerKeys"], list):
+                p["integerKeys"] = sorted(p["integerKeys"])
+        canonical["predicates"] = sorted(predicates, key=lambda p: (p.get("kind", ""), json.dumps(p, sort_keys=True, default=str)))
+    return canonical
+
+
+def _canonical_call_site_conditions(conditions: dict) -> dict:
+    """Return a deterministic, deep copy of call-site conditions."""
+    if not isinstance(conditions, dict):
+        return conditions
+    canonical = copy.deepcopy(conditions)
+    return dict(sorted(canonical.items()))
 
 
 def _git_head() -> str | None:
@@ -517,34 +612,37 @@ def build_registry(sites: list[dict]) -> dict:
         record_id = _generate_record_id(seed["id"])
         batch = seed.get("batch", "P3.3A")
         batch_counts[batch] += 1
-        records.append(
-            {
-                "id": record_id,
-                "batch": batch,
-                "status": "ACTIVE",
-                "owner": seed["owner"],
-                "sourceFile": seed["sourceFile"],
-                "entrypoint": seed["entrypoint"],
-                "process": seed["process"],
-                "phase": seed["phase"],
-                "preferenceKeys": sorted(seed["preferenceKeys"]),
-                "reasonCode": seed["reasonCode"],
-                "reason": seed["reason"],
-                "coveredCallSites": sorted(
-                    covered, key=lambda c: (c.split(":")[0], int(c.split(":")[1]), c.split(":")[2])
-                ),
-                "hookTargets": sorted(seed["hookTargets"]),
-                "testEvidence": sorted(seed["testEvidence"]),
-                "exitCondition": seed["exitCondition"],
-            }
-        )
+        record: dict[str, Any] = {
+            "id": record_id,
+            "batch": batch,
+            "status": "ACTIVE",
+            "owner": seed["owner"],
+            "sourceFile": seed["sourceFile"],
+            "entrypoint": seed["entrypoint"],
+            "process": seed["process"],
+            "phase": seed["phase"],
+            "preferenceKeys": sorted(seed["preferenceKeys"]),
+            "reasonCode": seed["reasonCode"],
+            "reason": seed["reason"],
+            "coveredCallSites": sorted(
+                covered, key=lambda c: (c.split(":")[0], int(c.split(":")[1]), c.split(":")[2])
+            ),
+            "hookTargets": sorted(seed["hookTargets"]),
+            "testEvidence": sorted(seed["testEvidence"]),
+            "exitCondition": seed["exitCondition"],
+        }
+        if "activationContract" in seed:
+            record["activationContract"] = _canonical_activation_contract(seed["activationContract"])
+        if "callSiteConditions" in seed:
+            record["callSiteConditions"] = _canonical_call_site_conditions(seed["callSiteConditions"])
+        records.append(record)
 
     records.sort(key=lambda r: r["id"])
 
     first_batch_size = batch_counts.get("P3.3A", 0)
 
     return {
-        "schemaVersion": 2,
+        "schemaVersion": 3,
         "inputDigest": _input_digest(all_legacy_ids),
         "totalLegacyCallSites": len(legacy),
         "totalLegacyGroups": len(groups),
@@ -664,6 +762,139 @@ def _validate_covered_call_sites(
     return errors
 
 
+def _validate_activation_contract(prefix: str, contract: object) -> list[str]:
+    errors: list[str] = []
+    if not isinstance(contract, dict):
+        errors.append(f"{prefix}: activationContract is not a dict")
+        return errors
+
+    mode = contract.get("mode")
+    if mode not in ALLOWED_ACTIVATION_MODES:
+        errors.append(f"{prefix}: unknown activationContract mode '{mode}'")
+
+    if mode == "UNCONDITIONAL":
+        if "predicates" in contract:
+            errors.append(f"{prefix}: UNCONDITIONAL activationContract must not contain predicates")
+        return errors
+
+    predicates = contract.get("predicates")
+    if not isinstance(predicates, list) or not predicates:
+        errors.append(f"{prefix}: activationContract predicates must be a non-empty list")
+        return errors
+
+    seen_predicates: set[str] = set()
+    for i, p in enumerate(predicates):
+        if not isinstance(p, dict):
+            errors.append(f"{prefix}: activationContract predicate[{i}] is not a dict")
+            continue
+        kind = p.get("kind")
+        if kind not in ALLOWED_PREDICATE_KINDS:
+            errors.append(f"{prefix}: unknown predicate kind '{kind}'")
+            continue
+
+        required = PREDICATE_REQUIRED_FIELDS[kind]
+        for r in required:
+            if r not in p:
+                errors.append(f"{prefix}: activationContract predicate[{i}] missing required field '{r}'")
+
+        allowed = PREDICATE_ALLOWED_FIELDS[kind]
+        for k in p.keys():
+            if k not in allowed:
+                errors.append(f"{prefix}: activationContract predicate[{i}] has unknown field '{k}'")
+
+        if kind == "DYNAMIC_SUFFIX_INT_GT":
+            suffix = p.get("keySuffix")
+            if not isinstance(suffix, str) or not suffix:
+                errors.append(f"{prefix}: DYNAMIC_SUFFIX_INT_GT keySuffix must be a non-empty string")
+            value_type = p.get("valueType")
+            if value_type not in ALLOWED_VALUE_TYPES:
+                errors.append(f"{prefix}: DYNAMIC_SUFFIX_INT_GT valueType must be one of {ALLOWED_VALUE_TYPES}, got {value_type!r}")
+        elif kind == "FIXED_INT_ANY_GT_AND_NONEMPTY_SET":
+            int_keys = p.get("integerKeys")
+            if not isinstance(int_keys, list) or not int_keys:
+                errors.append(f"{prefix}: FIXED_INT_ANY_GT_AND_NONEMPTY_SET integerKeys must be a non-empty list")
+            else:
+                for k in int_keys:
+                    if not isinstance(k, str) or not k:
+                        errors.append(f"{prefix}: FIXED_INT_ANY_GT_AND_NONEMPTY_SET integerKeys must be non-empty strings")
+            if not isinstance(p.get("requiredNonEmptySetKey"), str) or not p.get("requiredNonEmptySetKey"):
+                errors.append(f"{prefix}: FIXED_INT_ANY_GT_AND_NONEMPTY_SET requiredNonEmptySetKey must be a non-empty string")
+        elif kind == "INT_KEY_GT":
+            if not isinstance(p.get("key"), str) or not p.get("key"):
+                errors.append(f"{prefix}: INT_KEY_GT key must be a non-empty string")
+            if not isinstance(p.get("thresholdExclusive"), int):
+                errors.append(f"{prefix}: INT_KEY_GT thresholdExclusive must be an integer")
+        elif kind == "BOOLEAN_KEY_TRUE":
+            if not isinstance(p.get("key"), str) or not p.get("key"):
+                errors.append(f"{prefix}: BOOLEAN_KEY_TRUE key must be a non-empty string")
+
+        pred_id = f"{kind}:{json.dumps(p, sort_keys=True, default=str)}"
+        if pred_id in seen_predicates:
+            errors.append(f"{prefix}: duplicate activationContract predicate")
+        seen_predicates.add(pred_id)
+
+    return errors
+
+
+def _validate_call_site_conditions(
+    prefix: str,
+    conditions: object,
+    covered: list[str],
+    preference_keys: list[str],
+) -> list[str]:
+    errors: list[str] = []
+    if not isinstance(conditions, dict):
+        errors.append(f"{prefix}: callSiteConditions is not a dict")
+        return errors
+
+    covered_set = set(covered) if isinstance(covered, list) else set()
+    preference_set = set(preference_keys) if isinstance(preference_keys, list) else set()
+
+    for call_id, cond in conditions.items():
+        if not isinstance(call_id, str):
+            errors.append(f"{prefix}: callSiteConditions key is not a string")
+            continue
+        if call_id not in covered_set:
+            errors.append(f"{prefix}: callSiteConditions key '{call_id}' is not in coveredCallSites")
+            continue
+
+        if not isinstance(cond, dict):
+            errors.append(f"{prefix}: callSiteConditions '{call_id}' condition is not a dict")
+            continue
+
+        kind = cond.get("kind")
+        if kind not in ALLOWED_PREDICATE_KINDS:
+            errors.append(f"{prefix}: callSiteConditions '{call_id}' unknown kind '{kind}'")
+            continue
+
+        required = PREDICATE_REQUIRED_FIELDS[kind]
+        for r in required:
+            if r not in cond:
+                errors.append(f"{prefix}: callSiteConditions '{call_id}' missing required field '{r}'")
+
+        allowed = PREDICATE_ALLOWED_FIELDS[kind]
+        for k in cond.keys():
+            if k not in allowed:
+                errors.append(f"{prefix}: callSiteConditions '{call_id}' has unknown field '{k}'")
+
+        if kind == "INT_KEY_GT":
+            key = cond.get("key")
+            if not isinstance(key, str) or not key:
+                errors.append(f"{prefix}: callSiteConditions '{call_id}' INT_KEY_GT key must be a non-empty string")
+            elif key not in preference_set:
+                errors.append(f"{prefix}: callSiteConditions '{call_id}' uses key '{key}' not in preferenceKeys")
+            if not isinstance(cond.get("thresholdExclusive"), int):
+                errors.append(f"{prefix}: callSiteConditions '{call_id}' INT_KEY_GT thresholdExclusive must be an integer")
+        elif kind == "BOOLEAN_KEY_TRUE":
+            key = cond.get("key")
+            if not isinstance(key, str) or not key:
+                errors.append(f"{prefix}: callSiteConditions '{call_id}' BOOLEAN_KEY_TRUE key must be a non-empty string")
+            elif key not in preference_set:
+                errors.append(f"{prefix}: callSiteConditions '{call_id}' uses key '{key}' not in preferenceKeys")
+
+    return errors
+
+
 def validate(registry: dict, strict: bool = True) -> list[str]:
     errors: list[str] = []
 
@@ -761,6 +992,34 @@ def validate(registry: dict, strict: bool = True) -> list[str]:
         )
         errors.extend(covered_errors)
 
+        # activationContract / callSiteConditions validation
+        if "activationContract" in rec:
+            errors.extend(_validate_activation_contract(prefix, rec["activationContract"]))
+
+            # preferenceKeys must not enumerate dynamic suffix keys
+            ac = rec.get("activationContract") or {}
+            pred_kinds = {p.get("kind") for p in ac.get("predicates", []) if isinstance(p, dict)}
+            if "DYNAMIC_SUFFIX_INT_GT" in pred_kinds:
+                for pk in rec.get("preferenceKeys", []):
+                    if isinstance(pk, str) and pk.endswith(ac.get("predicates", [{}])[0].get("keySuffix", "")):
+                        # Check if this specific key suffix is the dynamic one
+                        for p in ac.get("predicates", []):
+                            if p.get("kind") == "DYNAMIC_SUFFIX_INT_GT" and isinstance(p.get("keySuffix"), str):
+                                if pk.endswith(p["keySuffix"]):
+                                    errors.append(
+                                        f"{prefix}: preferenceKeys must not enumerate dynamic suffix key '{pk}'; "
+                                        "it is already covered by activationContract DYNAMIC_SUFFIX_INT_GT"
+                                    )
+                                    break
+
+        if "callSiteConditions" in rec:
+            errors.extend(_validate_call_site_conditions(
+                prefix,
+                rec["callSiteConditions"],
+                rec.get("coveredCallSites", []),
+                rec.get("preferenceKeys", []),
+            ))
+
         # whole-file / whole-function gate
         covered = rec.get("coveredCallSites")
         if isinstance(covered, list) and source_file and source_file not in (None, ""):
@@ -819,6 +1078,10 @@ def _canonical(registry: dict) -> dict:
         for field in ("preferenceKeys", "hookTargets", "testEvidence", "coveredCallSites"):
             if isinstance(rec.get(field), list):
                 rec[field] = sorted(rec[field])
+        if isinstance(rec.get("activationContract"), dict):
+            rec["activationContract"] = _canonical_activation_contract(rec["activationContract"])
+        if isinstance(rec.get("callSiteConditions"), dict):
+            rec["callSiteConditions"] = _canonical_call_site_conditions(rec["callSiteConditions"])
     reg["records"] = sorted(records, key=lambda r: r.get("id", ""))
     return reg
 

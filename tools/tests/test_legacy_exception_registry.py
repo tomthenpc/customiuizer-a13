@@ -562,7 +562,42 @@ class LegacyExceptionIntegrityTest(unittest.TestCase):
         for rec in self.registry["records"]:
             self.assertIn(rec.get("batch"), ("P3.3A", "P3.3B"), f"Record {rec.get('id')} has invalid batch")
 
-    def test_48_p3_2_1b_python_test_not_regressed(self) -> None:
+    def test_50_schema_version_is_three(self) -> None:
+        self.assertEqual(self.registry.get("schemaVersion"), 3, "Registry schema must be version 3")
+
+    def test_51_activation_contract_in_canonical_comparison(self) -> None:
+        import build_legacy_exception_registry as builder
+        sites = builder.scan_legacy_call_sites()
+        expected = builder.build_registry(sites)
+        reg = copy.deepcopy(self.registry)
+        rec = next(r for r in reg["records"] if r["owner"] == "GlobalActions.setupGlobalActions")
+        rec["activationContract"]["mode"] = "UNCONDITIONAL"
+        diffs = builder.canonical_diff(expected, reg)
+        self.assertTrue(any("activationContract" in d or "mode" in d for d in diffs), "activationContract must be in canonical comparison")
+
+    def test_52_call_site_conditions_in_canonical_comparison(self) -> None:
+        import build_legacy_exception_registry as builder
+        sites = builder.scan_legacy_call_sites()
+        expected = builder.build_registry(sites)
+        reg = copy.deepcopy(self.registry)
+        rec = next(r for r in reg["records"] if r["owner"] == "GlobalActions.setupForegroundMonitor")
+        rec["callSiteConditions"] = {}
+        diffs = builder.canonical_diff(expected, reg)
+        self.assertTrue(any("callSiteConditions" in d for d in diffs), "callSiteConditions must be in canonical comparison")
+
+    def test_53_activation_contract_predicates_sorted(self) -> None:
+        for rec in self.registry["records"]:
+            ac = rec.get("activationContract")
+            if isinstance(ac, dict) and "predicates" in ac:
+                self.assertIsInstance(ac["predicates"], list, f"Record {rec['id']} activationContract predicates must be a list")
+
+    def test_54_p3_3a_records_have_no_activation_contract(self) -> None:
+        for rec in self.registry["records"]:
+            if rec["batch"] == "P3.3A":
+                self.assertNotIn("activationContract", rec, f"P3.3A record {rec['id']} must not have activationContract")
+                self.assertNotIn("callSiteConditions", rec, f"P3.3A record {rec['id']} must not have callSiteConditions")
+
+    def test_55_p3_2_1b_python_test_not_regressed(self) -> None:
         import subprocess
         result = subprocess.run(
             [sys.executable, "-m", "unittest", "tools.tests.test_check_hook_contract_parity"],

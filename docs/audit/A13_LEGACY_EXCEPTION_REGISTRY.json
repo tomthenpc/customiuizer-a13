@@ -1,5 +1,5 @@
 {
-  "schemaVersion": 2,
+  "schemaVersion": 3,
   "inputDigest": "f06dc0650e32702fbe8646edfc880d747dd6da2a51d0603f5599a1b89777bc72",
   "totalLegacyCallSites": 514,
   "totalLegacyGroups": 205,
@@ -102,34 +102,12 @@
       "process": "system_server",
       "phase": "SYSTEM_SERVER_STARTING",
       "preferenceKeys": [
-        "controls_backlong_action",
-        "controls_fingerprint2_action",
-        "controls_fingerprintlong_action",
-        "controls_fsg_assist_left_action",
-        "controls_fsg_assist_right_action",
-        "controls_fsg_swipeandstop_action",
-        "controls_homelong_action",
-        "controls_menulong_action",
-        "controls_navbarleft_action",
-        "controls_navbarleftlong_action",
-        "controls_navbarright_action",
-        "controls_navbarrightlong_action",
-        "controls_powerdt_action",
+        "controls_mediaplayer_apps",
         "controls_volumemedia_down",
-        "controls_volumemedia_up",
-        "launcher_doubletap_action",
-        "launcher_pinch_action",
-        "launcher_shake_action",
-        "launcher_spread_action",
-        "launcher_swipedown_action",
-        "launcher_swipeleft_action",
-        "launcher_swiperight_action",
-        "launcher_swipeup_action",
-        "system_cc_custom_clock_action",
-        "system_lockscreenshortcuts_right_action"
+        "controls_volumemedia_up"
       ],
       "reasonCode": "LIFECYCLE_BOOTSTRAP",
-      "reason": "GlobalActions.setupGlobalActions is installed at SYSTEM_SERVER_STARTING when needGlobalActions() detects any configured action preference (key ending with _action) or media volume controls with a non-empty player app list. It hooks AccessibilityManagerService construction and BaseMiuiPhoneWindowManager#initInternal to register cross-process broadcast receivers before the system finishes booting. There is no single typed FeatureSpec that owns both the lifecycle bootstrap and the cross-process action dispatch surface today.",
+      "reason": "GlobalActions.setupGlobalActions is installed at SYSTEM_SERVER_STARTING when the installer activation predicate is satisfied. The predicate is a disjunction: (A) any SharedPreferences entry whose key ends with '_action' and whose runtime value is an Integer greater than 1, or (B) any of the media volume shortcut keys (controls_volumemedia_up / controls_volumemedia_down) is greater than 0 and the media player app set (controls_mediaplayer_apps) is non-empty. The fixed literal keys needed by the activation predicate are listed in preferenceKeys; the dynamic '_action' key domain is expressed by the DYNAMIC_SUFFIX_INT_GT activationContract and is not enumerated in preferenceKeys. It hooks AccessibilityManagerService construction and BaseMiuiPhoneWindowManager#initInternal to register cross-process broadcast receivers before the system finishes booting. There is no single typed FeatureSpec that owns both the lifecycle bootstrap and the cross-process action dispatch surface today.",
       "coveredCallSites": [
         "tv/withaibuild/customiuizer/mods/GlobalActions.kt:780:setupGlobalActions",
         "tv/withaibuild/customiuizer/mods/GlobalActions.kt:827:setupGlobalActions"
@@ -142,7 +120,27 @@
         "tools/tests/test_legacy_exception_registry.py",
         "tools/tests/test_p33b_legacy_exception_routes.py"
       ],
-      "exitCondition": "Migrate each global action to a typed FeatureSpec that declares its source process, broadcast contract, and the exact system service hook it needs; remove this exception when all actions are installed by typed dispatchers and the global AccessibilityManagerService / BaseMiuiPhoneWindowManager hooks are no longer needed (P3.3C+)."
+      "exitCondition": "Migrate each global action to a typed FeatureSpec that declares its source process, broadcast contract, and the exact system service hook it needs; remove this exception when all actions are installed by typed dispatchers and the global AccessibilityManagerService / BaseMiuiPhoneWindowManager hooks are no longer needed (P3.3C+).",
+      "activationContract": {
+        "mode": "ANY_OF",
+        "predicates": [
+          {
+            "kind": "DYNAMIC_SUFFIX_INT_GT",
+            "keySuffix": "_action",
+            "thresholdExclusive": 1,
+            "valueType": "INTEGER"
+          },
+          {
+            "kind": "FIXED_INT_ANY_GT_AND_NONEMPTY_SET",
+            "integerKeys": [
+              "controls_volumemedia_down",
+              "controls_volumemedia_up"
+            ],
+            "thresholdExclusive": 0,
+            "requiredNonEmptySetKey": "controls_mediaplayer_apps"
+          }
+        ]
+      }
     },
     {
       "id": "84c04bebd4eb8a81",
@@ -158,7 +156,7 @@
         "various_alarmcompat_apps"
       ],
       "reasonCode": "LIFECYCLE_BOOTSTRAP",
-      "reason": "AlarmCompatServiceHook is installed at SYSTEM_SERVER_STARTING when various_alarmcompat is enabled. It hooks AlarmManagerService#onBootPhase (phase 500) to register a ContentObserver for next_alarm_clock_formatted and AlarmManagerService#getNextAlarmClockImpl to return a synthetic alarm for selected apps. The feature is tied to the ROM-specific AlarmManagerService lifecycle and cannot be expressed as a typed Feature today.",
+      "reason": "AlarmCompatServiceHook is installed at SYSTEM_SERVER_STARTING when various_alarmcompat is true. It hooks AlarmManagerService#onBootPhase (phase 500) to register a ContentObserver for next_alarm_clock_formatted and AlarmManagerService#getNextAlarmClockImpl to return a synthetic alarm for selected apps. The various_alarmcompat_apps key is a runtime allowlist configuration used inside the hooked functions, not the installer activation gate. The feature is tied to the ROM-specific AlarmManagerService lifecycle and cannot be expressed as a typed Feature today.",
       "coveredCallSites": [
         "tv/withaibuild/customiuizer/mods/Various.kt:830:AlarmCompatServiceHook",
         "tv/withaibuild/customiuizer/mods/Various.kt:852:AlarmCompatServiceHook"
@@ -170,7 +168,16 @@
       "testEvidence": [
         "tools/tests/test_p33b_legacy_exception_routes.py"
       ],
-      "exitCondition": "Migrate alarm compatibility to a typed system_server FeatureSpec that declares the AlarmManagerService lifecycle hooks and a per-app allowlist contract (P3.3C+)."
+      "exitCondition": "Migrate alarm compatibility to a typed system_server FeatureSpec that declares the AlarmManagerService lifecycle hooks and a per-app allowlist contract (P3.3C+).",
+      "activationContract": {
+        "mode": "ANY_OF",
+        "predicates": [
+          {
+            "kind": "BOOLEAN_KEY_TRUE",
+            "key": "various_alarmcompat"
+          }
+        ]
+      }
     },
     {
       "id": "adbd2a4c00ad368a",
@@ -186,7 +193,7 @@
         "various_showcallui"
       ],
       "reasonCode": "CROSS_PROCESS",
-      "reason": "GlobalActions.setupForegroundMonitor is installed in SystemUI when various_showcallui is enabled or controls_volumecursor is enabled. It observes the foreground package and fullscreen state and writes them into Settings.Global for cross-process consumption. The observer spans NetworkSpeedController construction, MiuiActivityUtil, and StatusBarStateControllerImpl, so it has no single typed owner today.",
+      "reason": "GlobalActions.setupForegroundMonitor is installed in SystemUI when various_showcallui is greater than 0 or controls_volumecursor is true. It observes the foreground package and fullscreen state and writes them into Settings.Global for cross-process consumption. The first two hooks (NetworkSpeedController construction and MiuiActivityUtil#updateTopActivity) are installed whenever the entrypoint is called; the third hook (StatusBarStateControllerImpl#setSystemBarAttributes) is installed only inside the various_showcallui > 0 branch and therefore has a per-call-site condition.",
       "coveredCallSites": [
         "tv/withaibuild/customiuizer/mods/GlobalActions.kt:743:setupForegroundMonitor",
         "tv/withaibuild/customiuizer/mods/GlobalActions.kt:747:setupForegroundMonitor",
@@ -200,7 +207,28 @@
       "testEvidence": [
         "tools/tests/test_p33b_legacy_exception_routes.py"
       ],
-      "exitCondition": "Migrate foreground package and fullscreen monitoring to a typed SystemUI FeatureSpec that owns NetworkSpeedController, MiuiActivityUtil, and StatusBarStateControllerImpl with explicit lifecycle boundaries (P3.3C+)."
+      "exitCondition": "Migrate foreground package and fullscreen monitoring to a typed SystemUI FeatureSpec that owns NetworkSpeedController, MiuiActivityUtil, and StatusBarStateControllerImpl with explicit lifecycle boundaries (P3.3C+).",
+      "activationContract": {
+        "mode": "ANY_OF",
+        "predicates": [
+          {
+            "kind": "BOOLEAN_KEY_TRUE",
+            "key": "controls_volumecursor"
+          },
+          {
+            "kind": "INT_KEY_GT",
+            "key": "various_showcallui",
+            "thresholdExclusive": 0
+          }
+        ]
+      },
+      "callSiteConditions": {
+        "tv/withaibuild/customiuizer/mods/GlobalActions.kt:759:setupForegroundMonitor": {
+          "kind": "INT_KEY_GT",
+          "key": "various_showcallui",
+          "thresholdExclusive": 0
+        }
+      }
     },
     {
       "id": "b39d505a5ec5dc48",
@@ -213,7 +241,7 @@
       "phase": "PACKAGE_READY",
       "preferenceKeys": [],
       "reasonCode": "CROSS_PROCESS",
-      "reason": "GlobalActions.setupStatusBar is installed unconditionally when the SystemUI package is ready. It hooks CentralSurfacesImpl#start to register a status-bar broadcast receiver that handles cross-process actions (expand notifications, toggle GPS, etc.). It cannot be a single typed Feature today because the receiver covers multiple unrelated actions and spans the SystemUI lifecycle.",
+      "reason": "GlobalActions.setupStatusBar is installed unconditionally when the SystemUI package is ready (com.android.systemui). It hooks CentralSurfacesImpl#start to register a status-bar broadcast receiver that handles cross-process actions (expand notifications, toggle GPS, etc.). It cannot be a single typed Feature today because the receiver covers multiple unrelated actions and spans the SystemUI lifecycle. The activationContract is UNCONDITIONAL and preferenceKeys is empty because there is no per-user preference gate.",
       "coveredCallSites": [
         "tv/withaibuild/customiuizer/mods/GlobalActions.kt:893:setupStatusBar"
       ],
@@ -223,7 +251,10 @@
       "testEvidence": [
         "tools/tests/test_p33b_legacy_exception_routes.py"
       ],
-      "exitCondition": "Migrate the status-bar global action receiver to a typed SystemUI FeatureSpec that owns CentralSurfacesImpl#start and declares the cross-process broadcast contract (P3.3C+)."
+      "exitCondition": "Migrate the status-bar global action receiver to a typed SystemUI FeatureSpec that owns CentralSurfacesImpl#start and declares the cross-process broadcast contract (P3.3C+).",
+      "activationContract": {
+        "mode": "UNCONDITIONAL"
+      }
     },
     {
       "id": "d0b55fb7aa83c53a",
@@ -257,8 +288,8 @@
       "exitCondition": "Create a typed system_server FeatureSpec for USB default mode and expose a cross-process contract for the Settings variant (P3.3C)."
     }
   ],
-  "sourceCommit": "64cf44aa384e2244ae9a8b8c8289360cd32ad3be",
+  "sourceCommit": "920056dffdfccb539e242d9aee1051e0a5f442d6",
   "sourceTree": "3c99e89a99f32263ed34402765ce5c11eb4d9de1",
-  "generatorVersion": "94f6c48b7e4fbd8f",
-  "generatedAt": "2026-08-03T14:34:41+00:00"
+  "generatorVersion": "c2b4b4a1e89571e5",
+  "generatedAt": "2026-08-03T23:34:01+00:00"
 }
