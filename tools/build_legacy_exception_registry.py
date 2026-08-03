@@ -69,9 +69,10 @@ ALLOWED_REASON_CODE = {
     "OTHER_REVIEW_REQUIRED",
 }
 
-FIRST_BATCH_SEEDS: list[dict] = [
+LEGACY_EXCEPTION_SEEDS: list[dict] = [
     {
         "id": "legacy-separatevolume-systemui",
+        "batch": "P3.3A",
         "owner": "MIUIVolumeDialogHook",
         "sourceFile": "tv/withaibuild/customiuizer/mods/SystemUIControlCenterHooks.kt",
         "entrypoint": "MIUIVolumeDialogHook",
@@ -101,6 +102,7 @@ FIRST_BATCH_SEEDS: list[dict] = [
     },
     {
         "id": "legacy-separatevolume-settings",
+        "batch": "P3.3A",
         "owner": "NotificationVolumeSettingsHook",
         "sourceFile": "tv/withaibuild/customiuizer/mods/SystemAudioAndVolumeHooks.kt",
         "entrypoint": "NotificationVolumeSettingsHook",
@@ -126,6 +128,7 @@ FIRST_BATCH_SEEDS: list[dict] = [
     },
     {
         "id": "legacy-usbconfig-system",
+        "batch": "P3.3A",
         "owner": "USBConfigHook",
         "sourceFile": "tv/withaibuild/customiuizer/mods/SystemSettingsMoreHooks.kt",
         "entrypoint": "USBConfigHook",
@@ -153,6 +156,7 @@ FIRST_BATCH_SEEDS: list[dict] = [
     },
     {
         "id": "legacy-usbconfig-settings",
+        "batch": "P3.3A",
         "owner": "USBConfigSettingsHook",
         "sourceFile": "tv/withaibuild/customiuizer/mods/SystemSettingsMoreHooks.kt",
         "entrypoint": "USBConfigSettingsHook",
@@ -173,6 +177,161 @@ FIRST_BATCH_SEEDS: list[dict] = [
         "exitCondition": (
             "Merge into a per-app FeatureSpec for com.android.settings when the "
             "Settings installer is replaced by the typed registry (P3.3C)."
+        ),
+    },
+    {
+        "id": "legacy-globalactions-systemserver",
+        "batch": "P3.3B",
+        "owner": "GlobalActions.setupGlobalActions",
+        "sourceFile": "tv/withaibuild/customiuizer/mods/GlobalActions.kt",
+        "entrypoint": "setupGlobalActions",
+        "process": "system_server",
+        "phase": "SYSTEM_SERVER_STARTING",
+        "preferenceKeys": [
+            "controls_backlong_action",
+            "controls_fingerprint2_action",
+            "controls_fingerprintlong_action",
+            "controls_fsg_assist_left_action",
+            "controls_fsg_assist_right_action",
+            "controls_fsg_swipeandstop_action",
+            "controls_homelong_action",
+            "controls_menulong_action",
+            "controls_navbarleft_action",
+            "controls_navbarleftlong_action",
+            "controls_navbarright_action",
+            "controls_navbarrightlong_action",
+            "controls_powerdt_action",
+            "controls_volumemedia_down",
+            "controls_volumemedia_up",
+            "launcher_doubletap_action",
+            "launcher_pinch_action",
+            "launcher_shake_action",
+            "launcher_spread_action",
+            "launcher_swipedown_action",
+            "launcher_swipeleft_action",
+            "launcher_swiperight_action",
+            "launcher_swipeup_action",
+            "system_cc_custom_clock_action",
+            "system_lockscreenshortcuts_right_action",
+        ],
+        "reasonCode": "LIFECYCLE_BOOTSTRAP",
+        "reason": (
+            "GlobalActions.setupGlobalActions is installed at SYSTEM_SERVER_STARTING "
+            "when needGlobalActions() detects any configured action preference "
+            "(key ending with _action) or media volume controls with a non-empty "
+            "player app list. It hooks AccessibilityManagerService construction and "
+            "BaseMiuiPhoneWindowManager#initInternal to register cross-process "
+            "broadcast receivers before the system finishes booting. There is no "
+            "single typed FeatureSpec that owns both the lifecycle bootstrap and the "
+            "cross-process action dispatch surface today."
+        ),
+        "ownedFunctions": {"setupGlobalActions"},
+        "hookTargets": [
+            "com.android.server.accessibility.AccessibilityManagerService#<init>",
+            "com.android.server.policy.BaseMiuiPhoneWindowManager#initInternal",
+        ],
+        "testEvidence": [
+            "tools/tests/test_legacy_exception_registry.py",
+            "tools/tests/test_p33b_legacy_exception_routes.py",
+        ],
+        "exitCondition": (
+            "Migrate each global action to a typed FeatureSpec that declares its "
+            "source process, broadcast contract, and the exact system service hook "
+            "it needs; remove this exception when all actions are installed by typed "
+            "dispatchers and the global AccessibilityManagerService / "
+            "BaseMiuiPhoneWindowManager hooks are no longer needed (P3.3C+)."
+        ),
+    },
+    {
+        "id": "legacy-globalactions-statusbar",
+        "batch": "P3.3B",
+        "owner": "GlobalActions.setupStatusBar",
+        "sourceFile": "tv/withaibuild/customiuizer/mods/GlobalActions.kt",
+        "entrypoint": "setupStatusBar",
+        "process": "system_ui",
+        "phase": "PACKAGE_READY",
+        "preferenceKeys": [],
+        "reasonCode": "CROSS_PROCESS",
+        "reason": (
+            "GlobalActions.setupStatusBar is installed unconditionally when the "
+            "SystemUI package is ready. It hooks CentralSurfacesImpl#start to "
+            "register a status-bar broadcast receiver that handles cross-process "
+            "actions (expand notifications, toggle GPS, etc.). It cannot be a single "
+            "typed Feature today because the receiver covers multiple unrelated "
+            "actions and spans the SystemUI lifecycle."
+        ),
+        "ownedFunctions": {"setupStatusBar"},
+        "hookTargets": [
+            "com.android.systemui.statusbar.phone.CentralSurfacesImpl#start",
+        ],
+        "testEvidence": ["tools/tests/test_p33b_legacy_exception_routes.py"],
+        "exitCondition": (
+            "Migrate the status-bar global action receiver to a typed SystemUI "
+            "FeatureSpec that owns CentralSurfacesImpl#start and declares the "
+            "cross-process broadcast contract (P3.3C+)."
+        ),
+    },
+    {
+        "id": "legacy-globalactions-foreground-monitor",
+        "batch": "P3.3B",
+        "owner": "GlobalActions.setupForegroundMonitor",
+        "sourceFile": "tv/withaibuild/customiuizer/mods/GlobalActions.kt",
+        "entrypoint": "setupForegroundMonitor",
+        "process": "system_ui",
+        "phase": "PACKAGE_READY",
+        "preferenceKeys": ["various_showcallui", "controls_volumecursor"],
+        "reasonCode": "CROSS_PROCESS",
+        "reason": (
+            "GlobalActions.setupForegroundMonitor is installed in SystemUI when "
+            "various_showcallui is enabled or controls_volumecursor is enabled. It "
+            "observes the foreground package and fullscreen state and writes them "
+            "into Settings.Global for cross-process consumption. The observer spans "
+            "NetworkSpeedController construction, MiuiActivityUtil, and "
+            "StatusBarStateControllerImpl, so it has no single typed owner today."
+        ),
+        "ownedFunctions": {"setupForegroundMonitor"},
+        "hookTargets": [
+            "com.android.systemui.statusbar.policy.NetworkSpeedController#<init>",
+            "com.miui.systemui.util.MiuiActivityUtil#updateTopActivity",
+            "com.android.systemui.statusbar.StatusBarStateControllerImpl#setSystemBarAttributes",
+        ],
+        "testEvidence": ["tools/tests/test_p33b_legacy_exception_routes.py"],
+        "exitCondition": (
+            "Migrate foreground package and fullscreen monitoring to a typed "
+            "SystemUI FeatureSpec that owns NetworkSpeedController, MiuiActivityUtil, "
+            "and StatusBarStateControllerImpl with explicit lifecycle boundaries "
+            "(P3.3C+)."
+        ),
+    },
+    {
+        "id": "legacy-alarmcompat-service",
+        "batch": "P3.3B",
+        "owner": "AlarmCompatServiceHook",
+        "sourceFile": "tv/withaibuild/customiuizer/mods/Various.kt",
+        "entrypoint": "AlarmCompatServiceHook",
+        "process": "system_server",
+        "phase": "SYSTEM_SERVER_STARTING",
+        "preferenceKeys": ["various_alarmcompat", "various_alarmcompat_apps"],
+        "reasonCode": "LIFECYCLE_BOOTSTRAP",
+        "reason": (
+            "AlarmCompatServiceHook is installed at SYSTEM_SERVER_STARTING when "
+            "various_alarmcompat is enabled. It hooks AlarmManagerService#onBootPhase "
+            "(phase 500) to register a ContentObserver for next_alarm_clock_formatted "
+            "and AlarmManagerService#getNextAlarmClockImpl to return a synthetic "
+            "alarm for selected apps. The feature is tied to the ROM-specific "
+            "AlarmManagerService lifecycle and cannot be expressed as a typed "
+            "Feature today."
+        ),
+        "ownedFunctions": {"AlarmCompatServiceHook"},
+        "hookTargets": [
+            "com.android.server.alarm.AlarmManagerService#onBootPhase",
+            "com.android.server.alarm.AlarmManagerService#getNextAlarmClockImpl",
+        ],
+        "testEvidence": ["tools/tests/test_p33b_legacy_exception_routes.py"],
+        "exitCondition": (
+            "Migrate alarm compatibility to a typed system_server FeatureSpec that "
+            "declares the AlarmManagerService lifecycle hooks and a per-app allowlist "
+            "contract (P3.3C+)."
         ),
     },
 ]
@@ -346,7 +505,8 @@ def build_registry(sites: list[dict]) -> dict:
         site_index[(s["rel"], s["function"])].append(s)
 
     records: list[dict] = []
-    for seed in FIRST_BATCH_SEEDS:
+    batch_counts: dict[str, int] = defaultdict(int)
+    for seed in LEGACY_EXCEPTION_SEEDS:
         rel = seed["sourceFile"]
         funcs = seed.get("ownedFunctions", {seed["entrypoint"]})
         covered: list[str] = []
@@ -355,9 +515,12 @@ def build_registry(sites: list[dict]) -> dict:
                 covered.append(_stable_call_id(s["rel"], s["line"], s["function"]))
 
         record_id = _generate_record_id(seed["id"])
+        batch = seed.get("batch", "P3.3A")
+        batch_counts[batch] += 1
         records.append(
             {
                 "id": record_id,
+                "batch": batch,
                 "status": "ACTIVE",
                 "owner": seed["owner"],
                 "sourceFile": seed["sourceFile"],
@@ -378,12 +541,16 @@ def build_registry(sites: list[dict]) -> dict:
 
     records.sort(key=lambda r: r["id"])
 
+    first_batch_size = batch_counts.get("P3.3A", 0)
+
     return {
-        "schemaVersion": 1,
+        "schemaVersion": 2,
         "inputDigest": _input_digest(all_legacy_ids),
         "totalLegacyCallSites": len(legacy),
         "totalLegacyGroups": len(groups),
-        "firstBatchSize": len(records),
+        "firstBatchSize": first_batch_size,
+        "registeredRecordCount": len(records),
+        "batchCounts": dict(sorted(batch_counts.items())),
         "records": records,
     }
 
@@ -511,6 +678,7 @@ def validate(registry: dict, strict: bool = True) -> list[str]:
         prefix = f"record[{idx}] ({rec.get('id', '?')})"
         for field in (
             "id",
+            "batch",
             "status",
             "owner",
             "sourceFile",
@@ -526,6 +694,9 @@ def validate(registry: dict, strict: bool = True) -> list[str]:
         ):
             if field not in rec:
                 errors.append(f"{prefix}: missing field '{field}'")
+
+        if rec.get("batch") not in ("P3.3A", "P3.3B"):
+            errors.append(f"{prefix}: batch must be 'P3.3A' or 'P3.3B', got {rec.get('batch')!r}")
 
         if not rec.get("owner"):
             errors.append(f"{prefix}: owner is empty")
@@ -658,7 +829,7 @@ def canonical_diff(expected: dict, actual: dict) -> list[str]:
     a = _canonical(actual)
     errors: list[str] = []
 
-    top_fields = ("schemaVersion", "totalLegacyCallSites", "totalLegacyGroups", "firstBatchSize", "inputDigest")
+    top_fields = ("schemaVersion", "totalLegacyCallSites", "totalLegacyGroups", "firstBatchSize", "registeredRecordCount", "batchCounts", "inputDigest")
     for f in top_fields:
         if a.get(f) != e.get(f):
             errors.append(
@@ -767,9 +938,12 @@ def main() -> int:
         f.write("\n")
 
     print(f"Wrote {OUT_FILE}")
+    print(f"  schema version:          {registry['schemaVersion']}")
     print(f"  total legacy call sites: {registry['totalLegacyCallSites']}")
     print(f"  total legacy groups:     {registry['totalLegacyGroups']}")
     print(f"  first batch records:     {registry['firstBatchSize']}")
+    print(f"  registered records:      {registry['registeredRecordCount']}")
+    print(f"  batch counts:            {registry['batchCounts']}")
     return 0
 
 

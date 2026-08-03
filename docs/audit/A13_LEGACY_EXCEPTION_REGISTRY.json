@@ -1,12 +1,18 @@
 {
-  "schemaVersion": 1,
+  "schemaVersion": 2,
   "inputDigest": "f06dc0650e32702fbe8646edfc880d747dd6da2a51d0603f5599a1b89777bc72",
   "totalLegacyCallSites": 514,
   "totalLegacyGroups": 205,
   "firstBatchSize": 4,
+  "registeredRecordCount": 8,
+  "batchCounts": {
+    "P3.3A": 4,
+    "P3.3B": 4
+  },
   "records": [
     {
       "id": "0f39ad5a6b4ea752",
+      "batch": "P3.3A",
       "status": "ACTIVE",
       "owner": "USBConfigSettingsHook",
       "sourceFile": "tv/withaibuild/customiuizer/mods/SystemSettingsMoreHooks.kt",
@@ -31,6 +37,7 @@
     },
     {
       "id": "1676c40a75d45cc9",
+      "batch": "P3.3A",
       "status": "ACTIVE",
       "owner": "MIUIVolumeDialogHook",
       "sourceFile": "tv/withaibuild/customiuizer/mods/SystemUIControlCenterHooks.kt",
@@ -62,6 +69,7 @@
     },
     {
       "id": "2dab6505e43f17aa",
+      "batch": "P3.3A",
       "status": "ACTIVE",
       "owner": "NotificationVolumeSettingsHook",
       "sourceFile": "tv/withaibuild/customiuizer/mods/SystemAudioAndVolumeHooks.kt",
@@ -85,7 +93,141 @@
       "exitCondition": "Merge into a per-app FeatureSpec for com.android.settings when the Settings installer is replaced by the typed registry (P3.3C)."
     },
     {
+      "id": "7fdf7b182b8948af",
+      "batch": "P3.3B",
+      "status": "ACTIVE",
+      "owner": "GlobalActions.setupGlobalActions",
+      "sourceFile": "tv/withaibuild/customiuizer/mods/GlobalActions.kt",
+      "entrypoint": "setupGlobalActions",
+      "process": "system_server",
+      "phase": "SYSTEM_SERVER_STARTING",
+      "preferenceKeys": [
+        "controls_backlong_action",
+        "controls_fingerprint2_action",
+        "controls_fingerprintlong_action",
+        "controls_fsg_assist_left_action",
+        "controls_fsg_assist_right_action",
+        "controls_fsg_swipeandstop_action",
+        "controls_homelong_action",
+        "controls_menulong_action",
+        "controls_navbarleft_action",
+        "controls_navbarleftlong_action",
+        "controls_navbarright_action",
+        "controls_navbarrightlong_action",
+        "controls_powerdt_action",
+        "controls_volumemedia_down",
+        "controls_volumemedia_up",
+        "launcher_doubletap_action",
+        "launcher_pinch_action",
+        "launcher_shake_action",
+        "launcher_spread_action",
+        "launcher_swipedown_action",
+        "launcher_swipeleft_action",
+        "launcher_swiperight_action",
+        "launcher_swipeup_action",
+        "system_cc_custom_clock_action",
+        "system_lockscreenshortcuts_right_action"
+      ],
+      "reasonCode": "LIFECYCLE_BOOTSTRAP",
+      "reason": "GlobalActions.setupGlobalActions is installed at SYSTEM_SERVER_STARTING when needGlobalActions() detects any configured action preference (key ending with _action) or media volume controls with a non-empty player app list. It hooks AccessibilityManagerService construction and BaseMiuiPhoneWindowManager#initInternal to register cross-process broadcast receivers before the system finishes booting. There is no single typed FeatureSpec that owns both the lifecycle bootstrap and the cross-process action dispatch surface today.",
+      "coveredCallSites": [
+        "tv/withaibuild/customiuizer/mods/GlobalActions.kt:780:setupGlobalActions",
+        "tv/withaibuild/customiuizer/mods/GlobalActions.kt:827:setupGlobalActions"
+      ],
+      "hookTargets": [
+        "com.android.server.accessibility.AccessibilityManagerService#<init>",
+        "com.android.server.policy.BaseMiuiPhoneWindowManager#initInternal"
+      ],
+      "testEvidence": [
+        "tools/tests/test_legacy_exception_registry.py",
+        "tools/tests/test_p33b_legacy_exception_routes.py"
+      ],
+      "exitCondition": "Migrate each global action to a typed FeatureSpec that declares its source process, broadcast contract, and the exact system service hook it needs; remove this exception when all actions are installed by typed dispatchers and the global AccessibilityManagerService / BaseMiuiPhoneWindowManager hooks are no longer needed (P3.3C+)."
+    },
+    {
+      "id": "84c04bebd4eb8a81",
+      "batch": "P3.3B",
+      "status": "ACTIVE",
+      "owner": "AlarmCompatServiceHook",
+      "sourceFile": "tv/withaibuild/customiuizer/mods/Various.kt",
+      "entrypoint": "AlarmCompatServiceHook",
+      "process": "system_server",
+      "phase": "SYSTEM_SERVER_STARTING",
+      "preferenceKeys": [
+        "various_alarmcompat",
+        "various_alarmcompat_apps"
+      ],
+      "reasonCode": "LIFECYCLE_BOOTSTRAP",
+      "reason": "AlarmCompatServiceHook is installed at SYSTEM_SERVER_STARTING when various_alarmcompat is enabled. It hooks AlarmManagerService#onBootPhase (phase 500) to register a ContentObserver for next_alarm_clock_formatted and AlarmManagerService#getNextAlarmClockImpl to return a synthetic alarm for selected apps. The feature is tied to the ROM-specific AlarmManagerService lifecycle and cannot be expressed as a typed Feature today.",
+      "coveredCallSites": [
+        "tv/withaibuild/customiuizer/mods/Various.kt:830:AlarmCompatServiceHook",
+        "tv/withaibuild/customiuizer/mods/Various.kt:852:AlarmCompatServiceHook"
+      ],
+      "hookTargets": [
+        "com.android.server.alarm.AlarmManagerService#getNextAlarmClockImpl",
+        "com.android.server.alarm.AlarmManagerService#onBootPhase"
+      ],
+      "testEvidence": [
+        "tools/tests/test_p33b_legacy_exception_routes.py"
+      ],
+      "exitCondition": "Migrate alarm compatibility to a typed system_server FeatureSpec that declares the AlarmManagerService lifecycle hooks and a per-app allowlist contract (P3.3C+)."
+    },
+    {
+      "id": "adbd2a4c00ad368a",
+      "batch": "P3.3B",
+      "status": "ACTIVE",
+      "owner": "GlobalActions.setupForegroundMonitor",
+      "sourceFile": "tv/withaibuild/customiuizer/mods/GlobalActions.kt",
+      "entrypoint": "setupForegroundMonitor",
+      "process": "system_ui",
+      "phase": "PACKAGE_READY",
+      "preferenceKeys": [
+        "controls_volumecursor",
+        "various_showcallui"
+      ],
+      "reasonCode": "CROSS_PROCESS",
+      "reason": "GlobalActions.setupForegroundMonitor is installed in SystemUI when various_showcallui is enabled or controls_volumecursor is enabled. It observes the foreground package and fullscreen state and writes them into Settings.Global for cross-process consumption. The observer spans NetworkSpeedController construction, MiuiActivityUtil, and StatusBarStateControllerImpl, so it has no single typed owner today.",
+      "coveredCallSites": [
+        "tv/withaibuild/customiuizer/mods/GlobalActions.kt:743:setupForegroundMonitor",
+        "tv/withaibuild/customiuizer/mods/GlobalActions.kt:747:setupForegroundMonitor",
+        "tv/withaibuild/customiuizer/mods/GlobalActions.kt:759:setupForegroundMonitor"
+      ],
+      "hookTargets": [
+        "com.android.systemui.statusbar.StatusBarStateControllerImpl#setSystemBarAttributes",
+        "com.android.systemui.statusbar.policy.NetworkSpeedController#<init>",
+        "com.miui.systemui.util.MiuiActivityUtil#updateTopActivity"
+      ],
+      "testEvidence": [
+        "tools/tests/test_p33b_legacy_exception_routes.py"
+      ],
+      "exitCondition": "Migrate foreground package and fullscreen monitoring to a typed SystemUI FeatureSpec that owns NetworkSpeedController, MiuiActivityUtil, and StatusBarStateControllerImpl with explicit lifecycle boundaries (P3.3C+)."
+    },
+    {
+      "id": "b39d505a5ec5dc48",
+      "batch": "P3.3B",
+      "status": "ACTIVE",
+      "owner": "GlobalActions.setupStatusBar",
+      "sourceFile": "tv/withaibuild/customiuizer/mods/GlobalActions.kt",
+      "entrypoint": "setupStatusBar",
+      "process": "system_ui",
+      "phase": "PACKAGE_READY",
+      "preferenceKeys": [],
+      "reasonCode": "CROSS_PROCESS",
+      "reason": "GlobalActions.setupStatusBar is installed unconditionally when the SystemUI package is ready. It hooks CentralSurfacesImpl#start to register a status-bar broadcast receiver that handles cross-process actions (expand notifications, toggle GPS, etc.). It cannot be a single typed Feature today because the receiver covers multiple unrelated actions and spans the SystemUI lifecycle.",
+      "coveredCallSites": [
+        "tv/withaibuild/customiuizer/mods/GlobalActions.kt:893:setupStatusBar"
+      ],
+      "hookTargets": [
+        "com.android.systemui.statusbar.phone.CentralSurfacesImpl#start"
+      ],
+      "testEvidence": [
+        "tools/tests/test_p33b_legacy_exception_routes.py"
+      ],
+      "exitCondition": "Migrate the status-bar global action receiver to a typed SystemUI FeatureSpec that owns CentralSurfacesImpl#start and declares the cross-process broadcast contract (P3.3C+)."
+    },
+    {
       "id": "d0b55fb7aa83c53a",
+      "batch": "P3.3A",
       "status": "ACTIVE",
       "owner": "USBConfigHook",
       "sourceFile": "tv/withaibuild/customiuizer/mods/SystemSettingsMoreHooks.kt",
@@ -115,8 +257,8 @@
       "exitCondition": "Create a typed system_server FeatureSpec for USB default mode and expose a cross-process contract for the Settings variant (P3.3C)."
     }
   ],
-  "sourceCommit": "d289a05e7de4665eb6af62b6ec8739961207c948",
+  "sourceCommit": "64cf44aa384e2244ae9a8b8c8289360cd32ad3be",
   "sourceTree": "3c99e89a99f32263ed34402765ce5c11eb4d9de1",
-  "generatorVersion": "1c11f925977b3abd",
-  "generatedAt": "2026-08-03T08:31:34+00:00"
+  "generatorVersion": "94f6c48b7e4fbd8f",
+  "generatedAt": "2026-08-03T14:34:41+00:00"
 }

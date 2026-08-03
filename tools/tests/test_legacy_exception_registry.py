@@ -253,45 +253,45 @@ class LegacyExceptionIntegrityTest(unittest.TestCase):
 
     def test_26_delete_seed_fails_check(self) -> None:
         import build_legacy_exception_registry as builder
-        orig = copy.deepcopy(builder.FIRST_BATCH_SEEDS)
+        orig = copy.deepcopy(builder.LEGACY_EXCEPTION_SEEDS)
         try:
-            builder.FIRST_BATCH_SEEDS = copy.deepcopy(builder.FIRST_BATCH_SEEDS[:-1])
+            builder.LEGACY_EXCEPTION_SEEDS = copy.deepcopy(builder.LEGACY_EXCEPTION_SEEDS[:-1])
             sites = builder.scan_legacy_call_sites()
             expected = builder.build_registry(sites)
             diffs = builder.canonical_diff(expected, self.registry)
             self.assertTrue(diffs, "Deleting a seed must make --check fail")
         finally:
-            builder.FIRST_BATCH_SEEDS = orig
+            builder.LEGACY_EXCEPTION_SEEDS = orig
 
     def test_27_modify_seed_owner_fails_check(self) -> None:
         import build_legacy_exception_registry as builder
-        orig = copy.deepcopy(builder.FIRST_BATCH_SEEDS)
+        orig = copy.deepcopy(builder.LEGACY_EXCEPTION_SEEDS)
         try:
-            builder.FIRST_BATCH_SEEDS = copy.deepcopy(builder.FIRST_BATCH_SEEDS)
-            builder.FIRST_BATCH_SEEDS[0]["owner"] = "ModifiedOwner"
+            builder.LEGACY_EXCEPTION_SEEDS = copy.deepcopy(builder.LEGACY_EXCEPTION_SEEDS)
+            builder.LEGACY_EXCEPTION_SEEDS[0]["owner"] = "ModifiedOwner"
             sites = builder.scan_legacy_call_sites()
             expected = builder.build_registry(sites)
             diffs = builder.canonical_diff(expected, self.registry)
             self.assertTrue(diffs, "Modifying seed owner must make --check fail")
         finally:
-            builder.FIRST_BATCH_SEEDS = orig
+            builder.LEGACY_EXCEPTION_SEEDS = orig
 
     def test_28_modify_seed_owned_functions_fails_check(self) -> None:
         import build_legacy_exception_registry as builder
-        orig = copy.deepcopy(builder.FIRST_BATCH_SEEDS)
+        orig = copy.deepcopy(builder.LEGACY_EXCEPTION_SEEDS)
         try:
-            builder.FIRST_BATCH_SEEDS = copy.deepcopy(builder.FIRST_BATCH_SEEDS)
-            builder.FIRST_BATCH_SEEDS[0]["ownedFunctions"] = {"MIUIVolumeDialogHook"}
+            builder.LEGACY_EXCEPTION_SEEDS = copy.deepcopy(builder.LEGACY_EXCEPTION_SEEDS)
+            builder.LEGACY_EXCEPTION_SEEDS[0]["ownedFunctions"] = {"MIUIVolumeDialogHook"}
             sites = builder.scan_legacy_call_sites()
             expected = builder.build_registry(sites)
             diffs = builder.canonical_diff(expected, self.registry)
             self.assertTrue(diffs, "Modifying seed ownedFunctions must make --check fail")
         finally:
-            builder.FIRST_BATCH_SEEDS = orig
+            builder.LEGACY_EXCEPTION_SEEDS = orig
 
     def test_29_add_seed_fails_check(self) -> None:
         import build_legacy_exception_registry as builder
-        orig = copy.deepcopy(builder.FIRST_BATCH_SEEDS)
+        orig = copy.deepcopy(builder.LEGACY_EXCEPTION_SEEDS)
         try:
             extra = {
                 "id": "legacy-test-added",
@@ -308,26 +308,26 @@ class LegacyExceptionIntegrityTest(unittest.TestCase):
                 "testEvidence": ["tools/tests/test_legacy_exception_registry.py"],
                 "exitCondition": "test",
             }
-            builder.FIRST_BATCH_SEEDS = copy.deepcopy(builder.FIRST_BATCH_SEEDS) + [extra]
+            builder.LEGACY_EXCEPTION_SEEDS = copy.deepcopy(builder.LEGACY_EXCEPTION_SEEDS) + [extra]
             sites = builder.scan_legacy_call_sites()
             expected = builder.build_registry(sites)
             diffs = builder.canonical_diff(expected, self.registry)
             self.assertTrue(diffs, "Adding a seed must make --check fail")
         finally:
-            builder.FIRST_BATCH_SEEDS = orig
+            builder.LEGACY_EXCEPTION_SEEDS = orig
 
     def test_30_seed_order_does_not_change_canonical(self) -> None:
         import build_legacy_exception_registry as builder
-        orig = copy.deepcopy(builder.FIRST_BATCH_SEEDS)
+        orig = copy.deepcopy(builder.LEGACY_EXCEPTION_SEEDS)
         try:
             sites = builder.scan_legacy_call_sites()
             expected_normal = builder.build_registry(sites)
-            builder.FIRST_BATCH_SEEDS = list(reversed(copy.deepcopy(builder.FIRST_BATCH_SEEDS)))
+            builder.LEGACY_EXCEPTION_SEEDS = list(reversed(copy.deepcopy(builder.LEGACY_EXCEPTION_SEEDS)))
             expected_reversed = builder.build_registry(sites)
             diffs = builder.canonical_diff(expected_normal, expected_reversed)
             self.assertEqual(diffs, [], "Reversing seed order must not change canonical registry")
         finally:
-            builder.FIRST_BATCH_SEEDS = orig
+            builder.LEGACY_EXCEPTION_SEEDS = orig
 
     def test_31_single_record_whole_file_calls_fails(self) -> None:
         import build_legacy_exception_registry as builder
@@ -550,9 +550,17 @@ class LegacyExceptionIntegrityTest(unittest.TestCase):
         diffs = builder.canonical_diff(expected, reg)
         self.assertEqual(diffs, [], "generatedAt and sourceCommit must not affect canonical comparison")
 
-    def test_47_first_batch_covers_exactly_eleven_calls(self) -> None:
-        total = sum(len(r["coveredCallSites"]) for r in self.registry["records"])
-        self.assertEqual(total, 11, "First batch must cover exactly 11 call sites")
+    def test_47_p3_3a_batch_covers_exactly_eleven_calls(self) -> None:
+        p3_3a = [r for r in self.registry["records"] if r["batch"] == "P3.3A"]
+        total = sum(len(r["coveredCallSites"]) for r in p3_3a)
+        self.assertEqual(total, 11, "P3.3A batch must cover exactly 11 call sites")
+
+    def test_48_first_batch_size_is_four(self) -> None:
+        self.assertEqual(self.registry.get("firstBatchSize"), 4, "firstBatchSize must remain 4")
+
+    def test_49_all_records_have_batch(self) -> None:
+        for rec in self.registry["records"]:
+            self.assertIn(rec.get("batch"), ("P3.3A", "P3.3B"), f"Record {rec.get('id')} has invalid batch")
 
     def test_48_p3_2_1b_python_test_not_regressed(self) -> None:
         import subprocess
