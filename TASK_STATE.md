@@ -484,9 +484,11 @@ P3.2.1A R1 修复验证记录：
 - GitHub CI A13 Fast CI run 30772075962  PASS (commit a34d0ef)
 ```
 
-P3.2.1B AnyOfRequirement 组级语义验证记录（待补充 exact commit CI）：
+P3.2.1B AnyOfRequirement 组级语义验证记录（exact commit CI 待追加）：
 
 ```text
+QualifyingCommit: cb70bca9a5a8a0852fc5931e5388ebcde757fd98
+VerifiedTree: 042f8fcd4f928b6d0bf3e6f9d5959546d311ff55
 - python -m unittest tools.tests.test_check_hook_contract_parity  PASS (54 tests)
 - python tools/check_hook_contract_parity.py  PASS (batches 9/10/11/12)
 - python -m unittest discover -s tools/tests -p "test_*.py"  PASS (221 tests)
@@ -496,6 +498,7 @@ P3.2.1B AnyOfRequirement 组级语义验证记录（待补充 exact commit CI）
 - powershell -NoProfile -ExecutionPolicy Bypass -File .\scripts\verify.ps1 -Mode Fast  PASS
 - powershell -NoProfile -ExecutionPolicy Bypass -File .\scripts\verify.ps1 -Mode Full  PASS
 - git diff --check  PASS
+- GitHub CI A13 Fast CI  run pending (state format fix commit pushed after cb70bca)
 ```
 
 ---
