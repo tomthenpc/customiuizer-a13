@@ -55,7 +55,7 @@ class TestContractParsing(unittest.TestCase):
         )
         }
         '''
-        targets, errors = parity.parse_contract_targets(text, "noDarkForce")
+        targets, _, errors = parity.parse_contract_targets(text, "noDarkForce")
         self.assertEqual(errors, [])
         self.assertEqual(len(targets), 1)
         key = next(iter(targets))
@@ -80,7 +80,7 @@ class TestContractParsing(unittest.TestCase):
         )
         }
         '''
-        targets, errors = parity.parse_contract_targets(text, "appLock")
+        targets, _, errors = parity.parse_contract_targets(text, "appLock")
         self.assertEqual(errors, [])
         self.assertEqual(len(targets), 1)
         key = next(iter(targets))
@@ -326,7 +326,7 @@ class TestParameterTypesParity(unittest.TestCase):
         )
         }
         '''
-        targets, errors = parity.parse_contract_targets(text, "testContract")
+        targets, _, errors = parity.parse_contract_targets(text, "testContract")
         self.assertEqual(errors, [])
         self.assertEqual(len(targets), 1)
         key = next(iter(targets))
@@ -350,7 +350,7 @@ class TestParameterTypesParity(unittest.TestCase):
         )
         }
         '''
-        targets, errors = parity.parse_contract_targets(text, "testContract")
+        targets, _, errors = parity.parse_contract_targets(text, "testContract")
         self.assertEqual(errors, [])
         self.assertEqual(len(targets), 1)
         key = next(iter(targets))
@@ -373,7 +373,7 @@ class TestParameterTypesParity(unittest.TestCase):
         )
         }
         '''
-        targets, errors = parity.parse_contract_targets(text, "testContract")
+        targets, _, errors = parity.parse_contract_targets(text, "testContract")
         self.assertEqual(errors, [])
         self.assertEqual(len(targets), 1)
         key = next(iter(targets))
@@ -510,7 +510,7 @@ class TestDuplicateContractTarget(unittest.TestCase):
         )
         }
         '''
-        targets, errors = parity.parse_contract_targets(text, "testContract")
+        targets, _, errors = parity.parse_contract_targets(text, "testContract")
         self.assertEqual(len([e for e in errors if "DUPLICATE_CONTRACT_TARGET" in e]), 1)
         self.assertEqual(len(targets), 1)
 
@@ -542,7 +542,7 @@ class TestDuplicateContractTarget(unittest.TestCase):
         )
         }
         '''
-        targets, errors = parity.parse_contract_targets(text, "testContract")
+        targets, _, errors = parity.parse_contract_targets(text, "testContract")
         self.assertEqual(len([e for e in errors if "DUPLICATE_CONTRACT_TARGET" in e]), 1)
         self.assertEqual(len(targets), 1)
 
@@ -568,7 +568,7 @@ class TestUnresolvedParameterTypes(unittest.TestCase):
         )
         }
         '''
-        targets, errors = parity.parse_contract_targets(text, "testContract")
+        targets, _, errors = parity.parse_contract_targets(text, "testContract")
         self.assertTrue(any("UNRESOLVED_PARAMETER_TYPES" in e for e in errors), errors)
         self.assertEqual(len(targets), 0)
 
@@ -590,7 +590,7 @@ class TestUnresolvedParameterTypes(unittest.TestCase):
         )
         }
         '''
-        targets, errors = parity.parse_contract_targets(text, "testContract")
+        targets, _, errors = parity.parse_contract_targets(text, "testContract")
         self.assertTrue(any("UNRESOLVED_PARAMETER_TYPES" in e for e in errors), errors)
 
     def test_empty_list_valid(self) -> None:
@@ -611,7 +611,7 @@ class TestUnresolvedParameterTypes(unittest.TestCase):
         )
         }
         '''
-        targets, errors = parity.parse_contract_targets(text, "testContract")
+        targets, _, errors = parity.parse_contract_targets(text, "testContract")
         self.assertEqual(errors, [])
         self.assertEqual(len(targets), 1)
         self.assertEqual(next(iter(targets)).parameter_types, ())
@@ -634,7 +634,7 @@ class TestUnresolvedParameterTypes(unittest.TestCase):
         )
         }
         '''
-        targets, errors = parity.parse_contract_targets(text, "testContract")
+        targets, _, errors = parity.parse_contract_targets(text, "testContract")
         self.assertEqual(errors, [])
         self.assertEqual(len(targets), 1)
         self.assertEqual(next(iter(targets)).parameter_types, ())
@@ -705,7 +705,7 @@ class TestMutations(unittest.TestCase):
         '''
 
         def correct() -> None:
-            targets, errors = parity.parse_contract_targets(text, "testContract")
+            targets, _, errors = parity.parse_contract_targets(text, "testContract")
             self.assertEqual(len([e for e in errors if "DUPLICATE_CONTRACT_TARGET" in e]), 1)
             self.assertEqual(len(targets), 1)
 
@@ -756,7 +756,7 @@ class TestMutations(unittest.TestCase):
         '''
 
         def correct() -> None:
-            targets, errors = parity.parse_contract_targets(text, "testContract")
+            targets, _, errors = parity.parse_contract_targets(text, "testContract")
             self.assertTrue(any("UNRESOLVED_PARAMETER_TYPES" in e for e in errors), errors)
 
         self._patch_and_assert_fails("resolve_parameter_list", buggy, correct)
@@ -769,7 +769,7 @@ class TestMutations(unittest.TestCase):
             issues = original(batch, contracts_text, source_root)
             for feature_id, (rel_path, function_name) in batch.items():
                 prod_targets, _ = parity.extract_production_targets(source_root, rel_path, function_name)
-                contract_targets, _ = parity.parse_contract_targets(contracts_text, feature_id)
+                contract_targets, _, _ = parity.parse_contract_targets(contracts_text, feature_id)
                 prod_keys = {pt.key for pt in prod_targets}
                 contract_keys = set(contract_targets.keys())
 
@@ -831,6 +831,574 @@ object ExampleHooks {
                 self.assertEqual(len([i for i in issues if "ORPHAN" in i]), 0)
 
             self._patch_and_assert_fails("check_batch", buggy, correct)
+
+
+class TestAnyOfRequirement(unittest.TestCase):
+    """AnyOfRequirement group semantics — candidates are not flattened."""
+
+    def _anyof_contract(self, optional: bool = False, fallback_type: str = "String") -> str:
+        crit = "Criticality.OPTIONAL" if optional else "Criticality.REQUIRED"
+        primary_param = "parameterTypes = listOf(INT)"
+        fallback_param = f"parameterTypes = listOf({fallback_type})"
+        return f'''
+        val testContract: HookTargetContract by lazy(kotlin.LazyThreadSafetyMode.NONE) {{ HookTargetContract(
+            featureId = "testContract",
+            requirements = listOf(
+                AnyOfRequirement(
+                    id = "testContract.group",
+                    criticality = {crit},
+                    candidates = listOf(
+                        HookTargetSpec(
+                            id = "Foo.bar.primary",
+                            operation = HookOperation.EXACT_METHOD,
+                            className = "com.example.Foo",
+                            memberName = "bar",
+                            {primary_param}
+                        ),
+                        HookTargetSpec(
+                            id = "Foo.bar.fallback",
+                            operation = HookOperation.EXACT_METHOD,
+                            className = "com.example.Foo",
+                            memberName = "bar",
+                            {fallback_param}
+                        )
+                    )
+                )
+            )
+        )
+        }}
+        '''
+
+    def _setup(self, contracts: str, production: str):
+        td = tempfile.TemporaryDirectory()
+        self.addCleanup(td.cleanup)
+        root = Path(td.name)
+        prod = root / "tv" / "withaibuild" / "customiuizer" / "mods" / "ExampleHooks.kt"
+        prod.parent.mkdir(parents=True, exist_ok=True)
+        prod.write_text(production, encoding="utf-8")
+        contracts_path = root / "CatalogContracts.kt"
+        contracts_path.write_text(contracts, encoding="utf-8")
+        return root, {"testContract": ("tv/withaibuild/customiuizer/mods/ExampleHooks.kt", "ExampleHook")}
+
+    def test_anyof_not_flattened_to_single_targets(self) -> None:
+        contracts = self._anyof_contract()
+        single, anyof, errors = parity.parse_contract_targets(contracts, "testContract")
+        self.assertEqual(errors, [])
+        self.assertEqual(len(single), 0)
+        self.assertEqual(len(anyof), 1)
+        self.assertEqual(len(anyof[0].candidates), 2)
+
+    def test_anyof_satisfied_by_primary_candidate(self) -> None:
+        contracts = self._anyof_contract()
+        production = '''
+object ExampleHooks {
+    @JvmStatic
+    fun ExampleHook(lpparam: SystemServerStartingParam) {
+        ModuleHelper.findAndHookMethod("com.example.Foo", lpparam.classLoader, "bar", Int::class.javaPrimitiveType, object : MethodHook() {})
+    }
+}
+'''
+        root, batch = self._setup(contracts, production)
+        issues = parity.check_batch(batch, contracts, root)
+        self.assertEqual(issues, [])
+
+    def test_anyof_satisfied_by_fallback_candidate(self) -> None:
+        contracts = self._anyof_contract()
+        production = '''
+object ExampleHooks {
+    @JvmStatic
+    fun ExampleHook(lpparam: SystemServerStartingParam) {
+        ModuleHelper.findAndHookMethod("com.example.Foo", lpparam.classLoader, "bar", String::class.java, object : MethodHook() {})
+    }
+}
+'''
+        root, batch = self._setup(contracts, production)
+        issues = parity.check_batch(batch, contracts, root)
+        self.assertEqual(issues, [])
+
+    def test_anyof_unsatisfied_when_no_candidate_matches(self) -> None:
+        contracts = self._anyof_contract()
+        production = '''
+object ExampleHooks {
+    @JvmStatic
+    fun ExampleHook(lpparam: SystemServerStartingParam) {
+        ModuleHelper.findAndHookMethod("com.example.Other", lpparam.classLoader, "bar", Int::class.javaPrimitiveType, object : MethodHook() {})
+    }
+}
+'''
+        root, batch = self._setup(contracts, production)
+        issues = parity.check_batch(batch, contracts, root)
+        self.assertEqual(len([i for i in issues if "ANYOF_GROUP_UNSATISFIED" in i]), 1)
+
+    def test_anyof_candidate_parameter_types_mismatch(self) -> None:
+        contracts = '''
+        val testContract: HookTargetContract by lazy(kotlin.LazyThreadSafetyMode.NONE) { HookTargetContract(
+            featureId = "testContract",
+            requirements = listOf(
+                AnyOfRequirement(
+                    id = "testContract.group",
+                    criticality = Criticality.REQUIRED,
+                    candidates = listOf(
+                        HookTargetSpec(
+                            id = "Foo.bar",
+                            operation = HookOperation.EXACT_METHOD,
+                            className = "com.example.Foo",
+                            memberName = "bar",
+                            parameterTypes = listOf(INT)
+                        )
+                    )
+                )
+            )
+        )
+        }
+        '''
+        production = '''
+object ExampleHooks {
+    @JvmStatic
+    fun ExampleHook(lpparam: SystemServerStartingParam) {
+        ModuleHelper.findAndHookMethod("com.example.Foo", lpparam.classLoader, "bar", String::class.java, object : MethodHook() {})
+    }
+}
+'''
+        root, batch = self._setup(contracts, production)
+        issues = parity.check_batch(batch, contracts, root)
+        self.assertEqual(len([i for i in issues if "ANYOF_CANDIDATE_MISMATCH" in i]), 1)
+        self.assertEqual(len([i for i in issues if "MISSING_CONTRACT_TARGET" in i]), 0)
+
+    def test_anyof_misses_production_target(self) -> None:
+        contracts = self._anyof_contract()
+        production = '''
+object ExampleHooks {
+    @JvmStatic
+    fun ExampleHook(lpparam: SystemServerStartingParam) {
+        ModuleHelper.findAndHookMethod("com.example.Missing", lpparam.classLoader, "missing", Int::class.javaPrimitiveType, object : MethodHook() {})
+    }
+}
+'''
+        root, batch = self._setup(contracts, production)
+        issues = parity.check_batch(batch, contracts, root)
+        self.assertEqual(len([i for i in issues if "ANYOF_GROUP_UNSATISFIED" in i]), 1)
+        self.assertEqual(len([i for i in issues if "MISSING_CONTRACT_TARGET" in i]), 1)
+
+    def test_anyof_criticality_required_preserved(self) -> None:
+        contracts = self._anyof_contract(optional=False)
+        production = '''
+object ExampleHooks {
+    @JvmStatic
+    fun ExampleHook(lpparam: SystemServerStartingParam) {
+        ModuleHelper.findAndHookMethodSilently("com.example.Foo", lpparam.classLoader, "bar", Int::class.javaPrimitiveType, object : MethodHook() {})
+    }
+}
+'''
+        root, batch = self._setup(contracts, production)
+        issues = parity.check_batch(batch, contracts, root)
+        self.assertEqual(len([i for i in issues if "CRITICALITY_MISMATCH" in i]), 1)
+
+    def test_anyof_criticality_optional_preserved(self) -> None:
+        contracts = self._anyof_contract(optional=True)
+        production = '''
+object ExampleHooks {
+    @JvmStatic
+    fun ExampleHook(lpparam: SystemServerStartingParam) {
+        ModuleHelper.findAndHookMethod("com.example.Foo", lpparam.classLoader, "bar", Int::class.javaPrimitiveType, object : MethodHook() {})
+    }
+}
+'''
+        root, batch = self._setup(contracts, production)
+        issues = parity.check_batch(batch, contracts, root)
+        self.assertEqual(len([i for i in issues if "CRITICALITY_MISMATCH" in i]), 1)
+
+    def test_anyof_with_single_target_together(self) -> None:
+        contracts = '''
+        val testContract: HookTargetContract by lazy(kotlin.LazyThreadSafetyMode.NONE) { HookTargetContract(
+            featureId = "testContract",
+            requirements = listOf(
+                SingleTargetRequirement(
+                    target = HookTargetSpec(
+                        id = "Single.baz",
+                        operation = HookOperation.EXACT_METHOD,
+                        className = "com.example.Single",
+                        memberName = "baz",
+                        parameterTypes = listOf(INT)
+                    )
+                ),
+                AnyOfRequirement(
+                    id = "testContract.group",
+                    criticality = Criticality.REQUIRED,
+                    candidates = listOf(
+                        HookTargetSpec(
+                            id = "Foo.bar.primary",
+                            operation = HookOperation.EXACT_METHOD,
+                            className = "com.example.Foo",
+                            memberName = "bar",
+                            parameterTypes = listOf(INT)
+                        ),
+                        HookTargetSpec(
+                            id = "Foo.bar.fallback",
+                            operation = HookOperation.EXACT_METHOD,
+                            className = "com.example.Foo",
+                            memberName = "bar",
+                            parameterTypes = listOf(String)
+                        )
+                    )
+                )
+            )
+        )
+        }
+        '''
+        production = '''
+object ExampleHooks {
+    @JvmStatic
+    fun ExampleHook(lpparam: SystemServerStartingParam) {
+        ModuleHelper.findAndHookMethod("com.example.Single", lpparam.classLoader, "baz", Int::class.javaPrimitiveType, object : MethodHook() {})
+        ModuleHelper.findAndHookMethod("com.example.Foo", lpparam.classLoader, "bar", String::class.java, object : MethodHook() {})
+    }
+}
+'''
+        root, batch = self._setup(contracts, production)
+        issues = parity.check_batch(batch, contracts, root)
+        self.assertEqual(issues, [])
+
+    def test_empty_anyof_group(self) -> None:
+        contracts = '''
+        val testContract: HookTargetContract by lazy(kotlin.LazyThreadSafetyMode.NONE) { HookTargetContract(
+            featureId = "testContract",
+            requirements = listOf(
+                AnyOfRequirement(
+                    id = "testContract.empty",
+                    criticality = Criticality.REQUIRED,
+                    candidates = listOf()
+                )
+            )
+        )
+        }
+        '''
+        single, anyof, errors = parity.parse_contract_targets(contracts, "testContract")
+        self.assertEqual(len(anyof), 0)
+        self.assertTrue(any("EMPTY_ANYOF_GROUP" in e for e in errors), errors)
+
+    def test_duplicate_anyof_candidate(self) -> None:
+        contracts = '''
+        val testContract: HookTargetContract by lazy(kotlin.LazyThreadSafetyMode.NONE) { HookTargetContract(
+            featureId = "testContract",
+            requirements = listOf(
+                AnyOfRequirement(
+                    id = "testContract.group",
+                    criticality = Criticality.REQUIRED,
+                    candidates = listOf(
+                        HookTargetSpec(
+                            id = "Foo.bar.primary",
+                            operation = HookOperation.EXACT_METHOD,
+                            className = "com.example.Foo",
+                            memberName = "bar",
+                            parameterTypes = listOf(INT)
+                        ),
+                        HookTargetSpec(
+                            id = "Foo.bar.primary",
+                            operation = HookOperation.EXACT_METHOD,
+                            className = "com.example.Foo",
+                            memberName = "bar",
+                            parameterTypes = listOf(INT)
+                        )
+                    )
+                )
+            )
+        )
+        }
+        '''
+        single, anyof, errors = parity.parse_contract_targets(contracts, "testContract")
+        self.assertEqual(len(anyof), 1)
+        self.assertTrue(any("DUPLICATE_ANYOF_CANDIDATE" in e for e in errors), errors)
+
+    def test_unparseable_anyof_candidate(self) -> None:
+        contracts = '''
+        val testContract: HookTargetContract by lazy(kotlin.LazyThreadSafetyMode.NONE) { HookTargetContract(
+            featureId = "testContract",
+            requirements = listOf(
+                AnyOfRequirement(
+                    id = "testContract.group",
+                    criticality = Criticality.REQUIRED,
+                    candidates = listOf(
+                        unresolvedCandidateExpression
+                    )
+                )
+            )
+        )
+        }
+        '''
+        single, anyof, errors = parity.parse_contract_targets(contracts, "testContract")
+        self.assertEqual(len(anyof), 0)
+        self.assertTrue(any("UNPARSEABLE_ANYOF_CANDIDATE" in e for e in errors), errors)
+
+
+class TestAnyOfMutations(unittest.TestCase):
+    """Mutation tests for AnyOfRequirement group semantics."""
+
+    def _patch_and_assert_fails(self, attr: str, buggy, correct_callable) -> None:
+        original = getattr(parity, attr)
+        setattr(parity, attr, buggy)
+        try:
+            with self.assertRaises(AssertionError):
+                correct_callable()
+        finally:
+            setattr(parity, attr, original)
+
+    def _anyof_contract(self) -> str:
+        return '''
+        val testContract: HookTargetContract by lazy(kotlin.LazyThreadSafetyMode.NONE) { HookTargetContract(
+            featureId = "testContract",
+            requirements = listOf(
+                AnyOfRequirement(
+                    id = "testContract.group",
+                    criticality = Criticality.REQUIRED,
+                    candidates = listOf(
+                        HookTargetSpec(
+                            id = "Foo.bar.primary",
+                            operation = HookOperation.EXACT_METHOD,
+                            className = "com.example.Foo",
+                            memberName = "bar",
+                            parameterTypes = listOf(INT)
+                        ),
+                        HookTargetSpec(
+                            id = "Foo.bar.fallback",
+                            operation = HookOperation.EXACT_METHOD,
+                            className = "com.example.Foo",
+                            memberName = "bar",
+                            parameterTypes = listOf(String)
+                        )
+                    )
+                )
+            )
+        )
+        }
+        '''
+
+    def test_mutation_remove_only_matching_candidate_fails(self) -> None:
+        contracts = self._anyof_contract()
+        production = '''
+object ExampleHooks {
+    @JvmStatic
+    fun ExampleHook(lpparam: SystemServerStartingParam) {
+        ModuleHelper.findAndHookMethod("com.example.Foo", lpparam.classLoader, "bar", Int::class.javaPrimitiveType, object : MethodHook() {})
+    }
+}
+'''
+
+        def correct() -> None:
+            with tempfile.TemporaryDirectory() as td:
+                root = Path(td)
+                prod = root / "tv" / "withaibuild" / "customiuizer" / "mods" / "ExampleHooks.kt"
+                prod.parent.mkdir(parents=True, exist_ok=True)
+                prod.write_text(production, encoding="utf-8")
+                contracts_path = root / "CatalogContracts.kt"
+                contracts_path.write_text(contracts, encoding="utf-8")
+                batch = {"testContract": ("tv/withaibuild/customiuizer/mods/ExampleHooks.kt", "ExampleHook")}
+                issues = parity.check_batch(batch, contracts, root)
+                self.assertEqual(issues, [])
+
+        original = parity.parse_contract_targets
+
+        def buggy(text: str, feature_id: str):
+            single, anyof, errors = original(text, feature_id)
+            modified: list[parity.AnyOfGroup] = []
+            for g in anyof:
+                modified.append(parity.AnyOfGroup(g.group_id, g.candidates[1:], g.optional))
+            return single, modified, errors
+
+        self._patch_and_assert_fails("parse_contract_targets", buggy, correct)
+
+    def test_mutation_flatten_anyof_to_required_fails(self) -> None:
+        contracts = self._anyof_contract()
+        production = '''
+object ExampleHooks {
+    @JvmStatic
+    fun ExampleHook(lpparam: SystemServerStartingParam) {
+        ModuleHelper.findAndHookMethod("com.example.Foo", lpparam.classLoader, "bar", Int::class.javaPrimitiveType, object : MethodHook() {})
+    }
+}
+'''
+
+        def correct() -> None:
+            with tempfile.TemporaryDirectory() as td:
+                root = Path(td)
+                prod = root / "tv" / "withaibuild" / "customiuizer" / "mods" / "ExampleHooks.kt"
+                prod.parent.mkdir(parents=True, exist_ok=True)
+                prod.write_text(production, encoding="utf-8")
+                contracts_path = root / "CatalogContracts.kt"
+                contracts_path.write_text(contracts, encoding="utf-8")
+                batch = {"testContract": ("tv/withaibuild/customiuizer/mods/ExampleHooks.kt", "ExampleHook")}
+                issues = parity.check_batch(batch, contracts, root)
+                self.assertEqual(issues, [])
+
+        original = parity.parse_contract_targets
+
+        def buggy(text: str, feature_id: str):
+            single, anyof, errors = original(text, feature_id)
+            for g in anyof:
+                for c in g.candidates:
+                    single[c] = ("REQUIRED", False)
+            return single, [], errors
+
+        self._patch_and_assert_fails("parse_contract_targets", buggy, correct)
+
+    def test_mutation_ignore_anyof_candidate_parameter_types_fails(self) -> None:
+        contracts = '''
+        val testContract: HookTargetContract by lazy(kotlin.LazyThreadSafetyMode.NONE) { HookTargetContract(
+            featureId = "testContract",
+            requirements = listOf(
+                AnyOfRequirement(
+                    id = "testContract.group",
+                    criticality = Criticality.REQUIRED,
+                    candidates = listOf(
+                        HookTargetSpec(
+                            id = "Foo.bar",
+                            operation = HookOperation.EXACT_METHOD,
+                            className = "com.example.Foo",
+                            memberName = "bar",
+                            parameterTypes = listOf(INT)
+                        )
+                    )
+                )
+            )
+        )
+        }
+        '''
+        production = '''
+object ExampleHooks {
+    @JvmStatic
+    fun ExampleHook(lpparam: SystemServerStartingParam) {
+        ModuleHelper.findAndHookMethod("com.example.Foo", lpparam.classLoader, "bar", String::class.java, object : MethodHook() {})
+    }
+}
+'''
+
+        def correct() -> None:
+            with tempfile.TemporaryDirectory() as td:
+                root = Path(td)
+                prod = root / "tv" / "withaibuild" / "customiuizer" / "mods" / "ExampleHooks.kt"
+                prod.parent.mkdir(parents=True, exist_ok=True)
+                prod.write_text(production, encoding="utf-8")
+                contracts_path = root / "CatalogContracts.kt"
+                contracts_path.write_text(contracts, encoding="utf-8")
+                batch = {"testContract": ("tv/withaibuild/customiuizer/mods/ExampleHooks.kt", "ExampleHook")}
+                issues = parity.check_batch(batch, contracts, root)
+                self.assertEqual(len([i for i in issues if "ANYOF_CANDIDATE_MISMATCH" in i]), 1)
+
+        original = parity.check_batch
+
+        def buggy(batch, contracts_text, source_root):
+            # Ignore parameter types for AnyOf candidates and match on base only.
+            single, anyof, errors = parity.parse_contract_targets(contracts_text, "testContract")
+            prod_targets, _ = parity.extract_production_targets(source_root, batch["testContract"][0], batch["testContract"][1])
+            prod_keys = {pt.key for pt in prod_targets}
+
+            def base(k):
+                return (k.class_name, k.member_name, k.operation)
+
+            issues: list[str] = []
+            for g in anyof:
+                matched = any(base(c) == base(pk) for c in g.candidates for pk in prod_keys)
+                if not matched:
+                    issues.append(f"ANYOF_GROUP_UNSATISFIED: {g.group_id}")
+            return issues
+
+        self._patch_and_assert_fails("check_batch", buggy, correct)
+
+    def test_mutation_remove_duplicate_anyof_detection_fails(self) -> None:
+        contracts = '''
+        val testContract: HookTargetContract by lazy(kotlin.LazyThreadSafetyMode.NONE) { HookTargetContract(
+            featureId = "testContract",
+            requirements = listOf(
+                AnyOfRequirement(
+                    id = "testContract.group",
+                    criticality = Criticality.REQUIRED,
+                    candidates = listOf(
+                        HookTargetSpec(
+                            id = "Foo.bar.primary",
+                            operation = HookOperation.EXACT_METHOD,
+                            className = "com.example.Foo",
+                            memberName = "bar",
+                            parameterTypes = listOf(INT)
+                        ),
+                        HookTargetSpec(
+                            id = "Foo.bar.primary",
+                            operation = HookOperation.EXACT_METHOD,
+                            className = "com.example.Foo",
+                            memberName = "bar",
+                            parameterTypes = listOf(INT)
+                        )
+                    )
+                )
+            )
+        )
+        }
+        '''
+
+        def correct() -> None:
+            single, anyof, errors = parity.parse_contract_targets(contracts, "testContract")
+            self.assertTrue(any("DUPLICATE_ANYOF_CANDIDATE" in e for e in errors), errors)
+
+        original = parity.parse_contract_targets
+
+        def buggy(text: str, feature_id: str):
+            single, anyof, errors = original(text, feature_id)
+            # Remove duplicate-candidate diagnostics without fixing the duplicates.
+            errors = [e for e in errors if "DUPLICATE_ANYOF_CANDIDATE" not in e]
+            return single, anyof, errors
+
+        self._patch_and_assert_fails("parse_contract_targets", buggy, correct)
+
+    def test_mutation_downgrade_required_anyof_fails(self) -> None:
+        contracts = '''
+        val testContract: HookTargetContract by lazy(kotlin.LazyThreadSafetyMode.NONE) { HookTargetContract(
+            featureId = "testContract",
+            requirements = listOf(
+                AnyOfRequirement(
+                    id = "testContract.group",
+                    criticality = Criticality.REQUIRED,
+                    candidates = listOf(
+                        HookTargetSpec(
+                            id = "Foo.bar.primary",
+                            operation = HookOperation.EXACT_METHOD,
+                            className = "com.example.Foo",
+                            memberName = "bar",
+                            parameterTypes = listOf(INT)
+                        )
+                    )
+                )
+            )
+        )
+        }
+        '''
+        production = '''
+object ExampleHooks {
+    @JvmStatic
+    fun ExampleHook(lpparam: SystemServerStartingParam) {
+        ModuleHelper.findAndHookMethodSilently("com.example.Foo", lpparam.classLoader, "bar", Int::class.javaPrimitiveType, object : MethodHook() {})
+    }
+}
+'''
+
+        def correct() -> None:
+            with tempfile.TemporaryDirectory() as td:
+                root = Path(td)
+                prod = root / "tv" / "withaibuild" / "customiuizer" / "mods" / "ExampleHooks.kt"
+                prod.parent.mkdir(parents=True, exist_ok=True)
+                prod.write_text(production, encoding="utf-8")
+                contracts_path = root / "CatalogContracts.kt"
+                contracts_path.write_text(contracts, encoding="utf-8")
+                batch = {"testContract": ("tv/withaibuild/customiuizer/mods/ExampleHooks.kt", "ExampleHook")}
+                issues = parity.check_batch(batch, contracts, root)
+                self.assertEqual(len([i for i in issues if "CRITICALITY_MISMATCH" in i]), 1)
+
+        original = parity.parse_contract_targets
+
+        def buggy(text: str, feature_id: str):
+            single, anyof, errors = original(text, feature_id)
+            modified = [parity.AnyOfGroup(g.group_id, g.candidates, True) for g in anyof]
+            return single, modified, errors
+
+        self._patch_and_assert_fails("parse_contract_targets", buggy, correct)
 
 
 if __name__ == "__main__":

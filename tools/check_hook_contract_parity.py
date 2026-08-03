@@ -3,7 +3,8 @@
 
 Covers batches 9/10/11/12 by default. Detects MISSING_CONTRACT_TARGET, ORPHAN_CONTRACT_TARGET,
 PARAMETER_TYPES_MISMATCH, UNRESOLVED_PARAMETER_TYPES, DUPLICATE_CONTRACT_TARGET, DUPLICATE_TARGET,
-CRITICALITY_MISMATCH and UNPARSEABLE_HOOK_SURFACE.
+CRITICALITY_MISMATCH, UNPARSEABLE_HOOK_SURFACE, EMPTY_ANYOF_GROUP, DUPLICATE_ANYOF_CANDIDATE,
+ANYOF_CANDIDATE_MISMATCH, ANYOF_GROUP_UNSATISFIED and UNPARSEABLE_ANYOF_CANDIDATE.
 """
 from __future__ import annotations
 
@@ -28,6 +29,13 @@ class ProductionTarget:
     hard: bool
     source: str
     line: int
+
+
+@dataclass(frozen=True)
+class AnyOfGroup:
+    group_id: str
+    candidates: tuple[TargetKey, ...]
+    optional: bool
 
 
 class TypeResolutionError(Exception):
@@ -329,13 +337,89 @@ def extract_balanced_expr(text: str, start: int) -> tuple[str, int] | None:
     return text[start_i:i].strip(), i
 
 
-def parse_contract_targets(contracts_text: str, feature_id: str) -> tuple[dict[TargetKey, tuple[str, bool]], list[str]]:
-    """Extract SingleTargetRequirement blocks for the named contract.
+def _extract_named_arg(inner: list[str], name: str) -> str | None:
+    """Return the value expression for `name = ...` inside a list of call arguments."""
+    pattern = re.compile(rf"^\s*{re.escape(name)}\s*=\s*", re.DOTALL)
+    for arg in inner:
+        m = pattern.match(arg)
+        if m:
+            return arg[m.end() :].strip()
+    return None
 
-    AnyOfRequirement candidates are intentionally out of scope for P3.2.1A.
-    Returns the target map and a list of diagnostic strings.
+
+def _parse_hook_target_spec_args(
+    spec_args: list[str],
+    imports: dict[str, str],
+    errors: list[str],
+    feature_id: str,
+    group_id: str | None = None,
+) -> TargetKey | None:
+    """Parse a HookTargetSpec argument list into a stable TargetKey."""
+    full = ", ".join(spec_args)
+    class_name = field(full, "className")
+    member_name = field(full, "memberName")
+    operation = symbol_field(full, "operation")
+    if operation == "ALL_CONSTRUCTORS" and not member_name:
+        member_name = "<constructors>"
+
+    parameter_types_expr = "emptyList()"
+    pt_pos = full.find("parameterTypes")
+    if pt_pos >= 0:
+        eq_pos = full.find("=", pt_pos)
+        if eq_pos >= 0:
+            extracted = extract_balanced_expr(full, eq_pos + 1)
+            if extracted:
+                parameter_types_expr, _ = extracted
+
+    if class_name and member_name and operation:
+        parameter_types, pt_errors = resolve_parameter_list(parameter_types_expr, imports)
+        errors.extend(pt_errors)
+        if pt_errors:
+            return None
+        return TargetKey(
+            class_name=class_name,
+            member_name=member_name,
+            operation=operation,
+            parameter_types=parameter_types,
+        )
+    ctx = f" {group_id}" if group_id else ""
+    errors.append(f"UNPARSEABLE_ANYOF_CANDIDATE: {feature_id}{ctx} HookTargetSpec missing className/memberName/operation")
+    return None
+
+
+def _parse_hook_target_spec(
+    spec_text: str,
+    imports: dict[str, str],
+    errors: list[str],
+    feature_id: str,
+    group_id: str | None = None,
+) -> TargetKey | None:
+    """Parse a standalone `HookTargetSpec(...)` expression into a TargetKey."""
+    spec_text = spec_text.strip()
+    if not spec_text.startswith("HookTargetSpec"):
+        ctx = f" {group_id}" if group_id else ""
+        errors.append(f"UNPARSEABLE_ANYOF_CANDIDATE: {feature_id}{ctx} candidate is not a HookTargetSpec: {spec_text[:80]}")
+        return None
+    open_pos = spec_text.find("(")
+    if open_pos < 0:
+        ctx = f" {group_id}" if group_id else ""
+        errors.append(f"UNPARSEABLE_ANYOF_CANDIDATE: {feature_id}{ctx} cannot find HookTargetSpec args: {spec_text[:80]}")
+        return None
+    inner = balanced_call_args(spec_text, open_pos)
+    if not inner:
+        ctx = f" {group_id}" if group_id else ""
+        errors.append(f"UNPARSEABLE_ANYOF_CANDIDATE: {feature_id}{ctx} cannot parse HookTargetSpec args: {spec_text[:80]}")
+        return None
+    return _parse_hook_target_spec_args(inner, imports, errors, feature_id, group_id)
+
+
+def parse_contract_targets(contracts_text: str, feature_id: str) -> tuple[dict[TargetKey, tuple[str, bool]], list[AnyOfGroup], list[str]]:
+    """Extract SingleTargetRequirement and AnyOfRequirement blocks for the named contract.
+
+    Returns the single-target map, the AnyOf groups, and a list of diagnostic strings.
     """
     results: dict[TargetKey, tuple[str, bool]] = {}
+    anyof_groups: list[AnyOfGroup] = []
     errors: list[str] = []
     imports = parse_imports(contracts_text)
     # find the val <featureId>: HookTargetContract block
@@ -345,7 +429,7 @@ def parse_contract_targets(contracts_text: str, feature_id: str) -> tuple[dict[T
     )
     m = block_re.search(contracts_text)
     if not m:
-        return results, errors
+        return results, anyof_groups, errors
     start = m.start()
     open_pos = contracts_text.find("{", m.end() - 1)
     depth = 0
@@ -372,47 +456,76 @@ def parse_contract_targets(contracts_text: str, feature_id: str) -> tuple[dict[T
                 end = i
                 break
     if end < 0:
-        return results, errors
+        return results, anyof_groups, errors
     block = contracts_text[open_pos + 1 : end]
 
-    # parse SingleTargetRequirement blocks
-    req_pattern = re.compile(r"SingleTargetRequirement\s*\(", re.DOTALL)
+    # parse top-level SingleTargetRequirement and AnyOfRequirement blocks
+    req_pattern = re.compile(r"(SingleTargetRequirement|AnyOfRequirement)\s*\(", re.DOTALL)
     for rm in req_pattern.finditer(block):
+        req_type = rm.group(1)
         inner = balanced_call_args(block, rm.end() - 1)
         if not inner:
+            errors.append(f"UNPARSEABLE_CONTRACT_REQUIREMENT: {feature_id} cannot parse {req_type}")
             continue
         full = ", ".join(inner)
-        target_block = inner[0]
-        class_name = field(target_block, "className")
-        member_name = field(target_block, "memberName")
-        operation = symbol_field(target_block, "operation")
         criticality = symbol_field(full, "criticality") or "REQUIRED"
-        if operation == "ALL_CONSTRUCTORS" and not member_name:
-            member_name = "<constructors>"
-        # Extract parameterTypes (default emptyList()).
-        parameter_types_expr = "emptyList()"
-        pt_pos = target_block.find("parameterTypes")
-        if pt_pos >= 0:
-            eq_pos = target_block.find("=", pt_pos)
-            if eq_pos >= 0:
-                extracted = extract_balanced_expr(target_block, eq_pos + 1)
-                if extracted:
-                    parameter_types_expr, _ = extracted
         optional = criticality == "OPTIONAL"
-        if class_name and member_name and operation:
-            parameter_types, pt_errors = resolve_parameter_list(parameter_types_expr, imports)
-            errors.extend(pt_errors)
-            if pt_errors:
-                # Cannot form a reliable TargetKey with unresolved parameter types.
+
+        if req_type == "SingleTargetRequirement":
+            target_arg = _extract_named_arg(inner, "target")
+            if not target_arg:
+                errors.append(f"UNPARSEABLE_CONTRACT_REQUIREMENT: {feature_id} SingleTargetRequirement missing target")
                 continue
-            key = TargetKey(
-                class_name=class_name,
-                member_name=member_name,
-                operation=operation,
-                parameter_types=parameter_types,
-            )
+            key = _parse_hook_target_spec(target_arg, imports, errors, feature_id)
+            if key is None:
+                continue
             _record_contract_target(results, key, (criticality, optional), feature_id, errors)
-    return results, errors
+
+        elif req_type == "AnyOfRequirement":
+            group_id = field(full, "id")
+            if not group_id:
+                errors.append(f"UNPARSEABLE_CONTRACT_REQUIREMENT: {feature_id} AnyOfRequirement missing id")
+                continue
+            candidates_expr = _extract_named_arg(inner, "candidates")
+            if not candidates_expr:
+                errors.append(f"UNPARSEABLE_CONTRACT_REQUIREMENT: {feature_id} AnyOfRequirement {group_id} missing candidates")
+                continue
+            list_of_m = re.match(r"^listOf\s*\((.*)\)\s*$", candidates_expr, re.DOTALL)
+            if not list_of_m:
+                errors.append(f"UNPARSEABLE_ANYOF_CANDIDATE: {feature_id} {group_id} candidates value is not a listOf: {candidates_expr[:80]}")
+                continue
+            inner_text = list_of_m.group(1).strip()
+
+            candidates: list[TargetKey] = []
+            seen_ids: set[str] = set()
+            seen_keys: set[TargetKey] = set()
+            for cm in re.finditer(r"HookTargetSpec\s*\(", candidates_expr):
+                spec_args = balanced_call_args(candidates_expr, cm.end() - 1)
+                if not spec_args:
+                    errors.append(f"UNPARSEABLE_ANYOF_CANDIDATE: {feature_id} {group_id} cannot parse candidate")
+                    continue
+                spec_full = ", ".join(spec_args)
+                candidate_id = field(spec_full, "id") or ""
+                if candidate_id:
+                    if candidate_id in seen_ids:
+                        errors.append(f"DUPLICATE_ANYOF_CANDIDATE: {feature_id} {group_id} has duplicate id {candidate_id}")
+                    seen_ids.add(candidate_id)
+                key = _parse_hook_target_spec_args(spec_args, imports, errors, feature_id, group_id)
+                if key is None:
+                    continue
+                if key in seen_keys:
+                    errors.append(f"DUPLICATE_ANYOF_CANDIDATE: {feature_id} {group_id} has duplicate candidate {key}")
+                seen_keys.add(key)
+                candidates.append(key)
+
+            if not candidates:
+                if inner_text:
+                    errors.append(f"UNPARSEABLE_ANYOF_CANDIDATE: {feature_id} {group_id} cannot parse any candidate from: {inner_text[:80]}")
+                else:
+                    errors.append(f"EMPTY_ANYOF_GROUP: {feature_id} {group_id} has no candidates")
+                continue
+            anyof_groups.append(AnyOfGroup(group_id=group_id, candidates=tuple(candidates), optional=optional))
+    return results, anyof_groups, errors
 
 
 def _record_contract_target(
@@ -719,7 +832,7 @@ def check_batch(
     for feature_id, (rel_path, function_name) in batch.items():
         prod_targets, parse_errors = extract_production_targets(source_root, rel_path, function_name)
         issues.extend(parse_errors)
-        contract_targets, contract_parse_errors = parse_contract_targets(contracts_text, feature_id)
+        single_targets, anyof_groups, contract_parse_errors = parse_contract_targets(contracts_text, feature_id)
         issues.extend(contract_parse_errors)
 
         prod_target_by_key: dict[TargetKey, ProductionTarget] = {}
@@ -730,43 +843,99 @@ def check_batch(
             prod_keys.add(pt.key)
             prod_target_by_key[pt.key] = pt
 
-        contract_keys = set(contract_targets.keys())
-
         def base(k: TargetKey) -> tuple[str, str, str]:
             return (k.class_name, k.member_name, k.operation)
 
+        # AnyOf group matching: any candidate can satisfy the group.
+        anyof_covered: set[TargetKey] = set()
+        for group in anyof_groups:
+            if not group.candidates:
+                issues.append(f"EMPTY_ANYOF_GROUP: {feature_id} {group.group_id}")
+                continue
+
+            exact_matches: set[TargetKey] = set()
+            for c in group.candidates:
+                if c in prod_keys:
+                    exact_matches.add(c)
+                    anyof_covered.add(c)
+
+            if exact_matches:
+                # Group is satisfied; criticality applies to the matched production targets.
+                for c in exact_matches:
+                    # If the same key is also a single contract target, the single-target
+                    # criticality check below handles it; avoid double reporting.
+                    if c in single_targets:
+                        continue
+                    pt = prod_target_by_key[c]
+                    if group.optional and pt.hard:
+                        issues.append(f"CRITICALITY_MISMATCH: {feature_id} {pt.source}: {group.group_id} candidate {c} contract OPTIONAL but production hard install")
+                    elif not group.optional and not pt.hard:
+                        issues.append(f"CRITICALITY_MISMATCH: {feature_id} {pt.source}: {group.group_id} candidate {c} contract REQUIRED but production silent install")
+                continue
+
+            # No exact match: look for same-base candidates with wrong parameter types.
+            mismatches: list[tuple[TargetKey, TargetKey]] = []
+            for c in group.candidates:
+                for pk in prod_keys:
+                    if base(c) == base(pk) and c.parameter_types != pk.parameter_types:
+                        mismatches.append((c, pk))
+            if mismatches:
+                for c, pk in mismatches:
+                    pt = prod_target_by_key[pk]
+                    issues.append(f"ANYOF_CANDIDATE_MISMATCH: {feature_id} {group.group_id}: candidate {c} does not match production {pt.source} types {pk.parameter_types}")
+            else:
+                issues.append(f"ANYOF_GROUP_UNSATISFIED: {feature_id} {group.group_id}: no candidate matched production")
+
+        # Single-target comparison.  A production target already covered by an AnyOf
+        # group, or that only matches an AnyOf candidate by base, is not reported as
+        # missing; it has already generated ANYOF_CANDIDATE_MISMATCH or satisfied the
+        # group.  It can still participate in base-level mismatch comparison so that a
+        # single contract for the same base is checked.
+        single_contract_keys = set(single_targets.keys())
+        anyof_base_matched: set[TargetKey] = set()
+        for group in anyof_groups:
+            for c in group.candidates:
+                for pk in prod_keys:
+                    if base(c) == base(pk):
+                        anyof_base_matched.add(pk)
+        prod_keys_for_missing = prod_keys - anyof_covered - anyof_base_matched
+
         contract_by_base: dict[tuple[str, str, str], list[TargetKey]] = {}
-        for k in contract_keys:
+        for k in single_contract_keys:
             contract_by_base.setdefault(base(k), []).append(k)
-        prod_by_base: dict[tuple[str, str, str], list[TargetKey]] = {}
+        prod_by_base_all: dict[tuple[str, str, str], list[TargetKey]] = {}
         for k in prod_keys:
-            prod_by_base.setdefault(base(k), []).append(k)
+            prod_by_base_all.setdefault(base(k), []).append(k)
+        prod_by_base_missing: dict[tuple[str, str, str], list[TargetKey]] = {}
+        for k in prod_keys_for_missing:
+            prod_by_base_missing.setdefault(base(k), []).append(k)
 
         # Compare overload signature sets per base. This keeps mismatch and orphan
         # diagnostics disjoint: a same-base overload difference is exactly one
         # PARAMETER_TYPES_MISMATCH, never an orphan variant.
-        all_bases = set(contract_by_base.keys()) | set(prod_by_base.keys())
+        all_bases = set(contract_by_base.keys()) | set(prod_by_base_all.keys())
         for b in all_bases:
             contract_versions = {c.parameter_types for c in contract_by_base.get(b, [])}
-            prod_versions = {p.parameter_types for p in prod_by_base.get(b, [])}
+            prod_versions = {p.parameter_types for p in prod_by_base_all.get(b, [])}
             in_contract = b in contract_by_base
-            in_prod = b in prod_by_base
+            in_prod = b in prod_by_base_all
+            in_prod_missing = b in prod_by_base_missing
             if in_contract and in_prod:
                 if contract_versions != prod_versions:
                     issues.append(
                         f"PARAMETER_TYPES_MISMATCH: {feature_id}: {b} production types {sorted(prod_versions)} do not match contract types {sorted(contract_versions)}"
                     )
-            elif in_prod:
-                for k in prod_by_base[b]:
+            elif in_prod_missing:
+                for k in prod_by_base_missing[b]:
                     pt = prod_target_by_key[k]
                     issues.append(f"MISSING_CONTRACT_TARGET: {feature_id} {pt.source}: {k}")
-            else:
+            elif in_contract:
                 for k in contract_by_base[b]:
                     issues.append(f"ORPHAN_CONTRACT_TARGET: {feature_id} contract has {k} not found in production")
 
         for pt in prod_targets:
-            if pt.key in contract_targets:
-                crit, optional = contract_targets[pt.key]
+            if pt.key in single_targets:
+                crit, optional = single_targets[pt.key]
                 hard = pt.hard
                 if optional and hard:
                     issues.append(f"CRITICALITY_MISMATCH: {feature_id} {pt.source}: {pt.key} contract OPTIONAL but production hard install")

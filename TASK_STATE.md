@@ -435,7 +435,8 @@ typed catalog 之外的 Hook 同样必须处理。
   - [x] batch 9: `EnhancedSecurity`, `AppLock`, `SkipAppLock`, `NoCallInterruption` (system_server, SYSTEM_SERVER_STARTING) — contract corrected, all hard/silent criticality verified
   - [x] batch 10: `RemoveSecure`, `NoSignatureVerify`, `NoDarkForce`, `StickyFloatingWindows` (system_server, SYSTEM_SERVER_STARTING) — contract corrected to match production hook calls; `stickyFloatingWindows` expanded from 1 to 7 targets after parity audit
   - [x] batch 11: `AppsDisableService`, `NoAccessDeviceLogsRequest`, `AutoGroupNotifications`, `AppLockTimeout` (system_server, SYSTEM_SERVER_STARTING) — migrated with focused behavior tests
-  - [~] P3.2.1 合同—生产表面门禁：新增 `tools/check_hook_contract_parity.py` + `tools/tests/test_check_hook_contract_parity.py`，覆盖 batch 9/10/11/12，已接入 `tools/verify.py` 和 CI
+  - [x] P3.2.1A 合同—生产 EXACT_METHOD/EXACT_CONSTRUCTOR `parameterTypes` 表面门禁：新增 `tools/check_hook_contract_parity.py` + `tools/tests/test_check_hook_contract_parity.py`，覆盖 batch 9/10/11/12，已接入 `tools/verify.py` 和 CI；R1 修复 FQ/nested class JVM 名称规范化、disjoint parameterTypes 诊断、duplicate `TargetKey` 检测、unresolved `parameterTypes` 退化为空；含 37 个 focused tests 与 4 个 mutation tests
+  - [x] P3.2.1B `AnyOfRequirement` 组级语义：解析 `AnyOfRequirement` 候选组，支持至少一个候选匹配即满足、检测空 group/duplicate candidate/candidate parameterTypes mismatch/错误候选/缺失候选/unparseable candidate，保留 P3.2.1A 全部能力；新增 `TestAnyOfRequirement` 与 `TestAnyOfMutations`（5 个 mutation tests）
   - [~] batch 12: 剩余 system_server SYSTEM_SERVER_STARTING 直接调用：
     口径：`SystemServerInstaller.install` 内非 `FeatureDispatcher.installById` 的直接调用，不含 `GlobalActions`/`Controls`/`Various`/`USBConfig`/`AlarmCompatService` 等已声明暂缓项，含一个偏好对应一个入口、每个入口只计一次：
     - [x] `TempHideOverlayAppHook` (system_screenshot_overlay) → `tempHideOverlayApp` FeatureSpec
@@ -466,6 +467,35 @@ duplicate hook ownership = 0
 - powershell .\scripts\verify.ps1 -Mode Full  PASS
 - powershell .\scripts\verify.ps1 -Mode Final  待当前工程 checkpoint 提交后重跑
 - GitHub CI A13 Fast CI run 30741425209  PASS (commit 66ad73b)
+```
+
+P3.2.1A R1 修复验证记录：
+
+```text
+- python -m unittest tools.tests.test_check_hook_contract_parity  PASS (37 tests)
+- python tools/check_hook_contract_parity.py  PASS (batches 9/10/11/12)
+- python -m unittest discover -s tools/tests -p "test_*.py"  PASS (204 tests)
+- python tools/check_automation_state.py  PASS
+- python tools/check-invariants.py  PASS
+- python tools/check-compat-contracts.py  PASS
+- powershell -NoProfile -ExecutionPolicy Bypass -File .\scripts\verify.ps1 -Mode Fast  PASS
+- powershell -NoProfile -ExecutionPolicy Bypass -File .\scripts\verify.ps1 -Mode Full  PASS
+- git diff --check  PASS
+- GitHub CI A13 Fast CI run 30772075962  PASS (commit a34d0ef)
+```
+
+P3.2.1B AnyOfRequirement 组级语义验证记录（待补充 exact commit CI）：
+
+```text
+- python -m unittest tools.tests.test_check_hook_contract_parity  PASS (54 tests)
+- python tools/check_hook_contract_parity.py  PASS (batches 9/10/11/12)
+- python -m unittest discover -s tools/tests -p "test_*.py"  PASS (221 tests)
+- python tools/check_automation_state.py  PASS
+- python tools/check-invariants.py  PASS
+- python tools/check-compat-contracts.py  PASS
+- powershell -NoProfile -ExecutionPolicy Bypass -File .\scripts\verify.ps1 -Mode Fast  PASS
+- powershell -NoProfile -ExecutionPolicy Bypass -File .\scripts\verify.ps1 -Mode Full  PASS
+- git diff --check  PASS
 ```
 
 ---
