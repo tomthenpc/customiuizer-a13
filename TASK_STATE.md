@@ -443,7 +443,7 @@ typed catalog 之外的 Hook 同样必须处理。
     - [x] `OpenAppInFreeFormHook` (system_notify_openinfw / system_fw_forcein_actionsend / system_betterpopups_allowfloat) → `openAppInFreeForm` FeatureSpec
     - [x] `NavBarActionsHook` / `PowerDoubleTapActionHook` (controls_backlong_action / controls_powerdt_action) → `navBarActions` + `powerDoubleTapAction` FeatureSpec (P3.2.3 完成)
     - [x] `SelectiveToastsHook` (system_blocktoasts) → `selectiveToasts` FeatureSpec (P3.2.2 完成)
-    - [ ] `MultiWindowPlusHook` / `NoFloatingWindowBlacklistHook` (system_fw_splitscreen / system_fw_noblacklist)
+    - [x] `MultiWindowPlusHook` / `NoFloatingWindowBlacklistHook` (system_fw_splitscreen / system_fw_noblacklist) → `multiWindowPlus` + `noFloatingWindowBlacklist` FeatureSpec (P3.2.4 完成)
   - [ ] `system_separatevolume` 等跨 process 项按 LEGACY_EXCEPTION 登记
 - [x] P3.5 A13 Devin Local 控制面迁移：安装本地 Skill、采用原子 Task Slice、独立 Reviewer 流程、更新控制文档与 checker/mutation tests
 - [ ] P3.3 登记不可迁移项为 LEGACY_EXCEPTION 并补充原因/owner/test；
@@ -562,6 +562,82 @@ Risks:
   - c1dd408 扩大了 check_hook_contract_parity.py 对局部变量/条件块的理解；
     后续若条件块解析误报需补充单元测试。
 Next: 继续 batch 12 MultiWindowPlusHook / NoFloatingWindowBlacklistHook，然后 P3.3 / P3.4
+```
+
+P3.2.4 MultiWindowPlus / NoFloatingWindowBlacklist 迁移记录：
+
+```text
+Task: 迁移 MultiWindowPlusHook 与 NoFloatingWindowBlacklistHook 到 FeatureCatalog
+Priority: P2
+State: COMPLETE
+Baseline commit: e98709b6d2b01de9e1be5522484f1a6bb09e69fc
+Files:
+  - app/src/main/java/tv/withaibuild/customiuizer/mods/catalog/FeatureId.kt
+  - app/src/main/java/tv/withaibuild/customiuizer/mods/diagnostics/DiagnosticIds.kt
+  - app/src/main/java/tv/withaibuild/customiuizer/mods/catalog/CatalogContracts.kt
+  - app/src/main/java/tv/withaibuild/customiuizer/mods/catalog/FeatureCatalog.kt
+  - app/src/main/java/tv/withaibuild/customiuizer/installers/SystemServerInstaller.java
+  - app/src/main/java/tv/withaibuild/customiuizer/mods/SystemFreeformAndMultiWindowHooks.kt (kept unchanged)
+  - app/src/test/java/tv/withaibuild/customiuizer/mods/Batch12BehaviorTest.kt
+  - app/src/test/java/tv/withaibuild/customiuizer/mods/catalog/FeatureCatalogTest.kt
+  - app/src/test/java/com/android/server/wm/ActivityTaskManagerServiceImpl.java (new stub)
+  - app/src/test/java/com/android/server/wm/MiuiFreeformServicesUtils.java (new stub)
+  - app/src/test/java/android/util/MiuiMultiWindowAdapter.java (new stub)
+  - app/src/test/java/android/util/MiuiMultiWindowUtils.java (new stub)
+  - tools/check_hook_contract_parity.py (multi-function feature extraction, private fun pattern)
+  - tools/tests/test_check_hook_contract_parity.py (multi-function extraction tests)
+  - tools/tests/test_architecture_invariants.py
+  - tools/tests/test_feature_inventory.py
+  - docs/rom-intelligence/A13_PROCESS_MATRIX.md
+Original behavior:
+  - MultiWindowPlusHook 和 NoFloatingWindowBlacklistHook 由 SystemServerInstaller 直接调用；
+  - 无 FeatureId、DiagnosticId、FeatureSpec、Contract；
+  - 无 typed Feature 安装路径；
+  - NoFloatingWindowBlacklistHook 通过 DisableFloatingWindowBlacklistHook 私有 helper 安装大部分 hook。
+Invariant:
+  - 保持 Hook 方法体、启用条件、调用顺序、异常处理及 ROM fallback 不变；
+  - disabled path 0 business object / 0 hook reflection；
+  - 未迁移 com.miui.home 的 MultiWindowPlusHook(PackageReadyParam) 与 LauncherInstaller 直接调用；
+  - 未修改 DisableFloatingWindowBlacklistHook 实现。
+Implementation:
+  - 新增 FeatureId.MULTI_WINDOW_PLUS / NO_FLOATING_WINDOW_BLACKLIST；
+  - 新增 DiagnosticIds 条目；
+  - 新增 CatalogContracts.multiWindowPlus（ActivityTaskManagerServiceImpl.updateResizeBlackList(Context) EXACT_METHOD、
+    getSplitScreenBlackListFromXml() EXACT_METHOD、inResizeBlackList ALL_METHODS_BY_NAME）
+    与 noFloatingWindowBlacklist（MiuiMultiWindowAdapter/Utils 全部目标 + MiuiFreeformServicesUtils.supportsFreeform，
+    其中 getListFromCloudData、getStartFromFreeformBlackListFromCloud、isPkgMainActivityResizeable 为 OPTIONAL）；
+  - 新增 FeatureSpec（system_server, SYSTEM_SERVER_STARTING, CONTRACT_REQUIRED）；
+  - SystemServerInstaller 替换为 FeatureDispatcher.installById；
+  - 移除 SystemServerInstaller 中未使用的 SystemFreeformAndMultiWindowHooks 导入；
+  - 为让 contract parity 工具识别 NoFloatingWindowBlacklistHook 经 DisableFloatingWindowBlacklistHook 安装的辅助目标，
+    增强 check_hook_contract_parity.py：支持一个 feature 对应多个 function name（主函数 + 私有 helper），并扩展
+    FUNCTION_PATTERN 以匹配 private fun；
+  - 更新 FeatureCatalogTest / architecture / feature inventory 计数 66→68、58→60；
+  - 更新 A13_PROCESS_MATRIX 增加 multiWindowPlus、noFloatingWindowBlacklist 两行。
+Commands:
+  - python -m unittest tools.tests.test_check_hook_contract_parity  PASS (56 tests)
+  - python tools/check_hook_contract_parity.py --batch 12  PASS
+  - python tools/check_hook_contract_parity.py  PASS
+  - .\gradlew.bat --no-daemon :app:testDebugUnitTest --tests Batch12BehaviorTest --tests FeatureCatalogTest  PASS
+  - .\gradlew.bat --no-daemon :app:testDebugUnitTest  PASS
+  - python -m unittest discover -s tools/tests -p "test_*.py"  PASS (223 tests)
+  - python tools/check_automation_state.py  PASS
+  - python tools/check-invariants.py  PASS
+  - python tools/check-compat-contracts.py  PASS
+  - powershell -NoProfile -ExecutionPolicy Bypass -File .\scripts\verify.ps1 -Mode Fast  PASS
+  - powershell -NoProfile -ExecutionPolicy Bypass -File .\scripts\verify.ps1 -Mode Full  PASS
+  - git diff --check  PASS
+Exit codes: 0
+Tests: Batch12BehaviorTest multiWindowPlus/noFloatingWindowBlacklist disabled/enabled paths; FeatureCatalogTest catalog total=68, adapted=60; Batch12 contract parity; multi-function extraction unit tests
+CI: GitHub Actions run 30790210095 PASS (commit 17ff77ce40b47c0b4fb335c597ca262869ef846a, job 91611921609)
+Device evidence: NOT_EXERCISED
+Commit: 17ff77ce40b47c0b4fb335c597ca262869ef846a
+Push: origin/devin/a13-rom-intelligence-audit
+Risks:
+  - MultiWindowPlus 仍保留 com.miui.home 的 PackageReadyParam 直接调用（LauncherInstaller），未在 catalog 中注册；
+    该路径仍在同一 preference system_fw_splitscreen 下，不视为 orphan，但进入 P3.3/P3.4 需统一 launcher 路由。
+  - 本次增强 contract parity 工具支持多 function 合并；后续 helper 跨文件调用不会被追踪。
+Next: 继续 P3.3 登记 LEGACY_EXCEPTION 与 P3.4 inventory 门禁
 ```
 
 ---

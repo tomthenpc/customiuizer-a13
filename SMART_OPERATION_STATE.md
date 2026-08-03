@@ -2,31 +2,31 @@
 
 ```text
 Mode: PROFESSIONAL_AUTONOMOUS_STEWARDSHIP
-CheckpointCount: 21
-CheckpointsSinceStandardSweep: 7
-CheckpointsSinceDeepSweep: 1
-LastQualifyingCheckpoint: c1dd4086230d1a333671e9ee325e2fa7dfc34723
-LastLightSweepCommit: c1dd4086230d1a333671e9ee325e2fa7dfc34723
-LastStandardSweepCommit: c1dd4086230d1a333671e9ee325e2fa7dfc34723
-LastDeepSweepCommit: 0715ac123ee02ed2ac0b1bb4ea202bece9db5263
-LastFullVerificationCommit: c1dd4086230d1a333671e9ee325e2fa7dfc34723
-LastVerifiedTree: 9eff6b1339c96e78ac9345919df4ef6f89f33947
+CheckpointCount: 22
+CheckpointsSinceStandardSweep: 8
+CheckpointsSinceDeepSweep: 2
+LastQualifyingCheckpoint: 17ff77ce40b47c0b4fb335c597ca262869ef846a
+LastLightSweepCommit: 17ff77ce40b47c0b4fb335c597ca262869ef846a
+LastStandardSweepCommit: 17ff77ce40b47c0b4fb335c597ca262869ef846a
+LastDeepSweepCommit: 17ff77ce40b47c0b4fb335c597ca262869ef846a
+LastFullVerificationCommit: 17ff77ce40b47c0b4fb335c597ca262869ef846a
+LastVerifiedTree: e69a61b5a84b1f6a2db67bbca045a68a37cbc49e
 LastVerifiedMode: Full
 LastCIState: PASS
-LastCIRun: https://github.com/tomthenpc/customiuizer-a13/actions/runs/30786701862
-LastCIJob: https://github.com/tomthenpc/customiuizer-a13/actions/runs/30786701862/job/91601485747
-LastCICommit: c1dd4086230d1a333671e9ee325e2fa7dfc34723
-LastCleanupCommit: c1dd4086230d1a333671e9ee325e2fa7dfc34723
-LastToolCreated: tools/check_hook_contract_parity.py (P3.2.3 guarded-optional + class-name literal variable resolution)
-LastFailureClass: hook-surface-drift (b522f69 reverted Controls.kt changes in c1dd408)
+LastCIRun: https://github.com/tomthenpc/customiuizer-a13/actions/runs/30790210095
+LastCIJob: https://github.com/tomthenpc/customiuizer-a13/actions/runs/30790210095/job/91611921609
+LastCICommit: 17ff77ce40b47c0b4fb335c597ca262869ef846a
+LastCleanupCommit: 17ff77ce40b47c0b4fb335c597ca262869ef846a
+LastToolCreated: tools/check_hook_contract_parity.py (multi-function feature surface, private fun pattern for helper inlining)
+LastFailureClass: none
 CurrentObjective: P3
 CurrentObjectiveState: PAUSED
-CurrentObjectiveStartEvidence: P3.2.3 NavBarActionsHook/PowerDoubleTapActionHook migrated and exact-commit CI green
-NextObjectiveFirstAction: continue P3.2 batch 12 MultiWindowPlusHook/NoFloatingWindowBlacklistHook migration
-ResumeTask: P3.2 batch 12 remaining migration (MultiWindowPlusHook/NoFloatingWindowBlacklistHook), then P3.3 LEGACY_EXCEPTION registration and P3.4 inventory gate
+CurrentObjectiveStartEvidence: P3.2.4 MultiWindowPlusHook/NoFloatingWindowBlacklistHook migrated and exact-commit CI green
+NextObjectiveFirstAction: continue P3.3 LEGACY_EXCEPTION registration and P3.4 inventory gate
+ResumeTask: P3.3 LEGACY_EXCEPTION registration and P3.4 inventory gate; then continue P3 objective
 DeepSweepDue: false
-LastVerifiedAt: 2026-08-03T13:20:00+08:00
-LastVerifiedCommandsDigest: python -m unittest tools.tests.test_check_hook_contract_parity; python tools/check_hook_contract_parity.py --batch 12; .\gradlew.bat --no-daemon :app:testDebugUnitTest; python -m unittest discover -s tools/tests -p "test_*.py"; powershell -NoProfile -ExecutionPolicy Bypass -File .\scripts\verify.ps1 -Mode Fast; powershell -NoProfile -ExecutionPolicy Bypass -File .\scripts\verify.ps1 -Mode Full
+LastVerifiedAt: 2026-08-03T14:41:00+08:00
+LastVerifiedCommandsDigest: python -m unittest tools.tests.test_check_hook_contract_parity; python tools/check_hook_contract_parity.py --batch 12; python tools/check_hook_contract_parity.py; .\gradlew.bat --no-daemon :app:testDebugUnitTest; .\gradlew.bat --no-daemon :app:testDebugUnitTest --tests Batch12BehaviorTest --tests FeatureCatalogTest; python -m unittest discover -s tools/tests -p "test_*.py"; python tools/check_automation_state.py; python tools/check-invariants.py; python tools/check-compat-contracts.py; powershell -NoProfile -ExecutionPolicy Bypass -File .\scripts\verify.ps1 -Mode Fast; powershell -NoProfile -ExecutionPolicy Bypass -File .\scripts\verify.ps1 -Mode Full; git diff --check
 ```
 
 本文件只记录执行节奏，不保存、替代或重置产品任务。
