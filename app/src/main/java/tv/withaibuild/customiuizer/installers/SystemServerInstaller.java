@@ -10,7 +10,6 @@ import tv.withaibuild.customiuizer.mods.GlobalActions;
 import tv.withaibuild.customiuizer.mods.SystemAudioAndVisualAndMoreHooks;
 import tv.withaibuild.customiuizer.mods.SystemAudioAndVolumeHooks;
 import tv.withaibuild.customiuizer.mods.SystemDisplayAndWindowHooks;
-import tv.withaibuild.customiuizer.mods.SystemFreeformAndMultiWindowHooks;
 import tv.withaibuild.customiuizer.mods.SystemLockScreenHooks;
 import tv.withaibuild.customiuizer.mods.SystemLockScreenMoreHooks;
 import tv.withaibuild.customiuizer.mods.SystemNotificationAndShareHooks;
@@ -92,8 +91,8 @@ public final class SystemServerInstaller {
         if (MainModule.mPrefs.getStringAsInt("controls_volumemedia_up", 0) > 0 ||
             MainModule.mPrefs.getStringAsInt("controls_volumemedia_down", 0) > 0) Controls.VolumeMediaButtonsHook(lpparam);
 
-        if (MainModule.mPrefs.getBoolean("system_fw_splitscreen")) SystemFreeformAndMultiWindowHooks.MultiWindowPlusHook(lpparam);
-        if (MainModule.mPrefs.getBoolean("system_fw_noblacklist")) SystemFreeformAndMultiWindowHooks.NoFloatingWindowBlacklistHook(lpparam);
+        if (MainModule.mPrefs.getBoolean("system_fw_splitscreen")) FeatureDispatcher.installById("multiWindowPlus", serverRuntime);
+        if (MainModule.mPrefs.getBoolean("system_fw_noblacklist")) FeatureDispatcher.installById("noFloatingWindowBlacklist", serverRuntime);
         if (MainModule.mPrefs.getBoolean("various_disable_access_devicelogs")) {
             FeatureDispatcher.installById("noAccessDeviceLogsRequest", serverRuntime);
         }

@@ -2059,6 +2059,61 @@ object FeatureCatalog {
             },
             activationRestartTarget = RestartTarget.REBOOT,
             configReloadMode = ConfigReloadMode.NONE
+        ),
+        // Catalog expansion batch 12 (continued): multi-window and freeform blacklist hooks.
+        FeatureSpec(
+            compatibilityPolicy = CompatibilityPolicy.CONTRACT_REQUIRED,
+            contract = CatalogContracts.multiWindowPlus,
+            id = "multiWindowPlus",
+            diagnosticId = DiagnosticIds.MULTI_WINDOW_PLUS,
+            processScope = ProcessScope.SYSTEM_SERVER,
+            installPhase = InstallPhase.SYSTEM_SERVER_STARTING,
+            processTarget = ProcessTarget.SystemServer,
+            preferenceKeys = setOf("system_fw_splitscreen"),
+            condition = { prefs ->
+                prefs.getBoolean("system_fw_splitscreen", false)
+            },
+            installer = { runtime, compatResult ->
+                legacyInstall(
+                    runtime = runtime,
+                    compatResult = compatResult,
+                    contract = CatalogContracts.multiWindowPlus,
+                    diagnosticId = DiagnosticIds.MULTI_WINDOW_PLUS
+                ) {
+                    SystemFreeformAndMultiWindowHooks.MultiWindowPlusHook(
+                        runtime.lpparam as SystemServerStartingParam
+                    )
+                }
+            },
+            activationRestartTarget = RestartTarget.REBOOT,
+            configReloadMode = ConfigReloadMode.NONE
+        ),
+        FeatureSpec(
+            compatibilityPolicy = CompatibilityPolicy.CONTRACT_REQUIRED,
+            contract = CatalogContracts.noFloatingWindowBlacklist,
+            id = "noFloatingWindowBlacklist",
+            diagnosticId = DiagnosticIds.NO_FLOATING_WINDOW_BLACKLIST,
+            processScope = ProcessScope.SYSTEM_SERVER,
+            installPhase = InstallPhase.SYSTEM_SERVER_STARTING,
+            processTarget = ProcessTarget.SystemServer,
+            preferenceKeys = setOf("system_fw_noblacklist"),
+            condition = { prefs ->
+                prefs.getBoolean("system_fw_noblacklist", false)
+            },
+            installer = { runtime, compatResult ->
+                legacyInstall(
+                    runtime = runtime,
+                    compatResult = compatResult,
+                    contract = CatalogContracts.noFloatingWindowBlacklist,
+                    diagnosticId = DiagnosticIds.NO_FLOATING_WINDOW_BLACKLIST
+                ) {
+                    SystemFreeformAndMultiWindowHooks.NoFloatingWindowBlacklistHook(
+                        runtime.lpparam as SystemServerStartingParam
+                    )
+                }
+            },
+            activationRestartTarget = RestartTarget.REBOOT,
+            configReloadMode = ConfigReloadMode.NONE
         )
     ) }
 

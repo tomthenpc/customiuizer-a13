@@ -74,7 +74,9 @@ enum class FeatureId(val canonicalId: String) {
     SELECTIVE_TOASTS("selectiveToasts"),
     NAV_BAR_ACTIONS("navBarActions"),
     POWER_DOUBLE_TAP_ACTION("powerDoubleTapAction"),
-    TEMP_HIDE_OVERLAY_APP("tempHideOverlayApp");
+    TEMP_HIDE_OVERLAY_APP("tempHideOverlayApp"),
+    MULTI_WINDOW_PLUS("multiWindowPlus"),
+    NO_FLOATING_WINDOW_BLACKLIST("noFloatingWindowBlacklist");
 
     companion object {
         private val byString: Map<String, FeatureId> = values().associateBy {

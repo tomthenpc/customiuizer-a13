@@ -43,7 +43,7 @@ class TypeResolutionError(Exception):
     """Raised when a Kotlin type expression cannot be normalized to a stable JVM name."""
 
 
-BATCH_FUNCTIONS: dict[str, dict[str, tuple[str, str]]] = {
+BATCH_FUNCTIONS: dict[str, dict[str, tuple[str, str | list[str]]]] = {
     "9": {
         "enhancedSecurity": ("tv/withaibuild/customiuizer/mods/SystemLockScreenHooks.kt", "EnhancedSecurityHook"),
         "appLock": ("tv/withaibuild/customiuizer/mods/SystemLockScreenMoreHooks.kt", "AppLockHook"),
@@ -68,6 +68,8 @@ BATCH_FUNCTIONS: dict[str, dict[str, tuple[str, str]]] = {
         "selectiveToasts": ("tv/withaibuild/customiuizer/mods/SystemStatusBarAndClockHooks.kt", "SelectiveToastsHook"),
         "navBarActions": ("tv/withaibuild/customiuizer/mods/Controls.kt", "NavBarActionsHook"),
         "powerDoubleTapAction": ("tv/withaibuild/customiuizer/mods/Controls.kt", "PowerDoubleTapActionHook"),
+        "multiWindowPlus": ("tv/withaibuild/customiuizer/mods/SystemFreeformAndMultiWindowHooks.kt", "MultiWindowPlusHook"),
+        "noFloatingWindowBlacklist": ("tv/withaibuild/customiuizer/mods/SystemFreeformAndMultiWindowHooks.kt", ["NoFloatingWindowBlacklistHook", "DisableFloatingWindowBlacklistHook"]),
     },
 }
 
@@ -79,7 +81,7 @@ MODULE_HELPER_RE = re.compile(
 
 
 FUNCTION_PATTERN = re.compile(
-    r"""@JvmStatic\s+fun\s+([A-Za-z0-9_]+)\s*\([^)]*\)(?:\s*:\s*[A-Za-z0-9_<>?\s]+)?\s*\{""",
+    r"""(?:@JvmStatic\s+)?(?:private\s+)?fun\s+([A-Za-z0-9_]+)\s*\([^)]*\)(?:\s*:\s*[A-Za-z0-9_<>?\s]+)?\s*\{""",
     re.DOTALL,
 )
 
@@ -917,13 +919,19 @@ def symbol_field(block: str, name: str) -> str | None:
 
 
 def check_batch(
-    batch: dict[str, tuple[str, str]],
+    batch: dict[str, tuple[str, str | list[str]]],
     contracts_text: str,
     source_root: Path,
 ) -> list[str]:
     issues: list[str] = []
     for feature_id, (rel_path, function_name) in batch.items():
-        prod_targets, parse_errors = extract_production_targets(source_root, rel_path, function_name)
+        function_names = [function_name] if isinstance(function_name, str) else function_name
+        prod_targets: list[ProductionTarget] = []
+        parse_errors: list[str] = []
+        for name in function_names:
+            targets, errors = extract_production_targets(source_root, rel_path, name)
+            prod_targets.extend(targets)
+            parse_errors.extend(errors)
         issues.extend(parse_errors)
         single_targets, anyof_groups, contract_parse_errors = parse_contract_targets(contracts_text, feature_id)
         issues.extend(contract_parse_errors)

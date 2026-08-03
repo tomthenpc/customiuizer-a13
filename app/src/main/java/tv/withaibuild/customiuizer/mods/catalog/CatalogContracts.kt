@@ -1236,4 +1236,113 @@ object CatalogContracts {
         )
     )
     }
+
+    val multiWindowPlus: HookTargetContract by lazy(kotlin.LazyThreadSafetyMode.NONE) { HookTargetContract(
+        featureId = "multiWindowPlus",
+        requirements = listOf(
+            SingleTargetRequirement(
+                target = HookTargetSpec(
+                    id = "ActivityTaskManagerServiceImpl.updateResizeBlackList",
+                    operation = HookOperation.EXACT_METHOD,
+                    className = "com.android.server.wm.ActivityTaskManagerServiceImpl",
+                    memberName = "updateResizeBlackList",
+                    parameterTypes = listOf(Context::class.java)
+                )
+            ),
+            SingleTargetRequirement(
+                target = HookTargetSpec(
+                    id = "ActivityTaskManagerServiceImpl.getSplitScreenBlackListFromXml",
+                    operation = HookOperation.EXACT_METHOD,
+                    className = "com.android.server.wm.ActivityTaskManagerServiceImpl",
+                    memberName = "getSplitScreenBlackListFromXml",
+                    parameterTypes = emptyList()
+                )
+            ),
+            SingleTargetRequirement(
+                target = HookTargetSpec(
+                    id = "ActivityTaskManagerServiceImpl.inResizeBlackList",
+                    operation = HookOperation.ALL_METHODS_BY_NAME,
+                    className = "com.android.server.wm.ActivityTaskManagerServiceImpl",
+                    memberName = "inResizeBlackList"
+                )
+            )
+        )
+    )
+    }
+
+    val noFloatingWindowBlacklist: HookTargetContract by lazy(kotlin.LazyThreadSafetyMode.NONE) { HookTargetContract(
+        featureId = "noFloatingWindowBlacklist",
+        requirements = listOf(
+            SingleTargetRequirement(
+                target = HookTargetSpec(
+                    id = "MiuiMultiWindowAdapter.getListFromCloudData",
+                    operation = HookOperation.ALL_METHODS_BY_NAME,
+                    className = "android.util.MiuiMultiWindowAdapter",
+                    memberName = "getListFromCloudData"
+                ),
+                criticality = Criticality.OPTIONAL
+            ),
+            SingleTargetRequirement(
+                target = HookTargetSpec(
+                    id = "MiuiMultiWindowAdapter.getStartFromFreeformBlackListFromCloud",
+                    operation = HookOperation.ALL_METHODS_BY_NAME,
+                    className = "android.util.MiuiMultiWindowAdapter",
+                    memberName = "getStartFromFreeformBlackListFromCloud"
+                ),
+                criticality = Criticality.OPTIONAL
+            ),
+            SingleTargetRequirement(
+                target = HookTargetSpec(
+                    id = "MiuiMultiWindowAdapter.getFreeformBlackList",
+                    operation = HookOperation.ALL_METHODS_BY_NAME,
+                    className = "android.util.MiuiMultiWindowAdapter",
+                    memberName = "getFreeformBlackList"
+                )
+            ),
+            SingleTargetRequirement(
+                target = HookTargetSpec(
+                    id = "MiuiMultiWindowAdapter.getFreeformBlackListFromCloud",
+                    operation = HookOperation.ALL_METHODS_BY_NAME,
+                    className = "android.util.MiuiMultiWindowAdapter",
+                    memberName = "getFreeformBlackListFromCloud"
+                )
+            ),
+            SingleTargetRequirement(
+                target = HookTargetSpec(
+                    id = "MiuiMultiWindowAdapter.setFreeformBlackList",
+                    operation = HookOperation.ALL_METHODS_BY_NAME,
+                    className = "android.util.MiuiMultiWindowAdapter",
+                    memberName = "setFreeformBlackList"
+                )
+            ),
+            SingleTargetRequirement(
+                target = HookTargetSpec(
+                    id = "MiuiMultiWindowUtils.isForceResizeable",
+                    operation = HookOperation.EXACT_METHOD,
+                    className = "android.util.MiuiMultiWindowUtils",
+                    memberName = "isForceResizeable",
+                    parameterTypes = emptyList()
+                )
+            ),
+            SingleTargetRequirement(
+                target = HookTargetSpec(
+                    id = "MiuiMultiWindowUtils.isPkgMainActivityResizeable",
+                    operation = HookOperation.ALL_METHODS_BY_NAME,
+                    className = "android.util.MiuiMultiWindowUtils",
+                    memberName = "isPkgMainActivityResizeable"
+                ),
+                criticality = Criticality.OPTIONAL
+            ),
+            SingleTargetRequirement(
+                target = HookTargetSpec(
+                    id = "MiuiFreeformServicesUtils.supportsFreeform",
+                    operation = HookOperation.EXACT_METHOD,
+                    className = "com.android.server.wm.MiuiFreeformServicesUtils",
+                    memberName = "supportsFreeform",
+                    parameterTypes = emptyList()
+                )
+            )
+        )
+    )
+    }
 }

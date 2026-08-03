@@ -1401,5 +1401,79 @@ object ExampleHooks {
         self._patch_and_assert_fails("parse_contract_targets", buggy, correct)
 
 
+class TestMultiFunctionExtraction(unittest.TestCase):
+
+    def test_extract_function_body_matches_private_helper(self) -> None:
+        text = '''
+object ExampleHooks {
+    @JvmStatic
+    fun ExampleHook(lpparam: SystemServerStartingParam) {
+        HelperMethod(lpparam.classLoader)
+    }
+
+    private fun HelperMethod(cl: ClassLoader) {
+        ModuleHelper.findAndHookMethod("com.example.Foo", cl, "bar", object : MethodHook() {})
+    }
+}
+'''
+        body, line = parity.extract_function_body(text, "HelperMethod")
+        self.assertIn('ModuleHelper.findAndHookMethod("com.example.Foo"', body)
+        self.assertGreater(line, 0)
+
+    def test_check_batch_merges_multiple_function_names(self) -> None:
+        contracts = '''
+        val testContract: HookTargetContract by lazy(kotlin.LazyThreadSafetyMode.NONE) { HookTargetContract(
+            featureId = "testContract",
+            requirements = listOf(
+                SingleTargetRequirement(
+                    target = HookTargetSpec(
+                        id = "Foo.bar",
+                        operation = HookOperation.EXACT_METHOD,
+                        className = "com.example.Foo",
+                        memberName = "bar",
+                        parameterTypes = emptyList()
+                    )
+                ),
+                SingleTargetRequirement(
+                    target = HookTargetSpec(
+                        id = "Baz.qux",
+                        operation = HookOperation.ALL_METHODS_BY_NAME,
+                        className = "com.example.Baz",
+                        memberName = "qux"
+                    ),
+                    criticality = Criticality.OPTIONAL
+                )
+            )
+        )
+        }
+        '''
+        production = '''
+object ExampleHooks {
+    @JvmStatic
+    fun ExampleHook(lpparam: SystemServerStartingParam) {
+        ModuleHelper.findAndHookMethod("com.example.Foo", lpparam.classLoader, "bar", object : MethodHook() {})
+        HelperMethod(lpparam.classLoader)
+    }
+
+    private fun HelperMethod(cl: ClassLoader) {
+        ModuleHelper.hookAllMethodsSilently("com.example.Baz", cl, "qux", object : MethodHook() {})
+    }
+}
+'''
+
+        with tempfile.TemporaryDirectory() as td:
+            root = Path(td)
+            prod = root / "tv" / "withaibuild" / "customiuizer" / "mods" / "ExampleHooks.kt"
+            prod.parent.mkdir(parents=True, exist_ok=True)
+            prod.write_text(production, encoding="utf-8")
+            contracts_path = root / "CatalogContracts.kt"
+            contracts_path.write_text(contracts, encoding="utf-8")
+            batch = {
+                "testContract": ("tv/withaibuild/customiuizer/mods/ExampleHooks.kt", ["ExampleHook", "HelperMethod"])
+            }
+            issues = parity.check_batch(batch, contracts, root)
+            self.assertEqual(issues, [])
+
+
 if __name__ == "__main__":
     unittest.main()

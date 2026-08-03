@@ -164,4 +164,39 @@ class Batch12BehaviorTest {
         assertTrue("powerDoubleTapAction second install is AlreadyInstalled", FeatureDispatcher.installById("powerDoubleTapAction", server))
     }
 
+    @Test
+    fun multiWindowPlus_disabledPathDoesNotExecuteInstaller() {
+        val prefs = PrefMap<String, Any>()
+        val server = runtime(prefs)
+
+        assertFalse("multiWindowPlus disabled", FeatureDispatcher.installById("multiWindowPlus", server))
+    }
+
+    @Test
+    fun multiWindowPlus_installsWhenEnabled() {
+        val prefs = PrefMap<String, Any>()
+        prefs["system_fw_splitscreen"] = true
+        val server = runtime(prefs)
+
+        assertTrue("multiWindowPlus first install", FeatureDispatcher.installById("multiWindowPlus", server))
+        assertTrue("multiWindowPlus second install is AlreadyInstalled", FeatureDispatcher.installById("multiWindowPlus", server))
+    }
+
+    @Test
+    fun noFloatingWindowBlacklist_disabledPathDoesNotExecuteInstaller() {
+        val prefs = PrefMap<String, Any>()
+        val server = runtime(prefs)
+
+        assertFalse("noFloatingWindowBlacklist disabled", FeatureDispatcher.installById("noFloatingWindowBlacklist", server))
+    }
+
+    @Test
+    fun noFloatingWindowBlacklist_installsWhenEnabled() {
+        val prefs = PrefMap<String, Any>()
+        prefs["system_fw_noblacklist"] = true
+        val server = runtime(prefs)
+
+        assertTrue("noFloatingWindowBlacklist first install", FeatureDispatcher.installById("noFloatingWindowBlacklist", server))
+        assertTrue("noFloatingWindowBlacklist second install is AlreadyInstalled", FeatureDispatcher.installById("noFloatingWindowBlacklist", server))
+    }
 }

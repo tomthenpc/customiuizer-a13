@@ -110,4 +110,8 @@ object DiagnosticIds {
     /** Catalog expansion batch 12 (continued): navigation bar and power double-tap actions. */
     const val NAV_BAR_ACTIONS = "NAV_BAR_ACTIONS"
     const val POWER_DOUBLE_TAP_ACTION = "POWER_DOUBLE_TAP_ACTION"
+
+    /** Catalog expansion batch 12 (continued): multi-window and freeform blacklist hooks. */
+    const val MULTI_WINDOW_PLUS = "MULTI_WINDOW_PLUS"
+    const val NO_FLOATING_WINDOW_BLACKLIST = "NO_FLOATING_WINDOW_BLACKLIST"
 }
