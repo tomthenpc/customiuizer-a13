@@ -441,7 +441,7 @@ typed catalog 之外的 Hook 同样必须处理。
     口径：`SystemServerInstaller.install` 内非 `FeatureDispatcher.installById` 的直接调用，不含 `GlobalActions`/`Controls`/`Various`/`USBConfig`/`AlarmCompatService` 等已声明暂缓项，含一个偏好对应一个入口、每个入口只计一次：
     - [x] `TempHideOverlayAppHook` (system_screenshot_overlay) → `tempHideOverlayApp` FeatureSpec
     - [x] `OpenAppInFreeFormHook` (system_notify_openinfw / system_fw_forcein_actionsend / system_betterpopups_allowfloat) → `openAppInFreeForm` FeatureSpec
-    - [ ] `NavBarActionsHook` / `PowerDoubleTapActionHook` (controls_backlong_action / controls_powerdt_action)
+    - [x] `NavBarActionsHook` / `PowerDoubleTapActionHook` (controls_backlong_action / controls_powerdt_action) → `navBarActions` + `powerDoubleTapAction` FeatureSpec (P3.2.3 完成)
     - [x] `SelectiveToastsHook` (system_blocktoasts) → `selectiveToasts` FeatureSpec (P3.2.2 完成)
     - [ ] `MultiWindowPlusHook` / `NoFloatingWindowBlacklistHook` (system_fw_splitscreen / system_fw_noblacklist)
   - [ ] `system_separatevolume` 等跨 process 项按 LEGACY_EXCEPTION 登记
@@ -499,6 +499,69 @@ VerifiedTree: 042f8fcd4f928b6d0bf3e6f9d5959546d311ff55
 - powershell -NoProfile -ExecutionPolicy Bypass -File .\scripts\verify.ps1 -Mode Full  PASS
 - git diff --check  PASS
 - GitHub CI A13 Fast CI run 30778144937 PASS (commit 9afec52)
+```
+
+P3.2.3 NavBarActions / PowerDoubleTapAction 迁移记录：
+
+```text
+Task: 迁移 NavBarActionsHook 与 PowerDoubleTapActionHook 到 FeatureCatalog
+Priority: P2
+State: COMPLETE
+Baseline commit: 1495a1583b89ceaa33d6ff20e535c1be706b648c
+Files:
+  - app/src/main/java/tv/withaibuild/customiuizer/mods/catalog/FeatureId.kt
+  - app/src/main/java/tv/withaibuild/customiuizer/mods/diagnostics/DiagnosticIds.kt
+  - app/src/main/java/tv/withaibuild/customiuizer/mods/catalog/CatalogContracts.kt
+  - app/src/main/java/tv/withaibuild/customiuizer/mods/catalog/FeatureCatalog.kt
+  - app/src/main/java/tv/withaibuild/customiuizer/installers/SystemServerInstaller.java
+  - app/src/main/java/tv/withaibuild/customiuizer/mods/Controls.kt (kept unchanged)
+  - app/src/test/java/tv/withaibuild/customiuizer/mods/Batch12BehaviorTest.kt
+  - app/src/test/java/tv/withaibuild/customiuizer/mods/catalog/FeatureCatalogTest.kt
+  - app/src/test/java/com/android/server/policy/BaseMiuiPhoneWindowManager.java (new stub)
+  - app/src/test/java/com/android/server/policy/MiuiKeyShortcutManager.java (new stub)
+  - app/src/test/java/com/miui/server/input/util/ShortCutActionsUtils.java (new stub)
+  - tools/check_hook_contract_parity.py (BUNDLE constant, guarded-optional logic, class-name literal variable resolution)
+  - tools/tests/test_architecture_invariants.py
+  - tools/tests/test_feature_inventory.py
+  - docs/rom-intelligence/A13_PROCESS_MATRIX.md
+Original behavior:
+  - NavBarActionsHook 和 PowerDoubleTapActionHook 由 SystemServerInstaller 直接调用；
+  - 无 FeatureId、DiagnosticId、FeatureSpec、Contract；
+  - 无 typed Feature 安装路径。
+Invariant:
+  - 保持 Hook 方法体、启用条件、调用顺序、异常处理及 ROM fallback 不变；
+  - disabled path 0 business object / 0 hook reflection。
+Implementation:
+  - 新增 FeatureId.NAV_BAR_ACTIONS / POWER_DOUBLE_TAP_ACTION；
+  - 新增 DiagnosticIds 条目；
+  - 新增 CatalogContracts.navBarActions（BaseMiuiPhoneWindowManager postKeyLongPress/removeKeyLongPress ALL_METHODS_BY_NAME）
+    与 powerDoubleTapAction（ShortCutActionsUtils.triggerFunction EXACT_METHOD 4 参数 +
+    MiuiKeyShortcutManager.getVolumeKeyLaunchCamera OPTIONAL 0 参数）；
+  - 新增 FeatureSpec（system_server, SYSTEM_SERVER_STARTING, CONTRACT_REQUIRED）；
+  - SystemServerInstaller 替换为 FeatureDispatcher.installById；
+  - 保持 Controls.kt 原 hook body 不变；为让 contract parity 工具识别原
+    `val className = "..."` 变量与条件安装的 OPTIONAL target，增强
+    check_hook_contract_parity.py（字符串类名变量解析、guard 区间检测）。
+Commands:
+  - python tools/check_hook_contract_parity.py --batch 12  PASS
+  - python -m unittest tools.tests.test_check_hook_contract_parity  PASS (54 tests)
+  - .\gradlew.bat --no-daemon :app:testDebugUnitTest  PASS
+  - python -m unittest discover -s tools/tests -p "test_*.py"  PASS (221 tests)
+  - powershell -NoProfile -ExecutionPolicy Bypass -File .\scripts\verify.ps1 -Mode Fast  PASS
+  - powershell -NoProfile -ExecutionPolicy Bypass -File .\scripts\verify.ps1 -Mode Full  PASS
+  - git diff --check  PASS
+Exit codes: 0
+Tests: Batch12BehaviorTest navBarActions/powerDoubleTapAction disabled/any-enabled paths; FeatureCatalogTest catalog total=66, adapted=58
+CI: GitHub Actions run 30786701862 PASS (commit c1dd408)
+Device evidence: NOT_EXERCISED
+Commit: b522f69 (migration) + c1dd408 (keep Controls.kt unchanged, strengthen parity tool)
+Push: origin/devin/a13-rom-intelligence-audit
+Risks:
+  - PowerDoubleTapAction 的 getVolumeKeyLaunchCamera 为 OPTIONAL + 条件硬安装；
+    若条件为 false，安装结果为 DEGRADED（仍 active），与原行为一致。
+  - c1dd408 扩大了 check_hook_contract_parity.py 对局部变量/条件块的理解；
+    后续若条件块解析误报需补充单元测试。
+Next: 继续 batch 12 MultiWindowPlusHook / NoFloatingWindowBlacklistHook，然后 P3.3 / P3.4
 ```
 
 ---
