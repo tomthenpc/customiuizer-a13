@@ -20,9 +20,9 @@ LastCleanupCommit: 4162340089ff975b011080e54a5ec2f255575889
 LastToolCreated: tools/build_legacy_exception_registry.py (stable LEGACY_EXCEPTION registry builder and validator)
 LastFailureClass: none
 CurrentObjective: P3
-CurrentObjectiveState: IN_PROGRESS
-CurrentObjectiveStartEvidence: P3.3A LEGACY_EXCEPTION registry foundation; 514 legacy call sites grouped into 205 logical owner groups; first batch refined to 4 cross-process curated records (separatevolume systemui/settings, usbconfig system/settings) with CROSS_PROCESS reasons, hookTargets and exit conditions; registry builder/validator and 24 focused/mutation tests updated; Fast verification green
-NextObjectiveFirstAction: continue P3.3B/C/D/E remaining logical owner batches; do not start P3.4 until all owners are registered and validated
+CurrentObjectiveState: PAUSED
+CurrentObjectiveStartEvidence: P3.3A LEGACY_EXCEPTION registry foundation committed with 514 legacy call sites in 205 logical owner groups and first batch of 20 records with schema validator and 24 focused mutation tests
+NextObjectiveFirstAction: continue P3.3B next batch of LEGACY_EXCEPTION owners
 ResumeTask: P3.3B next batch of LEGACY_EXCEPTION owners; P3.4 final inventory gate after all P3.3 batches
 DeepSweepDue: false
 LastVerifiedAt: 2026-08-03T15:30:00+08:00
