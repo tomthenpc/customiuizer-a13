@@ -27,6 +27,7 @@ class TargetKey:
 class ProductionTarget:
     key: TargetKey
     hard: bool
+    guarded: bool
     source: str
     line: int
 
@@ -208,16 +209,100 @@ def first_method_literal(args: list[str], class_resolved_from_var: bool) -> str 
     return None
 
 
-def resolve_class_variables(body: str) -> dict[str, str]:
-    """Map local variable names like 'SignDetails' to the string class name from XposedHelpers.findClass*."""
-    mapping: dict[str, str] = {}
+def resolve_class_variables(body: str) -> dict[str, tuple[str, bool]]:
+    """Map local variable names to (class_name, is_string_literal).
+
+    - XposedHelpers.findClass* returns a Class<?>, so is_string_literal=False.
+    - val x = "com.foo.Bar" is a String class-name binding, so is_string_literal=True.
+    """
+    mapping: dict[str, tuple[str, bool]] = {}
     pattern = re.compile(
         r"val\s+([A-Za-z0-9_]+)\s*=\s*XposedHelpers\.(?:findClass|findClassIfExists)\s*\(\s*\"([^\"]+)\"",
         re.DOTALL,
     )
     for m in pattern.finditer(body):
-        mapping[m.group(1)] = unescape_string(m.group(2))
+        mapping[m.group(1)] = (unescape_string(m.group(2)), False)
+    # Also catch simple val x = "com.foo.Bar" class-name bindings used by findAndHookMethod.
+    literal_pattern = re.compile(
+        r"val\s+([A-Za-z0-9_]+)\s*=\s*\"([A-Za-z0-9_]+(?:\.[A-Za-z0-9_$]+)+)\"",
+        re.DOTALL,
+    )
+    for m in literal_pattern.finditer(body):
+        mapping[m.group(1)] = (unescape_string(m.group(2)), True)
     return mapping
+
+
+def find_guarded_ranges(body: str) -> list[tuple[int, int]]:
+    """Return body-index ranges of `if (...) { ... }` blocks, handling nested braces.
+
+    This is intentionally conservative: it only treats braced `if` bodies, and it
+    ignores `else` branches. Overlapping ranges are merged so a call deep in nested
+    conditionals is still recognized as guarded.
+    """
+    ranges: list[tuple[int, int]] = []
+    if_pattern = re.compile(r"\bif\s*\(")
+    i = 0
+    while True:
+        m = if_pattern.search(body, i)
+        if not m:
+            break
+        cond_start = m.end()
+        # Find the matching ')' for the condition.
+        depth = 1
+        in_string = False
+        escaped = False
+        cond_end = cond_start
+        while cond_end < len(body) and depth > 0:
+            ch = body[cond_end]
+            if in_string:
+                if escaped:
+                    escaped = False
+                elif ch == "\\":
+                    escaped = True
+                elif ch == '"':
+                    in_string = False
+            else:
+                if ch == '"':
+                    in_string = True
+                elif ch == '(':
+                    depth += 1
+                elif ch == ')':
+                    depth -= 1
+            cond_end += 1
+        # Skip whitespace; require a '{' body.
+        brace = cond_end
+        while brace < len(body) and body[brace].isspace():
+            brace += 1
+        if brace >= len(body) or body[brace] != '{':
+            i = cond_end
+            continue
+        # Find matching '}'.
+        brace_start = brace
+        depth = 1
+        j = brace + 1
+        in_string = False
+        escaped = False
+        while j < len(body) and depth > 0:
+            ch = body[j]
+            if in_string:
+                if escaped:
+                    escaped = False
+                elif ch == "\\":
+                    escaped = True
+                elif ch == '"':
+                    in_string = False
+            else:
+                if ch == '"':
+                    in_string = True
+                elif ch in '([{':
+                    depth += 1
+                elif ch in ')]}':
+                    depth -= 1
+            j += 1
+        if depth == 0:
+            ranges.append((brace_start + 1, j - 1))
+        i = j
+    return ranges
 
 
 def extract_production_targets(source_root: Path, rel_path: str, function_name: str) -> tuple[list[ProductionTarget], list[str]]:
@@ -229,6 +314,7 @@ def extract_production_targets(source_root: Path, rel_path: str, function_name: 
         return [], [f"UNPARSEABLE_HOOK_SURFACE: cannot locate function {function_name} in {rel_path}"]
     body, line = extracted
     class_vars = resolve_class_variables(body)
+    guarded_ranges = find_guarded_ranges(body)
     targets: list[ProductionTarget] = []
     errors: list[str] = []
     for m in MODULE_HELPER_RE.finditer(body):
@@ -245,7 +331,9 @@ def extract_production_targets(source_root: Path, rel_path: str, function_name: 
         if not class_name:
             var = args[0].strip()
             if var in class_vars:
-                class_name = class_vars[var]
+                resolved_name, resolved_is_string = class_vars[var]
+                class_name = resolved_name
+                first_is_string = resolved_is_string
                 class_resolved = True
         member_name = first_method_literal(args, class_resolved)
         if not class_name:
@@ -297,7 +385,8 @@ def extract_production_targets(source_root: Path, rel_path: str, function_name: 
         # line is approximate; normalize to body-relative line
         body_lines_before = body[:m.start()].count("\n")
         abs_line = line + body_lines_before
-        targets.append(ProductionTarget(key=key, hard=is_hard(method), source=f"{rel_path}:{abs_line}", line=abs_line))
+        guarded = any(start <= m.start() < end for (start, end) in guarded_ranges)
+        targets.append(ProductionTarget(key=key, hard=is_hard(method), guarded=guarded, source=f"{rel_path}:{abs_line}", line=abs_line))
     return targets, errors
 
 
@@ -871,7 +960,7 @@ def check_batch(
                     if c in single_targets:
                         continue
                     pt = prod_target_by_key[c]
-                    if group.optional and pt.hard:
+                    if group.optional and pt.hard and not pt.guarded:
                         issues.append(f"CRITICALITY_MISMATCH: {feature_id} {pt.source}: {group.group_id} candidate {c} contract OPTIONAL but production hard install")
                     elif not group.optional and not pt.hard:
                         issues.append(f"CRITICALITY_MISMATCH: {feature_id} {pt.source}: {group.group_id} candidate {c} contract REQUIRED but production silent install")
@@ -941,7 +1030,7 @@ def check_batch(
             if pt.key in single_targets:
                 crit, optional = single_targets[pt.key]
                 hard = pt.hard
-                if optional and hard:
+                if optional and hard and not pt.guarded:
                     issues.append(f"CRITICALITY_MISMATCH: {feature_id} {pt.source}: {pt.key} contract OPTIONAL but production hard install")
                 elif not optional and not hard:
                     issues.append(f"CRITICALITY_MISMATCH: {feature_id} {pt.source}: {pt.key} contract REQUIRED but production silent install")

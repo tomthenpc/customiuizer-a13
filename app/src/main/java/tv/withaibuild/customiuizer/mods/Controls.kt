@@ -934,7 +934,8 @@ object Controls {
     @JvmStatic
     fun PowerDoubleTapActionHook(lpparam: SystemServerStartingParam) {
         val dtFromVolumeDown = MainModule.mPrefs.getBoolean("controls_volumedowndt_torch")
-        ModuleHelper.findAndHookMethod("com.miui.server.input.util.ShortCutActionsUtils", lpparam.classLoader, "triggerFunction", String::class.java, String::class.java, Bundle::class.java, Boolean::class.javaPrimitiveType, object : MethodHook() {
+        val className = "com.miui.server.input.util.ShortCutActionsUtils"
+        ModuleHelper.findAndHookMethod(className, lpparam.classLoader, "triggerFunction", String::class.java, String::class.java, Bundle::class.java, Boolean::class.javaPrimitiveType, object : MethodHook() {
             override fun before(param: BeforeHookCallback) {
                 val arg1 = param.getArg(1) as? String
                 if (dtFromVolumeDown && arg1 == "double_click_volume_down") {
@@ -948,7 +949,7 @@ object Controls {
         })
 
         if (dtFromVolumeDown) {
-            ModuleHelper.findAndHookMethodSilently("com.android.server.policy.MiuiKeyShortcutManager", lpparam.classLoader, "getVolumeKeyLaunchCamera", HookerClassHelper.returnConstant(true))
+            ModuleHelper.findAndHookMethod("com.android.server.policy.MiuiKeyShortcutManager", lpparam.classLoader, "getVolumeKeyLaunchCamera", HookerClassHelper.returnConstant(true))
         }
     }
 
