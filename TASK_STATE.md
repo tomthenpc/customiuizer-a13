@@ -444,9 +444,12 @@ typed catalog 之外的 Hook 同样必须处理。
     - [x] `NavBarActionsHook` / `PowerDoubleTapActionHook` (controls_backlong_action / controls_powerdt_action) → `navBarActions` + `powerDoubleTapAction` FeatureSpec (P3.2.3 完成)
     - [x] `SelectiveToastsHook` (system_blocktoasts) → `selectiveToasts` FeatureSpec (P3.2.2 完成)
     - [x] `MultiWindowPlusHook` / `NoFloatingWindowBlacklistHook` (system_fw_splitscreen / system_fw_noblacklist) → `multiWindowPlus` + `noFloatingWindowBlacklist` FeatureSpec (P3.2.4 完成)
-  - [ ] `system_separatevolume` 等跨 process 项按 LEGACY_EXCEPTION 登记
+  - [x] `system_separatevolume`、`system_defaultusb` 等首批跨 process 项已按 LEGACY_EXCEPTION 登记（4 条 curated records，CROSS_PROCESS 原因）
 - [x] P3.5 A13 Devin Local 控制面迁移：安装本地 Skill、采用原子 Task Slice、独立 Reviewer 流程、更新控制文档与 checker/mutation tests
-- [ ] P3.3 登记不可迁移项为 LEGACY_EXCEPTION 并补充原因/owner/test；
+- [~] P3.3 登记不可迁移项为 LEGACY_EXCEPTION 并补充原因/owner/test；
+  - [x] P3.3A 机器可读 registry schema/validator/首批 4 条 curated records 完成（commit 待写入）
+  - [ ] P3.3B/C/D/E 继续登记剩余 logical owners
+  - [ ] P3.3 整体完成需全部 205 logical owner groups 已登记并验证
 - [ ] P3.4 增加 inventory 机械门禁，防止 UNKNOWN/重复 ownership。
 
 完成条件：
@@ -639,6 +642,101 @@ Risks:
   - 本次增强 contract parity 工具支持多 function 合并；后续 helper 跨文件调用不会被追踪。
 Next: 继续 P3.3 登记 LEGACY_EXCEPTION 与 P3.4 inventory 门禁
 ```
+
+---
+
+## P3.3A LEGACY_EXCEPTION 登记基础
+
+State: `COMPLETE`
+
+文件：
+
+```text
+- docs/audit/A13_LEGACY_EXCEPTION_REGISTRY.json
+- tools/build_legacy_exception_registry.py
+- tools/validate_legacy_exception_registry.py
+- tools/tests/test_legacy_exception_registry.py
+- docs/process/tasks/A13-P3.3A-LEGACY-EXCEPTION-REGISTRY.md
+```
+
+原始行为：
+
+```text
+- A13_HOOK_OWNERSHIP_INVENTORY.md 仅有 per-file 分类，缺少稳定 call-site 身份；
+- 无机器可读 LEGACY_EXCEPTION 登记；
+- 无 validator / focused tests；
+- 首批 exception 未按 cross-process / owner / reason 精确定义。
+```
+
+不变量：
+
+```text
+- 不修改 app/src/main/** 生产代码或已有 typed Feature；
+- 不一次登记所有 514 legacy calls；
+- 每条 exception 必须有明确 owner、process、phase、reasonCode、hookTargets、testEvidence 和 exitCondition；
+- reason 必须为具体技术解释，不得仅写 "legacy"；
+- registry、inventory、build tool 的 legacy 计数一致（514）。
+```
+
+实现：
+
+```text
+- 定义 A13_LEGACY_EXCEPTION_REGISTRY.json schema v1（schemaVersion、sourceCommit、totalLegacyCallSites、
+  totalLegacyGroups、firstBatchSize、records[]）；
+- 定义 controlled reasonCode taxonomy（CROSS_PROCESS / LIFECYCLE_BOOTSTRAP / RESOURCE_HOOK / ... / OTHER_REVIEW_REQUIRED）；
+- build_legacy_exception_registry.py：
+  - scan_legacy_call_sites 复用 audit_hook_ownership.py 分类，保证与 inventory 一致；
+  - build_census 可生成稳定 per-call A13_HOOK_CALL_SITE_CENSUS.json；
+  - build_registry 以 FIRST_BATCH_SEEDS 生成首批 4 条 curated records；
+  - validate 检查 schema、taxonomy、文件/entrypoint 存在性、重复 id、call site 重叠、typed/infra 越界；
+- validate_legacy_exception_registry.py：独立入口调用同一 validate；
+- test_legacy_exception_registry.py：24 个 focused + mutation 测试；
+- 首批 4 条记录：
+  - legacy-separatevolume-systemui (MIUIVolumeDialogHook + SingleNotificationSliderHook, process=system_ui, phase=PACKAGE_READY, CROSS_PROCESS)
+  - legacy-separatevolume-settings (NotificationVolumeSettingsHook, process=per_app, phase=PACKAGE_READY, CROSS_PROCESS)
+  - legacy-usbconfig-system (USBConfigHook, process=system_server, phase=SYSTEM_SERVER_STARTING, CROSS_PROCESS)
+  - legacy-usbconfig-settings (USBConfigSettingsHook, process=per_app, phase=PACKAGE_READY, CROSS_PROCESS)
+- A13_HOOK_OWNERSHIP_INVENTORY.md 经 audit_hook_ownership.py 重新生成为 676 total / 514 LEGACY_EXCEPTION / 133 REGISTRY_FEATURE / 6 INSTALLER_INFRASTRUCTURE / 23 API_BRIDGE / 0 UNKNOWN。
+```
+
+验证：
+
+```text
+- python tools/build_legacy_exception_registry.py --build                -> 0
+- python tools/build_legacy_exception_registry.py --check                -> 0
+- python tools/validate_legacy_exception_registry.py                     -> 0
+- python -m unittest tools.tests.test_legacy_exception_registry          -> 24/24 pass
+- python -m unittest tools.tests.test_hook_ownership_inventory           -> 2/2 pass
+- python -m unittest discover -s tools/tests -p "test_*.py"              -> 247 pass
+- python tools/audit_hook_ownership.py                                   -> 0, totals 676/133/6/23/514/0
+- python tools/check-invariants.py                                       -> 0, no violations
+- python tools/check-compat-contracts.py                                 -> 0
+- git diff --check                                                       -> 0
+- powershell -NoProfile -ExecutionPolicy Bypass -File .\scripts\verify.ps1 -Mode Fast -> A13 VERIFICATION PASSED
+```
+
+CI:
+
+```text
+- 待提交并检查 GitHub Actions。
+```
+
+Device evidence: `NOT_EXERCISED`
+
+Commit: `待写入`
+
+Push: `origin/devin/a13-rom-intelligence-audit`
+
+风险：
+
+```text
+- audit_hook_ownership.py 的 typed-function 识别基于函数名；同名的多态重载（如 MultiWindowPlusHook 的 PackageReadyParam 变体）
+  会被 REGISTRY 或 LEGACY 同时归类，具体取决于所在文件；P3.4 的 inventory 门禁可进一步细化签名级 owner；
+- 首批 exception 仅覆盖 2 个 cross-process preference，剩余 ~501 legacy calls 留给 P3.3B/C；
+- registry 中的 hookTargets 为手工摘录，需随 ROM 版本变化由 contract parity 工具持续校验。
+```
+
+Next: P3.3B 继续登记剩余 cross-process / resource / lifecycle-bootstrap exception；P3.4 增加 inventory 机械门禁。
 
 ---
 
