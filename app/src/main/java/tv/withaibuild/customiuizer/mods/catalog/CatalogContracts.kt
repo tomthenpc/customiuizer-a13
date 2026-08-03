@@ -2,6 +2,7 @@ package tv.withaibuild.customiuizer.mods.catalog
 
 import android.content.Context
 import android.content.Intent
+import android.os.Bundle
 import tv.withaibuild.customiuizer.mods.utils.AnyOfRequirement
 import tv.withaibuild.customiuizer.mods.utils.Criticality
 import tv.withaibuild.customiuizer.mods.utils.HookOperation
@@ -23,6 +24,7 @@ object CatalogContracts {
     private val BOOLEAN = Boolean::class.javaPrimitiveType!!
     private val LONG = Long::class.javaPrimitiveType!!
     private val STRING = String::class.java
+    private val BUNDLE = Bundle::class.java
 
     val screenDimTime: HookTargetContract by lazy(kotlin.LazyThreadSafetyMode.NONE) { HookTargetContract(
         featureId = "screenDimTime",
@@ -1181,6 +1183,55 @@ object CatalogContracts {
                     className = "com.android.server.notification.NotificationManagerService",
                     memberName = "tryShowToast"
                 )
+            )
+        )
+    )
+    }
+
+    val navBarActions: HookTargetContract by lazy(kotlin.LazyThreadSafetyMode.NONE) { HookTargetContract(
+        featureId = "navBarActions",
+        requirements = listOf(
+            SingleTargetRequirement(
+                target = HookTargetSpec(
+                    id = "BaseMiuiPhoneWindowManager.postKeyLongPress",
+                    operation = HookOperation.ALL_METHODS_BY_NAME,
+                    className = "com.android.server.policy.BaseMiuiPhoneWindowManager",
+                    memberName = "postKeyLongPress"
+                )
+            ),
+            SingleTargetRequirement(
+                target = HookTargetSpec(
+                    id = "BaseMiuiPhoneWindowManager.removeKeyLongPress",
+                    operation = HookOperation.ALL_METHODS_BY_NAME,
+                    className = "com.android.server.policy.BaseMiuiPhoneWindowManager",
+                    memberName = "removeKeyLongPress"
+                )
+            )
+        )
+    )
+    }
+
+    val powerDoubleTapAction: HookTargetContract by lazy(kotlin.LazyThreadSafetyMode.NONE) { HookTargetContract(
+        featureId = "powerDoubleTapAction",
+        requirements = listOf(
+            SingleTargetRequirement(
+                target = HookTargetSpec(
+                    id = "ShortCutActionsUtils.triggerFunction",
+                    operation = HookOperation.EXACT_METHOD,
+                    className = "com.miui.server.input.util.ShortCutActionsUtils",
+                    memberName = "triggerFunction",
+                    parameterTypes = listOf(STRING, STRING, BUNDLE, BOOLEAN)
+                )
+            ),
+            SingleTargetRequirement(
+                target = HookTargetSpec(
+                    id = "MiuiKeyShortcutManager.getVolumeKeyLaunchCamera",
+                    operation = HookOperation.EXACT_METHOD,
+                    className = "com.android.server.policy.MiuiKeyShortcutManager",
+                    memberName = "getVolumeKeyLaunchCamera",
+                    parameterTypes = emptyList()
+                ),
+                criticality = Criticality.OPTIONAL
             )
         )
     )

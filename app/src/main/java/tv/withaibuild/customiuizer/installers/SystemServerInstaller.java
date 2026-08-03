@@ -43,8 +43,8 @@ public final class SystemServerInstaller {
 
         if (MainModule.mPrefs.getInt("controls_backlong_action", 1) > 1 ||
             MainModule.mPrefs.getInt("controls_homelong_action", 1) > 1 ||
-            MainModule.mPrefs.getInt("controls_menulong_action", 1) > 1) Controls.NavBarActionsHook(lpparam);
-        if (MainModule.mPrefs.getInt("controls_powerdt_action", 1) > 1 || MainModule.mPrefs.getBoolean("controls_volumedowndt_torch")) Controls.PowerDoubleTapActionHook(lpparam);
+            MainModule.mPrefs.getInt("controls_menulong_action", 1) > 1) FeatureDispatcher.installById("navBarActions", serverRuntime);
+        if (MainModule.mPrefs.getInt("controls_powerdt_action", 1) > 1 || MainModule.mPrefs.getBoolean("controls_volumedowndt_torch")) FeatureDispatcher.installById("powerDoubleTapAction", serverRuntime);
         if (MainModule.mPrefs.getInt("system_screenanim_duration", 0) > 0) FeatureDispatcher.installById("screenAnim", serverRuntime);
         if (MainModule.mPrefs.getInt("system_volumesteps", 0) > 0) FeatureDispatcher.installById("volumeSteps", serverRuntime);
         if (MainModule.mPrefs.getInt("system_applock_timeout", 1) > 1) FeatureDispatcher.installById("appLockTimeout", serverRuntime);

@@ -2,6 +2,7 @@ package tv.withaibuild.customiuizer.mods.catalog
 
 import io.github.libxposed.api.XposedModuleInterface.PackageReadyParam
 import io.github.libxposed.api.XposedModuleInterface.SystemServerStartingParam
+import tv.withaibuild.customiuizer.mods.Controls
 import tv.withaibuild.customiuizer.mods.PackagePermissions
 import tv.withaibuild.customiuizer.mods.SystemAudioAndVolumeHooks
 import tv.withaibuild.customiuizer.mods.SystemAudioAndVisualAndMoreHooks
@@ -1994,6 +1995,64 @@ object FeatureCatalog {
                     diagnosticId = DiagnosticIds.SELECTIVE_TOASTS
                 ) {
                     SystemStatusBarAndClockHooks.SelectiveToastsHook(
+                        runtime.lpparam as SystemServerStartingParam
+                    )
+                }
+            },
+            activationRestartTarget = RestartTarget.REBOOT,
+            configReloadMode = ConfigReloadMode.NONE
+        ),
+        // Catalog expansion batch 12 (continued): navigation bar and power double-tap actions.
+        FeatureSpec(
+            compatibilityPolicy = CompatibilityPolicy.CONTRACT_REQUIRED,
+            contract = CatalogContracts.navBarActions,
+            id = "navBarActions",
+            diagnosticId = DiagnosticIds.NAV_BAR_ACTIONS,
+            processScope = ProcessScope.SYSTEM_SERVER,
+            installPhase = InstallPhase.SYSTEM_SERVER_STARTING,
+            processTarget = ProcessTarget.SystemServer,
+            preferenceKeys = setOf("controls_backlong_action", "controls_homelong_action", "controls_menulong_action"),
+            condition = { prefs ->
+                prefs.getInt("controls_backlong_action", 1) > 1 ||
+                prefs.getInt("controls_homelong_action", 1) > 1 ||
+                prefs.getInt("controls_menulong_action", 1) > 1
+            },
+            installer = { runtime, compatResult ->
+                legacyInstall(
+                    runtime = runtime,
+                    compatResult = compatResult,
+                    contract = CatalogContracts.navBarActions,
+                    diagnosticId = DiagnosticIds.NAV_BAR_ACTIONS
+                ) {
+                    Controls.NavBarActionsHook(
+                        runtime.lpparam as SystemServerStartingParam
+                    )
+                }
+            },
+            activationRestartTarget = RestartTarget.REBOOT,
+            configReloadMode = ConfigReloadMode.NONE
+        ),
+        FeatureSpec(
+            compatibilityPolicy = CompatibilityPolicy.CONTRACT_REQUIRED,
+            contract = CatalogContracts.powerDoubleTapAction,
+            id = "powerDoubleTapAction",
+            diagnosticId = DiagnosticIds.POWER_DOUBLE_TAP_ACTION,
+            processScope = ProcessScope.SYSTEM_SERVER,
+            installPhase = InstallPhase.SYSTEM_SERVER_STARTING,
+            processTarget = ProcessTarget.SystemServer,
+            preferenceKeys = setOf("controls_powerdt_action", "controls_volumedowndt_torch"),
+            condition = { prefs ->
+                prefs.getInt("controls_powerdt_action", 1) > 1 ||
+                prefs.getBoolean("controls_volumedowndt_torch", false)
+            },
+            installer = { runtime, compatResult ->
+                legacyInstall(
+                    runtime = runtime,
+                    compatResult = compatResult,
+                    contract = CatalogContracts.powerDoubleTapAction,
+                    diagnosticId = DiagnosticIds.POWER_DOUBLE_TAP_ACTION
+                ) {
+                    Controls.PowerDoubleTapActionHook(
                         runtime.lpparam as SystemServerStartingParam
                     )
                 }

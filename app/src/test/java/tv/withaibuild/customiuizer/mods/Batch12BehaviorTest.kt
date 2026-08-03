@@ -118,4 +118,50 @@ class Batch12BehaviorTest {
         assertTrue("selectiveToasts second install is AlreadyInstalled", FeatureDispatcher.installById("selectiveToasts", server))
     }
 
+    @Test
+    fun navBarActions_disabledPathDoesNotExecuteInstaller() {
+        val prefs = PrefMap<String, Any>()
+        val server = runtime(prefs)
+
+        assertFalse("navBarActions disabled", FeatureDispatcher.installById("navBarActions", server))
+    }
+
+    @Test
+    fun navBarActions_installsWhenAnyPreferenceEnabled() {
+        val prefs = PrefMap<String, Any>()
+        prefs["controls_backlong_action"] = 2
+        val server = runtime(prefs)
+
+        assertTrue("navBarActions first install (controls_backlong_action)", FeatureDispatcher.installById("navBarActions", server))
+        assertTrue("navBarActions second install is AlreadyInstalled", FeatureDispatcher.installById("navBarActions", server))
+    }
+
+    @Test
+    fun powerDoubleTapAction_disabledPathDoesNotExecuteInstaller() {
+        val prefs = PrefMap<String, Any>()
+        val server = runtime(prefs)
+
+        assertFalse("powerDoubleTapAction disabled", FeatureDispatcher.installById("powerDoubleTapAction", server))
+    }
+
+    @Test
+    fun powerDoubleTapAction_installsWhenPowerDtEnabled() {
+        val prefs = PrefMap<String, Any>()
+        prefs["controls_powerdt_action"] = 2
+        val server = runtime(prefs)
+
+        assertTrue("powerDoubleTapAction first install (controls_powerdt_action)", FeatureDispatcher.installById("powerDoubleTapAction", server))
+        assertTrue("powerDoubleTapAction second install is AlreadyInstalled", FeatureDispatcher.installById("powerDoubleTapAction", server))
+    }
+
+    @Test
+    fun powerDoubleTapAction_installsWhenVolumeDownTorchEnabled() {
+        val prefs = PrefMap<String, Any>()
+        prefs["controls_volumedowndt_torch"] = true
+        val server = runtime(prefs)
+
+        assertTrue("powerDoubleTapAction first install (controls_volumedowndt_torch)", FeatureDispatcher.installById("powerDoubleTapAction", server))
+        assertTrue("powerDoubleTapAction second install is AlreadyInstalled", FeatureDispatcher.installById("powerDoubleTapAction", server))
+    }
+
 }

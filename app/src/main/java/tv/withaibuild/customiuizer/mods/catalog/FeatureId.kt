@@ -72,6 +72,8 @@ enum class FeatureId(val canonicalId: String) {
     AUTO_GROUP_NOTIFICATIONS("autoGroupNotifications"),
     APP_LOCK_TIMEOUT("appLockTimeout"),
     SELECTIVE_TOASTS("selectiveToasts"),
+    NAV_BAR_ACTIONS("navBarActions"),
+    POWER_DOUBLE_TAP_ACTION("powerDoubleTapAction"),
     TEMP_HIDE_OVERLAY_APP("tempHideOverlayApp");
 
     companion object {

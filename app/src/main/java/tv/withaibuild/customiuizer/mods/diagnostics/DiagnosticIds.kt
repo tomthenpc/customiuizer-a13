@@ -106,4 +106,8 @@ object DiagnosticIds {
     const val TEMP_HIDE_OVERLAY_APP = "TEMP_HIDE_OVERLAY_APP"
     const val OPEN_APP_IN_FREE_FORM = "OPEN_APP_IN_FREE_FORM"
     const val SELECTIVE_TOASTS = "SELECTIVE_TOASTS"
+
+    /** Catalog expansion batch 12 (continued): navigation bar and power double-tap actions. */
+    const val NAV_BAR_ACTIONS = "NAV_BAR_ACTIONS"
+    const val POWER_DOUBLE_TAP_ACTION = "POWER_DOUBLE_TAP_ACTION"
 }

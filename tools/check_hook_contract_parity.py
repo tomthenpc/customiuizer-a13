@@ -64,6 +64,9 @@ BATCH_FUNCTIONS: dict[str, dict[str, tuple[str, str]]] = {
     "12": {
         "tempHideOverlayApp": ("tv/withaibuild/customiuizer/mods/SystemAudioAndVisualAndMoreHooks.kt", "TempHideOverlayAppHook"),
         "openAppInFreeForm": ("tv/withaibuild/customiuizer/mods/SystemFreeformAndMultiWindowHooks.kt", "OpenAppInFreeFormHook"),
+        "selectiveToasts": ("tv/withaibuild/customiuizer/mods/SystemStatusBarAndClockHooks.kt", "SelectiveToastsHook"),
+        "navBarActions": ("tv/withaibuild/customiuizer/mods/Controls.kt", "NavBarActionsHook"),
+        "powerDoubleTapAction": ("tv/withaibuild/customiuizer/mods/Controls.kt", "PowerDoubleTapActionHook"),
     },
 }
 
@@ -623,6 +626,7 @@ CONTRACT_CONSTANTS: dict[str, str] = {
     "BOOLEAN": "boolean",
     "LONG": "long",
     "STRING": "java.lang.String",
+    "BUNDLE": "android.os.Bundle",
 }
 
 
