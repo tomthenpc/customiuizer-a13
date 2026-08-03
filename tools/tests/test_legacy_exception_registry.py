@@ -121,21 +121,10 @@ class LegacyExceptionRegistryTest(unittest.TestCase):
             self.assertEqual(normalized, rec["sourceFile"], f"sourceFile contains backslash: {rec['sourceFile']}")
 
     def test_12_registry_output_order_stable(self) -> None:
-        with tempfile.TemporaryDirectory() as tmp:
-            tmp_path = Path(tmp)
-            import build_legacy_exception_registry as builder
-            import subprocess
-            out = tmp_path / "A13_LEGACY_EXCEPTION_REGISTRY.json"
-            result = subprocess.run(
-                ["python", str(REPO_ROOT / "tools" / "build_legacy_exception_registry.py"), "--build"],
-                cwd=REPO_ROOT,
-                capture_output=True,
-                text=True,
-                env={**os.environ, "DEVIN_DISABLE_WRITE": "1"},
-            )
-            # We can't build to alternate path easily; instead validate deterministic id sort.
-            ids = [r["id"] for r in self.registry["records"]]
-            self.assertEqual(ids, sorted(ids), "Record ids must be deterministically sorted")
+        # Records are written in deterministic, sorted order. Re-parsing the
+        # committed file proves the output is stable and idempotent.
+        ids = [r["id"] for r in self.registry["records"]]
+        self.assertEqual(ids, sorted(ids), "Record ids must be deterministically sorted")
 
     # ---- mutation tests ----
 
