@@ -723,7 +723,7 @@ CI:
 
 Device evidence: `NOT_EXERCISED`
 
-Commit: `待写入`
+Commit: `abe5f2b314d168d0a43027e076f0af4c5ede8db7`
 
 Push: `origin/devin/a13-rom-intelligence-audit`
 
