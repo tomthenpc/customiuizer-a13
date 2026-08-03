@@ -762,10 +762,14 @@ State: `R2_REVIEW_REQUIRED`
 ```text
 - docs/audit/A13_LEGACY_EXCEPTION_REGISTRY.json
 - tools/build_legacy_exception_registry.py
+- tools/validate_legacy_exception_registry.py
 - tools/tests/test_legacy_exception_registry.py
 - tools/tests/test_p33b_legacy_exception_routes.py
 - docs/process/tasks/A13-P3.3B-GLOBALACTIONS-ALARMCOMPAT-EXCEPTIONS.md
+- docs/process/tasks/A13-P3.3B-R1-ACTIVATION-CONTRACT-REPAIR.md
 - docs/process/handoffs/A13-HANDOFF-2026-08-03-P3.3B.md
+- TASK_STATE.md
+- SMART_OPERATION_STATE.md
 ```
 
 原始行为：
@@ -783,25 +787,28 @@ State: `R2_REVIEW_REQUIRED`
 - 不一次登记所有 514 legacy calls；
 - 每条 exception 必须有明确 owner、process、phase、reasonCode、hookTargets、testEvidence 和 exitCondition；
 - reason 必须为具体技术解释，不得仅写 "legacy"；
-- P3.3A 4 条记录必须原样保留；
-- schema v2 中 firstBatchSize 必须保持为 4；
+- P3.3A 4 条记录必须原样保留，不得强制添加 activationContract / callSiteConditions；
+- schema v3 中 firstBatchSize 必须保持为 4；
 - batchCounts 和 registeredRecordCount 必须由 records 动态计算；
-- 删除/修改/移动 P3.3B batch 时 --check 必须报告 stale。
+- activationContract 和 callSiteConditions 必须受控枚举，不允许自由文本 expression；
+- preferenceKeys 只保存固定 literal keys，动态 key domain 由 activationContract 表达；
+- 删除/修改/移动 P3.3B batch 或合约时 --check 必须报告 stale。
 ```
 
 实现：
 
 ```text
-- 将 FIRST_BATCH_SEEDS 重命名为 LEGACY_EXCEPTION_SEEDS，每条 seed 增加 batch 字段；
-- 新增 4 条 P3.3B 记录：
-  - legacy-globalactions-systemserver (setupGlobalActions, system_server, SYSTEM_SERVER_STARTING, LIFECYCLE_BOOTSTRAP)
-  - legacy-globalactions-statusbar (setupStatusBar, system_ui, PACKAGE_READY, CROSS_PROCESS)
-  - legacy-globalactions-foreground-monitor (setupForegroundMonitor, system_ui, PACKAGE_READY, CROSS_PROCESS)
-  - legacy-alarmcompat-service (AlarmCompatServiceHook, system_server, SYSTEM_SERVER_STARTING, LIFECYCLE_BOOTSTRAP)
-- build_legacy_exception_registry.py 输出 schema v2：增加 registeredRecordCount 和 batchCounts；canonical_diff 比较新增字段；validate 检查 batch 字段；
-- test_legacy_exception_registry.py 更新为 50 个测试（P3.3A batch 覆盖 11 call sites、firstBatchSize=4、batch 字段校验）；
-- 新增 tools/tests/test_p33b_legacy_exception_routes.py：45 个 positive / mutation 测试，覆盖 route evidence、process/phase/preference/hookTargets 正确性、multi-batch 不变量、WHOLE_FILE/ALL_LEGACY/P3.3A 不回退等；
-- A13_LEGACY_EXCEPTION_REGISTRY.json 重新生成，8 条 records，P3.3A 4 条、P3.3B 4 条，cover 19 个 legacy call sites。
+- P3.3B 首次实现：FIRST_BATCH_SEEDS 重命名为 LEGACY_EXCEPTION_SEEDS，每条 seed 增加 batch 字段，新增 4 条 P3.3B 记录，schema 升级到 v2；
+- P3.3B-R1 修复（见 docs/process/tasks/A13-P3.3B-R1-ACTIVATION-CONTRACT-REPAIR.md）：
+  - schema 升级到 v3；
+  - 为 P3.3B records 新增 activationContract 和 callSiteConditions；
+  - setupGlobalActions preferenceKeys 只保留固定 literal keys（controls_volumemedia_up / controls_volumemedia_down / controls_mediaplayer_apps），动态 _action domain 由 DYNAMIC_SUFFIX_INT_GT 表达；
+  - setupForegroundMonitor 第三个 call 增加 per-call-site condition（various_showcallui > 0）；
+  - setupStatusBar 标记为 UNCONDITIONAL；
+  - AlarmCompatServiceHook 区分 various_alarmcompat（activation）与 various_alarmcompat_apps（runtime allowlist 配置）；
+  - route evidence 测试改为从生产源码和 committed registry 独立解析，不使用 LEGACY_EXCEPTION_SEEDS 作为 expected；
+- build_legacy_exception_registry.py 输出 schema v3，validate/canonical_diff 覆盖 activationContract / callSiteConditions；
+- A13_LEGACY_EXCEPTION_REGISTRY.json 重新生成，8 条 records，P3.3A 4 条、P3.3B 4 条，cover 19 个 legacy call sites，firstBatchSize 保持 4。
 ```
 
 验证：
@@ -810,10 +817,10 @@ State: `R2_REVIEW_REQUIRED`
 - python tools/build_legacy_exception_registry.py --build                 -> 0
 - python tools/build_legacy_exception_registry.py --check                 -> 0
 - python tools/validate_legacy_exception_registry.py                      -> 0
-- python -m unittest tools.tests.test_legacy_exception_registry           -> 50/50 pass
-- python -m unittest tools.tests.test_p33b_legacy_exception_routes        -> 45/45 pass
+- python -m unittest tools.tests.test_legacy_exception_registry           -> 55/55 pass
+- python -m unittest tools.tests.test_p33b_legacy_exception_routes        -> 59/59 pass
 - python -m unittest tools.tests.test_hook_ownership_inventory            -> 2/2 pass
-- python -m unittest discover -s tools/tests -p "test_*.py"               -> 318/318 pass
+- python -m unittest discover -s tools/tests -p "test_*.py"               -> 337/337 pass
 - python tools/check-invariants.py                                        -> 0, no violations
 - python tools/check-compat-contracts.py                                  -> 0
 - python tools/check_automation_state.py                                  -> 0
@@ -835,14 +842,14 @@ State: `R2_REVIEW_REQUIRED`
 CI：
 
 ```text
-- GitHub Actions A13 Fast CI run 30823463472, job 91718952599, result PASS (commit 786675803b67496aabd92666a9a3b70fcbb959ef)
+- GitHub Actions A13 Fast CI run 30862747188, job 91848049006, result PASS (commit 219c49659cf575ea7b0dc5c6b3e455ddf1ef3ac5)
 ```
 
 Device evidence: `NOT_EXERCISED`
 
-Commit: `786675803b67496aabd92666a9a3b70fcbb959ef`
+Commit: `219c49659cf575ea7b0dc5c6b3e455ddf1ef3ac5`
 
-Tree: `2a1c6bc156cfdeaf5c8f10c18cacfe6fc67df8c2`
+Tree: `67c754385bcd4ac3338a6adfe65ed3704c1f3101`
 
 Push: `origin/devin/a13-rom-intelligence-audit`
 
