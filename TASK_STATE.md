@@ -749,7 +749,114 @@ Push: `origin/devin/a13-rom-intelligence-audit`
 - registry 中的 hookTargets 为手工摘录，需随 ROM 版本变化由 contract parity 工具持续校验。
 ```
 
-Next: P3.3A approved; P3.3B may start as a new atomic implementation Task Slice; P3.3C/D/E and P3.4 remain planned but not started; toolchain upgrades remain blocked.
+Next: P3.3A approved; P3.3B engineering complete and in R2 review; P3.3C may start only after R2 APPROVE; P3.3D/E and P3.4 remain planned but not started; toolchain upgrades remain blocked.
+
+---
+
+## P3.3B GlobalActions and AlarmCompat LEGACY_EXCEPTION 登记
+
+State: `R2_REVIEW_REQUIRED`
+
+文件：
+
+```text
+- docs/audit/A13_LEGACY_EXCEPTION_REGISTRY.json
+- tools/build_legacy_exception_registry.py
+- tools/tests/test_legacy_exception_registry.py
+- tools/tests/test_p33b_legacy_exception_routes.py
+- docs/process/tasks/A13-P3.3B-GLOBALACTIONS-ALARMCOMPAT-EXCEPTIONS.md
+- docs/process/handoffs/A13-HANDOFF-2026-08-03-P3.3B.md
+```
+
+原始行为：
+
+```text
+- P3.3A 首批 exception 未覆盖 GlobalActions.kt 和 Various.kt 中的 cross-process / lifecycle-bootstrap entrypoint；
+- registry schema v1 无法表达多批次登记；
+- 无 P3.3B 路由 evidence、process/phase/preference 校验、或 mutation 测试。
+```
+
+不变量：
+
+```text
+- 不修改 app/src/main/** 生产代码或已有 typed Feature；
+- 不一次登记所有 514 legacy calls；
+- 每条 exception 必须有明确 owner、process、phase、reasonCode、hookTargets、testEvidence 和 exitCondition；
+- reason 必须为具体技术解释，不得仅写 "legacy"；
+- P3.3A 4 条记录必须原样保留；
+- schema v2 中 firstBatchSize 必须保持为 4；
+- batchCounts 和 registeredRecordCount 必须由 records 动态计算；
+- 删除/修改/移动 P3.3B batch 时 --check 必须报告 stale。
+```
+
+实现：
+
+```text
+- 将 FIRST_BATCH_SEEDS 重命名为 LEGACY_EXCEPTION_SEEDS，每条 seed 增加 batch 字段；
+- 新增 4 条 P3.3B 记录：
+  - legacy-globalactions-systemserver (setupGlobalActions, system_server, SYSTEM_SERVER_STARTING, LIFECYCLE_BOOTSTRAP)
+  - legacy-globalactions-statusbar (setupStatusBar, system_ui, PACKAGE_READY, CROSS_PROCESS)
+  - legacy-globalactions-foreground-monitor (setupForegroundMonitor, system_ui, PACKAGE_READY, CROSS_PROCESS)
+  - legacy-alarmcompat-service (AlarmCompatServiceHook, system_server, SYSTEM_SERVER_STARTING, LIFECYCLE_BOOTSTRAP)
+- build_legacy_exception_registry.py 输出 schema v2：增加 registeredRecordCount 和 batchCounts；canonical_diff 比较新增字段；validate 检查 batch 字段；
+- test_legacy_exception_registry.py 更新为 50 个测试（P3.3A batch 覆盖 11 call sites、firstBatchSize=4、batch 字段校验）；
+- 新增 tools/tests/test_p33b_legacy_exception_routes.py：45 个 positive / mutation 测试，覆盖 route evidence、process/phase/preference/hookTargets 正确性、multi-batch 不变量、WHOLE_FILE/ALL_LEGACY/P3.3A 不回退等；
+- A13_LEGACY_EXCEPTION_REGISTRY.json 重新生成，8 条 records，P3.3A 4 条、P3.3B 4 条，cover 19 个 legacy call sites。
+```
+
+验证：
+
+```text
+- python tools/build_legacy_exception_registry.py --build                 -> 0
+- python tools/build_legacy_exception_registry.py --check                 -> 0
+- python tools/validate_legacy_exception_registry.py                      -> 0
+- python -m unittest tools.tests.test_legacy_exception_registry           -> 50/50 pass
+- python -m unittest tools.tests.test_p33b_legacy_exception_routes        -> 45/45 pass
+- python -m unittest tools.tests.test_hook_ownership_inventory            -> 2/2 pass
+- python -m unittest discover -s tools/tests -p "test_*.py"               -> 318/318 pass
+- python tools/check-invariants.py                                        -> 0, no violations
+- python tools/check-compat-contracts.py                                  -> 0
+- python tools/check_automation_state.py                                  -> 0
+- python tools/check_document_contracts.py                                -> 0
+- python tools/check_goal_constitution.py                                 -> 0
+- python tools/check_hook_contract_parity.py                              -> 0
+- python tools/progress_snapshot.py --check                               -> 0
+- .\gradlew.bat --no-daemon :app:compileDebugKotlin                       -> BUILD SUCCESSFUL
+- .\gradlew.bat --no-daemon :app:compileDebugJavaWithJavac                -> BUILD SUCCESSFUL
+- .\gradlew.bat --no-daemon :app:testDebugUnitTest                        -> BUILD SUCCESSFUL
+- .\gradlew.bat --no-daemon :app:lintDebug                                -> BUILD SUCCESSFUL
+- .\gradlew.bat --no-daemon :app:assembleDebug                            -> BUILD SUCCESSFUL
+- powershell -NoProfile -ExecutionPolicy Bypass -File .\scripts\verify.ps1 -Mode Fast -> A13 VERIFICATION PASSED
+- powershell -NoProfile -ExecutionPolicy Bypass -File .\scripts\verify.ps1 -Mode Full  -> A13 VERIFICATION PASSED
+- git diff --check                                                        -> 0
+- 连续两次 --build 的 canonical 输出相同（仅 generatedAt 不同）
+```
+
+CI：
+
+```text
+- GitHub Actions A13 Fast CI run 30823463472, job 91718952599, result PASS (commit 786675803b67496aabd92666a9a3b70fcbb959ef)
+```
+
+Device evidence: `NOT_EXERCISED`
+
+Commit: `786675803b67496aabd92666a9a3b70fcbb959ef`
+
+Tree: `2a1c6bc156cfdeaf5c8f10c18cacfe6fc67df8c2`
+
+Push: `origin/devin/a13-rom-intelligence-audit`
+
+风险：
+
+```text
+- setupGlobalActions 的 preferenceKeys 列表基于源码中可证明的 _action key，但 needGlobalActions() 扫描所有 SharedPreferences entry 中结尾为 _action 的 key；实际触发集合可能大于列表，但列表是允许的、可维护的保守子集；
+- setupStatusBar 的 preferenceKeys 为空，表示其触发条件是 SystemUI package ready 而非用户偏好；validator 和 tests 已接受空列表；
+- GlobalActions 内仍存在 miuizerSettingsHook 等 legacy 函数未在 P3.3B 登记，留给后续 batch；
+- Various.kt 中仍有大量 legacy 函数，仅 AlarmCompatServiceHook 已登记；
+- hookTargets 仍为手工摘录，需随 ROM 版本持续校验。
+```
+
+Next: P3.3B is R2_REVIEW_REQUIRED; P3.3C may start only after R2 APPROVE; P3.3D/E and P3.4 remain planned but not started; toolchain upgrades remain blocked.
 
 ---
 
