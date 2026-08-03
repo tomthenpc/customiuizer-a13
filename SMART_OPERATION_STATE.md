@@ -2,31 +2,31 @@
 
 ```text
 Mode: PROFESSIONAL_AUTONOMOUS_STEWARDSHIP
-CheckpointCount: 24
+CheckpointCount: 25
 CheckpointsSinceStandardSweep: 10
 CheckpointsSinceDeepSweep: 4
-LastQualifyingCheckpoint: abe5f2b314d168d0a43027e076f0af4c5ede8db7
-LastLightSweepCommit: abe5f2b314d168d0a43027e076f0af4c5ede8db7
-LastStandardSweepCommit: abe5f2b314d168d0a43027e076f0af4c5ede8db7
-LastDeepSweepCommit: abe5f2b314d168d0a43027e076f0af4c5ede8db7
-LastFullVerificationCommit: abe5f2b314d168d0a43027e076f0af4c5ede8db7
-LastVerifiedTree: 7cd1f0135959d1ac8e4d681e639394b98e52f775
-LastVerifiedMode: Fast
-LastCIState: UNAVAILABLE
-LastCIRun: UNAVAILABLE
-LastCIJob: UNAVAILABLE
-LastCICommit: abe5f2b314d168d0a43027e076f0af4c5ede8db7
-LastCleanupCommit: abe5f2b314d168d0a43027e076f0af4c5ede8db7
-LastToolCreated: tools/build_legacy_exception_registry.py (stable LEGACY_EXCEPTION registry builder and validator)
+LastQualifyingCheckpoint: f72baa77fe8a8a6c3e2a2ba2ca9cabd90048e419
+LastLightSweepCommit: f72baa77fe8a8a6c3e2a2ba2ca9cabd90048e419
+LastStandardSweepCommit: f72baa77fe8a8a6c3e2a2ba2ca9cabd90048e419
+LastDeepSweepCommit: f72baa77fe8a8a6c3e2a2ba2ca9cabd90048e419
+LastFullVerificationCommit: f72baa77fe8a8a6c3e2a2ba2ca9cabd90048e419
+LastCleanupCommit: f72baa77fe8a8a6c3e2a2ba2ca9cabd90048e419
+LastVerifiedTree: d0667253d17972c926fa43cfe38f031450819635
+LastVerifiedMode: Full
+LastCIState: PASS
+LastCIRun: 30797856821
+LastCIJob: 91635432116
+LastCICommit: f72baa77fe8a8a6c3e2a2ba2ca9cabd90048e419
+LastToolCreated: tools/build_legacy_exception_registry.py (R1 hardened stale detection, whole-file/all-legacy gates, provenance validation)
 LastFailureClass: none
 CurrentObjective: P3
-CurrentObjectiveState: ACTIVE
-CurrentObjectiveStartEvidence: P3.3A LEGACY_EXCEPTION registry foundation with 514 legacy call sites in 205 logical owner groups and first batch of 4 cross-process curated records with CROSS_PROCESS reasons hookTargets and exit conditions
-NextObjectiveFirstAction: continue P3.3B next batch of LEGACY_EXCEPTION owners
-ResumeTask: continue P3.3B next batch of LEGACY_EXCEPTION owners then P3.4 final inventory gate
+CurrentObjectiveState: PAUSED
+CurrentObjectiveStartEvidence: P3.3A LEGACY_EXCEPTION registry foundation with 514 legacy call sites in 205 logical owner groups and first batch of 4 cross-process curated records; R1 integrity repair (canonical stale detection, whole-file/all-legacy gates, hookTargets/coveredCallSites/sourceFile validation, stable provenance) committed and CI passed; P3.3A R2 independent review is required before P3.3B
+NextObjectiveFirstAction: await a13-independent-review R2 on P3.3A before starting P3.3B
+ResumeTask: P3.3A R2 independent review; if APPROVED, continue P3.3B next batch of LEGACY_EXCEPTION owners then P3.4 final inventory gate
 DeepSweepDue: false
-LastVerifiedAt: 2026-08-03T15:35:00+08:00
-LastVerifiedCommandsDigest: python -m unittest tools.tests.test_legacy_exception_registry; python -m unittest discover -s tools/tests -p "test_*.py"; python tools/validate_legacy_exception_registry.py; python tools/build_legacy_exception_registry.py --build; python tools/build_legacy_exception_registry.py --check; python tools/check-invariants.py; python tools/check-compat-contracts.py; git diff --check; powershell -NoProfile -ExecutionPolicy Bypass -File .\scripts\verify.ps1 -Mode Fast
+LastVerifiedAt: 2026-08-03T08:42:25+00:00
+LastVerifiedCommandsDigest: python -m unittest tools.tests.test_legacy_exception_registry; python -m unittest discover -s tools/tests -p "test_*.py"; python tools/validate_legacy_exception_registry.py; python tools/build_legacy_exception_registry.py --build; python tools/build_legacy_exception_registry.py --check; python tools/check-invariants.py; python tools/check-compat-contracts.py; python tools/check_automation_state.py; python tools/check_document_contracts.py; python tools/check_goal_constitution.py; python tools/check_hook_contract_parity.py; python tools/progress_snapshot.py --check; powershell -NoProfile -ExecutionPolicy Bypass -File .\scripts\verify.ps1 -Mode Fast; powershell -NoProfile -ExecutionPolicy Bypass -File .\scripts\verify.ps1 -Mode Full; git diff --check
 ```
 
 本文件只记录执行节奏，不保存、替代或重置产品任务。

@@ -447,7 +447,7 @@ typed catalog 之外的 Hook 同样必须处理。
   - [x] `system_separatevolume`、`system_defaultusb` 等首批跨 process 项已按 LEGACY_EXCEPTION 登记（4 条 curated records，CROSS_PROCESS 原因）
 - [x] P3.5 A13 Devin Local 控制面迁移：安装本地 Skill、采用原子 Task Slice、独立 Reviewer 流程、更新控制文档与 checker/mutation tests
 - [~] P3.3 登记不可迁移项为 LEGACY_EXCEPTION 并补充原因/owner/test；
-  - [x] P3.3A 机器可读 registry schema/validator/首批 4 条 curated records 完成（commit 待写入）
+  - [x] P3.3A 机器可读 registry schema/validator/首批 4 条 curated records 完成，R1 完整性修复完成，state: `R2_REVIEW_REQUIRED`
   - [ ] P3.3B/C/D/E 继续登记剩余 logical owners
   - [ ] P3.3 整体完成需全部 205 logical owner groups 已登记并验证
 - [ ] P3.4 增加 inventory 机械门禁，防止 UNKNOWN/重复 ownership。
@@ -647,7 +647,7 @@ Next: 继续 P3.3 登记 LEGACY_EXCEPTION 与 P3.4 inventory 门禁
 
 ## P3.3A LEGACY_EXCEPTION 登记基础
 
-State: `COMPLETE`
+State: `R2_REVIEW_REQUIRED`
 
 文件：
 
@@ -697,6 +697,7 @@ State: `COMPLETE`
   - legacy-usbconfig-system (USBConfigHook, process=system_server, phase=SYSTEM_SERVER_STARTING, CROSS_PROCESS)
   - legacy-usbconfig-settings (USBConfigSettingsHook, process=per_app, phase=PACKAGE_READY, CROSS_PROCESS)
 - A13_HOOK_OWNERSHIP_INVENTORY.md 经 audit_hook_ownership.py 重新生成为 676 total / 514 LEGACY_EXCEPTION / 133 REGISTRY_FEATURE / 6 INSTALLER_INFRASTRUCTURE / 23 API_BRIDGE / 0 UNKNOWN。
+- R1 完整性修复：`--check` canonical stale detection（排除 `generatedAt` 与 `sourceCommit`），`WHOLE_FILE_LEGACY_EXCEPTION_FORBIDDEN` 与 `ALL_LEGACY_CALLS_BATCH_FORBIDDEN` 动态 census 门控，`hookTargets` / `coveredCallSites` / `sourceFile` 结构化校验，稳定 provenance（`inputDigest`、`sourceTree`、`generatorVersion`）；`test_legacy_exception_registry.py` 更新为 24 个 focused/mutation tests。
 ```
 
 验证：
@@ -707,23 +708,31 @@ State: `COMPLETE`
 - python tools/validate_legacy_exception_registry.py                     -> 0
 - python -m unittest tools.tests.test_legacy_exception_registry          -> 24/24 pass
 - python -m unittest tools.tests.test_hook_ownership_inventory           -> 2/2 pass
-- python -m unittest discover -s tools/tests -p "test_*.py"              -> 247 pass
+- python -m unittest discover -s tools/tests -p "test_*.py"              -> 271 pass
 - python tools/audit_hook_ownership.py                                   -> 0, totals 676/133/6/23/514/0
 - python tools/check-invariants.py                                       -> 0, no violations
 - python tools/check-compat-contracts.py                                 -> 0
+- python tools/check_automation_state.py                                 -> 0
+- python tools/check_document_contracts.py                               -> 0
+- python tools/check_goal_constitution.py                                -> 0
+- python tools/check_hook_contract_parity.py                             -> 0
+- python tools/progress_snapshot.py --check                              -> 0
 - git diff --check                                                       -> 0
 - powershell -NoProfile -ExecutionPolicy Bypass -File .\scripts\verify.ps1 -Mode Fast -> A13 VERIFICATION PASSED
+- powershell -NoProfile -ExecutionPolicy Bypass -File .\scripts\verify.ps1 -Mode Full -> A13 VERIFICATION PASSED
 ```
 
 CI:
 
 ```text
-- 待提交并检查 GitHub Actions。
+- GitHub Actions A13 Fast CI run 30797856821, job 91635432116, result PASS (commit f72baa77fe8a8a6c3e2a2ba2ca9cabd90048e419)
 ```
 
 Device evidence: `NOT_EXERCISED`
 
-Commit: `abe5f2b314d168d0a43027e076f0af4c5ede8db7`
+Commit: `f72baa77fe8a8a6c3e2a2ba2ca9cabd90048e419`
+
+Tree: `d0667253d17972c926fa43cfe38f031450819635`
 
 Push: `origin/devin/a13-rom-intelligence-audit`
 
@@ -736,7 +745,7 @@ Push: `origin/devin/a13-rom-intelligence-audit`
 - registry 中的 hookTargets 为手工摘录，需随 ROM 版本变化由 contract parity 工具持续校验。
 ```
 
-Next: P3.3B 继续登记剩余 cross-process / resource / lifecycle-bootstrap exception；P3.4 增加 inventory 机械门禁。
+Next: P3.3A R2 independent review (`a13-independent-review` Skill) 必须给出 `APPROVE` 才能开始 P3.3B；P3.4 与 toolchain 升级继续阻塞。
 
 ---
 
