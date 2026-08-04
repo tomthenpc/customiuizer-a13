@@ -755,9 +755,19 @@ Next: P3.3A approved; P3.3B engineering complete and in R2 review; P3.3C may sta
 
 ## P3.3B GlobalActions and AlarmCompat LEGACY_EXCEPTION 登记
 
-State: `R2_REPAIR_COMPLETE`（修复完成，等待下一轮 R2 independent review）
+State: `R2_REVIEW_REQUIRED`
 
 R2 修复目标 HEAD: `fa74d4f3c1d4b2f10c519ac154e5172bd2fa39d7`
+
+EngineeringCommit: `372c59fd3515036b348baf7a19d6443e1993b8e7`
+
+EngineeringTree: `2d820119e7d839a08795b49b69882f933e9ac7db`
+
+EngineeringCIRun: `30870297127`
+
+EngineeringCIJob: `91870748474`
+
+EngineeringCIResult: `PASS`
 
 文件：
 
@@ -773,6 +783,7 @@ R2 修复目标 HEAD: `fa74d4f3c1d4b2f10c519ac154e5172bd2fa39d7`
 - docs/process/tasks/A13-P3.3B-R1-ACTIVATION-CONTRACT-REPAIR.md
 - docs/process/tasks/A13-P3.3B-R2-SOURCE-LOGIC-VALIDATOR-REPAIR.md
 - docs/process/handoffs/A13-HANDOFF-2026-08-03-P3.3B.md
+- docs/process/handoffs/A13-HANDOFF-2026-08-04-P3.3B-R2.md
 - TASK_STATE.md
 - SMART_OPERATION_STATE.md
 ```
@@ -872,16 +883,18 @@ Push: `origin/devin/a13-rom-intelligence-audit`
 风险：
 
 ```text
-- setupGlobalActions 的 preferenceKeys 列表基于源码中可证明的 _action key，但 needGlobalActions() 扫描所有 SharedPreferences entry 中结尾为 _action 的 key；实际触发集合可能大于列表，但列表是允许的、可维护的保守子集；
+- setupGlobalActions 的 preferenceKeys 只包含固定 literal key；动态 `_action` domain 不属于 preferenceKeys 的子集或枚举范围，而是由 activationContract.DYNAMIC_SUFFIX_INT_GT 完整表达；
 - setupStatusBar 的 preferenceKeys 为空，表示其触发条件是 SystemUI package ready 而非用户偏好；validator 和 tests 已接受空列表；
 - GlobalActions 内仍存在 miuizerSettingsHook 等 legacy 函数未在 P3.3B 登记，留给后续 batch；
 - Various.kt 中仍有大量 legacy 函数，仅 AlarmCompatServiceHook 已登记；
 - hookTargets 仍为手工摘录，需随 ROM 版本持续校验。
 ```
 
-Commit: `372c59fd3515036b348baf7a19d6443e1993b8e7`
+StateCommit: `c555b31cc28df05906f666e6a38ce4007c0ff993`
 
-Push: `origin/devin/a13-rom-intelligence-audit` (fa74d4f..372c59f)
+HandoffCommit: `ae4f2d4e628f8e6748dd23d3a7267f4345663ca5`
+
+Push: `origin/devin/a13-rom-intelligence-audit`
 
 CI: GitHub Actions A13 Fast CI run 30870297127, job 91870748474, result PASS (commit 372c59fd3515036b348baf7a19d6443e1993b8e7)
 
