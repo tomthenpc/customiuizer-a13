@@ -912,9 +912,19 @@ R3EngineeringCommit: `23cf2e86309df4168db24e1d57719c9be1fe36a6`
 
 R3EngineeringTree: `2b1f703215717502f65bb8d608920db9c67bc504`
 
-R3StateCommit: `a34ce33`
+R3StateCommit: `a34ce3349ccfa6e79160890b6ba0fde73838688a`
 
-R3HandoffCommit: `a34ce33`
+R3HandoffCommit: `a34ce3349ccfa6e79160890b6ba0fde73838688a`
+
+R3EvidenceCorrectionCommit: `a153b930dbe557770af8dab1a9881f08a94dd547`
+
+R3ReviewTarget: `a153b930dbe557770af8dab1a9881f08a94dd547`
+
+R3ReviewTargetCIRun: `30959213005`
+
+R3ReviewTargetCIJob: `92159224416`
+
+R3ReviewTargetCIResult: `PASS`
 
 R3Push: `origin/devin/a13-rom-intelligence-audit`
 
