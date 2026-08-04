@@ -562,8 +562,8 @@ class LegacyExceptionIntegrityTest(unittest.TestCase):
         for rec in self.registry["records"]:
             self.assertIn(rec.get("batch"), ("P3.3A", "P3.3B"), f"Record {rec.get('id')} has invalid batch")
 
-    def test_50_schema_version_is_three(self) -> None:
-        self.assertEqual(self.registry.get("schemaVersion"), 3, "Registry schema must be version 3")
+    def test_50_schema_version_is_four(self) -> None:
+        self.assertEqual(self.registry.get("schemaVersion"), 4, "Registry schema must be version 4")
 
     def test_51_activation_contract_in_canonical_comparison(self) -> None:
         import build_legacy_exception_registry as builder
@@ -596,6 +596,7 @@ class LegacyExceptionIntegrityTest(unittest.TestCase):
             if rec["batch"] == "P3.3A":
                 self.assertNotIn("activationContract", rec, f"P3.3A record {rec['id']} must not have activationContract")
                 self.assertNotIn("callSiteConditions", rec, f"P3.3A record {rec['id']} must not have callSiteConditions")
+                self.assertNotIn("runtimeConfigKeys", rec, f"P3.3A record {rec['id']} must not have runtimeConfigKeys")
 
     def test_55_p3_2_1b_python_test_not_regressed(self) -> None:
         import subprocess
@@ -610,6 +611,164 @@ class LegacyExceptionIntegrityTest(unittest.TestCase):
             0,
             f"P3.2.1B contract parity tests must not regress: {result.stdout}\n{result.stderr}",
         )
+
+
+class LegacyExceptionFailClosedValidationTest(unittest.TestCase):
+    """Fail-closed and strict-typing tests for the validator."""
+
+    @classmethod
+    def setUpClass(cls) -> None:
+        import build_legacy_exception_registry as builder
+        cls.registry = load_json(REGISTRY_FILE)
+
+    def _mutate(self, owner: str, mutate: callable) -> dict:
+        import copy
+        reg = copy.deepcopy(self.registry)
+        rec = next(r for r in reg["records"] if r["owner"] == owner)
+        mutate(rec)
+        return reg
+
+    def _assert_invalid(self, reg: dict) -> None:
+        import build_legacy_exception_registry as builder
+        errors = builder.validate(reg)
+        self.assertTrue(errors, f"invalid registry must fail validation, got none")
+
+    def _assert_valid(self, reg: dict) -> None:
+        import build_legacy_exception_registry as builder
+        errors = builder.validate(reg)
+        self.assertEqual(errors, [], f"expected valid registry, got: {errors}")
+
+    def test_56_activation_contract_string(self) -> None:
+        reg = self._mutate(
+            "GlobalActions.setupGlobalActions",
+            lambda r: r.update({"activationContract": "ANY_OF"}),
+        )
+        self._assert_invalid(reg)
+
+    def test_57_activation_contract_list(self) -> None:
+        reg = self._mutate(
+            "GlobalActions.setupGlobalActions",
+            lambda r: r.update({"activationContract": [{"kind": "BOOLEAN_KEY_TRUE", "key": "x"}]}),
+        )
+        self._assert_invalid(reg)
+
+    def test_58_threshold_bool(self) -> None:
+        reg = self._mutate(
+            "GlobalActions.setupForegroundMonitor",
+            lambda r: r["activationContract"]["predicates"][0].update({"thresholdExclusive": True}),
+        )
+        self._assert_invalid(reg)
+
+    def test_59_threshold_float(self) -> None:
+        reg = self._mutate(
+            "GlobalActions.setupForegroundMonitor",
+            lambda r: r["activationContract"]["predicates"][0].update({"thresholdExclusive": 0.0}),
+        )
+        self._assert_invalid(reg)
+
+    def test_60_threshold_null(self) -> None:
+        reg = self._mutate(
+            "GlobalActions.setupForegroundMonitor",
+            lambda r: r["activationContract"]["predicates"][0].update({"thresholdExclusive": None}),
+        )
+        self._assert_invalid(reg)
+
+    def test_61_threshold_string(self) -> None:
+        reg = self._mutate(
+            "GlobalActions.setupForegroundMonitor",
+            lambda r: r["activationContract"]["predicates"][0].update({"thresholdExclusive": "0"}),
+        )
+        self._assert_invalid(reg)
+
+    def test_62_unknown_record_field(self) -> None:
+        reg = self._mutate(
+            "GlobalActions.setupGlobalActions",
+            lambda r: r.update({"legacyOwner": "x"}),
+        )
+        self._assert_invalid(reg)
+
+    def test_63_unsorted_integer_keys(self) -> None:
+        # The canonical order is alphabetical (down, up); reverse it to (up, down).
+        reg = self._mutate(
+            "GlobalActions.setupGlobalActions",
+            lambda r: r["activationContract"]["predicates"][1].update({"integerKeys": ["controls_volumemedia_up", "controls_volumemedia_down"]}),
+        )
+        self._assert_invalid(reg)
+
+    def test_64_runtime_config_key_overlaps_activation(self) -> None:
+        reg = self._mutate(
+            "AlarmCompatServiceHook",
+            lambda r: r["runtimeConfigKeys"].append("various_alarmcompat"),
+        )
+        self._assert_invalid(reg)
+
+    def test_65_preference_key_invariant(self) -> None:
+        reg = self._mutate(
+            "AlarmCompatServiceHook",
+            lambda r: r["preferenceKeys"].remove("various_alarmcompat_apps"),
+        )
+        self._assert_invalid(reg)
+
+    def test_66_call_site_condition_not_activation_branch(self) -> None:
+        reg = self._mutate(
+            "GlobalActions.setupForegroundMonitor",
+            lambda r: r["callSiteConditions"].update({
+                "tv/withaibuild/customiuizer/mods/GlobalActions.kt:759:setupForegroundMonitor": {
+                    "kind": "BOOLEAN_KEY_TRUE", "key": "various_showcallui",
+                }
+            }),
+        )
+        import build_legacy_exception_registry as builder
+        errors = builder.validate(reg)
+        self.assertTrue(any("CALL_SITE_CONDITION_NOT_ACTIVATION_BRANCH" in e for e in errors))
+
+    def test_67_p3_3b_preference_key_sorted(self) -> None:
+        for rec in self.registry["records"]:
+            if rec["batch"] == "P3.3B":
+                pks = rec.get("preferenceKeys", [])
+                self.assertEqual(pks, sorted(pks), f"record {rec['id']} preferenceKeys must be sorted")
+
+    def test_68_p3_3b_runtime_config_sorted(self) -> None:
+        for rec in self.registry["records"]:
+            if rec["batch"] == "P3.3B" and "runtimeConfigKeys" in rec:
+                rks = rec["runtimeConfigKeys"]
+                self.assertEqual(rks, sorted(rks), f"record {rec['id']} runtimeConfigKeys must be sorted")
+
+    def test_69_validation_passes_on_committed(self) -> None:
+        self._assert_valid(self.registry)
+
+    def test_70_seed_bogus_preference_keys(self) -> None:
+        import copy
+        import build_legacy_exception_registry as builder
+        sites = builder.scan_legacy_call_sites()
+        # Deep copy to avoid mutating module state.
+        seeds = copy.deepcopy(builder.LEGACY_EXCEPTION_SEEDS)
+        for seed in seeds:
+            if seed["id"] == "legacy-globalactions-systemserver":
+                seed["preferenceKeys"] = sorted(["controls_backlong_action", "controls_powerdt_action", "system_cc_custom_clock_action"])
+        # build_registry will canonicalise and validate; the bogus _action keys violate the invariant.
+        try:
+            original = builder.LEGACY_EXCEPTION_SEEDS
+            builder.LEGACY_EXCEPTION_SEEDS = seeds
+            expected = builder.build_registry(sites)
+            errors = builder.validate(expected)
+            self.assertTrue(errors, "bogus _action keys must fail validation")
+        finally:
+            builder.LEGACY_EXCEPTION_SEEDS = original
+
+    def test_71_missing_fixed_preference_key(self) -> None:
+        reg = self._mutate(
+            "GlobalActions.setupGlobalActions",
+            lambda r: r["preferenceKeys"].remove("controls_volumemedia_up"),
+        )
+        self._assert_invalid(reg)
+
+    def test_72_extra_unclassified_preference_key(self) -> None:
+        reg = self._mutate(
+            "GlobalActions.setupGlobalActions",
+            lambda r: r["preferenceKeys"].append("unknown_unclassified_key"),
+        )
+        self._assert_invalid(reg)
 
 
 if __name__ == "__main__":

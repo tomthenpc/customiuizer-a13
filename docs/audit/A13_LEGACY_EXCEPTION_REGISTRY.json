@@ -1,5 +1,5 @@
 {
-  "schemaVersion": 3,
+  "schemaVersion": 4,
   "inputDigest": "f06dc0650e32702fbe8646edfc880d747dd6da2a51d0603f5599a1b89777bc72",
   "totalLegacyCallSites": 514,
   "totalLegacyGroups": 205,
@@ -107,6 +107,7 @@
         "controls_volumemedia_up"
       ],
       "reasonCode": "LIFECYCLE_BOOTSTRAP",
+      "runtimeConfigKeys": [],
       "reason": "GlobalActions.setupGlobalActions is installed at SYSTEM_SERVER_STARTING when the installer activation predicate is satisfied. The predicate is a disjunction: (A) any SharedPreferences entry whose key ends with '_action' and whose runtime value is an Integer greater than 1, or (B) any of the media volume shortcut keys (controls_volumemedia_up / controls_volumemedia_down) is greater than 0 and the media player app set (controls_mediaplayer_apps) is non-empty. The fixed literal keys needed by the activation predicate are listed in preferenceKeys; the dynamic '_action' key domain is expressed by the DYNAMIC_SUFFIX_INT_GT activationContract and is not enumerated in preferenceKeys. It hooks AccessibilityManagerService construction and BaseMiuiPhoneWindowManager#initInternal to register cross-process broadcast receivers before the system finishes booting. There is no single typed FeatureSpec that owns both the lifecycle bootstrap and the cross-process action dispatch surface today.",
       "coveredCallSites": [
         "tv/withaibuild/customiuizer/mods/GlobalActions.kt:780:setupGlobalActions",
@@ -156,6 +157,9 @@
         "various_alarmcompat_apps"
       ],
       "reasonCode": "LIFECYCLE_BOOTSTRAP",
+      "runtimeConfigKeys": [
+        "various_alarmcompat_apps"
+      ],
       "reason": "AlarmCompatServiceHook is installed at SYSTEM_SERVER_STARTING when various_alarmcompat is true. It hooks AlarmManagerService#onBootPhase (phase 500) to register a ContentObserver for next_alarm_clock_formatted and AlarmManagerService#getNextAlarmClockImpl to return a synthetic alarm for selected apps. The various_alarmcompat_apps key is a runtime allowlist configuration used inside the hooked functions, not the installer activation gate. The feature is tied to the ROM-specific AlarmManagerService lifecycle and cannot be expressed as a typed Feature today.",
       "coveredCallSites": [
         "tv/withaibuild/customiuizer/mods/Various.kt:830:AlarmCompatServiceHook",
@@ -193,6 +197,7 @@
         "various_showcallui"
       ],
       "reasonCode": "CROSS_PROCESS",
+      "runtimeConfigKeys": [],
       "reason": "GlobalActions.setupForegroundMonitor is installed in SystemUI when various_showcallui is greater than 0 or controls_volumecursor is true. It observes the foreground package and fullscreen state and writes them into Settings.Global for cross-process consumption. The first two hooks (NetworkSpeedController construction and MiuiActivityUtil#updateTopActivity) are installed whenever the entrypoint is called; the third hook (StatusBarStateControllerImpl#setSystemBarAttributes) is installed only inside the various_showcallui > 0 branch and therefore has a per-call-site condition.",
       "coveredCallSites": [
         "tv/withaibuild/customiuizer/mods/GlobalActions.kt:743:setupForegroundMonitor",
@@ -241,6 +246,7 @@
       "phase": "PACKAGE_READY",
       "preferenceKeys": [],
       "reasonCode": "CROSS_PROCESS",
+      "runtimeConfigKeys": [],
       "reason": "GlobalActions.setupStatusBar is installed unconditionally when the SystemUI package is ready (com.android.systemui). It hooks CentralSurfacesImpl#start to register a status-bar broadcast receiver that handles cross-process actions (expand notifications, toggle GPS, etc.). It cannot be a single typed Feature today because the receiver covers multiple unrelated actions and spans the SystemUI lifecycle. The activationContract is UNCONDITIONAL and preferenceKeys is empty because there is no per-user preference gate.",
       "coveredCallSites": [
         "tv/withaibuild/customiuizer/mods/GlobalActions.kt:893:setupStatusBar"
@@ -288,8 +294,8 @@
       "exitCondition": "Create a typed system_server FeatureSpec for USB default mode and expose a cross-process contract for the Settings variant (P3.3C)."
     }
   ],
-  "sourceCommit": "920056dffdfccb539e242d9aee1051e0a5f442d6",
+  "sourceCommit": "fa74d4f3c1d4b2f10c519ac154e5172bd2fa39d7",
   "sourceTree": "3c99e89a99f32263ed34402765ce5c11eb4d9de1",
-  "generatorVersion": "c2b4b4a1e89571e5",
-  "generatedAt": "2026-08-03T23:34:01+00:00"
+  "generatorVersion": "3e6228b2b75f02b7",
+  "generatedAt": "2026-08-04T01:56:32+00:00"
 }

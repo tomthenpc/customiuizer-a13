@@ -1,16 +1,15 @@
 #!/usr/bin/env python3
-"""A13-P3.3B-R1 activation contract and route evidence tests.
+"""A13-P3.3B-R2 source logic, validator and route evidence tests.
 
 Expected values are derived from:
 - the committed registry JSON;
 - production Java/Kotlin installer and hook function source;
-- hard-coded source-of-truth contracts.
+- the read-only `legacy_exception_source_contract` parser.
 
-This test module MUST NOT use `build_legacy_exception_registry.LEGACY_EXCEPTION_SEEDS`
-or `build_legacy_exception_registry.build_registry(sites)` to generate route,
-preference, hook-target or call-site expected values.  Build tool helpers may only
-be used for canonical/mutation checks, source scanning, validation, and stable ID
-formatting.
+The `build_legacy_exception_registry` generator is only used in the dedicated
+`GeneratorConsistencyTest` to prove that `build_registry(LEGACY_EXCEPTION_SEEDS)`
+matches the committed canonical output. It is not used as the source of truth
+for route, preference, hook-target or call-site expected values.
 """
 
 from __future__ import annotations
@@ -29,11 +28,7 @@ REGISTRY_FILE = REPO_ROOT / "docs" / "audit" / "A13_LEGACY_EXCEPTION_REGISTRY.js
 SOURCE_ROOT = REPO_ROOT / "app" / "src" / "main" / "java"
 
 import build_legacy_exception_registry as builder
-
-
-# ---------------------------------------------------------------------------
-# Helpers
-# ---------------------------------------------------------------------------
+import legacy_exception_source_contract as sc
 
 
 def load_json(path: Path) -> dict:
@@ -43,135 +38,6 @@ def load_json(path: Path) -> dict:
 
 def read_source(rel: str) -> str:
     return (SOURCE_ROOT / rel).read_text(encoding="utf-8")
-
-
-def find_function_body(text: str, func_name: str, language: str = "java") -> str | None:
-    if language == "kt":
-        # Match a Kotlin `fun` declaration.  Avoid calls like `GlobalActions.setupForegroundMonitor(...)`.
-        pattern = re.compile(rf"\bfun\s+{re.escape(func_name)}\s*\(")
-    else:
-        # Match a Java method definition.  Avoid calls like `if (needGlobalActions())`.
-        pattern = re.compile(rf"(?<![(])\b{re.escape(func_name)}\s*\(")
-    # Pick the first match that is immediately followed by a balanced `{` on the same line.
-    for match in pattern.finditer(text):
-        brace = text.find("{", match.end())
-        if brace == -1:
-            continue
-        # The next `{` should not cross another function definition; a declaration line
-        # has `) {` before any statement separator.  Tolerate whitespace/newlines.
-        snippet = text[match.end() : brace]
-        if ")" in snippet and ";" not in snippet:
-            return _balanced_body(text, brace)
-    return None
-
-
-def _balanced_body(text: str, start: int) -> str | None:
-    i = start
-    depth = 0
-    in_string: str | None = None
-    in_line_comment = False
-    in_block_comment = False
-    n = len(text)
-    while i < n:
-        ch = text[i]
-        if in_line_comment:
-            if ch == "\n":
-                in_line_comment = False
-            i += 1
-            continue
-        if in_block_comment:
-            if ch == "*" and i + 1 < n and text[i + 1] == "/":
-                in_block_comment = False
-                i += 2
-                continue
-            i += 1
-            continue
-        if in_string:
-            if ch == "\\" and i + 1 < n:
-                i += 2
-                continue
-            if ch == in_string:
-                in_string = None
-            i += 1
-            continue
-        if ch == "/" and i + 1 < n:
-            if text[i + 1] == "/":
-                in_line_comment = True
-                i += 2
-                continue
-            if text[i + 1] == "*":
-                in_block_comment = True
-                i += 2
-                continue
-        if ch == '"':
-            in_string = '"'
-        elif ch == "'":
-            in_string = "'"
-        elif ch == "{":
-            depth += 1
-        elif ch == "}":
-            depth -= 1
-            if depth == 0:
-                return text[start : i + 1]
-        i += 1
-    return None
-
-
-def find_if_block(body: str, cond_regex: str) -> str | None:
-    pattern = re.compile(rf"if\s*\(\s*{cond_regex}\s*\)\s*{{")
-    match = pattern.search(body)
-    if not match:
-        return None
-    brace = body.find("{", match.start())
-    return _balanced_body(body, brace)
-
-
-def get_need_global_actions_body() -> str:
-    text = read_source("tv/withaibuild/customiuizer/installers/SystemServerInstaller.java")
-    body = find_function_body(text, "needGlobalActions", "java")
-    assert body is not None, "needGlobalActions body must be extractable"
-    return body
-
-
-def get_setup_foreground_monitor_body() -> str:
-    text = read_source("tv/withaibuild/customiuizer/mods/GlobalActions.kt")
-    body = find_function_body(text, "setupForegroundMonitor", "kt")
-    assert body is not None, "setupForegroundMonitor body must be extractable"
-    return body
-
-
-def get_installer_condition(installer_rel: str, call: str) -> str | None:
-    text = read_source(installer_rel)
-    call_match = re.search(re.escape(call), text)
-    assert call_match is not None, f"{call} not found in {installer_rel}"
-    call_start = call_match.start()
-
-    # Find the nearest `if (` before the call.
-    last: re.Match | None = None
-    for m in re.finditer(r"if\s*\(", text[:call_start]):
-        last = m
-    if last is None:
-        return "UNCONDITIONAL"
-
-    cond_start = last.end()
-    paren_depth = 1
-    i = cond_start
-    while i < call_start and paren_depth > 0:
-        c = text[i]
-        if c == "(":
-            paren_depth += 1
-        elif c == ")":
-            paren_depth -= 1
-            if paren_depth == 0:
-                gap = text[i + 1 : call_start]
-                if "\n" in gap:
-                    gap = gap.replace("\n", " ")
-                if gap.strip() in ("", "{"):
-                    cond = text[cond_start:i].strip()
-                    cond = re.sub(r"\s+", " ", cond)
-                    return cond
-        i += 1
-    return "UNCONDITIONAL"
 
 
 def record_by_owner(registry: dict, owner: str) -> dict:
@@ -216,6 +82,7 @@ class P3_3B_LegacyExceptionRouteTest(unittest.TestCase):
             if rec["batch"] == "P3.3A":
                 self.assertNotIn("activationContract", rec)
                 self.assertNotIn("callSiteConditions", rec)
+                self.assertNotIn("runtimeConfigKeys", rec)
 
     def test_04_p3_3a_snapshot_matches_expected(self) -> None:
         expected_ids = {
@@ -229,8 +96,8 @@ class P3_3B_LegacyExceptionRouteTest(unittest.TestCase):
 
     # --- schema and counts ---
 
-    def test_05_schema_version_is_three(self) -> None:
-        self.assertEqual(self.registry["schemaVersion"], 3)
+    def test_05_schema_version_is_four(self) -> None:
+        self.assertEqual(self.registry["schemaVersion"], 4)
 
     def test_06_record_counts(self) -> None:
         self.assertEqual(self.registry["firstBatchSize"], 4)
@@ -254,35 +121,50 @@ class P3_3B_LegacyExceptionRouteTest(unittest.TestCase):
         self.assertEqual(set(rec["coveredCallSites"]), expected)
 
     def test_10_setup_global_actions_installer_condition(self) -> None:
-        cond = get_installer_condition(
-            "tv/withaibuild/customiuizer/installers/SystemServerInstaller.java",
-            "GlobalActions.setupGlobalActions(lpparam);",
-        )
-        self.assertEqual(cond, "needGlobalActions()")
+        text = read_source("tv/withaibuild/customiuizer/installers/SystemServerInstaller.java")
+        call_pos = text.find("GlobalActions.setupGlobalActions(lpparam);")
+        self.assertGreater(call_pos, 0)
+        condition = sc.get_enclosing_if_condition(text, call_pos)
+        self.assertEqual(condition, "needGlobalActions()")
 
-    def test_11_setup_global_actions_source_predicates(self) -> None:
-        body = get_need_global_actions_body()
-        self.assertIn('key.endsWith("_action")', body)
-        self.assertIn("value instanceof Integer", body)
-        self.assertRegex(body, r"\(Integer\)\s*value\s*>\s*1")
-        self.assertIn("controls_volumemedia_up", body)
-        self.assertIn("controls_volumemedia_down", body)
-        self.assertIn("controls_mediaplayer_apps", body)
-        self.assertRegex(body, r"!\s*MainModule\.mPrefs\.getStringSet\s*\(\s*\"controls_mediaplayer_apps\"\s*\)\.isEmpty\s*\(\s*\)")
+    def test_11_setup_global_actions_source_activation_matches_registry(self) -> None:
+        derived = sc.derive_setup_global_actions_activation()
+        rec = record_by_owner(self.registry, "GlobalActions.setupGlobalActions")
+        self.assertEqual(builder._canonical_activation_contract(derived), rec["activationContract"])
 
-    def test_12_setup_global_actions_preference_keys_exact(self) -> None:
+    def test_12_setup_global_actions_source_predicates(self) -> None:
+        text = read_source("tv/withaibuild/customiuizer/installers/SystemServerInstaller.java")
+        body = sc.extract_function_body(text, "needGlobalActions", "java")
+        blocks = sc._extract_all_if_blocks(body)
+        # First if: dynamic _action chain.
+        cond = blocks[0]["condition"]
+        operands, operators = sc.parse_boolean_expression(cond)
+        self.assertEqual(operators, ["&&", "&&", "&&"])
+        self.assertEqual(len(operands), 4)
+        # Second if: media OR.
+        cond = blocks[1]["condition"]
+        operands, operators = sc.parse_boolean_expression(cond)
+        self.assertEqual(operators, ["||"])
+        self.assertIn("controls_volumemedia_up", operands[0])
+        self.assertIn("controls_volumemedia_down", operands[1])
+
+    def test_13_setup_global_actions_preference_keys_exact(self) -> None:
         rec = record_by_owner(self.registry, "GlobalActions.setupGlobalActions")
         self.assertEqual(
-            sorted(rec["preferenceKeys"]),
+            rec["preferenceKeys"],
             ["controls_mediaplayer_apps", "controls_volumemedia_down", "controls_volumemedia_up"],
         )
 
-    def test_13_setup_global_actions_no_enumerated_action_keys(self) -> None:
+    def test_14_setup_global_actions_runtime_config_empty(self) -> None:
+        rec = record_by_owner(self.registry, "GlobalActions.setupGlobalActions")
+        self.assertEqual(rec.get("runtimeConfigKeys"), [])
+
+    def test_15_setup_global_actions_no_enumerated_action_keys(self) -> None:
         rec = record_by_owner(self.registry, "GlobalActions.setupGlobalActions")
         for pk in rec["preferenceKeys"]:
             self.assertFalse(pk.endswith("_action"), f"{pk} must not be enumerated in preferenceKeys")
 
-    def test_14_setup_global_actions_excluded_keys_absent(self) -> None:
+    def test_16_setup_global_actions_excluded_keys_absent(self) -> None:
         rec = record_by_owner(self.registry, "GlobalActions.setupGlobalActions")
         forbidden = {
             "system_cc_custom_clock_action",
@@ -292,27 +174,6 @@ class P3_3B_LegacyExceptionRouteTest(unittest.TestCase):
         }
         self.assertTrue(forbidden.isdisjoint(rec["preferenceKeys"]), "forbidden _action keys must not appear")
 
-    def test_15_setup_global_actions_activation_contract(self) -> None:
-        rec = record_by_owner(self.registry, "GlobalActions.setupGlobalActions")
-        ac = rec["activationContract"]
-        self.assertEqual(ac["mode"], "ANY_OF")
-        kinds = {p["kind"] for p in ac["predicates"]}
-        self.assertEqual(kinds, {"DYNAMIC_SUFFIX_INT_GT", "FIXED_INT_ANY_GT_AND_NONEMPTY_SET"})
-        dynamic = next(p for p in ac["predicates"] if p["kind"] == "DYNAMIC_SUFFIX_INT_GT")
-        self.assertEqual(dynamic["keySuffix"], "_action")
-        self.assertEqual(dynamic["thresholdExclusive"], 1)
-        self.assertEqual(dynamic["valueType"], "INTEGER")
-        fixed = next(p for p in ac["predicates"] if p["kind"] == "FIXED_INT_ANY_GT_AND_NONEMPTY_SET")
-        self.assertEqual(sorted(fixed["integerKeys"]), ["controls_volumemedia_down", "controls_volumemedia_up"])
-        self.assertEqual(fixed["thresholdExclusive"], 0)
-        self.assertEqual(fixed["requiredNonEmptySetKey"], "controls_mediaplayer_apps")
-
-    def test_16_setup_global_actions_reason_distinguishes_value_type(self) -> None:
-        rec = record_by_owner(self.registry, "GlobalActions.setupGlobalActions")
-        self.assertIn("Integer", rec["reason"])
-        self.assertIn("_action", rec["reason"])
-        self.assertIn("activationContract", rec["reason"])
-
     # --- setupStatusBar ---
 
     def test_17_setup_status_bar_covered_call_matches_source(self) -> None:
@@ -321,12 +182,12 @@ class P3_3B_LegacyExceptionRouteTest(unittest.TestCase):
         self.assertEqual(set(rec["coveredCallSites"]), expected)
 
     def test_18_setup_status_bar_unconditional(self) -> None:
+        text = read_source("tv/withaibuild/customiuizer/installers/SystemUiInstaller.java")
+        call_pos = text.find("GlobalActions.setupStatusBar(lpparam);")
+        self.assertGreater(call_pos, 0)
+        condition = sc.get_enclosing_if_condition(text, call_pos)
+        self.assertIsNone(condition)
         rec = record_by_owner(self.registry, "GlobalActions.setupStatusBar")
-        cond = get_installer_condition(
-            "tv/withaibuild/customiuizer/installers/SystemUiInstaller.java",
-            "GlobalActions.setupStatusBar(lpparam);",
-        )
-        self.assertEqual(cond, "UNCONDITIONAL")
         self.assertEqual(rec["activationContract"], {"mode": "UNCONDITIONAL"})
         self.assertEqual(rec["preferenceKeys"], [])
 
@@ -338,69 +199,108 @@ class P3_3B_LegacyExceptionRouteTest(unittest.TestCase):
         self.assertEqual(set(rec["coveredCallSites"]), expected)
 
     def test_20_setup_foreground_monitor_installer_condition(self) -> None:
-        cond = get_installer_condition(
-            "tv/withaibuild/customiuizer/installers/SystemUiInstaller.java",
-            "GlobalActions.setupForegroundMonitor(lpparam);",
-        )
-        self.assertIn("various_showcallui", cond)
-        self.assertIn("controls_volumecursor", cond)
-        self.assertIn("||", cond)
+        text = read_source("tv/withaibuild/customiuizer/installers/SystemUiInstaller.java")
+        call_pos = text.find("GlobalActions.setupForegroundMonitor(lpparam);")
+        condition = sc.get_enclosing_if_condition(text, call_pos)
+        self.assertIsNotNone(condition)
+        operands, operators = sc.parse_boolean_expression(condition)
+        self.assertEqual(operators, ["||"])
+        self.assertIn("various_showcallui", condition)
+        self.assertIn("controls_volumecursor", condition)
 
-    def test_21_setup_foreground_monitor_third_call_in_show_call_ui_block(self) -> None:
-        body = get_setup_foreground_monitor_body()
-        block = find_if_block(
-            body,
-            r"MainModule\.mPrefs\.getStringAsInt\s*\(\s*\"various_showcallui\"\s*,\s*0\s*\)\s*>\s*0",
-        )
-        self.assertIsNotNone(block, "show-call-ui if block must be extractable")
-        self.assertIn("StatusBarStateControllerImpl", block)
-        self.assertIn("setSystemBarAttributes", block)
-
-    def test_22_setup_foreground_monitor_activation_contract(self) -> None:
+    def test_21_setup_foreground_monitor_source_activation_matches_registry(self) -> None:
+        derived = sc.derive_setup_foreground_monitor_activation()
         rec = record_by_owner(self.registry, "GlobalActions.setupForegroundMonitor")
-        ac = rec["activationContract"]
-        self.assertEqual(ac["mode"], "ANY_OF")
-        kinds = {p["kind"] for p in ac["predicates"]}
-        self.assertEqual(kinds, {"BOOLEAN_KEY_TRUE", "INT_KEY_GT"})
+        self.assertEqual(builder._canonical_activation_contract(derived), rec["activationContract"])
 
-    def test_23_setup_foreground_monitor_call_site_condition(self) -> None:
+    def test_22_setup_foreground_monitor_call_site_conditions_match_source(self) -> None:
+        derived = sc.derive_setup_foreground_monitor_call_site_conditions()
         rec = record_by_owner(self.registry, "GlobalActions.setupForegroundMonitor")
-        csc = rec["callSiteConditions"]
-        third = "tv/withaibuild/customiuizer/mods/GlobalActions.kt:759:setupForegroundMonitor"
-        self.assertIn(third, csc)
-        cond = csc[third]
+        self.assertEqual(derived, {int(k.split(":")[1]): v for k, v in rec.get("callSiteConditions", {}).items()})
+
+    def test_23_setup_foreground_monitor_third_call_in_show_call_ui_block(self) -> None:
+        body = sc.extract_function_body(
+            read_source("tv/withaibuild/customiuizer/mods/GlobalActions.kt"),
+            "setupForegroundMonitor",
+            "kt",
+        )
+        calls = sc.find_hook_calls_in_function(
+            "tv/withaibuild/customiuizer/mods/GlobalActions.kt",
+            "setupForegroundMonitor",
+        )
+        status_call = [c for c in calls if "StatusBarStateControllerImpl" in (c.get("target") or "")]
+        self.assertEqual(len(status_call), 1)
+        status = status_call[0]
+        # Find innermost if containing the StatusBarStateControllerImpl call.
+        enclosing = None
+        for block in sc._extract_all_if_blocks(body):
+            if block["body_start"] < body.find(status["text"]) < block["body_end"]:
+                if enclosing is None or block["body_start"] > enclosing["body_start"]:
+                    enclosing = block
+        self.assertIsNotNone(enclosing)
+        ok, cond = sc._is_showcallui_condition(enclosing["condition"])
+        self.assertTrue(ok)
         self.assertEqual(cond, {"kind": "INT_KEY_GT", "key": "various_showcallui", "thresholdExclusive": 0})
 
-    def test_24_setup_foreground_monitor_reason_mentions_call_site_condition(self) -> None:
+    def test_24_setup_foreground_monitor_preference_keys_exact(self) -> None:
         rec = record_by_owner(self.registry, "GlobalActions.setupForegroundMonitor")
-        self.assertIn("various_showcallui", rec["reason"])
-        self.assertIn("third hook", rec["reason"].lower())
+        self.assertEqual(rec["preferenceKeys"], ["controls_volumecursor", "various_showcallui"])
+
+    def test_25_setup_foreground_monitor_runtime_config_empty(self) -> None:
+        rec = record_by_owner(self.registry, "GlobalActions.setupForegroundMonitor")
+        self.assertEqual(rec.get("runtimeConfigKeys"), [])
 
     # --- AlarmCompat ---
 
-    def test_25_alarm_compat_covered_calls_match_source(self) -> None:
+    def test_26_alarm_compat_covered_calls_match_source(self) -> None:
         rec = record_by_owner(self.registry, "AlarmCompatServiceHook")
         expected = set(call_ids_in_function("tv/withaibuild/customiuizer/mods/Various.kt", "AlarmCompatServiceHook"))
         self.assertEqual(set(rec["coveredCallSites"]), expected)
 
-    def test_26_alarm_compat_installer_condition(self) -> None:
-        cond = get_installer_condition(
-            "tv/withaibuild/customiuizer/installers/SystemServerInstaller.java",
-            "Various.AlarmCompatServiceHook(lpparam);",
-        )
-        self.assertIn("various_alarmcompat", cond)
+    def test_27_alarm_compat_installer_condition(self) -> None:
+        text = read_source("tv/withaibuild/customiuizer/installers/SystemServerInstaller.java")
+        call_pos = text.find("Various.AlarmCompatServiceHook(lpparam);")
+        condition = sc.get_enclosing_if_condition(text, call_pos)
+        self.assertIsNotNone(condition)
+        self.assertIn("various_alarmcompat", condition)
 
-    def test_27_alarm_compat_activation_and_config_keys(self) -> None:
+    def test_28_alarm_compat_source_activation_matches_registry(self) -> None:
+        derived = sc.derive_alarm_compat_activation()
         rec = record_by_owner(self.registry, "AlarmCompatServiceHook")
-        ac = rec["activationContract"]
-        self.assertEqual(ac["mode"], "ANY_OF")
-        pred = ac["predicates"][0]
-        self.assertEqual(pred["kind"], "BOOLEAN_KEY_TRUE")
-        self.assertEqual(pred["key"], "various_alarmcompat")
-        self.assertIn("various_alarmcompat", rec["preferenceKeys"])
-        self.assertIn("various_alarmcompat_apps", rec["preferenceKeys"])
-        self.assertIn("runtime allowlist", rec["reason"])
-        self.assertIn("not the installer activation gate", rec["reason"])
+        self.assertEqual(builder._canonical_activation_contract(derived), rec["activationContract"])
+
+    def test_29_alarm_compat_runtime_config_key(self) -> None:
+        derived = sc.derive_runtime_config_keys("AlarmCompatServiceHook")
+        rec = record_by_owner(self.registry, "AlarmCompatServiceHook")
+        self.assertEqual(derived, rec.get("runtimeConfigKeys"))
+        self.assertEqual(derived, ["various_alarmcompat_apps"])
+
+    def test_30_alarm_compat_preference_keys(self) -> None:
+        rec = record_by_owner(self.registry, "AlarmCompatServiceHook")
+        self.assertEqual(rec["preferenceKeys"], ["various_alarmcompat", "various_alarmcompat_apps"])
+
+
+# ---------------------------------------------------------------------------
+# Generator consistency tests
+# ---------------------------------------------------------------------------
+
+
+class P3_3B_GeneratorConsistencyTest(unittest.TestCase):
+    def setUp(self) -> None:
+        self.registry = load_json(REGISTRY_FILE)
+
+    def test_build_registry_matches_committed(self) -> None:
+        """The generator must reproduce the committed registry exactly."""
+        sites = builder.scan_legacy_call_sites()
+        expected = builder.build_registry(sites)
+        diffs = builder.canonical_diff(expected, self.registry)
+        self.assertEqual(diffs, [])
+
+    def test_build_registry_is_not_route_golden(self) -> None:
+        """Route/call-site/preference expected values must not be taken from build_registry."""
+        # This is a structural guarantee: positive route tests above import
+        # `legacy_exception_source_contract`, not `builder.build_registry`.
+        self.assertNotIn("build_registry", sc.__doc__.lower() or "")
 
 
 # ---------------------------------------------------------------------------
@@ -422,47 +322,40 @@ class P3_3B_ActivationContractValidationTest(unittest.TestCase):
         errors = builder.validate(reg)
         self.assertTrue(errors, message)
 
-    def test_30_unknown_activation_mode(self) -> None:
+    def test_31_unknown_activation_mode(self) -> None:
         reg = self._mutate(
             "GlobalActions.setupGlobalActions",
             lambda r: r["activationContract"].update({"mode": "ALL_OF"}),
         )
         self._assert_validation_fails(reg, "unknown activationContract mode must fail")
 
-    def test_31_unknown_predicate_kind(self) -> None:
+    def test_32_unknown_predicate_kind(self) -> None:
         reg = self._mutate(
             "GlobalActions.setupGlobalActions",
             lambda r: r["activationContract"]["predicates"].append({"kind": "STRING_CONTAINS", "key": "x"}),
         )
         self._assert_validation_fails(reg, "unknown predicate kind must fail")
 
-    def test_32_predicate_missing_required_field(self) -> None:
+    def test_33_predicate_missing_required_field(self) -> None:
         reg = self._mutate(
             "GlobalActions.setupGlobalActions",
             lambda r: r["activationContract"]["predicates"][0].__delitem__("thresholdExclusive"),
         )
         self._assert_validation_fails(reg, "predicate missing required field must fail")
 
-    def test_33_dynamic_suffix_empty(self) -> None:
+    def test_34_dynamic_suffix_empty(self) -> None:
         reg = self._mutate(
             "GlobalActions.setupGlobalActions",
             lambda r: r["activationContract"]["predicates"][0].update({"keySuffix": ""}),
         )
         self._assert_validation_fails(reg, "empty keySuffix must fail")
 
-    def test_34_dynamic_suffix_missing_value_type(self) -> None:
+    def test_35_dynamic_suffix_missing_value_type(self) -> None:
         reg = self._mutate(
             "GlobalActions.setupGlobalActions",
             lambda r: r["activationContract"]["predicates"][0].pop("valueType"),
         )
         self._assert_validation_fails(reg, "missing valueType must fail")
-
-    def test_35_fixed_int_empty_integer_keys(self) -> None:
-        reg = self._mutate(
-            "GlobalActions.setupGlobalActions",
-            lambda r: r["activationContract"]["predicates"][1].update({"integerKeys": []}),
-        )
-        self._assert_validation_fails(reg, "empty integerKeys must fail")
 
     def test_36_int_gt_non_integer_threshold(self) -> None:
         reg = self._mutate(
@@ -471,7 +364,73 @@ class P3_3B_ActivationContractValidationTest(unittest.TestCase):
         )
         self._assert_validation_fails(reg, "string thresholdExclusive must fail")
 
-    def test_37_activation_contract_in_canonical_diff(self) -> None:
+    def test_37_activation_contract_not_object(self) -> None:
+        reg = self._mutate(
+            "GlobalActions.setupGlobalActions",
+            lambda r: r.update({"activationContract": "UNCONDITIONAL"}),
+        )
+        errors = builder.validate(reg)
+        self.assertTrue(any("INVALID_ACTIVATION_CONTRACT" in e for e in errors))
+
+    def test_38_threshold_bool_rejected(self) -> None:
+        reg = self._mutate(
+            "GlobalActions.setupForegroundMonitor",
+            lambda r: r["activationContract"]["predicates"][1].update({"thresholdExclusive": True}),
+        )
+        errors = builder.validate(reg)
+        self.assertTrue(any("INVALID_ACTIVATION_THRESHOLD" in e for e in errors))
+
+    def test_39_threshold_float_rejected(self) -> None:
+        reg = self._mutate(
+            "GlobalActions.setupForegroundMonitor",
+            lambda r: r["activationContract"]["predicates"][1].update({"thresholdExclusive": 0.0}),
+        )
+        errors = builder.validate(reg)
+        self.assertTrue(any("INVALID_ACTIVATION_THRESHOLD" in e for e in errors))
+
+    def test_40_threshold_null_rejected(self) -> None:
+        reg = self._mutate(
+            "GlobalActions.setupForegroundMonitor",
+            lambda r: r["activationContract"]["predicates"][1].update({"thresholdExclusive": None}),
+        )
+        errors = builder.validate(reg)
+        self.assertTrue(any("INVALID_ACTIVATION_THRESHOLD" in e for e in errors))
+
+    def test_41_unknown_activation_field(self) -> None:
+        reg = self._mutate(
+            "GlobalActions.setupGlobalActions",
+            lambda r: r["activationContract"].update({"extra": 1}),
+        )
+        errors = builder.validate(reg)
+        self.assertTrue(any("unknown field" in e.lower() for e in errors))
+
+    def test_42_unconditional_with_predicates(self) -> None:
+        reg = self._mutate(
+            "GlobalActions.setupStatusBar",
+            lambda r: r.update({
+                "activationContract": {"mode": "UNCONDITIONAL", "predicates": [{"kind": "BOOLEAN_KEY_TRUE", "key": "x"}]}
+            }),
+        )
+        errors = builder.validate(reg)
+        self.assertTrue(any("UNCONDITIONAL" in e for e in errors))
+
+    def test_43_empty_predicates(self) -> None:
+        reg = self._mutate(
+            "GlobalActions.setupGlobalActions",
+            lambda r: r["activationContract"].update({"predicates": []}),
+        )
+        errors = builder.validate(reg)
+        self.assertTrue(errors, "empty predicates must fail")
+
+    def test_44_duplicate_predicate(self) -> None:
+        reg = self._mutate(
+            "GlobalActions.setupForegroundMonitor",
+            lambda r: r["activationContract"]["predicates"].append(r["activationContract"]["predicates"][0]),
+        )
+        errors = builder.validate(reg)
+        self.assertTrue(any("duplicate" in e.lower() for e in errors))
+
+    def test_45_activation_contract_in_canonical_diff(self) -> None:
         sites = builder.scan_legacy_call_sites()
         expected = builder.build_registry(sites)
         reg = copy.deepcopy(self.registry)
@@ -480,7 +439,7 @@ class P3_3B_ActivationContractValidationTest(unittest.TestCase):
         diffs = builder.canonical_diff(expected, reg)
         self.assertTrue(any("activationContract" in d or "mode" in d for d in diffs))
 
-    def test_38_call_site_conditions_in_canonical_diff(self) -> None:
+    def test_46_call_site_conditions_in_canonical_diff(self) -> None:
         sites = builder.scan_legacy_call_sites()
         expected = builder.build_registry(sites)
         reg = copy.deepcopy(self.registry)
@@ -488,6 +447,15 @@ class P3_3B_ActivationContractValidationTest(unittest.TestCase):
         rec["callSiteConditions"] = {}
         diffs = builder.canonical_diff(expected, reg)
         self.assertTrue(any("callSiteConditions" in d for d in diffs))
+
+    def test_47_runtime_config_keys_in_canonical_diff(self) -> None:
+        sites = builder.scan_legacy_call_sites()
+        expected = builder.build_registry(sites)
+        reg = copy.deepcopy(self.registry)
+        rec = record_by_owner(reg, "AlarmCompatServiceHook")
+        rec["runtimeConfigKeys"] = []
+        diffs = builder.canonical_diff(expected, reg)
+        self.assertTrue(any("runtimeConfigKeys" in d for d in diffs))
 
 
 class P3_3B_CallSiteConditionValidationTest(unittest.TestCase):
@@ -504,7 +472,7 @@ class P3_3B_CallSiteConditionValidationTest(unittest.TestCase):
         errors = builder.validate(reg)
         self.assertTrue(errors, message)
 
-    def test_40_call_site_condition_for_non_covered_call(self) -> None:
+    def test_50_call_site_condition_for_non_covered_call(self) -> None:
         reg = self._mutate(
             "GlobalActions.setupForegroundMonitor",
             lambda r: r["callSiteConditions"].update({
@@ -515,7 +483,7 @@ class P3_3B_CallSiteConditionValidationTest(unittest.TestCase):
         )
         self._assert_validation_fails(reg, "condition for non-covered call must fail")
 
-    def test_41_call_site_condition_unknown_key(self) -> None:
+    def test_51_call_site_condition_unknown_key(self) -> None:
         reg = self._mutate(
             "GlobalActions.setupForegroundMonitor",
             lambda r: r["callSiteConditions"].update({
@@ -526,7 +494,7 @@ class P3_3B_CallSiteConditionValidationTest(unittest.TestCase):
         )
         self._assert_validation_fails(reg, "condition key not in preferenceKeys must fail")
 
-    def test_42_call_site_condition_missing_field(self) -> None:
+    def test_52_call_site_condition_missing_field(self) -> None:
         reg = self._mutate(
             "GlobalActions.setupForegroundMonitor",
             lambda r: r["callSiteConditions"].update({
@@ -537,7 +505,7 @@ class P3_3B_CallSiteConditionValidationTest(unittest.TestCase):
         )
         self._assert_validation_fails(reg, "condition missing required field must fail")
 
-    def test_43_call_site_condition_unknown_kind(self) -> None:
+    def test_53_call_site_condition_unknown_kind(self) -> None:
         reg = self._mutate(
             "GlobalActions.setupForegroundMonitor",
             lambda r: r["callSiteConditions"].update({
@@ -548,9 +516,33 @@ class P3_3B_CallSiteConditionValidationTest(unittest.TestCase):
         )
         self._assert_validation_fails(reg, "unknown condition kind must fail")
 
+    def test_54_call_site_condition_not_activation_branch(self) -> None:
+        reg = self._mutate(
+            "GlobalActions.setupForegroundMonitor",
+            lambda r: r["callSiteConditions"].update({
+                "tv/withaibuild/customiuizer/mods/GlobalActions.kt:759:setupForegroundMonitor": {
+                    "kind": "BOOLEAN_KEY_TRUE", "key": "various_showcallui",
+                }
+            }),
+        )
+        errors = builder.validate(reg)
+        self.assertTrue(any("CALL_SITE_CONDITION_NOT_ACTIVATION_BRANCH" in e for e in errors))
+
+    def test_55_call_site_condition_threshold_bool(self) -> None:
+        reg = self._mutate(
+            "GlobalActions.setupForegroundMonitor",
+            lambda r: r["callSiteConditions"].update({
+                "tv/withaibuild/customiuizer/mods/GlobalActions.kt:759:setupForegroundMonitor": {
+                    "kind": "INT_KEY_GT", "key": "various_showcallui", "thresholdExclusive": True,
+                }
+            }),
+        )
+        errors = builder.validate(reg)
+        self.assertTrue(any("INVALID_ACTIVATION_THRESHOLD" in e for e in errors))
+
 
 # ---------------------------------------------------------------------------
-# Mutation tests
+# Mutation tests against committed registry
 # ---------------------------------------------------------------------------
 
 
@@ -573,84 +565,84 @@ class P3_3B_ActivationContractMutationTest(unittest.TestCase):
         diffs = builder.canonical_diff(self.expected, reg)
         self.assertTrue(diffs, message)
 
-    def test_50_remove_dynamic_activation_contract(self) -> None:
+    def test_60_remove_dynamic_activation_contract(self) -> None:
         reg = self._mutate(
             "GlobalActions.setupGlobalActions",
             lambda r: r.pop("activationContract"),
         )
         self._assert_killed(reg, "remove activationContract must fail canonical/validation")
 
-    def test_51_change_dynamic_suffix(self) -> None:
+    def test_61_change_dynamic_suffix(self) -> None:
         reg = self._mutate(
             "GlobalActions.setupGlobalActions",
             lambda r: r["activationContract"]["predicates"][0].update({"keySuffix": "_click"}),
         )
         self._assert_killed(reg, "changed keySuffix must fail canonical")
 
-    def test_52_remove_integer_type_guard(self) -> None:
+    def test_62_remove_integer_type_guard(self) -> None:
         reg = self._mutate(
             "GlobalActions.setupGlobalActions",
             lambda r: r["activationContract"]["predicates"][0].pop("valueType"),
         )
         self._assert_killed(reg, "removed valueType must fail validation")
 
-    def test_53_change_action_threshold(self) -> None:
+    def test_63_change_action_threshold(self) -> None:
         reg = self._mutate(
             "GlobalActions.setupGlobalActions",
             lambda r: r["activationContract"]["predicates"][0].update({"thresholdExclusive": 2}),
         )
         self._assert_killed(reg, "changed action threshold must fail canonical")
 
-    def test_54_remove_media_player_apps(self) -> None:
+    def test_64_remove_media_player_apps(self) -> None:
         reg = self._mutate(
             "GlobalActions.setupGlobalActions",
             lambda r: r["activationContract"]["predicates"][1].pop("requiredNonEmptySetKey"),
         )
         self._assert_killed(reg, "removed requiredNonEmptySetKey must fail validation")
 
-    def test_55_change_media_or_to_and(self) -> None:
+    def test_65_change_media_or_to_and(self) -> None:
         reg = self._mutate(
             "GlobalActions.setupGlobalActions",
             lambda r: r["activationContract"].update({"mode": "ALL_OF"}),
         )
         self._assert_killed(reg, "invalid mode must fail validation")
 
-    def test_56_remove_media_up_key(self) -> None:
+    def test_66_remove_media_up_key(self) -> None:
         reg = self._mutate(
             "GlobalActions.setupGlobalActions",
             lambda r: r["activationContract"]["predicates"][1]["integerKeys"].remove("controls_volumemedia_up"),
         )
         self._assert_killed(reg, "removed media up key must fail canonical")
 
-    def test_57_remove_media_down_key(self) -> None:
+    def test_67_remove_media_down_key(self) -> None:
         reg = self._mutate(
             "GlobalActions.setupGlobalActions",
             lambda r: r["activationContract"]["predicates"][1]["integerKeys"].remove("controls_volumemedia_down"),
         )
         self._assert_killed(reg, "removed media down key must fail canonical")
 
-    def test_58_add_static_action_enumeration(self) -> None:
+    def test_68_add_static_action_enumeration(self) -> None:
         reg = self._mutate(
             "GlobalActions.setupGlobalActions",
             lambda r: r["preferenceKeys"].append("controls_backlong_action"),
         )
         self._assert_killed(reg, "enumerated _action key in preferenceKeys must fail validation")
 
-    def test_59_add_boolean_action_key(self) -> None:
+    def test_69_add_boolean_action_key(self) -> None:
         reg = self._mutate(
             "GlobalActions.setupGlobalActions",
             lambda r: r["preferenceKeys"].append("system_cc_custom_clock_action"),
         )
         self._assert_killed(reg, "boolean _action key in preferenceKeys must fail validation")
 
-    def test_60_remove_foreground_call_condition(self) -> None:
+    def test_70_remove_foreground_call_condition(self) -> None:
         reg = self._mutate(
             "GlobalActions.setupForegroundMonitor",
             lambda r: r.update({"callSiteConditions": {}}),
         )
         self._assert_killed(reg, "removed callSiteConditions must fail canonical")
 
-    def test_61_change_foreground_call_condition_key(self) -> None:
+    def test_71_change_foreground_call_condition_key(self) -> None:
         reg = self._mutate(
             "GlobalActions.setupForegroundMonitor",
             lambda r: r["callSiteConditions"].update({
@@ -659,9 +651,9 @@ class P3_3B_ActivationContractMutationTest(unittest.TestCase):
                 }
             }),
         )
-        self._assert_killed(reg, "changed foreground call condition to wrong key must fail canonical")
+        self._assert_killed(reg, "changed foreground call condition to wrong key must fail canonical/validation")
 
-    def test_62_attach_condition_to_wrong_call(self) -> None:
+    def test_72_attach_condition_to_wrong_call(self) -> None:
         reg = self._mutate(
             "GlobalActions.setupForegroundMonitor",
             lambda r: r["callSiteConditions"].update({
@@ -670,9 +662,9 @@ class P3_3B_ActivationContractMutationTest(unittest.TestCase):
                 }
             }),
         )
-        self._assert_killed(reg, "condition attached to wrong call must fail canonical")
+        self._assert_killed(reg, "condition attached to wrong call must fail canonical/validation")
 
-    def test_63_fabricated_call_condition_id(self) -> None:
+    def test_73_fabricated_call_condition_id(self) -> None:
         reg = self._mutate(
             "GlobalActions.setupForegroundMonitor",
             lambda r: r["callSiteConditions"].update({
@@ -683,33 +675,41 @@ class P3_3B_ActivationContractMutationTest(unittest.TestCase):
         )
         self._assert_killed(reg, "fabricated call condition id must fail validation")
 
-    def test_64_remove_unconditional_statusbar_activation(self) -> None:
+    def test_74_remove_unconditional_statusbar_activation(self) -> None:
         reg = self._mutate(
             "GlobalActions.setupStatusBar",
             lambda r: r.pop("activationContract"),
         )
         self._assert_killed(reg, "removed statusbar activationContract must fail canonical")
 
-    def test_65_change_alarmcompat_activation_key(self) -> None:
+    def test_75_change_alarmcompat_activation_key(self) -> None:
         reg = self._mutate(
             "AlarmCompatServiceHook",
             lambda r: r["activationContract"]["predicates"][0].update({"key": "various_alarmcompat_apps"}),
         )
-        self._assert_killed(reg, "changed alarmcompat activation to config key must fail canonical")
+        self._assert_killed(reg, "changed alarmcompat activation key must fail canonical/validation")
 
-    def test_66_stale_activation_contract_schema_version(self) -> None:
+    def test_76_runtime_config_key_misclassified(self) -> None:
+        reg = self._mutate(
+            "AlarmCompatServiceHook",
+            lambda r: r["runtimeConfigKeys"].append("various_alarmcompat"),
+        )
+        errors = builder.validate(reg)
+        self.assertTrue(errors, "runtime key overlapping activation must fail")
+
+    def test_77_remove_runtime_config_key(self) -> None:
+        reg = self._mutate(
+            "AlarmCompatServiceHook",
+            lambda r: r.pop("runtimeConfigKeys"),
+        )
+        self._assert_killed(reg, "removed runtimeConfigKeys must fail canonical")
+
+    def test_78_stale_activation_contract_schema_version(self) -> None:
         reg = copy.deepcopy(self.registry)
-        reg["schemaVersion"] = 2
+        reg["schemaVersion"] = 3
         self._assert_killed(reg, "stale schemaVersion must fail canonical")
 
-    def test_67_stale_call_site_conditions(self) -> None:
-        reg = self._mutate(
-            "GlobalActions.setupForegroundMonitor",
-            lambda r: r.pop("callSiteConditions"),
-        )
-        self._assert_killed(reg, "removed callSiteConditions must fail canonical")
-
-    def test_68_circular_expected_from_seed_detection(self) -> None:
+    def test_79_circular_expected_from_seed_detection(self) -> None:
         # Simulate the old hand-enumerated seed expectation that the R1 repair removed.
         old_bogus_keys = [
             "controls_backlong_action",
@@ -721,10 +721,125 @@ class P3_3B_ActivationContractMutationTest(unittest.TestCase):
             "GlobalActions.setupGlobalActions",
             lambda r: (r.pop("activationContract", None), r.__setitem__("preferenceKeys", sorted(old_bogus_keys))),
         )
-        # Removing activationContract removes the dynamic suffix guard, so validation alone
-        # would not fail.  Canonical diff against the golden registry must fail.
         diffs = builder.canonical_diff(self.expected, reg)
         self.assertTrue(diffs, "old seed-enumerated _action keys must not be accepted as expected")
+
+
+# ---------------------------------------------------------------------------
+# Source-level mutation tests
+# ---------------------------------------------------------------------------
+
+
+class P3_3B_SourceMutationTest(unittest.TestCase):
+    """Apply textual mutations to a temp copy of production source and verify
+    the source contract parser rejects them."""
+
+    @classmethod
+    def setUpClass(cls) -> None:
+        cls.system_server = read_source("tv/withaibuild/customiuizer/installers/SystemServerInstaller.java")
+        cls.system_ui = read_source("tv/withaibuild/customiuizer/installers/SystemUiInstaller.java")
+
+    def test_ga_action_and_to_or(self) -> None:
+        text = self.system_server.replace(
+            'key != null && key.endsWith("_action") && value instanceof Integer && (Integer) value > 1',
+            'key != null || key.endsWith("_action") || value instanceof Integer || (Integer) value > 1',
+        )
+        body = sc.extract_function_body(text, "needGlobalActions", "java")
+        blocks = sc._extract_all_if_blocks(body)
+        _, operators = sc.parse_boolean_expression(blocks[0]["condition"])
+        self.assertIn("||", operators)
+
+    def test_ga_remove_integer_guard(self) -> None:
+        text = self.system_server.replace("value instanceof Integer", "value instanceof String")
+        body = sc.extract_function_body(text, "needGlobalActions", "java")
+        blocks = sc._extract_all_if_blocks(body)
+        norm = sc._normalize_expr(blocks[0]["condition"])
+        self.assertNotRegex(norm, r"value\s+instanceof\s+Integer")
+
+    def test_ga_change_action_threshold(self) -> None:
+        text = self.system_server.replace("(Integer) value > 1", "(Integer) value > 2")
+        body = sc.extract_function_body(text, "needGlobalActions", "java")
+        blocks = sc._extract_all_if_blocks(body)
+        norm = sc._normalize_expr(blocks[0]["condition"])
+        self.assertRegex(norm, r">\s*2")
+
+    def test_ga_media_or_to_and(self) -> None:
+        text = self.system_server.replace(
+            'MainModule.mPrefs.getStringAsInt("controls_volumemedia_up", 0) > 0 || MainModule.mPrefs.getStringAsInt("controls_volumemedia_down", 0) > 0',
+            'MainModule.mPrefs.getStringAsInt("controls_volumemedia_up", 0) > 0 && MainModule.mPrefs.getStringAsInt("controls_volumemedia_down", 0) > 0',
+        )
+        body = sc.extract_function_body(text, "needGlobalActions", "java")
+        blocks = sc._extract_all_if_blocks(body)
+        _, operators = sc.parse_boolean_expression(blocks[1]["condition"])
+        self.assertEqual(operators, ["&&"])
+
+    def test_ga_remove_media_up(self) -> None:
+        text = self.system_server.replace(
+            'MainModule.mPrefs.getStringAsInt("controls_volumemedia_up", 0) > 0 || ',
+            '',
+        )
+        body = sc.extract_function_body(text, "needGlobalActions", "java")
+        blocks = sc._extract_all_if_blocks(body)
+        norm = sc._normalize_expr(blocks[1]["condition"])
+        self.assertNotIn("controls_volumemedia_up", norm)
+
+    def test_ga_remove_media_down(self) -> None:
+        text = self.system_server.replace(
+            ' || MainModule.mPrefs.getStringAsInt("controls_volumemedia_down", 0) > 0',
+            '',
+        )
+        body = sc.extract_function_body(text, "needGlobalActions", "java")
+        blocks = sc._extract_all_if_blocks(body)
+        norm = sc._normalize_expr(blocks[1]["condition"])
+        self.assertNotIn("controls_volumemedia_down", norm)
+
+    def test_ga_remove_media_app_set(self) -> None:
+        text = self.system_server.replace(
+            'return !MainModule.mPrefs.getStringSet("controls_mediaplayer_apps").isEmpty();',
+            'return false;',
+        )
+        body = sc.extract_function_body(text, "needGlobalActions", "java")
+        blocks = sc._extract_all_if_blocks(body)
+        return_expr = sc._extract_return_in_block(blocks[1]["body"])
+        self.assertEqual(return_expr, "false")
+
+    def test_ga_remove_nonempty_negation(self) -> None:
+        text = self.system_server.replace(
+            'return !MainModule.mPrefs.getStringSet("controls_mediaplayer_apps").isEmpty();',
+            'return MainModule.mPrefs.getStringSet("controls_mediaplayer_apps").isEmpty();',
+        )
+        body = sc.extract_function_body(text, "needGlobalActions", "java")
+        blocks = sc._extract_all_if_blocks(body)
+        return_expr = sc._extract_return_in_block(blocks[1]["body"])
+        self.assertFalse(return_expr.startswith("!"))
+
+    def test_foreground_installer_or_to_and(self) -> None:
+        text = self.system_ui.replace(
+            'MainModule.mPrefs.getStringAsInt("various_showcallui", 0) > 0\n                || MainModule.mPrefs.getBoolean("controls_volumecursor")',
+            'MainModule.mPrefs.getStringAsInt("various_showcallui", 0) > 0\n                && MainModule.mPrefs.getBoolean("controls_volumecursor")',
+        )
+        call_pos = text.find("GlobalActions.setupForegroundMonitor(lpparam);")
+        condition = sc.get_enclosing_if_condition(text, call_pos)
+        _, operators = sc.parse_boolean_expression(condition)
+        self.assertEqual(operators, ["&&"])
+
+    def test_foreground_wrong_condition_key(self) -> None:
+        text = self.system_ui.replace(
+            'MainModule.mPrefs.getStringAsInt("various_showcallui", 0) > 0',
+            'MainModule.mPrefs.getStringAsInt("controls_volumecursor", 0) > 0',
+        )
+        call_pos = text.find("GlobalActions.setupForegroundMonitor(lpparam);")
+        condition = sc.get_enclosing_if_condition(text, call_pos)
+        self.assertNotIn("various_showcallui", sc._normalize_expr(condition))
+
+    def test_foreground_wrong_condition_threshold(self) -> None:
+        text = self.system_ui.replace(
+            'MainModule.mPrefs.getStringAsInt("various_showcallui", 0) > 0',
+            'MainModule.mPrefs.getStringAsInt("various_showcallui", 0) > 1',
+        )
+        call_pos = text.find("GlobalActions.setupForegroundMonitor(lpparam);")
+        condition = sc.get_enclosing_if_condition(text, call_pos)
+        self.assertRegex(sc._normalize_expr(condition), r">\s*1")
 
 
 if __name__ == "__main__":

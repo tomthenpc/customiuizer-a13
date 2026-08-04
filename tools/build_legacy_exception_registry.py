@@ -97,6 +97,32 @@ PREDICATE_ALLOWED_FIELDS: dict[str, set[str]] = {
 
 ALLOWED_VALUE_TYPES = {"INTEGER"}
 
+ALLOWED_RECORD_FIELDS = {
+    "id",
+    "batch",
+    "status",
+    "owner",
+    "sourceFile",
+    "entrypoint",
+    "process",
+    "phase",
+    "preferenceKeys",
+    "runtimeConfigKeys",
+    "activationContract",
+    "callSiteConditions",
+    "reasonCode",
+    "reason",
+    "coveredCallSites",
+    "hookTargets",
+    "testEvidence",
+    "exitCondition",
+}
+
+
+def _is_strict_int(value: object) -> bool:
+    return isinstance(value, int) and not isinstance(value, bool)
+
+
 LEGACY_EXCEPTION_SEEDS: list[dict] = [
     {
         "id": "legacy-separatevolume-systemui",
@@ -220,6 +246,7 @@ LEGACY_EXCEPTION_SEEDS: list[dict] = [
             "controls_volumemedia_up",
             "controls_mediaplayer_apps",
         ],
+        "runtimeConfigKeys": [],
         "activationContract": {
             "mode": "ANY_OF",
             "predicates": [
@@ -281,6 +308,7 @@ LEGACY_EXCEPTION_SEEDS: list[dict] = [
         "process": "system_ui",
         "phase": "PACKAGE_READY",
         "preferenceKeys": [],
+        "runtimeConfigKeys": [],
         "activationContract": {
             "mode": "UNCONDITIONAL",
         },
@@ -315,6 +343,7 @@ LEGACY_EXCEPTION_SEEDS: list[dict] = [
         "process": "system_ui",
         "phase": "PACKAGE_READY",
         "preferenceKeys": ["various_showcallui", "controls_volumecursor"],
+        "runtimeConfigKeys": [],
         "activationContract": {
             "mode": "ANY_OF",
             "predicates": [
@@ -371,6 +400,7 @@ LEGACY_EXCEPTION_SEEDS: list[dict] = [
         "process": "system_server",
         "phase": "SYSTEM_SERVER_STARTING",
         "preferenceKeys": ["various_alarmcompat", "various_alarmcompat_apps"],
+        "runtimeConfigKeys": ["various_alarmcompat_apps"],
         "activationContract": {
             "mode": "ANY_OF",
             "predicates": [
@@ -623,6 +653,10 @@ def build_registry(sites: list[dict]) -> dict:
             "phase": seed["phase"],
             "preferenceKeys": sorted(seed["preferenceKeys"]),
             "reasonCode": seed["reasonCode"],
+        }
+        if "runtimeConfigKeys" in seed:
+            record["runtimeConfigKeys"] = sorted(seed["runtimeConfigKeys"])
+        record.update({
             "reason": seed["reason"],
             "coveredCallSites": sorted(
                 covered, key=lambda c: (c.split(":")[0], int(c.split(":")[1]), c.split(":")[2])
@@ -630,7 +664,7 @@ def build_registry(sites: list[dict]) -> dict:
             "hookTargets": sorted(seed["hookTargets"]),
             "testEvidence": sorted(seed["testEvidence"]),
             "exitCondition": seed["exitCondition"],
-        }
+        })
         if "activationContract" in seed:
             record["activationContract"] = _canonical_activation_contract(seed["activationContract"])
         if "callSiteConditions" in seed:
@@ -642,7 +676,7 @@ def build_registry(sites: list[dict]) -> dict:
     first_batch_size = batch_counts.get("P3.3A", 0)
 
     return {
-        "schemaVersion": 3,
+        "schemaVersion": 4,
         "inputDigest": _input_digest(all_legacy_ids),
         "totalLegacyCallSites": len(legacy),
         "totalLegacyGroups": len(groups),
@@ -762,11 +796,119 @@ def _validate_covered_call_sites(
     return errors
 
 
+def _predicate_sort_key(p: dict) -> tuple:
+    return (p.get("kind", ""), json.dumps(p, sort_keys=True, default=str))
+
+
+def _canonical_predicate(p: dict) -> dict:
+    """Return a canonical, deep copy of a single predicate."""
+    c = copy.deepcopy(p)
+    if c.get("kind") == "FIXED_INT_ANY_GT_AND_NONEMPTY_SET" and isinstance(c.get("integerKeys"), list):
+        c["integerKeys"] = sorted(c["integerKeys"])
+    return c
+
+
+def _predicate_id(p: dict) -> str:
+    return f"{p.get('kind', '')}:{json.dumps(_canonical_predicate(p), sort_keys=True, default=str)}"
+
+
+def _validate_runtime_config_keys(
+    prefix: str,
+    runtime_keys: object,
+    fixed_activation: set[str],
+    call_condition_keys: set[str],
+) -> list[str]:
+    errors: list[str] = []
+    if runtime_keys is None:
+        return errors
+    if not isinstance(runtime_keys, list):
+        errors.append(f"{prefix}: runtimeConfigKeys must be a list")
+        return errors
+    seen: set[str] = set()
+    for i, k in enumerate(runtime_keys):
+        if not isinstance(k, str) or not k:
+            errors.append(f"{prefix}: runtimeConfigKeys[{i}] must be a non-empty string")
+            continue
+        if k in seen:
+            errors.append(f"{prefix}: runtimeConfigKeys contains duplicate '{k}'")
+        seen.add(k)
+        if k in fixed_activation:
+            errors.append(
+                f"{prefix}: runtimeConfigKeys key '{k}' is already an activation fixed key"
+            )
+        if k in call_condition_keys:
+            errors.append(
+                f"{prefix}: runtimeConfigKeys key '{k}' is already a call-site condition key"
+            )
+    if runtime_keys != sorted(runtime_keys):
+        errors.append(f"{prefix}: runtimeConfigKeys must be sorted")
+    return errors
+
+
+def _validate_preference_key_invariants(
+    prefix: str,
+    rec: dict,
+) -> list[str]:
+    """Enforce preferenceKeys == fixedActivationKeys ∪ callConditionKeys ∪ runtimeKeys."""
+    errors: list[str] = []
+    has_contract_schema = any(
+        field in rec for field in ("activationContract", "callSiteConditions")
+    )
+    if not has_contract_schema:
+        # P3.3A records may omit the new schema fields; do not enforce on them.
+        return errors
+
+    ac = rec.get("activationContract")
+    csc = rec.get("callSiteConditions")
+    runtime = rec.get("runtimeConfigKeys")
+
+    fixed_activation: set[str] = set()
+    if isinstance(ac, dict) and ac.get("mode") == "ANY_OF":
+        for p in ac.get("predicates", []):
+            if not isinstance(p, dict):
+                continue
+            kind = p.get("kind")
+            if kind == "BOOLEAN_KEY_TRUE":
+                fixed_activation.add(p.get("key", ""))
+            elif kind == "INT_KEY_GT":
+                fixed_activation.add(p.get("key", ""))
+            elif kind == "FIXED_INT_ANY_GT_AND_NONEMPTY_SET":
+                for k in p.get("integerKeys", []):
+                    fixed_activation.add(k)
+                fixed_activation.add(p.get("requiredNonEmptySetKey", ""))
+
+    call_condition: set[str] = set()
+    if isinstance(csc, dict):
+        for cond in csc.values():
+            if not isinstance(cond, dict):
+                continue
+            kind = cond.get("kind")
+            if kind in ("BOOLEAN_KEY_TRUE", "INT_KEY_GT"):
+                call_condition.add(cond.get("key", ""))
+
+    runtime_set: set[str] = set()
+    if isinstance(runtime, list):
+        runtime_set = {k for k in runtime if isinstance(k, str)}
+
+    expected = sorted((fixed_activation | call_condition | runtime_set) - {""})
+    actual = sorted(rec.get("preferenceKeys", []))
+    if actual != expected:
+        errors.append(
+            f"{prefix}: PREFERENCE_KEY_INVARIANT_VIOLATED: "
+            f"expected {expected}, got {actual}"
+        )
+    return errors
+
+
 def _validate_activation_contract(prefix: str, contract: object) -> list[str]:
     errors: list[str] = []
     if not isinstance(contract, dict):
-        errors.append(f"{prefix}: activationContract is not a dict")
+        errors.append(f"{prefix}: INVALID_ACTIVATION_CONTRACT: activationContract must be an object")
         return errors
+
+    unknown_top = set(contract.keys()) - {"mode", "predicates"}
+    for k in unknown_top:
+        errors.append(f"{prefix}: activationContract has unknown field '{k}'")
 
     mode = contract.get("mode")
     if mode not in ALLOWED_ACTIVATION_MODES:
@@ -778,9 +920,17 @@ def _validate_activation_contract(prefix: str, contract: object) -> list[str]:
         return errors
 
     predicates = contract.get("predicates")
-    if not isinstance(predicates, list) or not predicates:
-        errors.append(f"{prefix}: activationContract predicates must be a non-empty list")
+    if not isinstance(predicates, list):
+        errors.append(f"{prefix}: activationContract predicates must be a list")
         return errors
+    if not predicates:
+        errors.append(f"{prefix}: activationContract predicates must not be empty")
+        return errors
+
+    # Canonical sort check for predicates.
+    expected_order = sorted(predicates, key=_predicate_sort_key)
+    if predicates != expected_order:
+        errors.append(f"{prefix}: activationContract predicates are not in canonical order")
 
     seen_predicates: set[str] = set()
     for i, p in enumerate(predicates):
@@ -809,26 +959,39 @@ def _validate_activation_contract(prefix: str, contract: object) -> list[str]:
             value_type = p.get("valueType")
             if value_type not in ALLOWED_VALUE_TYPES:
                 errors.append(f"{prefix}: DYNAMIC_SUFFIX_INT_GT valueType must be one of {ALLOWED_VALUE_TYPES}, got {value_type!r}")
+            if not _is_strict_int(p.get("thresholdExclusive")):
+                errors.append(f"{prefix}: INVALID_ACTIVATION_THRESHOLD: DYNAMIC_SUFFIX_INT_GT thresholdExclusive must be a strict int, got {p.get('thresholdExclusive')!r}")
         elif kind == "FIXED_INT_ANY_GT_AND_NONEMPTY_SET":
             int_keys = p.get("integerKeys")
             if not isinstance(int_keys, list) or not int_keys:
                 errors.append(f"{prefix}: FIXED_INT_ANY_GT_AND_NONEMPTY_SET integerKeys must be a non-empty list")
             else:
+                if int_keys != sorted(int_keys):
+                    errors.append(f"{prefix}: FIXED_INT_ANY_GT_AND_NONEMPTY_SET integerKeys must be sorted")
+                seen_keys: set[str] = set()
                 for k in int_keys:
                     if not isinstance(k, str) or not k:
                         errors.append(f"{prefix}: FIXED_INT_ANY_GT_AND_NONEMPTY_SET integerKeys must be non-empty strings")
-            if not isinstance(p.get("requiredNonEmptySetKey"), str) or not p.get("requiredNonEmptySetKey"):
+                    elif k in seen_keys:
+                        errors.append(f"{prefix}: FIXED_INT_ANY_GT_AND_NONEMPTY_SET integerKeys contains duplicate '{k}'")
+                    seen_keys.add(k)
+            if not _is_strict_int(p.get("thresholdExclusive")):
+                errors.append(f"{prefix}: INVALID_ACTIVATION_THRESHOLD: FIXED_INT_ANY_GT_AND_NONEMPTY_SET thresholdExclusive must be a strict int, got {p.get('thresholdExclusive')!r}")
+            rnsk = p.get("requiredNonEmptySetKey")
+            if not isinstance(rnsk, str) or not rnsk:
                 errors.append(f"{prefix}: FIXED_INT_ANY_GT_AND_NONEMPTY_SET requiredNonEmptySetKey must be a non-empty string")
         elif kind == "INT_KEY_GT":
-            if not isinstance(p.get("key"), str) or not p.get("key"):
+            key = p.get("key")
+            if not isinstance(key, str) or not key:
                 errors.append(f"{prefix}: INT_KEY_GT key must be a non-empty string")
-            if not isinstance(p.get("thresholdExclusive"), int):
-                errors.append(f"{prefix}: INT_KEY_GT thresholdExclusive must be an integer")
+            if not _is_strict_int(p.get("thresholdExclusive")):
+                errors.append(f"{prefix}: INVALID_ACTIVATION_THRESHOLD: INT_KEY_GT thresholdExclusive must be a strict int, got {p.get('thresholdExclusive')!r}")
         elif kind == "BOOLEAN_KEY_TRUE":
-            if not isinstance(p.get("key"), str) or not p.get("key"):
+            key = p.get("key")
+            if not isinstance(key, str) or not key:
                 errors.append(f"{prefix}: BOOLEAN_KEY_TRUE key must be a non-empty string")
 
-        pred_id = f"{kind}:{json.dumps(p, sort_keys=True, default=str)}"
+        pred_id = _predicate_id(p)
         if pred_id in seen_predicates:
             errors.append(f"{prefix}: duplicate activationContract predicate")
         seen_predicates.add(pred_id)
@@ -841,6 +1004,7 @@ def _validate_call_site_conditions(
     conditions: object,
     covered: list[str],
     preference_keys: list[str],
+    activation_contract: object,
 ) -> list[str]:
     errors: list[str] = []
     if not isinstance(conditions, dict):
@@ -849,6 +1013,13 @@ def _validate_call_site_conditions(
 
     covered_set = set(covered) if isinstance(covered, list) else set()
     preference_set = set(preference_keys) if isinstance(preference_keys, list) else set()
+
+    # Build the set of activation predicates this record allows call conditions to match.
+    allowed_activation_preds: set[str] = set()
+    if isinstance(activation_contract, dict) and activation_contract.get("mode") == "ANY_OF":
+        for p in activation_contract.get("predicates", []):
+            if isinstance(p, dict):
+                allowed_activation_preds.add(_predicate_id(p))
 
     for call_id, cond in conditions.items():
         if not isinstance(call_id, str):
@@ -883,14 +1054,21 @@ def _validate_call_site_conditions(
                 errors.append(f"{prefix}: callSiteConditions '{call_id}' INT_KEY_GT key must be a non-empty string")
             elif key not in preference_set:
                 errors.append(f"{prefix}: callSiteConditions '{call_id}' uses key '{key}' not in preferenceKeys")
-            if not isinstance(cond.get("thresholdExclusive"), int):
-                errors.append(f"{prefix}: callSiteConditions '{call_id}' INT_KEY_GT thresholdExclusive must be an integer")
+            if not _is_strict_int(cond.get("thresholdExclusive")):
+                errors.append(f"{prefix}: INVALID_ACTIVATION_THRESHOLD: callSiteConditions '{call_id}' INT_KEY_GT thresholdExclusive must be a strict int, got {cond.get('thresholdExclusive')!r}")
         elif kind == "BOOLEAN_KEY_TRUE":
             key = cond.get("key")
             if not isinstance(key, str) or not key:
                 errors.append(f"{prefix}: callSiteConditions '{call_id}' BOOLEAN_KEY_TRUE key must be a non-empty string")
             elif key not in preference_set:
                 errors.append(f"{prefix}: callSiteConditions '{call_id}' uses key '{key}' not in preferenceKeys")
+
+        # The condition predicate must be exactly one of the record's activation predicates.
+        if allowed_activation_preds and _predicate_id(cond) not in allowed_activation_preds:
+            errors.append(
+                f"{prefix}: CALL_SITE_CONDITION_NOT_ACTIVATION_BRANCH: "
+                f"callSiteConditions '{call_id}' does not match any activationContract predicate"
+            )
 
     return errors
 
@@ -925,6 +1103,25 @@ def validate(registry: dict, strict: bool = True) -> list[str]:
         ):
             if field not in rec:
                 errors.append(f"{prefix}: missing field '{field}'")
+
+        unknown = set(rec.keys()) - ALLOWED_RECORD_FIELDS
+        for k in sorted(unknown):
+            errors.append(f"{prefix}: unknown record field '{k}'")
+
+        # preferenceKeys must be a sorted list of unique non-empty strings.
+        pks = rec.get("preferenceKeys")
+        if isinstance(pks, list):
+            if pks != sorted(pks):
+                errors.append(f"{prefix}: preferenceKeys must be sorted")
+            seen_pks: set[str] = set()
+            for pk in pks:
+                if not isinstance(pk, str) or not pk:
+                    errors.append(f"{prefix}: preferenceKeys must contain non-empty strings")
+                elif pk in seen_pks:
+                    errors.append(f"{prefix}: preferenceKeys contains duplicate '{pk}'")
+                seen_pks.add(pk)
+        else:
+            errors.append(f"{prefix}: preferenceKeys must be a list")
 
         if rec.get("batch") not in ("P3.3A", "P3.3B"):
             errors.append(f"{prefix}: batch must be 'P3.3A' or 'P3.3B', got {rec.get('batch')!r}")
@@ -997,20 +1194,17 @@ def validate(registry: dict, strict: bool = True) -> list[str]:
             errors.extend(_validate_activation_contract(prefix, rec["activationContract"]))
 
             # preferenceKeys must not enumerate dynamic suffix keys
-            ac = rec.get("activationContract") or {}
-            pred_kinds = {p.get("kind") for p in ac.get("predicates", []) if isinstance(p, dict)}
-            if "DYNAMIC_SUFFIX_INT_GT" in pred_kinds:
-                for pk in rec.get("preferenceKeys", []):
-                    if isinstance(pk, str) and pk.endswith(ac.get("predicates", [{}])[0].get("keySuffix", "")):
-                        # Check if this specific key suffix is the dynamic one
-                        for p in ac.get("predicates", []):
-                            if p.get("kind") == "DYNAMIC_SUFFIX_INT_GT" and isinstance(p.get("keySuffix"), str):
-                                if pk.endswith(p["keySuffix"]):
-                                    errors.append(
-                                        f"{prefix}: preferenceKeys must not enumerate dynamic suffix key '{pk}'; "
-                                        "it is already covered by activationContract DYNAMIC_SUFFIX_INT_GT"
-                                    )
-                                    break
+            ac = rec.get("activationContract")
+            if isinstance(ac, dict):
+                for p in ac.get("predicates", []):
+                    if isinstance(p, dict) and p.get("kind") == "DYNAMIC_SUFFIX_INT_GT" and isinstance(p.get("keySuffix"), str):
+                        suffix = p["keySuffix"]
+                        for pk in rec.get("preferenceKeys", []):
+                            if isinstance(pk, str) and pk.endswith(suffix):
+                                errors.append(
+                                    f"{prefix}: preferenceKeys must not enumerate dynamic suffix key '{pk}'; "
+                                    "it is already covered by activationContract DYNAMIC_SUFFIX_INT_GT"
+                                )
 
         if "callSiteConditions" in rec:
             errors.extend(_validate_call_site_conditions(
@@ -1018,7 +1212,40 @@ def validate(registry: dict, strict: bool = True) -> list[str]:
                 rec["callSiteConditions"],
                 rec.get("coveredCallSites", []),
                 rec.get("preferenceKeys", []),
+                rec.get("activationContract"),
             ))
+
+        # runtimeConfigKeys validation and bidirectional preference key invariants.
+        ac = rec.get("activationContract")
+        csc = rec.get("callSiteConditions")
+        if "runtimeConfigKeys" in rec:
+            fixed_activation: set[str] = set()
+            call_condition: set[str] = set()
+            if isinstance(ac, dict) and ac.get("mode") == "ANY_OF":
+                for p in ac.get("predicates", []):
+                    if not isinstance(p, dict):
+                        continue
+                    kind = p.get("kind")
+                    if kind == "BOOLEAN_KEY_TRUE":
+                        fixed_activation.add(p.get("key", ""))
+                    elif kind == "INT_KEY_GT":
+                        fixed_activation.add(p.get("key", ""))
+                    elif kind == "FIXED_INT_ANY_GT_AND_NONEMPTY_SET":
+                        for k in p.get("integerKeys", []):
+                            fixed_activation.add(k)
+                        fixed_activation.add(p.get("requiredNonEmptySetKey", ""))
+            if isinstance(csc, dict):
+                for cond in csc.values():
+                    if not isinstance(cond, dict):
+                        continue
+                    kind = cond.get("kind")
+                    if kind in ("BOOLEAN_KEY_TRUE", "INT_KEY_GT"):
+                        call_condition.add(cond.get("key", ""))
+            errors.extend(_validate_runtime_config_keys(
+                prefix, rec["runtimeConfigKeys"], fixed_activation, call_condition
+            ))
+
+        errors.extend(_validate_preference_key_invariants(prefix, rec))
 
         # whole-file / whole-function gate
         covered = rec.get("coveredCallSites")
@@ -1075,7 +1302,7 @@ def _canonical(registry: dict) -> dict:
 
     records = reg.get("records", [])
     for rec in records:
-        for field in ("preferenceKeys", "hookTargets", "testEvidence", "coveredCallSites"):
+        for field in ("preferenceKeys", "runtimeConfigKeys", "hookTargets", "testEvidence", "coveredCallSites"):
             if isinstance(rec.get(field), list):
                 rec[field] = sorted(rec[field])
         if isinstance(rec.get("activationContract"), dict):

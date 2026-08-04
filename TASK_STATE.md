@@ -755,7 +755,9 @@ Next: P3.3A approved; P3.3B engineering complete and in R2 review; P3.3C may sta
 
 ## P3.3B GlobalActions and AlarmCompat LEGACY_EXCEPTION 登记
 
-State: `R2_REVIEW_REQUIRED`
+State: `R2_REPAIR_COMPLETE`（修复完成，等待下一轮 R2 independent review）
+
+R2 修复目标 HEAD: `fa74d4f3c1d4b2f10c519ac154e5172bd2fa39d7`
 
 文件：
 
@@ -763,10 +765,13 @@ State: `R2_REVIEW_REQUIRED`
 - docs/audit/A13_LEGACY_EXCEPTION_REGISTRY.json
 - tools/build_legacy_exception_registry.py
 - tools/validate_legacy_exception_registry.py
+- tools/legacy_exception_source_contract.py（新增）
 - tools/tests/test_legacy_exception_registry.py
 - tools/tests/test_p33b_legacy_exception_routes.py
+- tools/tests/test_legacy_exception_source_contract.py（新增）
 - docs/process/tasks/A13-P3.3B-GLOBALACTIONS-ALARMCOMPAT-EXCEPTIONS.md
 - docs/process/tasks/A13-P3.3B-R1-ACTIVATION-CONTRACT-REPAIR.md
+- docs/process/tasks/A13-P3.3B-R2-SOURCE-LOGIC-VALIDATOR-REPAIR.md
 - docs/process/handoffs/A13-HANDOFF-2026-08-03-P3.3B.md
 - TASK_STATE.md
 - SMART_OPERATION_STATE.md
@@ -807,8 +812,18 @@ State: `R2_REVIEW_REQUIRED`
   - setupStatusBar 标记为 UNCONDITIONAL；
   - AlarmCompatServiceHook 区分 various_alarmcompat（activation）与 various_alarmcompat_apps（runtime allowlist 配置）；
   - route evidence 测试改为从生产源码和 committed registry 独立解析，不使用 LEGACY_EXCEPTION_SEEDS 作为 expected；
-- build_legacy_exception_registry.py 输出 schema v3，validate/canonical_diff 覆盖 activationContract / callSiteConditions；
-- A13_LEGACY_EXCEPTION_REGISTRY.json 重新生成，8 条 records，P3.3A 4 条、P3.3B 4 条，cover 19 个 legacy call sites，firstBatchSize 保持 4。
+- P3.3B-R2 修复（见 docs/process/tasks/A13-P3.3B-R2-SOURCE-LOGIC-VALIDATOR-REPAIR.md）：
+  - 新增 tools/legacy_exception_source_contract.py 只读 source contract parser，从 Java/Kotlin 源码结构化推导 activation、call-site condition、runtimeConfigKeys、preferenceKeys；
+  - needGlobalActions() 证据改由 balanced-brace function extraction、boolean expression 拆析、if/return 结构验证，能区分 OR/AND、证明 app-set 非空属于 media 分支并受 ! 取反；
+  - setupForegroundMonitor 证据从 SystemUiInstaller 与 GlobalActions 源码分别推导，第三个 call 必须位于 various_showcallui > 0 分支；
+  - build_legacy_exception_registry.py 升级到 schema v4；
+  - 新增 runtimeConfigKeys（可选），AlarmCompatServiceHook 区分 various_alarmcompat（activation）与 various_alarmcompat_apps（runtime）；
+  - validator fail-closed：非 object 的 activationContract 不报 AttributeError/KeyError，threshold 拒绝 string/bool/float/null，精确 allowed/required 字段集、canonical 排序、重复/空 predicate、UNCONDITIONAL 携带 predicate、unknown field 等；
+  - callSiteConditions 必须 canonical 等于 activationContract 中某个 predicate，否则 CALL_SITE_CONDITION_NOT_ACTIVATION_BRANCH；
+  - preferenceKeys 双向不变量：等于 sorted(fixedActivationKeys ∪ callConditionKeys ∪ runtimeKeys)；
+  - test_p33b 重构为 generator + source contract + fail-closed + mutation + source mutation 五类测试；
+  - 新增 test_legacy_exception_source_contract.py 覆盖 source parser 与 mutation；
+  - A13_LEGACY_EXCEPTION_REGISTRY.json 重新生成，schema v4，provenance 刷新，8 records / 19 covered calls / firstBatchSize 4 保持不变。
 ```
 
 验证：
@@ -817,10 +832,11 @@ State: `R2_REVIEW_REQUIRED`
 - python tools/build_legacy_exception_registry.py --build                 -> 0
 - python tools/build_legacy_exception_registry.py --check                 -> 0
 - python tools/validate_legacy_exception_registry.py                      -> 0
-- python -m unittest tools.tests.test_legacy_exception_registry           -> 55/55 pass
-- python -m unittest tools.tests.test_p33b_legacy_exception_routes        -> 59/59 pass
+- python -m unittest tools.tests.test_legacy_exception_registry           -> 69/69 pass
+- python -m unittest tools.tests.test_p33b_legacy_exception_routes        -> 86/86 pass
+- python -m unittest tools.tests.test_legacy_exception_source_contract    -> 40/40 pass
 - python -m unittest tools.tests.test_hook_ownership_inventory            -> 2/2 pass
-- python -m unittest discover -s tools/tests -p "test_*.py"               -> 337/337 pass
+- python -m unittest discover -s tools/tests -p "test_*.py"               -> 416/416 pass
 - python tools/check-invariants.py                                        -> 0, no violations
 - python tools/check-compat-contracts.py                                  -> 0
 - python tools/check_automation_state.py                                  -> 0
@@ -863,7 +879,13 @@ Push: `origin/devin/a13-rom-intelligence-audit`
 - hookTargets 仍为手工摘录，需随 ROM 版本持续校验。
 ```
 
-Next: P3.3B is R2_REVIEW_REQUIRED; P3.3C may start only after R2 APPROVE; P3.3D/E and P3.4 remain planned but not started; toolchain upgrades remain blocked.
+Commit: 待提交（本次 R2 修复将生成一个 checkpoint commit 并 push 到 origin/devin/a13-rom-intelligence-audit）
+
+Push: 待推送
+
+CI: 待 GitHub Actions A13 Fast/Full CI 验证
+
+Next: P3.3B R2 修复完成，进入独立 R2 review；P3.3C 仍 blocked 直到 R2 APPROVE；P3.3D/E 和 P3.4 remain planned but not started；toolchain upgrades remain blocked。
 
 ---
 
