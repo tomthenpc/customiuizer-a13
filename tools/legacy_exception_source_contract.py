@@ -108,6 +108,101 @@ def _skip_whitespace(text: str, start: int) -> int:
     return n
 
 
+def _in_string_or_comment(text: str, pos: int) -> bool:
+    """Return True if `pos` lies inside a string literal or Java/Kotlin comment."""
+    in_string: str | None = None
+    in_line_comment = False
+    in_block_comment = False
+    for i, ch in enumerate(text):
+        if i > pos:
+            return False
+        if in_line_comment:
+            if i == pos:
+                return True
+            if ch == "\n":
+                in_line_comment = False
+            continue
+        if in_block_comment:
+            if i == pos:
+                return True
+            if ch == "*" and i + 1 < len(text) and text[i + 1] == "/":
+                in_block_comment = False
+            continue
+        if in_string:
+            if i == pos:
+                return True
+            if ch == "\\" and i + 1 < len(text):
+                continue
+            if ch == in_string:
+                in_string = None
+            continue
+        if ch == "/" and i + 1 < len(text):
+            nxt = text[i + 1]
+            if nxt == "/":
+                in_line_comment = True
+                continue
+            if nxt == "*":
+                in_block_comment = True
+                continue
+        if ch == '"' or ch == "'":
+            in_string = ch
+            if i == pos:
+                return True
+        if i == pos:
+            return False
+    return False
+
+
+def _skip_whitespace_and_comments(text: str, start: int) -> int:
+    """Return the first index >= start that is not whitespace or a comment."""
+    n = len(text)
+    i = start
+    in_line_comment = False
+    in_block_comment = False
+    in_string: str | None = None
+    while i < n:
+        ch = text[i]
+        if in_line_comment:
+            if ch == "\n":
+                in_line_comment = False
+            i += 1
+            continue
+        if in_block_comment:
+            if ch == "*" and i + 1 < n and text[i + 1] == "/":
+                in_block_comment = False
+                i += 2
+                continue
+            i += 1
+            continue
+        if in_string:
+            if ch == "\\" and i + 1 < n:
+                i += 2
+                continue
+            if ch == in_string:
+                in_string = None
+            i += 1
+            continue
+        if ch.isspace():
+            i += 1
+            continue
+        if ch == "/" and i + 1 < n:
+            nxt = text[i + 1]
+            if nxt == "/":
+                in_line_comment = True
+                i += 2
+                continue
+            if nxt == "*":
+                in_block_comment = True
+                i += 2
+                continue
+        if ch == '"' or ch == "'":
+            in_string = ch
+            i += 1
+            continue
+        return i
+    return n
+
+
 def _closing_for_open_paren(text: str, open_pos: int) -> int:
     """Find the index of the `)` matching the `(` at open_pos."""
     block = _balanced_range(text, open_pos, "(", ")")
@@ -135,19 +230,67 @@ def _strip_outer_parens(expr: str) -> str:
 
 
 def _find_function_definition(text: str, func_name: str, language: str) -> tuple[int, int] | None:
-    """Return (match_start, brace_start) for the function definition."""
+    """Return (match_start, brace_start) for the unique function definition.
+
+    The match must be a real declaration, not a call or a string/comment.
+    Multiple matching definitions, Kotlin expression bodies, or unsupported
+    declaration forms are treated as errors and raise SourceStructureError.
+    """
     if language == "kt":
         pattern = re.compile(rf"\bfun\s+{re.escape(func_name)}\s*\(")
     else:
         pattern = re.compile(rf"(?<![(\w])\b{re.escape(func_name)}\s*\(")
+
+    candidates: list[tuple[int, int]] = []
     for match in pattern.finditer(text):
-        brace = text.find("{", match.end())
-        if brace == -1:
+        # Locate the actual opening parenthesis of the parameter list.
+        paren = _find_next(text, match.start(), "(")
+        if paren == -1:
             continue
-        snippet = text[match.end() : brace]
-        if ")" in snippet and ";" not in snippet:
-            return match.start(), brace
-    return None
+        if _in_string_or_comment(text, match.start()):
+            continue
+        params = _balanced_range(text, paren, "(", ")")
+        if params is None:
+            continue
+        params_end = paren + len(params) - 1
+        # Skip Java throws/annotations and Kotlin return-type annotations.
+        i = _skip_whitespace_and_comments(text, params_end + 1)
+        while i < len(text):
+            # Java: `throws Exception, ...`
+            if text.startswith("throws", i):
+                i += 6
+                while i < len(text):
+                    if text[i] in ",":
+                        i += 1
+                        i = _skip_whitespace_and_comments(text, i)
+                        continue
+                    if text[i].isspace():
+                        i = _skip_whitespace_and_comments(text, i)
+                        continue
+                    if text[i] == "{" or text[i] == ";" or text[i] == "=" or text[i] == "(":
+                        break
+                    i += 1
+                continue
+            break
+        if i >= len(text):
+            continue
+        nxt = text[i]
+        if nxt == "{":
+            candidates.append((match.start(), i))
+            continue
+        if nxt == "=":
+            raise SourceStructureError(
+                f"{func_name} has an expression body; that is not supported by the source contract parser"
+            )
+        # Any other next token is not a block-body definition (call, type cast,
+        # statement, etc.): ignore this candidate.
+    if not candidates:
+        return None
+    if len(candidates) > 1:
+        raise SourceStructureError(
+            f"{func_name} has multiple definitions or overloads; source contract extraction is ambiguous"
+        )
+    return candidates[0]
 
 
 def extract_function_body(text: str, func_name: str, language: str = "java") -> str | None:
@@ -160,15 +303,6 @@ def extract_function_body(text: str, func_name: str, language: str = "java") -> 
 
 def extract_balanced_range(text: str, start: int) -> str | None:
     return _balanced_range(text, start, "{", "}")
-
-
-def _expr_char_state(text: str, i: int) -> str:
-    """Return the lexical state at index i: 'code', 'string', 'line_comment',
-    or 'block_comment'.  Used by expression parsers that do not need full
-    brace counting but must skip strings/comments."""
-    # Simpler: callers use _balanced_range where possible.  This is a stub
-    # kept for future extension.
-    return "code"
 
 
 def parse_boolean_expression(expr: str) -> tuple[list[str], list[str]]:
@@ -264,14 +398,74 @@ def _contains_token(expr: str, token: str) -> bool:
     return _normalize_expr(expr).find(_normalize_expr(token)) != -1
 
 
+def _find_next_at_depth(text: str, start: int, char: str) -> int:
+    """Return the next `char` at brace/comment/string-aware depth 0."""
+    n = len(text)
+    i = start
+    depth = 0
+    in_string: str | None = None
+    in_line_comment = False
+    in_block_comment = False
+    while i < n:
+        ch = text[i]
+        if in_line_comment:
+            if ch == "\n":
+                in_line_comment = False
+            i += 1
+            continue
+        if in_block_comment:
+            if ch == "*" and i + 1 < n and text[i + 1] == "/":
+                in_block_comment = False
+                i += 2
+                continue
+            i += 1
+            continue
+        if in_string:
+            if ch == "\\" and i + 1 < n:
+                i += 2
+                continue
+            if ch == in_string:
+                in_string = None
+            i += 1
+            continue
+        if ch == "/" and i + 1 < n:
+            nxt = text[i + 1]
+            if nxt == "/":
+                in_line_comment = True
+                i += 2
+                continue
+            if nxt == "*":
+                in_block_comment = True
+                i += 2
+                continue
+        if ch == '"' or ch == "'":
+            in_string = ch
+            i += 1
+            continue
+        if ch in "({[":
+            depth += 1
+        elif ch in ")]}":
+            depth -= 1
+        elif ch == char and depth == 0:
+            return i
+        i += 1
+    return -1
+
+
 def _extract_all_if_blocks(text: str, min_depth: int = 1) -> list[dict]:
     """Extract all `if (condition) { body }` blocks in `text`.
 
     Returns a list of dicts with `condition`, `body`, `start`, `end`,
-    `body_start`, `body_end`.
+    `body_start`, `body_end`.  Candidates inside strings or comments are
+    ignored, and candidate `if` tokens are checked to avoid matches inside
+    identifiers.
     """
     blocks: list[dict] = []
     for m in re.finditer(r"\bif\s*\(", text):
+        # Skip `if` tokens that are inside string literals or comments, or that
+        # are part of a larger identifier (e.g. `notifyif(` would not match).
+        if _in_string_or_comment(text, m.start()):
+            continue
         open_paren = text.find("(", m.start())
         if open_paren == -1:
             continue
@@ -279,10 +473,11 @@ def _extract_all_if_blocks(text: str, min_depth: int = 1) -> list[dict]:
         if close_paren == -1:
             continue
         condition = text[open_paren + 1 : close_paren].strip()
-        after = _skip_whitespace(text, close_paren + 1)
+        after = _skip_whitespace_and_comments(text, close_paren + 1)
         if after >= len(text) or text[after] != "{":
-            # one-statement if: find the next `;` at the same nesting level
-            stmt_end = text.find(";", after)
+            # one-statement if: find the next `;` at the same nesting level,
+            # skipping string/comment boundaries and nested braces.
+            stmt_end = _find_next_at_depth(text, after, ";")
             if stmt_end == -1:
                 continue
             body = text[after : stmt_end + 1]
@@ -416,21 +611,6 @@ def _extract_preference_keys(text: str) -> set[str]:
         r"\s*\(\s*\"([^\"]+)\""
     )
     return {m.group(1) for m in pattern.finditer(text)}
-
-
-def _match_action_predicate(expr: str) -> bool:
-    """Check whether an expression matches the dynamic _action predicate."""
-    n = _normalize_expr(expr)
-    # key != null
-    if "key!=null" in n or "null!=key" in n:
-        return True
-    if "key.endsWith(\"_action\")" in n:
-        return True
-    if "value instanceof Integer" in n:
-        return True
-    if re.search(r"\(?Integer\)?\s*value\s*>\s*1", n):
-        return True
-    return False
 
 
 def _is_action_chain(condition: str) -> bool:
@@ -569,11 +749,11 @@ def derive_setup_global_actions_activation() -> dict:
 
 
 def _extract_return_in_block(block: str) -> str:
-    """Return the expression of the first `return` inside `block`."""
-    m = re.search(r"\breturn\s+([^;]+);", block)
-    if not m:
+    """Return the expression of the first top-level `return` inside `block`."""
+    returns = _find_top_level_returns(block)
+    if not returns:
         return ""
-    return m.group(1).strip()
+    return returns[0]["expr"]
 
 
 def _is_foreground_activation_condition(condition: str) -> tuple[bool, list[dict] | None]:
@@ -585,9 +765,10 @@ def _is_foreground_activation_condition(condition: str) -> tuple[bool, list[dict
     predicates: list[dict] = []
     for op in operands:
         n = _normalize_expr(op)
-        if "various_showcallui" in n and re.search(r"getStringAsInt.*>\s*0", n):
+        keys = _extract_preference_keys(op)
+        if "various_showcallui" in keys and re.search(r"getStringAsInt.*>\s*0", n):
             predicates.append({"kind": "INT_KEY_GT", "key": "various_showcallui", "thresholdExclusive": 0})
-        elif "controls_volumecursor" in n and "getBoolean" in n:
+        elif "controls_volumecursor" in keys and "getBoolean" in n:
             predicates.append({"kind": "BOOLEAN_KEY_TRUE", "key": "controls_volumecursor"})
         else:
             return False, None
@@ -759,9 +940,9 @@ def derive_alarm_compat_activation() -> dict:
     call_pos = _get_call_pos(text, call)
     condition = get_enclosing_if_condition(text, call_pos)
     if condition is None:
-        raise SourceContractError("AlarmCompatServiceHook installer condition not found")
-    n = _normalize_expr(condition)
-    if "various_alarmcompat" in n and "getBoolean" in n:
+        return {"mode": "UNCONDITIONAL"}
+    keys = _extract_preference_keys(condition)
+    if keys == {"various_alarmcompat"}:
         return {"mode": "ANY_OF", "predicates": [{"kind": "BOOLEAN_KEY_TRUE", "key": "various_alarmcompat"}]}
     raise SourceContractError(f"AlarmCompatServiceHook activation not derivable: {condition}")
 

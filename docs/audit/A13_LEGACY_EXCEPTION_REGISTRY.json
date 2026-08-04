@@ -294,8 +294,8 @@
       "exitCondition": "Create a typed system_server FeatureSpec for USB default mode and expose a cross-process contract for the Settings variant (P3.3C)."
     }
   ],
-  "sourceCommit": "fa74d4f3c1d4b2f10c519ac154e5172bd2fa39d7",
+  "sourceCommit": "33ce1ab5969d61c94c0ce3f7942c8dac02a5c579",
   "sourceTree": "3c99e89a99f32263ed34402765ce5c11eb4d9de1",
   "generatorVersion": "3e6228b2b75f02b7",
-  "generatedAt": "2026-08-04T01:56:32+00:00"
+  "generatedAt": "2026-08-04T14:01:27+00:00"
 }

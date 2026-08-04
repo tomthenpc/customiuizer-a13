@@ -14,7 +14,10 @@ for route, preference, hook-target or call-site expected values.
 
 from __future__ import annotations
 
+import ast
+import contextlib
 import copy
+import inspect
 import json
 import re
 import sys
@@ -54,6 +57,44 @@ def call_ids_in_function(rel: str, func: str) -> list[str]:
         for s in sites
         if s["rel"] == rel and s["function"] == func and s["category"] == "LEGACY_EXCEPTION"
     ]
+
+
+@contextlib.contextmanager
+def _override_source(rel: str, text: str):
+    """Temporarily point the source contract parser at an in-memory file."""
+    original_root = sc.SOURCE_ROOT
+    with tempfile.TemporaryDirectory() as tmp:
+        root = Path(tmp) / "app" / "src" / "main" / "java"
+        path = root / rel
+        path.parent.mkdir(parents=True, exist_ok=True)
+        path.write_text(text, encoding="utf-8")
+        sc.SOURCE_ROOT = root
+        try:
+            yield
+        finally:
+            sc.SOURCE_ROOT = original_root
+
+
+def _source_truth_classes_call_build_registry() -> list[str]:
+    """Return any source-truth test class that contains a real Call to build_registry."""
+    offenders: list[str] = []
+    source_truth_classes = (
+        P3_3B_LegacyExceptionRouteTest,
+        P3_3B_SourceMutationTest,
+    )
+    # ActivationContractMutationTest and IndependentTruthTest live in other files; we only
+    # assert this file's classes here.
+    for cls in source_truth_classes:
+        source = inspect.getsource(cls)
+        tree = ast.parse(source)
+        for node in ast.walk(tree):
+            if isinstance(node, ast.Call):
+                func = node.func
+                if isinstance(func, ast.Attribute) and func.attr == "build_registry":
+                    offenders.append(f"{cls.__name__} -> build_registry")
+                if isinstance(func, ast.Name) and func.id == "build_registry":
+                    offenders.append(f"{cls.__name__} -> build_registry")
+    return offenders
 
 
 # ---------------------------------------------------------------------------
@@ -286,6 +327,13 @@ class P3_3B_LegacyExceptionRouteTest(unittest.TestCase):
 
 
 class P3_3B_GeneratorConsistencyTest(unittest.TestCase):
+    """Tests that LEGACY_EXCEPTION_SEEDS can reproduce the committed registry.
+
+    This is the ONLY test class in this module that may call build_registry().
+    Route, activation, preference and call-site expected values must be derived
+    from production source and the committed JSON, not from the generator.
+    """
+
     def setUp(self) -> None:
         self.registry = load_json(REGISTRY_FILE)
 
@@ -297,10 +345,9 @@ class P3_3B_GeneratorConsistencyTest(unittest.TestCase):
         self.assertEqual(diffs, [])
 
     def test_build_registry_is_not_route_golden(self) -> None:
-        """Route/call-site/preference expected values must not be taken from build_registry."""
-        # This is a structural guarantee: positive route tests above import
-        # `legacy_exception_source_contract`, not `builder.build_registry`.
-        self.assertNotIn("build_registry", sc.__doc__.lower() or "")
+        """AST gate: source-truth test classes in this file must not call build_registry."""
+        offenders = _source_truth_classes_call_build_registry()
+        self.assertEqual(offenders, [], "source-truth classes must not call build_registry")
 
 
 # ---------------------------------------------------------------------------
@@ -431,30 +478,24 @@ class P3_3B_ActivationContractValidationTest(unittest.TestCase):
         self.assertTrue(any("duplicate" in e.lower() for e in errors))
 
     def test_45_activation_contract_in_canonical_diff(self) -> None:
-        sites = builder.scan_legacy_call_sites()
-        expected = builder.build_registry(sites)
         reg = copy.deepcopy(self.registry)
         rec = record_by_owner(reg, "GlobalActions.setupGlobalActions")
         rec["activationContract"]["mode"] = "UNCONDITIONAL"
-        diffs = builder.canonical_diff(expected, reg)
+        diffs = builder.canonical_diff(self.registry, reg)
         self.assertTrue(any("activationContract" in d or "mode" in d for d in diffs))
 
     def test_46_call_site_conditions_in_canonical_diff(self) -> None:
-        sites = builder.scan_legacy_call_sites()
-        expected = builder.build_registry(sites)
         reg = copy.deepcopy(self.registry)
         rec = record_by_owner(reg, "GlobalActions.setupForegroundMonitor")
         rec["callSiteConditions"] = {}
-        diffs = builder.canonical_diff(expected, reg)
+        diffs = builder.canonical_diff(self.registry, reg)
         self.assertTrue(any("callSiteConditions" in d for d in diffs))
 
     def test_47_runtime_config_keys_in_canonical_diff(self) -> None:
-        sites = builder.scan_legacy_call_sites()
-        expected = builder.build_registry(sites)
         reg = copy.deepcopy(self.registry)
         rec = record_by_owner(reg, "AlarmCompatServiceHook")
         rec["runtimeConfigKeys"] = []
-        diffs = builder.canonical_diff(expected, reg)
+        diffs = builder.canonical_diff(self.registry, reg)
         self.assertTrue(any("runtimeConfigKeys" in d for d in diffs))
 
 
@@ -547,10 +588,15 @@ class P3_3B_CallSiteConditionValidationTest(unittest.TestCase):
 
 
 class P3_3B_ActivationContractMutationTest(unittest.TestCase):
+    """Schema mutations against a deep copy of the committed registry.
+
+    This class must not use build_registry() as the expected baseline; it uses
+    the committed JSON and canonical_diff() to detect drift.
+    """
+
     def setUp(self) -> None:
         self.registry = load_json(REGISTRY_FILE)
-        self.sites = builder.scan_legacy_call_sites()
-        self.expected = builder.build_registry(self.sites)
+        self.committed = copy.deepcopy(self.registry)
 
     def _mutate(self, owner: str, mutate: callable) -> dict:
         reg = copy.deepcopy(self.registry)
@@ -562,7 +608,7 @@ class P3_3B_ActivationContractMutationTest(unittest.TestCase):
         errors = builder.validate(reg)
         if errors:
             return
-        diffs = builder.canonical_diff(self.expected, reg)
+        diffs = builder.canonical_diff(self.committed, reg)
         self.assertTrue(diffs, message)
 
     def test_60_remove_dynamic_activation_contract(self) -> None:
@@ -721,8 +767,7 @@ class P3_3B_ActivationContractMutationTest(unittest.TestCase):
             "GlobalActions.setupGlobalActions",
             lambda r: (r.pop("activationContract", None), r.__setitem__("preferenceKeys", sorted(old_bogus_keys))),
         )
-        diffs = builder.canonical_diff(self.expected, reg)
-        self.assertTrue(diffs, "old seed-enumerated _action keys must not be accepted as expected")
+        self._assert_killed(reg, "old seed-enumerated _action keys must not be accepted as expected")
 
 
 # ---------------------------------------------------------------------------
@@ -732,114 +777,148 @@ class P3_3B_ActivationContractMutationTest(unittest.TestCase):
 
 class P3_3B_SourceMutationTest(unittest.TestCase):
     """Apply textual mutations to a temp copy of production source and verify
-    the source contract parser rejects them."""
+    the final source-derived contract extraction fails or produces a different
+    contract.  Intermediate parser assertions are replaced by calls to the
+    actual derive_*() entry points used by the registry.
+    """
 
     @classmethod
     def setUpClass(cls) -> None:
         cls.system_server = read_source("tv/withaibuild/customiuizer/installers/SystemServerInstaller.java")
         cls.system_ui = read_source("tv/withaibuild/customiuizer/installers/SystemUiInstaller.java")
+        cls.global_actions = read_source("tv/withaibuild/customiuizer/mods/GlobalActions.kt")
+
+    def _original_global_actions_activation(self) -> dict:
+        with _override_source(
+            "tv/withaibuild/customiuizer/installers/SystemServerInstaller.java",
+            self.system_server,
+        ):
+            return sc.derive_setup_global_actions_activation()
+
+    def _derive_global_actions_activation(self, text: str) -> dict:
+        with _override_source(
+            "tv/withaibuild/customiuizer/installers/SystemServerInstaller.java", text
+        ):
+            return sc.derive_setup_global_actions_activation()
+
+    def _derive_foreground_monitor_activation(self, text: str) -> dict:
+        with _override_source(
+            "tv/withaibuild/customiuizer/installers/SystemUiInstaller.java", text
+        ):
+            return sc.derive_setup_foreground_monitor_activation()
+
+    def _derive_foreground_call_site_conditions(self, text: str) -> dict[int, dict]:
+        with _override_source("tv/withaibuild/customiuizer/mods/GlobalActions.kt", text):
+            return sc.derive_setup_foreground_monitor_call_site_conditions()
 
     def test_ga_action_and_to_or(self) -> None:
         text = self.system_server.replace(
             'key != null && key.endsWith("_action") && value instanceof Integer && (Integer) value > 1',
             'key != null || key.endsWith("_action") || value instanceof Integer || (Integer) value > 1',
         )
-        body = sc.extract_function_body(text, "needGlobalActions", "java")
-        blocks = sc._extract_all_if_blocks(body)
-        _, operators = sc.parse_boolean_expression(blocks[0]["condition"])
-        self.assertIn("||", operators)
+        with self.assertRaises(sc.SourceContractError):
+            self._derive_global_actions_activation(text)
 
     def test_ga_remove_integer_guard(self) -> None:
         text = self.system_server.replace("value instanceof Integer", "value instanceof String")
-        body = sc.extract_function_body(text, "needGlobalActions", "java")
-        blocks = sc._extract_all_if_blocks(body)
-        norm = sc._normalize_expr(blocks[0]["condition"])
-        self.assertNotRegex(norm, r"value\s+instanceof\s+Integer")
+        with self.assertRaises(sc.SourceContractError):
+            self._derive_global_actions_activation(text)
 
     def test_ga_change_action_threshold(self) -> None:
         text = self.system_server.replace("(Integer) value > 1", "(Integer) value > 2")
-        body = sc.extract_function_body(text, "needGlobalActions", "java")
-        blocks = sc._extract_all_if_blocks(body)
-        norm = sc._normalize_expr(blocks[0]["condition"])
-        self.assertRegex(norm, r">\s*2")
+        with self.assertRaises(sc.SourceContractError):
+            self._derive_global_actions_activation(text)
 
     def test_ga_media_or_to_and(self) -> None:
         text = self.system_server.replace(
             'MainModule.mPrefs.getStringAsInt("controls_volumemedia_up", 0) > 0 || MainModule.mPrefs.getStringAsInt("controls_volumemedia_down", 0) > 0',
             'MainModule.mPrefs.getStringAsInt("controls_volumemedia_up", 0) > 0 && MainModule.mPrefs.getStringAsInt("controls_volumemedia_down", 0) > 0',
         )
-        body = sc.extract_function_body(text, "needGlobalActions", "java")
-        blocks = sc._extract_all_if_blocks(body)
-        _, operators = sc.parse_boolean_expression(blocks[1]["condition"])
-        self.assertEqual(operators, ["&&"])
+        with self.assertRaises(sc.SourceContractError):
+            self._derive_global_actions_activation(text)
 
     def test_ga_remove_media_up(self) -> None:
         text = self.system_server.replace(
             'MainModule.mPrefs.getStringAsInt("controls_volumemedia_up", 0) > 0 || ',
             '',
         )
-        body = sc.extract_function_body(text, "needGlobalActions", "java")
-        blocks = sc._extract_all_if_blocks(body)
-        norm = sc._normalize_expr(blocks[1]["condition"])
-        self.assertNotIn("controls_volumemedia_up", norm)
+        with self.assertRaises(sc.SourceContractError):
+            self._derive_global_actions_activation(text)
 
     def test_ga_remove_media_down(self) -> None:
         text = self.system_server.replace(
             ' || MainModule.mPrefs.getStringAsInt("controls_volumemedia_down", 0) > 0',
             '',
         )
-        body = sc.extract_function_body(text, "needGlobalActions", "java")
-        blocks = sc._extract_all_if_blocks(body)
-        norm = sc._normalize_expr(blocks[1]["condition"])
-        self.assertNotIn("controls_volumemedia_down", norm)
+        with self.assertRaises(sc.SourceContractError):
+            self._derive_global_actions_activation(text)
 
     def test_ga_remove_media_app_set(self) -> None:
         text = self.system_server.replace(
             'return !MainModule.mPrefs.getStringSet("controls_mediaplayer_apps").isEmpty();',
             'return false;',
         )
-        body = sc.extract_function_body(text, "needGlobalActions", "java")
-        blocks = sc._extract_all_if_blocks(body)
-        return_expr = sc._extract_return_in_block(blocks[1]["body"])
-        self.assertEqual(return_expr, "false")
+        with self.assertRaises(sc.SourceContractError):
+            self._derive_global_actions_activation(text)
 
     def test_ga_remove_nonempty_negation(self) -> None:
         text = self.system_server.replace(
             'return !MainModule.mPrefs.getStringSet("controls_mediaplayer_apps").isEmpty();',
             'return MainModule.mPrefs.getStringSet("controls_mediaplayer_apps").isEmpty();',
         )
-        body = sc.extract_function_body(text, "needGlobalActions", "java")
-        blocks = sc._extract_all_if_blocks(body)
-        return_expr = sc._extract_return_in_block(blocks[1]["body"])
-        self.assertFalse(return_expr.startswith("!"))
+        with self.assertRaises(sc.SourceContractError):
+            self._derive_global_actions_activation(text)
 
     def test_foreground_installer_or_to_and(self) -> None:
         text = self.system_ui.replace(
             'MainModule.mPrefs.getStringAsInt("various_showcallui", 0) > 0\n                || MainModule.mPrefs.getBoolean("controls_volumecursor")',
             'MainModule.mPrefs.getStringAsInt("various_showcallui", 0) > 0\n                && MainModule.mPrefs.getBoolean("controls_volumecursor")',
         )
-        call_pos = text.find("GlobalActions.setupForegroundMonitor(lpparam);")
-        condition = sc.get_enclosing_if_condition(text, call_pos)
-        _, operators = sc.parse_boolean_expression(condition)
-        self.assertEqual(operators, ["&&"])
+        with self.assertRaises(sc.SourceContractError):
+            self._derive_foreground_monitor_activation(text)
 
     def test_foreground_wrong_condition_key(self) -> None:
         text = self.system_ui.replace(
             'MainModule.mPrefs.getStringAsInt("various_showcallui", 0) > 0',
             'MainModule.mPrefs.getStringAsInt("controls_volumecursor", 0) > 0',
         )
-        call_pos = text.find("GlobalActions.setupForegroundMonitor(lpparam);")
-        condition = sc.get_enclosing_if_condition(text, call_pos)
-        self.assertNotIn("various_showcallui", sc._normalize_expr(condition))
+        with self.assertRaises(sc.SourceContractError):
+            self._derive_foreground_monitor_activation(text)
 
     def test_foreground_wrong_condition_threshold(self) -> None:
         text = self.system_ui.replace(
             'MainModule.mPrefs.getStringAsInt("various_showcallui", 0) > 0',
             'MainModule.mPrefs.getStringAsInt("various_showcallui", 0) > 1',
         )
-        call_pos = text.find("GlobalActions.setupForegroundMonitor(lpparam);")
-        condition = sc.get_enclosing_if_condition(text, call_pos)
-        self.assertRegex(sc._normalize_expr(condition), r">\s*1")
+        with self.assertRaises(sc.SourceContractError):
+            self._derive_foreground_monitor_activation(text)
+
+    def test_foreground_move_hook_outside_branch(self) -> None:
+        # Remove the `if (various_showcallui > 0) {` wrapping around the StatusBarStateControllerImpl hook.
+        mutated = self.global_actions.replace(
+            'if (MainModule.mPrefs.getStringAsInt("various_showcallui", 0) > 0) {\n                    ModuleHelper.hookAllMethods("com.android.systemui.statusbar.StatusBarStateControllerImpl"',
+            'ModuleHelper.hookAllMethods("com.android.systemui.statusbar.StatusBarStateControllerImpl"',
+        )
+        conditions = self._derive_foreground_call_site_conditions(mutated)
+        # The StatusBarStateControllerImpl call should no longer have a showcallui condition.
+        for cond in conditions.values():
+            if cond.get("key") == "various_showcallui":
+                raise AssertionError("StatusBarStateControllerImpl call site condition must not be derived after moving outside branch")
+
+    def test_foreground_empty_sibling_if_ignored(self) -> None:
+        # Add an empty showcallui sibling if before the real installer condition.
+        # The source-derived activation must remain unchanged.
+        call = 'GlobalActions.setupForegroundMonitor(lpparam);'
+        call_pos = self.system_ui.find(call)
+        real_if = self.system_ui.rfind('if (', 0, call_pos)
+        inserted = 'if (MainModule.mPrefs.getStringAsInt("various_showcallui", 0) > 0) { }\n'
+        mutated = self.system_ui[:real_if] + inserted + self.system_ui[real_if:]
+        derived = self._derive_foreground_monitor_activation(mutated)
+        expected = sc.derive_setup_foreground_monitor_activation()
+        self.assertEqual(
+            builder._canonical_activation_contract(derived),
+            builder._canonical_activation_contract(expected),
+        )
 
 
 if __name__ == "__main__":

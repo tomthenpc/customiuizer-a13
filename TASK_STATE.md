@@ -755,9 +755,11 @@ Next: P3.3A approved; P3.3B engineering complete and in R2 review; P3.3C may sta
 
 ## P3.3B GlobalActions and AlarmCompat LEGACY_EXCEPTION 登记
 
-State: `R2_REVIEW_REQUIRED`
+State: `R3_REVIEW_REQUIRED`
 
 R2 修复目标 HEAD: `fa74d4f3c1d4b2f10c519ac154e5172bd2fa39d7`
+
+R3 修复目标 HEAD: `33ce1ab5969d61c94c0ce3f7942c8dac02a5c579`
 
 EngineeringCommit: `372c59fd3515036b348baf7a19d6443e1993b8e7`
 
@@ -768,6 +770,16 @@ EngineeringCIRun: `30870297127`
 EngineeringCIJob: `91870748474`
 
 EngineeringCIResult: `PASS`
+
+R3EngineeringCommit: `pending`
+
+R3EngineeringTree: `pending`
+
+R3EngineeringCIRun: `pending`
+
+R3EngineeringCIJob: `pending`
+
+R3EngineeringCIResult: `pending`
 
 文件：
 
@@ -843,11 +855,12 @@ EngineeringCIResult: `PASS`
 - python tools/build_legacy_exception_registry.py --build                 -> 0
 - python tools/build_legacy_exception_registry.py --check                 -> 0
 - python tools/validate_legacy_exception_registry.py                      -> 0
-- python -m unittest tools.tests.test_legacy_exception_registry           -> 69/69 pass
-- python -m unittest tools.tests.test_p33b_legacy_exception_routes        -> 86/86 pass
-- python -m unittest tools.tests.test_legacy_exception_source_contract    -> 40/40 pass
+- python -m unittest tools.tests.test_legacy_exception_registry           -> 72/72 pass
+- python -m unittest tools.tests.test_p33b_legacy_exception_routes        -> 88/88 pass
+- python -m unittest tools.tests.test_legacy_exception_source_contract    -> 56/56 pass
 - python -m unittest tools.tests.test_hook_ownership_inventory            -> 2/2 pass
-- python -m unittest discover -s tools/tests -p "test_*.py"               -> 416/416 pass
+- python -m unittest tools.tests.test_p33b_completion_evidence            -> 1/1 pass
+- python -m unittest discover -s tools/tests -p "test_*.py"               -> 440/440 pass
 - python tools/check-invariants.py                                        -> 0, no violations
 - python tools/check-compat-contracts.py                                  -> 0
 - python tools/check_automation_state.py                                  -> 0
