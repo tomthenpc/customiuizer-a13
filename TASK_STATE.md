@@ -879,11 +879,11 @@ Push: `origin/devin/a13-rom-intelligence-audit`
 - hookTargets 仍为手工摘录，需随 ROM 版本持续校验。
 ```
 
-Commit: 待提交（本次 R2 修复将生成一个 checkpoint commit 并 push 到 origin/devin/a13-rom-intelligence-audit）
+Commit: `372c59fd3515036b348baf7a19d6443e1993b8e7`
 
-Push: 待推送
+Push: `origin/devin/a13-rom-intelligence-audit` (fa74d4f..372c59f)
 
-CI: 待 GitHub Actions A13 Fast/Full CI 验证
+CI: GitHub Actions A13 Fast CI run 30870297127, job 91870748474, result PASS (commit 372c59fd3515036b348baf7a19d6443e1993b8e7)
 
 Next: P3.3B R2 修复完成，进入独立 R2 review；P3.3C 仍 blocked 直到 R2 APPROVE；P3.3D/E 和 P3.4 remain planned but not started；toolchain upgrades remain blocked。
 
