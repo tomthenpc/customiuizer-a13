@@ -270,7 +270,7 @@ object Helpers {
             if (token != null) inputManager.hideSoftInputFromWindow(token, InputMethodManager.HIDE_NOT_ALWAYS)
         } catch (t: Throwable) {
             if (t is OutOfMemoryError || t is ThreadDeath || t is VirtualMachineError) throw t
-            t.printStackTrace()
+            SettingsDiagnostics.failure("Helpers.hideKeyboard", t)
         }
     }
 
@@ -356,7 +356,7 @@ object Helpers {
             }
         } catch (t: Throwable) {
             if (t is OutOfMemoryError || t is ThreadDeath || t is VirtualMachineError) throw t
-            t.printStackTrace()
+            SettingsDiagnostics.failure("Helpers.updateNewModsMarking", t)
         }
     }
 
@@ -466,7 +466,7 @@ object Helpers {
             (getAnimationScale.invoke(wm, type) as? Float) ?: 1.0f
         } catch (t: Throwable) {
             if (t is OutOfMemoryError || t is ThreadDeath || t is VirtualMachineError) throw t
-            t.printStackTrace()
+            SettingsDiagnostics.failure("Helpers.getAnimationScale", t)
             1.0f
         }
     }
@@ -491,7 +491,7 @@ object Helpers {
             setAnimationScale.invoke(wm, type, value)
         } catch (t: Throwable) {
             if (t is OutOfMemoryError || t is ThreadDeath || t is VirtualMachineError) throw t
-            t.printStackTrace()
+            SettingsDiagnostics.failure("Helpers.setAnimationScale", t)
         }
     }
 
@@ -501,7 +501,7 @@ object Helpers {
             context.packageManager.javaClass.getDeclaredMethod("getPackageInfoAsUser", String::class.java, Int::class.javaPrimitiveType, Int::class.javaPrimitiveType)
         } catch (t: Throwable) {
             if (t is OutOfMemoryError || t is ThreadDeath || t is VirtualMachineError) throw t
-            t.printStackTrace()
+            SettingsDiagnostics.failure("Helpers.getPackageInfoAsUser", t)
             null
         }
     }
@@ -538,7 +538,7 @@ object Helpers {
 }
         } catch (e: Throwable) {
             if (e is OutOfMemoryError || e is ThreadDeath || e is VirtualMachineError) throw e
-            e.printStackTrace()
+            SettingsDiagnostics.failure("Helpers.getInstalledApps.item", e)
         }
         installedAppsList?.sortWith { a, b -> (a.label ?: "").compareTo((b.label ?: ""), true) }
     }
@@ -578,7 +578,7 @@ object Helpers {
 }
         } catch (t: Throwable) {
             if (t is OutOfMemoryError || t is ThreadDeath || t is VirtualMachineError) throw t
-            t.printStackTrace()
+            SettingsDiagnostics.failure("Helpers.getLaunchableApps.item", t)
         }
         launchableAppsList?.sortWith { a, b -> (a.label ?: "").compareTo((b.label ?: ""), true) }
     }
@@ -627,7 +627,7 @@ object Helpers {
 }
         } catch (e: Throwable) {
             if (e is OutOfMemoryError || e is ThreadDeath || e is VirtualMachineError) throw e
-            e.printStackTrace()
+            SettingsDiagnostics.failure("Helpers.getShareApps.item", e)
         }
         shareAppsList?.sortWith { a, b -> (a.label ?: "").compareTo((b.label ?: ""), true) }
     }
@@ -685,7 +685,7 @@ object Helpers {
 }
         } catch (e: Throwable) {
             if (e is OutOfMemoryError || e is ThreadDeath || e is VirtualMachineError) throw e
-            e.printStackTrace()
+            SettingsDiagnostics.failure("Helpers.getOpenWithApps.item", e)
         }
         openWithAppsList?.sortWith { a, b -> (a.label ?: "").compareTo((b.label ?: ""), true) }
     }
@@ -706,7 +706,7 @@ object Helpers {
                 pm.getApplicationLabel(ai)
             } catch (e: Throwable) {
                 if (e is OutOfMemoryError || e is ThreadDeath || e is VirtualMachineError) throw e
-                e.printStackTrace()
+                SettingsDiagnostics.failure("Helpers.getAppName.application", e)
                 null
             }
         } else {
@@ -714,7 +714,7 @@ object Helpers {
                 pm.getActivityInfo(ComponentName(pkgActArray[0], pkgActArray[1]), 0).loadLabel(pm).toString()
             } catch (e: Throwable) {
                 if (e is OutOfMemoryError || e is ThreadDeath || e is VirtualMachineError) throw e
-                e.printStackTrace()
+                SettingsDiagnostics.failure("Helpers.getAppName.activity", e)
                 null
             }
         }
@@ -735,7 +735,7 @@ object Helpers {
                 pm.getApplicationIcon(pkgActArray[0])
             } catch (e: Throwable) {
                 if (e is OutOfMemoryError || e is ThreadDeath || e is VirtualMachineError) throw e
-                e.printStackTrace()
+                SettingsDiagnostics.failure("Helpers.getAppIcon.application", e)
                 null
             }
         } else {
@@ -743,7 +743,7 @@ object Helpers {
                 pm.getActivityIcon(ComponentName(pkgActArray[0], pkgActArray[1]))
             } catch (e: Throwable) {
                 if (e is OutOfMemoryError || e is ThreadDeath || e is VirtualMachineError) throw e
-                e.printStackTrace()
+                SettingsDiagnostics.failure("Helpers.getAppIcon.activity", e)
                 null
             }
         }
@@ -860,7 +860,7 @@ object Helpers {
                     order++
                 } catch (t: Throwable) {
                     if (t is OutOfMemoryError || t is ThreadDeath || t is VirtualMachineError) throw t
-                    t.printStackTrace()
+                    SettingsDiagnostics.failure("Helpers.parsePrefXml.item", t)
                 }
                 eventType = xml.next()
             }
@@ -988,7 +988,7 @@ object Helpers {
             true
         } catch (t: Throwable) {
             if (t is OutOfMemoryError || t is ThreadDeath || t is VirtualMachineError) throw t
-            t.printStackTrace()
+            SettingsDiagnostics.failure("Helpers.copyFile", t)
             false
         }
     }

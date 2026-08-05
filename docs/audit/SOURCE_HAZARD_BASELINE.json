@@ -20,21 +20,6 @@
     "a652f08b415c304c013f",
     "a652f08b415c304c013f",
     "a95519aefc9e79ef11fb",
-    "babfd4ba0a647db0d4fe",
-    "babfd4ba0a647db0d4fe",
-    "babfd4ba0a647db0d4fe",
-    "babfd4ba0a647db0d4fe",
-    "babfd4ba0a647db0d4fe",
-    "babfd4ba0a647db0d4fe",
-    "babfd4ba0a647db0d4fe",
-    "babfd4ba0a647db0d4fe",
-    "babfd4ba0a647db0d4fe",
-    "babfd4ba0a647db0d4fe",
-    "babfd4ba0a647db0d4fe",
-    "babfd4ba0a647db0d4fe",
-    "babfd4ba0a647db0d4fe",
-    "babfd4ba0a647db0d4fe",
-    "babfd4ba0a647db0d4fe",
     "c5ba9f12f6fc5a30fe12",
     "cbe397fbe52d61351f14",
     "d6e39d1a5ff2ad4dbd3b",
@@ -204,111 +189,6 @@
       "line": 351,
       "snippet": ".printStackTrace(",
       "fingerprint": "6a60ad6a9693b3047110"
-    },
-    {
-      "rule": "PRINT_STACK_TRACE",
-      "path": "app/src/main/java/tv/withaibuild/customiuizer/utils/Helpers.kt",
-      "line": 273,
-      "snippet": ".printStackTrace(",
-      "fingerprint": "babfd4ba0a647db0d4fe"
-    },
-    {
-      "rule": "PRINT_STACK_TRACE",
-      "path": "app/src/main/java/tv/withaibuild/customiuizer/utils/Helpers.kt",
-      "line": 359,
-      "snippet": ".printStackTrace(",
-      "fingerprint": "babfd4ba0a647db0d4fe"
-    },
-    {
-      "rule": "PRINT_STACK_TRACE",
-      "path": "app/src/main/java/tv/withaibuild/customiuizer/utils/Helpers.kt",
-      "line": 469,
-      "snippet": ".printStackTrace(",
-      "fingerprint": "babfd4ba0a647db0d4fe"
-    },
-    {
-      "rule": "PRINT_STACK_TRACE",
-      "path": "app/src/main/java/tv/withaibuild/customiuizer/utils/Helpers.kt",
-      "line": 494,
-      "snippet": ".printStackTrace(",
-      "fingerprint": "babfd4ba0a647db0d4fe"
-    },
-    {
-      "rule": "PRINT_STACK_TRACE",
-      "path": "app/src/main/java/tv/withaibuild/customiuizer/utils/Helpers.kt",
-      "line": 504,
-      "snippet": ".printStackTrace(",
-      "fingerprint": "babfd4ba0a647db0d4fe"
-    },
-    {
-      "rule": "PRINT_STACK_TRACE",
-      "path": "app/src/main/java/tv/withaibuild/customiuizer/utils/Helpers.kt",
-      "line": 541,
-      "snippet": ".printStackTrace(",
-      "fingerprint": "babfd4ba0a647db0d4fe"
-    },
-    {
-      "rule": "PRINT_STACK_TRACE",
-      "path": "app/src/main/java/tv/withaibuild/customiuizer/utils/Helpers.kt",
-      "line": 581,
-      "snippet": ".printStackTrace(",
-      "fingerprint": "babfd4ba0a647db0d4fe"
-    },
-    {
-      "rule": "PRINT_STACK_TRACE",
-      "path": "app/src/main/java/tv/withaibuild/customiuizer/utils/Helpers.kt",
-      "line": 630,
-      "snippet": ".printStackTrace(",
-      "fingerprint": "babfd4ba0a647db0d4fe"
-    },
-    {
-      "rule": "PRINT_STACK_TRACE",
-      "path": "app/src/main/java/tv/withaibuild/customiuizer/utils/Helpers.kt",
-      "line": 688,
-      "snippet": ".printStackTrace(",
-      "fingerprint": "babfd4ba0a647db0d4fe"
-    },
-    {
-      "rule": "PRINT_STACK_TRACE",
-      "path": "app/src/main/java/tv/withaibuild/customiuizer/utils/Helpers.kt",
-      "line": 709,
-      "snippet": ".printStackTrace(",
-      "fingerprint": "babfd4ba0a647db0d4fe"
-    },
-    {
-      "rule": "PRINT_STACK_TRACE",
-      "path": "app/src/main/java/tv/withaibuild/customiuizer/utils/Helpers.kt",
-      "line": 717,
-      "snippet": ".printStackTrace(",
-      "fingerprint": "babfd4ba0a647db0d4fe"
-    },
-    {
-      "rule": "PRINT_STACK_TRACE",
-      "path": "app/src/main/java/tv/withaibuild/customiuizer/utils/Helpers.kt",
-      "line": 738,
-      "snippet": ".printStackTrace(",
-      "fingerprint": "babfd4ba0a647db0d4fe"
-    },
-    {
-      "rule": "PRINT_STACK_TRACE",
-      "path": "app/src/main/java/tv/withaibuild/customiuizer/utils/Helpers.kt",
-      "line": 746,
-      "snippet": ".printStackTrace(",
-      "fingerprint": "babfd4ba0a647db0d4fe"
-    },
-    {
-      "rule": "PRINT_STACK_TRACE",
-      "path": "app/src/main/java/tv/withaibuild/customiuizer/utils/Helpers.kt",
-      "line": 863,
-      "snippet": ".printStackTrace(",
-      "fingerprint": "babfd4ba0a647db0d4fe"
-    },
-    {
-      "rule": "PRINT_STACK_TRACE",
-      "path": "app/src/main/java/tv/withaibuild/customiuizer/utils/Helpers.kt",
-      "line": 991,
-      "snippet": ".printStackTrace(",
-      "fingerprint": "babfd4ba0a647db0d4fe"
     },
     {
       "rule": "PRINT_STACK_TRACE",
