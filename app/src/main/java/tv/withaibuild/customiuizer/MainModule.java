@@ -5,8 +5,6 @@ import android.os.Build;
 
 import androidx.annotation.NonNull;
 
-import java.util.Set;
-
 import io.github.libxposed.api.XposedModule;
 import io.github.libxposed.api.XposedModuleInterface;
 import io.github.libxposed.api.XposedModuleInterface.PackageReadyParam;
@@ -29,6 +27,7 @@ import tv.withaibuild.customiuizer.installers.SettingsInstaller;
 import tv.withaibuild.customiuizer.installers.SystemUiInstaller;
 import tv.withaibuild.customiuizer.installers.SystemServerInstaller;
 import tv.withaibuild.customiuizer.installers.WallpaperInstaller;
+import tv.withaibuild.customiuizer.prefs.PreferenceLoadRegistry;
 import tv.withaibuild.customiuizer.utils.PrefMap;
 import tv.withaibuild.customiuizer.utils.PreferenceBootstrap;
 
@@ -74,44 +73,6 @@ public class MainModule extends XposedModule {
         return preferenceBootstrap.start();
     }
 
-    private boolean isPrefEnabled(SharedPreferences prefs, String key) {
-        return prefs.getBoolean(key, false);
-    }
-
-    private boolean isInPrefSet(SharedPreferences prefs, String key, String pkg) {
-        Set<String> set = prefs.getStringSet(key, null);
-        return set != null && set.contains(pkg);
-    }
-
-    private boolean isVolumeMediaEnabled(SharedPreferences prefs) {
-        String up = prefs.getString("pref_key_controls_volumemedia_up", "0");
-        String down = prefs.getString("pref_key_controls_volumemedia_down", "0");
-        try {
-            return (up != null && Integer.parseInt(up) > 0)
-                || (down != null && Integer.parseInt(down) > 0);
-        } catch (NumberFormatException e) {
-            return false;
-        }
-    }
-
-    private boolean needLoadPrefs(String pkg, SharedPreferences prefs) {
-        if (ProcessScopes.isKnownPackage(pkg)) return true;
-
-        if (isPrefEnabled(prefs, "pref_key_various_alarmcompat")
-                && isInPrefSet(prefs, "pref_key_various_alarmcompat_apps", pkg)) return true;
-
-        if (isPrefEnabled(prefs, "pref_key_system_statusbarcolor")
-                && isInPrefSet(prefs, "pref_key_system_statusbarcolor_apps", pkg)) return true;
-
-        if (isPrefEnabled(prefs, "pref_key_system_nooverscroll")
-                && isInPrefSet(prefs, "pref_key_system_nooverscroll_apps", pkg)) return true;
-
-        if (isVolumeMediaEnabled(prefs)
-                && isInPrefSet(prefs, "pref_key_controls_mediaplayer_apps", pkg)) return true;
-
-        return false;
-    }
-
     private void watchPreferenceChange() {
         preferenceBootstrap.ensureWatcher();
     }
@@ -136,7 +97,7 @@ public class MainModule extends XposedModule {
         }
 
         SharedPreferences remote = getRemotePrefs();
-        if (remote == null || !needLoadPrefs(pkg, remote)) return;
+        if (remote == null || !PreferenceLoadRegistry.shouldLoad(remote, pkg)) return;
         initPrefs();
 
         if (scope == ProcessScope.INPUT_METHOD) {
