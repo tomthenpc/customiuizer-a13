@@ -93,6 +93,95 @@ public class HookerClassHelperTest {
     }
 
     @Test
+    public void beforeThreadDeathIsRethrownBeforeProceed() {
+        FakeChain chain = new FakeChain();
+        ThreadDeath failure = new ThreadDeath();
+        HookerClassHelper.MethodHook hook = new HookerClassHelper.MethodHook() {
+            @Override protected void before(HookerClassHelper.BeforeHookCallback callback) {
+                throw failure;
+            }
+        };
+
+        ThreadDeath thrown = assertThrows(ThreadDeath.class, () -> hook.intercept(chain));
+        assertSame(failure, thrown);
+        assertFalse(chain.proceeded);
+    }
+
+    @Test
+    public void wrappedBeforeThreadDeathIsUnwrappedBeforeProceed() {
+        FakeChain chain = new FakeChain();
+        ThreadDeath failure = new ThreadDeath();
+        HookerClassHelper.MethodHook hook = new HookerClassHelper.MethodHook() {
+            @Override protected void before(HookerClassHelper.BeforeHookCallback callback)
+                throws Throwable {
+                throw new InvocationTargetException(failure);
+            }
+        };
+
+        ThreadDeath thrown = assertThrows(ThreadDeath.class, () -> hook.intercept(chain));
+        assertSame(failure, thrown);
+        assertFalse(chain.proceeded);
+    }
+
+    @Test
+    public void beforeInternalErrorIsRethrownBeforeProceed() {
+        FakeChain chain = new FakeChain();
+        InternalError failure = new InternalError("before internal");
+        HookerClassHelper.MethodHook hook = new HookerClassHelper.MethodHook() {
+            @Override protected void before(HookerClassHelper.BeforeHookCallback callback) {
+                throw failure;
+            }
+        };
+
+        InternalError thrown = assertThrows(InternalError.class, () -> hook.intercept(chain));
+        assertSame(failure, thrown);
+        assertFalse(chain.proceeded);
+    }
+
+    @Test
+    public void wrappedBeforeInternalErrorIsUnwrappedBeforeProceed() {
+        FakeChain chain = new FakeChain();
+        InternalError failure = new InternalError("wrapped before internal");
+        HookerClassHelper.MethodHook hook = new HookerClassHelper.MethodHook() {
+            @Override protected void before(HookerClassHelper.BeforeHookCallback callback)
+                throws Throwable {
+                throw new InvocationTargetException(failure);
+            }
+        };
+
+        InternalError thrown = assertThrows(InternalError.class, () -> hook.intercept(chain));
+        assertSame(failure, thrown);
+        assertFalse(chain.proceeded);
+    }
+
+    @Test
+    public void wrappedOrdinaryBeforeFailureRemainsIsolated() throws Throwable {
+        FakeChain chain = new FakeChain();
+        HookerClassHelper.MethodHook hook = new HookerClassHelper.MethodHook() {
+            @Override protected void before(HookerClassHelper.BeforeHookCallback callback)
+                throws Throwable {
+                throw new InvocationTargetException(new IllegalStateException("ordinary"));
+            }
+        };
+
+        assertEquals("host-result", hook.intercept(chain));
+        assertTrue(chain.proceeded);
+    }
+
+    @Test
+    public void assertionErrorBeforeRemainsIsolated() throws Throwable {
+        FakeChain chain = new FakeChain();
+        HookerClassHelper.MethodHook hook = new HookerClassHelper.MethodHook() {
+            @Override protected void before(HookerClassHelper.BeforeHookCallback callback) {
+                throw new AssertionError("before assertion");
+            }
+        };
+
+        assertEquals("host-result", hook.intercept(chain));
+        assertTrue(chain.proceeded);
+    }
+
+    @Test
     public void ordinaryAfterFailureKeepsHostResult() throws Throwable {
         FakeChain chain = new FakeChain();
         HookerClassHelper.MethodHook hook = new HookerClassHelper.MethodHook() {
@@ -119,6 +208,68 @@ public class HookerClassHelperTest {
     }
 
     @Test
+    public void afterThreadDeathIsRethrown() {
+        FakeChain chain = new FakeChain();
+        ThreadDeath failure = new ThreadDeath();
+        HookerClassHelper.MethodHook hook = new HookerClassHelper.MethodHook() {
+            @Override protected void after(HookerClassHelper.AfterHookCallback callback) {
+                throw failure;
+            }
+        };
+
+        ThreadDeath thrown = assertThrows(ThreadDeath.class, () -> hook.intercept(chain));
+        assertSame(failure, thrown);
+        assertTrue(chain.proceeded);
+    }
+
+    @Test
+    public void wrappedAfterThreadDeathIsRethrown() {
+        FakeChain chain = new FakeChain();
+        ThreadDeath failure = new ThreadDeath();
+        HookerClassHelper.MethodHook hook = new HookerClassHelper.MethodHook() {
+            @Override protected void after(HookerClassHelper.AfterHookCallback callback)
+                throws Throwable {
+                throw new InvocationTargetException(failure);
+            }
+        };
+
+        ThreadDeath thrown = assertThrows(ThreadDeath.class, () -> hook.intercept(chain));
+        assertSame(failure, thrown);
+        assertTrue(chain.proceeded);
+    }
+
+    @Test
+    public void afterInternalErrorIsRethrown() {
+        FakeChain chain = new FakeChain();
+        InternalError failure = new InternalError("after internal");
+        HookerClassHelper.MethodHook hook = new HookerClassHelper.MethodHook() {
+            @Override protected void after(HookerClassHelper.AfterHookCallback callback) {
+                throw failure;
+            }
+        };
+
+        InternalError thrown = assertThrows(InternalError.class, () -> hook.intercept(chain));
+        assertSame(failure, thrown);
+        assertTrue(chain.proceeded);
+    }
+
+    @Test
+    public void wrappedAfterInternalErrorIsRethrown() {
+        FakeChain chain = new FakeChain();
+        InternalError failure = new InternalError("wrapped after internal");
+        HookerClassHelper.MethodHook hook = new HookerClassHelper.MethodHook() {
+            @Override protected void after(HookerClassHelper.AfterHookCallback callback)
+                throws Throwable {
+                throw new InvocationTargetException(failure);
+            }
+        };
+
+        InternalError thrown = assertThrows(InternalError.class, () -> hook.intercept(chain));
+        assertSame(failure, thrown);
+        assertTrue(chain.proceeded);
+    }
+
+    @Test
     public void hostOutOfMemorySkipsAfterAndIsRethrown() {
         FakeChain chain = new FakeChain();
         chain.failure = new OutOfMemoryError("host oom");
@@ -132,5 +283,93 @@ public class HookerClassHelperTest {
 
         assertThrows(OutOfMemoryError.class, () -> hook.intercept(chain));
         assertFalse(afterCalled[0]);
+    }
+
+    @Test
+    public void hostThreadDeathSkipsAfterAndIsRethrown() {
+        FakeChain chain = new FakeChain();
+        ThreadDeath failure = new ThreadDeath();
+        chain.failure = failure;
+        final boolean[] afterCalled = {false};
+        HookerClassHelper.MethodHook hook = new HookerClassHelper.MethodHook() {
+            @Override protected void after(HookerClassHelper.AfterHookCallback callback) {
+                afterCalled[0] = true;
+                callback.setResult("masked");
+            }
+        };
+
+        ThreadDeath thrown = assertThrows(ThreadDeath.class, () -> hook.intercept(chain));
+        assertSame(failure, thrown);
+        assertFalse(afterCalled[0]);
+    }
+
+    @Test
+    public void wrappedHostThreadDeathSkipsAfterAndIsRethrown() {
+        FakeChain chain = new FakeChain();
+        ThreadDeath failure = new ThreadDeath();
+        chain.failure = new InvocationTargetException(failure);
+        final boolean[] afterCalled = {false};
+        HookerClassHelper.MethodHook hook = new HookerClassHelper.MethodHook() {
+            @Override protected void after(HookerClassHelper.AfterHookCallback callback) {
+                afterCalled[0] = true;
+                callback.setResult("masked");
+            }
+        };
+
+        ThreadDeath thrown = assertThrows(ThreadDeath.class, () -> hook.intercept(chain));
+        assertSame(failure, thrown);
+        assertFalse(afterCalled[0]);
+    }
+
+    @Test
+    public void hostInternalErrorSkipsAfterAndIsRethrown() {
+        FakeChain chain = new FakeChain();
+        InternalError failure = new InternalError("host internal");
+        chain.failure = failure;
+        final boolean[] afterCalled = {false};
+        HookerClassHelper.MethodHook hook = new HookerClassHelper.MethodHook() {
+            @Override protected void after(HookerClassHelper.AfterHookCallback callback) {
+                afterCalled[0] = true;
+                callback.setResult("masked");
+            }
+        };
+
+        InternalError thrown = assertThrows(InternalError.class, () -> hook.intercept(chain));
+        assertSame(failure, thrown);
+        assertFalse(afterCalled[0]);
+    }
+
+    @Test
+    public void wrappedHostInternalErrorSkipsAfterAndIsRethrown() {
+        FakeChain chain = new FakeChain();
+        InternalError failure = new InternalError("wrapped host internal");
+        chain.failure = new InvocationTargetException(failure);
+        final boolean[] afterCalled = {false};
+        HookerClassHelper.MethodHook hook = new HookerClassHelper.MethodHook() {
+            @Override protected void after(HookerClassHelper.AfterHookCallback callback) {
+                afterCalled[0] = true;
+                callback.setResult("masked");
+            }
+        };
+
+        InternalError thrown = assertThrows(InternalError.class, () -> hook.intercept(chain));
+        assertSame(failure, thrown);
+        assertFalse(afterCalled[0]);
+    }
+
+    @Test
+    public void ordinaryHostThrowableStillRunsAfter() throws Throwable {
+        FakeChain chain = new FakeChain();
+        chain.failure = new IllegalStateException("host ordinary");
+        final boolean[] afterCalled = {false};
+        HookerClassHelper.MethodHook hook = new HookerClassHelper.MethodHook() {
+            @Override protected void after(HookerClassHelper.AfterHookCallback callback) {
+                afterCalled[0] = true;
+                callback.setResult("replaced");
+            }
+        };
+
+        assertEquals("replaced", hook.intercept(chain));
+        assertTrue(afterCalled[0]);
     }
 }

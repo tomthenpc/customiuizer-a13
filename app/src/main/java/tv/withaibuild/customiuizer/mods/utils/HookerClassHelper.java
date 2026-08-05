@@ -221,7 +221,7 @@ public final class HookerClassHelper {
                 }
             }
 
-            throwIfOutOfMemory(throwable);
+            throwIfFatal(throwable);
 
             if (hasAfter) {
                 AfterHookCallback after = new AfterHookCallback(before, result, throwable);
@@ -242,7 +242,7 @@ public final class HookerClassHelper {
             try {
                 before(callback);
             } catch (Throwable t) {
-                throwIfOutOfMemory(t);
+                throwIfFatal(t);
                 XposedHelpers.log(t);
             }
         }
@@ -251,7 +251,7 @@ public final class HookerClassHelper {
             try {
                 after(callback);
             } catch (Throwable t) {
-                throwIfOutOfMemory(t);
+                throwIfFatal(t);
                 XposedHelpers.log(t);
             }
         }
@@ -262,12 +262,19 @@ public final class HookerClassHelper {
         protected void after(AfterHookCallback callback) throws Throwable {
         }
 
-        private static void throwIfOutOfMemory(Throwable throwable) {
+        private static void throwIfFatal(Throwable throwable) {
             Throwable current = throwable;
             for (int depth = 0; current != null && depth < 8; depth++) {
                 if (current instanceof OutOfMemoryError) {
                     throw (OutOfMemoryError) current;
                 }
+                if (current instanceof ThreadDeath) {
+                    throw (ThreadDeath) current;
+                }
+                if (current instanceof VirtualMachineError) {
+                    throw (VirtualMachineError) current;
+                }
+
                 Throwable next = current.getCause();
                 if (next == current) return;
                 current = next;
