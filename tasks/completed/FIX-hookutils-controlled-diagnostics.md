@@ -1,7 +1,7 @@
 # FIX-hookutils-controlled-diagnostics
 
 - Platform: A13
-- Status: Active
+- Status: Done
 - Priority: P1
 - Owner: Devin
 - Reviewer: ChatGPT / human
@@ -105,24 +105,24 @@ catch Throwable
 
 ## 验收标准
 
-- [ ] `HookUtils.kt` 的 6 处 `printStackTrace()` 全部移除
-- [ ] 使用一个统一、轻量、固定 tag 的日志入口
-- [ ] 六处日志均有明确 operation 名称
-- [ ] fatal error 重抛逻辑完整保留
-- [ ] 所有 fallback 返回值不变
-- [ ] 不改变方法签名和调用方
-- [ ] 不引入新依赖
-- [ ] 不修改其他 baseline finding
-- [ ] source hazard 从 47 降到 41，0 new
-- [ ] Python tests 通过
-- [ ] Gradle unit tests 通过
-- [ ] fast verify 通过
-- [ ] full verify 通过
-- [ ] `git diff --check` 通过
-- [ ] 工作区干净
-- [ ] 不需要 APK
-- [ ] 不需要实机验证
-- [ ] 完成状态标记为 `STATIC_VERIFIED`
+- [x] `HookUtils.kt` 的 6 处 `printStackTrace()` 全部移除
+- [x] 使用一个统一、轻量、固定 tag 的日志入口
+- [x] 六处日志均有明确 operation 名称
+- [x] fatal error 重抛逻辑完整保留
+- [x] 所有 fallback 返回值不变
+- [x] 不改变方法签名和调用方
+- [x] 不引入新依赖
+- [x] 不修改其他 baseline finding
+- [x] source hazard 从 47 降到 41，0 new
+- [x] Python tests 通过
+- [x] Gradle unit tests 通过
+- [x] fast verify 通过
+- [x] full verify 通过
+- [x] `git diff --check` 通过
+- [x] 工作区干净
+- [x] 不需要 APK
+- [x] 不需要实机验证
+- [x] 完成状态标记为 `STATIC_VERIFIED`
 
 ## 验证
 
@@ -143,16 +143,39 @@ git diff --check
 git status --short
 ```
 
+### 实际结果
+
+- `compileall tools`：通过
+- `unittest discover`：433 tests passed, 0 failed, skipped 2
+- `testDebugUnitTest --tests HookUtilsDiagnosticsTest`：通过
+- `compileDebugKotlin`：通过
+- `compileDebugJavaWithJavac`：通过
+- `testDebugUnitTest`：通过
+- `source_hazard_scan.py --path app/src/main/java`：`Source hazard scan passed: 41 reviewed finding(s), 0 new`
+- `verify.py fast --changed`：通过
+- `verify.py full`：通过（含 compileDebugKotlin、compileDebugJavaWithJavac、testDebugUnitTest-all、lintDebug）
+- `git diff --check`：通过（仅 SOURCE_HAZARD_BASELINE.json CRLF 转 LF 的正常 git 提示）
+- `git status --short`：干净
+
 ## 构建产物
 
 未要求 APK。
 
 ## 完成记录
 
-- Base SHA:
-- Final SHA:
+- Base SHA: 0ed5e700da3f7f4edd05328a5534bf25b2c3c874
+- Final SHA: 8aefa75c9bf01ee1c8ab658718b5028c5de6a9aa
 - Commits:
+  - `8999ced` docs: add active FIX-hookutils-controlled-diagnostics task
+  - `8aefa75` fix: replace HookUtils printStackTrace diagnostics
 - Behavior changed:
-- Verification:
-- Device evidence:
-- Known limits:
+  - `HookUtils.kt` 的 6 处 `.printStackTrace()` 全部替换为 `logFailure(operation, throwable)`；
+  - 新增固定 `TAG = "CustoMIUIzer-HookUtils"` 和统一 `logFailure` 入口；
+  - 六处 operation 名称：`copyFile`、`getAnimationScale`、`getAppName.application`、`getAppName.activity`、`getAppIcon.application`、`getAppIcon.activity`；
+  - 每处 catch 仍先重抛 `OutOfMemoryError` / `ThreadDeath` / `VirtualMachineError`；
+  - 所有 fallback 返回值不变；
+  - `SOURCE_HAZARD_BASELINE.json` 从 47 条降至 41 条，仅移除 `HookUtils.kt` 的 6 条 `PRINT_STACK_TRACE`；
+  - 新增 `HookUtilsDiagnosticsTest.kt` 和 `test_hookutils_diagnostics.py` 覆盖运行时与静态合同。
+- Verification: 见“验证”章节
+- Device evidence: 未涉及设备；本任务仅工具/门禁改动，标记为 `STATIC_VERIFIED`
+- Known limits: 未修改 `XposedHelpers`、settings-app `Helpers` 或其他全局日志设施；其他 41 条 baseline finding 保留待后续处理。
