@@ -128,34 +128,6 @@ def check_compat_contracts() -> int:
     )
 
 
-def check_automation_state() -> int:
-    return run(
-        [find_python(), str(REPO_ROOT / "tools" / "check_automation_state.py")],
-        "check-automation-state",
-    )
-
-
-def check_document_contracts() -> int:
-    return run(
-        [find_python(), str(REPO_ROOT / "tools" / "check_document_contracts.py")],
-        "check-document-contracts",
-    )
-
-
-def check_goal_constitution() -> int:
-    return run(
-        [find_python(), str(REPO_ROOT / "tools" / "check_goal_constitution.py")],
-        "check-goal-constitution",
-    )
-
-
-def check_progress_snapshot() -> int:
-    return run(
-        [find_python(), str(REPO_ROOT / "tools" / "progress_snapshot.py"), "--check"],
-        "progress-snapshot",
-    )
-
-
 def check_hook_contract_parity() -> int:
     return run(
         [find_python(), str(REPO_ROOT / "tools" / "check_hook_contract_parity.py")],
@@ -191,15 +163,7 @@ def fast_mode(pattern: str | None, skip_android: bool) -> int:
         return 1
     if check_compat_contracts() != 0:
         return 1
-    if check_automation_state() != 0:
-        return 1
-    if check_document_contracts() != 0:
-        return 1
-    if check_goal_constitution() != 0:
-        return 1
     if check_hook_contract_parity() != 0:
-        return 1
-    if check_progress_snapshot() != 0:
         return 1
     if skip_android:
         print("[verify] no relevant source changes; skipping Android build tasks")
@@ -218,15 +182,7 @@ def full_mode() -> int:
         return 1
     if check_compat_contracts() != 0:
         return 1
-    if check_automation_state() != 0:
-        return 1
-    if check_document_contracts() != 0:
-        return 1
-    if check_goal_constitution() != 0:
-        return 1
     if check_hook_contract_parity() != 0:
-        return 1
-    if check_progress_snapshot() != 0:
         return 1
     if compile_debug() != 0:
         return 1

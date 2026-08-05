@@ -16,7 +16,11 @@
 
 - 当前仍有效的构建与验证说明；
 - 少量长期兼容说明；
-- 架构决策记录。
+- 架构决策记录；
+- `docs/audit/` 和 `docs/rom-intelligence/A13_PROCESS_MATRIX.md`：由 `tools/` 门禁脚本和
+  `tools/tests/` 直接读写的机械基线/契约数据（Hook surface、source hazard、legacy
+  exception registry、hook ownership、process matrix 等）。这些文件是自动化验证的输入，
+  不是叙事报告；删除或改名前必须先确认没有脚本或测试依赖它们。
 
 禁止重新引入：
 

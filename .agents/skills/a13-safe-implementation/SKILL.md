@@ -75,7 +75,7 @@ Do not mix a runtime Hook change with a progress/hazard tool rewrite, CI workflo
 ## Required workflow
 
 1. Read the filled Task Slice from `$ARGUMENTS`.
-2. Read `GOAL.md`, `AGENTS.md`, `TASK_STATE.md`, and the risk matrix.
+2. Read `AGENTS.md`, `PROJECT.md`, `ARCHITECTURE.md`, `COMPATIBILITY.md`, the active task contract in `tasks/active/`, and the risk matrix.
 3. Verify repository, branch, upstream, working tree, unfinished Git operations, and base commit.
 4. Record the original behavior and independent test oracle before changing production code.
 5. Add a failing regression/contract/callback test first when technically possible.

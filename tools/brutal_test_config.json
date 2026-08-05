@@ -1,9 +1,6 @@
 {
   "name": "A13",
   "expected_branch": "devin/a13-rom-intelligence-audit",
-  "smart_state": "SMART_OPERATION_STATE.md",
-  "task_state": "TASK_STATE.md",
-  "progress_json": "docs/progress/A13_PROGRESS_CURRENT.json",
   "catalog_file": "app/src/main/java/tv/withaibuild/customiuizer/mods/catalog/FeatureCatalog.kt",
   "feature_id_file": "app/src/main/java/tv/withaibuild/customiuizer/mods/catalog/FeatureId.kt",
   "process_matrix": "docs/rom-intelligence/A13_PROCESS_MATRIX.md",
@@ -15,8 +12,6 @@
   ],
   "full_workflows": [],
   "gates": {
-    "automation": "python tools/check_automation_state.py",
-    "progress": "python tools/progress_snapshot.py --check",
     "ci": "python tools/ci_contract_scan.py --expected-branch devin/a13-rom-intelligence-audit --default-branch main",
     "catalog": "python tools/catalog_contract_probe.py --catalog app/src/main/java/tv/withaibuild/customiuizer/mods/catalog/FeatureCatalog.kt --feature-id app/src/main/java/tv/withaibuild/customiuizer/mods/catalog/FeatureId.kt --diagnostic-ids app/src/main/java/tv/withaibuild/customiuizer/mods/diagnostics/DiagnosticIds.kt --matrix docs/rom-intelligence/A13_PROCESS_MATRIX.md",
     "tests": "python -m unittest discover -s tools/tests -p \"test_*.py\"",
@@ -24,47 +19,10 @@
   },
   "hermetic_commands": [
     "python -m unittest discover -s tools/tests -p \"test_*.py\"",
-    "python tools/check_automation_state.py",
-    "python tools/progress_snapshot.py --check",
     "python tools/ci_contract_scan.py --expected-branch devin/a13-rom-intelligence-audit --default-branch main",
     "python tools/catalog_contract_probe.py --catalog app/src/main/java/tv/withaibuild/customiuizer/mods/catalog/FeatureCatalog.kt --feature-id app/src/main/java/tv/withaibuild/customiuizer/mods/catalog/FeatureId.kt --diagnostic-ids app/src/main/java/tv/withaibuild/customiuizer/mods/diagnostics/DiagnosticIds.kt --matrix docs/rom-intelligence/A13_PROCESS_MATRIX.md"
   ],
-  "determinism_command": "python tools/progress_snapshot.py --write",
-  "determinism_outputs": [
-    "docs/progress/A13_PROGRESS_CURRENT.json",
-    "docs/progress/A13_PROGRESS_CURRENT.md"
-  ],
   "mutations": [
-    {
-      "name": "duplicate SMART key",
-      "mutator": "duplicate_smart_key",
-      "gate": "automation"
-    },
-    {
-      "name": "fake CI PASS",
-      "mutator": "fake_ci_pass",
-      "gate": "automation"
-    },
-    {
-      "name": "symbolic verified tree",
-      "mutator": "symbolic_verified_tree",
-      "gate": "automation"
-    },
-    {
-      "name": "ambiguous resume path",
-      "mutator": "ambiguous_resume",
-      "gate": "automation"
-    },
-    {
-      "name": "TASK state drift",
-      "mutator": "task_state_drift",
-      "gate": "progress"
-    },
-    {
-      "name": "generated progress tamper",
-      "mutator": "progress_json_tamper",
-      "gate": "progress"
-    },
     {
       "name": "remove fetch-depth",
       "mutator": "remove_fetch_depth",
