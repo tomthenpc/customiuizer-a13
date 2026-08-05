@@ -8,20 +8,13 @@
     "5d76ef433a5818f61ebd",
     "5f0112083d34d892a20d",
     "5f0112083d34d892a20d",
-    "62a82efa534ff06f6e8c",
     "63d83e30463c7d811336",
     "6a60ad6a9693b3047110",
     "6fb50aa89d886ffea5c2",
-    "a652f08b415c304c013f",
-    "a652f08b415c304c013f",
-    "a95519aefc9e79ef11fb",
     "c5ba9f12f6fc5a30fe12",
     "cbe397fbe52d61351f14",
     "d6e39d1a5ff2ad4dbd3b",
-    "d7407313a25d60591550",
-    "da2dae3ecf4c3e51fc4d",
-    "da2dae3ecf4c3e51fc4d",
-    "da2dae3ecf4c3e51fc4d"
+    "d7407313a25d60591550"
   ],
   "findings": [
     {
@@ -86,55 +79,6 @@
       "line": 54,
       "snippet": ".printStackTrace(",
       "fingerprint": "0db4399e3dea5150c370"
-    },
-    {
-      "rule": "PRINT_STACK_TRACE",
-      "path": "app/src/main/java/tv/withaibuild/customiuizer/subs/ActivitySelector.kt",
-      "line": 99,
-      "snippet": ".printStackTrace(",
-      "fingerprint": "a95519aefc9e79ef11fb"
-    },
-    {
-      "rule": "PRINT_STACK_TRACE",
-      "path": "app/src/main/java/tv/withaibuild/customiuizer/subs/AppSelector.kt",
-      "line": 199,
-      "snippet": ".printStackTrace(",
-      "fingerprint": "da2dae3ecf4c3e51fc4d"
-    },
-    {
-      "rule": "PRINT_STACK_TRACE",
-      "path": "app/src/main/java/tv/withaibuild/customiuizer/subs/AppSelector.kt",
-      "line": 224,
-      "snippet": ".printStackTrace(",
-      "fingerprint": "da2dae3ecf4c3e51fc4d"
-    },
-    {
-      "rule": "PRINT_STACK_TRACE",
-      "path": "app/src/main/java/tv/withaibuild/customiuizer/subs/AppSelector.kt",
-      "line": 290,
-      "snippet": ".printStackTrace(",
-      "fingerprint": "da2dae3ecf4c3e51fc4d"
-    },
-    {
-      "rule": "PRINT_STACK_TRACE",
-      "path": "app/src/main/java/tv/withaibuild/customiuizer/subs/ShortcutSelector.kt",
-      "line": 77,
-      "snippet": ".printStackTrace(",
-      "fingerprint": "a652f08b415c304c013f"
-    },
-    {
-      "rule": "PRINT_STACK_TRACE",
-      "path": "app/src/main/java/tv/withaibuild/customiuizer/subs/ShortcutSelector.kt",
-      "line": 97,
-      "snippet": ".printStackTrace(",
-      "fingerprint": "a652f08b415c304c013f"
-    },
-    {
-      "rule": "PRINT_STACK_TRACE",
-      "path": "app/src/main/java/tv/withaibuild/customiuizer/subs/SortableList.kt",
-      "line": 66,
-      "snippet": ".printStackTrace(",
-      "fingerprint": "62a82efa534ff06f6e8c"
     },
     {
       "rule": "PRINT_STACK_TRACE",

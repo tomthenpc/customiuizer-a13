@@ -14,6 +14,7 @@ import tv.withaibuild.customiuizer.mods.GlobalActions
 import tv.withaibuild.customiuizer.utils.AppData
 import tv.withaibuild.customiuizer.utils.AppDataAdapter
 import tv.withaibuild.customiuizer.utils.Helpers
+import tv.withaibuild.customiuizer.utils.SettingsDiagnostics
 import java.util.ArrayList
 
 class ActivitySelector : SubFragmentWithSearch() {
@@ -96,7 +97,7 @@ class ActivitySelector : SubFragmentWithSearch() {
                     act.runOnUiThread(process)
                 } catch (e: Throwable) {
                     if (e is OutOfMemoryError || e is ThreadDeath || e is VirtualMachineError) throw e
-                    e.printStackTrace()
+                    SettingsDiagnostics.failure("ActivitySelector.loadActivities", e)
                 }
             }.start()
         }, animDur.toLong())

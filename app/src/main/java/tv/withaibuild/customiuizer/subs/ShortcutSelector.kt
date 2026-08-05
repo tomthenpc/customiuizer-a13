@@ -16,6 +16,7 @@ import tv.withaibuild.customiuizer.R
 import tv.withaibuild.customiuizer.SubFragmentWithSearch
 import tv.withaibuild.customiuizer.utils.AppHelper
 import tv.withaibuild.customiuizer.utils.ResolveInfoAdapter
+import tv.withaibuild.customiuizer.utils.SettingsDiagnostics
 import java.io.File
 import java.io.FileOutputStream
 import java.util.ArrayList
@@ -74,7 +75,7 @@ class ShortcutSelector : SubFragmentWithSearch() {
                 icon = BitmapFactory.decodeResource(mContext.resources, resId)
             } catch (t: Throwable) {
                 if (t is OutOfMemoryError || t is ThreadDeath || t is VirtualMachineError) throw t
-                t.printStackTrace()
+                SettingsDiagnostics.failure("ShortcutSelector.loadIconResource", t)
             }
             if (icon == null) icon = data?.getParcelableExtra<Bitmap>(Intent.EXTRA_SHORTCUT_ICON)
 
@@ -94,7 +95,7 @@ class ShortcutSelector : SubFragmentWithSearch() {
                 }
             } catch (t: Throwable) {
                 if (t is OutOfMemoryError || t is ThreadDeath || t is VirtualMachineError) throw t
-                t.printStackTrace()
+                SettingsDiagnostics.failure("ShortcutSelector.persistIcon", t)
             }
 
             intent.putExtra("shortcut_contents", keyContents)

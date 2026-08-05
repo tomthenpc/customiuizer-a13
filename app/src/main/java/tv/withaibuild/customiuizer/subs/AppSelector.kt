@@ -17,6 +17,7 @@ import tv.withaibuild.customiuizer.utils.AppData
 import tv.withaibuild.customiuizer.utils.AppDataAdapter
 import tv.withaibuild.customiuizer.utils.AppHelper
 import tv.withaibuild.customiuizer.utils.Helpers
+import tv.withaibuild.customiuizer.utils.SettingsDiagnostics
 import tv.withaibuild.customiuizer.utils.LockedAppAdapter
 import tv.withaibuild.customiuizer.utils.PrivacyAppAdapter
 
@@ -195,8 +196,8 @@ class AppSelector : SubFragmentWithSearch() {
                             null
                         )
                     } catch (t: Throwable) {
-                        if (t is OutOfMemoryError) throw t
-                        t.printStackTrace()
+                        if (t is OutOfMemoryError || t is ThreadDeath || t is VirtualMachineError) throw t
+                        SettingsDiagnostics.failure("AppSelector.privacy.toggle", t)
                     }
                 } else if (applock) {
                     val app = (parent.adapter as? LockedAppAdapter)?.getItem(position) ?: return@OnItemClickListener
@@ -220,8 +221,8 @@ class AppSelector : SubFragmentWithSearch() {
                         setApplicationAccessControlEnabledForUser.invoke(mSecurityManager, app.pkgName, !currentEnabled, app.user)
                         (parent.adapter as? LockedAppAdapter)?.refresh(app)
                     } catch (t: Throwable) {
-                        if (t is OutOfMemoryError) throw t
-                        t.printStackTrace()
+                        if (t is OutOfMemoryError || t is ThreadDeath || t is VirtualMachineError) throw t
+                        SettingsDiagnostics.failure("AppSelector.applock.toggle", t)
                     }
                 } else if (customTitles) {
                     val app = (parent.adapter as? AppDataAdapter)?.getItem(position) ?: return@OnItemClickListener
@@ -287,7 +288,7 @@ class AppSelector : SubFragmentWithSearch() {
                             act.runOnUiThread(process)
                         } catch (e: Throwable) {
                             if (e is OutOfMemoryError || e is ThreadDeath || e is VirtualMachineError) throw e
-                            e.printStackTrace()
+                            SettingsDiagnostics.failure("AppSelector.loadApps", e)
                         }
                     }.start()
                 }

@@ -13,6 +13,7 @@ import tv.withaibuild.customiuizer.SubFragment
 import tv.withaibuild.customiuizer.utils.AppHelper
 import tv.withaibuild.customiuizer.utils.Helpers
 import tv.withaibuild.customiuizer.utils.PreferenceAdapter
+import tv.withaibuild.customiuizer.utils.SettingsDiagnostics
 import tv.withaibuild.customiuizer.utils.SortableListView
 import java.util.Locale
 import java.util.UUID
@@ -63,7 +64,7 @@ class SortableList : SubFragment() {
                 ssField.set(listView, shadow)
             } catch (e: Throwable) {
                 if (e is OutOfMemoryError || e is ThreadDeath || e is VirtualMachineError) throw e
-                e.printStackTrace()
+                SettingsDiagnostics.failure("SortableList.loadDragShadow", e)
             }
         }
 
