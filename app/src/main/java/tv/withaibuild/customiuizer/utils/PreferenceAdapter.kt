@@ -78,7 +78,7 @@ class PreferenceAdapter(
             itemIcon.setImageDrawable(drawable ?: row.context.packageManager.getApplicationIcon(Helpers.modulePkg))
         } catch (t: Throwable) {
             if (t is OutOfMemoryError || t is ThreadDeath || t is VirtualMachineError) throw t
-            t.printStackTrace()
+            SettingsDiagnostics.failure("PreferenceAdapter.bindActionIcon", t)
         }
 
         row.setPadding(row.paddingLeft, row.paddingTop, 0, row.paddingBottom)

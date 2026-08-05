@@ -348,7 +348,7 @@ object AppHelper {
             pair
         } catch (t: Throwable) {
             if (t is OutOfMemoryError || t is ThreadDeath || t is VirtualMachineError) throw t
-            t.printStackTrace()
+            SettingsDiagnostics.failure("AppHelper.resolveActionName", t)
             null
         }
     }

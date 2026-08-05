@@ -48,8 +48,8 @@ class LockedAppAdapter @SuppressLint("WrongConstant") constructor(
                 getApplicationAccessControlEnabledAsUser = method
             }
         } catch (t: Throwable) {
-            if (t is OutOfMemoryError) throw t
-            t.printStackTrace()
+            if (t is OutOfMemoryError || t is ThreadDeath || t is VirtualMachineError) throw t
+            SettingsDiagnostics.failure("LockedAppAdapter.initializeSecurityManager", t)
         }
 
         for (app in originalAppList) {

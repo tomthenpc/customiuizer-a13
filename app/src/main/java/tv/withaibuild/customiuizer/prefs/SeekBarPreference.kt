@@ -12,6 +12,7 @@ import androidx.preference.PreferenceViewHolder
 import tv.withaibuild.customiuizer.R
 import tv.withaibuild.customiuizer.utils.AppHelper
 import tv.withaibuild.customiuizer.utils.Helpers
+import tv.withaibuild.customiuizer.utils.SettingsDiagnostics
 import java.util.IllegalFormatException
 
 class SeekBarPreference @JvmOverloads constructor(
@@ -265,7 +266,7 @@ class SeekBarPreference @JvmOverloads constructor(
                     }
                 } ?: display.toString()
             } catch (e: IllegalFormatException) {
-                e.printStackTrace()
+                SettingsDiagnostics.failure("SeekBarPreference.formatDisplayValue", e)
                 display.toString()
             }
             valueView.text = if (mShowPlus && display > 0) "+$text" else text

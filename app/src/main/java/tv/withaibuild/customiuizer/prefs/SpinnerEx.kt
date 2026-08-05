@@ -11,6 +11,7 @@ import android.widget.TextView
 import androidx.appcompat.widget.AppCompatSpinner
 import androidx.appcompat.widget.ListPopupWindow
 import tv.withaibuild.customiuizer.R
+import tv.withaibuild.customiuizer.utils.SettingsDiagnostics
 
 @SuppressLint("ResourceType")
 open class SpinnerEx @JvmOverloads constructor(
@@ -44,7 +45,7 @@ open class SpinnerEx @JvmOverloads constructor(
             popupWindow?.setHeight((40 * 10 * scale).toInt())
         } catch (e: Throwable) {
             if (e is OutOfMemoryError || e is ThreadDeath || e is VirtualMachineError) throw e
-            e.printStackTrace()
+            SettingsDiagnostics.failure("SpinnerEx.configurePopupHeight", e)
         }
     }
 

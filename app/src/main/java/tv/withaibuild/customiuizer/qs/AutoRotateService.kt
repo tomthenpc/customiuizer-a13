@@ -7,6 +7,7 @@ import android.service.quicksettings.TileService
 import tv.withaibuild.customiuizer.R
 import tv.withaibuild.customiuizer.utils.AppHelper
 import tv.withaibuild.customiuizer.utils.Helpers
+import tv.withaibuild.customiuizer.utils.SettingsDiagnostics
 
 class AutoRotateService : TileService() {
 
@@ -52,7 +53,7 @@ class AutoRotateService : TileService() {
             prefs.edit().putInt("pref_key_qs_autorotate_state", nextState).apply()
         } catch (t: Throwable) {
             if (t is OutOfMemoryError || t is ThreadDeath || t is VirtualMachineError) throw t
-            t.printStackTrace()
+            SettingsDiagnostics.failure("AutoRotateService.switchState", t)
         }
     }
 
@@ -61,7 +62,7 @@ class AutoRotateService : TileService() {
             AppHelper.getSharedPrefs(this, false).getInt("pref_key_qs_autorotate_state", 0)
         } catch (t: Throwable) {
             if (t is OutOfMemoryError || t is ThreadDeath || t is VirtualMachineError) throw t
-            t.printStackTrace()
+            SettingsDiagnostics.failure("AutoRotateService.readState", t)
             0
         }
     }

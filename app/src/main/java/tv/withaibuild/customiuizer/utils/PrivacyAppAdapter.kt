@@ -48,8 +48,8 @@ class PrivacyAppAdapter @SuppressLint("WrongConstant") constructor(
                 isPrivacyApp = method
             }
         } catch (t: Throwable) {
-            if (t is OutOfMemoryError) throw t
-            t.printStackTrace()
+            if (t is OutOfMemoryError || t is ThreadDeath || t is VirtualMachineError) throw t
+            SettingsDiagnostics.failure("PrivacyAppAdapter.initializeSecurityManager", t)
         }
 
         for (app in originalAppList) {
