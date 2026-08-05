@@ -629,9 +629,7 @@ public class ModuleHelper {
             try {
                 prefObserver.onChange(key);
             } catch (Throwable t) {
-                if (t instanceof OutOfMemoryError) throw (OutOfMemoryError) t;
-                if (t instanceof ThreadDeath) throw (ThreadDeath) t;
-                if (t instanceof VirtualMachineError) throw (VirtualMachineError) t;
+                throwIfFatal(t);
                 log(t);
             }
         }
@@ -639,9 +637,7 @@ public class ModuleHelper {
             try {
                 prefObserver.onChange(key);
             } catch (Throwable t) {
-                if (t instanceof OutOfMemoryError) throw (OutOfMemoryError) t;
-                if (t instanceof ThreadDeath) throw (ThreadDeath) t;
-                if (t instanceof VirtualMachineError) throw (VirtualMachineError) t;
+                throwIfFatal(t);
                 log(t);
             }
         }
@@ -664,9 +660,7 @@ public class ModuleHelper {
                     prefObserver.onChange(key);
                 }
             } catch (Throwable t) {
-                if (t instanceof OutOfMemoryError) throw (OutOfMemoryError) t;
-                if (t instanceof ThreadDeath) throw (ThreadDeath) t;
-                if (t instanceof VirtualMachineError) throw (VirtualMachineError) t;
+                throwIfFatal(t);
                 log(t);
             }
         }
@@ -1077,9 +1071,7 @@ public class ModuleHelper {
         try {
             block.run();
         } catch (Throwable t) {
-            if (t instanceof OutOfMemoryError) throw (OutOfMemoryError) t;
-            if (t instanceof ThreadDeath) throw (ThreadDeath) t;
-            if (t instanceof VirtualMachineError) throw (VirtualMachineError) t;
+            throwIfFatal(t);
             log(t);
         }
     }
@@ -1115,9 +1107,7 @@ public class ModuleHelper {
         try {
             block.run();
         } catch (Throwable t) {
-            if (t instanceof OutOfMemoryError) throw (OutOfMemoryError) t;
-            if (t instanceof ThreadDeath) throw (ThreadDeath) t;
-            if (t instanceof VirtualMachineError) throw (VirtualMachineError) t;
+            throwIfFatal(t);
             logGuardedFailure(callbackName, t, failureLogger);
         }
     }
@@ -1132,9 +1122,7 @@ public class ModuleHelper {
         try {
             return block.call();
         } catch (Throwable t) {
-            if (t instanceof OutOfMemoryError) throw (OutOfMemoryError) t;
-            if (t instanceof ThreadDeath) throw (ThreadDeath) t;
-            if (t instanceof VirtualMachineError) throw (VirtualMachineError) t;
+            throwIfFatal(t);
             log(t);
             return fallback;
         }
@@ -1151,9 +1139,7 @@ public class ModuleHelper {
         try {
             return block.call();
         } catch (Throwable t) {
-            if (t instanceof OutOfMemoryError) throw (OutOfMemoryError) t;
-            if (t instanceof ThreadDeath) throw (ThreadDeath) t;
-            if (t instanceof VirtualMachineError) throw (VirtualMachineError) t;
+            throwIfFatal(t);
             logGuardedFailure(callbackName, t, failureLogger);
             return fallback;
         }
