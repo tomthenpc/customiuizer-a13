@@ -725,8 +725,8 @@ public class ModuleHelper {
             try {
                 registrationContext.registerReceiver(receiver, filter, flags);
             } catch (Throwable t) {
+                throwIfFatal(t);
                 newRegistration.state = RegistrationState.REGISTER_FAILED;
-                if (t instanceof OutOfMemoryError) throw (OutOfMemoryError) t;
                 log(key, t);
                 return false;
             }
@@ -806,8 +806,8 @@ public class ModuleHelper {
                 try {
                     registrationContext.registerReceiver(receiver, filter, flags);
                 } catch (Throwable t) {
+                    throwIfFatal(t);
                     newRegistration.state = RegistrationState.REGISTER_FAILED;
-                    if (t instanceof OutOfMemoryError) throw (OutOfMemoryError) t;
                     log(key, t);
                     return false;
                 }
@@ -885,8 +885,8 @@ public class ModuleHelper {
                         registration.state = RegistrationState.RELEASED;
                         return true;
                     } catch (Throwable t) {
+                        throwIfFatal(t);
                         registration.state = RegistrationState.STALE;
-                        if (t instanceof OutOfMemoryError) throw (OutOfMemoryError) t;
                         return false;
                     }
             }
@@ -910,13 +910,14 @@ public class ModuleHelper {
                         registration.context.unregisterReceiver(registration.receiver);
                         registration.state = RegistrationState.RELEASED;
                     } catch (Throwable t) {
+                        throwIfFatal(t);
+
                         registration.state = RegistrationState.STALE;
                         if (registration instanceof OwnedReceiverRegistration) {
                             addToStale(staleOwnedReceivers, registration.key, (OwnedReceiverRegistration) registration);
                         } else {
                             addToStale(staleModuleReceivers, registration.key, registration);
                         }
-                        if (t instanceof OutOfMemoryError) throw (OutOfMemoryError) t;
                     }
                     return;
             }
