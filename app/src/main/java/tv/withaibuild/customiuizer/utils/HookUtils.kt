@@ -12,6 +12,7 @@ import android.graphics.drawable.Drawable
 import android.os.Build
 import android.os.IBinder
 import android.os.PowerManager
+import android.util.Log
 import android.util.TypedValue
 import android.view.HapticFeedbackConstants
 import android.view.View
@@ -38,6 +39,12 @@ import java.nio.file.StandardCopyOption
  * the hook paths actually call.
  */
 object HookUtils {
+
+    private const val TAG = "CustoMIUIzer-HookUtils"
+
+    private fun logFailure(operation: String, throwable: Throwable) {
+        Log.e(TAG, operation, throwable)
+    }
 
     @JvmField
     var mWakeLock: PowerManager.WakeLock? = null
@@ -100,7 +107,7 @@ object HookUtils {
             true
         } catch (t: Throwable) {
             if (t is OutOfMemoryError || t is ThreadDeath || t is VirtualMachineError) throw t
-            t.printStackTrace()
+            logFailure("copyFile", t)
             false
         }
     }
@@ -337,7 +344,7 @@ object HookUtils {
             (getAnimationScale.invoke(wm, type) as? Float) ?: 1.0f
         } catch (t: Throwable) {
             if (t is OutOfMemoryError || t is ThreadDeath || t is VirtualMachineError) throw t
-            t.printStackTrace()
+            logFailure("getAnimationScale", t)
             1.0f
         }
     }
@@ -363,7 +370,7 @@ object HookUtils {
                 pm.getApplicationLabel(ai)
             } catch (e: Throwable) {
                 if (e is OutOfMemoryError || e is ThreadDeath || e is VirtualMachineError) throw e
-                e.printStackTrace()
+                logFailure("getAppName.application", e)
                 null
             }
         } else {
@@ -371,7 +378,7 @@ object HookUtils {
                 pm.getActivityInfo(ComponentName(pkgActArray[0], pkgActArray[1]), 0).loadLabel(pm).toString()
             } catch (e: Throwable) {
                 if (e is OutOfMemoryError || e is ThreadDeath || e is VirtualMachineError) throw e
-                e.printStackTrace()
+                logFailure("getAppName.activity", e)
                 null
             }
         }
@@ -392,7 +399,7 @@ object HookUtils {
                 pm.getApplicationIcon(pkgActArray[0])
             } catch (e: Throwable) {
                 if (e is OutOfMemoryError || e is ThreadDeath || e is VirtualMachineError) throw e
-                e.printStackTrace()
+                logFailure("getAppIcon.application", e)
                 null
             }
         } else {
@@ -400,7 +407,7 @@ object HookUtils {
                 pm.getActivityIcon(ComponentName(pkgActArray[0], pkgActArray[1]))
             } catch (e: Throwable) {
                 if (e is OutOfMemoryError || e is ThreadDeath || e is VirtualMachineError) throw e
-                e.printStackTrace()
+                logFailure("getAppIcon.activity", e)
                 null
             }
         }

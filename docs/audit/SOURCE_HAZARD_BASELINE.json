@@ -20,12 +20,6 @@
     "a652f08b415c304c013f",
     "a652f08b415c304c013f",
     "a95519aefc9e79ef11fb",
-    "ad248e7a390352635e27",
-    "ad248e7a390352635e27",
-    "ad248e7a390352635e27",
-    "ad248e7a390352635e27",
-    "ad248e7a390352635e27",
-    "ad248e7a390352635e27",
     "babfd4ba0a647db0d4fe",
     "babfd4ba0a647db0d4fe",
     "babfd4ba0a647db0d4fe",
@@ -315,48 +309,6 @@
       "line": 991,
       "snippet": ".printStackTrace(",
       "fingerprint": "babfd4ba0a647db0d4fe"
-    },
-    {
-      "rule": "PRINT_STACK_TRACE",
-      "path": "app/src/main/java/tv/withaibuild/customiuizer/utils/HookUtils.kt",
-      "line": 103,
-      "snippet": ".printStackTrace(",
-      "fingerprint": "ad248e7a390352635e27"
-    },
-    {
-      "rule": "PRINT_STACK_TRACE",
-      "path": "app/src/main/java/tv/withaibuild/customiuizer/utils/HookUtils.kt",
-      "line": 340,
-      "snippet": ".printStackTrace(",
-      "fingerprint": "ad248e7a390352635e27"
-    },
-    {
-      "rule": "PRINT_STACK_TRACE",
-      "path": "app/src/main/java/tv/withaibuild/customiuizer/utils/HookUtils.kt",
-      "line": 366,
-      "snippet": ".printStackTrace(",
-      "fingerprint": "ad248e7a390352635e27"
-    },
-    {
-      "rule": "PRINT_STACK_TRACE",
-      "path": "app/src/main/java/tv/withaibuild/customiuizer/utils/HookUtils.kt",
-      "line": 374,
-      "snippet": ".printStackTrace(",
-      "fingerprint": "ad248e7a390352635e27"
-    },
-    {
-      "rule": "PRINT_STACK_TRACE",
-      "path": "app/src/main/java/tv/withaibuild/customiuizer/utils/HookUtils.kt",
-      "line": 395,
-      "snippet": ".printStackTrace(",
-      "fingerprint": "ad248e7a390352635e27"
-    },
-    {
-      "rule": "PRINT_STACK_TRACE",
-      "path": "app/src/main/java/tv/withaibuild/customiuizer/utils/HookUtils.kt",
-      "line": 403,
-      "snippet": ".printStackTrace(",
-      "fingerprint": "ad248e7a390352635e27"
     },
     {
       "rule": "PRINT_STACK_TRACE",
