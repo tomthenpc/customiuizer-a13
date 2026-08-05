@@ -20,12 +20,13 @@ Modify four receiver lifecycle methods in `ModuleHelper.java` to use the shared 
 5. Keep the compact `releaseReceiver` catch layout, but ensure `throwIfFatal(t);` is first.
 
 ## Verification
-- New static contract test: `tools/tests/test_module_helper_receiver_lifecycle_fatality.py` (35 tests).
-- Existing `tools/tests/test_module_helper_reflection_fallback_fatality.py` and `tools/tests/test_module_helper_hook_install_fatality.py` must still pass.
-- `python tools/verify.py full`
-- `python -m compileall tools`
-- `python -m unittest discover -s tools/tests -p "test_*.py"`
-- `git diff --check`
+- New static contract test: `tools/tests/test_module_helper_receiver_lifecycle_fatality.py` (39 tests).
+- Existing `tools/tests/test_module_helper_reflection_fallback_fatality.py` and `tools/tests/test_module_helper_hook_install_fatality.py` still pass.
+- `python tools/verify.py full` passed.
+- `python -m compileall tools` passed.
+- `python -m unittest discover -s tools/tests -p "test_*.py"` passed (663 tests).
+- `git diff --check` passed.
+- Eight mutations were applied and reverted; the new contract test correctly failed each time.
 
 ## Status
-In progress.
+Completed.
