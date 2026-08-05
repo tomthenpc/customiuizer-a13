@@ -74,11 +74,7 @@ class LockedAppAdapter @SuppressLint("WrongConstant") constructor(
         return try {
             method.invoke(sm, app.pkgName.orEmpty(), app.user) as? Boolean ?: false
         } catch (error: Throwable) {
-            if (
-                error is OutOfMemoryError ||
-                error is ThreadDeath ||
-                error is VirtualMachineError
-            ) throw error
+            ReflectionFatality.rethrowIfFatal(error)
 
             if (!readCheckedFailureLogged) {
                 readCheckedFailureLogged = true

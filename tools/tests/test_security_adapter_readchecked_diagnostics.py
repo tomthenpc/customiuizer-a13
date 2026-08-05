@@ -8,6 +8,7 @@ REPO = Path(__file__).resolve().parent.parent.parent
 FILES = {
     "LockedAppAdapter": REPO / "app" / "src" / "main" / "java" / "tv" / "withaibuild" / "customiuizer" / "utils" / "LockedAppAdapter.kt",
     "PrivacyAppAdapter": REPO / "app" / "src" / "main" / "java" / "tv" / "withaibuild" / "customiuizer" / "utils" / "PrivacyAppAdapter.kt",
+    "ReflectionFatality": REPO / "app" / "src" / "main" / "java" / "tv" / "withaibuild" / "customiuizer" / "utils" / "ReflectionFatality.kt",
 }
 SETTINGS_DIAGNOSTICS = (
     REPO / "app" / "src" / "main" / "java" / "tv" / "withaibuild" / "customiuizer" / "utils" / "SettingsDiagnostics.kt"
@@ -43,18 +44,51 @@ class SecurityAdapterReadCheckedContractTest(unittest.TestCase):
                 text = self.texts[name]
                 body = self._extract_method_body_with_call(text, "readChecked", method)
                 self.assertIsNotNone(body)
-                self.assertIn(f"method.invoke(sm, app.pkgName.orEmpty(), app.user)", body)
+                self.assertIn("method.invoke(sm, app.pkgName.orEmpty(), app.user)", body)
                 self.assertIn("as? Boolean ?: false", body)
 
-    def test_catch_has_full_fatal_guard(self):
+    def test_readChecked_uses_reflection_fatality(self):
+        for name in ("LockedAppAdapter", "PrivacyAppAdapter"):
+            with self.subTest(name=name):
+                body = self._extract_catch_body_after_call(f"{name}.readChecked")
+                self.assertIsNotNone(body)
+                self.assertIn("ReflectionFatality.rethrowIfFatal(error)", body)
+                # No direct fatal guard; ReflectionFatality handles direct and wrapped fatals.
+                self.assertNotIn("error is OutOfMemoryError", body)
+
+    def test_reflection_fatality_order(self):
         for op in ("LockedAppAdapter.readChecked", "PrivacyAppAdapter.readChecked"):
             with self.subTest(operation=op):
                 body = self._extract_catch_body_after_call(op)
                 self.assertIsNotNone(body)
-                for fatal in ("is OutOfMemoryError", "is ThreadDeath", "is VirtualMachineError"):
-                    with self.subTest(fatal=fatal):
-                        self.assertIn(fatal, body)
-                self.assertIn("throw", body)
+                helper_pos = body.find("ReflectionFatality.rethrowIfFatal(error)")
+                log_once_pos = body.find("if (!readCheckedFailureLogged)")
+                log_pos = body.find("SettingsDiagnostics.failure")
+                self.assertGreater(helper_pos, -1)
+                self.assertGreater(log_once_pos, -1)
+                self.assertGreater(log_pos, -1)
+                self.assertLess(helper_pos, log_once_pos)
+                self.assertLess(helper_pos, log_pos)
+
+    def test_reflection_fatality_called_once(self):
+        for op in ("LockedAppAdapter.readChecked", "PrivacyAppAdapter.readChecked"):
+            with self.subTest(operation=op):
+                body = self._extract_catch_body_after_call(op)
+                self.assertIsNotNone(body)
+                calls = body.count("ReflectionFatality.rethrowIfFatal(error)")
+                self.assertEqual(1, calls)
+
+    def test_logs_outer_error(self):
+        for op in ("LockedAppAdapter.readChecked", "PrivacyAppAdapter.readChecked"):
+            with self.subTest(operation=op):
+                body = self._extract_catch_body_after_call(op)
+                self.assertIsNotNone(body)
+                # The SettingsDiagnostics call must still pass the outer `error` variable.
+                op_name = op
+                self.assertIn(f'SettingsDiagnostics.failure("{op_name}", error)', body)
+                # Must not be passing error.cause or candidate.
+                self.assertNotIn("error.cause", body)
+                self.assertNotIn("candidate", body)
 
     def test_fallback_is_false(self):
         for op in ("LockedAppAdapter.readChecked", "PrivacyAppAdapter.readChecked"):
@@ -76,7 +110,6 @@ class SecurityAdapterReadCheckedContractTest(unittest.TestCase):
                 body = self._extract_catch_body_after_call(op)
                 self.assertIsNotNone(body)
                 self.assertIn("if (!readCheckedFailureLogged)", body)
-                # Flag should be set in the same guarded block or before SettingsDiagnostics.failure.
                 self.assertRegex(body, r'readCheckedFailureLogged\s*=\s*true')
 
     def test_no_nullify_manager_or_method(self):
@@ -115,8 +148,39 @@ class SecurityAdapterReadCheckedContractTest(unittest.TestCase):
     def test_readChecked_operations_unique(self):
         for op in ("LockedAppAdapter.readChecked", "PrivacyAppAdapter.readChecked"):
             with self.subTest(operation=op):
-                calls = sum(text.count(f'SettingsDiagnostics.failure("{op}",') for text in self.texts.values())
+                calls = sum(
+                    text.count(f'SettingsDiagnostics.failure("{op}",')
+                    for name, text in self.texts.items()
+                    if name != "ReflectionFatality"
+                )
                 self.assertEqual(1, calls)
+
+    def test_reflection_fatality_unwraps_only_invocation_target(self):
+        text = self.texts["ReflectionFatality"]
+        self.assertIn("error is InvocationTargetException", text)
+        self.assertIn("error.cause ?: error", text)
+        # No recursive cause traversal.
+        self.assertNotIn("cause?.cause", text)
+        self.assertNotIn("while", text)
+
+    def test_reflection_fatality_no_android_or_xposed_imports(self):
+        text = self.texts["ReflectionFatality"]
+        for forbidden in ("import android", "import io.github.libxposed", "import de.robv.android.xposed"):
+            with self.subTest(forbidden=forbidden):
+                self.assertNotIn(forbidden, text)
+
+    def test_reflection_fatality_no_logging_or_wrapping(self):
+        text = self.texts["ReflectionFatality"]
+        self.assertNotIn("Log.", text)
+        self.assertNotIn("RuntimeException(", text)
+        self.assertNotIn("throw OutOfMemoryError", text)
+        self.assertNotIn("throw InvocationTargetException", text)
+
+    def test_reflection_fatality_checks_three_fatals(self):
+        text = self.texts["ReflectionFatality"]
+        self.assertIn("is OutOfMemoryError", text)
+        self.assertIn("is ThreadDeath", text)
+        self.assertIn("is VirtualMachineError", text)
 
     def test_source_hazard_baseline_empty(self):
         baseline = REPO / "docs" / "audit" / "SOURCE_HAZARD_BASELINE.json"
