@@ -10,7 +10,6 @@ import org.junit.Test
 import tv.withaibuild.customiuizer.mods.utils.DeviceInfoMonitor
 import tv.withaibuild.customiuizer.utils.PrefMap
 import java.util.Locale
-import java.util.Properties
 
 class SystemUIStatusBarHooksDeviceMonitorTest {
 
@@ -168,13 +167,7 @@ class SystemUIStatusBarHooksDeviceMonitorTest {
             deviceTempReverseOrder = false
         )
 
-        val props = Properties().apply {
-            setProperty("POWER_SUPPLY_TEMP", "350")
-            setProperty("POWER_SUPPLY_CURRENT_NOW", "-1250000")
-            setProperty("POWER_SUPPLY_VOLTAGE_NOW", "4200000")
-        }
-
-        val text = DeviceInfoMonitor.buildBatteryInfo(snap, props)
+        val text = DeviceInfoMonitor.buildBatteryInfo(snap, 350, -1_250_000, 4_200_000)
 
         // Temp = 35 (350/10, no decimal because 350 % 10 == 0)
         // Current = -1 * round(-1250000 / 1000) = 1250 mA -> 1.25 A
@@ -198,13 +191,7 @@ class SystemUIStatusBarHooksDeviceMonitorTest {
             deviceTempReverseOrder = false
         )
 
-        val props = Properties().apply {
-            setProperty("POWER_SUPPLY_TEMP", "351")
-            setProperty("POWER_SUPPLY_CURRENT_NOW", "-500000")
-            setProperty("POWER_SUPPLY_VOLTAGE_NOW", "4200000")
-        }
-
-        val text = DeviceInfoMonitor.buildBatteryInfo(snap, props)
+        val text = DeviceInfoMonitor.buildBatteryInfo(snap, 351, -500_000, 4_200_000)
 
         // positive => raw current made absolute; 500 mA displayed as 500 mA.
         // temp 351 -> 35.1 (not divisible by 10)
@@ -228,9 +215,7 @@ class SystemUIStatusBarHooksDeviceMonitorTest {
             deviceTempReverseOrder = false
         )
 
-        val props = Properties()
-
-        val text = DeviceInfoMonitor.buildBatteryInfo(snap, props)
+        val text = DeviceInfoMonitor.buildBatteryInfo(snap, 0, 0, 0)
 
         // Missing values fall back to 0 and produce a harmless string instead of crashing.
         assertEquals("0\u2103 0mA", text)
@@ -253,7 +238,7 @@ class SystemUIStatusBarHooksDeviceMonitorTest {
             deviceTempReverseOrder = true
         )
 
-        val text = DeviceInfoMonitor.buildDeviceInfo(snap, "360", "45000")
+        val text = DeviceInfoMonitor.buildDeviceInfo(snap, 360, 45_000)
 
         // reverse order with single row: CPU 45.0℃ before battery 36.0℃
         assertEquals("45.0\u2103 36.0\u2103", text)
@@ -276,9 +261,9 @@ class SystemUIStatusBarHooksDeviceMonitorTest {
             deviceTempReverseOrder = false
         )
 
-        val text = DeviceInfoMonitor.buildDeviceInfo(snap, "360", null)
+        val text = DeviceInfoMonitor.buildDeviceInfo(snap, 360, 0)
 
-        // content=2: only battery temperature, CPU may be null
+        // content=2: only battery temperature, CPU may be 0
         assertEquals("36.0\u2103", text)
     }
 
@@ -299,9 +284,9 @@ class SystemUIStatusBarHooksDeviceMonitorTest {
             deviceTempReverseOrder = false
         )
 
-        val text = DeviceInfoMonitor.buildDeviceInfo(snap, null, "45000")
+        val text = DeviceInfoMonitor.buildDeviceInfo(snap, 0, 45_000)
 
-        // content=3: only CPU temperature, battery may be null
+        // content=3: only CPU temperature, battery may be 0
         assertEquals("45.0\u2103", text)
     }
 
@@ -322,7 +307,7 @@ class SystemUIStatusBarHooksDeviceMonitorTest {
             deviceTempReverseOrder = false
         )
 
-        val text = DeviceInfoMonitor.buildDeviceInfo(snap, "360", "45000")
+        val text = DeviceInfoMonitor.buildDeviceInfo(snap, 360, 45_000)
 
         // Illegal content value falls back to mode 1 (battery + CPU)
         assertEquals("36.0\u2103 45.0\u2103", text)

@@ -81,4 +81,34 @@ class DeviceInfoMonitorLifecycleTest {
         )
         assertFalse(DeviceInfoMonitor.isCurrentTick(3, 3, snapshot, snapshot, false))
     }
+
+    @Test
+    fun screenOffRejectsCurrentTickUntilScreenOn() {
+        val state = DeviceInfoMonitor.LifecycleState()
+        val snapshot = DeviceInfoMonitor.readSnapshot(PrefMap())
+
+        state.start(enabled = true, interactive = true)
+        assertTrue(state.canSchedule())
+        assertTrue(DeviceInfoMonitor.isCurrentTick(1, 1, snapshot, snapshot, state.canSchedule()))
+
+        state.onScreenOff()
+        assertFalse(state.canSchedule())
+        assertFalse(DeviceInfoMonitor.isCurrentTick(1, 1, snapshot, snapshot, state.canSchedule()))
+
+        assertTrue(state.onScreenOn())
+        assertTrue(state.canSchedule())
+        assertTrue(DeviceInfoMonitor.isCurrentTick(1, 1, snapshot, snapshot, state.canSchedule()))
+    }
+
+    @Test
+    fun stopRejectsCurrentTick() {
+        val state = DeviceInfoMonitor.LifecycleState()
+        val snapshot = DeviceInfoMonitor.readSnapshot(PrefMap())
+
+        state.start(enabled = true, interactive = true)
+        assertTrue(DeviceInfoMonitor.isCurrentTick(1, 1, snapshot, snapshot, state.canSchedule()))
+
+        state.stop()
+        assertFalse(DeviceInfoMonitor.isCurrentTick(1, 1, snapshot, snapshot, state.canSchedule()))
+    }
 }

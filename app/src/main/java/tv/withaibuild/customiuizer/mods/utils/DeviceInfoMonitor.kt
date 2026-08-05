@@ -10,11 +10,9 @@ import android.os.Message
 import android.os.PowerManager
 import io.github.libxposed.api.XposedModuleInterface.PackageReadyParam
 import java.io.FileInputStream
-import java.io.RandomAccessFile
 import java.text.DecimalFormat
 import java.text.DecimalFormatSymbols
 import java.util.Locale
-import java.util.Properties
 import tv.withaibuild.customiuizer.MainModule
 import tv.withaibuild.customiuizer.mods.SystemUIStatusBarHooks
 import tv.withaibuild.customiuizer.mods.utils.HookerClassHelper.AfterHookCallback
@@ -42,6 +40,18 @@ object DeviceInfoMonitor {
     internal const val BASE_DELAY_MS = 2_000L
     internal const val MAX_DELAY_MS = 60_000L
     private const val SCREEN_RECEIVER_KEY = "systemui.deviceInfoMonitorScreenReceiver"
+
+    private const val BATTERY_UEVENT_PATH =
+        "/sys/class/power_supply/battery/uevent"
+    private const val CPU_TEMP_PATH =
+        "/sys/devices/virtual/thermal/thermal_zone0/temp"
+
+    private val sysfsReadLock = Any()
+    private val batteryReadBuffer =
+        ByteArray(DeviceInfoSysfsParser.BATTERY_BUFFER_BYTES)
+    private val cpuReadBuffer =
+        ByteArray(DeviceInfoSysfsParser.CPU_BUFFER_BYTES)
+    private val batteryValues = DeviceInfoSysfsParser.BatteryValues()
 
     internal data class Snapshot(
         val showBatteryDetail: Boolean = true,
@@ -119,20 +129,6 @@ object DeviceInfoMonitor {
             canSchedule
     }
 
-    private data class IconUpdate(
-        val type: Int,
-        val show: Boolean,
-        val text: String
-    )
-
-    private data class ReadResult(
-        val batteryShow: Boolean,
-        val batteryText: String,
-        val tempShow: Boolean,
-        val tempText: String,
-        val complete: Boolean
-    )
-
     private data class TextState(
         var show: Boolean = false,
         var text: String = ""
@@ -149,7 +145,6 @@ object DeviceInfoMonitor {
     private var generation = 0
     private var mainHandler: Handler? = null
     private var backgroundHandler: Handler? = null
-    private var powerManager: PowerManager? = null
     private var chargeUtilsClass: Class<*>? = null
     private var classLoader: ClassLoader? = null
     private var fixedShowBatteryDetail = false
@@ -208,12 +203,10 @@ object DeviceInfoMonitor {
                         if (activeGeneration != generation || msg.what != UPDATE_MESSAGE) {
                             return@guarded
                         }
-                        val update = msg.obj as? IconUpdate ?: return@guarded
-                        SystemUIStatusBarHooks.updateDeviceInfoIcon(
-                            update.type,
-                            update.show,
-                            update.text
-                        )
+                        val text = msg.obj as? String ?: return@guarded
+                        val type = msg.arg1
+                        val show = msg.arg2 != 0
+                        SystemUIStatusBarHooks.updateDeviceInfoIcon(type, show, text)
                     }
                 }
             }
@@ -229,7 +222,7 @@ object DeviceInfoMonitor {
                 }
             }
 
-            powerManager =
+            val powerManager =
                 applicationContext.getSystemService(Context.POWER_SERVICE) as? PowerManager
             val runImmediately = lifecycle.start(
                 currentSnapshot.enabled,
@@ -313,18 +306,20 @@ object DeviceInfoMonitor {
             return
         }
 
-        if (powerManager?.isInteractive == false) {
-            synchronized(lock) {
-                if (activeGeneration == generation) {
-                    lifecycle.onScreenOff()
-                    backgroundHandler?.removeMessages(MONITOR_MESSAGE)
-                }
+        synchronized(lock) {
+            if (!isCurrentTick(
+                    activeGeneration,
+                    generation,
+                    current,
+                    snapshot,
+                    lifecycle.canSchedule()
+                )
+            ) {
+                return
             }
-            return
         }
 
-        val result = readDeviceData(current)
-        publish(activeGeneration, current, result)
+        val complete = sampleAndPublish(activeGeneration, current)
 
         synchronized(lock) {
             if (!isCurrentTick(
@@ -337,13 +332,88 @@ object DeviceInfoMonitor {
             ) {
                 return
             }
-            val delay = lifecycle.recordRead(result.complete)
+            val delay = lifecycle.recordRead(complete)
             backgroundHandler?.removeMessages(MONITOR_MESSAGE)
             backgroundHandler?.sendEmptyMessageDelayed(MONITOR_MESSAGE, delay)
         }
     }
 
-    private fun publish(activeGeneration: Int, current: Snapshot, result: ReadResult) {
+    private fun sampleAndPublish(activeGeneration: Int, current: Snapshot): Boolean {
+        val showBattery = current.showBatteryDetail && shouldShowBatteryInfo(current)
+        val tempMode =
+            if (current.deviceTempContentOpt in 1..3) current.deviceTempContentOpt else 1
+        val needBatteryTemp =
+            current.showDeviceTemp && (tempMode == 1 || tempMode == 2)
+        val needCpuTemp =
+            current.showDeviceTemp && (tempMode == 1 || tempMode == 3)
+        val needBatteryUevent = showBattery || needBatteryTemp
+
+        var batteryTemperature = 0
+        var batteryCurrentNow = 0
+        var batteryVoltageNow = 0
+        var cpuTemperature = 0
+
+        var batteryRead = !needBatteryUevent
+        var cpuRead = !needCpuTemp
+
+        synchronized(sysfsReadLock) {
+            if (needBatteryUevent) {
+                val length = readSysfsFile(BATTERY_UEVENT_PATH, batteryReadBuffer)
+                if (length >= 0) {
+                    batteryRead = DeviceInfoSysfsParser.parseBatteryUevent(
+                        batteryReadBuffer,
+                        length,
+                        batteryValues
+                    )
+                    if (batteryRead) {
+                        batteryTemperature = batteryValues.temperature
+                        batteryCurrentNow = batteryValues.currentNow
+                        batteryVoltageNow = batteryValues.voltageNow
+                    }
+                }
+            }
+            if (needCpuTemp) {
+                val length = readSysfsFile(CPU_TEMP_PATH, cpuReadBuffer)
+                if (length >= 0) {
+                    cpuTemperature =
+                        DeviceInfoSysfsParser.parseCpuTemperature(cpuReadBuffer, length)
+                    cpuRead = true
+                }
+            }
+        }
+
+        val batteryText = if (showBattery && batteryRead) {
+            buildBatteryInfo(
+                current,
+                batteryTemperature,
+                batteryCurrentNow,
+                batteryVoltageNow
+            )
+        } else {
+            ""
+        }
+
+        val tempText = if (current.showDeviceTemp) {
+            buildDeviceInfo(current, batteryTemperature, cpuTemperature)
+        } else {
+            ""
+        }
+
+        publish(activeGeneration, current, 91, showBattery, batteryText)
+        publish(activeGeneration, current, 92, current.showDeviceTemp, tempText)
+
+        val batteryComplete = !needBatteryUevent || batteryRead
+        val cpuComplete = !needCpuTemp || cpuRead
+        return batteryComplete && cpuComplete
+    }
+
+    private fun publish(
+        activeGeneration: Int,
+        current: Snapshot,
+        type: Int,
+        show: Boolean,
+        text: String
+    ) {
         synchronized(lock) {
             if (!isCurrentTick(
                     activeGeneration,
@@ -356,60 +426,41 @@ object DeviceInfoMonitor {
                 return
             }
             val handler = mainHandler ?: return
-            if (current.showBatteryDetail &&
-                (batteryState.show != result.batteryShow || batteryState.text != result.batteryText)
-            ) {
-                batteryState.show = result.batteryShow
-                batteryState.text = result.batteryText
+            val state = if (type == 91) batteryState else tempState
+            val featureEnabled =
+                if (type == 91) current.showBatteryDetail else current.showDeviceTemp
+            if (!featureEnabled) return
+            if (state.show != show || state.text != text) {
+                state.show = show
+                state.text = text
                 handler.obtainMessage(
                     UPDATE_MESSAGE,
-                    IconUpdate(91, result.batteryShow, result.batteryText)
-                ).sendToTarget()
-            }
-            if (current.showDeviceTemp &&
-                (tempState.show != result.tempShow || tempState.text != result.tempText)
-            ) {
-                tempState.show = result.tempShow
-                tempState.text = result.tempText
-                handler.obtainMessage(
-                    UPDATE_MESSAGE,
-                    IconUpdate(92, result.tempShow, result.tempText)
+                    type,
+                    if (show) 1 else 0,
+                    text
                 ).sendToTarget()
             }
         }
     }
 
-    private fun readDeviceData(current: Snapshot): ReadResult {
-        val showBattery = current.showBatteryDetail && shouldShowBatteryInfo(current)
-        val tempMode =
-            if (current.deviceTempContentOpt in 1..3) current.deviceTempContentOpt else 1
-        val needBatteryTemp =
-            current.showDeviceTemp && (tempMode == 1 || tempMode == 2)
-        val needCpuTemp =
-            current.showDeviceTemp && (tempMode == 1 || tempMode == 3)
-        val needBatteryUevent = showBattery || needBatteryTemp
-
-        val props = if (needBatteryUevent) readBatteryProperties() else null
-        val cpuTemp = if (needCpuTemp) readCpuTemperature() else null
-        val batteryComplete = !needBatteryUevent || props != null
-        val cpuComplete = !needCpuTemp || cpuTemp != null
-
-        return ReadResult(
-            batteryShow = showBattery,
-            batteryText =
-                if (showBattery && props != null) buildBatteryInfo(current, props) else "",
-            tempShow = current.showDeviceTemp,
-            tempText = if (current.showDeviceTemp) {
-                buildDeviceInfo(
-                    current,
-                    props?.getProperty("POWER_SUPPLY_TEMP"),
-                    cpuTemp
-                )
-            } else {
-                ""
-            },
-            complete = batteryComplete && cpuComplete
-        )
+    private fun readSysfsFile(path: String, buffer: ByteArray): Int {
+        return try {
+            FileInputStream(path).use { input ->
+                var offset = 0
+                val capacity = buffer.size
+                while (offset < capacity) {
+                    val read = input.read(buffer, offset, capacity - offset)
+                    if (read < 0) return@use offset
+                    if (read == 0) return@use -1
+                    offset += read
+                }
+                if (input.read() >= 0) return@use -1
+                offset
+            }
+        } catch (t: Throwable) {
+            RuntimeFatality.throwIfFatal(t)
+            -1
+        }
     }
 
     private fun shouldShowBatteryInfo(current: Snapshot): Boolean {
@@ -421,33 +472,6 @@ object DeviceInfoMonitor {
         return XposedHelpers.callMethod(batteryStatus, "isCharging") as? Boolean ?: false
     }
 
-    private fun readBatteryProperties(): Properties? {
-        return try {
-            FileInputStream("/sys/class/power_supply/battery/uevent").use { input ->
-                Properties().apply { load(input) }
-            }
-        } catch (oom: OutOfMemoryError) {
-            throw oom
-        } catch (fatal: Throwable) {
-            if (fatal is OutOfMemoryError || fatal is ThreadDeath || fatal is VirtualMachineError) throw fatal
-            null
-        }
-    }
-
-    private fun readCpuTemperature(): String? {
-        return try {
-            RandomAccessFile(
-                "/sys/devices/virtual/thermal/thermal_zone0/temp",
-                "r"
-            ).use { it.readLine() }
-        } catch (oom: OutOfMemoryError) {
-            throw oom
-        } catch (fatal: Throwable) {
-            if (fatal is OutOfMemoryError || fatal is ThreadDeath || fatal is VirtualMachineError) throw fatal
-            null
-        }
-    }
-
     private fun stopLocked() {
         generation++
         backgroundHandler?.removeMessages(MONITOR_MESSAGE)
@@ -455,7 +479,6 @@ object DeviceInfoMonitor {
         ModuleHelper.unregisterModuleReceiver(SCREEN_RECEIVER_KEY)
         backgroundHandler = null
         mainHandler = null
-        powerManager = null
         lifecycle.stop()
         batteryState.show = false
         batteryState.text = ""
@@ -501,16 +524,17 @@ object DeviceInfoMonitor {
         )
     }
 
-    private fun parseSysfsInt(raw: String?, fallback: Int = 0): Int {
-        return raw?.trim()?.toIntOrNull() ?: fallback
-    }
-
     @JvmStatic
-    internal fun buildBatteryInfo(current: Snapshot, props: Properties): String {
+    internal fun buildBatteryInfo(
+        current: Snapshot,
+        batteryTemperature: Int,
+        batteryCurrentNow: Int,
+        batteryVoltageNow: Int
+    ): String {
         val opt = current.batteryContentOpt
         var simpleTemp = ""
         if (opt == 1 || opt == 4) {
-            val value = parseSysfsInt(props.getProperty("POWER_SUPPLY_TEMP"))
+            val value = batteryTemperature
             simpleTemp = if (current.batteryTempDecimal) {
                 (value / 10f).toString()
             } else if (value % 10 == 0) {
@@ -521,8 +545,7 @@ object DeviceInfoMonitor {
         }
 
         val ratio = if (current.batteryFixCurrentRatio) 1f else 1_000f
-        var rawCurrent =
-            -1 * Math.round(parseSysfsInt(props.getProperty("POWER_SUPPLY_CURRENT_NOW")) / ratio)
+        var rawCurrent = -1 * Math.round(batteryCurrentNow / ratio)
         var currentText = ""
         var currentUnit = "mA"
         if (opt == 1 || opt == 3 || opt == 5) {
@@ -541,8 +564,7 @@ object DeviceInfoMonitor {
         val finalCurrentUnit = if (hideUnit == 1 || hideUnit == 3) "" else currentUnit
         var watts = ""
         if (opt == 2 || opt == 4 || opt == 5) {
-            val volts =
-                parseSysfsInt(props.getProperty("POWER_SUPPLY_VOLTAGE_NOW")) / 1_000f / 1_000f
+            val volts = batteryVoltageNow / 1_000f / 1_000f
             watts = format2(Math.abs(volts * rawCurrent) / 1_000f)
         }
 
@@ -571,8 +593,8 @@ object DeviceInfoMonitor {
     @JvmStatic
     internal fun buildDeviceInfo(
         current: Snapshot,
-        batteryTemp: String?,
-        cpuTemp: String?
+        batteryTemperature: Int,
+        cpuTemperature: Int
     ): String {
         val opt =
             if (current.deviceTempContentOpt in 1..3) current.deviceTempContentOpt else 1
@@ -580,16 +602,16 @@ object DeviceInfoMonitor {
         val separator = if (current.deviceTempSingleRow) " " else "\n"
         return when (opt) {
             1 -> {
-                val battery = format1(parseSysfsInt(batteryTemp) / 10f)
-                val cpu = format1(parseSysfsInt(cpuTemp) / 1_000f)
+                val battery = format1(batteryTemperature / 10f)
+                val cpu = format1(cpuTemperature / 1_000f)
                 if (current.deviceTempReverseOrder) {
                     "$cpu$unit$separator$battery$unit"
                 } else {
                     "$battery$unit$separator$cpu$unit"
                 }
             }
-            2 -> format1(parseSysfsInt(batteryTemp) / 10f) + unit
-            else -> format1(parseSysfsInt(cpuTemp) / 1_000f) + unit
+            2 -> format1(batteryTemperature / 10f) + unit
+            else -> format1(cpuTemperature / 1_000f) + unit
         }
     }
 }
