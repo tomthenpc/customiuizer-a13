@@ -603,7 +603,7 @@ class P3_3B_CallSiteConditionValidationTest(unittest.TestCase):
         reg = self._mutate(
             "GlobalActions.setupForegroundMonitor",
             lambda r: r["callSiteConditions"].update({
-                "tv/withaibuild/customiuizer/mods/GlobalActions.kt:759:setupForegroundMonitor": {
+                "tv/withaibuild/customiuizer/mods/GlobalActions.kt:765:setupForegroundMonitor": {
                     "kind": "INT_KEY_GT", "key": "unknown_key", "thresholdExclusive": 0,
                 }
             }),
@@ -614,7 +614,7 @@ class P3_3B_CallSiteConditionValidationTest(unittest.TestCase):
         reg = self._mutate(
             "GlobalActions.setupForegroundMonitor",
             lambda r: r["callSiteConditions"].update({
-                "tv/withaibuild/customiuizer/mods/GlobalActions.kt:759:setupForegroundMonitor": {
+                "tv/withaibuild/customiuizer/mods/GlobalActions.kt:765:setupForegroundMonitor": {
                     "kind": "INT_KEY_GT",
                 }
             }),
@@ -625,7 +625,7 @@ class P3_3B_CallSiteConditionValidationTest(unittest.TestCase):
         reg = self._mutate(
             "GlobalActions.setupForegroundMonitor",
             lambda r: r["callSiteConditions"].update({
-                "tv/withaibuild/customiuizer/mods/GlobalActions.kt:759:setupForegroundMonitor": {
+                "tv/withaibuild/customiuizer/mods/GlobalActions.kt:765:setupForegroundMonitor": {
                     "kind": "FLOAT_GT", "key": "various_showcallui", "thresholdExclusive": 0,
                 }
             }),
@@ -636,7 +636,7 @@ class P3_3B_CallSiteConditionValidationTest(unittest.TestCase):
         reg = self._mutate(
             "GlobalActions.setupForegroundMonitor",
             lambda r: r["callSiteConditions"].update({
-                "tv/withaibuild/customiuizer/mods/GlobalActions.kt:759:setupForegroundMonitor": {
+                "tv/withaibuild/customiuizer/mods/GlobalActions.kt:765:setupForegroundMonitor": {
                     "kind": "BOOLEAN_KEY_TRUE", "key": "various_showcallui",
                 }
             }),
@@ -648,7 +648,7 @@ class P3_3B_CallSiteConditionValidationTest(unittest.TestCase):
         reg = self._mutate(
             "GlobalActions.setupForegroundMonitor",
             lambda r: r["callSiteConditions"].update({
-                "tv/withaibuild/customiuizer/mods/GlobalActions.kt:759:setupForegroundMonitor": {
+                "tv/withaibuild/customiuizer/mods/GlobalActions.kt:765:setupForegroundMonitor": {
                     "kind": "INT_KEY_GT", "key": "various_showcallui", "thresholdExclusive": True,
                 }
             }),
@@ -767,7 +767,7 @@ class P3_3B_ActivationContractMutationTest(unittest.TestCase):
         reg = self._mutate(
             "GlobalActions.setupForegroundMonitor",
             lambda r: r["callSiteConditions"].update({
-                "tv/withaibuild/customiuizer/mods/GlobalActions.kt:759:setupForegroundMonitor": {
+                "tv/withaibuild/customiuizer/mods/GlobalActions.kt:765:setupForegroundMonitor": {
                     "kind": "BOOLEAN_KEY_TRUE", "key": "controls_volumecursor",
                 }
             }),

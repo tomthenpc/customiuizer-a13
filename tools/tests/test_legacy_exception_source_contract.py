@@ -370,7 +370,7 @@ class SetupForegroundMonitorSourceContractTest(unittest.TestCase):
             line = int(parts[1])
             expected[line] = cond
         self.assertEqual(derived, expected)
-        self.assertEqual(list(derived.keys()), [759])
+        self.assertEqual(list(derived.keys()), [765])
 
 
 class ForegroundMonitorMutationTest(unittest.TestCase):

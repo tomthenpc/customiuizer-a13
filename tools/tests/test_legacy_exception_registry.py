@@ -713,7 +713,7 @@ class LegacyExceptionFailClosedValidationTest(unittest.TestCase):
         reg = self._mutate(
             "GlobalActions.setupForegroundMonitor",
             lambda r: r["callSiteConditions"].update({
-                "tv/withaibuild/customiuizer/mods/GlobalActions.kt:759:setupForegroundMonitor": {
+                "tv/withaibuild/customiuizer/mods/GlobalActions.kt:765:setupForegroundMonitor": {
                     "kind": "BOOLEAN_KEY_TRUE", "key": "various_showcallui",
                 }
             }),

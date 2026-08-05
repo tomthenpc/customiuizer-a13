@@ -359,7 +359,7 @@ LEGACY_EXCEPTION_SEEDS: list[dict] = [
             ],
         },
         "callSiteConditions": {
-            "tv/withaibuild/customiuizer/mods/GlobalActions.kt:759:setupForegroundMonitor": {
+            "tv/withaibuild/customiuizer/mods/GlobalActions.kt:765:setupForegroundMonitor": {
                 "kind": "INT_KEY_GT",
                 "key": "various_showcallui",
                 "thresholdExclusive": 0,

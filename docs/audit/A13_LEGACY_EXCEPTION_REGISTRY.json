@@ -1,6 +1,6 @@
 {
   "schemaVersion": 4,
-  "inputDigest": "f06dc0650e32702fbe8646edfc880d747dd6da2a51d0603f5599a1b89777bc72",
+  "inputDigest": "377eb0df7957f976e1103a54e1dd7f00ca67fddb3530dea38018df6bced5b812",
   "totalLegacyCallSites": 514,
   "totalLegacyGroups": 205,
   "firstBatchSize": 4,
@@ -25,7 +25,7 @@
       "reasonCode": "CROSS_PROCESS",
       "reason": "The Settings app side of USB default configuration is installed from the Settings installer and lacks a typed per-app Feature owner. It shares the system_defaultusb preference with the system_server hook.",
       "coveredCallSites": [
-        "tv/withaibuild/customiuizer/mods/SystemSettingsMoreHooks.kt:88:USBConfigSettingsHook"
+        "tv/withaibuild/customiuizer/mods/SystemSettingsMoreHooks.kt:91:USBConfigSettingsHook"
       ],
       "hookTargets": [
         "com.android.settings.connecteddevice.usb.UsbModeChooserReceiver#onReceive"
@@ -51,11 +51,11 @@
       "reasonCode": "CROSS_PROCESS",
       "reason": "The separate volume stream feature routes to SystemUI (MiuiVolumeDialog / volume plugin) as well as to system_server audio (NotificationVolumeServiceHook is already typed in FeatureCatalog). There is currently no typed cross-process owner that covers the SystemUI side of the split.",
       "coveredCallSites": [
-        "tv/withaibuild/customiuizer/mods/SystemUIControlCenterHooks.kt:87:MIUIVolumeDialogHook",
-        "tv/withaibuild/customiuizer/mods/SystemUIControlCenterHooks.kt:100:MIUIVolumeDialogHook",
-        "tv/withaibuild/customiuizer/mods/SystemUIControlCenterHooks.kt:113:MIUIVolumeDialogHook",
-        "tv/withaibuild/customiuizer/mods/SystemUIControlCenterHooks.kt:242:SingleNotificationSliderHook",
-        "tv/withaibuild/customiuizer/mods/SystemUIControlCenterHooks.kt:250:SingleNotificationSliderHook"
+        "tv/withaibuild/customiuizer/mods/SystemUIControlCenterHooks.kt:92:MIUIVolumeDialogHook",
+        "tv/withaibuild/customiuizer/mods/SystemUIControlCenterHooks.kt:105:MIUIVolumeDialogHook",
+        "tv/withaibuild/customiuizer/mods/SystemUIControlCenterHooks.kt:118:MIUIVolumeDialogHook",
+        "tv/withaibuild/customiuizer/mods/SystemUIControlCenterHooks.kt:249:SingleNotificationSliderHook",
+        "tv/withaibuild/customiuizer/mods/SystemUIControlCenterHooks.kt:257:SingleNotificationSliderHook"
       ],
       "hookTargets": [
         "com.android.systemui.miui.volume.MiuiVolumeDialogImpl#addColumn",
@@ -110,8 +110,8 @@
       "runtimeConfigKeys": [],
       "reason": "GlobalActions.setupGlobalActions is installed at SYSTEM_SERVER_STARTING when the installer activation predicate is satisfied. The predicate is a disjunction: (A) any SharedPreferences entry whose key ends with '_action' and whose runtime value is an Integer greater than 1, or (B) any of the media volume shortcut keys (controls_volumemedia_up / controls_volumemedia_down) is greater than 0 and the media player app set (controls_mediaplayer_apps) is non-empty. The fixed literal keys needed by the activation predicate are listed in preferenceKeys; the dynamic '_action' key domain is expressed by the DYNAMIC_SUFFIX_INT_GT activationContract and is not enumerated in preferenceKeys. It hooks AccessibilityManagerService construction and BaseMiuiPhoneWindowManager#initInternal to register cross-process broadcast receivers before the system finishes booting. There is no single typed FeatureSpec that owns both the lifecycle bootstrap and the cross-process action dispatch surface today.",
       "coveredCallSites": [
-        "tv/withaibuild/customiuizer/mods/GlobalActions.kt:780:setupGlobalActions",
-        "tv/withaibuild/customiuizer/mods/GlobalActions.kt:827:setupGlobalActions"
+        "tv/withaibuild/customiuizer/mods/GlobalActions.kt:786:setupGlobalActions",
+        "tv/withaibuild/customiuizer/mods/GlobalActions.kt:833:setupGlobalActions"
       ],
       "hookTargets": [
         "com.android.server.accessibility.AccessibilityManagerService#<init>",
@@ -162,8 +162,8 @@
       ],
       "reason": "AlarmCompatServiceHook is installed at SYSTEM_SERVER_STARTING when various_alarmcompat is true. It hooks AlarmManagerService#onBootPhase (phase 500) to register a ContentObserver for next_alarm_clock_formatted and AlarmManagerService#getNextAlarmClockImpl to return a synthetic alarm for selected apps. The various_alarmcompat_apps key is a runtime allowlist configuration used inside the hooked functions, not the installer activation gate. The feature is tied to the ROM-specific AlarmManagerService lifecycle and cannot be expressed as a typed Feature today.",
       "coveredCallSites": [
-        "tv/withaibuild/customiuizer/mods/Various.kt:830:AlarmCompatServiceHook",
-        "tv/withaibuild/customiuizer/mods/Various.kt:852:AlarmCompatServiceHook"
+        "tv/withaibuild/customiuizer/mods/Various.kt:844:AlarmCompatServiceHook",
+        "tv/withaibuild/customiuizer/mods/Various.kt:866:AlarmCompatServiceHook"
       ],
       "hookTargets": [
         "com.android.server.alarm.AlarmManagerService#getNextAlarmClockImpl",
@@ -200,9 +200,9 @@
       "runtimeConfigKeys": [],
       "reason": "GlobalActions.setupForegroundMonitor is installed in SystemUI when various_showcallui is greater than 0 or controls_volumecursor is true. It observes the foreground package and fullscreen state and writes them into Settings.Global for cross-process consumption. The first two hooks (NetworkSpeedController construction and MiuiActivityUtil#updateTopActivity) are installed whenever the entrypoint is called; the third hook (StatusBarStateControllerImpl#setSystemBarAttributes) is installed only inside the various_showcallui > 0 branch and therefore has a per-call-site condition.",
       "coveredCallSites": [
-        "tv/withaibuild/customiuizer/mods/GlobalActions.kt:743:setupForegroundMonitor",
-        "tv/withaibuild/customiuizer/mods/GlobalActions.kt:747:setupForegroundMonitor",
-        "tv/withaibuild/customiuizer/mods/GlobalActions.kt:759:setupForegroundMonitor"
+        "tv/withaibuild/customiuizer/mods/GlobalActions.kt:749:setupForegroundMonitor",
+        "tv/withaibuild/customiuizer/mods/GlobalActions.kt:753:setupForegroundMonitor",
+        "tv/withaibuild/customiuizer/mods/GlobalActions.kt:765:setupForegroundMonitor"
       ],
       "hookTargets": [
         "com.android.systemui.statusbar.StatusBarStateControllerImpl#setSystemBarAttributes",
@@ -228,7 +228,7 @@
         ]
       },
       "callSiteConditions": {
-        "tv/withaibuild/customiuizer/mods/GlobalActions.kt:759:setupForegroundMonitor": {
+        "tv/withaibuild/customiuizer/mods/GlobalActions.kt:765:setupForegroundMonitor": {
           "kind": "INT_KEY_GT",
           "key": "various_showcallui",
           "thresholdExclusive": 0
@@ -249,7 +249,7 @@
       "runtimeConfigKeys": [],
       "reason": "GlobalActions.setupStatusBar is installed unconditionally when the SystemUI package is ready (com.android.systemui). It hooks CentralSurfacesImpl#start to register a status-bar broadcast receiver that handles cross-process actions (expand notifications, toggle GPS, etc.). It cannot be a single typed Feature today because the receiver covers multiple unrelated actions and spans the SystemUI lifecycle. The activationContract is UNCONDITIONAL and preferenceKeys is empty because there is no per-user preference gate.",
       "coveredCallSites": [
-        "tv/withaibuild/customiuizer/mods/GlobalActions.kt:893:setupStatusBar"
+        "tv/withaibuild/customiuizer/mods/GlobalActions.kt:899:setupStatusBar"
       ],
       "hookTargets": [
         "com.android.systemui.statusbar.phone.CentralSurfacesImpl#start"
@@ -279,9 +279,9 @@
       "reason": "USB default configuration must run in system_server (PowerManager / UsbDeviceManager) and has no typed Feature owner. The feature spans both system_server and the Settings app, so the split cannot be expressed as a single catalog entry today.",
       "coveredCallSites": [
         "tv/withaibuild/customiuizer/mods/SystemSettingsMoreHooks.kt:28:USBConfigHook",
-        "tv/withaibuild/customiuizer/mods/SystemSettingsMoreHooks.kt:66:USBConfigHook",
-        "tv/withaibuild/customiuizer/mods/SystemSettingsMoreHooks.kt:67:USBConfigHook",
-        "tv/withaibuild/customiuizer/mods/SystemSettingsMoreHooks.kt:69:USBConfigHook"
+        "tv/withaibuild/customiuizer/mods/SystemSettingsMoreHooks.kt:68:USBConfigHook",
+        "tv/withaibuild/customiuizer/mods/SystemSettingsMoreHooks.kt:69:USBConfigHook",
+        "tv/withaibuild/customiuizer/mods/SystemSettingsMoreHooks.kt:71:USBConfigHook"
       ],
       "hookTargets": [
         "com.android.server.power.PowerManagerService#systemReady",
@@ -294,8 +294,8 @@
       "exitCondition": "Create a typed system_server FeatureSpec for USB default mode and expose a cross-process contract for the Settings variant (P3.3C)."
     }
   ],
-  "sourceCommit": "33ce1ab5969d61c94c0ce3f7942c8dac02a5c579",
-  "sourceTree": "3c99e89a99f32263ed34402765ce5c11eb4d9de1",
-  "generatorVersion": "3e6228b2b75f02b7",
-  "generatedAt": "2026-08-04T14:01:27+00:00"
+  "sourceCommit": "f78f0d8d8c9618fb6f183534fbf094f8752b57a0",
+  "sourceTree": "46e0893fab3d1ac75d811bd7d3a7235cafbb4041",
+  "generatorVersion": "7b7847444be4cdcd",
+  "generatedAt": "2026-08-05T03:22:42+00:00"
 }
