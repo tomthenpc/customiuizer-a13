@@ -1,7 +1,7 @@
 # OPTIMIZE-needloadprefs-knowledge-sink
 
 - Platform: A13
-- Status: Active
+- Status: Done
 - Priority: P1
 - Owner: Devin
 - Reviewer: ChatGPT / human
@@ -68,19 +68,19 @@
 
 ## 验收标准
 
-- [ ] `MainModule` 中 9 个具体 preference key 全部消失；
-- [ ] `MainModule` 不再包含 `needLoadPrefs()` 及其三个辅助方法；
-- [ ] known package 和四组 legacy feature 判断全部进入统一 registry；
-- [ ] 所有行为矩阵测试通过；
-- [ ] volume media 的短路和异常行为与旧 Java 实现一致；
-- [ ] remote null、rejected process、initPrefs 和 installer 时序不变；
-- [ ] 不修改 Hook、Installer、FeatureCatalog 或 PreferenceSchema；
-- [ ] source hazard 为 47 reviewed、0 new；
-- [ ] Python tests、Gradle unit tests、fast verify、full verify 全部通过；
-- [ ] `git diff --check` 通过；
-- [ ] 工作区无未解释文件；
-- [ ] 不要求 APK；
-- [ ] 完成状态标记为 `STATIC_VERIFIED`。
+- [x] `MainModule` 中 9 个具体 preference key 全部消失；
+- [x] `MainModule` 不再包含 `needLoadPrefs()` 及其三个辅助方法；
+- [x] known package 和四组 legacy feature 判断全部进入统一 registry；
+- [x] 所有行为矩阵测试通过；
+- [x] volume media 的短路和异常行为与旧 Java 实现一致；
+- [x] remote null、rejected process、initPrefs 和 installer 时序不变；
+- [x] 不修改 Hook、Installer、FeatureCatalog 或 PreferenceSchema；
+- [x] source hazard 为 47 reviewed、0 new；
+- [x] Python tests、Gradle unit tests、fast verify、full verify 全部通过；
+- [x] `git diff --check` 通过；
+- [x] 工作区无未解释文件；
+- [x] 不要求 APK；
+- [x] 完成状态标记为 `STATIC_VERIFIED`。
 
 ## 验证
 
@@ -100,16 +100,38 @@ git diff --check
 git status --short
 ```
 
+### 实际结果
+
+- `compileall tools`：通过
+- `unittest discover`：426 tests passed, 0 failed, skipped 2
+- `testDebugUnitTest --tests PreferenceLoadRegistryTest`：通过
+- `compileDebugKotlin`：通过
+- `compileDebugJavaWithJavac`：通过
+- `source_hazard_scan.py --path app/src/main/java`：`Source hazard scan passed: 47 reviewed finding(s), 0 new`
+- `verify.py fast --changed`：通过
+- `verify.py full`：通过（含 compileDebugKotlin、compileDebugJavaWithJavac、testDebugUnitTest-all、lintDebug）
+- `git diff --check`：通过（仅 MainModule.java CRLF 转 LF 的正常 git 提示）
+- `git status --short`：工作区干净
+
 ## 构建产物
 
 未要求 APK。
 
 ## 完成记录
 
-- Base SHA:
-- Final SHA:
+- Base SHA: 164c45653b2e6066b8d519f2fd59efc49e66ce40
+- Final SHA: 3fd569cc7e8ba543b921ebaae9d849f777928cf0
 - Commits:
+  - `09a6b19` docs: add active OPTIMIZE-needloadprefs-knowledge-sink task
+  - `3fd569c` refactor: extract preference load registry
 - Behavior changed:
-- Verification:
-- Device evidence:
+  - 新增 `PreferenceLoadRegistry`，聚合四组 legacy preference-load 规则；
+  - `MainModule` 删除 `needLoadPrefs`、`isPrefEnabled`、`isInPrefSet`、`isVolumeMediaEnabled` 及 9 个 preference key 字面量；
+  - `MainModule.onPackageReady` 现在调用 `PreferenceLoadRegistry.shouldLoad(remote, pkg)`；
+  - Volume Media 的 `||` 短路和 `NumberFormatException` 行为保持与旧 Java 实现一致；
+  - known package、remote null、rejected process、`initPrefs()` 调用时序保持不变。
+- Verification: 见“验证”章节
+- Device evidence: 未涉及设备；本任务仅静态重构与单元测试，标记为 `STATIC_VERIFIED`
 - Known limits:
+  - `PreferenceSchema` / `FeatureCatalog` integration remains a separate phase after the four legacy common-package features receive real `FeatureSpec` ownership.
+  - `PreferenceLoadPredicate` 仅用于 legacy 规则下沉，未接入 installer 或 dispatcher。
