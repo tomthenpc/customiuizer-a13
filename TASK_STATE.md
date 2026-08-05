@@ -755,11 +755,13 @@ Next: P3.3A approved; P3.3B engineering complete and in R2 review; P3.3C may sta
 
 ## P3.3B GlobalActions and AlarmCompat LEGACY_EXCEPTION 登记
 
-State: `R3_REVIEW_REQUIRED`
+State: `R4_REVIEW_REQUIRED`
 
 R2 修复目标 HEAD: `fa74d4f3c1d4b2f10c519ac154e5172bd2fa39d7`
 
 R3 修复目标 HEAD: `33ce1ab5969d61c94c0ce3f7942c8dac02a5c579`
+
+R4 修复目标 HEAD: `6f06e6df9a05d5b50f1c314c1f92f2c9a3ccb248`
 
 EngineeringCommit: `372c59fd3515036b348baf7a19d6443e1993b8e7`
 
@@ -781,6 +783,16 @@ R3EngineeringCIJob: `92157229529`
 
 R3EngineeringCIResult: `PASS`
 
+R4EngineeringCommit: `6f06e6df9a05d5b50f1c314c1f92f2c9a3ccb248`
+
+R4EngineeringTree: `aacdce71b908356e369bf843867f1785905095b6`
+
+R4EngineeringCIRun: `30968706163`
+
+R4EngineeringCIJob: `92188177489`
+
+R4EngineeringCIResult: `PASS`
+
 文件：
 
 ```text
@@ -794,8 +806,12 @@ R3EngineeringCIResult: `PASS`
 - docs/process/tasks/A13-P3.3B-GLOBALACTIONS-ALARMCOMPAT-EXCEPTIONS.md
 - docs/process/tasks/A13-P3.3B-R1-ACTIVATION-CONTRACT-REPAIR.md
 - docs/process/tasks/A13-P3.3B-R2-SOURCE-LOGIC-VALIDATOR-REPAIR.md
+- docs/process/tasks/A13-P3.3B-R3-INDEPENDENT-TRUTH-EVIDENCE-REPAIR.md
+- docs/process/tasks/A13-P3.3B-R4-GATE-COVERAGE-COMPLETION-EVIDENCE.md
 - docs/process/handoffs/A13-HANDOFF-2026-08-03-P3.3B.md
 - docs/process/handoffs/A13-HANDOFF-2026-08-04-P3.3B-R2.md
+- docs/process/handoffs/A13-HANDOFF-2026-08-04-P3.3B-R3.md
+- docs/process/handoffs/A13-HANDOFF-2026-08-05-P3.3B-R4.md
 - TASK_STATE.md
 - SMART_OPERATION_STATE.md
 ```
@@ -847,6 +863,15 @@ R3EngineeringCIResult: `PASS`
   - test_p33b 重构为 generator + source contract + fail-closed + mutation + source mutation 五类测试；
   - 新增 test_legacy_exception_source_contract.py 覆盖 source parser 与 mutation；
   - A13_LEGACY_EXCEPTION_REGISTRY.json 重新生成，schema v4，provenance 刷新，8 records / 19 covered calls / firstBatchSize 4 保持不变。
+- P3.3B-R4 修复（见 docs/process/tasks/A13-P3.3B-R4-GATE-COVERAGE-COMPLETION-EVIDENCE.md）与 handoff A13-HANDOFF-2026-08-05-P3.3B-R4.md：
+  - 统一 build_registry AST gate 覆盖 test_p33b_legacy_exception_routes.py 与 test_legacy_exception_source_contract.py 全模块；
+  - 唯一 allowlisted class 为 P3_3B_GeneratorConsistencyTest；
+  - 识别并拒绝 alias / getattr / partial / callback / 嵌套引用等绕过形式；
+  - completion evidence 改为使用 unittest.defaultTestLoader 动态计算 focused counts 与 discover total；
+  - 机械核对 TASK_STATE.md / SMART_OPERATION_STATE.md / R3/R4 handoff 与 task slice 的 active verification 段；
+  - 不再保留任何手写测试数量；
+  - 新增 P2 parser 边界 subtests 与最小 Kotlin return-type fail-closed 修复；
+  - 所有正式文档数字更新为 57/57 source contract、441/441 discover。
 ```
 
 验证：
@@ -884,13 +909,14 @@ CI：
 ```text
 - GitHub Actions A13 Fast CI run 30862747188, job 91848049006, result PASS (commit 219c49659cf575ea7b0dc5c6b3e455ddf1ef3ac5)
 - GitHub Actions A13 Fast CI run 30958584324, job 92157229529, result PASS (commit 23cf2e86309df4168db24e1d57719c9be1fe36a6)
+- GitHub Actions A13 Fast CI run 30968706163, job 92188177489, result PASS (commit 6f06e6df9a05d5b50f1c314c1f92f2c9a3ccb248)
 ```
 
 Device evidence: `NOT_EXERCISED`
 
-Commit: `219c49659cf575ea7b0dc5c6b3e455ddf1ef3ac5`
+Commit: `6f06e6df9a05d5b50f1c314c1f92f2c9a3ccb248`
 
-Tree: `67c754385bcd4ac3338a6adfe65ed3704c1f3101`
+Tree: `aacdce71b908356e369bf843867f1785905095b6`
 
 Push: `origin/devin/a13-rom-intelligence-audit`
 
