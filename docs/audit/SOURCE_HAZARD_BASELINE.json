@@ -3,11 +3,6 @@
   "fingerprints": [
     "0db4399e3dea5150c370",
     "1540eec8ac6e38bbfb30",
-    "3e26c7d43e4220d58ba8",
-    "3e26c7d43e4220d58ba8",
-    "3e26c7d43e4220d58ba8",
-    "3e26c7d43e4220d58ba8",
-    "3e26c7d43e4220d58ba8",
     "5151c9f99364ad247926",
     "5d611f6a72677f18db86",
     "5d76ef433a5818f61ebd",
@@ -49,41 +44,6 @@
       "line": 92,
       "snippet": ".printStackTrace(",
       "fingerprint": "5151c9f99364ad247926"
-    },
-    {
-      "rule": "PRINT_STACK_TRACE",
-      "path": "app/src/main/java/tv/withaibuild/customiuizer/PreferenceFragmentBase.kt",
-      "line": 248,
-      "snippet": ".printStackTrace(",
-      "fingerprint": "3e26c7d43e4220d58ba8"
-    },
-    {
-      "rule": "PRINT_STACK_TRACE",
-      "path": "app/src/main/java/tv/withaibuild/customiuizer/PreferenceFragmentBase.kt",
-      "line": 361,
-      "snippet": ".printStackTrace(",
-      "fingerprint": "3e26c7d43e4220d58ba8"
-    },
-    {
-      "rule": "PRINT_STACK_TRACE",
-      "path": "app/src/main/java/tv/withaibuild/customiuizer/PreferenceFragmentBase.kt",
-      "line": 373,
-      "snippet": ".printStackTrace(",
-      "fingerprint": "3e26c7d43e4220d58ba8"
-    },
-    {
-      "rule": "PRINT_STACK_TRACE",
-      "path": "app/src/main/java/tv/withaibuild/customiuizer/PreferenceFragmentBase.kt",
-      "line": 413,
-      "snippet": ".printStackTrace(",
-      "fingerprint": "3e26c7d43e4220d58ba8"
-    },
-    {
-      "rule": "PRINT_STACK_TRACE",
-      "path": "app/src/main/java/tv/withaibuild/customiuizer/PreferenceFragmentBase.kt",
-      "line": 424,
-      "snippet": ".printStackTrace(",
-      "fingerprint": "3e26c7d43e4220d58ba8"
     },
     {
       "rule": "PRINT_STACK_TRACE",

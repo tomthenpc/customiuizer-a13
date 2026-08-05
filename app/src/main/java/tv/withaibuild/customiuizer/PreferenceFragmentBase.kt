@@ -22,6 +22,7 @@ import tv.withaibuild.customiuizer.subs.WebPage
 import tv.withaibuild.customiuizer.utils.AppHelper
 import tv.withaibuild.customiuizer.utils.AppLocaleController
 import tv.withaibuild.customiuizer.utils.Helpers
+import tv.withaibuild.customiuizer.utils.SettingsDiagnostics
 import java.io.ObjectInputStream
 import java.io.ObjectOutputStream
 import java.text.SimpleDateFormat
@@ -245,7 +246,7 @@ open class PreferenceFragmentBase : PreferenceFragmentCompat() {
             PreferenceManager.setDefaultValues(getValidContext(), pref_defaults, false)
         } catch (t: Throwable) {
             if (t is OutOfMemoryError || t is ThreadDeath || t is VirtualMachineError) throw t
-            t.printStackTrace()
+            SettingsDiagnostics.failure("PreferenceFragmentBase.setDefaultValues", t)
         }
     }
 
@@ -358,7 +359,7 @@ open class PreferenceFragmentBase : PreferenceFragmentCompat() {
                     .show()
             } catch (e: Throwable) {
                 if (e is OutOfMemoryError || e is ThreadDeath || e is VirtualMachineError) throw e
-                e.printStackTrace()
+                SettingsDiagnostics.failure("PreferenceFragmentBase.backup.write", e)
                 AlertDialog.Builder(getValidContext())
                     .setTitle(R.string.warning)
                     .setMessage(getString(R.string.storage_cannot_backup) + "\n" + e.message)
@@ -370,7 +371,7 @@ open class PreferenceFragmentBase : PreferenceFragmentCompat() {
                     output?.close()
                 } catch (ex: Throwable) {
                     if (ex is OutOfMemoryError || ex is ThreadDeath || ex is VirtualMachineError) throw ex
-                    ex.printStackTrace()
+                    SettingsDiagnostics.failure("PreferenceFragmentBase.backup.close", ex)
                 }
             }
         }
@@ -410,7 +411,7 @@ open class PreferenceFragmentBase : PreferenceFragmentCompat() {
                 .show()
         } catch (t: Throwable) {
             if (t is OutOfMemoryError || t is ThreadDeath || t is VirtualMachineError) throw t
-            t.printStackTrace()
+            SettingsDiagnostics.failure("PreferenceFragmentBase.restore.read", t)
             AlertDialog.Builder(act)
                 .setTitle(R.string.warning)
                 .setMessage(R.string.storage_cannot_restore)
@@ -421,7 +422,7 @@ open class PreferenceFragmentBase : PreferenceFragmentCompat() {
                 input?.close()
             } catch (ex: Throwable) {
                 if (ex is OutOfMemoryError || ex is ThreadDeath || ex is VirtualMachineError) throw ex
-                ex.printStackTrace()
+                SettingsDiagnostics.failure("PreferenceFragmentBase.restore.close", ex)
             }
         }
     }
