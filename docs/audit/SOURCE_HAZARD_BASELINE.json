@@ -2,9 +2,7 @@
   "schema": 1,
   "fingerprints": [
     "0db4399e3dea5150c370",
-    "0ddd77585f15b0fe2b77",
     "1540eec8ac6e38bbfb30",
-    "313181deefa64ef98056",
     "3e26c7d43e4220d58ba8",
     "3e26c7d43e4220d58ba8",
     "3e26c7d43e4220d58ba8",
@@ -151,25 +149,11 @@
       "fingerprint": "0db4399e3dea5150c370"
     },
     {
-      "rule": "THREAD_SLEEP",
-      "path": "app/src/main/java/tv/withaibuild/customiuizer/subs/ActivitySelector.kt",
-      "line": 82,
-      "snippet": "Thread.sleep(",
-      "fingerprint": "313181deefa64ef98056"
-    },
-    {
       "rule": "PRINT_STACK_TRACE",
       "path": "app/src/main/java/tv/withaibuild/customiuizer/subs/ActivitySelector.kt",
-      "line": 103,
+      "line": 99,
       "snippet": ".printStackTrace(",
       "fingerprint": "a95519aefc9e79ef11fb"
-    },
-    {
-      "rule": "THREAD_SLEEP",
-      "path": "app/src/main/java/tv/withaibuild/customiuizer/subs/AppSelector.kt",
-      "line": 273,
-      "snippet": "Thread.sleep(",
-      "fingerprint": "0ddd77585f15b0fe2b77"
     },
     {
       "rule": "PRINT_STACK_TRACE",
@@ -188,7 +172,7 @@
     {
       "rule": "PRINT_STACK_TRACE",
       "path": "app/src/main/java/tv/withaibuild/customiuizer/subs/AppSelector.kt",
-      "line": 294,
+      "line": 290,
       "snippet": ".printStackTrace(",
       "fingerprint": "da2dae3ecf4c3e51fc4d"
     },

@@ -77,31 +77,28 @@ class ActivitySelector : SubFragmentWithSearch() {
             view?.findViewById<View>(R.id.am_progressBar)?.visibility = View.GONE
         }
 
-        Thread {
-            try {
-                Thread.sleep(animDur.toLong())
-            } catch (fatal: Throwable) {
-                if (fatal is OutOfMemoryError || fatal is ThreadDeath || fatal is VirtualMachineError) throw fatal
-}
-            try {
-                val act = activity ?: return@Thread
-                activities.clear()
-                val pm = act.packageManager
-                val pi = pm.getPackageInfo(pkg ?: "", PackageManager.GET_ACTIVITIES)
-                pi.activities?.forEach { info ->
-                    val appData = AppData().apply {
-                        pkgName = pkg
-                        actName = info.name ?: ""
-                        label = info.loadLabel(pm).toString()
-                        enabled = info.enabled
+        view?.postDelayed({
+            Thread {
+                try {
+                    val act = activity ?: return@Thread
+                    activities.clear()
+                    val pm = act.packageManager
+                    val pi = pm.getPackageInfo(pkg ?: "", PackageManager.GET_ACTIVITIES)
+                    pi.activities?.forEach { info ->
+                        val appData = AppData().apply {
+                            pkgName = pkg
+                            actName = info.name ?: ""
+                            label = info.loadLabel(pm).toString()
+                            enabled = info.enabled
+                        }
+                        activities.add(appData)
                     }
-                    activities.add(appData)
+                    act.runOnUiThread(process)
+                } catch (e: Throwable) {
+                    if (e is OutOfMemoryError || e is ThreadDeath || e is VirtualMachineError) throw e
+                    e.printStackTrace()
                 }
-                act.runOnUiThread(process)
-            } catch (e: Throwable) {
-                if (e is OutOfMemoryError || e is ThreadDeath || e is VirtualMachineError) throw e
-                e.printStackTrace()
-            }
-        }.start()
+            }.start()
+        }, animDur.toLong())
     }
 }

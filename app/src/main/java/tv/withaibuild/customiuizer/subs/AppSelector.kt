@@ -268,33 +268,30 @@ class AppSelector : SubFragmentWithSearch() {
         if (initialized) {
             process?.run()
         } else {
-            Thread {
-                try {
-                    Thread.sleep(animDur.toLong())
-                } catch (fatal: Throwable) {
-                    if (fatal is OutOfMemoryError || fatal is ThreadDeath || fatal is VirtualMachineError) throw fatal
-                }
+            view?.postDelayed({
                 if (act != null) {
-                    try {
-                        if (isActivity || privacy || applock || (multi && key != null)) {
-                            if (openwith) {
-                                if (Helpers.openWithAppsList == null) Helpers.getOpenWithApps(act)
-                            } else if (share) {
-                                if (Helpers.shareAppsList == null) Helpers.getShareApps(act)
+                    Thread {
+                        try {
+                            if (isActivity || privacy || applock || (multi && key != null)) {
+                                if (openwith) {
+                                    if (Helpers.openWithAppsList == null) Helpers.getOpenWithApps(act)
+                                } else if (share) {
+                                    if (Helpers.shareAppsList == null) Helpers.getShareApps(act)
+                                } else {
+                                    if (Helpers.installedAppsList == null) Helpers.getInstalledApps(act)
+                                }
                             } else {
-                                if (Helpers.installedAppsList == null) Helpers.getInstalledApps(act)
+                                if (Helpers.launchableAppsList == null) Helpers.getLaunchableApps(act)
                             }
-                        } else {
-                            if (Helpers.launchableAppsList == null) Helpers.getLaunchableApps(act)
+                            initialized = true
+                            act.runOnUiThread(process)
+                        } catch (e: Throwable) {
+                            if (e is OutOfMemoryError || e is ThreadDeath || e is VirtualMachineError) throw e
+                            e.printStackTrace()
                         }
-                        initialized = true
-                        act.runOnUiThread(process)
-                    } catch (e: Throwable) {
-                        if (e is OutOfMemoryError || e is ThreadDeath || e is VirtualMachineError) throw e
-                        e.printStackTrace()
-                    }
+                    }.start()
                 }
-            }.start()
+            }, animDur.toLong())
         }
     }
 
