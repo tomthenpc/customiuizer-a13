@@ -17,7 +17,6 @@ from __future__ import annotations
 import ast
 import contextlib
 import copy
-import inspect
 import json
 import re
 import sys
@@ -27,11 +26,13 @@ from pathlib import Path
 
 REPO_ROOT = Path(__file__).resolve().parents[2]
 sys.path.insert(0, str(REPO_ROOT / "tools"))
+sys.path.insert(0, str(REPO_ROOT / "tools" / "tests"))
 REGISTRY_FILE = REPO_ROOT / "docs" / "audit" / "A13_LEGACY_EXCEPTION_REGISTRY.json"
 SOURCE_ROOT = REPO_ROOT / "app" / "src" / "main" / "java"
 
 import build_legacy_exception_registry as builder
 import legacy_exception_source_contract as sc
+import p33b_ast_policy as ast_policy
 
 
 def load_json(path: Path) -> dict:
@@ -73,28 +74,6 @@ def _override_source(rel: str, text: str):
             yield
         finally:
             sc.SOURCE_ROOT = original_root
-
-
-def _source_truth_classes_call_build_registry() -> list[str]:
-    """Return any source-truth test class that contains a real Call to build_registry."""
-    offenders: list[str] = []
-    source_truth_classes = (
-        P3_3B_LegacyExceptionRouteTest,
-        P3_3B_SourceMutationTest,
-    )
-    # ActivationContractMutationTest and IndependentTruthTest live in other files; we only
-    # assert this file's classes here.
-    for cls in source_truth_classes:
-        source = inspect.getsource(cls)
-        tree = ast.parse(source)
-        for node in ast.walk(tree):
-            if isinstance(node, ast.Call):
-                func = node.func
-                if isinstance(func, ast.Attribute) and func.attr == "build_registry":
-                    offenders.append(f"{cls.__name__} -> build_registry")
-                if isinstance(func, ast.Name) and func.id == "build_registry":
-                    offenders.append(f"{cls.__name__} -> build_registry")
-    return offenders
 
 
 # ---------------------------------------------------------------------------
@@ -344,10 +323,106 @@ class P3_3B_GeneratorConsistencyTest(unittest.TestCase):
         diffs = builder.canonical_diff(expected, self.registry)
         self.assertEqual(diffs, [])
 
-    def test_build_registry_is_not_route_golden(self) -> None:
-        """AST gate: source-truth test classes in this file must not call build_registry."""
-        offenders = _source_truth_classes_call_build_registry()
-        self.assertEqual(offenders, [], "source-truth classes must not call build_registry")
+    def test_build_registry_ast_policy(self) -> None:
+        """AST gate: only this class may reference build_registry in this module."""
+        source = Path(__file__).read_text(encoding="utf-8")
+        allowed = {"P3_3B_GeneratorConsistencyTest"}
+        real = ast_policy.find_build_registry_violations(source, allowed)
+        self.assertEqual(real, [], f"real module has build_registry violations: {real}")
+
+        target_classes = [
+            "P3_3B_LegacyExceptionRouteTest",
+            "P3_3B_SourceMutationTest",
+            "P3_3B_ActivationContractValidationTest",
+            "P3_3B_CallSiteConditionValidationTest",
+            "P3_3B_ActivationContractMutationTest",
+        ]
+
+        mutations = [
+            ("direct call", "def test_x(self):\n        build_registry([])\n"),
+            ("builder attribute", "def test_x(self):\n        builder.build_registry([])\n"),
+            (
+                "import alias",
+                "def test_x(self):\n        from tools.build_legacy_exception_registry import build_registry as br\n        br([])\n",
+            ),
+            (
+                "module alias",
+                "def test_x(self):\n        import tools.build_legacy_exception_registry as reg\n        reg.build_registry([])\n",
+            ),
+            (
+                "assignment alias",
+                "def test_x(self):\n        fn = builder.build_registry\n        fn([])\n",
+            ),
+            (
+                "getattr",
+                "def test_x(self):\n        getattr(builder, \"build_registry\")([])\n",
+            ),
+            (
+                "partial/callback",
+                "def test_x(self):\n        import functools\n        functools.partial(builder.build_registry, [])([])\n",
+            ),
+            (
+                "lambda reference",
+                "def test_x(self):\n        some_call(lambda: builder.build_registry)\n",
+            ),
+        ]
+
+        for target in target_classes:
+            for label, method in mutations:
+                with self.subTest(class_name=target, mutation=label):
+                    mutated = ast_policy.inject_method(source, target, method)
+                    violations = ast_policy.find_build_registry_violations(mutated, allowed)
+                    reported = [v for v in violations if v.class_name == target]
+                    self.assertTrue(
+                        reported,
+                        f"mutation {label} in {target} should be rejected",
+                    )
+
+        with self.subTest(mutation="future unknown TestCase"):
+            future = source + "\n\nclass FutureEvilTest(unittest.TestCase):\n    def test_x(self):\n        builder.build_registry([])\n"
+            violations = ast_policy.find_build_registry_violations(future, allowed)
+            self.assertTrue(
+                any(v.class_name == "FutureEvilTest" for v in violations),
+                "future unknown TestCase must be rejected",
+            )
+
+        with self.subTest(mutation="module-level helper"):
+            helper = (
+                source
+                + "\n\ndef _module_helper():\n    return builder.build_registry\n"
+            )
+            violations = ast_policy.find_build_registry_violations(helper, allowed)
+            self.assertTrue(
+                any(v.class_name is None for v in violations),
+                "module-level helper must be rejected",
+            )
+
+        with self.subTest(false_positive="docstring"):
+            mutated = ast_policy.inject_method(
+                source,
+                "P3_3B_LegacyExceptionRouteTest",
+                'def test_x(self):\n        """build_registry docstring"""\n        self.assertTrue(True)\n',
+            )
+            violations = ast_policy.find_build_registry_violations(mutated, allowed)
+            self.assertEqual(violations, [], f"docstring must not trigger: {violations}")
+
+        with self.subTest(false_positive="string literal"):
+            mutated = ast_policy.inject_method(
+                source,
+                "P3_3B_LegacyExceptionRouteTest",
+                'def test_x(self):\n        x = "build_registry"\n        self.assertIsNotNone(x)\n',
+            )
+            violations = ast_policy.find_build_registry_violations(mutated, allowed)
+            self.assertEqual(violations, [], f"string literal must not trigger: {violations}")
+
+        with self.subTest(false_positive="builder.validate"):
+            mutated = ast_policy.inject_method(
+                source,
+                "P3_3B_LegacyExceptionRouteTest",
+                "def test_x(self):\n        builder.validate([])\n",
+            )
+            violations = ast_policy.find_build_registry_violations(mutated, allowed)
+            self.assertEqual(violations, [], f"builder.validate must not trigger: {violations}")
 
 
 # ---------------------------------------------------------------------------

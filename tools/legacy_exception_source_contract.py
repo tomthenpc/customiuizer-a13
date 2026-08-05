@@ -272,6 +272,24 @@ def _find_function_definition(text: str, func_name: str, language: str) -> tuple
                     i += 1
                 continue
             break
+        # Kotlin return-type annotation `fun f(): Type {` or `fun f(): Type = ...`
+        if i < len(text) and text[i] == ":":
+            i += 1
+            i = _skip_whitespace_and_comments(text, i)
+            while i < len(text):
+                ch = text[i]
+                if ch.isspace():
+                    i = _skip_whitespace_and_comments(text, i)
+                    continue
+                if ch.isalnum() or ch == "_" or ch == "." or ch == "?":
+                    i += 1
+                    continue
+                if ch == "<":
+                    block = _balanced_range(text, i, "<", ">")
+                    if block is not None:
+                        i += len(block)
+                        continue
+                break
         if i >= len(text):
             continue
         nxt = text[i]

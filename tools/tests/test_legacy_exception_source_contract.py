@@ -12,7 +12,6 @@ from __future__ import annotations
 import ast
 import contextlib
 import copy
-import inspect
 import json
 import os
 import re
@@ -23,11 +22,13 @@ from pathlib import Path
 
 REPO_ROOT = Path(__file__).resolve().parents[2]
 sys.path.insert(0, str(REPO_ROOT / "tools"))
+sys.path.insert(0, str(REPO_ROOT / "tools" / "tests"))
 REGISTRY_FILE = REPO_ROOT / "docs" / "audit" / "A13_LEGACY_EXCEPTION_REGISTRY.json"
 SOURCE_ROOT = REPO_ROOT / "app" / "src" / "main" / "java"
 
 import build_legacy_exception_registry as builder
 import legacy_exception_source_contract as sc
+import p33b_ast_policy as ast_policy
 
 
 def load_json(path: Path) -> dict:
@@ -64,22 +65,6 @@ def _override_source(rel: str, text: str, *, extra: dict[str, str] | None = None
             yield
         finally:
             sc.SOURCE_ROOT = original_root
-
-
-def _ast_offenders_for_build_registry(*classes: type) -> list[str]:
-    """Return classes that contain a real Call to build_registry."""
-    offenders: list[str] = []
-    for cls in classes:
-        source = inspect.getsource(cls)
-        tree = ast.parse(source)
-        for node in ast.walk(tree):
-            if isinstance(node, ast.Call):
-                func = node.func
-                if isinstance(func, ast.Attribute) and func.attr == "build_registry":
-                    offenders.append(f"{cls.__name__} -> build_registry")
-                if isinstance(func, ast.Name) and func.id == "build_registry":
-                    offenders.append(f"{cls.__name__} -> build_registry")
-    return offenders
 
 
 class SourceParserStructureTest(unittest.TestCase):
@@ -694,23 +679,245 @@ class SourceParserBoundaryTest(unittest.TestCase):
         with self.assertRaises(sc.SourceStructureError):
             sc.extract_function_body(text, "needGlobalActions", "java")
 
+    def test_p2_parser_boundaries(self) -> None:
+        """P2 boundary subtests for multi-line, generic, Kotlin, comment/string and overload."""
+        cases = [
+            (
+                "multi-line java declaration",
+                "needGlobalActions",
+                '''
+                public static boolean
+                needGlobalActions() {
+                    return true;
+                }
+                ''',
+                "java",
+                None,
+                "return true",
+            ),
+            (
+                "annotation generic return",
+                "needGlobalActions",
+                '''
+                @Override
+                public static <T> boolean needGlobalActions() {
+                    return true;
+                }
+                ''',
+                "java",
+                None,
+                "return true",
+            ),
+            (
+                "kotlin multi modifier block-body",
+                "setupForegroundMonitor",
+                '''
+                public actual fun setupForegroundMonitor(lpparam: String): Boolean {
+                    return true
+                }
+                ''',
+                "kt",
+                None,
+                "return true",
+            ),
+            (
+                "kotlin expression body",
+                "setupForegroundMonitor",
+                'fun setupForegroundMonitor(lpparam: String) = true',
+                "kt",
+                sc.SourceStructureError,
+                None,
+            ),
+            (
+                "comment if block",
+                "needGlobalActions",
+                '''
+                /* if (x) { return true; } */
+                static boolean needGlobalActions() { return true; }
+                ''',
+                "java",
+                None,
+                "return true",
+            ),
+            (
+                "string if block",
+                "needGlobalActions",
+                '''
+                String s = "if (x) { return true; }";
+                static boolean needGlobalActions() { return true; }
+                ''',
+                "java",
+                None,
+                "return true",
+            ),
+            (
+                "string comment braces",
+                "needGlobalActions",
+                '''
+                String s = "{";
+                static boolean needGlobalActions() { return true; }
+                ''',
+                "java",
+                None,
+                "return true",
+            ),
+            (
+                "adjacent function pseudo activation",
+                "needGlobalActions",
+                '''
+                static boolean other() {
+                    XposedHelpers.findAndHookMethod(c, "needGlobalActions", new XC_MethodHook() {
+                        @Override
+                        protected void beforeHookedMethod(XC_MethodHook.MethodHookParam param) {
+                            if (true) return;
+                        }
+                    });
+                    return false;
+                }
+                static boolean needGlobalActions() { return true; }
+                ''',
+                "java",
+                None,
+                "return true",
+            ),
+            (
+                "kotlin no semicolon invocation before target",
+                "setupForegroundMonitor",
+                '''
+                callSomething()
+                fun setupForegroundMonitor(lpparam: String): Boolean {
+                    return true
+                }
+                ''',
+                "kt",
+                None,
+                "return true",
+            ),
+            (
+                "anonymous object same name",
+                "setupForegroundMonitor",
+                '''
+                val a = object : Object() {
+                    fun setupForegroundMonitor(lpparam: String): Boolean { return false }
+                }
+                fun setupForegroundMonitor(lpparam: String): Boolean { return true }
+                ''',
+                "kt",
+                sc.SourceStructureError,
+                None,
+            ),
+        ]
+
+        for label, name, text, lang, exc, expected in cases:
+            with self.subTest(label=label):
+                if exc is not None:
+                    with self.assertRaises(exc):
+                        sc.extract_function_body(text, name, lang)
+                else:
+                    body = sc.extract_function_body(text, name, lang)
+                    self.assertIsNotNone(body)
+                    if expected:
+                        self.assertIn(expected, body)
+
 
 class NoBuildRegistryInSourceTruthTest(unittest.TestCase):
-    """AST gate: source-truth test classes in this file must not call build_registry."""
+    """AST gate: this module must never reference build_registry."""
 
-    def test_no_build_registry_in_source_truth_classes(self) -> None:
-        offenders = _ast_offenders_for_build_registry(
-            SourceParserStructureTest,
-            SetupGlobalActionsSourceContractTest,
-            SetupGlobalActionsMutationTest,
-            SetupForegroundMonitorSourceContractTest,
-            ForegroundMonitorMutationTest,
-            AlarmCompatAndStatusBarSourceContractTest,
-            AlarmCompatMutationTest,
-            IndependentTruthTest,
-            SourceParserBoundaryTest,
-        )
-        self.assertEqual(offenders, [], f"source-truth classes must not call build_registry: {offenders}")
+    def test_build_registry_ast_policy(self) -> None:
+        """No class in this module may reference build_registry."""
+        source = Path(__file__).read_text(encoding="utf-8")
+        real = ast_policy.find_build_registry_violations(source, set())
+        self.assertEqual(real, [], f"real module has build_registry violations: {real}")
+
+        target_classes = [
+            "SourceParserStructureTest",
+            "SetupGlobalActionsSourceContractTest",
+            "SetupGlobalActionsMutationTest",
+            "SetupForegroundMonitorSourceContractTest",
+            "ForegroundMonitorMutationTest",
+            "AlarmCompatAndStatusBarSourceContractTest",
+            "AlarmCompatMutationTest",
+            "IndependentTruthTest",
+            "SourceParserBoundaryTest",
+        ]
+
+        mutations = [
+            ("direct call", "def test_x(self):\n        build_registry([])\n"),
+            ("builder attribute", "def test_x(self):\n        builder.build_registry([])\n"),
+            (
+                "import alias",
+                "def test_x(self):\n        from tools.build_legacy_exception_registry import build_registry as br\n        br([])\n",
+            ),
+            (
+                "module alias",
+                "def test_x(self):\n        import tools.build_legacy_exception_registry as reg\n        reg.build_registry([])\n",
+            ),
+            (
+                "assignment alias",
+                "def test_x(self):\n        fn = builder.build_registry\n        fn([])\n",
+            ),
+            (
+                "getattr",
+                "def test_x(self):\n        getattr(builder, \"build_registry\")([])\n",
+            ),
+            (
+                "partial/callback",
+                "def test_x(self):\n        import functools\n        functools.partial(builder.build_registry, [])([])\n",
+            ),
+            (
+                "lambda reference",
+                "def test_x(self):\n        some_call(lambda: builder.build_registry)\n",
+            ),
+        ]
+
+        for target in target_classes:
+            for label, method in mutations:
+                with self.subTest(class_name=target, mutation=label):
+                    mutated = ast_policy.inject_method(source, target, method)
+                    violations = ast_policy.find_build_registry_violations(mutated, set())
+                    reported = [v for v in violations if v.class_name == target]
+                    self.assertTrue(
+                        reported,
+                        f"mutation {label} in {target} should be rejected",
+                    )
+
+        with self.subTest(mutation="module-level helper"):
+            helper = (
+                source
+                + "\n\ndef _module_helper():\n    return builder.build_registry\n"
+            )
+            violations = ast_policy.find_build_registry_violations(helper, set())
+            self.assertTrue(
+                any(v.class_name is None for v in violations),
+                "module-level helper must be rejected",
+            )
+
+        with self.subTest(false_positive="docstring"):
+            mutated = ast_policy.inject_method(
+                source,
+                "SourceParserStructureTest",
+                'def test_x(self):\n        """build_registry docstring"""\n        self.assertTrue(True)\n',
+            )
+            violations = ast_policy.find_build_registry_violations(mutated, set())
+            self.assertEqual(violations, [], f"docstring must not trigger: {violations}")
+
+        with self.subTest(false_positive="string literal"):
+            mutated = ast_policy.inject_method(
+                source,
+                "SourceParserStructureTest",
+                'def test_x(self):\n        x = "build_registry"\n        self.assertIsNotNone(x)\n',
+            )
+            violations = ast_policy.find_build_registry_violations(mutated, set())
+            self.assertEqual(violations, [], f"string literal must not trigger: {violations}")
+
+        with self.subTest(false_positive="builder.validate"):
+            mutated = ast_policy.inject_method(
+                source,
+                "SourceParserStructureTest",
+                "def test_x(self):\n        builder.validate([])\n",
+            )
+            violations = ast_policy.find_build_registry_violations(mutated, set())
+            self.assertEqual(violations, [], f"builder.validate must not trigger: {violations}")
 
 
 if __name__ == "__main__":

@@ -857,10 +857,10 @@ R3EngineeringCIResult: `PASS`
 - python tools/validate_legacy_exception_registry.py                      -> 0
 - python -m unittest tools.tests.test_legacy_exception_registry           -> 72/72 pass
 - python -m unittest tools.tests.test_p33b_legacy_exception_routes        -> 88/88 pass
-- python -m unittest tools.tests.test_legacy_exception_source_contract    -> 56/56 pass
+- python -m unittest tools.tests.test_legacy_exception_source_contract    -> 57/57 pass
 - python -m unittest tools.tests.test_hook_ownership_inventory            -> 2/2 pass
 - python -m unittest tools.tests.test_p33b_completion_evidence            -> 1/1 pass
-- python -m unittest discover -s tools/tests -p "test_*.py"               -> 440/440 pass
+- python -m unittest discover -s tools/tests -p "test_*.py"               -> 441/441 pass
 - python tools/check-invariants.py                                        -> 0, no violations
 - python tools/check-compat-contracts.py                                  -> 0
 - python tools/check_automation_state.py                                  -> 0
