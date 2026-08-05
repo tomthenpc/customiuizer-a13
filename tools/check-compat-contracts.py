@@ -99,8 +99,8 @@ def check_hook_installer(errors: list[str]) -> None:
         fail("HookInstaller does not enforce selected variant for multi-variant contracts", errors)
 def check_diagnostic_recorder(errors: list[str]) -> None:
     text = read("tv/withaibuild/customiuizer/mods/diagnostics/DiagnosticRecorder.kt")
-    if text.count("catch (oom: OutOfMemoryError)") < 2:
-        fail("DiagnosticRecorder fallback logger does not protect OOM boundaries", errors)
+    if text.count("RuntimeFatality.throwIfFatal") < 2:
+        fail("DiagnosticRecorder does not call RuntimeFatality.throwIfFatal in both logger boundaries", errors)
 def main() -> int:
     errors: list[str] = []
     check_auto_brightness(errors)

@@ -2,6 +2,7 @@ package tv.withaibuild.customiuizer.mods.diagnostics
 
 import android.os.SystemClock
 import tv.withaibuild.customiuizer.mods.catalog.CompatibilityState
+import tv.withaibuild.customiuizer.mods.utils.RuntimeFatality
 import tv.withaibuild.customiuizer.mods.utils.XposedHelpers
 
 /**
@@ -38,6 +39,9 @@ object DiagnosticRecorder {
 
     /** Injected logger. Defaults to [XposedHelpers.log] when null. */
     internal var logger: ((String) -> Unit)? = null
+
+    /** Injected fallback logger. Defaults to [XposedHelpers.log]. */
+    internal var fallbackLogger: (String) -> Unit = { XposedHelpers.log(it) }
 
     @JvmStatic
     @Synchronized
@@ -104,29 +108,22 @@ object DiagnosticRecorder {
             if (log != null) {
                 try {
                     log(logLine)
-                } catch (oom: OutOfMemoryError) {
-                    throw oom
                 } catch (t: Throwable) {
-                    if (t is OutOfMemoryError || t is ThreadDeath || t is VirtualMachineError) throw t
-                    try {
-                        XposedHelpers.log("Diagnostic logger failed: ${t.message}")
-                    } catch (oom: OutOfMemoryError) {
-                        throw oom
-                    } catch (fatal: Throwable) {
-                        if (fatal is OutOfMemoryError || fatal is ThreadDeath || fatal is VirtualMachineError) throw fatal
-                        // fallback logger must not block the installation path
-                    }
+                    RuntimeFatality.throwIfFatal(t)
+                    logFallbackSafely("Diagnostic logger failed: ${t.message}")
                 }
             } else {
-                try {
-                    XposedHelpers.log(logLine)
-                } catch (oom: OutOfMemoryError) {
-                    throw oom
-                } catch (fatal: Throwable) {
-                    if (fatal is OutOfMemoryError || fatal is ThreadDeath || fatal is VirtualMachineError) throw fatal
-                    // logger failure must not block the installation path
-                }
+                logFallbackSafely(logLine)
             }
+        }
+    }
+
+    private fun logFallbackSafely(message: String) {
+        try {
+            fallbackLogger(message)
+        } catch (t: Throwable) {
+            RuntimeFatality.throwIfFatal(t)
+            // ordinary fallback logger failure is intentionally ignored
         }
     }
 
@@ -183,5 +180,6 @@ object DiagnosticRecorder {
         logThrottler.clear()
         logger = null
         clock = { SystemClock.elapsedRealtime() }
+        fallbackLogger = { XposedHelpers.log(it) }
     }
 }

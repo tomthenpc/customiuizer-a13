@@ -3,6 +3,7 @@ package tv.withaibuild.customiuizer.mods.compat
 import tv.withaibuild.customiuizer.mods.catalog.CompatibilityState
 import tv.withaibuild.customiuizer.mods.diagnostics.DiagnosticRecorder
 import tv.withaibuild.customiuizer.mods.diagnostics.ReasonCode
+import tv.withaibuild.customiuizer.mods.utils.RuntimeFatality
 
 /**
  * Records the per-process ROM environment exactly once.
@@ -16,10 +17,8 @@ internal object RomEnvironmentDiagnostics {
     fun recordSafely(environment: RomEnvironment) {
         try {
             record(environment)
-        } catch (oom: OutOfMemoryError) {
-            throw oom
-        } catch (fatal: Throwable) {
-            if (fatal is OutOfMemoryError || fatal is ThreadDeath || fatal is VirtualMachineError) throw fatal
+        } catch (t: Throwable) {
+            RuntimeFatality.throwIfFatal(t)
             // Diagnostic recording is best-effort metadata. A recording failure must never
             // prevent the feature installer from continuing.
         }

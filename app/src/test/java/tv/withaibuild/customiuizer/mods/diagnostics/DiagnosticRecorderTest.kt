@@ -1,10 +1,13 @@
 package tv.withaibuild.customiuizer.mods.diagnostics
 
+import java.lang.reflect.InvocationTargetException
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse
 import org.junit.Assert.assertNotNull
 import org.junit.Assert.assertNull
+import org.junit.Assert.assertSame
 import org.junit.Assert.assertTrue
+import org.junit.Assert.fail
 import org.junit.Before
 import org.junit.Test
 import tv.withaibuild.customiuizer.mods.catalog.CompatibilityState
@@ -12,15 +15,18 @@ import tv.withaibuild.customiuizer.mods.catalog.CompatibilityState
 class DiagnosticRecorderTest {
 
     private val logMessages = mutableListOf<String>()
+    private val fallbackMessages = mutableListOf<String>()
     private var now = 0L
 
     @Before
     fun setUp() {
         DiagnosticRecorder.reset()
         logMessages.clear()
+        fallbackMessages.clear()
         now = 0L
         DiagnosticRecorder.clock = { now }
         DiagnosticRecorder.logger = { logMessages += it }
+        DiagnosticRecorder.fallbackLogger = { fallbackMessages += it }
     }
 
     @Test
@@ -284,5 +290,262 @@ class DiagnosticRecorderTest {
         DiagnosticRecorder.reset()
 
         assertTrue(DiagnosticRecorder.summarize().isEmpty())
+    }
+
+    @Test
+    fun injectedLoggerDirectOutOfMemoryIsRethrown() {
+        val failure = OutOfMemoryError("injected oom")
+        DiagnosticRecorder.logger = { throw failure }
+
+        val thrown = try {
+            DiagnosticRecorder.record(
+                DiagnosticIds.PACKAGE_PERMISSIONS,
+                installation = InstallOutcome.FAILED,
+                reasonCode = ReasonCode.INSTALLER_FAILED
+            )
+            fail("expected OutOfMemoryError")
+            null
+        } catch (oom: OutOfMemoryError) {
+            oom
+        }
+
+        assertSame(failure, thrown)
+        assertTrue(fallbackMessages.isEmpty())
+    }
+
+    @Test
+    fun injectedLoggerWrappedThreadDeathIsRethrown() {
+        val failure = ThreadDeath()
+        val wrapper = InvocationTargetException(failure)
+        DiagnosticRecorder.logger = { throw wrapper }
+
+        val thrown = try {
+            DiagnosticRecorder.record(
+                DiagnosticIds.PACKAGE_PERMISSIONS,
+                installation = InstallOutcome.FAILED,
+                reasonCode = ReasonCode.INSTALLER_FAILED
+            )
+            fail("expected ThreadDeath")
+            null
+        } catch (td: ThreadDeath) {
+            td
+        }
+
+        assertSame(failure, thrown)
+        assertTrue(fallbackMessages.isEmpty())
+    }
+
+    @Test
+    fun injectedLoggerDoubleWrappedInternalErrorIsRethrown() {
+        val failure = InternalError("injected internal")
+        val wrapper = RuntimeException(RuntimeException(failure))
+        DiagnosticRecorder.logger = { throw wrapper }
+
+        val thrown = try {
+            DiagnosticRecorder.record(
+                DiagnosticIds.PACKAGE_PERMISSIONS,
+                installation = InstallOutcome.FAILED,
+                reasonCode = ReasonCode.INSTALLER_FAILED
+            )
+            fail("expected InternalError")
+            null
+        } catch (ie: InternalError) {
+            ie
+        }
+
+        assertSame(failure, thrown)
+        assertTrue(fallbackMessages.isEmpty())
+    }
+
+    @Test
+    fun fatalInjectedLoggerDoesNotCallFallbackLogger() {
+        DiagnosticRecorder.logger = { throw OutOfMemoryError() }
+
+        try {
+            DiagnosticRecorder.record(
+                DiagnosticIds.PACKAGE_PERMISSIONS,
+                installation = InstallOutcome.FAILED,
+                reasonCode = ReasonCode.INSTALLER_FAILED
+            )
+            fail("expected OutOfMemoryError")
+        } catch (_: OutOfMemoryError) {
+        }
+
+        assertTrue(fallbackMessages.isEmpty())
+    }
+
+    @Test
+    fun ordinaryInjectedLoggerFailureCallsFallbackLoggerOnce() {
+        DiagnosticRecorder.logger = { throw IllegalStateException("logger failed") }
+
+        DiagnosticRecorder.record(
+            DiagnosticIds.PACKAGE_PERMISSIONS,
+            installation = InstallOutcome.FAILED,
+            reasonCode = ReasonCode.INSTALLER_FAILED
+        )
+
+        assertEquals(1, fallbackMessages.size)
+        assertTrue(fallbackMessages.single().contains("Diagnostic logger failed"))
+    }
+
+    @Test
+    fun fallbackTextContainsDiagnosticLoggerFailed() {
+        DiagnosticRecorder.logger = { throw IllegalStateException("broken") }
+
+        DiagnosticRecorder.record(
+            DiagnosticIds.PACKAGE_PERMISSIONS,
+            installation = InstallOutcome.FAILED,
+            reasonCode = ReasonCode.INSTALLER_FAILED
+        )
+
+        assertTrue(fallbackMessages.single().startsWith("Diagnostic logger failed: "))
+    }
+
+    @Test
+    fun fallbackLoggerDirectOutOfMemoryIsRethrown() {
+        val failure = OutOfMemoryError("fallback oom")
+        DiagnosticRecorder.logger = { throw IllegalStateException("logger failed") }
+        DiagnosticRecorder.fallbackLogger = { throw failure }
+
+        val thrown = try {
+            DiagnosticRecorder.record(
+                DiagnosticIds.PACKAGE_PERMISSIONS,
+                installation = InstallOutcome.FAILED,
+                reasonCode = ReasonCode.INSTALLER_FAILED
+            )
+            fail("expected OutOfMemoryError")
+            null
+        } catch (oom: OutOfMemoryError) {
+            oom
+        }
+
+        assertSame(failure, thrown)
+    }
+
+    @Test
+    fun fallbackLoggerWrappedThreadDeathIsRethrown() {
+        val failure = ThreadDeath()
+        val wrapper = InvocationTargetException(failure)
+        DiagnosticRecorder.logger = { throw IllegalStateException("logger failed") }
+        DiagnosticRecorder.fallbackLogger = { throw wrapper }
+
+        val thrown = try {
+            DiagnosticRecorder.record(
+                DiagnosticIds.PACKAGE_PERMISSIONS,
+                installation = InstallOutcome.FAILED,
+                reasonCode = ReasonCode.INSTALLER_FAILED
+            )
+            fail("expected ThreadDeath")
+            null
+        } catch (td: ThreadDeath) {
+            td
+        }
+
+        assertSame(failure, thrown)
+    }
+
+    @Test
+    fun fallbackLoggerWrappedInternalErrorIsRethrown() {
+        val failure = InternalError("fallback internal")
+        val wrapper = RuntimeException(RuntimeException(failure))
+        DiagnosticRecorder.logger = { throw IllegalStateException("logger failed") }
+        DiagnosticRecorder.fallbackLogger = { throw wrapper }
+
+        val thrown = try {
+            DiagnosticRecorder.record(
+                DiagnosticIds.PACKAGE_PERMISSIONS,
+                installation = InstallOutcome.FAILED,
+                reasonCode = ReasonCode.INSTALLER_FAILED
+            )
+            fail("expected InternalError")
+            null
+        } catch (ie: InternalError) {
+            ie
+        }
+
+        assertSame(failure, thrown)
+    }
+
+    @Test
+    fun ordinaryFallbackLoggerFailureIsSwallowed() {
+        DiagnosticRecorder.logger = { throw IllegalStateException("logger failed") }
+        DiagnosticRecorder.fallbackLogger = { throw IllegalStateException("fallback failed") }
+
+        DiagnosticRecorder.record(
+            DiagnosticIds.PACKAGE_PERMISSIONS,
+            installation = InstallOutcome.FAILED,
+            reasonCode = ReasonCode.INSTALLER_FAILED
+        )
+
+        val snapshot = DiagnosticRecorder.summarize()[DiagnosticIds.PACKAGE_PERMISSIONS]
+        assertNotNull(snapshot)
+        assertEquals(InstallOutcome.FAILED, snapshot!!.installation)
+    }
+
+    @Test
+    fun loggerNullUsesDefaultFallbackLoggerAndReceivesFullLogLine() {
+        DiagnosticRecorder.logger = null
+
+        DiagnosticRecorder.record(
+            DiagnosticIds.PACKAGE_PERMISSIONS,
+            installation = InstallOutcome.FAILED,
+            reasonCode = ReasonCode.INSTALLER_FAILED
+        )
+
+        assertEquals(1, fallbackMessages.size)
+        val message = fallbackMessages.single()
+        assertTrue(message.startsWith("Diagnostic[PACKAGE_PERMISSIONS]"))
+        assertTrue(message.contains("FAILED"))
+        assertTrue(message.contains("INSTALLER_FAILED"))
+    }
+
+    @Test
+    fun defaultFallbackLoggerWrappedFatalIsRethrown() {
+        val failure = OutOfMemoryError("default fallback oom")
+        DiagnosticRecorder.logger = null
+        DiagnosticRecorder.fallbackLogger = { throw RuntimeException(failure) }
+
+        val thrown = try {
+            DiagnosticRecorder.record(
+                DiagnosticIds.PACKAGE_PERMISSIONS,
+                installation = InstallOutcome.FAILED,
+                reasonCode = ReasonCode.INSTALLER_FAILED
+            )
+            fail("expected OutOfMemoryError")
+            null
+        } catch (oom: OutOfMemoryError) {
+            oom
+        }
+
+        assertSame(failure, thrown)
+    }
+
+    @Test
+    fun wrappedAssertionErrorInjectedLoggerIsTreatedAsOrdinaryAndUsesFallback() {
+        DiagnosticRecorder.logger = { throw RuntimeException(AssertionError("wrapped assertion")) }
+
+        DiagnosticRecorder.record(
+            DiagnosticIds.PACKAGE_PERMISSIONS,
+            installation = InstallOutcome.FAILED,
+            reasonCode = ReasonCode.INSTALLER_FAILED
+        )
+
+        assertEquals(1, fallbackMessages.size)
+        assertTrue(fallbackMessages.single().contains("Diagnostic logger failed"))
+    }
+
+    @Test
+    fun resetRestoresLoggerClockAndProductionFallbackLogger() {
+        val customFallback = { _: String -> /* no-op */ }
+        DiagnosticRecorder.logger = { throw IllegalStateException("broken") }
+        DiagnosticRecorder.fallbackLogger = customFallback
+        DiagnosticRecorder.clock = { 9999L }
+
+        DiagnosticRecorder.reset()
+
+        assertTrue(DiagnosticRecorder.summarize().isEmpty())
+        assertNull(DiagnosticRecorder.logger)
+        assertEquals(0L, DiagnosticRecorder.clock())
+        assertTrue(DiagnosticRecorder.fallbackLogger !== customFallback)
     }
 }

@@ -1,11 +1,13 @@
 package tv.withaibuild.customiuizer.mods.catalog
 
 import org.junit.After
+import java.lang.reflect.InvocationTargetException
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse
 import org.junit.Assert.assertNotNull
 import org.junit.Assert.assertSame
 import org.junit.Assert.assertTrue
+import org.junit.Assert.fail
 import org.junit.Before
 import org.junit.Test
 import tv.withaibuild.customiuizer.mods.diagnostics.DiagnosticRecorder
@@ -124,5 +126,88 @@ class FeatureRuntimeTest {
         } catch (oom: OutOfMemoryError) {
             // expected
         }
+    }
+
+    @Test
+    fun diagnosticsClockWrappedOutOfMemoryRethrowsOriginal() {
+        val failure = OutOfMemoryError("clock oom")
+        DiagnosticRecorder.clock = { throw RuntimeException(failure) }
+        val rt = runtime()
+
+        val thrown = try {
+            rt.environment
+            fail("expected OutOfMemoryError")
+            null
+        } catch (oom: OutOfMemoryError) {
+            oom
+        }
+
+        assertSame(failure, thrown)
+    }
+
+    @Test
+    fun diagnosticsClockWrappedThreadDeathRethrowsOriginal() {
+        val failure = ThreadDeath()
+        DiagnosticRecorder.clock = { throw InvocationTargetException(failure) }
+        val rt = runtime()
+
+        val thrown = try {
+            rt.environment
+            fail("expected ThreadDeath")
+            null
+        } catch (td: ThreadDeath) {
+            td
+        }
+
+        assertSame(failure, thrown)
+    }
+
+    @Test
+    fun diagnosticsClockDoubleWrappedInternalErrorRethrowsOriginal() {
+        val failure = InternalError("clock internal")
+        DiagnosticRecorder.clock = { throw RuntimeException(RuntimeException(failure)) }
+        val rt = runtime()
+
+        val thrown = try {
+            rt.environment
+            fail("expected InternalError")
+            null
+        } catch (ie: InternalError) {
+            ie
+        }
+
+        assertSame(failure, thrown)
+    }
+
+    @Test
+    fun diagnosticsClockWrappedOrdinaryExceptionAllowsEnvironmentAndResolver() {
+        DiagnosticRecorder.clock = { throw RuntimeException(IllegalStateException("clock failed")) }
+        val rt = runtime()
+
+        val env = rt.environment
+        assertNotNull(env)
+        assertTrue(rt.isEnvironmentInitialized())
+
+        val resolver = rt.resolver
+        assertNotNull(resolver)
+        assertTrue(rt.isResolverInitialized())
+    }
+
+    @Test
+    fun diagnosticsLoggerWrappedFatalRethrowsOriginal() {
+        val failure = InternalError("logger internal")
+        val wrapper = RuntimeException(RuntimeException(failure))
+        DiagnosticRecorder.logger = { throw wrapper }
+        val rt = runtime()
+
+        val thrown = try {
+            rt.environment
+            fail("expected InternalError")
+            null
+        } catch (ie: InternalError) {
+            ie
+        }
+
+        assertSame(failure, thrown)
     }
 }
