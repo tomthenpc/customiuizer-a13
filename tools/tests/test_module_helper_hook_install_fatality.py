@@ -265,7 +265,7 @@ class ModuleHelperHookInstallFatalityContractTest(unittest.TestCase):
         self.assertIsNotNone(body)
         self.assertIn("parameterTypesAndCallback", body)
 
-    def test_non_target_field_helpers_unchanged(self):
+    def test_field_helpers_use_shared_fatal_boundary(self):
         for sig in (
             "public static Object getStaticObjectFieldSilently(Class <?> clazz, String fieldName)",
             "public static Object getObjectFieldSilently(Object obj, String fieldName)",
@@ -275,8 +275,11 @@ class ModuleHelperHookInstallFatalityContractTest(unittest.TestCase):
                 self.assertIsNotNone(body)
                 catch = self._extract_catch_body(body)
                 self.assertIsNotNone(catch)
-                self.assertIn("if (t instanceof OutOfMemoryError)", catch)
+                self.assertIn("throwIfFatal(t);", catch)
                 self.assertIn("return NOT_EXIST_SYMBOL", catch)
+                self.assertNotIn("t instanceof OutOfMemoryError", catch)
+                self.assertNotIn("t instanceof ThreadDeath", catch)
+                self.assertNotIn("t instanceof VirtualMachineError", catch)
 
     def test_no_print_stack_trace_globally(self):
         for path in (REPO / "app" / "src" / "main" / "java").rglob("*"):

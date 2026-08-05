@@ -448,7 +448,7 @@ public class ModuleHelper {
         try {
             return XposedHelpers.getStaticObjectField(clazz, fieldName);
         } catch (Throwable t) {
-            if (t instanceof OutOfMemoryError) throw (OutOfMemoryError) t;
+            throwIfFatal(t);
             return NOT_EXIST_SYMBOL;
         }
     }
@@ -457,7 +457,7 @@ public class ModuleHelper {
         try {
             return XposedHelpers.getObjectField(obj, fieldName);
         } catch (Throwable t) {
-            if (t instanceof OutOfMemoryError) throw (OutOfMemoryError) t;
+            throwIfFatal(t);
             return NOT_EXIST_SYMBOL;
         }
     }
@@ -472,7 +472,7 @@ public class ModuleHelper {
                 if (currentActivityThread != null) context = (Context) sGetSystemContextMethod.invoke(currentActivityThread);
             }
         } catch (Throwable t) {
-            if (t instanceof OutOfMemoryError) throw (OutOfMemoryError) t;
+            throwIfFatal(t);
         }
         return context;
     }
@@ -487,7 +487,7 @@ public class ModuleHelper {
                 if (currentActivityThread != null) context = (Context) sGetSystemContextMethod.invoke(currentActivityThread);
             }
         } catch (Throwable t) {
-            if (t instanceof OutOfMemoryError) throw (OutOfMemoryError) t;
+            throwIfFatal(t);
         }
         return context;
     }
