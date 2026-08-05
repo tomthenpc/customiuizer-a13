@@ -1709,6 +1709,8 @@ public final class XposedHelpers {
     private static InvocationTargetError invocationTargetError(InvocationTargetException exception) {
         Throwable cause = exception.getCause();
         if (cause instanceof OutOfMemoryError) throw (OutOfMemoryError) cause;
+        if (cause instanceof ThreadDeath) throw (ThreadDeath) cause;
+        if (cause instanceof VirtualMachineError) throw (VirtualMachineError) cause;
         return new InvocationTargetError(cause);
     }
 
