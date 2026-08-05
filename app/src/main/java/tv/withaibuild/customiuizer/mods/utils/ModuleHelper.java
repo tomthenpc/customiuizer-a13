@@ -57,7 +57,7 @@ public class ModuleHelper {
     public static final String prefsName = "customiuizer_prefs";
 
     @SuppressLint("StaticFieldLeak")
-    public static Context mModuleContext = null;
+    public static Context mModuleContext = null; // BRUTAL_ALLOW:STATIC_STRONG_ANDROID_OWNER
 
     static CopyOnWriteArraySet<PreferenceObserver> prefObservers = new CopyOnWriteArraySet<PreferenceObserver>();
     private static final ConcurrentHashMap<String, PreferenceObserver> keyedPrefObservers =

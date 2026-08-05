@@ -178,7 +178,7 @@ object StepCounterController {
 
     private val stepViews = mutableListOf<StepViewRef>()
     private val viewLock = Any()
-    private var sContext: Context? = null
+    private var sContext: Context? = null // BRUTAL_ALLOW:STATIC_STRONG_ANDROID_OWNER
     private var queryHandler: Handler? = null
     private var uiHandler: Handler? = null
     private var queryThread: HandlerThread? = null

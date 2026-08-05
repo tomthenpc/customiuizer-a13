@@ -56,8 +56,8 @@ object Controls {
     private var isWaitingForVolumeLongPressed = false
     private var wasRaise2WakeEnabled = false
     private var mHandler: Handler? = null
-    private var sScreenOnContext: Context? = null
-    private var sPowerContext: Context? = null
+    private var sScreenOnContext: Context? = null // BRUTAL_ALLOW:STATIC_STRONG_ANDROID_OWNER
+    private var sPowerContext: Context? = null // BRUTAL_ALLOW:STATIC_STRONG_ANDROID_OWNER
     private var sPowerManager: PowerManager? = null
 
     private val mPowerLongPressRunnable = Runnable {
@@ -84,7 +84,7 @@ object Controls {
         }
     }
 
-    private var sVolumeContext: Context? = null
+    private var sVolumeContext: Context? = null // BRUTAL_ALLOW:STATIC_STRONG_ANDROID_OWNER
     private var sVolumeKeyCode = KeyEvent.KEYCODE_UNKNOWN
 
     private val mVolumeLongPressRunnable = Runnable {
@@ -588,7 +588,7 @@ object Controls {
     }
 
     @SuppressLint("StaticFieldLeak")
-    private var miuiPWMContext: Context? = null
+    private var miuiPWMContext: Context? = null // BRUTAL_ALLOW:STATIC_STRONG_ANDROID_OWNER
     private var miuiPWMHandler: Handler? = null
     private var hasDoubleTap = false
     private var wasScreenOn = false
@@ -734,7 +734,7 @@ object Controls {
     }
 
     @SuppressLint("StaticFieldLeak")
-    private var basePWMContext: Context? = null
+    private var basePWMContext: Context? = null // BRUTAL_ALLOW:STATIC_STRONG_ANDROID_OWNER
     private var basePWMObject: Any? = null
     private var markShortcutTriggered: java.lang.reflect.Method? = null
 

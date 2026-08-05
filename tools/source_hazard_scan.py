@@ -8,6 +8,7 @@ used. Add `BRUTAL_ALLOW:<RULE>` on the same line for a narrow reviewed waiver.
 from __future__ import annotations
 
 import argparse
+import functools
 import hashlib
 import json
 import re
@@ -69,10 +70,12 @@ RULES: list[tuple[str, re.Pattern[str], str]] = [
     (
         "STATIC_STRONG_ANDROID_OWNER",
         re.compile(
-            r"(?m)^\s*(?:public|private|protected|internal)?\s*(?:static\s+|@JvmField\s+)?"
-            r"(?:var|val|[A-Za-z0-9_<>?.]+\s+)"
-            r"[A-Za-z0-9_]*\s*(?::\s*)?"
-            r"(?:Context|Activity|View|Fragment|Window|Drawable)\??\s*(?:=|;)"
+            r"(?m)^[ \t]*(?:public|private|protected|internal)?[ \t]*(?:static[ \t]+|@JvmField[ \t]+)?"
+            r"(?:"
+            r"(?:var|val)[ \t]+[A-Za-z0-9_]+[ \t]*:[ \t]*\b(?:Context|Activity|View|Fragment|Window|Drawable)\??[ \t]*(?:=|;)"
+            r"|"
+            r"\b(?:Context|Activity|View|Fragment|Window|Drawable)(?:<[^>\n]*>)?[ \t]+[A-Za-z0-9_]+[ \t]*(?:=|;)"
+            r")"
         ),
         "potential strong Android owner; require scoped owner or WeakReference",
     ),
@@ -97,6 +100,122 @@ def line_number(text: str, offset: int) -> int:
     return text[:offset].count("\n") + 1
 
 
+# Match type / function declaration lines, accounting for `companion object`.
+_TYPE_DECL_RE = re.compile(
+    r"^(?:\s*(?:abstract\s+|data\s+|sealed\s+|open\s+|public\s+|private\s+|"
+    r"protected\s+|internal\s+|final\s+))*"
+    r"(class|object|companion\s+object|interface|enum\s+class|enum)\b"
+)
+_FUN_DECL_RE = re.compile(
+    r"^(?:\s*(?:public|private|protected|internal|override|abstract|open|final|"
+    r"inline|crossinline|noinline|operator|infix|suspend|tailrec|external|"
+    r"expect|actual)\s+)*fun\b"
+    r"|"
+    r"(?:public|private|protected|static|final|abstract|synchronized|"
+    r"native|strictfp|\s)+[A-Za-z0-9_<>,\[\].\s]+\s+[A-Za-z0-9_]+\s*\("
+)
+
+
+def _declaration_kind(line: str) -> str | None:
+    """Return 'type', 'fun', or None based on whether the line starts a declaration."""
+    if _TYPE_DECL_RE.match(line):
+        return "type"
+    if _FUN_DECL_RE.match(line):
+        return "fun"
+    return None
+
+
+def _detect_type_kind(line: str) -> str:
+    """Return a coarse kind for a type declaration line: object, class, etc."""
+    m = re.match(
+        r"\s*(?:abstract\s+|data\s+|sealed\s+|open\s+|public\s+|private\s+|"
+        r"protected\s+|internal\s+|final\s+)*"
+        r"(class|object|companion\s+object|interface|enum\s+class|enum)\b",
+        line,
+    )
+    if not m:
+        return "other"
+    kind = m.group(1)
+    if kind == "companion object":
+        return "companion"
+    if kind == "object":
+        return "object"
+    return "class"  # class, interface, enum, enum class
+
+
+def _has_static_keyword(line: str, prev_line: str) -> bool:
+    """True if the field line or previous line indicates a static field."""
+    # Java `static` keyword.
+    if re.search(r"\bstatic\b", line):
+        return True
+    # Kotlin `@JvmField` on the field line or previous line.
+    if "@JvmField" in line or "@JvmField" in prev_line:
+        return True
+    return False
+
+
+@functools.lru_cache(maxsize=512)
+def _scope_state_for(text: str) -> dict[int, tuple[bool, bool, bool, bool]]:
+    """Return a map from 1-indexed line numbers to (in_fun, in_object, in_class, is_static_field).
+
+    in_object is also true for `companion object` because those fields are static
+    at the JVM level.  in_class is the opposite of in_object for type scopes, but
+    note that object members can also appear inside nested classes/objects.
+    """
+    lines = text.splitlines()
+    line_count = len(lines)
+    info: dict[int, tuple[bool, bool, bool, bool]] = {}
+
+    stack: list[tuple[str, str]] = []  # (block_kind, type_kind)
+    pending: list[str] = []  # type/fun declarations waiting for their opening brace
+
+    for i, line in enumerate(lines, 1):
+        prev_line = lines[i - 2] if i > 1 else ""
+        kind = _declaration_kind(line)
+        if kind:
+            pending.append(kind)
+
+        # Process braces in order on this line.
+        for ch in line:
+            if ch == "{":
+                block_kind = pending.pop(0) if pending else "other"
+                type_kind = _detect_type_kind(line) if block_kind == "type" else "other"
+                # For `companion object`, the type kind is 'companion' and we treat it like 'object'.
+                if type_kind == "companion":
+                    type_kind = "object"
+                stack.append((block_kind, type_kind))
+            elif ch == "}":
+                if stack:
+                    stack.pop()
+
+        # Determine state for this line *after* processing braces.  This means the
+        # body of a declaration that opened on this line is considered entered.
+        in_fun = any(b == "fun" for b, _ in stack)
+        in_object = any(t == "object" for _, t in stack)
+        in_class = any(t == "class" for _, t in stack)
+        is_static = _has_static_keyword(line, prev_line)
+        info[i] = (in_fun, in_object, in_class, is_static)
+
+    return info
+
+
+def _is_static_owner_scope(text: str, line: int, source_line: str) -> bool:
+    """Return True only for static/object fields, not locals or class instance fields."""
+    info = _scope_state_for(text)
+    in_fun, in_object, in_class, is_static = info.get(line, (False, False, False, False))
+    # Locals inside functions are never the target of this rule.
+    if in_fun:
+        return False
+    # Object / companion object fields are static at the JVM level.
+    if in_object:
+        return True
+    # Java static fields.
+    if is_static:
+        return True
+    # Instance fields in classes are ordinary instance fields, not static owners.
+    return False
+
+
 def scan_file(path: Path, repo_root: Path) -> list[Finding]:
     try:
         text = path.read_text(encoding="utf-8")
@@ -109,6 +228,8 @@ def scan_file(path: Path, repo_root: Path) -> list[Finding]:
             line = line_number(text, match.start())
             source_line = text.splitlines()[line - 1] if text.splitlines() else ""
             if f"BRUTAL_ALLOW:{rule}" in source_line:
+                continue
+            if rule == "STATIC_STRONG_ANDROID_OWNER" and not _is_static_owner_scope(text, line, source_line):
                 continue
             snippet = re.sub(r"\s+", " ", match.group(0))[:220]
             findings.append(Finding(rule, rel, line, snippet))

@@ -69,8 +69,8 @@ object GlobalActions {
 
     @JvmField
     var mStatusBar: Any? = null
-    private var mGlobalReceiverContext: Context? = null
-    private var mSBReceiverContext: Context? = null
+    private var mGlobalReceiverContext: Context? = null // BRUTAL_ALLOW:STATIC_STRONG_ANDROID_OWNER
+    private var mSBReceiverContext: Context? = null // BRUTAL_ALLOW:STATIC_STRONG_ANDROID_OWNER
 
     private val mMainHandler by lazy(LazyThreadSafetyMode.SYNCHRONIZED) {
         Handler(Looper.getMainLooper())
