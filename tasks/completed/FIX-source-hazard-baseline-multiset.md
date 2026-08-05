@@ -1,7 +1,7 @@
 # FIX-source-hazard-baseline-multiset
 
 - Platform: A13
-- Status: Active
+- Status: Done
 - Priority: P1
 - Owner: Devin
 - Reviewer: ChatGPT / human
@@ -57,15 +57,15 @@
 
 ## 验收标准
 
-- [ ] `source_hazard_scan.py` baseline 加载后总计数为 47，而不是唯一指纹数 20；
-- [ ] 人工构造的第二处重复 hazard 能被报告；
-- [ ] baseline 与当前重复次数完全相同时，结果为 0 new；
-- [ ] fingerprint 不包含行号的稳定性保持不变；
-- [ ] baseline 总数保留重复项计数；
-- [ ] 原有 allow marker 和 Throwable 测试继续通过；
-- [ ] 完整本地门禁通过；
-- [ ] 最终 diff 已审查；
-- [ ] 工作区没有未解释改动。
+- [x] `source_hazard_scan.py` baseline 加载后总计数为 47，而不是唯一指纹数 20；
+- [x] 人工构造的第二处重复 hazard 能被报告；
+- [x] baseline 与当前重复次数完全相同时，结果为 0 new；
+- [x] fingerprint 不包含行号的稳定性保持不变；
+- [x] baseline 总数保留重复项计数；
+- [x] 原有 allow marker 和 Throwable 测试继续通过；
+- [x] 完整本地门禁通过；
+- [x] 最终 diff 已审查；
+- [x] 工作区没有未解释改动。
 
 ## 验证
 
@@ -77,16 +77,34 @@ python tools/verify.py fast --changed
 python tools/verify.py full
 ```
 
+### 实际结果
+
+- `compileall tools`：通过
+- `unittest discover`：421 tests passed, 0 failed, skipped 2
+- `source_hazard_scan.py --path app/src/main/java`：
+  - `Source hazard scan passed: 47 reviewed finding(s), 0 new`
+  - JSON payload: `{"total": 47, "baseline": 47, "new": 0}`
+- `verify.py fast --changed`：通过（check-invariants、check-compat-contracts、check-hook-contract-parity OK）
+- `verify.py full`：通过（含 compileDebugKotlin、compileDebugJavaWithJavac、testDebugUnitTest-all、lintDebug）
+- 人工构造重复 hazard 验证：baseline 含 1 个 fingerprint、源码含 2 个相同 fingerprint 时，恰好报告 1 个 new finding
+
 ## 构建产物
 
 未要求 APK。
 
 ## 完成记录
 
-- Base SHA:
-- Final SHA:
+- Base SHA: 841253dfb865b57b3ff97206c4e2d96ab74c747e
+- Final SHA: d0d4a84c12653d24c6fa020a6b1f47afed2b640d
 - Commits:
+  - `03337ad` docs: add active task FIX-source-hazard-baseline-multiset
+  - `d0d4a84` fix: source hazard baseline multiset semantics
 - Behavior changed:
-- Verification:
-- Device evidence:
-- Known limits:
+  - `load_baseline()` 现在返回 `collections.Counter[str]` 而不是 `set[str]`，保留重复 fingerprint 计数；
+  - 新增 `find_new_findings()`，按多重集合语义抵消 baseline 与当前 findings；
+  - JSON 输出中的 `baseline` 现在表示 baseline fingerprint 总数（含重复），而不是唯一 fingerprint 数量；
+  - `--strict-all` 仍使用空 `Counter`，使全部 findings 被报告为 new；
+  - `--write-baseline` 仍保存完整 fingerprints 列表（含重复），格式兼容。
+- Verification: 见“验证”章节
+- Device evidence: 未涉及设备；本任务仅工具/门禁改动
+- Known limits: `PreferenceLoadPredicate` 保留为未来独立重构，不继续在本分支实施
