@@ -13,6 +13,7 @@ import hashlib
 import json
 import re
 import sys
+from collections import Counter
 from dataclasses import dataclass, asdict
 from pathlib import Path
 
@@ -273,11 +274,34 @@ def collect(root: Path, paths: list[str]) -> list[Finding]:
     return findings
 
 
-def load_baseline(path: Path) -> set[str]:
+def load_baseline(path: Path) -> Counter[str]:
     if not path.exists():
-        return set()
+        return Counter()
     data = json.loads(path.read_text(encoding="utf-8"))
-    return set(data.get("fingerprints", []))
+    return Counter(data.get("fingerprints", []))
+
+
+def find_new_findings(
+    findings: list[Finding],
+    baseline: Counter[str],
+) -> list[Finding]:
+    """Return findings that exceed the baseline multiplicity.
+
+    Each recorded baseline fingerprint can offset exactly one current finding
+    with the same fingerprint. Findings that appear fewer times than baseline
+    do not cause the scanner to fail; excess baseline entries are ignored.
+    """
+    remaining = baseline.copy()
+    new_findings: list[Finding] = []
+
+    for finding in findings:
+        fingerprint = finding.fingerprint
+        if remaining[fingerprint] > 0:
+            remaining[fingerprint] -= 1
+        else:
+            new_findings.append(finding)
+
+    return new_findings
 
 
 def main(argv: list[str] | None = None) -> int:
@@ -311,11 +335,11 @@ def main(argv: list[str] | None = None) -> int:
         print(f"Wrote baseline with {len(findings)} finding(s): {baseline_path}")
         return 0
 
-    baseline = set() if args.strict_all else load_baseline(baseline_path)
-    new_findings = [f for f in findings if f.fingerprint not in baseline]
+    baseline: Counter[str] = Counter() if args.strict_all else load_baseline(baseline_path)
+    new_findings = find_new_findings(findings, baseline)
     payload = {
         "total": len(findings),
-        "baseline": len(baseline),
+        "baseline": sum(baseline.values()),
         "new": len(new_findings),
         "findings": [dict(asdict(f), fingerprint=f.fingerprint) for f in new_findings],
     }
