@@ -59,6 +59,12 @@ import java.lang.System.currentTimeMillis
 import tv.withaibuild.customiuizer.utils.HookUtils
 
 @Suppress("WeakerAccess")
+// mGlobalReceiverContext/mSBReceiverContext are the system_server/SystemUI
+// per-process singleton Context (AccessibilityManagerService/StatusBar
+// mContext), not an Activity Context. Each reassignment first unregisters the
+// receiver bound to the previous Context, so there is no unmanaged owner
+// hand-off; Lint cannot see that ownership-replacement pattern.
+@SuppressLint("StaticFieldLeak")
 object GlobalActions {
 
     @JvmField

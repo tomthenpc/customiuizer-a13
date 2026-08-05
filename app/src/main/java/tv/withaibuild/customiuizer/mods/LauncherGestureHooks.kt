@@ -26,7 +26,6 @@ object LauncherGestureHooks {
     private var mHotSeatDownX = 0f
     private var mHotSeatDownY = 0f
     private var mHotSeatDownTime = 0L
-    private var mHotSeatContext: Context? = null
 
     @JvmStatic
     fun HomescreenSwipesHook(lpparam: PackageReadyParam) {
@@ -151,10 +150,12 @@ object LauncherGestureHooks {
                         mHotSeatDownX = ev.x
                         mHotSeatDownY = ev.y
                         mHotSeatDownTime = SystemClock.uptimeMillis()
-                        mHotSeatContext = helperContext
                     }
                     MotionEvent.ACTION_UP -> {
-                        val ctx = mHotSeatContext ?: helperContext
+                        // helperContext is recomputed above from hotSeat.context on every
+                        // dispatchTouchEvent call, including this ACTION_UP, so there is no
+                        // need to carry a Context across gestures in a static field.
+                        val ctx = helperContext
                         val dx = ev.x - mHotSeatDownX
                         val dy = ev.y - mHotSeatDownY
                         val dt = SystemClock.uptimeMillis() - mHotSeatDownTime

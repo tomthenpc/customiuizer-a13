@@ -58,6 +58,11 @@ import java.util.ArrayList
 import java.util.Locale
 
 @Suppress("UNUSED_PARAMETER")
+// mPct (below) is created by initPct() and torn down by removePct(), which
+// removes it from its parent ViewGroup and clears the field; Lint reports the
+// static-Context/View rule against the containing object as well as the
+// field itself, so the suppression has to live here too.
+@SuppressLint("StaticFieldLeak")
 object SystemUIControlCenterHooks {
 
     private const val STATUS_BAR_CLS = "com.android.systemui.statusbar.phone.CentralSurfacesImpl"

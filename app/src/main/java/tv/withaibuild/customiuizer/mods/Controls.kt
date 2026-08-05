@@ -40,6 +40,12 @@ import tv.withaibuild.customiuizer.mods.utils.XposedHelpers.findMethodExact
 import tv.withaibuild.customiuizer.utils.HookUtils
 
 @Suppress("UNUSED_PARAMETER")
+// sScreenOnContext/sPowerContext/sVolumeContext are the system_server-process
+// PhoneWindowManager/MiuiPhoneWindowManager mContext, i.e. a per-process
+// singleton, not an Activity Context. Each reassignment first unregisters the
+// receiver bound to the previous Context, so there is no unmanaged owner
+// hand-off; Lint cannot see that ownership-replacement pattern.
+@SuppressLint("StaticFieldLeak")
 object Controls {
 
     private var isPowerPressed = false

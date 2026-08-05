@@ -1,5 +1,6 @@
 package tv.withaibuild.customiuizer.mods.utils
 
+import android.annotation.SuppressLint
 import android.content.BroadcastReceiver
 import android.content.Context
 import android.content.Intent
@@ -21,7 +22,13 @@ import java.util.concurrent.atomic.AtomicReference
  * [Lifecycle] class while keeping Android-specific registration and ContentResolver
  * access in the object. This keeps the scheduling rules unit-testable without a
  * full SystemUI environment.
+ *
+ * sContext holds context.applicationContext (never an Activity Context) and is
+ * cleared by [destroy]; stepViews holds its TextView entries through
+ * WeakReference. Lint's generic static-Context rule cannot see either of those
+ * ownership/release guarantees.
  */
+@SuppressLint("StaticFieldLeak")
 object StepCounterController {
 
     /**
