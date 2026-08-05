@@ -6,6 +6,7 @@ import android.content.UriMatcher
 import android.content.res.AssetFileDescriptor
 import android.database.Cursor
 import android.net.Uri
+import tv.withaibuild.customiuizer.utils.SettingsDiagnostics
 import java.io.FileNotFoundException
 
 class PrefsProvider : ContentProvider() {
@@ -49,7 +50,7 @@ class PrefsProvider : ContentProvider() {
                 return ctx.assets.openFd(filename)
             } catch (t: Throwable) {
                 if (t is OutOfMemoryError || t is ThreadDeath || t is VirtualMachineError) throw t
-                t.printStackTrace()
+                SettingsDiagnostics.failure("PrefsProvider.openTestAsset", t)
             }
         }
 

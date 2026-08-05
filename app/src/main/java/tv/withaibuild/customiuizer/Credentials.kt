@@ -10,6 +10,7 @@ import android.security.keystore.KeyGenParameterSpec
 import android.security.keystore.KeyProperties
 import android.widget.Toast
 import androidx.appcompat.app.AppCompatActivity
+import tv.withaibuild.customiuizer.utils.SettingsDiagnostics
 import javax.crypto.KeyGenerator
 
 @Suppress("DEPRECATION")
@@ -46,7 +47,7 @@ class Credentials : AppCompatActivity() {
             }
         } catch (t: Throwable) {
             if (t is OutOfMemoryError || t is ThreadDeath || t is VirtualMachineError) throw t
-            t.printStackTrace()
+            SettingsDiagnostics.failure("Credentials.initializeCredentialFlow", t)
         }
     }
 

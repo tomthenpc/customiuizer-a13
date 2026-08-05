@@ -14,6 +14,7 @@ import androidx.appcompat.app.AppCompatActivity
 import tv.withaibuild.customiuizer.utils.AppDataAdapter
 import tv.withaibuild.customiuizer.utils.Helpers
 import tv.withaibuild.customiuizer.utils.LockedAppAdapter
+import tv.withaibuild.customiuizer.utils.SettingsDiagnostics
 import tv.withaibuild.customiuizer.utils.PrivacyAppAdapter
 import tv.withaibuild.customiuizer.utils.ResolveInfoAdapter
 
@@ -51,7 +52,7 @@ open class SubFragmentWithSearch : SubFragment() {
             )
         } catch (t: Throwable) {
             if (t is OutOfMemoryError || t is ThreadDeath || t is VirtualMachineError) throw t
-            t.printStackTrace()
+            SettingsDiagnostics.failure("SubFragmentWithSearch.styleSearchView", t)
         }
     }
 

@@ -8,6 +8,7 @@ import android.widget.TextView
 import tv.withaibuild.customiuizer.prefs.ListPreferenceEx
 import tv.withaibuild.customiuizer.utils.AppHelper
 import tv.withaibuild.customiuizer.utils.AppLocaleController
+import tv.withaibuild.customiuizer.utils.SettingsDiagnostics
 import java.text.SimpleDateFormat
 import java.util.Date
 import java.util.Locale
@@ -48,7 +49,7 @@ class AboutFragment : SubFragment() {
                 version.text = getString(R.string.about_version, versionName)
             } catch (e: Throwable) {
                 if (e is OutOfMemoryError || e is ThreadDeath || e is VirtualMachineError) throw e
-                e.printStackTrace()
+                SettingsDiagnostics.failure("AboutFragment.bindVersionText", e)
             }
         }
     }

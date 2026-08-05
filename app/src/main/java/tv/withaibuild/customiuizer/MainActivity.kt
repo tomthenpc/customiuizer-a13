@@ -16,6 +16,7 @@ import io.github.libxposed.service.XposedServiceHelper
 import tv.withaibuild.customiuizer.mods.GlobalActions
 import tv.withaibuild.customiuizer.utils.AppHelper
 import tv.withaibuild.customiuizer.utils.Helpers
+import tv.withaibuild.customiuizer.utils.SettingsDiagnostics
 
 class MainActivity : AppCompatActivity() {
 
@@ -89,7 +90,7 @@ class MainActivity : AppCompatActivity() {
             prefsChanged?.let { AppHelper.appPrefs?.unregisterOnSharedPreferenceChangeListener(it) }
         } catch (t: Throwable) {
             if (t is OutOfMemoryError || t is ThreadDeath || t is VirtualMachineError) throw t
-            t.printStackTrace()
+            SettingsDiagnostics.failure("MainActivity.unregisterPreferenceListener", t)
         }
         super.onDestroy()
     }

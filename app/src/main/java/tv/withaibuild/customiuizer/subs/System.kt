@@ -25,6 +25,7 @@ import tv.withaibuild.customiuizer.prefs.SeekBarPreference
 import tv.withaibuild.customiuizer.qs.AutoRotateService
 import tv.withaibuild.customiuizer.utils.AppHelper
 import tv.withaibuild.customiuizer.utils.Helpers
+import tv.withaibuild.customiuizer.utils.SettingsDiagnostics
 import kotlin.math.roundToInt
 
 @Suppress("DEPRECATION")
@@ -260,7 +261,7 @@ class System : SubFragment() {
                             }
                         } catch (t: Throwable) {
                             if (t is OutOfMemoryError || t is ThreadDeath || t is VirtualMachineError) throw t
-                            t.printStackTrace()
+                            SettingsDiagnostics.failure("System.writeQqsCount", t)
                         }
                     }
 
