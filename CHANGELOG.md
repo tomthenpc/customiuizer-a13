@@ -1,5 +1,24 @@
 # 更新日志
 
+## r13.10.0（2026-08-05）
+
+### ROM 兼容与 Hook 合同
+
+- 完善 Android 13 上 MIUI 14 与 HyperOS 1 的 ROM 环境识别、target contract、variant 选择和安装诊断，缺少目标时保持安全跳过，不进行跨候选混装；
+- 加固反射参数、Hook 安装与兼容性失败分类，使 resolver、installer 和诊断记录保持一致。
+
+### 稳定性
+
+- 在 Hook 回调、反射 fallback、Receiver 生命周期、Preference observer、延迟 callback 和 diagnostics 边界统一传播直接或包装的 OutOfMemoryError、ThreadDeath 与 VirtualMachineError；
+- 普通 ROM 差异、反射失败和 callback 异常继续按原有 sentinel、日志或 fallback 隔离，不改变既有功能行为；
+- 增加 cause-chain、原实例身份、状态机顺序与 mutation 合同测试。
+
+### 发布说明
+
+- 面向 MIUI 14 / Android 13；HyperOS 1 / Android 13 继续作为实验兼容目标；
+- 本版通过静态门禁、Release JVM、Release/Vital Lint、R8、正式签名、zipalign、包名、版本和 Xposed 元数据核验；
+- 本地正式 APK 构建完成后仍标记为 BUILD_VERIFIED，实机状态由用户安装使用后确认。
+
 ## r13.9.2（2026-08-01）
 
 ### 内存与稳定性

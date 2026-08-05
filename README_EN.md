@@ -33,7 +33,7 @@ python -m unittest discover -s tools/tests -p "test_*.py"
 
 Formal builds use an external A13-specific signing configuration. Never commit keys, passwords, tokens, APKs, or local signing files. Disabled features must create no background work; Hook hot paths stay allocation-light; receivers and observers are releasable; `OutOfMemoryError` is never swallowed.
 
-- Current release: `r13.9.2` (versionCode `133`)
+- Current release: `r13.10.0` (versionCode `134`)
 - User downloads: <https://github.com/Xposed-Modules-Repo/tv.withaibuild.customiuizer.r13/releases>
 - Source: <https://github.com/tomthenpc/customiuizer-a13>
 

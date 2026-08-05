@@ -33,7 +33,7 @@ python -m unittest discover -s tools/tests -p "test_*.py"
 
 正式构建使用仓库外的 A13 专用签名配置；不得提交密钥、密码、令牌、APK 或本地签名配置。开发时保持关闭功能零后台成本、Hook 热路径低分配、Receiver/Observer 可释放，且不得吞掉 `OutOfMemoryError`。
 
-- 当前正式版：`r13.9.2`（versionCode `133`）
+- 当前正式版：`r13.10.0`（versionCode `134`）
 - 用户下载：<https://github.com/Xposed-Modules-Repo/tv.withaibuild.customiuizer.r13/releases>
 - 源码：<https://github.com/tomthenpc/customiuizer-a13>
 
