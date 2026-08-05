@@ -258,6 +258,7 @@ open class SubFragment : PreferenceFragmentBase() {
                     is ColorCircle -> prefs.putInt(tag, nView.color).apply()
                 }
             } catch (e: Throwable) {
+                if (e is OutOfMemoryError || e is ThreadDeath || e is VirtualMachineError) throw e
                 Log.e("miuizer", "Cannot save sub preference!")
             }
         }
@@ -278,6 +279,7 @@ open class SubFragment : PreferenceFragmentBase() {
                     is TextView -> nView.text = AppHelper.getStringOfAppPrefs(tag, "")
                 }
             } catch (e: Throwable) {
+                if (e is OutOfMemoryError || e is ThreadDeath || e is VirtualMachineError) throw e
                 Log.e("miuizer", "Cannot load sub preference!")
             }
         }

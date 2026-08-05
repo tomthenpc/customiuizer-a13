@@ -107,11 +107,13 @@ object DiagnosticRecorder {
                 } catch (oom: OutOfMemoryError) {
                     throw oom
                 } catch (t: Throwable) {
+                    if (t is OutOfMemoryError || t is ThreadDeath || t is VirtualMachineError) throw t
                     try {
                         XposedHelpers.log("Diagnostic logger failed: ${t.message}")
                     } catch (oom: OutOfMemoryError) {
                         throw oom
-                    } catch (_: Throwable) {
+                    } catch (fatal: Throwable) {
+                        if (fatal is OutOfMemoryError || fatal is ThreadDeath || fatal is VirtualMachineError) throw fatal
                         // fallback logger must not block the installation path
                     }
                 }
@@ -120,7 +122,8 @@ object DiagnosticRecorder {
                     XposedHelpers.log(logLine)
                 } catch (oom: OutOfMemoryError) {
                     throw oom
-                } catch (_: Throwable) {
+                } catch (fatal: Throwable) {
+                    if (fatal is OutOfMemoryError || fatal is ThreadDeath || fatal is VirtualMachineError) throw fatal
                     // logger failure must not block the installation path
                 }
             }

@@ -48,6 +48,7 @@ class PrefsProvider : ContentProvider() {
             if (filename != null) try {
                 return ctx.assets.openFd(filename)
             } catch (t: Throwable) {
+                if (t is OutOfMemoryError || t is ThreadDeath || t is VirtualMachineError) throw t
                 t.printStackTrace()
             }
         }

@@ -96,6 +96,7 @@ object SystemUINotificationHooks {
                             XposedHelpers.callMethod(mStatusBar, "collapsePanels")
                             XposedHelpers.callMethod(mContext, "startActivityAsUser", intent, XposedHelpers.newInstance(UserHandle::class.java, user))
                         } catch (t: Throwable) {
+                            if (t is OutOfMemoryError || t is ThreadDeath || t is VirtualMachineError) throw t
                             XposedHelpers.log(t)
                         }
                     } else {

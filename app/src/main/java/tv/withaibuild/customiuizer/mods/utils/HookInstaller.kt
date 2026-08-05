@@ -156,7 +156,8 @@ object HookInstaller {
             Class.forName(className, false, classLoader)
         } catch (oom: OutOfMemoryError) {
             throw oom
-        } catch (_: Throwable) {
+        } catch (fatal: Throwable) {
+            if (fatal is OutOfMemoryError || fatal is ThreadDeath || fatal is VirtualMachineError) throw fatal
             null
         }
     }

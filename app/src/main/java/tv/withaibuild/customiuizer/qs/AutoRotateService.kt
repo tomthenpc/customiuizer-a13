@@ -51,6 +51,7 @@ class AutoRotateService : TileService() {
             val nextState = if (state >= 2) 0 else state + 1
             prefs.edit().putInt("pref_key_qs_autorotate_state", nextState).apply()
         } catch (t: Throwable) {
+            if (t is OutOfMemoryError || t is ThreadDeath || t is VirtualMachineError) throw t
             t.printStackTrace()
         }
     }
@@ -59,6 +60,7 @@ class AutoRotateService : TileService() {
         return try {
             AppHelper.getSharedPrefs(this, false).getInt("pref_key_qs_autorotate_state", 0)
         } catch (t: Throwable) {
+            if (t is OutOfMemoryError || t is ThreadDeath || t is VirtualMachineError) throw t
             t.printStackTrace()
             0
         }

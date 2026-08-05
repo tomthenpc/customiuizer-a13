@@ -63,7 +63,9 @@ object SystemStatusBarMoreHooks {
                     try {
                         val mBatteryChargingInView = XposedHelpers.getObjectField(param.thisObject, "mBatteryChargingInView") as? ImageView
                         mBatteryChargingInView?.visibility = View.GONE
-                    } catch (ignore: Throwable) {}
+                    } catch (ignore: Throwable) {
+                        if (ignore is OutOfMemoryError || ignore is ThreadDeath || ignore is VirtualMachineError) throw ignore
+}
                 }
                 if (hideNormalPercentage) {
                     val mBatteryView = param.thisObject as? View ?: return
@@ -93,6 +95,7 @@ object SystemStatusBarMoreHooks {
             val nextTime = try {
                 XposedHelpers.getAdditionalInstanceField(thisObject, "mNextAlarmTime") as? Long
             } catch (t: Throwable) {
+                if (t is OutOfMemoryError || t is ThreadDeath || t is VirtualMachineError) throw t
                 null
             } ?: ModuleHelper.getNextMIUIAlarmTime(mContext)
             var finalNextTime = nextTime
@@ -106,6 +109,7 @@ object SystemStatusBarMoreHooks {
             mIconController = XposedHelpers.getObjectField(thisObject, "miuiDripLeftStatusBarIconController")
             XposedHelpers.callMethod(mIconController, "setIconVisibility", "alarm_clock", vis)
         } catch (t: Throwable) {
+            if (t is OutOfMemoryError || t is ThreadDeath || t is VirtualMachineError) throw t
             XposedHelpers.log(t)
         }
     }

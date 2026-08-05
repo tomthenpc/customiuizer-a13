@@ -355,6 +355,7 @@ object LockScreenAlbumArtController {
                             } catch (oom: OutOfMemoryError) {
                                 throw oom
                             } catch (failure: Throwable) {
+                                if (failure is OutOfMemoryError || failure is ThreadDeath || failure is VirtualMachineError) throw failure
                                 XposedHelpers.log(failure)
                                 null
                             }

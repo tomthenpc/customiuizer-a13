@@ -167,6 +167,7 @@ class BatteryIndicator @JvmOverloads constructor(
         } catch (oom: OutOfMemoryError) {
             throw oom
         } catch (t: Throwable) {
+            if (t is OutOfMemoryError || t is ThreadDeath || t is VirtualMachineError) throw t
             XposedHelpers.log(t)
         }
 
@@ -363,6 +364,7 @@ class BatteryIndicator @JvmOverloads constructor(
         } catch (oom: OutOfMemoryError) {
             throw oom
         } catch (ignored: Throwable) {
+            if (ignored is OutOfMemoryError || ignored is ThreadDeath || ignored is VirtualMachineError) throw ignored
         }
         visibility = mVisibility
         scaleType = if (mCentered) ScaleType.CENTER else ScaleType.MATRIX
@@ -403,6 +405,7 @@ class BatteryIndicator @JvmOverloads constructor(
                 } catch (oom: OutOfMemoryError) {
                     throw oom
                 } catch (t: Throwable) {
+                    if (t is OutOfMemoryError || t is ThreadDeath || t is VirtualMachineError) throw t
                     XposedHelpers.log(t)
                 }
             }
@@ -485,6 +488,7 @@ class BatteryIndicator @JvmOverloads constructor(
         } catch (oom: OutOfMemoryError) {
             throw oom
         } catch (t: Throwable) {
+            if (t is OutOfMemoryError || t is ThreadDeath || t is VirtualMachineError) throw t
             XposedHelpers.log(t)
         }
     }

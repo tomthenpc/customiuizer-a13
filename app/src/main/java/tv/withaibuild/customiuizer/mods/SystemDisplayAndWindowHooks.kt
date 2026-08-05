@@ -28,7 +28,9 @@ object SystemDisplayAndWindowHooks {
                 try {
                     XposedHelpers.setObjectField(param.thisObject, "mColorFadeEnabled", true)
                     XposedHelpers.setObjectField(param.thisObject, "mColorFadeFadesConfig", true)
-                } catch (ignore: Throwable) {}
+                } catch (ignore: Throwable) {
+                    if (ignore is OutOfMemoryError || ignore is ThreadDeath || ignore is VirtualMachineError) throw ignore
+}
             }
 
             override fun after(param: AfterHookCallback) {
@@ -198,9 +200,11 @@ object SystemDisplayAndWindowHooks {
         val ccCls = try {
             XposedHelpers.findClass("com.android.keyguard.charge.MiuiWirelessChargeController", lpparam.classLoader)
         } catch (t1: Throwable) {
+            if (t1 is OutOfMemoryError || t1 is ThreadDeath || t1 is VirtualMachineError) throw t1
             try {
                 XposedHelpers.findClass("com.android.keyguard.charge.MiuiChargeController", lpparam.classLoader)
             } catch (t2: Throwable) {
+                if (t2 is OutOfMemoryError || t2 is ThreadDeath || t2 is VirtualMachineError) throw t2
                 XposedHelpers.log(t1)
                 XposedHelpers.log(t2)
                 return

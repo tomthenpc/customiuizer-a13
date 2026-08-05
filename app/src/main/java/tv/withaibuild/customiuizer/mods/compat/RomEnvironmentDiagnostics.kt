@@ -18,7 +18,8 @@ internal object RomEnvironmentDiagnostics {
             record(environment)
         } catch (oom: OutOfMemoryError) {
             throw oom
-        } catch (_: Throwable) {
+        } catch (fatal: Throwable) {
+            if (fatal is OutOfMemoryError || fatal is ThreadDeath || fatal is VirtualMachineError) throw fatal
             // Diagnostic recording is best-effort metadata. A recording failure must never
             // prevent the feature installer from continuing.
         }

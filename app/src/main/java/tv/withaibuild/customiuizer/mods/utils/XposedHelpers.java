@@ -394,6 +394,7 @@ public final class XposedHelpers {
                 try {
                     return clazz.getDeclaredField(fieldName);
                 } catch (NoSuchFieldException ignored) {
+                    /* not in this class, continue searching superclasses */
                 }
             }
             throw e;
@@ -526,6 +527,7 @@ public final class XposedHelpers {
                     method.setAccessible(true);
                     return Optional.of(method);
                 } catch (NoSuchMethodException ignored) {
+                    /* not in this class, continue searching superclasses */
                 }
             } while ((clz = clz.getSuperclass()) != null);
             return Optional.empty();
@@ -605,6 +607,7 @@ public final class XposedHelpers {
         try {
             return findMethodExact(clazz, methodName, parameterTypes);
         } catch (NoSuchMethodError ignored) {
+            /* exact match not found, fall through to best-match search */
         }
 
         // then find the best match
@@ -882,6 +885,7 @@ public final class XposedHelpers {
         try {
             return findConstructorExact(clazz, parameterTypes);
         } catch (NoSuchMethodError ignored) {
+            /* exact match not found, fall through to best-match search */
         }
 
         // then find the best match

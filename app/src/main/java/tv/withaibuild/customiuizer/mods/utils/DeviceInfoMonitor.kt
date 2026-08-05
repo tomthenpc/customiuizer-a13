@@ -428,7 +428,8 @@ object DeviceInfoMonitor {
             }
         } catch (oom: OutOfMemoryError) {
             throw oom
-        } catch (_: Throwable) {
+        } catch (fatal: Throwable) {
+            if (fatal is OutOfMemoryError || fatal is ThreadDeath || fatal is VirtualMachineError) throw fatal
             null
         }
     }
@@ -441,7 +442,8 @@ object DeviceInfoMonitor {
             ).use { it.readLine() }
         } catch (oom: OutOfMemoryError) {
             throw oom
-        } catch (_: Throwable) {
+        } catch (fatal: Throwable) {
+            if (fatal is OutOfMemoryError || fatal is ThreadDeath || fatal is VirtualMachineError) throw fatal
             null
         }
     }

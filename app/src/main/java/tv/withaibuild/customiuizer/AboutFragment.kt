@@ -47,6 +47,7 @@ class AboutFragment : SubFragment() {
                 }
                 version.text = getString(R.string.about_version, versionName)
             } catch (e: Throwable) {
+                if (e is OutOfMemoryError || e is ThreadDeath || e is VirtualMachineError) throw e
                 e.printStackTrace()
             }
         }

@@ -189,6 +189,7 @@ object SystemLockScreenMoreHooks {
                 ) return true
             }
         } catch (t: Throwable) {
+            if (t is OutOfMemoryError || t is ThreadDeath || t is VirtualMachineError) throw t
             XposedHelpers.log(t)
         }
         return false
@@ -242,6 +243,7 @@ object SystemLockScreenMoreHooks {
                             val mCallback = XposedHelpers.getObjectField(controller, "mKeyguardSecurityCallback")
                             XposedHelpers.callMethod(mCallback, "reportUnlockAttempt", 0, true, 0, 0)
                         } catch (t: Throwable) {
+                            if (t is OutOfMemoryError || t is ThreadDeath || t is VirtualMachineError) throw t
                             XposedHelpers.log(t)
                         }
                     }
@@ -327,6 +329,7 @@ object SystemLockScreenMoreHooks {
                                 )
                                 XposedHelpers.callMethod(mLockUserManager, "updatePublicMode")
                             } catch (t: Throwable) {
+                                if (t is OutOfMemoryError || t is ThreadDeath || t is VirtualMachineError) throw t
                                 XposedHelpers.log(t)
                             }
                         }

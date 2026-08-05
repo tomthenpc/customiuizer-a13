@@ -100,7 +100,10 @@ object AppHelper {
 
         val editor = target.edit()
         putPreferenceValue(editor, key, value)
-        val committed = try { editor.commit() } catch (t: Throwable) { false }
+        val committed = try { editor.commit() } catch (t: Throwable) {
+            if (t is OutOfMemoryError || t is ThreadDeath || t is VirtualMachineError) throw t
+            false
+        }
         if (!committed) mirrorDirty = true
     }
 
@@ -113,8 +116,16 @@ object AppHelper {
             mirrorDirty = true
             return
         }
-        val localAll = try { local.all } catch (t: Throwable) { mirrorDirty = true; return }
-        val remoteAll = try { target.all } catch (t: Throwable) { mirrorDirty = true; return }
+        val localAll = try { local.all } catch (t: Throwable) {
+            if (t is OutOfMemoryError || t is ThreadDeath || t is VirtualMachineError) throw t
+            mirrorDirty = true
+            return
+        }
+        val remoteAll = try { target.all } catch (t: Throwable) {
+            if (t is OutOfMemoryError || t is ThreadDeath || t is VirtualMachineError) throw t
+            mirrorDirty = true
+            return
+        }
 
         val editor = target.edit()
         var hasChange = false
@@ -142,7 +153,10 @@ object AppHelper {
             return
         }
 
-        val committed = try { editor.commit() } catch (t: Throwable) { false }
+        val committed = try { editor.commit() } catch (t: Throwable) {
+            if (t is OutOfMemoryError || t is ThreadDeath || t is VirtualMachineError) throw t
+            false
+        }
         if (committed) {
             mirrorDirty = false
         } else {
@@ -227,6 +241,7 @@ object AppHelper {
             val mContext = if (context.isDeviceProtectedStorage) context else context.createDeviceProtectedStorageContext()
             getLocaleContext(if (config == null) mContext else mContext.createConfigurationContext(config))
         } catch (t: Throwable) {
+            if (t is OutOfMemoryError || t is ThreadDeath || t is VirtualMachineError) throw t
             context
         }
     }
@@ -332,6 +347,7 @@ object AppHelper {
             }
             pair
         } catch (t: Throwable) {
+            if (t is OutOfMemoryError || t is ThreadDeath || t is VirtualMachineError) throw t
             t.printStackTrace()
             null
         }

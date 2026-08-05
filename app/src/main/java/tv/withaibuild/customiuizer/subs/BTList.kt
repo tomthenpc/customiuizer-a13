@@ -168,7 +168,9 @@ class BTList : SubFragment() {
     fun unregisterReceivers() {
         handler?.removeCallbacks(getCachedDevices)
         mAppContext?.let {
-            try { it.unregisterReceiver(devicesReceiver) } catch (_: Throwable) {}
+            try { it.unregisterReceiver(devicesReceiver) } catch (fatal: Throwable) {
+                if (fatal is OutOfMemoryError || fatal is ThreadDeath || fatal is VirtualMachineError) throw fatal
+}
         }
     }
 

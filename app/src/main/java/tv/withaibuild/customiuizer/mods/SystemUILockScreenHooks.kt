@@ -99,6 +99,7 @@ object SystemUILockScreenHooks {
                                     } catch (oom: OutOfMemoryError) {
                                         throw oom
                                     } catch (e: Throwable) {
+                                        if (e is OutOfMemoryError || e is ThreadDeath || e is VirtualMachineError) throw e
                                         XposedHelpers.callMethod(panel, "updateThemeBackgroundVisibility")
                                     }
                                 }
@@ -484,7 +485,9 @@ object SystemUILockScreenHooks {
                 var mStartedFromLockScreen = false
                 try {
                     mStartedFromLockScreen = XposedHelpers.getAdditionalInstanceField(act.application, "wasStartedFromLockScreen") as? Boolean ?: false
-                } catch (_: Throwable) {}
+                } catch (fatal: Throwable) {
+                    if (fatal is OutOfMemoryError || fatal is ThreadDeath || fatal is VirtualMachineError) throw fatal
+}
                 if (mFromSecureKeyguard || mStartedFromLockScreen) {
                     XposedHelpers.setAdditionalInstanceField(act.application, "wasStartedFromLockScreen", true)
                     act.setShowWhenLocked(true)
@@ -541,6 +544,7 @@ object SystemUILockScreenHooks {
                             val clickHandler = XposedHelpers.findMethodExact(tile.javaClass, "handleClick", View::class.java)
                             clickHandler.invoke(tile, arrayOfNulls<Any>(1))
                         } catch (t: Throwable) {
+                            if (t is OutOfMemoryError || t is ThreadDeath || t is VirtualMachineError) throw t
                             XposedHelpers.log(t)
                         }
                     }
@@ -617,6 +621,7 @@ object SystemUILockScreenHooks {
                                         }
                                     })
                                 } catch (t: Throwable) {
+                                    if (t is OutOfMemoryError || t is ThreadDeath || t is VirtualMachineError) throw t
                                     XposedHelpers.log(t)
                                 }
                             }

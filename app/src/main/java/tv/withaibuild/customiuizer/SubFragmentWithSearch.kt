@@ -50,6 +50,7 @@ open class SubFragmentWithSearch : SubFragment() {
                 )
             )
         } catch (t: Throwable) {
+            if (t is OutOfMemoryError || t is ThreadDeath || t is VirtualMachineError) throw t
             t.printStackTrace()
         }
     }

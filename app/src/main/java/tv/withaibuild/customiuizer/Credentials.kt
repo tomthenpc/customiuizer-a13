@@ -33,6 +33,7 @@ class Credentials : AppCompatActivity() {
                     Toast.makeText(this, R.string.credentials_ok, Toast.LENGTH_SHORT).show()
                     finish()
                 } catch (e: Throwable) {
+                    if (e is OutOfMemoryError || e is ThreadDeath || e is VirtualMachineError) throw e
                     val authIntent = km.createConfirmDeviceCredentialIntent(
                         getString(R.string.credentials_unlock),
                         getString(R.string.dummy)
@@ -44,6 +45,7 @@ class Credentials : AppCompatActivity() {
                 startActivity(Intent(DevicePolicyManager.ACTION_SET_NEW_PASSWORD))
             }
         } catch (t: Throwable) {
+            if (t is OutOfMemoryError || t is ThreadDeath || t is VirtualMachineError) throw t
             t.printStackTrace()
         }
     }

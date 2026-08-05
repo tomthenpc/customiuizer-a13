@@ -166,6 +166,7 @@ object SystemUIControlCenterHooks {
                         ?: XposedHelpers.getObjectField(param.getThisObject(), "mSafetyWarning") as? Boolean
                         ?: false
                 } catch (e: Throwable) {
+                    if (e is OutOfMemoryError || e is ThreadDeath || e is VirtualMachineError) throw e
                     XposedHelpers.getObjectField(param.getThisObject(), "mSafetyWarning") as? Boolean ?: false
                 }
                 if (mSafetyWarning) {
@@ -221,6 +222,7 @@ object SystemUIControlCenterHooks {
                             if (key == "system_volumeblur_collapsed") blurCollapsed = MainModule.mPrefs.getInt(key, 0) / 100f
                             if (key == "system_volumeblur_expanded") blurExpanded = MainModule.mPrefs.getInt(key, 0) / 100f
                         } catch (t: Throwable) {
+                            if (t is OutOfMemoryError || t is ThreadDeath || t is VirtualMachineError) throw t
                             XposedHelpers.log(t)
                         }
                     }
@@ -468,7 +470,9 @@ object SystemUIControlCenterHooks {
             var mLabelContainer: ViewGroup? = null
             try {
                 mLabelContainer = XposedHelpers.getObjectField(tileView, "mLabelContainer") as? ViewGroup
-            } catch (_: Throwable) {}
+            } catch (fatal: Throwable) {
+                if (fatal is OutOfMemoryError || fatal is ThreadDeath || fatal is VirtualMachineError) throw fatal
+}
             if (mLabelContainer != null) {
                 mLabelContainer.visibility = if (
                     MainModule.mPrefs.getBoolean("system_qsnolabels") ||
@@ -746,6 +750,7 @@ object SystemUIControlCenterHooks {
                 mPct!!.setTextColor(modRes.getColor(R.color.color_on_surface_variant, context.theme))
                 mPct!!.background = ResourcesCompat.getDrawable(modRes, R.drawable.input_background, context.theme)
             } catch (err: Throwable) {
+                if (err is OutOfMemoryError || err is ThreadDeath || err is VirtualMachineError) throw err
                 XposedHelpers.log(err)
             }
             container.addView(mPct)

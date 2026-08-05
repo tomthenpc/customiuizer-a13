@@ -1247,6 +1247,7 @@ object SystemUIStatusBarHooks {
             meter.setTag(netSpeedViewHolderTag, holder)
             holder
         } catch (t: Throwable) {
+            if (t is OutOfMemoryError || t is ThreadDeath || t is VirtualMachineError) throw t
             null
         }
     }
@@ -1331,6 +1332,7 @@ object SystemUIStatusBarHooks {
                 XposedHelpers.log("CustoMIUIzer NetSpeed", "initNetSpeedStyle completed")
             }
         } catch (t: Throwable) {
+            if (t is OutOfMemoryError || t is ThreadDeath || t is VirtualMachineError) throw t
             if (isFirst) {
                 XposedHelpers.log("CustoMIUIzer NetSpeed", "initNetSpeedStyle failed: ${t.javaClass.name}: ${t.message}")
             }
@@ -1558,6 +1560,7 @@ object SystemUIStatusBarHooks {
             ("ble_unlock_mode" == slotName && MainModule.mPrefs.getBoolean("system_statusbaricons_ble_unlock")) ||
             ("hd" == slotName && MainModule.mPrefs.getBoolean("system_statusbaricons_volte"))
         } catch (t: Throwable) {
+            if (t is OutOfMemoryError || t is ThreadDeath || t is VirtualMachineError) throw t
             XposedHelpers.log(t)
             false
         }
@@ -1669,6 +1672,7 @@ object SystemUIStatusBarHooks {
         } catch (oom: OutOfMemoryError) {
             throw oom
         } catch (t: Throwable) {
+            if (t is OutOfMemoryError || t is ThreadDeath || t is VirtualMachineError) throw t
             XposedHelpers.log(t)
             ""
         }

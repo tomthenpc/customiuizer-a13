@@ -133,6 +133,7 @@ object AppLocaleController {
             manager.applicationLocales = LocaleList.forLanguageTags(locales.toLanguageTags())
             true
         } catch (t: Throwable) {
+            if (t is OutOfMemoryError || t is ThreadDeath || t is VirtualMachineError) throw t
             Log.e(TAG, "LocaleManager rejected the locale list", t)
             false
         }
@@ -150,6 +151,7 @@ object AppLocaleController {
             else -> LocaleListCompat.getEmptyLocaleList()
         }
     } catch (t: Throwable) {
+        if (t is OutOfMemoryError || t is ThreadDeath || t is VirtualMachineError) throw t
         Log.w(TAG, "Unable to read application locales", t)
         LocaleListCompat.getEmptyLocaleList()
     }
@@ -164,6 +166,7 @@ object AppLocaleController {
             else -> LocaleListCompat.forLanguageTags(normalized)
         }
     } catch (t: Throwable) {
+        if (t is OutOfMemoryError || t is ThreadDeath || t is VirtualMachineError) throw t
         Log.w(TAG, "Unable to build application locale list", t)
         LocaleListCompat.getEmptyLocaleList()
     }

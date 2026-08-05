@@ -100,6 +100,7 @@ object SystemFreeformAndMultiWindowHooks {
             val injector = XposedHelpers.callMethod(opt, "getActivityOptionsInjector")
             XposedHelpers.callMethod(injector, "setFreeformScale", scale)
         } catch (ignore: Throwable) {
+            if (ignore is OutOfMemoryError || ignore is ThreadDeath || ignore is VirtualMachineError) throw ignore
             XposedHelpers.log(ignore)
         }
         return opt
@@ -203,6 +204,7 @@ object SystemFreeformAndMultiWindowHooks {
                 val mContext: Context? = try {
                     XposedHelpers.getObjectField(param.args[0], "mContext") as? Context
                 } catch (ignore: Throwable) {
+                    if (ignore is OutOfMemoryError || ignore is ThreadDeath || ignore is VirtualMachineError) throw ignore
                     val mService = XposedHelpers.getObjectField(param.args[0], "mService")
                     XposedHelpers.getObjectField(mService, "mContext") as? Context
                 }
@@ -215,6 +217,7 @@ object SystemFreeformAndMultiWindowHooks {
                     try {
                         param.setResult(patchActivityOptions(mContext, options, pkgName))
                     } catch (t: Throwable) {
+                        if (t is OutOfMemoryError || t is ThreadDeath || t is VirtualMachineError) throw t
                         XposedHelpers.log(t)
                     }
                 } else if (windowingMode == 5 && !fwApps.containsKey(pkgName)) {

@@ -137,6 +137,7 @@ object Helpers {
     val isMIUI14: Boolean = try {
         miui.os.Build.getMiUiVersionCode()?.toIntOrNull()?.let { it > 13 } ?: false
     } catch (t: Throwable) {
+        if (t is OutOfMemoryError || t is ThreadDeath || t is VirtualMachineError) throw t
         false
     }
 
@@ -175,6 +176,7 @@ object Helpers {
         try {
             checkbox.setButtonDrawable(if (btnResID == 0) R.drawable.btn_checkbox else btnResID)
         } catch (t: Throwable) {
+            if (t is OutOfMemoryError || t is ThreadDeath || t is VirtualMachineError) throw t
             checkbox.setButtonDrawable(R.drawable.btn_checkbox)
         }
     }
@@ -251,6 +253,7 @@ object Helpers {
             act.overridePendingTransition(R.anim.activity_open_enter, R.anim.activity_open_exit)
             true
         } catch (t: Throwable) {
+            if (t is OutOfMemoryError || t is ThreadDeath || t is VirtualMachineError) throw t
             if (!silent) Toast.makeText(act, R.string.various_hiddenfeatures_not_found, Toast.LENGTH_LONG).show()
             false
         }
@@ -266,6 +269,7 @@ object Helpers {
             val token = currentFocusedView.windowToken
             if (token != null) inputManager.hideSoftInputFromWindow(token, InputMethodManager.HIDE_NOT_ALWAYS)
         } catch (t: Throwable) {
+            if (t is OutOfMemoryError || t is ThreadDeath || t is VirtualMachineError) throw t
             t.printStackTrace()
         }
     }
@@ -322,7 +326,9 @@ object Helpers {
                         output.write("")
                     }
                 }
-            } catch (ignore: Throwable) {}
+            } catch (ignore: Throwable) {
+                if (ignore is OutOfMemoryError || ignore is ThreadDeath || ignore is VirtualMachineError) throw ignore
+}
         }
     }
 
@@ -349,6 +355,7 @@ object Helpers {
                 } * 24 * 60 * 60 * 1000
             }
         } catch (t: Throwable) {
+            if (t is OutOfMemoryError || t is ThreadDeath || t is VirtualMachineError) throw t
             t.printStackTrace()
         }
     }
@@ -458,6 +465,7 @@ object Helpers {
             getAnimationScale.isAccessible = true
             (getAnimationScale.invoke(wm, type) as? Float) ?: 1.0f
         } catch (t: Throwable) {
+            if (t is OutOfMemoryError || t is ThreadDeath || t is VirtualMachineError) throw t
             t.printStackTrace()
             1.0f
         }
@@ -482,6 +490,7 @@ object Helpers {
             setAnimationScale.isAccessible = true
             setAnimationScale.invoke(wm, type, value)
         } catch (t: Throwable) {
+            if (t is OutOfMemoryError || t is ThreadDeath || t is VirtualMachineError) throw t
             t.printStackTrace()
         }
     }
@@ -491,6 +500,7 @@ object Helpers {
         return try {
             context.packageManager.javaClass.getDeclaredMethod("getPackageInfoAsUser", String::class.java, Int::class.javaPrimitiveType, Int::class.javaPrimitiveType)
         } catch (t: Throwable) {
+            if (t is OutOfMemoryError || t is ThreadDeath || t is VirtualMachineError) throw t
             t.printStackTrace()
             null
         }
@@ -523,8 +533,11 @@ object Helpers {
                     appDual.user = 999
                     installedAppsList?.add(appDual)
                 }
-            } catch (ignore: Throwable) {}
+            } catch (ignore: Throwable) {
+                if (ignore is OutOfMemoryError || ignore is ThreadDeath || ignore is VirtualMachineError) throw ignore
+}
         } catch (e: Throwable) {
+            if (e is OutOfMemoryError || e is ThreadDeath || e is VirtualMachineError) throw e
             e.printStackTrace()
         }
         installedAppsList?.sortWith { a, b -> (a.label ?: "").compareTo((b.label ?: ""), true) }
@@ -560,8 +573,11 @@ object Helpers {
                     appDual.user = 999
                     launchableAppsList?.add(appDual)
                 }
-            } catch (ignore: Throwable) {}
+            } catch (ignore: Throwable) {
+                if (ignore is OutOfMemoryError || ignore is ThreadDeath || ignore is VirtualMachineError) throw ignore
+}
         } catch (t: Throwable) {
+            if (t is OutOfMemoryError || t is ThreadDeath || t is VirtualMachineError) throw t
             t.printStackTrace()
         }
         launchableAppsList?.sortWith { a, b -> (a.label ?: "").compareTo((b.label ?: ""), true) }
@@ -606,8 +622,11 @@ object Helpers {
                     appDual.user = 999
                     shareAppsList?.add(appDual)
                 }
-            } catch (ignore: Throwable) {}
+            } catch (ignore: Throwable) {
+                if (ignore is OutOfMemoryError || ignore is ThreadDeath || ignore is VirtualMachineError) throw ignore
+}
         } catch (e: Throwable) {
+            if (e is OutOfMemoryError || e is ThreadDeath || e is VirtualMachineError) throw e
             e.printStackTrace()
         }
         shareAppsList?.sortWith { a, b -> (a.label ?: "").compareTo((b.label ?: ""), true) }
@@ -661,8 +680,11 @@ object Helpers {
                     appDual.user = 999
                     openWithAppsList?.add(appDual)
                 }
-            } catch (ignore: Throwable) {}
+            } catch (ignore: Throwable) {
+                if (ignore is OutOfMemoryError || ignore is ThreadDeath || ignore is VirtualMachineError) throw ignore
+}
         } catch (e: Throwable) {
+            if (e is OutOfMemoryError || e is ThreadDeath || e is VirtualMachineError) throw e
             e.printStackTrace()
         }
         openWithAppsList?.sortWith { a, b -> (a.label ?: "").compareTo((b.label ?: ""), true) }
@@ -683,6 +705,7 @@ object Helpers {
                 val ai = pm.getApplicationInfo(pkgActArray[0], 0)
                 pm.getApplicationLabel(ai)
             } catch (e: Throwable) {
+                if (e is OutOfMemoryError || e is ThreadDeath || e is VirtualMachineError) throw e
                 e.printStackTrace()
                 null
             }
@@ -690,6 +713,7 @@ object Helpers {
             try {
                 pm.getActivityInfo(ComponentName(pkgActArray[0], pkgActArray[1]), 0).loadLabel(pm).toString()
             } catch (e: Throwable) {
+                if (e is OutOfMemoryError || e is ThreadDeath || e is VirtualMachineError) throw e
                 e.printStackTrace()
                 null
             }
@@ -710,6 +734,7 @@ object Helpers {
             try {
                 pm.getApplicationIcon(pkgActArray[0])
             } catch (e: Throwable) {
+                if (e is OutOfMemoryError || e is ThreadDeath || e is VirtualMachineError) throw e
                 e.printStackTrace()
                 null
             }
@@ -717,6 +742,7 @@ object Helpers {
             try {
                 pm.getActivityIcon(ComponentName(pkgActArray[0], pkgActArray[1]))
             } catch (e: Throwable) {
+                if (e is OutOfMemoryError || e is ThreadDeath || e is VirtualMachineError) throw e
                 e.printStackTrace()
                 null
             }
@@ -762,6 +788,7 @@ object Helpers {
                 else -> null
             }
         } catch (t: Throwable) {
+            if (t is OutOfMemoryError || t is ThreadDeath || t is VirtualMachineError) throw t
             null
         }
     }
@@ -832,6 +859,7 @@ object Helpers {
                     }
                     order++
                 } catch (t: Throwable) {
+                    if (t is OutOfMemoryError || t is ThreadDeath || t is VirtualMachineError) throw t
                     t.printStackTrace()
                 }
                 eventType = xml.next()
@@ -914,6 +942,7 @@ object Helpers {
         try {
             vibrator.vibrate(VibrationEffect.createWaveform(pattern, -1))
         } catch (t: Throwable) {
+            if (t is OutOfMemoryError || t is ThreadDeath || t is VirtualMachineError) throw t
             vibrator.vibrate(200L)
         }
     }
@@ -929,6 +958,7 @@ object Helpers {
             }
             pattern
         } catch (t: Throwable) {
+            if (t is OutOfMemoryError || t is ThreadDeath || t is VirtualMachineError) throw t
             LongArray(0)
         }
     }
@@ -957,6 +987,7 @@ object Helpers {
             Files.copy(Paths.get(from), Paths.get(to), StandardCopyOption.REPLACE_EXISTING)
             true
         } catch (t: Throwable) {
+            if (t is OutOfMemoryError || t is ThreadDeath || t is VirtualMachineError) throw t
             t.printStackTrace()
             false
         }

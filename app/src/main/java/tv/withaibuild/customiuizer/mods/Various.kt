@@ -101,7 +101,9 @@ object Various {
                     try {
                         val piField = XposedHelpers.findFirstFieldByExactType(param.thisObject.javaClass, PackageInfo::class.java)
                         if (piField != null) mSupportFragment = param.thisObject
-                    } catch (_: Throwable) { }
+                    } catch (fatal: Throwable) {
+                        if (fatal is OutOfMemoryError || fatal is ThreadDeath || fatal is VirtualMachineError) throw fatal
+                    }
                 }
             })
         }
@@ -145,6 +147,7 @@ object Various {
                                 addPref[0].invoke(frag, "open_in_store", modRes.getString(R.string.appdetails_playstore), "")
                                 addPref[0].invoke(frag, "launch_app", modRes.getString(R.string.appdetails_launch), "")
                             } catch (t: Throwable) {
+                                if (t is OutOfMemoryError || t is ThreadDeath || t is VirtualMachineError) throw t
                                 XposedHelpers.log(t)
                             }
                         }
@@ -186,6 +189,7 @@ object Various {
                                             val uid = act.intent.getIntExtra("am_app_uid", -1)
                                             user = XposedHelpers.callStaticMethod(UserHandle::class.java, "getUserId", uid) as? Int ?: 0
                                         } catch (t: Throwable) {
+                                            if (t is OutOfMemoryError || t is ThreadDeath || t is VirtualMachineError) throw t
                                             XposedHelpers.log(t)
                                         }
 
@@ -193,6 +197,7 @@ object Various {
                                         if (user != 0) try {
                                             XposedHelpers.callMethod(act, "startActivityAsUser", launchIntent, XposedHelpers.newInstance(UserHandle::class.java, user))
                                         } catch (t: Throwable) {
+                                            if (t is OutOfMemoryError || t is ThreadDeath || t is VirtualMachineError) throw t
                                             XposedHelpers.log(t)
                                         } else {
                                             act.startActivity(launchIntent)
@@ -204,6 +209,7 @@ object Various {
                         }
                     })
                 } catch (t: Throwable) {
+                    if (t is OutOfMemoryError || t is ThreadDeath || t is VirtualMachineError) throw t
                     XposedHelpers.log(t)
                     return@post
                 }
@@ -255,6 +261,7 @@ object Various {
                                     param.args[0] as? Bundle
                                 )
                             } catch (t: Throwable) {
+                                if (t is OutOfMemoryError || t is ThreadDeath || t is VirtualMachineError) throw t
                                 XposedHelpers.log("AppsDefaultSortHook", t.message)
                             }
                         }
@@ -278,6 +285,7 @@ object Various {
             }
             Handler(Looper.getMainLooper()).postDelayed(Runnable { ModuleHelper.guarded { act.invalidateOptionsMenu() } }, 500)
         } catch (t: Throwable) {
+            if (t is OutOfMemoryError || t is ThreadDeath || t is VirtualMachineError) throw t
             XposedHelpers.log(t)
         }
     }
@@ -317,7 +325,8 @@ object Various {
                 val mPackageInfo = piField.get(act) as? PackageInfo ?: return
                 val appInfo = try {
                     pm.getApplicationInfo(mPackageInfo.packageName, PackageManager.GET_META_DATA)
-                } catch (_: Throwable) {
+                } catch (fatal: Throwable) {
+                    if (fatal is OutOfMemoryError || fatal is ThreadDeath || fatal is VirtualMachineError) throw fatal
                     return
                 }
                 val isSystem = (appInfo.flags and ApplicationInfo.FLAG_SYSTEM) != 0
@@ -535,7 +544,10 @@ object Various {
                                     }
                                     view.setBackground(null)
                                 }
-                            } catch (t: Throwable) { XposedHelpers.log(t) }
+                            } catch (t: Throwable) {
+                                if (t is OutOfMemoryError || t is ThreadDeath || t is VirtualMachineError) throw t
+                                XposedHelpers.log(t)
+                            }
                         }
                     }
                     myhandler.postDelayed(removeBg, 150)
@@ -806,7 +818,9 @@ object Various {
                             val featMap = fm as? MutableMap<String, Int> ?: return
                             featMap["mi_lab_ai_clipboard_enable"] = 0
                             featMap["mi_lab_blur_location_enable"] = 0
-                        } catch (_: Throwable) { }
+                        } catch (fatal: Throwable) {
+                            if (fatal is OutOfMemoryError || fatal is ThreadDeath || fatal is VirtualMachineError) throw fatal
+                        }
                     }
                 }
             }
@@ -1071,7 +1085,8 @@ object Various {
 
                         val mAppInfo = try {
                             act.packageManager.getPackageInfo(mPkgInfo.packageName, 0)
-                        } catch (_: Throwable) {
+                        } catch (fatal: Throwable) {
+                            if (fatal is OutOfMemoryError || fatal is ThreadDeath || fatal is VirtualMachineError) throw fatal
                             null
                         }
 

@@ -259,6 +259,7 @@ class System : SubFragment() {
                                 Settings.Secure.putInt(resolver, "sysui_qqs_count", value)
                             }
                         } catch (t: Throwable) {
+                            if (t is OutOfMemoryError || t is ThreadDeath || t is VirtualMachineError) throw t
                             t.printStackTrace()
                         }
                     }

@@ -244,6 +244,7 @@ open class PreferenceFragmentBase : PreferenceFragmentCompat() {
         try {
             PreferenceManager.setDefaultValues(getValidContext(), pref_defaults, false)
         } catch (t: Throwable) {
+            if (t is OutOfMemoryError || t is ThreadDeath || t is VirtualMachineError) throw t
             t.printStackTrace()
         }
     }
@@ -285,7 +286,9 @@ open class PreferenceFragmentBase : PreferenceFragmentCompat() {
         var order = 100.0f
         try {
             order = (view?.translationZ ?: 100.0f) + 0.0f
-        } catch (_: Throwable) {}
+        } catch (fatal: Throwable) {
+            if (fatal is OutOfMemoryError || fatal is ThreadDeath || fatal is VirtualMachineError) throw fatal
+}
         bundle.putFloat("order", order)
         if (fragment.arguments == null) {
             fragment.arguments = bundle
@@ -354,6 +357,7 @@ open class PreferenceFragmentBase : PreferenceFragmentCompat() {
                     .setPositiveButton(android.R.string.ok) { _, _ -> }
                     .show()
             } catch (e: Throwable) {
+                if (e is OutOfMemoryError || e is ThreadDeath || e is VirtualMachineError) throw e
                 e.printStackTrace()
                 AlertDialog.Builder(getValidContext())
                     .setTitle(R.string.warning)
@@ -365,6 +369,7 @@ open class PreferenceFragmentBase : PreferenceFragmentCompat() {
                     output?.flush()
                     output?.close()
                 } catch (ex: Throwable) {
+                    if (ex is OutOfMemoryError || ex is ThreadDeath || ex is VirtualMachineError) throw ex
                     ex.printStackTrace()
                 }
             }
@@ -404,6 +409,7 @@ open class PreferenceFragmentBase : PreferenceFragmentCompat() {
                 }
                 .show()
         } catch (t: Throwable) {
+            if (t is OutOfMemoryError || t is ThreadDeath || t is VirtualMachineError) throw t
             t.printStackTrace()
             AlertDialog.Builder(act)
                 .setTitle(R.string.warning)
@@ -414,6 +420,7 @@ open class PreferenceFragmentBase : PreferenceFragmentCompat() {
             try {
                 input?.close()
             } catch (ex: Throwable) {
+                if (ex is OutOfMemoryError || ex is ThreadDeath || ex is VirtualMachineError) throw ex
                 ex.printStackTrace()
             }
         }

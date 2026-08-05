@@ -43,11 +43,13 @@ object SystemSettingsMoreHooks {
                                     if (XposedHelpers.callMethod(usbMgr, "isFunctionEnabled", func) as? Boolean == true) return
                                     XposedHelpers.callMethod(usbMgr, "setCurrentFunction", func, MainModule.mPrefs.getBoolean("system_defaultusb_unsecure"))
                                 } catch (t: Throwable) {
+                                    if (t is OutOfMemoryError || t is ThreadDeath || t is VirtualMachineError) throw t
                                     XposedHelpers.log(t)
                                 }
                                 mUSBConnected = mConnected
                             }
                         } catch (t: Throwable) {
+                            if (t is OutOfMemoryError || t is ThreadDeath || t is VirtualMachineError) throw t
                             XposedHelpers.log(t)
                         }
                     }
@@ -73,6 +75,7 @@ object SystemSettingsMoreHooks {
                     try {
                         setUnlockedFunc = XposedHelpers.getStaticIntField(XposedHelpers.findClass("com.android.server.usb.UsbDeviceManager", lpparam.classLoader), "MSG_SET_SCREEN_UNLOCKED_FUNCTIONS")
                     } catch (t: Throwable) {
+                        if (t is OutOfMemoryError || t is ThreadDeath || t is VirtualMachineError) throw t
                     }
                     if (msg.what == setUnlockedFunc) {
                         msg.obj = 0L

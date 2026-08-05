@@ -78,6 +78,7 @@ internal class BitmapCachedLoader(
             val bitmap = try {
                 loader.loadBitmap()
             } catch (t: Throwable) {
+                if (t is OutOfMemoryError || t is ThreadDeath || t is VirtualMachineError) throw t
                 Log.w(TAG, "Icon load failed", t)
                 null
             }
@@ -106,6 +107,7 @@ internal class BitmapCachedLoader(
                     icon = packageManager.getActivityIcon(component)
                 }
             } catch (_: PackageManager.NameNotFoundException) {
+                /* activity not found, try application icon below */
             }
         }
         if (icon == null) {
@@ -119,6 +121,7 @@ internal class BitmapCachedLoader(
                     icon = packageManager.getApplicationIcon(pkgName)
                 }
             } catch (_: PackageManager.NameNotFoundException) {
+                /* package not found, will return null below */
             }
         }
         icon ?: return null
@@ -138,6 +141,7 @@ internal class BitmapCachedLoader(
             try {
                 loader.applyToTarget(bitmap)
             } catch (t: Throwable) {
+                if (t is OutOfMemoryError || t is ThreadDeath || t is VirtualMachineError) throw t
                 Log.w(TAG, "Unable to apply app icon", t)
             }
         }

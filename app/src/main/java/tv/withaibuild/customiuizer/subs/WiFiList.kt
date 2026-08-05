@@ -84,6 +84,7 @@ class WiFiList : SubFragment() {
             try {
                 wifiManager?.startScan()
             } catch (ignore: Throwable) {
+                if (ignore is OutOfMemoryError || ignore is ThreadDeath || ignore is VirtualMachineError) throw ignore
             }
             handler?.postDelayed(this, scanInterval.toLong())
             this@WiFiList.updateProgressBar()
@@ -169,6 +170,7 @@ class WiFiList : SubFragment() {
             locationManager.isProviderEnabled(LocationManager.GPS_PROVIDER) ||
                 locationManager.isProviderEnabled(LocationManager.NETWORK_PROVIDER)
         } catch (t: Throwable) {
+            if (t is OutOfMemoryError || t is ThreadDeath || t is VirtualMachineError) throw t
             false
         }
     }
@@ -198,7 +200,9 @@ class WiFiList : SubFragment() {
     fun unregisterReceivers() {
         handler?.removeCallbacks(getScanResults)
         mAppContext?.let {
-            try { it.unregisterReceiver(wifiReceiver) } catch (_: Throwable) {}
+            try { it.unregisterReceiver(wifiReceiver) } catch (fatal: Throwable) {
+                if (fatal is OutOfMemoryError || fatal is ThreadDeath || fatal is VirtualMachineError) throw fatal
+}
         }
     }
 

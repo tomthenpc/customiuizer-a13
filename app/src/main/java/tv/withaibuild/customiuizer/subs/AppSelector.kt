@@ -271,7 +271,8 @@ class AppSelector : SubFragmentWithSearch() {
             Thread {
                 try {
                     Thread.sleep(animDur.toLong())
-                } catch (_: Throwable) {
+                } catch (fatal: Throwable) {
+                    if (fatal is OutOfMemoryError || fatal is ThreadDeath || fatal is VirtualMachineError) throw fatal
                 }
                 if (act != null) {
                     try {
@@ -289,6 +290,7 @@ class AppSelector : SubFragmentWithSearch() {
                         initialized = true
                         act.runOnUiThread(process)
                     } catch (e: Throwable) {
+                        if (e is OutOfMemoryError || e is ThreadDeath || e is VirtualMachineError) throw e
                         e.printStackTrace()
                     }
                 }

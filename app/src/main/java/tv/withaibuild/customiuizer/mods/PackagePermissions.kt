@@ -83,6 +83,7 @@ object PackagePermissions {
             mySystemApps.addAll(systemPackages)
             XposedHelpers.setStaticObjectField(dpgpiClass, "MIUI_SYSTEM_APPS", mySystemApps.toTypedArray())
         } catch (t: Throwable) {
+            if (t is OutOfMemoryError || t is ThreadDeath || t is VirtualMachineError) throw t
             XposedHelpers.log(t)
         }
     }

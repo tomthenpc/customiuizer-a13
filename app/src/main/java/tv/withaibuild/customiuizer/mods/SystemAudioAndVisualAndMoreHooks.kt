@@ -832,6 +832,7 @@ object SystemAudioAndVisualAndMoreHooks {
                     } catch (oom: OutOfMemoryError) {
                         throw oom
                     } catch (ignore: Throwable) {
+                        if (ignore is OutOfMemoryError || ignore is ThreadDeath || ignore is VirtualMachineError) throw ignore
                         null
                     }
                     if (wallpaperDrawable is BitmapDrawable) {

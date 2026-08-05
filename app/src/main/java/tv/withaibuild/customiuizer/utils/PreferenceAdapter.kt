@@ -77,6 +77,7 @@ class PreferenceAdapter(
             val drawable: Drawable? = Helpers.getActionImageLocal(row.context, key + "_" + uuid)
             itemIcon.setImageDrawable(drawable ?: row.context.packageManager.getApplicationIcon(Helpers.modulePkg))
         } catch (t: Throwable) {
+            if (t is OutOfMemoryError || t is ThreadDeath || t is VirtualMachineError) throw t
             t.printStackTrace()
         }
 

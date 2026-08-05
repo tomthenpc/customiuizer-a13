@@ -127,6 +127,7 @@ object SystemAudioAndVolumeHooks {
                     val mRingVolume = XposedHelpers.callMethod(param.thisObject, "findPreference", "ring_volume")
                     XposedHelpers.callMethod(mRingVolume, "setTitle", callsResId)
                 } catch (t: Throwable) {
+                    if (t is OutOfMemoryError || t is ThreadDeath || t is VirtualMachineError) throw t
                     XposedHelpers.log("NotificationVolumeSettingsHook", "Unable to find class/method in Settings to hook")
                 }
             }

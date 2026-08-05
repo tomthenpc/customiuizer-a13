@@ -45,10 +45,12 @@ object SystemChargingAndWallpaperHooks {
                         props = Properties()
                         props.load(fis)
                     } catch (ign: Throwable) {
+                        if (ign is OutOfMemoryError || ign is ThreadDeath || ign is VirtualMachineError) throw ign
                     } finally {
                         try {
                             fis?.close()
                         } catch (ign: Throwable) {
+                            if (ign is OutOfMemoryError || ign is ThreadDeath || ign is VirtualMachineError) throw ign
                         }
                     }
                     if (props != null) {
@@ -98,6 +100,7 @@ object SystemChargingAndWallpaperHooks {
                 try {
                     handleIncomingUser = XposedHelpers.callStaticMethod(ActivityManager::class.java, "handleIncomingUser", Binder.getCallingPid(), Binder.getCallingUid(), param.args[7], false, true, "changing wallpaper", null) as? Int ?: 0
                 } catch (ignore: Throwable) {
+                    if (ignore is OutOfMemoryError || ignore is ThreadDeath || ignore is VirtualMachineError) throw ignore
                 }
                 val wallpaperData = XposedHelpers.callMethod(param.thisObject, "getWallpaperSafeLocked", handleIncomingUser, param.args[5])
                 val wallpaper = XposedHelpers.getObjectField(wallpaperData, "wallpaperFile") as? File ?: return
@@ -166,6 +169,7 @@ object SystemChargingAndWallpaperHooks {
                             .put("totalOfAlbum", -1)
                             .put("wallpaperUri", lockWallpaper.toURI())
                         } catch (t: Throwable) {
+                            if (t is OutOfMemoryError || t is ThreadDeath || t is VirtualMachineError) throw t
                             XposedHelpers.log(t)
                         }
 

@@ -97,6 +97,7 @@ object SystemSettingsAndConnectivityHooks {
                 val mCarrierText = try {
                     XposedHelpers.getObjectField(param.thisObject, "carrierText") as? TextView
                 } catch (e: Throwable) {
+                    if (e is OutOfMemoryError || e is ThreadDeath || e is VirtualMachineError) throw e
                     XposedHelpers.getObjectField(param.thisObject, "mCarrierText") as? TextView
                 } ?: return
                 mCarrierText.visibility = View.GONE

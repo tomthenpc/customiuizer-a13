@@ -41,6 +41,7 @@ class Various : SubFragment() {
             val pkgInfo = act.packageManager.getApplicationInfo("com.miui.packageinstaller", PackageManager.MATCH_DISABLED_COMPONENTS)
             if (!pkgInfo.enabled) throw Throwable()
         } catch (e: Throwable) {
+            if (e is OutOfMemoryError || e is ThreadDeath || e is VirtualMachineError) throw e
             val pref = findPreference<Preference>("pref_key_various_miuiinstaller") as? CheckBoxPreferenceEx
             pref?.isChecked = false
             pref?.setUnsupported(true)

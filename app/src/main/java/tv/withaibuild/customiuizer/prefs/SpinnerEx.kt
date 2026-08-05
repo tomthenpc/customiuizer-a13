@@ -43,6 +43,7 @@ open class SpinnerEx @JvmOverloads constructor(
             val scale = resources.displayMetrics.density
             popupWindow?.setHeight((40 * 10 * scale).toInt())
         } catch (e: Throwable) {
+            if (e is OutOfMemoryError || e is ThreadDeath || e is VirtualMachineError) throw e
             e.printStackTrace()
         }
     }

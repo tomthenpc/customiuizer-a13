@@ -73,6 +73,7 @@ class ShortcutSelector : SubFragmentWithSearch() {
                 val resId = mContext.resources.getIdentifier(iconResId.resourceName, "drawable", iconResId.packageName)
                 icon = BitmapFactory.decodeResource(mContext.resources, resId)
             } catch (t: Throwable) {
+                if (t is OutOfMemoryError || t is ThreadDeath || t is VirtualMachineError) throw t
                 t.printStackTrace()
             }
             if (icon == null) icon = data?.getParcelableExtra<Bitmap>(Intent.EXTRA_SHORTCUT_ICON)
@@ -92,6 +93,7 @@ class ShortcutSelector : SubFragmentWithSearch() {
                     }
                 }
             } catch (t: Throwable) {
+                if (t is OutOfMemoryError || t is ThreadDeath || t is VirtualMachineError) throw t
                 t.printStackTrace()
             }
 

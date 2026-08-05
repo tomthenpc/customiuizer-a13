@@ -70,11 +70,14 @@ object SystemShareAndOpenWithHooks {
                         var hasDual = false
                         try {
                             hasDual = XposedHelpers.callMethod(pm, "getPackageInfoAsUser", resolveInfo.activityInfo.packageName, 0, 999) != null
-                        } catch (ignore: Throwable) {}
+                        } catch (ignore: Throwable) {
+                            if (ignore is OutOfMemoryError || ignore is ThreadDeath || ignore is VirtualMachineError) throw ignore
+}
                         if ((removeOriginal && !hasDual) || removeOriginal && hasDual && removeDual) itr.remove()
                     }
                     param.setResult(resolved)
                 } catch (t: Throwable) {
+                    if (t is OutOfMemoryError || t is ThreadDeath || t is VirtualMachineError) throw t
                     if (t !is BadParcelableException) XposedHelpers.log(t)
                 }
             }
@@ -120,7 +123,9 @@ object SystemShareAndOpenWithHooks {
         if (mimeType == null && linkSchemes) mimeType = "link/*"
         if (mimeType == null && intent.data != null) try {
             mimeType = context.contentResolver.getType(intent.data!!)
-        } catch (ignore: Throwable) {}
+        } catch (ignore: Throwable) {
+            if (ignore is OutOfMemoryError || ignore is ThreadDeath || ignore is VirtualMachineError) throw ignore
+}
         return mimeType
     }
 
@@ -196,12 +201,15 @@ object SystemShareAndOpenWithHooks {
                         var hasDual = false
                         try {
                             hasDual = XposedHelpers.callMethod(pm, "getPackageInfoAsUser", resolveInfo.activityInfo.packageName, 0, 999) != null
-                        } catch (ignore: Throwable) {}
+                        } catch (ignore: Throwable) {
+                            if (ignore is OutOfMemoryError || ignore is ThreadDeath || ignore is VirtualMachineError) throw ignore
+}
                         if ((isRemove.first && !hasDual) || isRemove.first && hasDual && isRemove.second) itr.remove()
                     }
 
                     param.setResult(resolved)
                 } catch (t: Throwable) {
+                    if (t is OutOfMemoryError || t is ThreadDeath || t is VirtualMachineError) throw t
                     if (t !is BadParcelableException) XposedHelpers.log(t)
                 }
             }

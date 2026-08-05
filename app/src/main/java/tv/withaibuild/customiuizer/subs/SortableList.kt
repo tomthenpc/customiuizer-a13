@@ -62,6 +62,7 @@ class SortableList : SubFragment() {
                 )
                 ssField.set(listView, shadow)
             } catch (e: Throwable) {
+                if (e is OutOfMemoryError || e is ThreadDeath || e is VirtualMachineError) throw e
                 e.printStackTrace()
             }
         }

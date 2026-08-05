@@ -64,11 +64,13 @@ class System_AirplaneModeConfig : SubFragment() {
         radios = try {
             Settings.Global.getString(resolver, "airplane_mode_radios")?.split(",")?.toMutableList() ?: mutableListOf()
         } catch (t: Throwable) {
+            if (t is OutOfMemoryError || t is ThreadDeath || t is VirtualMachineError) throw t
             mutableListOf()
         }
         radiosToggle = try {
             Settings.Global.getString(resolver, "airplane_mode_toggleable_radios")?.split(",")?.toMutableList() ?: mutableListOf()
         } catch (t: Throwable) {
+            if (t is OutOfMemoryError || t is ThreadDeath || t is VirtualMachineError) throw t
             mutableListOf()
         }
 

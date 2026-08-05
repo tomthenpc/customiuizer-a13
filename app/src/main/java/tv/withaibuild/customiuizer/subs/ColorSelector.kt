@@ -133,7 +133,9 @@ class ColorSelector : SubFragment() {
                         if (text.isNotBlank()) {
                             try {
                                 text.let { colorCircle?.setColor(Color.parseColor(it), true) }
-                            } catch (_: IllegalArgumentException) {}
+                            } catch (_: IllegalArgumentException) {
+                                /* invalid color string, keep existing color */
+                            }
                         }
                     }
                 },

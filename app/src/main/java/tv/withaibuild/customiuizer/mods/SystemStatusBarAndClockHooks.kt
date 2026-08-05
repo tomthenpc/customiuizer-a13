@@ -180,6 +180,7 @@ object SystemStatusBarAndClockHooks {
             val isSelected = selectedApps != null && selectedApps.contains(pkgName)
             opt == 2 && !isSelected || opt == 3 && isSelected
         } catch (t: Throwable) {
+            if (t is OutOfMemoryError || t is ThreadDeath || t is VirtualMachineError) throw t
             XposedHelpers.log(t)
             false
         }

@@ -288,7 +288,9 @@ public class ResourceHooks {
                 resName = res.getResourceEntryName(resId);
             } catch (OutOfMemoryError oom) {
                 throw oom;
-            } catch (Throwable ignored) {}
+            } catch (Throwable t) {
+                if (t instanceof VirtualMachineError || t instanceof ThreadDeath) throw t;
+            }
             if (pkgName == null || resType == null || resName == null) return null;
 
             String resFullName = pkgName + ":" + resType + "/" + resName;
@@ -357,6 +359,8 @@ public class ResourceHooks {
             XposedHelpers.log(t);
         } catch (OutOfMemoryError oom) {
             throw oom;
-        } catch (Throwable ignored) {}
+        } catch (Throwable ex) {
+            if (ex instanceof VirtualMachineError || ex instanceof ThreadDeath) throw ex;
+        }
     }
 }

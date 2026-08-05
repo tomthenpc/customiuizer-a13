@@ -99,6 +99,7 @@ object HookUtils {
             Files.copy(Paths.get(from), Paths.get(to), StandardCopyOption.REPLACE_EXISTING)
             true
         } catch (t: Throwable) {
+            if (t is OutOfMemoryError || t is ThreadDeath || t is VirtualMachineError) throw t
             t.printStackTrace()
             false
         }
@@ -335,6 +336,7 @@ object HookUtils {
             getAnimationScale.isAccessible = true
             (getAnimationScale.invoke(wm, type) as? Float) ?: 1.0f
         } catch (t: Throwable) {
+            if (t is OutOfMemoryError || t is ThreadDeath || t is VirtualMachineError) throw t
             t.printStackTrace()
             1.0f
         }
@@ -360,6 +362,7 @@ object HookUtils {
                 val ai = pm.getApplicationInfo(pkgActArray[0], 0)
                 pm.getApplicationLabel(ai)
             } catch (e: Throwable) {
+                if (e is OutOfMemoryError || e is ThreadDeath || e is VirtualMachineError) throw e
                 e.printStackTrace()
                 null
             }
@@ -367,6 +370,7 @@ object HookUtils {
             try {
                 pm.getActivityInfo(ComponentName(pkgActArray[0], pkgActArray[1]), 0).loadLabel(pm).toString()
             } catch (e: Throwable) {
+                if (e is OutOfMemoryError || e is ThreadDeath || e is VirtualMachineError) throw e
                 e.printStackTrace()
                 null
             }
@@ -387,6 +391,7 @@ object HookUtils {
             try {
                 pm.getApplicationIcon(pkgActArray[0])
             } catch (e: Throwable) {
+                if (e is OutOfMemoryError || e is ThreadDeath || e is VirtualMachineError) throw e
                 e.printStackTrace()
                 null
             }
@@ -394,6 +399,7 @@ object HookUtils {
             try {
                 pm.getActivityIcon(ComponentName(pkgActArray[0], pkgActArray[1]))
             } catch (e: Throwable) {
+                if (e is OutOfMemoryError || e is ThreadDeath || e is VirtualMachineError) throw e
                 e.printStackTrace()
                 null
             }

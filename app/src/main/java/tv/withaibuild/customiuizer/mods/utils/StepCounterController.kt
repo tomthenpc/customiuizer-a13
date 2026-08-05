@@ -448,6 +448,7 @@ object StepCounterController {
         } catch (oom: OutOfMemoryError) {
             throw oom
         } catch (t: Throwable) {
+            if (t is OutOfMemoryError || t is ThreadDeath || t is VirtualMachineError) throw t
             XposedHelpers.log("StepCounterController", "querySteps failed: ${t.javaClass.name}")
         } finally {
             lifecycle.finishQuery(ticket)
@@ -483,6 +484,7 @@ object StepCounterController {
             lifecycle.consumeResult(ticket)
             throw oom
         } catch (t: Throwable) {
+            if (t is OutOfMemoryError || t is ThreadDeath || t is VirtualMachineError) throw t
             XposedHelpers.log("StepCounterController", "uiHandler.post failed: ${t.javaClass.name}")
             false
         }

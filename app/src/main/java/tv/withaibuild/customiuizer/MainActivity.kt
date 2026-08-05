@@ -88,6 +88,7 @@ class MainActivity : AppCompatActivity() {
         try {
             prefsChanged?.let { AppHelper.appPrefs?.unregisterOnSharedPreferenceChangeListener(it) }
         } catch (t: Throwable) {
+            if (t is OutOfMemoryError || t is ThreadDeath || t is VirtualMachineError) throw t
             t.printStackTrace()
         }
         super.onDestroy()

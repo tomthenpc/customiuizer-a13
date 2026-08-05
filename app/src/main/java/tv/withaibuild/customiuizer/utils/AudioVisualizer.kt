@@ -355,6 +355,7 @@ class AudioVisualizer @JvmOverloads constructor(
         } catch (oom: OutOfMemoryError) {
             throw oom
         } catch (t: Throwable) {
+            if (t is OutOfMemoryError || t is ThreadDeath || t is VirtualMachineError) throw t
             XposedHelpers.log(t)
         }
     }
@@ -446,6 +447,7 @@ class AudioVisualizer @JvmOverloads constructor(
                 } catch (oom: OutOfMemoryError) {
                     throw oom
                 } catch (t: Throwable) {
+                    if (t is OutOfMemoryError || t is ThreadDeath || t is VirtualMachineError) throw t
                     XposedHelpers.log(t)
                 }
             }
@@ -479,6 +481,7 @@ class AudioVisualizer @JvmOverloads constructor(
                 } catch (oom: OutOfMemoryError) {
                     throw oom
                 } catch (t: Throwable) {
+                    if (t is OutOfMemoryError || t is ThreadDeath || t is VirtualMachineError) throw t
                     XposedHelpers.log(t)
                 }
             }
@@ -598,7 +601,8 @@ class AudioVisualizer @JvmOverloads constructor(
             if (mVisualizer?.enabled != true) return
         } catch (oom: OutOfMemoryError) {
             throw oom
-        } catch (_: Throwable) {
+        } catch (fatal: Throwable) {
+            if (fatal is OutOfMemoryError || fatal is ThreadDeath || fatal is VirtualMachineError) throw fatal
             return
         }
 
@@ -685,6 +689,7 @@ class AudioVisualizer @JvmOverloads constructor(
     } catch (oom: OutOfMemoryError) {
         throw oom
     } catch (t: Throwable) {
+        if (t is OutOfMemoryError || t is ThreadDeath || t is VirtualMachineError) throw t
         XposedHelpers.log(t)
         null
     }
@@ -707,6 +712,7 @@ class AudioVisualizer @JvmOverloads constructor(
             } catch (oom: OutOfMemoryError) {
                 throw oom
             } catch (t: Throwable) {
+                if (t is OutOfMemoryError || t is ThreadDeath || t is VirtualMachineError) throw t
                 XposedHelpers.log(t)
             }
             try {
@@ -714,6 +720,7 @@ class AudioVisualizer @JvmOverloads constructor(
             } catch (oom: OutOfMemoryError) {
                 throw oom
             } catch (t: Throwable) {
+                if (t is OutOfMemoryError || t is ThreadDeath || t is VirtualMachineError) throw t
                 XposedHelpers.log(t)
             }
         }
@@ -737,6 +744,7 @@ class AudioVisualizer @JvmOverloads constructor(
                 } catch (oom: OutOfMemoryError) {
                     throw oom
                 } catch (t: Throwable) {
+                    if (t is OutOfMemoryError || t is ThreadDeath || t is VirtualMachineError) throw t
                     XposedHelpers.log(t)
                     null
                 }
@@ -761,6 +769,7 @@ class AudioVisualizer @JvmOverloads constructor(
         } catch (oom: OutOfMemoryError) {
             throw oom
         } catch (t: Throwable) {
+            if (t is OutOfMemoryError || t is ThreadDeath || t is VirtualMachineError) throw t
             XposedHelpers.log(t)
         }
     }
