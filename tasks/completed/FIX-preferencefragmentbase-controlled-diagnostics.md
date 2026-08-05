@@ -1,7 +1,7 @@
 # FIX-preferencefragmentbase-controlled-diagnostics
 
 - Platform: A13
-- Status: In Progress
+- Status: Done
 - Priority: P1
 - Owner: Devin
 - Reviewer: ChatGPT / human
@@ -107,21 +107,21 @@ catch (t: Throwable) {
 
 ## 验收标准
 
-- [ ] 五处 `printStackTrace()` 全部移除
-- [ ] 五个固定 operation 全部存在且唯一
-- [ ] 复用 `SettingsDiagnostics`
-- [ ] fatal error 重抛完整保留
-- [ ] backup/restore 成功和失败 UI 行为不变
-- [ ] stream flush/close 时序不变
-- [ ] 不修改序列化格式
-- [ ] baseline 从 26 降至 21
-- [ ] source hazard 为 21 reviewed、0 new
-- [ ] dependency verification strict 通过
-- [ ] Python tests、Gradle unit tests、lint、fast verify、full verify 全部通过
-- [ ] `git diff --check` 通过
-- [ ] 工作区干净
-- [ ] 不要求 APK
-- [ ] 完成状态：`STATIC_VERIFIED`
+- [x] 五处 `printStackTrace()` 全部移除
+- [x] 五个固定 operation 全部存在且唯一
+- [x] 复用 `SettingsDiagnostics`
+- [x] fatal error 重抛完整保留
+- [x] backup/restore 成功和失败 UI 行为不变
+- [x] stream flush/close 时序不变
+- [x] 不修改序列化格式
+- [x] baseline 从 26 降至 21
+- [x] source hazard 为 21 reviewed、0 new
+- [x] dependency verification strict 通过
+- [x] Python tests、Gradle unit tests、lint、fast verify、full verify 全部通过
+- [x] `git diff --check` 通过
+- [x] 工作区干净
+- [x] 不要求 APK
+- [x] 完成状态：`STATIC_VERIFIED`
 
 ## 验证
 
@@ -144,15 +144,27 @@ git diff --check
 git status --short
 ```
 
-## 提交建议
+### 实际结果
 
-```text
-docs: add active FIX-preferencefragmentbase-controlled-diagnostics task
-fix: replace PreferenceFragmentBase printStackTrace diagnostics
-docs: complete FIX-preferencefragmentbase-controlled-diagnostics task
-```
+- `compileall tools`：通过
+- `unittest discover`：461 tests passed, 0 failed, skipped 2
+- `compileDebugKotlin`：通过
+- `compileDebugJavaWithJavac`：通过
+- `testDebugUnitTest`：通过
+- `lintDebug`：通过
+- `testDebugUnitTest --dependency-verification=strict`：通过
+- `source_hazard_scan.py --path app/src/main/java`：`Source hazard scan passed: 21 reviewed finding(s), 0 new`
+- `verify.py fast --changed`：通过
+- `verify.py full`：通过
+- `git diff --check`：通过
+- `git status --short`：干净
+
+## 构建产物
+
+未要求 APK。
 
 ## 完成记录
 
 - Base SHA: 5c2291c9744c3c05f197a4083bea2d43d1cdacd1
-- 最终分支 HEAD: （完成后填写）
+- Implementation SHA: 806ed7a0c62e9d4c820f26d89bc31c7e92a4a6d3
+- Final branch HEAD: （归档后填写）
