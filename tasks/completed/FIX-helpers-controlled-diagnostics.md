@@ -1,7 +1,7 @@
 # FIX-helpers-controlled-diagnostics
 
 - Platform: A13
-- Status: Active
+- Status: Done
 - Priority: P1
 - Owner: Devin
 - Reviewer: ChatGPT / human
@@ -88,26 +88,26 @@
 
 ## 验收标准
 
-- [ ] `Helpers.kt` 的 15 处 `.printStackTrace()` 全部移除
-- [ ] 新增统一且可复用的 settings-app logger
-- [ ] 15 个固定 operation 全部存在且唯一
-- [ ] fatal error 重抛完整保留
-- [ ] 所有 fallback 保持不变
-- [ ] 应用列表仍按单条失败隔离并继续遍历
-- [ ] XML 解析仍按单 item 失败隔离并继续
-- [ ] 不改变方法签名和调用方
-- [ ] 不增加依赖、线程、协程或 Context 所有权
-- [ ] baseline 从 41 降至 26
-- [ ] source hazard 为 26 reviewed、0 new
-- [ ] Python tests 通过
-- [ ] Gradle unit tests 通过
-- [ ] fast verify 通过
-- [ ] full verify 通过
-- [ ] `git diff --check` 通过
-- [ ] 工作区干净
-- [ ] 不需要 APK
-- [ ] 不需要实机验证
-- [ ] 完成状态标记为 `STATIC_VERIFIED`
+- [x] `Helpers.kt` 的 15 处 `.printStackTrace()` 全部移除
+- [x] 新增统一且可复用的 settings-app logger
+- [x] 15 个固定 operation 全部存在且唯一
+- [x] fatal error 重抛完整保留
+- [x] 所有 fallback 保持不变
+- [x] 应用列表仍按单条失败隔离并继续遍历
+- [x] XML 解析仍按单 item 失败隔离并继续
+- [x] 不改变方法签名和调用方
+- [x] 不增加依赖、线程、协程或 Context 所有权
+- [x] baseline 从 41 降至 26
+- [x] source hazard 为 26 reviewed、0 new
+- [x] Python tests 通过
+- [x] Gradle unit tests 通过
+- [x] fast verify 通过
+- [x] full verify 通过
+- [x] `git diff --check` 通过
+- [x] 工作区干净
+- [x] 不需要 APK
+- [x] 不需要实机验证
+- [x] 完成状态标记为 `STATIC_VERIFIED`
 
 ## 验证
 
@@ -128,16 +128,39 @@ git diff --check
 git status --short
 ```
 
+### 实际结果
+
+- `compileall tools`：通过
+- `unittest discover`：449 tests passed, 0 failed, skipped 2
+- `testDebugUnitTest --tests SettingsDiagnosticsHelpersTest`：通过
+- `compileDebugKotlin`：通过
+- `compileDebugJavaWithJavac`：通过
+- `testDebugUnitTest`：通过
+- `source_hazard_scan.py --path app/src/main/java`：`Source hazard scan passed: 26 reviewed finding(s), 0 new`
+- `verify.py fast --changed`：通过
+- `verify.py full`：通过（含 compileDebugKotlin、compileDebugJavaWithJavac、testDebugUnitTest-all、lintDebug）
+- `git diff --check`：通过（仅 CRLF 转 LF 正常提示）
+- `git status --short`：干净
+
 ## 构建产物
 
 未要求 APK。
 
 ## 完成记录
 
-- Base SHA:
-- Final SHA:
+- Base SHA: ab18d7dcad4a02c7d8ebc415b772b7b7b59fbd50
+- Final SHA: 4a5bab377a4765f0657b8057180a826fd9183e97
 - Commits:
+  - `40408c9` docs: add active FIX-helpers-controlled-diagnostics task
+  - `4a5bab3` fix: replace Helpers printStackTrace diagnostics
 - Behavior changed:
-- Verification:
-- Device evidence:
-- Known limits:
+  - `Helpers.kt` 的 15 处 `.printStackTrace()` 全部替换为 `SettingsDiagnostics.failure(operation, throwable)`；
+  - 新增 `SettingsDiagnostics` 轻量无状态 logger，固定 tag `CustoMIUIzer-Settings`；
+  - 15 个 operation 名称按规范固定，每个恰好调用一次；
+  - 每处 catch 仍先重抛 fatal error，fallback 全部保持；
+  - 应用列表循环和 `parsePrefXml` 仍单条失败后继续；
+  - `SOURCE_HAZARD_BASELINE.json` 从 41 条降至 26 条，仅移除 `Helpers.kt` 的 15 条 `PRINT_STACK_TRACE`；
+  - 新增 `SettingsDiagnosticsHelpersTest.kt` 和 `test_helpers_diagnostics.py` 覆盖运行时与静态合同。
+- Verification: 见“验证”章节
+- Device evidence: 未涉及设备；本任务仅 settings-app 诊断入口和门禁改动，标记为 `STATIC_VERIFIED`
+- Known limits: 未修改 `HookUtils.kt`、其他 26 条 baseline finding 文件或全局日志设施；`SettingsDiagnostics` 设计为后续 settings-app 文件复用。
