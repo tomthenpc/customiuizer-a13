@@ -1,5 +1,6 @@
 package tv.withaibuild.customiuizer.mods
 
+import android.animation.ValueAnimator
 import android.annotation.SuppressLint
 import android.app.Activity
 import android.content.Context
@@ -13,31 +14,38 @@ import tv.withaibuild.customiuizer.mods.utils.HookerClassHelper.BeforeHookCallba
 import tv.withaibuild.customiuizer.mods.utils.HookerClassHelper.MethodHook
 import tv.withaibuild.customiuizer.mods.utils.ModuleHelper
 import tv.withaibuild.customiuizer.mods.utils.XposedHelpers
-import tv.withaibuild.customiuizer.utils.HookUtils
 
 @Suppress("UNUSED_PARAMETER")
 object LauncherAnimationHooks {
 
+    private const val MIN_NON_ZERO_SCALE = 0.01f
+
     private fun scaleStiffness(`val`: Float, scale: Float): Float {
         return (if (scale < 1.0f) 2f / scale else 1.0f / scale) * `val`
+    }
+
+    internal fun effectiveAnimatorScale(rawScale: Float): Float {
+        return if (rawScale == 0f) MIN_NON_ZERO_SCALE else rawScale
+    }
+
+    private fun currentAnimatorScale(): Float {
+        return effectiveAnimatorScale(ValueAnimator.getDurationScale())
     }
 
     @JvmStatic
     fun FixAnimHook(lpparam: PackageReadyParam) {
         ModuleHelper.hookAllMethods("com.miui.home.launcher.animate.SpringAnimator", lpparam.classLoader, "getSpringForce", object : MethodHook() {
             override fun before(param: BeforeHookCallback) {
-                var scale = HookUtils.getAnimationScale(2)
+                val scale = currentAnimatorScale()
                 if (scale == 1.0f) return
-                if (scale == 0f) scale = 0.01f
                 param.getArgs()[2] = scaleStiffness(param.getArg(2) as? Float ?: 0f, scale)
             }
         })
 
         val hook = object : MethodHook() {
             override fun before(param: BeforeHookCallback) {
-                var scale = HookUtils.getAnimationScale(2)
+                val scale = currentAnimatorScale()
                 if (scale == 1.0f) return
-                if (scale == 0f) scale = 0.01f
                 XposedHelpers.setFloatField(param.getThisObject(), "mCenterXStiffness", scaleStiffness(XposedHelpers.getFloatField(param.getThisObject(), "mCenterXStiffness"), scale))
                 XposedHelpers.setFloatField(param.getThisObject(), "mCenterYStiffness", scaleStiffness(XposedHelpers.getFloatField(param.getThisObject(), "mCenterYStiffness"), scale))
                 XposedHelpers.setFloatField(param.getThisObject(), "mWidthStiffness", scaleStiffness(XposedHelpers.getFloatField(param.getThisObject(), "mWidthStiffness"), scale))

@@ -26,10 +26,9 @@ class HookUtilsDiagnosticsContractTest(unittest.TestCase):
         self.assertIn("private fun logFailure(operation: String, throwable: Throwable)", self.text)
         self.assertIn("Log.e(TAG, operation, throwable)", self.text)
 
-    def test_six_operation_names_present_and_unique(self):
+    def test_five_operation_names_present_and_unique(self):
         operations = [
             "copyFile",
-            "getAnimationScale",
             "getAppName.application",
             "getAppName.activity",
             "getAppIcon.application",
@@ -43,7 +42,7 @@ class HookUtilsDiagnosticsContractTest(unittest.TestCase):
         self.assertEqual(len(operations), len(set(found)))
 
     def test_each_catch_rethrows_fatal_errors(self):
-        # Count fatal guards in catch blocks; should be at least 6 (one per changed catch).
+        # Count fatal guards in catch blocks; should be at least 5 (one per changed catch).
         fatal_guards = list(re.finditer(
             r"catch\s*\([a-zA-Z]+\s*:\s*Throwable\).*?\{[^}]*if\s*\(\w+\s+is\s+OutOfMemoryError\s+\|\|\s*\w+\s+is\s+ThreadDeath\s+\|\|\s*\w+\s+is\s+VirtualMachineError\)\s+throw\s+\w+",
             self.text,
@@ -51,8 +50,8 @@ class HookUtilsDiagnosticsContractTest(unittest.TestCase):
         ))
         self.assertGreaterEqual(
             len(fatal_guards),
-            6,
-            f"Expected at least 6 fatal error re-throw guards, found {len(fatal_guards)}",
+            5,
+            f"Expected at least 5 fatal error re-throw guards, found {len(fatal_guards)}",
         )
 
     def test_no_system_out_or_err(self):
@@ -61,7 +60,6 @@ class HookUtilsDiagnosticsContractTest(unittest.TestCase):
     def test_log_failure_called_in_each_catch(self):
         # Each logFailure call should be immediately followed by the known fallback.
         self.assertIn('logFailure("copyFile",', self.text)
-        self.assertIn('logFailure("getAnimationScale",', self.text)
         self.assertIn('logFailure("getAppName.application",', self.text)
         self.assertIn('logFailure("getAppName.activity",', self.text)
         self.assertIn('logFailure("getAppIcon.application",', self.text)

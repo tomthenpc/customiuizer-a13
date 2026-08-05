@@ -79,10 +79,4 @@ class HookUtilsDiagnosticsTest {
         }
     }
 
-    @Test
-    fun getAnimationScale_returnsFallback_whenReflectionFails() {
-        // In a JVM unit test the Android ServiceManager / WindowManagerService
-        // classes are unavailable, so the method should fall back to 1.0f.
-        assertEquals(1.0f, HookUtils.getAnimationScale(0), 0.0f)
-    }
 }

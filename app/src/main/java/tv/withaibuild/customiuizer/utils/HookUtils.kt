@@ -10,7 +10,6 @@ import android.graphics.Bitmap
 import android.graphics.Rect
 import android.graphics.drawable.Drawable
 import android.os.Build
-import android.os.IBinder
 import android.os.PowerManager
 import android.util.Log
 import android.util.TypedValue
@@ -324,30 +323,6 @@ object HookUtils {
         )
     }
 
-    @SuppressWarnings("ConstantConditions")
-    @SuppressLint("PrivateApi", "DiscouragedPrivateApi")
-    @JvmStatic
-    fun getAnimationScale(type: Int): Float {
-        return try {
-            val smClass = Class.forName("android.os.ServiceManager")
-            val getService = smClass.getDeclaredMethod("getService", String::class.java)
-            getService.isAccessible = true
-            val manager = getService.invoke(smClass, "window")
-
-            val wmsClass = Class.forName("android.view.IWindowManager\$Stub")
-            val asInterface = wmsClass.getDeclaredMethod("asInterface", IBinder::class.java)
-            asInterface.isAccessible = true
-            val wm = asInterface.invoke(wmsClass, manager)
-
-            val getAnimationScale = wm.javaClass.getDeclaredMethod("getAnimationScale", Int::class.javaPrimitiveType)
-            getAnimationScale.isAccessible = true
-            (getAnimationScale.invoke(wm, type) as? Float) ?: 1.0f
-        } catch (t: Throwable) {
-            if (t is OutOfMemoryError || t is ThreadDeath || t is VirtualMachineError) throw t
-            logFailure("getAnimationScale", t)
-            1.0f
-        }
-    }
 
     @JvmStatic
     fun containsStringPair(hayStack: Set<String>?, needle: String?): Boolean {
