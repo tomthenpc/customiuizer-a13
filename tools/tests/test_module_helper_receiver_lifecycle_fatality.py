@@ -394,19 +394,36 @@ class ModuleHelperReceiverLifecycleFatalityContractTest(unittest.TestCase):
                 self.assertIsNotNone(catch)
                 self.assertIn("throwIfFatal(t);", catch)
 
-    def test_non_target_methods_unchanged(self):
-        # These methods must not be converted to the shared helper by this task.
-        for sig in (
+    def test_action_alarm_helpers_use_shared_fatal_boundary(self):
+        # These methods were converted to the shared fatal boundary in a later task.
+        action_alarm_sigs = (
             "public static long getNextMIUIAlarmTime(Context context)",
-            "public static void openAppInfo(Context context, String pkg, int user)",
             "public static Drawable getActionImage(Context context, String key)",
             "public static String getActionName(Context context, String key)",
-        ):
+        )
+        for sig in action_alarm_sigs:
             with self.subTest(sig=sig):
                 body = self._extract_method_body(sig)
                 self.assertIsNotNone(body)
-                self.assertNotIn("throwIfFatal(t);", body)
-                self.assertIn("if (t instanceof OutOfMemoryError)", body)
+                catch = self._extract_catch_body(body)
+                self.assertIsNotNone(catch)
+                self.assertRegex(
+                    self._strip_comments(catch),
+                    r"^\s*throwIfFatal\s*\(\s*t\s*\)\s*;",
+                    f"throwIfFatal(t) must be first statement in {sig}",
+                )
+                self.assertNotIn("t instanceof OutOfMemoryError", catch)
+                self.assertNotIn("if (t2 instanceof OutOfMemoryError)", catch)
+
+        # openAppInfo has two nested catch blocks; verify both use throwIfFatal.
+        open_sig = "public static void openAppInfo(Context context, String pkg, int user)"
+        body = self._extract_method_body(open_sig)
+        self.assertIsNotNone(body)
+        self.assertIn("throwIfFatal(t);", body)
+        self.assertIn("throwIfFatal(t2);", body)
+        self.assertIn("log(t2)", body)
+        self.assertNotIn("if (t instanceof OutOfMemoryError)", body)
+        self.assertNotIn("if (t2 instanceof OutOfMemoryError)", body)
 
     # ------------------------------------------------------------------
     # 34-35. Baseline and global printStackTrace

@@ -532,7 +532,7 @@ public class ModuleHelper {
 
             nextTime = cal.getTimeInMillis();
         } catch (Throwable t) {
-            if (t instanceof OutOfMemoryError) throw (OutOfMemoryError) t;
+            throwIfFatal(t);
             log(t);
         }
         return nextTime;
@@ -545,7 +545,7 @@ public class ModuleHelper {
             if (user != 0) intent.putExtra("miui.intent.extra.USER_ID", user);
             context.startActivity(intent);
         } catch (Throwable t) {
-            if (t instanceof OutOfMemoryError) throw (OutOfMemoryError) t;
+            throwIfFatal(t);
             try {
                 Intent intent = new Intent(android.provider.Settings.ACTION_APPLICATION_DETAILS_SETTINGS);
                 intent.setFlags(Intent.FLAG_ACTIVITY_NEW_TASK | Intent.FLAG_ACTIVITY_RESET_TASK_IF_NEEDED);
@@ -555,7 +555,7 @@ public class ModuleHelper {
                 else
                     context.startActivity(intent);
             } catch (Throwable t2) {
-                if (t2 instanceof OutOfMemoryError) throw (OutOfMemoryError) t2;
+                throwIfFatal(t2);
                 log(t2);
             }
         }
@@ -1020,7 +1020,7 @@ public class ModuleHelper {
             else
                 return null;
         } catch (Throwable t) {
-            if (t instanceof OutOfMemoryError) throw (OutOfMemoryError) t;
+            throwIfFatal(t);
             return null;
         }
     }
@@ -1058,7 +1058,7 @@ public class ModuleHelper {
             } else
                 return null;
         } catch (Throwable t) {
-            if (t instanceof OutOfMemoryError) throw (OutOfMemoryError) t;
+            throwIfFatal(t);
             return null;
         }
     }
