@@ -22,15 +22,20 @@ Modify four user-action/alarm helper methods in `ModuleHelper.java` to use the s
 6. Alarm algorithm, Intent parameters, user behavior, action preference keys, toggle resource mappings, and activity name fallback must remain unchanged.
 
 ## Verification
-- New static contract test: `tools/tests/test_module_helper_action_alarm_fatality.py`.
-- Updated `tools/tests/test_module_helper_receiver_lifecycle_fatality.py` scope test.
-- Existing `tools/tests/test_module_helper_reflection_fallback_fatality.py` and `tools/tests/test_module_helper_hook_install_fatality.py` must still pass.
-- `python tools/verify.py full`
-- `python -m compileall tools`
-- `python -m unittest discover -s tools/tests -p "test_*.py"`
-- `python tools/source_hazard_scan.py --path app/src/main/java`
-- `python tools/verify.py fast --changed`
-- `git diff --check`
+- New static contract test: `tools/tests/test_module_helper_action_alarm_fatality.py` (36 tests).
+- Updated `tools/tests/test_module_helper_receiver_lifecycle_fatality.py` scope test to reflect new action/alarm helper state.
+- Existing `tools/tests/test_module_helper_reflection_fallback_fatality.py` and `tools/tests/test_module_helper_hook_install_fatality.py` still pass.
+- `python tools/verify.py full` passed.
+- `python -m compileall tools` passed.
+- `python -m unittest discover -s tools/tests -p "test_*.py"` passed (699 tests).
+- `python tools/source_hazard_scan.py --path app/src/main/java` passed with 0 reviewed, 0 new.
+- `python tools/verify.py fast --changed` passed.
+- `git diff --check` passed.
+- 10 mutations were applied and reverted; the new contract test correctly failed each time.
+
+## SHAs
+- Base SHA: `c9c9f3e080a90309901f371177f501a97c5136ca`
+- Implementation SHA: `22e7be36b1af7ed1f2e479c1da33c085bdf06a7b`
 
 ## Status
-In progress.
+Completed.
