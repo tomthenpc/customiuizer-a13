@@ -1,26 +1,48 @@
 pluginManagement {
     repositories {
-        maven("https://mirrors.huaweicloud.com/repository/maven/")
-        maven("https://mirrors.aliyun.com/repository/google/")
         google()
         mavenCentral()
         gradlePluginPortal()
+        maven("https://mirrors.huaweicloud.com/repository/maven/") {
+            name = "huaweicloud-maven"
+            mavenContent {
+                releasesOnly()
+            }
+        }
+        maven("https://mirrors.aliyun.com/repository/google/") {
+            name = "aliyun-google"
+            mavenContent {
+                releasesOnly()
+            }
+        }
     }
 }
 
 dependencyResolutionManagement {
-    repositoriesMode.set(RepositoriesMode.PREFER_SETTINGS)
+    repositoriesMode.set(RepositoriesMode.FAIL_ON_PROJECT_REPOS)
     repositories {
-        mavenLocal {
-            content {
-                includeGroup("io.github.libxposed")
+        val useLocalLibxposed = providers.gradleProperty("useLocalLibxposed").orNull == "true"
+        if (useLocalLibxposed) {
+            mavenLocal {
+                content {
+                    includeGroup("io.github.libxposed")
+                }
             }
         }
-        maven("https://mirrors.huaweicloud.com/repository/maven/")
-        maven("https://jitpack.io")
-        maven("https://mirrors.aliyun.com/repository/google/")
-        mavenCentral()
         google()
+        mavenCentral()
+        maven("https://mirrors.huaweicloud.com/repository/maven/") {
+            name = "huaweicloud-maven"
+            mavenContent {
+                releasesOnly()
+            }
+        }
+        maven("https://mirrors.aliyun.com/repository/google/") {
+            name = "aliyun-google"
+            mavenContent {
+                releasesOnly()
+            }
+        }
     }
 }
 
