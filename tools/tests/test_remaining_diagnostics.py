@@ -75,8 +75,10 @@ class RemainingDiagnosticsContractTest(unittest.TestCase):
             "AutoRotateService.readState",
             "AppHelper.resolveActionName",
             "LockedAppAdapter.initializeSecurityManager",
+            "LockedAppAdapter.readChecked",
             "PreferenceAdapter.bindActionIcon",
             "PrivacyAppAdapter.initializeSecurityManager",
+            "PrivacyAppAdapter.readChecked",
         ]
         for op in operations:
             with self.subTest(operation=op):
@@ -86,8 +88,8 @@ class RemainingDiagnosticsContractTest(unittest.TestCase):
         all_found = []
         for text in self.texts.values():
             all_found.extend(re.findall(r'SettingsDiagnostics\.failure\("([^"]+)",', text))
-        self.assertEqual(8, len(all_found))
-        self.assertEqual(8, len(set(all_found)), "operation names must be unique")
+        self.assertEqual(10, len(all_found))
+        self.assertEqual(10, len(set(all_found)), "operation names must be unique")
 
     def test_seekbar_only_illegalformat(self):
         text = self.texts["SeekBarPreference"]

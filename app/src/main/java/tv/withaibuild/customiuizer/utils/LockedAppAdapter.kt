@@ -32,6 +32,7 @@ class LockedAppAdapter @SuppressLint("WrongConstant") constructor(
     private val searchLocale = Locale.getDefault()
     private var mSecurityManager: Any? = null
     private var getApplicationAccessControlEnabledAsUser: Method? = null
+    private var readCheckedFailureLogged = false
 
     init {
         prepareRows()
@@ -72,8 +73,18 @@ class LockedAppAdapter @SuppressLint("WrongConstant") constructor(
         val method = getApplicationAccessControlEnabledAsUser ?: return false
         return try {
             method.invoke(sm, app.pkgName.orEmpty(), app.user) as? Boolean ?: false
-        } catch (t: Throwable) {
-            if (t is OutOfMemoryError) throw t
+        } catch (error: Throwable) {
+            if (
+                error is OutOfMemoryError ||
+                error is ThreadDeath ||
+                error is VirtualMachineError
+            ) throw error
+
+            if (!readCheckedFailureLogged) {
+                readCheckedFailureLogged = true
+                SettingsDiagnostics.failure("LockedAppAdapter.readChecked", error)
+            }
+
             false
         }
     }
