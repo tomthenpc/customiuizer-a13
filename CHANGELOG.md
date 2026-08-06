@@ -1,5 +1,32 @@
 # 更新日志
 
+## r13.10.1（2026-08-06）
+
+### 性能与资源治理
+
+- 状态栏设备信息采样改为固定缓冲区与逐字节 sysfs 解析，移除周期性 Properties、RandomAccessFile、临时结果对象和屏幕状态 Binder 查询；
+- Launcher HotSeats 手势阈值和触摸状态按 View 实例缓存，减少每个触摸事件中的 density 与 ViewConfiguration 重复读取；
+- Launcher FSG 的 BaseRecentsImpl Class 在 Hook 安装阶段解析一次并由相关 callback 复用。
+
+### 稳定性与兼容性
+
+- 保持原有 DeviceInfo 显示类型、文本格式、采样周期、失败退避和屏幕生命周期合同；
+- 保持 Launcher 左右滑动距离、速度、touchSlop、动作 key 和 FSG 调用范围行为；
+- FSG stack-scope 优化因缺少 MIUI 14 / HyperOS 1 Launcher APK 与反编译证据而冻结，不进行无证据替换。
+
+### 工程与仓库
+
+- 删除未引用的 miui.jar 和异常 java.lang external annotation；
+- 规范化 IDE、本地工具、构建产物、APK/AAB、系统文件及 ROM intelligence 输入的共享忽略规则；
+- 保留 framework.jar、miuisystem.jar、Gradle wrapper 和项目级共享 Android Studio 配置。
+
+### 发布说明
+
+- 面向 MIUI 14 / Android 13；
+- HyperOS 1 / Android 13 继续作为实验兼容目标；
+- 本阶段仅准备 Release Candidate 元数据，不生成 APK；
+- 正式签名 Release APK 必须在完整静态发布门禁通过后，由精确 RC commit 单独构建。
+
 ## r13.10.0（2026-08-05）
 
 ### ROM 兼容与 Hook 合同
