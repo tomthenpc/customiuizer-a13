@@ -317,5 +317,98 @@ object Unresolved {
         self.assertNotEqual(records[0].confidence, "high")
 
 
+    def test_method_level_process_mapping(self):
+        """A mod class with methods called from different installers must get per-method process scope."""
+        self._write(
+            "mods/FeatureClass.kt",
+            '''
+package tv.withaibuild.customiuizer.mods
+import tv.withaibuild.customiuizer.mods.utils.ModuleHelper
+import tv.withaibuild.customiuizer.mods.utils.HookerClassHelper.MethodHook
+
+object FeatureClass {
+    fun serverHook(cl: ClassLoader) {
+        ModuleHelper.findAndHookMethod("com.android.Server", cl, "run", object : MethodHook() { })
+    }
+    fun uiHook(cl: ClassLoader) {
+        ModuleHelper.findAndHookMethod("com.android.UI", cl, "run", object : MethodHook() { })
+    }
+}
+''',
+        )
+        self._write(
+            "installers/SystemServerInstaller.java",
+            '''
+package tv.withaibuild.customiuizer.installers;
+import io.github.libxposed.api.XposedModuleInterface;
+import tv.withaibuild.customiuizer.mods.FeatureClass;
+public class SystemServerInstaller {
+    public static void install(XposedModuleInterface.SystemServerStartingParam lpparam) {
+        FeatureClass.serverHook(lpparam.getClassLoader());
+    }
+}
+''',
+        )
+        self._write(
+            "installers/SystemUiInstaller.java",
+            '''
+package tv.withaibuild.customiuizer.installers;
+import io.github.libxposed.api.XposedModuleInterface;
+import tv.withaibuild.customiuizer.mods.FeatureClass;
+public class SystemUiInstaller {
+    public static void install(XposedModuleInterface.PackageReadyParam lpparam) {
+        FeatureClass.uiHook(lpparam.getClassLoader());
+    }
+}
+''',
+        )
+        records = self._scan()
+        self.assertEqual(len(records), 2)
+        for r in records:
+            if r.registration_function == "serverHook":
+                self.assertEqual(r.target_process, "SYSTEM_SERVER")
+            elif r.registration_function == "uiHook":
+                self.assertEqual(r.target_process, "SYSTEM_UI")
+            else:
+                self.fail(f"unexpected registration_function {r.registration_function}")
+
+    def test_regression_checks_android_package(self):
+        self._write(
+            "installers/AndroidPackageInstaller.java",
+            '''
+package tv.withaibuild.customiuizer.installers;
+import io.github.libxposed.api.XposedModuleInterface.PackageReadyParam;
+import tv.withaibuild.customiuizer.MainModule;
+import tv.withaibuild.customiuizer.mods.catalog.FeatureDispatcher;
+import tv.withaibuild.customiuizer.mods.catalog.FeatureRuntime;
+
+public final class AndroidPackageInstaller {
+    static boolean isAnyFeatureEnabled(PrefMap prefs) {
+        return prefs.getBoolean("system_cleanshare") || prefs.getBoolean("system_cleanopenwith");
+    }
+    public static void install(PackageReadyParam lpparam, Runnable watchPreferences) {
+        String pkg = lpparam.getPackageName();
+        if (!"android".equals(pkg)) return;
+        if (!isAnyFeatureEnabled(MainModule.mPrefs)) return;
+
+        FeatureRuntime androidRuntime = null;
+        boolean listenerNeeded = false;
+        if (MainModule.mPrefs.getBoolean("system_cleanshare") || MainModule.mPrefs.getBoolean("system_cleanopenwith")) {
+            androidRuntime = FeatureDispatcher.createRuntime(pkg, lpparam, lpparam.getClassLoader(), MainModule.mPrefs);
+            if (MainModule.mPrefs.getBoolean("system_cleanshare")) {
+                if (FeatureDispatcher.installById("cleanShareMenu", androidRuntime)) listenerNeeded = true;
+            }
+        }
+        if (listenerNeeded) watchPreferences.run();
+    }
+}
+''',
+        )
+        findings = scan._regression_checks(self.tmp)
+        self.assertTrue(any(f["id"] == "EARLY_FEATURE_GATE_ANDROID" and f["status"] == "pass" for f in findings))
+        self.assertTrue(any(f["id"] == "GUARDED_WATCH_PREFERENCES_ANDROID" and f["status"] == "pass" for f in findings))
+        self.assertTrue(any(f["id"] == "LAZY_FEATURE_RUNTIME_ANDROID" and f["status"] == "pass" for f in findings))
+
+
 if __name__ == "__main__":
     unittest.main()

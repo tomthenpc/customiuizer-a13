@@ -465,29 +465,50 @@ def _detect_hook_type(snippet: str) -> str:
     return "UNKNOWN"
 
 
-def _callback_frequency_class(target_method: str, body: str | None) -> str:
+def _callback_frequency_class(target_class: str, target_method: str, body: str | None) -> str:
+    """Classify the callback frequency/phase into the fixed P1B-0 enum.
+
+    Startup paths (Application/Activity/Service onCreate, attach, setup) must
+    not be reported as hot paths.
+    """
     tm = target_method.lower()
-    high = ("ontouch", "dispatchtouchevent", "onintercepttouchevent", "ondraw", "ondispatchdraw",
-            "updatetime", "runtick", "ontick", "handlemessage", "run", "onmeasure", "layout",
-            "onlayout", "onscrolled", "onscroll", "onfling", "oncompute")
-    medium = ("oncreate", "onattach", "ondetach", "onresume", "onpause", "onstart", "onstop",
-              "onrestart", "onconfigurationchanged", "onviewattached", "onviewdetached",
-              "afterhookedmethod", "beforehookedmethod", "onreceive", "onchange")
-    low = ("ondestroy", "finish", "setup", "init", "install", "once")
-    for h in high:
+    tc = target_class.lower()
+
+    # Touch, draw, layout and frame-driven hooks.
+    frame_hot = ("ontouch", "dispatchtouchevent", "onintercepttouchevent", "ondraw", "ondispatchdraw",
+                 "onmeasure", "onlayout", "onscrolled", "onscroll", "onfling", "oncompute",
+                 "updatetime", "runtick", "ontick", "doinbackground", "dispatchdraw", "draw",
+                 "onpredraw", "ongloballayout")
+    for h in frame_hot:
         if h in tm:
-            return "HIGH"
-    for m in medium:
-        if m in tm:
-            return "MEDIUM"
-    for l in low:
-        if l in tm:
-            return "LOW"
-    if body:
-        # Loop in callback is a sign of repeated work.
-        if re.search(r"\b(for|while)\s*\(", body):
-            return "HIGH"
-    return "MEDIUM"
+            return "FRAME_OR_LAYOUT_HOT"
+
+    # User interaction (not frame continuous, but directly user-driven).
+    if any(h in tm for h in ("onclick", "onlongclick", "onitemclick", "onkey", "onback")):
+        return "USER_INTERACTION"
+
+    # Process / component startup.  Do not mark as hot.
+    if any(h in tm for h in ("oncreate", "onattach", "onapplication", "attach", "onstart", "onresume",
+                              "onpause", "onstop", "onrestart", "onconfigurationchanged",
+                              "onviewattached", "onviewdetached", "afterhookedmethod", "beforehookedmethod",
+                              "install", "setup", "init", "finish", "ondestroy", "once")):
+        # Distinguish Application/Service/Provider onCreate (process startup) from Activity/Fragment.
+        if "application" in tc or "systemui" in tc or "launcher" in tc or "service" in tc or "provider" in tc:
+            return "PROCESS_STARTUP"
+        return "COMPONENT_STARTUP"
+
+    # Event-driven callbacks at medium/low rate.
+    if any(h in tm for h in ("onreceive", "onchange", "onresult", "handlemessage", "onmessage",
+                              "onbind", "onunbind", "onconnected", "ondisconnected")):
+        return "EVENT_DRIVEN_MEDIUM"
+
+    # Runnable.run and generic delayed callbacks depend on usage.
+    if "run" in tm:
+        if body and re.search(r"\b(for|while)\s*\(", body):
+            return "EVENT_DRIVEN_HIGH"
+        return "EVENT_DRIVEN_MEDIUM"
+
+    return "UNKNOWN"
 
 
 def _analyze_callback_body(body: str | None) -> dict[str, str]:
@@ -504,12 +525,31 @@ def _analyze_callback_body(body: str | None) -> dict[str, str]:
     }
     if not body:
         return result
-    result["preference_read_in_callback"] = "true" if re.search(
-        r"mPrefs\.|getRemotePreferences|getBoolean|getString|getInt|getStringAsInt|remote\.get", body
-    ) else "false"
-    result["reflection_lookup_in_callback"] = "true" if re.search(
-        r"findClass|getDeclaredMethod|getMethod|getDeclaredField|getField|getClassLoader|\.class\b", body
-    ) else "false"
+
+    # Preference reads inside a callback.  MainModule.mPrefs is a PrefMap in-memory
+    # snapshot (IN_MEMORY_SNAPSHOT_READ or SHARED_PREFERENCES_API_READ); remote
+    # SharedPreferences or Settings.* are DISK_OR_IPC_READ.
+    if re.search(r"\bMainModule\.mPrefs\.|\bmPrefs\.|\.getBoolean\(|\.getString\(|\.getInt\(|\.getStringAsInt\(|\.getStringSet\(", body):
+        result["preference_read_in_callback"] = "IN_MEMORY_SNAPSHOT_READ"
+    elif re.search(r"getRemotePreferences|\.getSharedPreferences\(|remote\.(?:getBoolean|getString|getInt|getStringAsInt|getStringSet)\b", body):
+        result["preference_read_in_callback"] = "DISK_OR_IPC_READ"
+    elif re.search(r"Settings\.(?:System|Secure|Global)\.", body):
+        result["preference_read_in_callback"] = "DISK_OR_IPC_READ"
+    elif re.search(r"getBoolean\(|getString\(|getInt\(|getStringAsInt\(|getStringSet\(", body):
+        # Unknown preference object; treat as SharedPreferences API.
+        result["preference_read_in_callback"] = "SHARED_PREFERENCES_API_READ"
+    else:
+        result["preference_read_in_callback"] = "false"
+
+    # Reflection in a callback is only CALLBACK_TIME_REFLECTION; `.class` is
+    # cached class metadata; everything else is UNKNOWN.
+    if re.search(r"findClass|getDeclaredMethod|getMethod|getDeclaredField|getField|getClassLoader|forName|\.javaClass\b|\.getClass\b", body):
+        result["reflection_lookup_in_callback"] = "CALLBACK_TIME_REFLECTION"
+    elif re.search(r"\b\w+\.class\b|Class\.forName", body):
+        result["reflection_lookup_in_callback"] = "CACHED_METADATA_USE"
+    else:
+        result["reflection_lookup_in_callback"] = "false"
+
     result["collection_allocation_in_callback"] = "true" if re.search(
         r"\b(listOf|mapOf|setOf|arrayListOf|hashMapOf|hashSetOf|mutableListOf|mutableMapOf|mutableSetOf|"
         r"ArrayList|HashMap|HashSet|LinkedHashMap|ConcurrentHashMap)\s*\(", body
@@ -648,6 +688,37 @@ def _build_installer_class_map(source_root: Path) -> dict[str, list[str]]:
     return class_to_installers
 
 
+def _build_installer_method_map(source_root: Path) -> dict[tuple[str, str], list[str]]:
+    """Map (mod class, mod method) to the installer(s) that call it.
+
+    This is more accurate than class-level mapping because a single mod class
+    can be reused by multiple installers, and P1B-0 process attribution must be
+    per method call, not per class.
+    """
+    installers_dir = source_root / "installers"
+    method_map: dict[tuple[str, str], list[str]] = {}
+    if not installers_dir.exists():
+        return method_map
+    scope_map = _build_process_scope_map()
+    for path in sorted(installers_dir.rglob("*")):
+        if path.suffix not in (".kt", ".java"):
+            continue
+        text = path.read_text(encoding="utf-8", errors="replace")
+        installer_name = path.stem
+        installer_process = scope_map.get(installer_name, "unknown")
+        # Collect imported mod classes (simple name -> full simple name).
+        imports: dict[str, str] = {}
+        for line in text.splitlines():
+            m = re.match(r"\s*import\s+tv\.withaibuild\.customiuizer\.mods\.([A-Za-z0-9_]+)", line)
+            if m:
+                imports[m.group(1)] = m.group(1)
+        for simple, _ in imports.items():
+            for m in re.finditer(rf"\b{re.escape(simple)}\.([A-Za-z0-9_]+)\s*\(", text):
+                method = m.group(1)
+                method_map.setdefault((simple, method), []).append(installer_process)
+    return method_map
+
+
 def _build_process_scope_map() -> dict[str, str]:
     """Map installer name to the primary ProcessScope it serves."""
     return {
@@ -671,10 +742,24 @@ def _build_process_scope_for_file(
     rel_path: str,
     class_name: str,
     first_top_level_type: str,
+    registration_function: str,
     installer_map: dict[str, list[str]],
+    installer_method_map: dict[tuple[str, str], list[str]],
     scope_map: dict[str, str],
     feature_catalog: dict[str, dict[str, Any]],
 ) -> str:
+    # Method-level mapping is the most accurate. A single mod class may host
+    # methods called from different installers (e.g. SystemNotificationMoreHooks
+    # has methods called from both SystemUiInstaller and SettingsInstaller).
+    for cn in (class_name, first_top_level_type):
+        if not cn:
+            continue
+        methods = installer_method_map.get((cn, registration_function))
+        if methods:
+            scopes = sorted({m for m in methods})
+            if len(scopes) == 1:
+                return _normalize_scope(scopes[0])
+            return "MULTI_PROCESS:" + ",".join(scopes)
     # Direct feature catalog hit (try both the extracted class and first top-level).
     for cn in (class_name, first_top_level_type):
         if cn in feature_catalog:
@@ -811,16 +896,24 @@ class HookCostRecord:
 
 def _compute_score(fields: dict[str, Any]) -> int:
     score = 0
-    if fields["target_process"] in ("SYSTEM_UI", "system_server", "LAUNCHER", "PHONE"):
+    if fields["target_process"] in ("SYSTEM_UI", "SYSTEM_SERVER", "LAUNCHER", "PHONE"):
         score += 2
-    if fields["callback_frequency_class"] == "HIGH":
+    if fields["callback_frequency_class"] in ("FRAME_OR_LAYOUT_HOT", "EVENT_DRIVEN_HIGH"):
         score += 4
-    if fields["callback_frequency_class"] == "MEDIUM":
+    if fields["callback_frequency_class"] in ("EVENT_DRIVEN_MEDIUM", "USER_INTERACTION"):
         score += 2
-    if fields["preference_read_in_callback"] == "true":
+    if fields["callback_frequency_class"] in ("COMPONENT_STARTUP", "PROCESS_STARTUP"):
+        score += 1
+    if fields["preference_read_in_callback"] == "DISK_OR_IPC_READ":
+        score += 4
+    if fields["preference_read_in_callback"] == "SHARED_PREFERENCES_API_READ":
         score += 3
-    if fields["reflection_lookup_in_callback"] == "true":
+    if fields["preference_read_in_callback"] == "IN_MEMORY_SNAPSHOT_READ":
+        score += 1
+    if fields["reflection_lookup_in_callback"] == "CALLBACK_TIME_REFLECTION":
         score += 3
+    if fields["reflection_lookup_in_callback"] == "CACHED_METADATA_USE":
+        score += 1
     if fields["collection_allocation_in_callback"] == "true":
         score += 2
     if fields["binder_or_system_call_in_callback"] == "true":
@@ -854,6 +947,7 @@ class HookCostScanner:
         self.source_root = source_root
         self.feature_catalog = _build_feature_catalog_map(source_root)
         self.installer_map = _build_installer_class_map(source_root)
+        self.installer_method_map = _build_installer_method_map(source_root)
         self.scope_map = _build_process_scope_map()
 
     def scan(self) -> list[HookCostRecord]:
@@ -905,9 +999,9 @@ class HookCostScanner:
                 if not is_hook:
                     target_method = "register/callback"
                 hook_type = _detect_hook_type(snippet)
-                process_scope = _build_process_scope_for_file(rel, feature_name, first_top_level_type, self.installer_map, self.scope_map, self.feature_catalog)
-                package_scope = _package_scope_for_process(process_scope)
                 registration_function = _extract_enclosing_function(text, line_no)
+                process_scope = _build_process_scope_for_file(rel, feature_name, first_top_level_type, registration_function, self.installer_map, self.installer_method_map, self.scope_map, self.feature_catalog)
+                package_scope = _package_scope_for_process(process_scope)
 
                 fcat = self.feature_catalog.get(feature_name) or self.feature_catalog.get(first_top_level_type) or {}
                 feature_id = fcat.get("feature_id", first_top_level_type if first_top_level_type != "unknown" else feature_name)
@@ -928,7 +1022,7 @@ class HookCostScanner:
 
                 body = _extract_callback_body(text, m.end())
                 cb = _analyze_callback_body(body)
-                freq = _callback_frequency_class(target_method, body)
+                freq = _callback_frequency_class(target_class, target_method, body)
 
                 retained = "unknown"
                 if re.search(r"(?:Activity|View|Fragment|Window|Context)\s+[A-Za-z0-9_]+\s*=?\s*(?!null)", body or ""):
@@ -997,7 +1091,51 @@ def _to_jsonable(records: list[HookCostRecord]) -> list[dict[str, Any]]:
     return [r.as_dict() for r in records]
 
 
-def _write_cost_map(records: list[HookCostRecord], output: Path) -> None:
+def _regression_checks(source_root: Path) -> list[dict[str, Any]]:
+    """Static regression checks for P1B-0 zero-feature cost reductions."""
+    findings: list[dict[str, Any]] = []
+    installer = source_root / "installers" / "AndroidPackageInstaller.java"
+    if installer.exists():
+        text = installer.read_text(encoding="utf-8", errors="replace")
+        if "isAnyFeatureEnabled(MainModule.mPrefs)" in text:
+            findings.append({
+                "id": "EARLY_FEATURE_GATE_ANDROID",
+                "source": "installers/AndroidPackageInstaller.java",
+                "status": "pass",
+                "message": "isAnyFeatureEnabled gate present before FeatureRuntime/FeatureDispatcher",
+            })
+        else:
+            findings.append({
+                "id": "EARLY_FEATURE_GATE_ANDROID",
+                "source": "installers/AndroidPackageInstaller.java",
+                "status": "fail",
+                "message": "missing isAnyFeatureEnabled early gate",
+            })
+        if re.search(r"if\s*\(\s*listenerNeeded\s*\)\s*watchPreferences\.run\(\)", text):
+            findings.append({
+                "id": "GUARDED_WATCH_PREFERENCES_ANDROID",
+                "source": "installers/AndroidPackageInstaller.java",
+                "status": "pass",
+                "message": "watchPreferences.run() is gated by listenerNeeded",
+            })
+        elif "watchPreferences.run()" in text:
+            findings.append({
+                "id": "GUARDED_WATCH_PREFERENCES_ANDROID",
+                "source": "installers/AndroidPackageInstaller.java",
+                "status": "fail",
+                "message": "watchPreferences is still called unconditionally",
+            })
+        if "FeatureRuntime androidRuntime = null" in text or re.search(r"if\s*\([^)]*system_cleanshare[^)]*system_cleanopenwith[^)]*\).*\{[^}]*FeatureRuntime", text, re.S):
+            findings.append({
+                "id": "LAZY_FEATURE_RUNTIME_ANDROID",
+                "source": "installers/AndroidPackageInstaller.java",
+                "status": "pass",
+                "message": "FeatureRuntime is created only when a catalog feature may be enabled",
+            })
+    return findings
+
+
+def _write_cost_map(records: list[HookCostRecord], output: Path, source_root: Path | None = None) -> None:
     output.parent.mkdir(parents=True, exist_ok=True)
     data = {
         "schema_version": 1,
@@ -1006,7 +1144,9 @@ def _write_cost_map(records: list[HookCostRecord], output: Path) -> None:
         "total_records": len(records),
         "records": _to_jsonable(records),
     }
-    output.write_text(json.dumps(data, indent=2, ensure_ascii=False) + "\n", encoding="utf-8")
+    if source_root is not None:
+        data["regression_findings"] = _regression_checks(source_root)
+    output.write_text(json.dumps(data, indent=2, ensure_ascii=False) + "\n", encoding="utf-8", newline="\n")
 
 
 def main(argv: list[str] | None = None) -> int:
@@ -1018,7 +1158,7 @@ def main(argv: list[str] | None = None) -> int:
 
     scanner = HookCostScanner(args.source_root)
     records = scanner.scan()
-    _write_cost_map(records, args.output)
+    _write_cost_map(records, args.output, source_root=args.source_root)
     print(f"Wrote {len(records)} hook cost records to {args.output}")
 
     if args.verify_stability:
