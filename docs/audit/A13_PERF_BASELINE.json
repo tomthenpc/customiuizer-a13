@@ -1,0 +1,137 @@
+{
+  "schema_version": 1,
+  "project": "CustoMIUIzer A13",
+  "branch": "devin/a13-memory-performance-optimization",
+  "commit": "5ca30911e3fc41e80bfde7ac294218e9b855b8d3",
+  "application_id": "tv.withaibuild.customiuizer.r13",
+  "baseline_status": "RUNTIME_BASELINE_PENDING_DEVICE",
+  "description": "Machine-readable performance baseline. P0 contains the schema and one placeholder record. Real device records must be backfilled from out/a13-perf/*.json after running tools/a13_perf_probe.py on an A13 device.",
+  "records": [
+    {
+      "device": "PENDING_DEVICE",
+      "rom": "PENDING_ROM",
+      "android_version": "PENDING_VERSION",
+      "build_variant": "PENDING_VARIANT",
+      "measurement_time": "PENDING",
+      "measurement_method": "adb_shell_dumpsys_meminfo_and_proc",
+      "repetitions": 5,
+      "aggregation_method": "median",
+      "module_state": "enabled_features_off",
+      "process": {
+        "name": "manager_app",
+        "package": "tv.withaibuild.customiuizer.r13"
+      },
+      "scenario": "manager_home_idle",
+      "metrics": {
+        "total_pss_kb": {
+          "unit": "KiB",
+          "source": "adb shell dumpsys meminfo <pid>",
+          "value": null,
+          "unavailable_reason": "RUNTIME_BASELINE_PENDING_DEVICE"
+        },
+        "java_heap_kb": {
+          "unit": "KiB",
+          "source": "adb shell dumpsys meminfo <pid>",
+          "value": null,
+          "unavailable_reason": "RUNTIME_BASELINE_PENDING_DEVICE"
+        },
+        "native_heap_kb": {
+          "unit": "KiB",
+          "source": "adb shell dumpsys meminfo <pid>",
+          "value": null,
+          "unavailable_reason": "RUNTIME_BASELINE_PENDING_DEVICE"
+        },
+        "graphics_kb": {
+          "unit": "KiB",
+          "source": "adb shell dumpsys meminfo <pid>",
+          "value": null,
+          "unavailable_reason": "RUNTIME_BASELINE_PENDING_DEVICE"
+        },
+        "private_dirty_kb": {
+          "unit": "KiB",
+          "source": "adb shell dumpsys meminfo <pid>",
+          "value": null,
+          "unavailable_reason": "RUNTIME_BASELINE_PENDING_DEVICE"
+        },
+        "thread_count": {
+          "unit": "count",
+          "source": "/proc/<pid>/status",
+          "value": null,
+          "unavailable_reason": "RUNTIME_BASELINE_PENDING_DEVICE"
+        },
+        "cpu_time_ms": {
+          "unit": "ms",
+          "source": "/proc/<pid>/stat",
+          "value": null,
+          "unavailable_reason": "RUNTIME_BASELINE_PENDING_DEVICE"
+        },
+        "startup_total_time_ms": {
+          "unit": "ms",
+          "source": "adb shell am start -W",
+          "value": null,
+          "unavailable_reason": "RUNTIME_BASELINE_PENDING_DEVICE"
+        },
+        "gc_count": {
+          "unit": "count",
+          "source": "dumpsys procstats --hours 0",
+          "value": null,
+          "unavailable_reason": "RUNTIME_BASELINE_PENDING_DEVICE"
+        },
+        "gc_freed_objects": {
+          "unit": "count",
+          "source": "dumpsys procstats --hours 0",
+          "value": null,
+          "unavailable_reason": "RUNTIME_BASELINE_PENDING_DEVICE"
+        },
+        "binder_proxy_count": {
+          "unit": "count",
+          "source": "/proc/<pid>/status",
+          "value": null,
+          "unavailable_reason": "RUNTIME_BASELINE_PENDING_DEVICE"
+        },
+        "loaded_class_count": {
+          "unit": "count",
+          "source": "NOT_IMPLEMENTED_IN_PROBE",
+          "value": null,
+          "unavailable_reason": "RUNTIME_BASELINE_PENDING_DEVICE"
+        },
+        "process_restart_count": {
+          "unit": "count",
+          "source": "dumpsys procstats --hours 0 <package>",
+          "value": null,
+          "unavailable_reason": "RUNTIME_BASELINE_PENDING_DEVICE"
+        }
+      },
+      "raw_samples": [],
+      "median": {
+        "total_pss_kb": null,
+        "java_heap_kb": null,
+        "native_heap_kb": null,
+        "graphics_kb": null,
+        "private_dirty_kb": null,
+        "thread_count": null,
+        "cpu_time_ms": null,
+        "startup_total_time_ms": null,
+        "gc_count": null,
+        "gc_freed_objects": null,
+        "binder_proxy_count": null,
+        "loaded_class_count": null,
+        "process_restart_count": null
+      },
+      "notes": "Placeholder record generated during A13-PERF-P0. Replace with real device output from tools/a13_perf_probe.py.",
+      "unavailable_reason": "RUNTIME_BASELINE_PENDING_DEVICE"
+    }
+  ],
+  "regression_gates": [
+    "Each optimization must compare against a fixed baseline.",
+    "Device, ROM, build type, and scenario must match.",
+    "At least 5 repetitions with median aggregation.",
+    "Memory gains below 5% with increased complexity are not accepted.",
+    "Cold start or key interaction regression over 5% is blocking.",
+    "Hook count, covered process count, and resident thread count must not increase.",
+    "Do not claim optimization by disabling existing features.",
+    "Do not claim runtime memory drop with only APK size reduction.",
+    "Do not report only Java Heap while ignoring Native, Graphics, and PSS.",
+    "Data that cannot be stably reproduced is not acceptable evidence."
+  ]
+}
