@@ -71,7 +71,7 @@ public final class SystemUiInstaller {
             });
             GlobalActions.setupStatusBar(lpparam);
 
-            if (currentTime - restartTime < 10000) {
+            if (isWithinSystemUiRestartGuard(restartTime, currentTime)) {
                 return;
             }
 
@@ -482,5 +482,14 @@ public final class SystemUiInstaller {
             base = base.substring("pref_key_".length());
         }
         return base.startsWith("controls_") || base.startsWith("system_");
+    }
+
+    /**
+     * Pure predicate for the restart-time guard. Returns true when the elapsed
+     * time since the last recorded SystemUI restart is shorter than the guard
+     * window, indicating that the heavy runtime setup should be skipped this pass.
+     */
+    static boolean isWithinSystemUiRestartGuard(long restartTime, long currentTime) {
+        return currentTime - restartTime < 10000;
     }
 }
