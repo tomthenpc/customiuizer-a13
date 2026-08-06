@@ -1,36 +1,67 @@
+# IDE and editors
 *.iml
-.gradle
-.kotlin/
-app/release/*
-app/standalone/*
-/local.properties
-.devin/
-*.log
-/.idea/caches
-/.idea/libraries
+/.idea/caches/
+/.idea/libraries/
 /.idea/modules.xml
 /.idea/workspace.xml
 /.idea/navEditor.xml
 /.idea/assetWizardSettings.xml
-.DS_Store
-/build
-/captures
-.externalNativeBuild
 /.idea/misc.xml
-app/develop/
-.idea/.name
+/.idea/.name
+/.vscode/
+
+# Local tooling
+/.devin/
+
+# Gradle, Kotlin and Android build output
+/.gradle/
+/.kotlin/
+/build/
+/captures/
+.externalNativeBuild/
+.cxx/
+/out/
+/app/release/
+/app/develop/
+/app/standalone/
+
+# Android package artifacts
+*.apk
+*.aab
+*.apks
+
+# Local configuration and signing material
+/local.properties
 keystore.properties
+secrets.properties
 *.jks
 *.keystore
 *.p12
 *.pfx
-secrets.properties
-backup/
+
+# Logs, backups and temporary files
+*.log
 *.bak
+*.tmp
+*.temp
+*.orig
+*.rej
+*.swp
+*.swo
+backup/
+
+# Python cache
 __pycache__/
 *.py[cod]
+
+# OS-generated files
+.DS_Store
+Thumbs.db
+desktop.ini
+
+# Local ROM intelligence inputs and outputs
 /local-rom-samples/
-/build/rom-intelligence/
 *.rom-sample
 *.rom.json
 rom-target-diff.md
+/k7_window_dump.xml
