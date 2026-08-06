@@ -19,7 +19,7 @@ CustoMIUIzer A13 是面向 Android 13 的 MIUI / HyperOS 系统界面与交互�
 - libxposed `minApiVersion=101`、`targetApiVersion=102`；
 - 不支持 Android 14 及以上版本。
 
-已知实机基线：Redmi Note 11T Pro（`xaga`）、MIUI `V14.0.10.0.TLOINXM`、LSPosed 2.1.1 / [Vector v2.2](https://github.com/JingMatrix/Vector/releases/tag/v2.2)。HyperOS 1 / Android 13 仍需按 ROM 提供完整 LSPosed / Vector 日志验证。
+已知实机基线：Redmi Note 11T Pro（`xaga`）、MIUI `V14.0.10.0.TLOINXM`、LSPosed 2.1.1。HyperOS 1 / Android 13 仍需按 ROM 提供完整 LSPosed 日志验证。
 
 ## 构建与开发
 
