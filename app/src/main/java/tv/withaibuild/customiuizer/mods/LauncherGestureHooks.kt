@@ -23,9 +23,46 @@ import tv.withaibuild.customiuizer.mods.utils.XposedHelpers
 @Suppress("UNUSED_PARAMETER")
 object LauncherGestureHooks {
 
-    private var mHotSeatDownX = 0f
-    private var mHotSeatDownY = 0f
-    private var mHotSeatDownTime = 0L
+    private const val HOTSEAT_GESTURE_STATE_KEY =
+        "customiuizer.hotseatGestureState"
+
+    internal class HotSeatGestureState {
+        var densityDpi: Int = Int.MIN_VALUE
+            private set
+        var minDistance: Int = 0
+            private set
+        var velocityThreshold: Int = 0
+            private set
+        var touchSlop: Int = 0
+            private set
+
+        var downX: Float = 0f
+        var downY: Float = 0f
+        var downTime: Long = 0L
+
+        fun updateThresholdsIfNeeded(
+            newDensityDpi: Int,
+            density: Float,
+            newTouchSlop: Int
+        ): Boolean {
+            if (densityDpi == newDensityDpi) return false
+
+            densityDpi = newDensityDpi
+            minDistance = Math.round(75f * density)
+            velocityThreshold = Math.round(33f * density)
+            touchSlop = newTouchSlop
+            return true
+        }
+    }
+
+    private fun hotSeatGestureState(hotSeat: ViewGroup): HotSeatGestureState {
+        var state = XposedHelpers.getAdditionalInstanceField(hotSeat, HOTSEAT_GESTURE_STATE_KEY) as? HotSeatGestureState
+        if (state == null) {
+            state = HotSeatGestureState()
+            XposedHelpers.setAdditionalInstanceField(hotSeat, HOTSEAT_GESTURE_STATE_KEY, state)
+        }
+        return state
+    }
 
     @JvmStatic
     fun HomescreenSwipesHook(lpparam: PackageReadyParam) {
@@ -139,32 +176,39 @@ object LauncherGestureHooks {
             override fun before(param: BeforeHookCallback) {
                 val ev = param.getArg(0) as? MotionEvent ?: return
                 val hotSeat = param.getThisObject() as? ViewGroup ?: return
-                val helperContext = hotSeat.context ?: return
-                val density = helperContext.resources.displayMetrics.density
-                val minDist = Math.round(75 * density)
-                val thresholdVel = Math.round(33 * density)
-                val touchSlop = ViewConfiguration.get(helperContext).scaledTouchSlop
+                if (hotSeat.context == null) return
+                val state = hotSeatGestureState(hotSeat)
+
+                val resources = hotSeat.context.resources
+                val densityDpi = resources.configuration.densityDpi
+                val density: Float
+                val touchSlop: Int
+                if (state.densityDpi != densityDpi) {
+                    density = resources.displayMetrics.density
+                    touchSlop = ViewConfiguration.get(hotSeat.context).scaledTouchSlop
+                } else {
+                    density = 0f
+                    touchSlop = 0
+                }
+                state.updateThresholdsIfNeeded(densityDpi, density, touchSlop)
 
                 when (ev.action) {
                     MotionEvent.ACTION_DOWN -> {
-                        mHotSeatDownX = ev.x
-                        mHotSeatDownY = ev.y
-                        mHotSeatDownTime = SystemClock.uptimeMillis()
+                        state.downX = ev.x
+                        state.downY = ev.y
+                        state.downTime = SystemClock.uptimeMillis()
                     }
                     MotionEvent.ACTION_UP -> {
-                        // helperContext is recomputed above from hotSeat.context on every
-                        // dispatchTouchEvent call, including this ACTION_UP, so there is no
-                        // need to carry a Context across gestures in a static field.
-                        val ctx = helperContext
-                        val dx = ev.x - mHotSeatDownX
-                        val dy = ev.y - mHotSeatDownY
-                        val dt = SystemClock.uptimeMillis() - mHotSeatDownTime
+                        val ctx = hotSeat.context
+                        val dx = ev.x - state.downX
+                        val dy = ev.y - state.downY
+                        val dt = SystemClock.uptimeMillis() - state.downTime
                         if (dt == 0L) return
                         val velocity = kotlin.math.abs(dx) * 1000 / dt
-                        if (kotlin.math.abs(dy) <= touchSlop && velocity > thresholdVel) {
-                            if (dx > minDist) {
+                        if (kotlin.math.abs(dy) <= state.touchSlop && velocity > state.velocityThreshold) {
+                            if (dx > state.minDistance) {
                                 GlobalActions.handleAction(ctx, "launcher_swiperight")
-                            } else if (-dx > minDist) {
+                            } else if (-dx > state.minDistance) {
                                 GlobalActions.handleAction(ctx, "launcher_swipeleft")
                             }
                         }
@@ -205,18 +249,23 @@ object LauncherGestureHooks {
 
     @JvmStatic
     fun FSGesturesHook(lpparam: PackageReadyParam) {
+        val baseRecentsClass = XposedHelpers.findClass(
+            "com.miui.home.recents.BaseRecentsImpl",
+            lpparam.classLoader
+        )
+
         ModuleHelper.findAndHookMethod("com.miui.home.launcher.DeviceConfig", lpparam.classLoader, "usingFsGesture", HookerClassHelper.returnConstant(true))
 
         ModuleHelper.findAndHookMethodSilently("com.miui.home.recents.BaseRecentsImpl", lpparam.classLoader, "createAndAddNavStubView", object : MethodHook() {
             override fun before(param: BeforeHookCallback) {
-                val fsg = XposedHelpers.getAdditionalStaticField(XposedHelpers.findClass("com.miui.home.recents.BaseRecentsImpl", lpparam.classLoader), "REAL_FORCE_FSG_NAV_BAR") as? Boolean ?: false
+                val fsg = XposedHelpers.getAdditionalStaticField(baseRecentsClass, "REAL_FORCE_FSG_NAV_BAR") as? Boolean ?: false
                 if (!fsg) param.returnAndSkip(null)
             }
         })
 
         ModuleHelper.findAndHookMethodSilently("com.miui.home.recents.BaseRecentsImpl", lpparam.classLoader, "updateFsgWindowState", object : MethodHook() {
             override fun after(param: AfterHookCallback) {
-                val fsg = XposedHelpers.getAdditionalStaticField(XposedHelpers.findClass("com.miui.home.recents.BaseRecentsImpl", lpparam.classLoader), "REAL_FORCE_FSG_NAV_BAR") as? Boolean ?: false
+                val fsg = XposedHelpers.getAdditionalStaticField(baseRecentsClass, "REAL_FORCE_FSG_NAV_BAR") as? Boolean ?: false
                 if (fsg) return
 
                 val mNavStubView = XposedHelpers.getObjectField(param.getThisObject(), "mNavStubView")
@@ -234,7 +283,7 @@ object LauncherGestureHooks {
 
                 for (el in Thread.currentThread().stackTrace) {
                     if (el.className == "com.miui.home.recents.BaseRecentsImpl") {
-                        XposedHelpers.setAdditionalStaticField(XposedHelpers.findClass("com.miui.home.recents.BaseRecentsImpl", lpparam.classLoader), "REAL_FORCE_FSG_NAV_BAR", param.getResult())
+                        XposedHelpers.setAdditionalStaticField(baseRecentsClass, "REAL_FORCE_FSG_NAV_BAR", param.getResult())
                         param.setResult(true)
                         return
                     }
