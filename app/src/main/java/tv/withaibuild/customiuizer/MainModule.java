@@ -162,9 +162,15 @@ public class MainModule extends XposedModule {
         final boolean isLauncherPkg = scope == ProcessScope.LAUNCHER;
 
         if (isLauncherPkg) {
-            LauncherInstaller.installPackageReady(lpparam);
-            LauncherInstaller.installApplication(lpparam);
-            watchPreferenceChange();
+            if (LauncherInstaller.hasAnyLauncherPackageReadyFeature(mPrefs)) {
+                LauncherInstaller.installPackageReady(lpparam);
+            }
+            if (LauncherInstaller.hasAnyLauncherApplicationFeature(mPrefs)) {
+                LauncherInstaller.installApplication(lpparam);
+            }
+            if (LauncherInstaller.hasAnyLauncherApplicationFeature(mPrefs)) {
+                watchPreferenceChange();
+            }
         }
     }
 

@@ -110,10 +110,28 @@ public final class LauncherInstaller {
         });
     }
 
-    // Startup family predicate for Launcher
-    public static boolean hasAnyLauncherStartupFeature(PrefMap<String, Object> prefs) {
-        if (prefs.getInt("launcher_swipedown_action", 1) != 1 || prefs.getInt("launcher_swipeup_action", 1) != 1 || prefs.getInt("launcher_swipedown2_action", 1) != 1 || prefs.getInt("launcher_swipeup2_action", 1) != 1) return true;
-        if (prefs.getInt("launcher_swipeleft_action", 1) != 1 || prefs.getInt("launcher_swiperight_action", 1) != 1) return true;
+    // Startup family predicates for Launcher
+
+    public static boolean hasAnyLauncherPackageReadyFeature(PrefMap<String, Object> prefs) {
+        if (prefs.getInt("launcher_horizmargin", 0) > 0) return true;
+        if (prefs.getInt("launcher_indicatorheight", 9) > 9) return true;
+        if (prefs.getInt("launcher_indicator_topmargin", 0) > 0) return true;
+        if (prefs.getBoolean("launcher_unlockgrids")) return true;
+        if (prefs.getBoolean("launcher_docktitles")) return true;
+        if (prefs.getBoolean("launcher_disable_log")) return true;
+        if (prefs.getInt("launcher_topmargin", 0) > 0) return true;
+        if (prefs.getInt("launcher_dock_topmargin", 0) > 0) return true;
+        if (prefs.getInt("launcher_dock_bottommargin", 0) > 0) return true;
+        return false;
+    }
+
+    public static boolean hasAnyLauncherApplicationFeature(PrefMap<String, Object> prefs) {
+        if (prefs.getInt("launcher_swipedown_action", 1) != 1 ||
+                prefs.getInt("launcher_swipeup_action", 1) != 1 ||
+                prefs.getInt("launcher_swipedown2_action", 1) != 1 ||
+                prefs.getInt("launcher_swipeup2_action", 1) != 1) return true;
+        if (prefs.getInt("launcher_swipeleft_action", 1) != 1 ||
+                prefs.getInt("launcher_swiperight_action", 1) != 1) return true;
         if (prefs.getInt("launcher_shake_action", 1) != 1) return true;
         if (prefs.getInt("launcher_doubletap_action", 1) != 1) return true;
         if (prefs.getInt("launcher_pinch_action", 1) != 1) return true;
@@ -151,19 +169,14 @@ public final class LauncherInstaller {
         if (prefs.getInt("launcher_horizwidgetmargin", 0) > 0) return true;
         if (prefs.getInt("controls_fsg_assist_left_action", 1) > 1 || prefs.getInt("controls_fsg_assist_right_action", 1) > 1) return true;
         if (prefs.getInt("controls_fsg_swipeandstop_action", 1) > 1) return true;
-        if ((prefs.getStringAsInt("launcher_closefolders", 1) > 1 || prefs.getBoolean("launcher_closedrawer"))) return true;
+        if (prefs.getStringAsInt("launcher_closefolders", 1) > 1 || prefs.getBoolean("launcher_closedrawer")) return true;
         if (prefs.getBoolean("system_resizablewidgets")) return true;
         if (prefs.getBoolean("launcher_noclockhide")) return true;
         if (prefs.getBoolean("launcher_nowidgetonly")) return true;
-        if (prefs.getInt("launcher_horizmargin", 0) > 0) return true;
-        if (prefs.getInt("launcher_indicatorheight", 9) > 9) return true;
-        if (prefs.getInt("launcher_indicator_topmargin", 0) > 0) return true;
-        if (prefs.getBoolean("launcher_unlockgrids")) return true;
-        if (prefs.getBoolean("launcher_docktitles")) return true;
-        if (prefs.getBoolean("launcher_disable_log")) return true;
-        if (prefs.getInt("launcher_topmargin", 0) > 0) return true;
-        if (prefs.getInt("launcher_dock_topmargin", 0) > 0) return true;
-        if (prefs.getInt("launcher_dock_bottommargin", 0) > 0) return true;
         return false;
+    }
+
+    public static boolean hasAnyLauncherStartupFeature(PrefMap<String, Object> prefs) {
+        return hasAnyLauncherPackageReadyFeature(prefs) || hasAnyLauncherApplicationFeature(prefs);
     }
 }
