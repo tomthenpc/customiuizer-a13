@@ -1,21 +1,21 @@
 package com.android.systemui
 
-class Dependency {
-    companion object {
-        @JvmField
-        var instances: MutableMap<Class<*>, Any> = mutableMapOf()
+import com.android.systemui.statusbar.notification.policy.AppMiniWindowManager
 
-        @JvmStatic
-        fun get(clazz: Class<*>): Any? = instances[clazz]
+object Dependency {
+    private val mocks = mutableMapOf<Class<*>, Any>()
 
-        @JvmStatic
-        fun setMock(clazz: Class<*>, instance: Any) {
-            instances[clazz] = instance
-        }
+    @JvmStatic
+    fun get(cls: Class<*>): Any? =
+        mocks[cls] ?: if (cls == AppMiniWindowManager::class.java) AppMiniWindowManager.getInstance() else null
 
-        @JvmStatic
-        fun clear() {
-            instances.clear()
-        }
+    @JvmStatic
+    fun setMock(cls: Class<*>, instance: Any) {
+        mocks[cls] = instance
+    }
+
+    @JvmStatic
+    fun clear() {
+        mocks.clear()
     }
 }

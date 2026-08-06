@@ -1171,6 +1171,133 @@ def _regression_checks_p1b3(source_root: Path) -> list[dict[str, Any]]:
     return findings
 
 
+def _regression_checks_p1b4b(source_root: Path) -> list[dict[str, Any]]:
+    """Static regression checks for P1B-4B notification intent launch hot-path."""
+    findings: list[dict[str, Any]] = []
+    hook_file = source_root / "mods" / "SystemUINotificationHooks.kt"
+    if not hook_file.exists():
+        return findings
+
+    text = hook_file.read_text(encoding="utf-8", errors="replace")
+    tracker = ScopeTracker(text)
+
+    fun_match = re.search(r"\s*fun\s+OpenNotifyInFloatingWindowHook\s*\([^)]*\)\s*\{", text)
+    if not fun_match:
+        findings.append({
+            "id": "NOTIFY_INTENT_HOT_PATH_FUNCTION_PRESENT",
+            "source": "mods/SystemUINotificationHooks.kt",
+            "status": "fail",
+            "message": "OpenNotifyInFloatingWindowHook function not found",
+        })
+        return findings
+
+    open_brace = fun_match.end() - 1
+    close_brace = tracker.find_matching_close(open_brace)
+    if close_brace is None:
+        findings.append({
+            "id": "NOTIFY_INTENT_HOT_PATH_FUNCTION_PRESENT",
+            "source": "mods/SystemUINotificationHooks.kt",
+            "status": "fail",
+            "message": "Could not parse OpenNotifyInFloatingWindowHook function body",
+        })
+        return findings
+
+    fun_body = text[open_brace:close_brace + 1]
+
+    # Feature must be gated before any reflection/class lookup.
+    if re.search(r"if\s*\(\s*!\s*MainModule\.mPrefs\.getBoolean\s*\(\s*\"system_notify_openinfw\"\s*\)\s*\)\s*return", fun_body):
+        findings.append({
+            "id": "NOTIFY_INTENT_EARLY_FEATURE_GATE",
+            "source": "mods/SystemUINotificationHooks.kt",
+            "status": "pass",
+            "message": "system_notify_openinfw is checked before reflection in OpenNotifyInFloatingWindowHook",
+        })
+    else:
+        findings.append({
+            "id": "NOTIFY_INTENT_EARLY_FEATURE_GATE",
+            "source": "mods/SystemUINotificationHooks.kt",
+            "status": "fail",
+            "message": "system_notify_openinfw early gate missing in OpenNotifyInFloatingWindowHook",
+        })
+
+    # The target method must still be hooked.
+    if re.search(r"ModuleHelper\.hookAllMethods.*startNotificationIntent", fun_body):
+        findings.append({
+            "id": "NOTIFY_INTENT_TARGET_HOOKED",
+            "source": "mods/SystemUINotificationHooks.kt",
+            "status": "pass",
+            "message": "startNotificationIntent is still hooked via ModuleHelper.hookAllMethods",
+        })
+    else:
+        findings.append({
+            "id": "NOTIFY_INTENT_TARGET_HOOKED",
+            "source": "mods/SystemUINotificationHooks.kt",
+            "status": "fail",
+            "message": "startNotificationIntent hook no longer present",
+        })
+
+    # Reflection lookups should happen before the MethodHook callback object.
+    first_callback = re.search(r"\bobject\s*:\s*MethodHook\s*\(\s*\)\s*\{", fun_body)
+    if first_callback:
+        pre_callback = fun_body[:first_callback.start()]
+        if re.search(r"\b(findClass|findClassIfExists|findMethodBestMatch|findFieldIfExists)\b", pre_callback):
+            findings.append({
+                "id": "NOTIFY_INTENT_REGISTRATION_TIME_REFLECTION",
+                "source": "mods/SystemUINotificationHooks.kt",
+                "status": "pass",
+                "message": "Reflection lookups in OpenNotifyInFloatingWindowHook are performed before the callback",
+            })
+        else:
+            findings.append({
+                "id": "NOTIFY_INTENT_REGISTRATION_TIME_REFLECTION",
+                "source": "mods/SystemUINotificationHooks.kt",
+                "status": "fail",
+                "message": "No registration-time reflection found in OpenNotifyInFloatingWindowHook",
+            })
+
+        callback_region = fun_body[first_callback.start():]
+        forbidden = re.search(r"\b(findClass|findClassIfExists|findMethodBestMatch|findFieldIfExists|findField|findMethod)\b", callback_region)
+        if forbidden:
+            findings.append({
+                "id": "NOTIFY_INTENT_NO_CALLBACK_REFLECTION_LOOKUP",
+                "source": "mods/SystemUINotificationHooks.kt",
+                "status": "fail",
+                "message": f"Reflection lookup {forbidden.group(0)} found in the OpenNotifyInFloatingWindowHook callback",
+            })
+        else:
+            findings.append({
+                "id": "NOTIFY_INTENT_NO_CALLBACK_REFLECTION_LOOKUP",
+                "source": "mods/SystemUINotificationHooks.kt",
+                "status": "pass",
+                "message": "No reflection lookups in the OpenNotifyInFloatingWindowHook callback",
+            })
+
+        # The callback should still obtain the foreground package name dynamically.
+        if re.search(r"ProcessManager\.getForegroundInfo\s*\(", callback_region):
+            findings.append({
+                "id": "NOTIFY_INTENT_FOREGROUND_QUERY_RETAINED",
+                "source": "mods/SystemUINotificationHooks.kt",
+                "status": "pass",
+                "message": "Foreground package query retained in the callback",
+            })
+        else:
+            findings.append({
+                "id": "NOTIFY_INTENT_FOREGROUND_QUERY_RETAINED",
+                "source": "mods/SystemUINotificationHooks.kt",
+                "status": "fail",
+                "message": "ProcessManager.getForegroundInfo is missing from the callback",
+            })
+    else:
+        findings.append({
+            "id": "NOTIFY_INTENT_REGISTRATION_TIME_REFLECTION",
+            "source": "mods/SystemUINotificationHooks.kt",
+            "status": "fail",
+            "message": "Could not locate a MethodHook callback in OpenNotifyInFloatingWindowHook",
+        })
+
+    return findings
+
+
 def _regression_checks(source_root: Path) -> list[dict[str, Any]]:
     """Static regression checks for P1B-0 zero-feature cost reductions."""
     findings: list[dict[str, Any]] = []
@@ -1213,6 +1340,7 @@ def _regression_checks(source_root: Path) -> list[dict[str, Any]]:
                 "message": "FeatureRuntime is created only when a catalog feature may be enabled",
             })
     findings.extend(_regression_checks_p1b3(source_root))
+    findings.extend(_regression_checks_p1b4b(source_root))
     return findings
 
 

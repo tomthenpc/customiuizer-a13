@@ -3,6 +3,7 @@ package tv.withaibuild.customiuizer.mods
 import android.annotation.SuppressLint
 import android.app.PendingIntent
 import android.content.ComponentName
+import android.service.notification.StatusBarNotification
 import android.content.Context
 import android.content.Intent
 import android.os.PowerManager
@@ -25,6 +26,8 @@ import tv.withaibuild.customiuizer.utils.PrefPair
 import java.io.File
 import java.io.FileOutputStream
 import java.io.InputStream
+import java.lang.reflect.Field
+import java.lang.reflect.Method
 
 @Suppress("UNUSED_PARAMETER")
 object SystemUINotificationHooks {
@@ -124,15 +127,87 @@ object SystemUINotificationHooks {
 
     @JvmStatic
     fun OpenNotifyInFloatingWindowHook(lpparam: PackageReadyParam) {
-        ModuleHelper.hookAllMethods("com.android.systemui.statusbar.phone.MiuiStatusBarNotificationActivityStarter", lpparam.classLoader, "startNotificationIntent", object : MethodHook() {
+        if (!MainModule.mPrefs.getBoolean("system_notify_openinfw")) return
+        val classLoader = lpparam.classLoader
+        val starterClass = try {
+            XposedHelpers.findClass("com.android.systemui.statusbar.phone.MiuiStatusBarNotificationActivityStarter", classLoader)
+        } catch (t: Throwable) {
+            return
+        }
+        val dependencyClass = try {
+            XposedHelpers.findClass("com.android.systemui.Dependency", classLoader)
+        } catch (t: Throwable) {
+            return
+        }
+        val appMiniWindowManagerClass = XposedHelpers.findClassIfExists(
+            "com.android.systemui.statusbar.notification.policy.AppMiniWindowManager",
+            classLoader
+        ) ?: return
+        val statusBarNotificationClass = try {
+            XposedHelpers.findClass("android.service.notification.StatusBarNotification", classLoader)
+        } catch (t: Throwable) {
+            return
+        }
+
+        val isSubstituteNotificationMethod = try {
+            XposedHelpers.findMethodBestMatch(statusBarNotificationClass, "isSubstituteNotification")
+                .also { it.isAccessible = true }
+        } catch (t: Throwable) {
+            null
+        }
+
+        val dependencyGetMethod = try {
+            XposedHelpers.findMethodBestMatch(dependencyClass, "get", Class::class.java)
+                .also { it.isAccessible = true }
+        } catch (t: Throwable) {
+            return
+        }
+        val launchMiniWindowActivityMethod = try {
+            XposedHelpers.findMethodBestMatch(
+                appMiniWindowManagerClass,
+                "launchMiniWindowActivity",
+                String::class.java,
+                PendingIntent::class.java
+            ).also { it.isAccessible = true }
+        } catch (t: Throwable) {
+            return
+        }
+
+        val mSbnFieldsByMethod = HashMap<Method, Field>()
+        for (method in starterClass.declaredMethods) {
+            if (method.name != "startNotificationIntent") continue
+            val paramTypes = method.parameterTypes
+            if (paramTypes.size <= 2) continue
+            val entryClass = paramTypes[2]
+            val field = XposedHelpers.findFieldIfExists(entryClass, "mSbn") ?: continue
+            field.isAccessible = true
+            mSbnFieldsByMethod[method] = field
+        }
+        if (mSbnFieldsByMethod.isEmpty()) return
+
+        ModuleHelper.hookAllMethods(starterClass, "startNotificationIntent", object : MethodHook() {
             override fun before(param: BeforeHookCallback) {
                 val pendingIntent = param.getArg(0) as? PendingIntent ?: return
-                val mSbn = XposedHelpers.getObjectField(param.getArg(2), "mSbn") ?: return
-                val pkgName: String = if (XposedHelpers.callMethod(mSbn, "isSubstituteNotification") as? Boolean == true) {
-                    XposedHelpers.getObjectField(mSbn, "mPkgName") as? String ?: ""
+                val member = param.getMember() as? Method ?: return
+                val mSbnField = mSbnFieldsByMethod[member] ?: return
+                val mSbn = try {
+                    mSbnField.get(param.getArg(2))
+                } catch (t: Throwable) {
+                    null
+                } ?: return
+
+                val isSubstitute = try {
+                    isSubstituteNotificationMethod?.invoke(mSbn) as? Boolean
+                } catch (t: Throwable) {
+                    null
+                } ?: false
+
+                val pkgName: String = if (isSubstitute) {
+                    (mSbn as? StatusBarNotification)?.getPackageName() ?: ""
                 } else {
                     pendingIntent.creatorPackage ?: ""
                 }
+
                 val foregroundInfo = ProcessManager.getForegroundInfo()
                 if (foregroundInfo != null) {
                     val topPackage = foregroundInfo.mForegroundPackageName
@@ -140,18 +215,25 @@ object SystemUINotificationHooks {
                         return
                     }
                 }
+
                 val whitelist = MainModule.mPrefs.getBoolean("system_notify_openinfw_in_whitelist")
-                val appInList = MainModule.mPrefs.getStringSet("system_notify_openinfw_apps").contains(pkgName)
+                val appSet = MainModule.mPrefs.getStringSet("system_notify_openinfw_apps")
+                val appInList = appSet.contains(pkgName)
                 if (whitelist xor appInList) {
                     return
                 }
-                val Dependency = XposedHelpers.findClass("com.android.systemui.Dependency", lpparam.classLoader)
-                val AppMiniWindowManager = XposedHelpers.callStaticMethod(
-                    Dependency,
-                    "get",
-                    XposedHelpers.findClassIfExists("com.android.systemui.statusbar.notification.policy.AppMiniWindowManager", lpparam.classLoader)
-                )
-                XposedHelpers.callMethod(AppMiniWindowManager, "launchMiniWindowActivity", pkgName, pendingIntent)
+
+                val appMiniWindowManager = try {
+                    dependencyGetMethod.invoke(null, appMiniWindowManagerClass)
+                } catch (t: Throwable) {
+                    null
+                } ?: return
+
+                try {
+                    launchMiniWindowActivityMethod.invoke(appMiniWindowManager, pkgName, pendingIntent)
+                } catch (t: Throwable) {
+                    return
+                }
                 param.returnAndSkip(null)
             }
         })
