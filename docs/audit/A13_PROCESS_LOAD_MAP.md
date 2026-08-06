@@ -239,3 +239,50 @@ P1A 未修改源码，仅记录以下待验证/优化项：
 4. `MainModule.onPackageReady` 中是否先构建完整 installer list 再逐项判断（目前是 `if (scope == ...)` 分支，未构建 list）。
 5. Kotlin `object` / `companion object` 是否在各自 installer 调用前发生静态初始化。
 6. 同一偏好键是否被多个 installer 重复读取。
+
+## 7. P1B-0 实施记录
+
+### 7.1 已实施的零功能成本降低
+
+#### `AndroidPackageInstaller` 延迟初始化与监听门控
+
+- **位置**：<ref_snippet file="C:\Users\tv\Downloads\Peengeek\customiuizer-a13-forDevin\app\src\main\java\tv\withaibuild\customiuizer\installers\AndroidPackageInstaller.java" lines="25-69" />
+- **进程**：`android` 包主进程（`ProcessScope.ANDROID_PACKAGE`）
+- **修改类型**：`EARLIER_PROCESS_GATE` + `FEATURE_OFF_NO_REGISTRATION` + `LAZY_FEATURE_CLASS_LOAD`
+- **静态证据**：
+  - 所有相关功能默认关闭（`system_statusbarheight` 默认 `19`、`controls_navbarheight` 默认 `19`、`system_allrotations2` 默认 `1`、`system_rotateanim` 默认 `1`、`system_cleanshare` 默认 `false`、`system_cleanopenwith` 默认 `false`）。
+  - 原先 `FeatureRuntime`、`FeatureDispatcher` 与 `watchPreferences.run()` 在 package 确认后立即执行，与功能是否启用无关。
+- **修改后行为**：
+  - 包名校验后增加 `isAnyFeatureEnabled(MainModule.mPrefs)` 校验；全部关闭时直接返回，不再引用 `FeatureDispatcher`、`FeatureRuntime` 和 mods 类。
+  - `FeatureRuntime` 仅在 `system_cleanshare` 或 `system_cleanopenwith` 启用时创建。
+  - `watchPreferences.run()` 仅在 catalog feature 真正安装成功后（`listenerNeeded`）调用。
+- **行为等价证明**：
+  - 功能关闭时，原代码不会注册任何 Hook：`FeatureDispatcher.installById` 会检查 catalog condition，条件 false 时不安装；资源替换分支也因 `if` 条件不执行；因此不注册 `watchPreferenceChange` 与无 Hook 的状态等价。
+  - 功能开启时，原路径：创建 `FeatureRuntime` -> 调用 `FeatureDispatcher.installById` -> 资源替换 -> `watchPreferences.run()`。新路径：创建 `FeatureRuntime` -> 调用 `FeatureDispatcher.installById`（记录是否 listenerNeeded）-> 资源替换 -> 若 catalog 安装成功则 `watchPreferences.run()`。catalog 功能 `configReloadMode = NONE`/`REBOOT`，运行时重新加载需要进程重启，因此 listener 是否注册对当前生命周期行为无影响。
+- **新增测试**：`app/src/test/java/tv/withaibuild/customiuizer/installers/AndroidPackageInstallerTest.kt`
+- **回归扫描**：`a13_hook_cost_scan.py` 在 `regression_findings` 中对此门控进行静态检查，结果 `pass`。
+
+### 7.2 未实施候选及阻塞原因
+
+| 候选 | 阻塞原因 | 证据 |
+|------|----------|------|
+| `PackagePermissions` 无条件 Hook | 无对应偏好开关；`condition = { true }`；标记为核心权限服务 | `FeatureCatalog` 中 `packagePermissions` 无 `preferenceKeys` |
+| `SystemUIApplication#onCreate` 无条件 Hook | `setupStatusBar` 为多个 status bar 资源替换的入口；无法在不列出所有相关偏好的情况下安全早退 | `SystemUIStatusBarHooks.setupStatusBar` 内多资源分支 |
+| `Launcher Application#attach` 无条件 Hook | `noClockHide`/`noWidgetOnly` 等 catalog feature 直接在该回调中安装；需完整 OR 门控且默认状态复杂，超出 P1B-0 最小范围 | `LauncherInstaller.handleLoadLauncher` 行 60/67 直接调用 `FeatureDispatcher.installById` |
+
+### 7.3 修改前后静态计数
+
+| 指标 | P1A（修改前） | P1B-0（修改后） | 变化说明 |
+|------|---------------|-----------------|----------|
+| `android` 包 `watchPreferences` 注册点 | 1 个无条件 | 1 个有条件 | 仅 catalog feature 启用时注册 |
+| `AndroidPackageInstaller` 中 `FeatureRuntime` 创建点 | 1 个无条件 | 1 个有条件 | 仅相关功能启用时创建 |
+| Hook call site 总数 | 669 | 669 | 未新增/删除 Hook；仅减少 zero-feature 路径 |
+| `registered_when_feature_disabled` | 2 | 2 | `PackagePermissions` 仍为无条件 |
+| `MULTI_PROCESS` 记录 | 26 | 18 | 方法级进程映射更准确 |
+| `SYSTEM_UI` | 201 | 243 | `SystemNotificationMoreHooks` 通知菜单等正确归属 SystemUI |
+| `SYSTEM_SERVER` | 287 | 208 | 上述校正结果 |
+
+### 7.4 运行时开关语义判断
+
+- `AndroidPackageInstaller` 涉及功能（`system_cleanshare`、`system_cleanopenwith`、`system_allrotations2`、`system_rotateanim`、`system_statusbarheight`、`controls_navbarheight`）的 catalog spec 配置为 `configReloadMode = NONE` 或 `REBOOT`，运行时即时切换不生效，因此不注册 listener 不改变用户可见行为。
+- 资源替换类功能不支持运行时热重载，无需 listener。
