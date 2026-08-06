@@ -8,7 +8,7 @@ CustoMIUIzer A13 是面向 **MIUI 14 / Android 13** 的系统界面与交互定�
 - 应用 ID：`tv.withaibuild.customiuizer.r13`
 - 源码仓库：<https://github.com/tomthenpc/customiuizer-a13>
 - 用户下载：<https://github.com/Xposed-Modules-Repo/tv.withaibuild.customiuizer.r13/releases>
-- 实装框架：[Vector v2.2](https://github.com/JingMatrix/Vector/releases/tag/v2.2)
+- 实装框架：LSPosed / Vector
 
 ## 核心功能
 
@@ -25,12 +25,12 @@ CustoMIUIzer A13 是面向 **MIUI 14 / Android 13** 的系统界面与交互定�
 | 兼容探测目标 | HyperOS 1 / Android 13，具体功能取决于 ROM 与系统应用版本 |
 | SDK | minSdk 33 / targetSdk 34 |
 | ABI | `arm64-v8a` |
-| Xposed 框架 | [Vector v2.2](https://github.com/JingMatrix/Vector/releases/tag/v2.2) |
+| Xposed 框架 | LSPosed / Vector |
 | 模块元数据 | `minApiVersion=101`、`targetApiVersion=102`、`staticScope=false` |
 
 不支持 Android 14 及以上版本，也不建议与上游版或其他 CustoMIUIzer 派生模块同时启用。
 
-已知实装基线：Redmi Note 11T Pro（`xaga`）、MIUI `V14.0.10.0.TLOINXM`、Vector v2.2。
+已知实装基线：Redmi Note 11T Pro（`xaga`）、MIUI `V14.0.10.0.TLOINXM`。
 
 ## 运行架构
 

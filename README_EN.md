@@ -8,7 +8,7 @@ CustoMIUIzer A13 customizes the system UI and interactions on **MIUI 14 / Androi
 - Application ID: `tv.withaibuild.customiuizer.r13`
 - Source repository: <https://github.com/tomthenpc/customiuizer-a13>
 - User downloads: <https://github.com/Xposed-Modules-Repo/tv.withaibuild.customiuizer.r13/releases>
-- Deployed framework: [Vector v2.2](https://github.com/JingMatrix/Vector/releases/tag/v2.2)
+- Deployed framework: LSPosed / Vector
 
 ## Core Features
 
@@ -25,12 +25,12 @@ CustoMIUIzer A13 customizes the system UI and interactions on **MIUI 14 / Androi
 | Capability-detected target | HyperOS 1 / Android 13; feature availability depends on the ROM and system-app versions |
 | SDK | minSdk 33 / targetSdk 34 |
 | ABI | `arm64-v8a` |
-| Xposed framework | [Vector v2.2](https://github.com/JingMatrix/Vector/releases/tag/v2.2) |
+| Xposed framework | LSPosed / Vector |
 | Module metadata | `minApiVersion=101`, `targetApiVersion=102`, `staticScope=false` |
 
 Android 14 and later are not supported. Do not enable this module together with upstream or another CustoMIUIzer-derived module.
 
-Known deployed baseline: Redmi Note 11T Pro (`xaga`), MIUI `V14.0.10.0.TLOINXM`, and Vector v2.2.
+Known deployed baseline: Redmi Note 11T Pro (`xaga`), MIUI `V14.0.10.0.TLOINXM`, .
 
 ## Runtime Architecture
 

@@ -22,7 +22,7 @@
 ### 验证范围
 
 - 当前代码通过 Python 与 Gradle 静态门禁、Release Kotlin/Java 编译、Release 单元测试、Release/Vital Lint、R8、严格依赖校验、Manifest 与 Xposed 元数据检查。
-- 已知实装基线为 Redmi Note 11T Pro（`xaga`）、MIUI `V14.0.10.0.TLOINXM`、Vector v2.2；HyperOS 1 的具体功能可用性取决于 ROM 与系统应用版本。
+- 已知实装基线为 Redmi Note 11T Pro（`xaga`）、MIUI `V14.0.10.0.TLOINXM`。HyperOS 1 的具体功能可用性取决于 ROM 与系统应用版本。
 
 ## r13.9.2 — 2026-08-01
 

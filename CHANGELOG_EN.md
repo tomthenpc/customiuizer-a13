@@ -22,7 +22,7 @@
 ### Verification Scope
 
 - The current code passes Python and Gradle static gates, Release Kotlin/Java compilation, Release unit tests, Release/Vital Lint, R8, strict dependency verification, Manifest checks, and Xposed metadata checks.
-- The known deployed baseline is Redmi Note 11T Pro (`xaga`), MIUI `V14.0.10.0.TLOINXM`, and Vector v2.2. HyperOS 1 feature availability depends on the ROM and system-app versions.
+- The known deployed baseline is Redmi Note 11T Pro (`xaga`), MIUI `V14.0.10.0.TLOINXM`, . HyperOS 1 feature availability depends on the ROM and system-app versions.
 
 ## r13.9.2 — 2026-08-01
 
