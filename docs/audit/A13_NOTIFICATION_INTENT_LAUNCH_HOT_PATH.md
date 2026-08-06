@@ -177,3 +177,13 @@ MiuiStatusBarNotificationActivityStarter.startNotificationIntent(PendingIntent, 
 
 - 回调不持有 `NotificationEntry`、`ExpandableNotificationRow`、`StatusBarNotification`、`Notification`、`PendingIntent`、`Intent`、`Context`、`ActivityStarter`、`Handler`、`View` 或 `Binder` 实例。
 - 安装阶段仅持有 `Class`、`Field`、`Method` 引用，以及一个由 `Method` → `Field` 组成的有界映射，大小不超过 `startNotificationIntent` 重载数量。
+
+## 12. 实现后验证
+
+- `python tools/verify.py full`：通过。
+- `python -m unittest discover -s tools/tests -p "test_*.py"`：944 项通过，2 项跳过。
+- `python -m compileall tools`：通过。
+- `python tools/a13_hook_cost_scan.py --output docs/audit/A13_HOOK_COST_MAP.json`：已重新生成，回归检查全部通过。
+- `.\gradlew.bat :app:minifyReleaseWithR8`：通过。
+- `.\gradlew.bat :app:assembleDebug`：通过。
+- 正式 Release 签名构建：本地未配置 A13 签名（`CUSTOMIUIZER_A13_KEYSTORE_PROPERTIES` 未设置），未执行；等签名配置就位后可按既有流程构建。
