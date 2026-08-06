@@ -19,7 +19,7 @@ CustoMIUIzer A13 customizes Android 13 system UI and interactions on MIUI and Hy
 - libxposed `minApiVersion=101`, `targetApiVersion=102`;
 - Android 14 and later are not supported.
 
-Known device baseline: Redmi Note 11T Pro (`xaga`), MIUI `V14.0.10.0.TLOINXM`, and LSPosed 2.1.1. HyperOS 1 / Android 13 still requires complete ROM-specific LSPosed logs.
+Known device baseline: Redmi Note 11T Pro (`xaga`), MIUI `V14.0.10.0.TLOINXM`, and LSPosed 2.1.1 / [Vector v2.2](https://github.com/JingMatrix/Vector/releases/tag/v2.2). HyperOS 1 / Android 13 still requires complete ROM-specific LSPosed / Vector logs.
 
 ## Build and development
 

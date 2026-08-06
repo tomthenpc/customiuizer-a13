@@ -6,7 +6,8 @@
 
 - 状态栏设备信息采样改为固定缓冲区与逐字节 sysfs 解析，移除周期性 Properties、RandomAccessFile、临时结果对象和屏幕状态 Binder 查询；
 - Launcher HotSeats 手势阈值和触摸状态按 View 实例缓存，减少每个触摸事件中的 density 与 ViewConfiguration 重复读取；
-- Launcher FSG 的 BaseRecentsImpl Class 在 Hook 安装阶段解析一次并由相关 callback 复用。
+- Launcher FSG 的 BaseRecentsImpl Class 在 Hook 安装阶段解析一次并由相关 callback 复用；
+- Launcher 动画缩放使用 `ValueAnimator.getDurationScale()` 快路径，移除反射与 `Settings.System` Binder 调用。
 
 ### 稳定性与兼容性
 
@@ -29,16 +30,25 @@
 
 ## r13.10.0（2026-08-05）
 
-### ROM 兼容与 Hook 合同
+### ROM 兼容、安装架构与 Hook 合同
 
+- 新增 `ProcessScope` 与 `ProcessScopes.resolve()` 作为包/进程路由唯一来源；`MainModule` 按 scope 分发到 `AndroidPackageInstaller`、`SystemUiInstaller`、`LauncherInstaller` 等独立 Installer，避免非目标进程加载偏好与 Hook；
+- 新增 `FeatureCatalog` + `FeatureInstallRegistry` 类型化特性目录与安装注册表，统一 id 归一化、原子申领、兼容政策与失败诊断；
+- 从 `MainModule` 提取 `PreferenceLoadRegistry`，集中处理四个遗留偏好的加载判断，保持原有短路和异常语义；
 - 完善 Android 13 上 MIUI 14 与 HyperOS 1 的 ROM 环境识别、target contract、variant 选择和安装诊断，缺少目标时保持安全跳过，不进行跨候选混装；
 - 加固反射参数、Hook 安装与兼容性失败分类，使 resolver、installer 和诊断记录保持一致。
 
-### 稳定性
+### 稳定性与生命周期
 
 - 在 Hook 回调、反射 fallback、Receiver 生命周期、Preference observer、延迟 callback 和 diagnostics 边界统一传播直接或包装的 OutOfMemoryError、ThreadDeath 与 VirtualMachineError；
+- `ModuleHelper` 增加 Receiver / Observer / Callback 的完整注册、替换和释放闭环；`ActivitySelector` / `AppSelector` 改用 `postDelayed` 替代 `Thread.sleep`；
 - 普通 ROM 差异、反射失败和 callback 异常继续按原有 sentinel、日志或 fallback 隔离，不改变既有功能行为；
 - 增加 cause-chain、原实例身份、状态机顺序与 mutation 合同测试。
+
+### 界面与用户行为
+
+- 来电不打断、移除安全窗口、临时隐藏悬浮窗、强制浮窗打开、小窗 Plus、去除浮窗黑名单等用户行为功能接入类型化 catalog；
+- 状态栏时钟、自动亮度、网速指示、通知、控制中心、电池、亮度、音量等大量 SystemUI Hook 迁移到类型化目录，提升安装稳定性。
 
 ### 发布说明
 
