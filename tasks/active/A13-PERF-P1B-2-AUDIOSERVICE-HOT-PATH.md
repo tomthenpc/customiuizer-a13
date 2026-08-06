@@ -7,8 +7,8 @@
 | 任务 | `A13-PERF-P1B-2-AUDIOSERVICE-HOT-PATH` |
 | 分支 | `devin/a13-memory-performance-optimization` |
 | 起点 commit | `3d38cdd53a6190c68187a803badaf201dfda25cd` |
-| 状态 | `COMPLETED` |
-| 终点 commit | `fec4ee6` |
+| 状态 | `QA_CONDITIONAL` |
+| 终点 commit | `5f780b8` |
 | P0 真实运行时基线 | `RUNTIME_BASELINE_PENDING_DEVICE` |
 | 授权范围 | 仅 `AudioService$VolumeStreamState#readSettings` 与 `AudioService#createStreamStates` 两个目标路径的辅助逻辑 |
 

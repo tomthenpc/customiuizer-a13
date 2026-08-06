@@ -7,7 +7,7 @@
 | 任务 | `A13-PERF-P1B-1-STARTUP-LOAD-GATING` |
 | 分支 | `devin/a13-memory-performance-optimization` |
 | 起点 commit | `cd89c38f02834db5baf24e5ab08b345c187085fe` |
-| 状态 | `COMPLETED` |
+| 状态 | `QA_CONDITIONAL` |
 | 终点 commit | 44b4c4c |
 | P0 真实运行时基线 | `RUNTIME_BASELINE_PENDING_DEVICE` |
 | 授权范围 | 仅启动加载路径优化；禁止进入一般 Hook 热路径、AudioService、Tile、通知菜单、Launcher 手势、重复 Hook 合并、生命周期监听注销、UI 页面、PackagePermissions、构建系统、R8、新功能 |

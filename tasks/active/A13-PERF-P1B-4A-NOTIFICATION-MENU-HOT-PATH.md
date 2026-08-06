@@ -7,7 +7,7 @@
 | 任务 | `A13-PERF-P1B-4A-NOTIFICATION-MENU-HOT-PATH` |
 | 分支 | `devin/a13-memory-performance-optimization` |
 | 起点 commit | `ec05f5e948167742da6520cdf64b9fd32d360b3e` |
-| 状态 | `ENGINEERING_COMPLETE_DEVICE_EVIDENCE_PENDING` |
+| 状态 | `QA_REOPENED` |
 | 终点 commit | `b58ced9` |
 | P0 真实运行时基线 | `RUNTIME_BASELINE_PENDING_DEVICE` |
 | 授权范围 | 仅 `MiuiNotificationMenuRow#createMenuViews` 及该回调直接调用、属于本模块的通知菜单辅助逻辑 |
