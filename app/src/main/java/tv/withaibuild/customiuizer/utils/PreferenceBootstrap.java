@@ -114,7 +114,10 @@ public class PreferenceBootstrap {
             boolean listenerOk = watcherRegistered || ensureListenerLocked();
 
             // 4. Without a live listener we cannot publish a stable snapshot.
+            // However, the first read is still useful as a baseline for startup
+            // gating; ensureWatcher() will promote it to a stable snapshot later.
             if (!listenerOk) {
+                publishSnapshot(first);
                 state = State.SNAPSHOT_PENDING_LISTENER;
                 return state;
             }
