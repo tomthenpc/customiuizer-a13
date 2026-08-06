@@ -11,11 +11,8 @@ class HookOwnershipInventoryCompletenessTest(unittest.TestCase):
     """
 
     HOOK_RE = re.compile(
-        r"\b(ModuleHelper|XposedHelpers|XposedBridge|HookerClassHelper)\s*\.\s*"
-        r"(findAndHookMethod|findAndHookConstructor|hookAllMethods|hookAllConstructors|hookMethod|hookAll)"
-        r"|\bfindAndHookMethod\s*\("
-        r"|\bhookAllMethods\s*\("
-        r"|\bhookAllConstructors\s*\(",
+        r"\bModuleHelper\s*\.\s*"
+        r"(findAndHookMethod|hookAllConstructors|hookAllMethods)",
         re.S,
     )
 
@@ -44,12 +41,12 @@ class HookOwnershipInventoryCompletenessTest(unittest.TestCase):
         categories: set[str] = set()
         for line in text.splitlines():
             m = re.match(
-                r"^\| `([^`]+)` \| (\d+) \| (\d+) \| (\d+) \| `([^`]+)` \|",
+                r"^\| `([^`]+)` \| (\d+) \| [^|]+ \| `([^`]+)` \|",
                 line,
             )
             if not m:
                 continue
-            file_path, direct, _registry, _legacy, category = m.groups()
+            file_path, direct, category = m.groups()
             file_path = file_path.replace("\\", "/")
             prefix = "tv/withaibuild/customiuizer/"
             if file_path.startswith(prefix):

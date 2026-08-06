@@ -1,8 +1,8 @@
 {
   "schemaVersion": 4,
-  "inputDigest": "151d4cdbcc9186cd47eab12b353b3b0d13f72cdce7997f3bb9897ec73b4b44fd",
-  "totalLegacyCallSites": 514,
-  "totalLegacyGroups": 205,
+  "inputDigest": "dc978b7608be2d296f31efbe9672fdfe9f922d2246ef9b511dcc4b2a647fad0d",
+  "totalLegacyCallSites": 515,
+  "totalLegacyGroups": 206,
   "firstBatchSize": 4,
   "registeredRecordCount": 8,
   "batchCounts": {
@@ -82,7 +82,7 @@
       "reasonCode": "CROSS_PROCESS",
       "reason": "The Settings app variant of the separate volume stream feature is installed from the Settings installer and is not yet represented as a typed FeatureSpec, while the system_server audio side is already in the catalog.",
       "coveredCallSites": [
-        "tv/withaibuild/customiuizer/mods/SystemAudioAndVolumeHooks.kt:79:NotificationVolumeSettingsHook"
+        "tv/withaibuild/customiuizer/mods/SystemAudioAndVolumeHooks.kt:55:NotificationVolumeSettingsHook"
       ],
       "hookTargets": [
         "com.android.settings.MiuiSoundSettings#onCreate"
@@ -294,8 +294,8 @@
       "exitCondition": "Create a typed system_server FeatureSpec for USB default mode and expose a cross-process contract for the Settings variant (P3.3C)."
     }
   ],
-  "sourceCommit": "3f0ac11bd35da3ee2254dd06793d617e4e167ab6",
-  "sourceTree": "0c02622b2ebd21e30c8b8d289ebfcc04ce1fb558",
+  "sourceCommit": "3d38cdd53a6190c68187a803badaf201dfda25cd",
+  "sourceTree": "46c10d5d53061ce83244fac64b29bbc9e4f1a0cc",
   "generatorVersion": "7b7847444be4cdcd",
-  "generatedAt": "2026-08-06T01:00:46+00:00"
+  "generatedAt": "2026-08-06T09:04:40+00:00"
 }

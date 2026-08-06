@@ -1,9 +1,9 @@
 package tv.withaibuild.customiuizer.mods
 
+import android.content.ContentResolver
 import android.content.Context
 import android.content.res.Resources
 import android.os.Bundle
-import android.provider.Settings
 import android.util.SparseIntArray
 import io.github.libxposed.api.XposedModuleInterface.PackageReadyParam
 import io.github.libxposed.api.XposedModuleInterface.SystemServerStartingParam
@@ -36,31 +36,7 @@ object SystemAudioAndVolumeHooks {
             }
         })
 
-        ModuleHelper.findAndHookMethod("com.android.server.audio.AudioService\$VolumeStreamState", lpparam.classLoader, "readSettings", object : MethodHook() {
-            override fun before(param: BeforeHookCallback) {
-                val mStreamType = XposedHelpers.getIntField(param.thisObject, "mStreamType")
-                if (mStreamType != 1) return
-                synchronized(param.member.declaringClass) {
-                    val audioSystem = XposedHelpers.findClass("android.media.AudioSystem", lpparam.classLoader)
-                    val DEVICE_OUT_ALL = XposedHelpers.getStaticObjectField(audioSystem, "DEVICE_OUT_ALL_SET") as? Set<Int> ?: return
-                    val DEVICE_OUT_DEFAULT = XposedHelpers.getStaticIntField(audioSystem, "DEVICE_OUT_DEFAULT")
-                    val DEFAULT_STREAM_VOLUME = XposedHelpers.getStaticObjectField(audioSystem, "DEFAULT_STREAM_VOLUME") as? IntArray ?: return
-                    val mContentResolver = XposedHelpers.getObjectField(XposedHelpers.getSurroundingThis(param.thisObject), "mContentResolver")
-                    val mIndexMap = XposedHelpers.getObjectField(param.thisObject, "mIndexMap") as? SparseIntArray ?: return
-                    for (deviceType in DEVICE_OUT_ALL) {
-                        val name = XposedHelpers.callMethod(param.thisObject, "getSettingNameForDevice", deviceType) as? String ?: continue
-                        val defaultValue = if (deviceType == DEVICE_OUT_DEFAULT) DEFAULT_STREAM_VOLUME[mStreamType] else -1
-                        val index = XposedHelpers.callStaticMethod(Settings.System::class.java, "getIntForUser", mContentResolver, name, defaultValue, -2) as? Int ?: continue
-                        if (index != -1) {
-                            val validIndex = XposedHelpers.callMethod(param.thisObject, "getValidIndex", 10 * index, true) as? Int ?: continue
-                            mIndexMap.put(deviceType, validIndex)
-                        }
-                    }
-                    XposedHelpers.setObjectField(param.thisObject, "mIndexMap", mIndexMap)
-                }
-                param.returnAndSkip(null)
-            }
-        })
+        installNotificationVolumeReadSettingsHook(lpparam)
 
         ModuleHelper.findAndHookMethodSilently("com.android.server.audio.AudioService", lpparam.classLoader, "shouldZenMuteStream", Int::class.javaPrimitiveType, object : MethodHook() {
             override fun after(param: AfterHookCallback) {
@@ -136,16 +112,175 @@ object SystemAudioAndVolumeHooks {
 
     @JvmStatic
     fun VolumeStepsHook(lpparam: SystemServerStartingParam) {
-        ModuleHelper.findAndHookMethod("com.android.server.audio.AudioService", lpparam.classLoader, "createStreamStates", object : MethodHook() {
+        val audioClass = XposedHelpers.findClassIfExists("com.android.server.audio.AudioService", lpparam.classLoader) ?: return
+        val maxStreamVolumeField = XposedHelpers.findFieldIfExists(audioClass, "MAX_STREAM_VOLUME") ?: return
+        val mult = MainModule.mPrefs.getInt("system_volumesteps", 0)
+        if (mult <= 0) return
+
+        ModuleHelper.findAndHookMethod(audioClass, "createStreamStates", object : MethodHook() {
             override fun before(param: BeforeHookCallback) {
-                val audioCls = XposedHelpers.findClass("com.android.server.audio.AudioService", lpparam.classLoader)
-                val maxStreamVolume = XposedHelpers.getStaticObjectField(audioCls, "MAX_STREAM_VOLUME") as? IntArray ?: return
-                val mult = MainModule.mPrefs.getInt("system_volumesteps", 0)
-                if (mult <= 0) return
+                val maxStreamVolume = maxStreamVolumeField.get(null) as? IntArray ?: return
                 for (i in maxStreamVolume.indices) {
                     maxStreamVolume[i] = Math.round(maxStreamVolume[i] * mult / 100.0f)
                 }
-                XposedHelpers.setStaticObjectField(audioCls, "MAX_STREAM_VOLUME", maxStreamVolume)
+                maxStreamVolumeField.set(null, maxStreamVolume)
+            }
+        })
+    }
+
+    private fun installNotificationVolumeReadSettingsHook(lpparam: SystemServerStartingParam) {
+        val volumeStreamStateClass = XposedHelpers.findClassIfExists(
+            "com.android.server.audio.AudioService\$VolumeStreamState",
+            lpparam.classLoader
+        ) ?: return
+        val audioServiceClass = volumeStreamStateClass.enclosingClass ?: return
+
+        val audioSystemClass = XposedHelpers.findClassIfExists("android.media.AudioSystem", lpparam.classLoader)
+        val settingsSystemClass = XposedHelpers.findClassIfExists("android.provider.Settings\$System", lpparam.classLoader)
+        if (audioSystemClass == null || settingsSystemClass == null) {
+            XposedHelpers.log("NotificationVolumeServiceHook", "AudioService readSettings hook skipped: framework class not found")
+            return
+        }
+
+        val mStreamTypeField = XposedHelpers.findFieldIfExists(volumeStreamStateClass, "mStreamType") ?: run {
+            XposedHelpers.log("NotificationVolumeServiceHook", "AudioService readSettings hook skipped: mStreamType not found")
+            return
+        }
+        val mIndexMapField = XposedHelpers.findFieldIfExists(volumeStreamStateClass, "mIndexMap") ?: run {
+            XposedHelpers.log("NotificationVolumeServiceHook", "AudioService readSettings hook skipped: mIndexMap not found")
+            return
+        }
+        val outerThisField = XposedHelpers.findFieldIfExists(volumeStreamStateClass, "this\$0") ?: run {
+            XposedHelpers.log("NotificationVolumeServiceHook", "AudioService readSettings hook skipped: enclosing instance not found")
+            return
+        }
+        val mContentResolverField = XposedHelpers.findFieldIfExists(audioServiceClass, "mContentResolver") ?: run {
+            XposedHelpers.log("NotificationVolumeServiceHook", "AudioService readSettings hook skipped: mContentResolver not found")
+            return
+        }
+
+        val deviceOutAllSetField = XposedHelpers.findFieldIfExists(audioSystemClass, "DEVICE_OUT_ALL_SET") ?: run {
+            XposedHelpers.log("NotificationVolumeServiceHook", "AudioService readSettings hook skipped: DEVICE_OUT_ALL_SET not found")
+            return
+        }
+        val deviceOutDefaultField = XposedHelpers.findFieldIfExists(audioSystemClass, "DEVICE_OUT_DEFAULT") ?: run {
+            XposedHelpers.log("NotificationVolumeServiceHook", "AudioService readSettings hook skipped: DEVICE_OUT_DEFAULT not found")
+            return
+        }
+        val defaultStreamVolumeField = XposedHelpers.findFieldIfExists(audioSystemClass, "DEFAULT_STREAM_VOLUME") ?: run {
+            XposedHelpers.log("NotificationVolumeServiceHook", "AudioService readSettings hook skipped: DEFAULT_STREAM_VOLUME not found")
+            return
+        }
+
+        val getSettingNameForDeviceMethod = XposedHelpers.findMethodExactIfExists(
+            volumeStreamStateClass, "getSettingNameForDevice", Int::class.javaPrimitiveType
+        ) ?: run {
+            XposedHelpers.log("NotificationVolumeServiceHook", "AudioService readSettings hook skipped: getSettingNameForDevice not found")
+            return
+        }
+        val getValidIndexMethod = XposedHelpers.findMethodExactIfExists(
+            volumeStreamStateClass, "getValidIndex", Int::class.javaPrimitiveType, Boolean::class.javaPrimitiveType
+        ) ?: run {
+            XposedHelpers.log("NotificationVolumeServiceHook", "AudioService readSettings hook skipped: getValidIndex not found")
+            return
+        }
+        val getIntForUserMethod = XposedHelpers.findMethodExactIfExists(
+            settingsSystemClass, "getIntForUser",
+            ContentResolver::class.java, String::class.java, Int::class.javaPrimitiveType, Int::class.javaPrimitiveType
+        ) ?: run {
+            XposedHelpers.log("NotificationVolumeServiceHook", "AudioService readSettings hook skipped: Settings.System.getIntForUser not found")
+            return
+        }
+
+        val deviceOutDefault = try {
+            deviceOutDefaultField.getInt(null)
+        } catch (t: Throwable) {
+            if (t is OutOfMemoryError || t is ThreadDeath || t is VirtualMachineError) throw t
+            XposedHelpers.log("NotificationVolumeServiceHook", "AudioService readSettings hook skipped: cannot read DEVICE_OUT_DEFAULT")
+            return
+        }
+
+        ModuleHelper.findAndHookMethod(volumeStreamStateClass, "readSettings", object : MethodHook() {
+            override fun before(param: BeforeHookCallback) {
+                val thisObject = param.thisObject
+                val streamType = try {
+                    mStreamTypeField.getInt(thisObject)
+                } catch (t: Throwable) {
+                    if (t is OutOfMemoryError || t is ThreadDeath || t is VirtualMachineError) throw t
+                    return
+                }
+                if (streamType != 1) return
+
+                val outerThis = try {
+                    outerThisField.get(thisObject)
+                } catch (t: Throwable) {
+                    if (t is OutOfMemoryError || t is ThreadDeath || t is VirtualMachineError) throw t
+                    return
+                }
+                val contentResolver = try {
+                    mContentResolverField.get(outerThis)
+                } catch (t: Throwable) {
+                    if (t is OutOfMemoryError || t is ThreadDeath || t is VirtualMachineError) throw t
+                    return
+                }
+                val indexMap = try {
+                    mIndexMapField.get(thisObject) as? SparseIntArray
+                } catch (t: Throwable) {
+                    if (t is OutOfMemoryError || t is ThreadDeath || t is VirtualMachineError) throw t
+                    return
+                } ?: return
+
+                val deviceOutAll = try {
+                    deviceOutAllSetField.get(null)
+                } catch (t: Throwable) {
+                    if (t is OutOfMemoryError || t is ThreadDeath || t is VirtualMachineError) throw t
+                    return
+                } as? Set<*> ?: return
+
+                val defaultStreamVolume = try {
+                    defaultStreamVolumeField.get(null)
+                } catch (t: Throwable) {
+                    if (t is OutOfMemoryError || t is ThreadDeath || t is VirtualMachineError) throw t
+                    return
+                } as? IntArray ?: return
+
+                synchronized(volumeStreamStateClass) {
+                    for (rawDeviceType in deviceOutAll) {
+                        val deviceType = rawDeviceType as? Int ?: continue
+                        val name = try {
+                            getSettingNameForDeviceMethod.invoke(thisObject, deviceType) as? String
+                        } catch (t: Throwable) {
+                            if (t is OutOfMemoryError || t is ThreadDeath || t is VirtualMachineError) throw t
+                            continue
+                        } ?: continue
+
+                        val defaultValue = if (deviceType == deviceOutDefault) defaultStreamVolume[streamType] else -1
+                        val index = try {
+                            getIntForUserMethod.invoke(null, contentResolver, name, defaultValue, -2) as? Int
+                        } catch (t: Throwable) {
+                            if (t is OutOfMemoryError || t is ThreadDeath || t is VirtualMachineError) throw t
+                            continue
+                        } ?: continue
+
+                        if (index != -1) {
+                            val validIndex = try {
+                                getValidIndexMethod.invoke(thisObject, 10 * index, true) as? Int
+                            } catch (t: Throwable) {
+                                if (t is OutOfMemoryError || t is ThreadDeath || t is VirtualMachineError) throw t
+                                continue
+                            } ?: continue
+
+                            indexMap.put(deviceType, validIndex)
+                        }
+                    }
+                }
+
+                try {
+                    mIndexMapField.set(thisObject, indexMap)
+                } catch (t: Throwable) {
+                    if (t is OutOfMemoryError || t is ThreadDeath || t is VirtualMachineError) throw t
+                }
+                param.returnAndSkip(null)
             }
         })
     }
