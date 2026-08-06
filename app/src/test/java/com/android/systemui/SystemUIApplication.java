@@ -1,6 +1,7 @@
 package com.android.systemui;
 
 import android.app.Application;
+import android.content.ContentResolver;
 
 /**
  * Minimal test stub for com.android.systemui.SystemUIApplication.
@@ -10,6 +11,13 @@ import android.app.Application;
  * classpath.
  */
 public class SystemUIApplication extends Application {
+
+    private final ContentResolver contentResolver = new ContentResolver(null) {};
+
+    @Override
+    public ContentResolver getContentResolver() {
+        return contentResolver;
+    }
 
     public void onCreate() {
         // no-op for tests
