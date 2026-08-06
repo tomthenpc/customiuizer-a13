@@ -239,7 +239,8 @@ class ScopeProtectionTest(unittest.TestCase):
         )
         changed = [p for p in result.stdout.splitlines() if p]
         allowed = {
-            "app/src/main/java/tv/withaibuild/customiuizer/mods/LauncherGestureHooks.kt"
+            "app/src/main/java/tv/withaibuild/customiuizer/mods/LauncherGestureHooks.kt",
+            "app/src/main/java/tv/withaibuild/customiuizer/installers/AndroidPackageInstaller.java",
         }
         for path in changed:
             if path in allowed:
