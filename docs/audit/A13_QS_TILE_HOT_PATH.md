@@ -158,5 +158,17 @@ QSTile.handleClick(View)
 - `.\gradlew.bat :app:compileDebugJavaWithJavac` 通过
 - `.\gradlew.bat :app:testDebugUnitTest --tests tv.withaibuild.customiuizer.mods.SecureQSTilesHookTest` 通过
 - `.\gradlew.bat :app:lintDebug` 通过
+- `.\gradlew.bat :app:packageRelease` / `assembleRelease` 通过（R8 / lintVitalRelease / 签名）
+- 正式 Release APK：`CustoMIUIzer-A13-r13.10.1.apk`，大小 `2935586` 字节，SHA-256 `074857C350EFD68478FAD5D70FBCE33D5C4207EF48630265F80FEACF2BF3BC6`
+- `apksigner verify --verbose --print-certs`：`Verifies` / `v2 scheme=true` / signers=1 / 证书 SHA-256 `15ce32f03e4d8e62df9390f77431862e59bf2cf95cd5a72f0c7330cdfcca2934`
 - `python tools/verify.py fast --changed` 通过
 - `python tools/verify.py full` 通过
+
+## 9. 任务状态与保留说明
+
+- **任务状态**：`ENGINEERING_COMPLETE_DEVICE_EVIDENCE_PENDING`
+- **保留的动态反射**：`mAfterUnlockReceiver.onReceive` 中 `XposedHelpers.findMethodExact(tile.javaClass, "handleClick", View::class.java)`。
+  - 原因：`tile` 是运行时由 `MiuiQSFactory#createTileInternal` 返回的具体 Tile 实例，其 `javaClass` 无法在安装阶段确定；每个被保护的 Tile 类只会在首次创建时进入该分支，且 `clickHandler` 不缓存到任何按实例增长的映射。
+- **未缓存的实例**：未缓存任何 `QSTileHost`、`MiuiQSFactory`、`QSTile`、`Context`、`Handler`、`View`、`CentralSurfaces` 或 `ControlCenterControllerImpl` 实例。
+- **未新增项**：无新线程、Handler、listener、observer、全局锁或无上限缓存；`securedTiles` 仍为有界 `ArrayList<String>`。
+- **P0 基线**：`RUNTIME_BASELINE_PENDING_DEVICE`，未声明未经真机测量的性能收益。

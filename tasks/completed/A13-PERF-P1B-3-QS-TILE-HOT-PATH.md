@@ -7,8 +7,8 @@
 | 任务 | `A13-PERF-P1B-3-QS-TILE-HOT-PATH` |
 | 分支 | `devin/a13-memory-performance-optimization` |
 | 起点 commit | `5f780b8a15727114bd29f01188191a2520ff2509` |
-| 状态 | `COMPLETED` |
-| 终点 commit | `4c02caa` |
+| 状态 | `ENGINEERING_COMPLETE_DEVICE_EVIDENCE_PENDING` |
+| Engineering Final SHA | `3cf73a0` |
 | P0 真实运行时基线 | `RUNTIME_BASELINE_PENDING_DEVICE` |
 | 授权范围 | 仅 Quick Settings Tile 创建路径：`tileHostCls` 构造器 Hook、`FactoryImpl#createTileInternal` Hook 及二者直接使用的模块 Tile 创建辅助逻辑 |
 
@@ -89,22 +89,52 @@
 
 ## 验证结果
 
+### Python / 静态门禁
+
 - `python tools/verify.py fast --changed` OK
 - `python tools/verify.py full` OK
 - `python -m compileall tools` OK
-- `python -m unittest discover -s tools/tests -p "test_*.py"` OK (944 tests, 2 skipped)
+- `python -m unittest discover -s tools/tests -p "test_*.py"` OK（944 tests, 2 skipped）
 - `git diff --check` OK
-- `tools/a13_hook_cost_scan.py` OK (669 records, P1B-3 regression checks pass)
+- `tools/a13_hook_cost_scan.py` OK（669 records, P1B-3 regression checks pass）
 - `tools/a13_hook_cost_scan.py --verify-stability` OK
+
+### Android 构建
+
 - `.\gradlew.bat :app:compileDebugKotlin` OK
 - `.\gradlew.bat :app:compileDebugJavaWithJavac` OK
 - `.\gradlew.bat :app:testDebugUnitTest --tests "tv.withaibuild.customiuizer.mods.SecureQSTilesHookTest"` OK
 - `.\gradlew.bat :app:lintDebug` OK
-- `.\gradlew.bat :app:assembleDebug` OK
-- 正式 Release 签名：当前环境无 A13 外部签名配置（`keystorePropertiesPath` 未设置），未执行；待用户提供签名配置或 CI 执行。
+- `.\gradlew.bat :app:packageRelease --no-daemon` OK
+- `.\gradlew.bat :app:assembleRelease --no-daemon` OK
 
-## 风险与未完成项
+### 正式 Release APK
 
-1. **正式 Release 签名**：需要在仓库外配置 `customiuizerA13KeystoreProperties` 或 `CUSTOMIUIZER_A13_KEYSTORE_PROPERTIES` 后，由授权环境运行 `gradlew :app:assembleRelease` 或 CI 完成。
-2. **实机验证**：P0 真实运行时基线仍为 `RUNTIME_BASELINE_PENDING_DEVICE`，所有性能收益数字均为静态推断，不声称具体 KB/MB/百分比/延迟/耗电变化。
-3. **R8**：已通过 Debug 构建与 lint；Release R8 优化需正式打包后验证。
+- 文件：`C:\Users\tv\Downloads\Peengeek\customiuizer-a13-forDevin\app\build\outputs\apk\release\CustoMIUIzer-A13-r13.10.1.apk`
+- 大小：`2935586` 字节
+- APK SHA-256：`074857C350EFD68478FAD5D70FBCE33D5C4207EF48630265F80FEACF2BF3BC6`
+- `apksigner verify --verbose --print-certs`：
+  - `Verifies`
+  - `Verified using v2 scheme (APK Signature Scheme v2): true`
+  - `Number of signers: 1`
+  - 证书 SHA-256：`15ce32f03e4d8e62df9390f77431862e59bf2cf95cd5a72f0c7330cdfcca2934`
+
+## 范围完整性核对
+
+| 入口 | Hook 注册位置 | 回调位置 | 修改前反射 | 修改后反射 | 修改前临时集合 | 修改后临时集合 | 保留动态反射 | 原因 |
+|---|---|---|---|---|---|---|---|---|
+| `QSTileHost` 构造器 | `ModuleHelper.hookAllConstructors(tileHostClass, hostHook)` | `hostHook.after` | `getObjectField` (反射) | `qTileHostContextField.get` / `ModuleHelper.registerModuleReceiver` | 每次构造新建 `BroadcastReceiver` | 同前（仍新建 Receiver，但 `registerModuleReceiver` 按 key 替换，实际只保留一个活跃实例） | 无 | 无 |
+| `FactoryImpl#createTileInternal` | `ModuleHelper.findAndHookMethod(miuiQSFactoryClass, "createTileInternal", ...)` | `after` 回调 | 每次 `HashSet<String>()` + 10 次 `getBoolean` | `isSecureTile(name)` 单次 `getBoolean` | `HashSet`（每个 Tile） | 无 | 无 | 无 |
+| `tileHook.before` | `ModuleHelper.findAndHookMethod(tile.javaClass, "handleClick", ...)` | `before` 回调 | 6 次 `findClass`/`findClassIfExists` | 0 次类查找；使用缓存 `Method.invoke` | 每次点击 `Runnable` + `Intent` | 同前（必要运行时对象） | 无 | 无 |
+| `mAfterUnlockReceiver.onReceive` | 在 `hostHook.after` 内创建并注册 | `onReceive` | `getObjectField` + 链式 `findClass`/`callMethod` | 缓存 `Field.get` / `Method.invoke` | `Intent`、`arrayOfNulls` | 同前 | `findMethodExact(tile.javaClass, "handleClick", View::class.java)` | `tile.javaClass` 是运行时具体 Tile 类，无法在安装阶段静态确定；该方法只用于触发 `handleClick`，不缓存按 Tile 实例增长的映射 |
+
+- 未缓存 `QSTileHost`、`MiuiQSFactory`、`QSTile`、`Context`、`Handler`、`View` 实例。
+- 未新增线程、Handler、listener、observer、全局锁或无上限缓存。
+- Hook call site 数量与进程覆盖范围未扩大。
+
+## 最终状态
+
+- 工程实现与本地验证已完成。
+- 正式 Release 已构建并签名通过。
+- P0 真机运行时基线仍为 `RUNTIME_BASELINE_PENDING_DEVICE`，未进行真机功能和性能验证。
+- 状态：`ENGINEERING_COMPLETE_DEVICE_EVIDENCE_PENDING`。
