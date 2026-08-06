@@ -2,6 +2,7 @@ package tv.withaibuild.customiuizer.utils
 
 import android.content.SharedPreferences
 import io.github.libxposed.api.XposedInterface
+import tv.withaibuild.customiuizer.mods.utils.HookerClassHelper
 import java.lang.reflect.InvocationHandler
 import java.lang.reflect.Method
 import java.lang.reflect.Proxy
@@ -44,6 +45,51 @@ object FakeXposedInterface {
         recordedHooks.clear()
         interceptedExecutables.clear()
         remotePreferences = null
+    }
+
+    /** Find the recorded hook for a given declaring class and method name. */
+    @JvmStatic
+    fun findHook(declaringClassName: String, methodName: String): RecordedHook? {
+        return recordedHooks.find { record ->
+            val member = record.executable
+            member.declaringClass?.name == declaringClassName && member.name == methodName
+        }
+    }
+
+    /**
+     * Manually invoke the after-callback of a recorded hook with a fake Xposed
+     * [XposedInterface.Chain]. This lets unit tests exercise the `isHooked`
+     * gating in SystemUiInstaller without a real runtime.
+     */
+    @JvmStatic
+    fun executeAfter(recorded: RecordedHook, thisObject: Any?) {
+        val executable = recorded.executable
+        val chain = Proxy.newProxyInstance(
+            executable.declaringClass.classLoader,
+            arrayOf(XposedInterface.Chain::class.java)
+        ) { _, method, _ ->
+            when (method.name) {
+                "getExecutable" -> executable
+                "getThisObject" -> thisObject
+                "getArgs" -> emptyList<Any?>()
+                "proceed" -> null
+                else -> null
+            }
+        } as XposedInterface.Chain
+
+        val beforeCtor = HookerClassHelper.BeforeHookCallback::class.java.getDeclaredConstructor(XposedInterface.Chain::class.java)
+        beforeCtor.isAccessible = true
+        val before = beforeCtor.newInstance(chain)
+
+        val afterCtor = HookerClassHelper.AfterHookCallback::class.java.getDeclaredConstructor(
+            HookerClassHelper.BeforeHookCallback::class.java,
+            Object::class.java,
+            Throwable::class.java
+        )
+        afterCtor.isAccessible = true
+        val after = afterCtor.newInstance(before, null, null)
+
+        recorded.hook.afterHook(after)
     }
 
     private class RootHandler(private val classLoader: ClassLoader) : InvocationHandler {

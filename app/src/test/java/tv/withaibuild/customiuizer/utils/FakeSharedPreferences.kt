@@ -35,10 +35,10 @@ class FakeSharedPreferences : SharedPreferences {
                        it.startsWith("tv.withaibuild.customiuizer.utils.PreferenceBootstrap.ensureListenerLocked") }
         }
 
-    /** Returns registration attempts whose stack contains the MainModule.watchPreferenceChange path. */
+    /** Returns registration attempts whose stack contains the PreferenceBootstrap.ensureWatcher path. */
     val systemUiWatcherRegisterAttempts: Int
         get() = registerAttemptStacks.count { stack ->
-            stack.any { it.startsWith("tv.withaibuild.customiuizer.MainModule.watchPreferenceChange") }
+            stack.any { it.startsWith("tv.withaibuild.customiuizer.utils.PreferenceBootstrap.ensureWatcher") }
         }
 
     /**

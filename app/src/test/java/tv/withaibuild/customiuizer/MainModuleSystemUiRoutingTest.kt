@@ -3,13 +3,14 @@ package tv.withaibuild.customiuizer
 import android.os.Build
 import android.util.SparseArray
 import android.util.SparseIntArray
+import com.android.systemui.SystemUIApplication
 import io.github.libxposed.api.XposedModuleInterface
 import org.junit.After
 import org.junit.Assert.assertEquals
+import org.junit.Assert.assertNotNull
 import org.junit.Assert.assertTrue
 import org.junit.Before
 import org.junit.Test
-import tv.withaibuild.customiuizer.mods.catalog.FeatureRuntime
 import tv.withaibuild.customiuizer.mods.utils.ResourceHooks
 import tv.withaibuild.customiuizer.mods.utils.XposedHelpers
 import tv.withaibuild.customiuizer.utils.FakeSharedPreferences
@@ -27,11 +28,11 @@ import java.util.concurrent.atomic.AtomicReference
  * - `SystemUIApplication#onCreate` hook installation
  * - resource hook registration
  * - listener registration deltas (PreferenceBootstrap baseline vs SystemUI watcher)
- * - FeatureRuntime creation
+ * - manual execution of the onCreate callback and its `isHooked` de-duplication
  *
- * The restart-time guard in SystemUiInstaller is not disabled; therefore
- * `watchPreferenceChange` is only reached by manually invoking the onCreate
- * after-callback.
+ * FeatureRuntime creation is NOT verified in this harness, because the JVM
+ * unit test path returns early from the restart-time guard. The guard's
+ * pure logic is tested separately in [SystemUiRestartGuardTest].
  */
 class MainModuleSystemUiRoutingTest {
 
@@ -45,7 +46,6 @@ class MainModuleSystemUiRoutingTest {
         MainModule.mPrefs = PrefMap()
         Build.VERSION.SDK_INT = Build.VERSION_CODES.TIRAMISU
         resetResourceHooks()
-        FeatureRuntime.resetForTest()
         fakeSharedPreferences = FakeSharedPreferences()
         FakeXposedInterface.remotePreferences = fakeSharedPreferences
     }
@@ -56,7 +56,6 @@ class MainModuleSystemUiRoutingTest {
         XposedHelpers.moduleInst = null
         MainModule.mPrefs = PrefMap()
         Build.VERSION.SDK_INT = 0
-        FeatureRuntime.resetForTest()
     }
 
     private fun resetResourceHooks() {
@@ -114,9 +113,9 @@ class MainModuleSystemUiRoutingTest {
 
     private fun moduleWithPrefs(prefs: Map<String, Any>): MainModule {
         fakeSharedPreferences.setAll(prefs)
-        fakeSharedPreferences.failFirstRegister = false
+        fakeSharedPreferences.failFirstRegister = true
         fakeSharedPreferences.reset()
-        fakeSharedPreferences.failFirstRegister = false
+        fakeSharedPreferences.failFirstRegister = true
         fakeSharedPreferences.setAll(prefs)
         val module = MainModule()
         module.attachFramework(FakeXposedInterface.create())
@@ -131,29 +130,46 @@ class MainModuleSystemUiRoutingTest {
         return (f.get(resHooks) as? ConcurrentHashMap<*, *>)?.size ?: 0
     }
 
-    /** Snapshot of gate state before onPackageReady is called. */
-    private data class GateSnapshot(val hooks: Int, val resources: Int, val registerAttempts: Int, val watcherAttempts: Int, val runtimeCount: Int)
+    private data class GateSnapshot(
+        val hooks: Int,
+        val resources: Int,
+        val registerAttempts: Int,
+        val registerSuccess: Int,
+        val watcherAttempts: Int,
+        val activeListeners: Set<String>
+    )
 
     private fun before(module: MainModule): GateSnapshot {
         return GateSnapshot(
             hooks = FakeXposedInterface.recordedHooks.size,
             resources = resourceHookCount(),
             registerAttempts = fakeSharedPreferences.registerAttemptCount,
+            registerSuccess = fakeSharedPreferences.registerCount,
             watcherAttempts = fakeSharedPreferences.systemUiWatcherRegisterAttempts,
-            runtimeCount = FeatureRuntime.testCreationCount
+            activeListeners = fakeSharedPreferences.activeListenerIdentities
         )
     }
 
+    private fun executeSystemUiOnCreate(): Any {
+        val app = SystemUIApplication()
+        val recorded = FakeXposedInterface.findHook("com.android.systemui.SystemUIApplication", "onCreate")
+        assertNotNull("SystemUIApplication#onCreate hook must be installed", recorded)
+        FakeXposedInterface.executeAfter(recorded!!, app)
+        return app
+    }
+
     @Test
-    fun allOff_doesNotInstallSystemUiHooksOrRuntime() {
+    fun allOff_doesNotInstallSystemUiHooksOrOnCreate() {
         val module = moduleWithPrefs(emptyMap())
         val base = before(module)
         module.onPackageReady(packageReadyParam("com.android.systemui", "com.android.systemui"))
 
-        assertEquals(base.hooks, FakeXposedInterface.recordedHooks.size)
+        assertEquals("no onCreate hook", base.hooks, FakeXposedInterface.recordedHooks.size)
         assertEquals(base.resources, resourceHookCount())
         assertEquals(base.watcherAttempts, fakeSharedPreferences.systemUiWatcherRegisterAttempts)
-        assertEquals(base.runtimeCount, FeatureRuntime.testCreationCount)
+        // PreferenceBootstrap baseline listener may be registered by initPrefs();
+        // the SystemUI watcher must not be.
+        assertEquals(0, fakeSharedPreferences.systemUiWatcherRegisterAttempts)
     }
 
     @Test
@@ -162,25 +178,48 @@ class MainModuleSystemUiRoutingTest {
         val base = before(module)
         module.onPackageReady(packageReadyParam("com.android.systemui", "com.android.systemui"))
 
-        assertEquals(base.hooks, FakeXposedInterface.recordedHooks.size)
+        assertEquals("no onCreate hook", base.hooks, FakeXposedInterface.recordedHooks.size)
         assertEquals(base.resources, resourceHookCount())
         assertEquals(base.watcherAttempts, fakeSharedPreferences.systemUiWatcherRegisterAttempts)
-        assertEquals(base.runtimeCount, FeatureRuntime.testCreationCount)
     }
 
     @Test
-    fun validSystemUiAction_installsOnCreateHook() {
+    fun unknownActionInSystemUiProcess_doesNotTriggerInstall() {
+        val module = moduleWithPrefs(mapOf("unknown_feature_action" to 2))
+        val base = before(module)
+        module.onPackageReady(packageReadyParam("com.android.systemui", "com.android.systemui"))
+
+        assertEquals("no onCreate hook", base.hooks, FakeXposedInterface.recordedHooks.size)
+        assertEquals(base.resources, resourceHookCount())
+        assertEquals(base.watcherAttempts, fakeSharedPreferences.systemUiWatcherRegisterAttempts)
+    }
+
+    @Test
+    fun validSystemUiAction_installsOnCreateHookAndRegistersWatcherOnce() {
         val module = moduleWithPrefs(mapOf("controls_backlong_action" to 2))
         val base = before(module)
         module.onPackageReady(packageReadyParam("com.android.systemui", "com.android.systemui"))
 
         assertTrue("SystemUI onCreate hook should be installed", FakeXposedInterface.recordedHooks.size > base.hooks)
         assertEquals(base.resources, resourceHookCount())
+
+        // Before onCreate executes, the SystemUI watcher is not yet registered.
         assertEquals(base.watcherAttempts, fakeSharedPreferences.systemUiWatcherRegisterAttempts)
-        // FeatureRuntime is created after the restart-time guard; in unit tests
-        // Settings.getLong returns a large value, so the guard returns early
-        // and no runtime is created yet.
-        assertEquals(base.runtimeCount, FeatureRuntime.testCreationCount)
+
+        // First onCreate after-callback registers the watcher exactly once.
+        // In this harness initPrefs() is set to fail its first listener attempt,
+        // so the first successful registration happens during onCreate.
+        executeSystemUiOnCreate()
+        assertEquals(base.watcherAttempts + 1, fakeSharedPreferences.systemUiWatcherRegisterAttempts)
+        assertEquals(base.registerSuccess + 1, fakeSharedPreferences.registerCount)
+        assertEquals(base.activeListeners.size + 1, fakeSharedPreferences.activeListenerIdentities.size)
+
+        // Second onCreate after-callback is a no-op due to isHooked.
+        val beforeSecond = before(module)
+        executeSystemUiOnCreate()
+        assertEquals(beforeSecond.watcherAttempts, fakeSharedPreferences.systemUiWatcherRegisterAttempts)
+        assertEquals(beforeSecond.registerSuccess, fakeSharedPreferences.registerCount)
+        assertEquals(beforeSecond.activeListeners.size, fakeSharedPreferences.activeListenerIdentities.size)
     }
 
     @Test
@@ -190,6 +229,12 @@ class MainModuleSystemUiRoutingTest {
         module.onPackageReady(packageReadyParam("com.android.systemui", "com.android.systemui"))
 
         assertTrue("Resource hooks should be installed for system_statusbarheight", resourceHookCount() > base.resources)
+        assertTrue("onCreate hook should still be installed", FakeXposedInterface.recordedHooks.size > base.hooks)
+
+        // Watcher is only registered after onCreate.
+        assertEquals(base.watcherAttempts, fakeSharedPreferences.systemUiWatcherRegisterAttempts)
+        executeSystemUiOnCreate()
+        assertEquals(base.watcherAttempts + 1, fakeSharedPreferences.systemUiWatcherRegisterAttempts)
     }
 
     @Test
@@ -199,6 +244,7 @@ class MainModuleSystemUiRoutingTest {
         module.onPackageReady(packageReadyParam("com.android.systemui", "com.android.systemui"))
 
         assertTrue("Resource hooks should be installed for controls_navbarheight", resourceHookCount() > base.resources)
+        assertTrue("onCreate hook should still be installed", FakeXposedInterface.recordedHooks.size > base.hooks)
     }
 
     @Test
@@ -209,6 +255,5 @@ class MainModuleSystemUiRoutingTest {
 
         assertEquals(base.hooks, FakeXposedInterface.recordedHooks.size)
         assertEquals(base.watcherAttempts, fakeSharedPreferences.systemUiWatcherRegisterAttempts)
-        assertEquals(base.runtimeCount, FeatureRuntime.testCreationCount)
     }
 }

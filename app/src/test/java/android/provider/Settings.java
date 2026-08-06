@@ -28,5 +28,13 @@ public final class Settings {
             // restart-time guard path on a real device.
             return overrideLong;
         }
+
+        public static boolean putLong(ContentResolver resolver, String name, long value) {
+            return true;
+        }
+
+        public static boolean putInt(ContentResolver resolver, String name, int value) {
+            return true;
+        }
     }
 }
