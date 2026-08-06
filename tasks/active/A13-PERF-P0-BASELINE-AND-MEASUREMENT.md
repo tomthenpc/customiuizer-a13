@@ -9,7 +9,9 @@
 | 基线 commit | `5ca30911e3fc41e80bfde7ac294218e9b855b8d3` |
 | 应用 ID | `tv.withaibuild.customiuizer.r13` |
 | 主 Activity | `tv.withaibuild.customiuizer.MainActivity` |
-| 状态 | `ACTIVE` |
+| 状态 | `ACTIVE — 测量基础设施已完成，真实 A13 设备基线待回填` |
+| 运行时基线 | `RUNTIME_BASELINE_PENDING_DEVICE` |
+| 下游任务 | `A13-PERF-P1A` 可静态并行推进；`A13-PERF-P1B` 源码优化须等待真实运行时基线或明确授权 |
 
 ## 背景
 
@@ -149,6 +151,18 @@ A13 性能优化需要建立可重复、可审计的测量体系。没有真实�
 | `a13_perf_probe.py` 解析错误导致数据不可用 | P0 阶段无运行数据 | 修复解析器，重新采集 |
 | 文档或 schema 字段遗漏 | 后续比较无法对齐 | 更新 `A13_PERF_BASELINE.md` / `.json` |
 | 误改业务代码 | 破坏功能 | 立即 `git checkout --` 恢复相关文件 |
+
+## P0 完成情况
+
+- 测量基础设施已完成：`tools/a13_perf_probe.py`、JSON schema、单元测试、基线文档均到位。
+- 真实 A13 设备数据尚未获得，状态保持 `RUNTIME_BASELINE_PENDING_DEVICE`。
+- 未伪造任何设备数据或推测 PSS 数值。
+- 本任务保留在 `tasks/active/`，不移动到 `tasks/completed`。
+
+## 与 P1A/P1B 的关系
+
+- `A13-PERF-P1A`（静态 Hook 与进程成本拓扑）可在无真机数据时并行推进。
+- `A13-PERF-P1B`（实际源码优化）必须基于真实运行时基线，除非收到明确授权。
 
 ## 最终证据位置
 
