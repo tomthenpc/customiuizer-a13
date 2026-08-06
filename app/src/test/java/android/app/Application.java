@@ -1,5 +1,6 @@
 package android.app;
 
+import android.content.ContentResolver;
 import android.content.Context;
 import android.content.ContextWrapper;
 
@@ -23,5 +24,16 @@ public class Application extends ContextWrapper {
      */
     public final void attach(Context base) {
         // no-op for tests
+    }
+
+    @Override
+    public Context getApplicationContext() {
+        return this;
+    }
+
+    @Override
+    public ContentResolver getContentResolver() {
+        // Test Settings stub does not consult the resolver.
+        return null;
     }
 }

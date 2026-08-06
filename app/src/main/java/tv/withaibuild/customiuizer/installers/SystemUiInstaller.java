@@ -460,8 +460,7 @@ public final class SystemUiInstaller {
         for (java.util.Map.Entry<String, Object> entry : prefs.entrySet()) {
             String key = entry.getKey();
             Object value = entry.getValue();
-            // Launcher actions (e.g. swipe gestures) are not global system actions.
-            if (key != null && !key.startsWith("pref_key_launcher_") && key.endsWith("_action") && value instanceof Integer && (Integer) value > 1) {
+            if (isSystemUiGlobalActionKey(key) && value instanceof Integer && (Integer) value > 1) {
                 return true;
             }
         }
@@ -469,5 +468,19 @@ public final class SystemUiInstaller {
             return !prefs.getStringSet("controls_mediaplayer_apps").isEmpty();
         }
         return false;
+    }
+
+    /**
+     * Returns true only for action keys that belong to the SystemUI / GlobalActions
+     * domain. Launcher actions, app-internal actions and unknown action keys are
+     * rejected by default (positive-domain gating).
+     */
+    static boolean isSystemUiGlobalActionKey(String key) {
+        if (key == null || !key.endsWith("_action")) return false;
+        String base = key;
+        if (base.startsWith("pref_key_")) {
+            base = base.substring("pref_key_".length());
+        }
+        return base.startsWith("controls_") || base.startsWith("system_");
     }
 }
