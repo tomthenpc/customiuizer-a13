@@ -39,6 +39,7 @@ import tv.withaibuild.customiuizer.mods.utils.LockScreenAlbumArtController
 import tv.withaibuild.customiuizer.mods.utils.ModuleHelper
 import tv.withaibuild.customiuizer.mods.utils.XposedHelpers
 import tv.withaibuild.customiuizer.mods.utils.ResourceHooks
+import java.lang.reflect.Field
 import java.lang.reflect.Method
 import java.util.LinkedHashMap
 
@@ -499,141 +500,177 @@ object SystemUILockScreenHooks {
 
     @JvmStatic
     fun SecureQSTilesHook(lpparam: PackageReadyParam) {
-        val tileHostCls = XposedHelpers.findClassIfExists("com.android.systemui.qs.QSTileHost", lpparam.classLoader)
+        val classLoader = lpparam.classLoader
 
-        val hook = object : MethodHook() {
-            override fun after(param: AfterHookCallback) {
-                val mContext = XposedHelpers.getObjectField(param.getThisObject(), "mContext") as? Context ?: return
-                val mAfterUnlockReceiver = object : BroadcastReceiver() {
-                    @Suppress("UNCHECKED_CAST")
-                    override fun onReceive(context: Context, intent: Intent) {
-                        try {
-                            val tileName = intent.getStringExtra("tileName") ?: return
-                            val expandAfter = intent.getBooleanExtra("expandAfter", false)
-                            val usingCenter = intent.getBooleanExtra("usingCenter", false)
-                            if ("edit" == tileName || expandAfter) {
-                                val expandIntent = Intent(GlobalActions.ACTION_PREFIX + "ExpandSettings")
-                                expandIntent.putExtra("forceExpand", true)
-                                context.sendBroadcast(expandIntent)
-                            }
-                            val mTiles = XposedHelpers.getObjectField(param.getThisObject(), "mTiles") as? LinkedHashMap<String, Any> ?: return
-                            var tile = mTiles[tileName]
-                            if (tile == null) {
-                                if (usingCenter) {
-                                    val mController = XposedHelpers.callStaticMethod(
-                                        XposedHelpers.findClass("com.android.systemui.Dependency", lpparam.classLoader),
-                                        "get",
-                                        XposedHelpers.findClassIfExists("com.android.systemui.miui.statusbar.policy.ControlPanelController", lpparam.classLoader)
-                                    )
-                                    val mControlCenter = XposedHelpers.getObjectField(mController, "mControlCenter")
-                                    val mControlPanelContentView = XposedHelpers.getObjectField(mControlCenter, "mControlPanelContentView")
-                                    val mControlCenterPanel = XposedHelpers.callMethod(mControlPanelContentView, "getControlCenterPanel")
-                                    var mBigTile: Any? = null
-                                    when (tileName) {
-                                        "bt" -> mBigTile = XposedHelpers.getObjectField(mControlCenterPanel, "mBigTile1")
-                                        "cell" -> mBigTile = XposedHelpers.getObjectField(mControlCenterPanel, "mBigTile2")
-                                        "wifi" -> mBigTile = XposedHelpers.getObjectField(mControlCenterPanel, "mBigTile3")
-                                    }
-                                    if (mBigTile != null) tile = XposedHelpers.getObjectField(mBigTile, "mQSTile")
-                                    if (tile == null) return
-                                } else {
-                                    return
+        val tileHostClass = XposedHelpers.findClassIfExists("com.android.systemui.qs.QSTileHost", classLoader)
+        val qsTileImplClass = XposedHelpers.findClassIfExists("com.android.systemui.qs.tileimpl.QSTileImpl", classLoader)
+        val dependencyClass = XposedHelpers.findClassIfExists("com.android.systemui.Dependency", classLoader)
+        val keyguardViewMediatorClass = XposedHelpers.findClassIfExists("com.android.systemui.keyguard.KeyguardViewMediator", classLoader)
+        val centralSurfacesClass = XposedHelpers.findClassIfExists("com.android.systemui.statusbar.phone.CentralSurfaces", classLoader)
+        val controlCenterControllerImplClass = XposedHelpers.findClassIfExists("com.android.systemui.controlcenter.policy.ControlCenterControllerImpl", classLoader)
+        val controlPanelControllerClass = XposedHelpers.findClassIfExists("com.android.systemui.miui.statusbar.policy.ControlPanelController", classLoader)
+        val miuiQSFactoryClass = XposedHelpers.findClassIfExists("com.android.systemui.qs.tileimpl.MiuiQSFactory", classLoader)
+
+        val qTileHostContextField = tileHostClass?.let { XposedHelpers.findFieldIfExists(it, "mContext") }
+        val qTileHostTilesField = tileHostClass?.let { XposedHelpers.findFieldIfExists(it, "mTiles") }
+        val qTileContextField = qsTileImplClass?.let { XposedHelpers.findFieldIfExists(it, "mContext") }
+
+        val dependencyGetMethod = dependencyClass?.let { XposedHelpers.findMethodExactIfExists(it, "get", Class::class.java) }
+        val isUseControlCenterMethod = controlCenterControllerImplClass?.let { XposedHelpers.findMethodExactIfExists(it, "isUseControlCenter") }
+        val collapseControlCenterMethod = controlCenterControllerImplClass?.let { XposedHelpers.findMethodExactIfExists(it, "collapseControlCenter", Boolean::class.javaPrimitiveType) }
+        val postQSRunnableDismissingKeyguardMethod = centralSurfacesClass?.let { XposedHelpers.findMethodExactIfExists(it, "postQSRunnableDismissingKeyguard", Boolean::class.javaPrimitiveType, Runnable::class.java) }
+
+        val mControlCenterField = controlPanelControllerClass?.let { XposedHelpers.findFieldIfExists(it, "mControlCenter") }
+        val mControlCenterClass = mControlCenterField?.type
+        val mControlPanelContentViewField = mControlCenterClass?.let { XposedHelpers.findFieldIfExists(it, "mControlPanelContentView") }
+        val mControlPanelContentViewClass = mControlPanelContentViewField?.type
+        val getControlCenterPanelMethod = mControlPanelContentViewClass?.let { XposedHelpers.findMethodExactIfExists(it, "getControlCenterPanel") }
+        val controlCenterPanelClass = getControlCenterPanelMethod?.returnType
+        val mBigTile1Field = controlCenterPanelClass?.let { XposedHelpers.findFieldIfExists(it, "mBigTile1") }
+        val mBigTile2Field = controlCenterPanelClass?.let { XposedHelpers.findFieldIfExists(it, "mBigTile2") }
+        val mBigTile3Field = controlCenterPanelClass?.let { XposedHelpers.findFieldIfExists(it, "mBigTile3") }
+        val bigTileClass = mBigTile1Field?.type
+        val mQSTileField = bigTileClass?.let { XposedHelpers.findFieldIfExists(it, "mQSTile") }
+
+        val handleQSTileClickAction = GlobalActions.ACTION_PREFIX + "HandleQSTileClick"
+        val expandSettingsAction = GlobalActions.ACTION_PREFIX + "ExpandSettings"
+
+        if (tileHostClass != null) {
+            val hostHook = object : MethodHook() {
+                override fun after(param: AfterHookCallback) {
+                    val host = param.getThisObject()
+                    val mContext = qTileHostContextField?.get(host) as? Context ?: return
+                    val mAfterUnlockReceiver = object : BroadcastReceiver() {
+                        @Suppress("UNCHECKED_CAST")
+                        override fun onReceive(context: Context, intent: Intent) {
+                            try {
+                                val tileName = intent.getStringExtra("tileName") ?: return
+                                val expandAfter = intent.getBooleanExtra("expandAfter", false)
+                                val usingCenter = intent.getBooleanExtra("usingCenter", false)
+                                if ("edit" == tileName || expandAfter) {
+                                    val expandIntent = Intent(expandSettingsAction)
+                                    expandIntent.putExtra("forceExpand", true)
+                                    context.sendBroadcast(expandIntent)
                                 }
+                                val mTiles = qTileHostTilesField?.get(host) as? LinkedHashMap<String, Any> ?: return
+                                var tile = mTiles[tileName]
+                                if (tile == null) {
+                                    if (usingCenter) {
+                                        if (controlPanelControllerClass == null || dependencyGetMethod == null) return
+                                        val mController = dependencyGetMethod.invoke(null, controlPanelControllerClass) ?: return
+                                        val mControlCenter = mControlCenterField?.get(mController) ?: return
+                                        val mControlPanelContentView = mControlPanelContentViewField?.get(mControlCenter) ?: return
+                                        val mControlCenterPanel = getControlCenterPanelMethod?.invoke(mControlPanelContentView) ?: return
+                                        val mBigTile: Any? = when (tileName) {
+                                            "bt" -> mBigTile1Field?.get(mControlCenterPanel)
+                                            "cell" -> mBigTile2Field?.get(mControlCenterPanel)
+                                            "wifi" -> mBigTile3Field?.get(mControlCenterPanel)
+                                            else -> null
+                                        }
+                                        if (mBigTile != null) tile = mQSTileField?.get(mBigTile)
+                                        if (tile == null) return
+                                    } else {
+                                        return
+                                    }
+                                }
+                                XposedHelpers.setAdditionalInstanceField(tile, "mCalledAfterUnlock", true)
+                                val clickHandler = XposedHelpers.findMethodExact(tile.javaClass, "handleClick", View::class.java)
+                                clickHandler.invoke(tile, arrayOfNulls<Any>(1))
+                            } catch (t: Throwable) {
+                                if (t is OutOfMemoryError || t is ThreadDeath || t is VirtualMachineError) throw t
+                                XposedHelpers.log(t)
                             }
-                            XposedHelpers.setAdditionalInstanceField(tile, "mCalledAfterUnlock", true)
-                            val clickHandler = XposedHelpers.findMethodExact(tile.javaClass, "handleClick", View::class.java)
-                            clickHandler.invoke(tile, arrayOfNulls<Any>(1))
-                        } catch (t: Throwable) {
-                            if (t is OutOfMemoryError || t is ThreadDeath || t is VirtualMachineError) throw t
-                            XposedHelpers.log(t)
                         }
                     }
+                    ModuleHelper.registerModuleReceiver(
+                        mContext,
+                        "systemui.afterUnlockReceiver",
+                        mAfterUnlockReceiver,
+                        IntentFilter(handleQSTileClickAction),
+                        Context.RECEIVER_EXPORTED
+                    )
                 }
-                ModuleHelper.registerModuleReceiver(
-                    mContext,
-                    "systemui.afterUnlockReceiver",
-                    mAfterUnlockReceiver,
-                    IntentFilter(GlobalActions.ACTION_PREFIX + "HandleQSTileClick"),
-                    Context.RECEIVER_EXPORTED
-                )
             }
+            ModuleHelper.hookAllConstructors(tileHostClass, hostHook)
         }
 
-        ModuleHelper.hookAllConstructors(tileHostCls, hook)
-
-        val FactoryImpl = "com.android.systemui.qs.tileimpl.MiuiQSFactory"
-        ModuleHelper.findAndHookMethod(FactoryImpl, lpparam.classLoader, "createTileInternal", String::class.java, object : MethodHook() {
+        if (miuiQSFactoryClass == null) return
+        ModuleHelper.findAndHookMethod(miuiQSFactoryClass, "createTileInternal", String::class.java, object : MethodHook() {
             override fun after(param: AfterHookCallback) {
                 val tile = param.getResult() ?: return
                 val tileClass = tile.javaClass.canonicalName ?: return
                 val tileName = param.getArg(0) as? String ?: return
-                var name = tileName
-                if (name.startsWith("intent(")) name = "intent"
-                else if (name.startsWith("custom(")) name = "custom"
-                val secureTitles = HashSet<String>()
-                if (MainModule.mPrefs.getBoolean("system_secureqs_wifi")) secureTitles.add("wifi")
-                if (MainModule.mPrefs.getBoolean("system_secureqs_bt")) secureTitles.add("bt")
-                if (MainModule.mPrefs.getBoolean("system_secureqs_mobiledata")) secureTitles.add("cell")
-                if (MainModule.mPrefs.getBoolean("system_secureqs_airplane")) secureTitles.add("airplane")
-                if (MainModule.mPrefs.getBoolean("system_secureqs_location")) secureTitles.add("gps")
-                if (MainModule.mPrefs.getBoolean("system_secureqs_hotspot")) secureTitles.add("hotspot")
-                if (MainModule.mPrefs.getBoolean("system_secureqs_nfc")) secureTitles.add("nfc")
-                if (MainModule.mPrefs.getBoolean("system_secureqs_sync")) secureTitles.add("sync")
-                if (MainModule.mPrefs.getBoolean("system_secureqs_edit")) secureTitles.add("edit")
-                if (MainModule.mPrefs.getBoolean("system_secureqs_custom")) {
-                    secureTitles.add("intent")
-                    secureTitles.add("custom")
+
+                val name = when {
+                    tileName.startsWith("intent(") -> "intent"
+                    tileName.startsWith("custom(") -> "custom"
+                    else -> tileName
                 }
-                if (secureTitles.contains(name) && !securedTiles.contains(tileClass)) {
-                    val tileHook = object : MethodHook() {
-                        override fun before(param2: BeforeHookCallback) {
-                            val mCalledAfterUnlock = XposedHelpers.getAdditionalInstanceField(param2.getThisObject(), "mCalledAfterUnlock") as? Boolean
-                            if (mCalledAfterUnlock == true) {
-                                XposedHelpers.setAdditionalInstanceField(param2.getThisObject(), "mCalledAfterUnlock", false)
-                                return
-                            }
-                            var isScreenLockDisabled = XposedHelpers.getAdditionalStaticField(
-                                XposedHelpers.findClass("com.android.systemui.keyguard.KeyguardViewMediator", lpparam.classLoader),
-                                "isScreenLockDisabled"
-                            ) as? Boolean ?: false
-                            if (isScreenLockDisabled) return
-                            val mContext = XposedHelpers.getObjectField(param2.getThisObject(), "mContext") as? Context ?: return
-                            val kgMgr = mContext.getSystemService(Context.KEYGUARD_SERVICE) as? KeyguardManager ?: return
-                            if (!kgMgr.isKeyguardLocked || !kgMgr.isKeyguardSecure) return
-                            Handler(mContext.mainLooper).post {
-                                try {
-                                    val DependencyClass = XposedHelpers.findClass("com.android.systemui.Dependency", lpparam.classLoader)
-                                    val StatusbarClsForDep = "com.android.systemui.statusbar.phone.CentralSurfaces"
-                                    val mStatusBar = XposedHelpers.callStaticMethod(DependencyClass, "get", XposedHelpers.findClassIfExists(StatusbarClsForDep, lpparam.classLoader))
-                                    val usingControlCenter: Boolean
-                                    val mController = XposedHelpers.callStaticMethod(DependencyClass, "get", XposedHelpers.findClassIfExists("com.android.systemui.controlcenter.policy.ControlCenterControllerImpl", lpparam.classLoader))
-                                    usingControlCenter = XposedHelpers.callMethod(mController, "isUseControlCenter") as? Boolean ?: false
-                                    if (usingControlCenter) XposedHelpers.callMethod(mController, "collapseControlCenter", true)
-                                    val keepOpened = MainModule.mPrefs.getBoolean("system_secureqs_keepopened")
-                                    val expandAfter = usingControlCenter && keepOpened
-                                    XposedHelpers.callMethod(mStatusBar, "postQSRunnableDismissingKeyguard", !keepOpened, Runnable {
-                                        ModuleHelper.guarded {
-                                            val intent = Intent(GlobalActions.ACTION_PREFIX + "HandleQSTileClick")
-                                            intent.putExtra("tileName", tileName)
-                                            intent.putExtra("expandAfter", expandAfter)
-                                            intent.putExtra("usingCenter", usingControlCenter)
-                                            mContext.sendBroadcast(intent)
-                                        }
-                                    })
-                                } catch (t: Throwable) {
-                                    if (t is OutOfMemoryError || t is ThreadDeath || t is VirtualMachineError) throw t
-                                    XposedHelpers.log(t)
-                                }
-                            }
-                            param2.returnAndSkip(null)
+
+                if (!isSecureTile(name) || securedTiles.contains(tileClass)) return
+
+                val originalTileName = tileName
+                val tileHook = object : MethodHook() {
+                    override fun before(param2: BeforeHookCallback) {
+                        val mCalledAfterUnlock = XposedHelpers.getAdditionalInstanceField(param2.getThisObject(), "mCalledAfterUnlock") as? Boolean
+                        if (mCalledAfterUnlock == true) {
+                            XposedHelpers.setAdditionalInstanceField(param2.getThisObject(), "mCalledAfterUnlock", false)
+                            return
                         }
+                        val isScreenLockDisabled = if (keyguardViewMediatorClass != null) {
+                            XposedHelpers.getAdditionalStaticField(keyguardViewMediatorClass, "isScreenLockDisabled") as? Boolean ?: false
+                        } else false
+                        if (isScreenLockDisabled) return
+                        val mContext = qTileContextField?.get(param2.getThisObject()) as? Context ?: return
+                        val kgMgr = mContext.getSystemService(Context.KEYGUARD_SERVICE) as? KeyguardManager ?: return
+                        if (!kgMgr.isKeyguardLocked || !kgMgr.isKeyguardSecure) return
+                        Handler(mContext.mainLooper).post {
+                            try {
+                                if (dependencyClass == null || dependencyGetMethod == null || centralSurfacesClass == null) return@post
+                                val mStatusBar = dependencyGetMethod.invoke(null, centralSurfacesClass) ?: return@post
+                                if (controlCenterControllerImplClass == null) return@post
+                                val mController = dependencyGetMethod.invoke(null, controlCenterControllerImplClass) ?: return@post
+                                val usingControlCenter = isUseControlCenterMethod?.invoke(mController) as? Boolean ?: false
+                                if (usingControlCenter) collapseControlCenterMethod?.invoke(mController, true)
+                                val keepOpened = MainModule.mPrefs.getBoolean("system_secureqs_keepopened")
+                                val expandAfter = usingControlCenter && keepOpened
+                                val runnable = Runnable {
+                                    ModuleHelper.guarded {
+                                        val intent = Intent(handleQSTileClickAction)
+                                        intent.putExtra("tileName", originalTileName)
+                                        intent.putExtra("expandAfter", expandAfter)
+                                        intent.putExtra("usingCenter", usingControlCenter)
+                                        mContext.sendBroadcast(intent)
+                                    }
+                                }
+                                postQSRunnableDismissingKeyguardMethod?.invoke(mStatusBar, !keepOpened, runnable)
+                            } catch (t: Throwable) {
+                                if (t is OutOfMemoryError || t is ThreadDeath || t is VirtualMachineError) throw t
+                                XposedHelpers.log(t)
+                            }
+                        }
+                        param2.returnAndSkip(null)
                     }
-                    ModuleHelper.findAndHookMethod(tileClass, lpparam.classLoader, "handleClick", View::class.java, tileHook)
-                    ModuleHelper.hookAllMethodsSilently(tileClass, lpparam.classLoader, "handleSecondaryClick", tileHook)
-                    securedTiles.add(tileClass)
                 }
+                ModuleHelper.findAndHookMethod(tile.javaClass, "handleClick", View::class.java, tileHook)
+                ModuleHelper.hookAllMethodsSilently(tile.javaClass, "handleSecondaryClick", tileHook)
+                securedTiles.add(tileClass)
             }
         })
+    }
+
+    private fun isSecureTile(name: String): Boolean = when (name) {
+        "wifi" -> MainModule.mPrefs.getBoolean("system_secureqs_wifi")
+        "bt" -> MainModule.mPrefs.getBoolean("system_secureqs_bt")
+        "cell" -> MainModule.mPrefs.getBoolean("system_secureqs_mobiledata")
+        "airplane" -> MainModule.mPrefs.getBoolean("system_secureqs_airplane")
+        "gps" -> MainModule.mPrefs.getBoolean("system_secureqs_location")
+        "hotspot" -> MainModule.mPrefs.getBoolean("system_secureqs_hotspot")
+        "nfc" -> MainModule.mPrefs.getBoolean("system_secureqs_nfc")
+        "sync" -> MainModule.mPrefs.getBoolean("system_secureqs_sync")
+        "edit" -> MainModule.mPrefs.getBoolean("system_secureqs_edit")
+        "intent", "custom" -> MainModule.mPrefs.getBoolean("system_secureqs_custom")
+        else -> false
     }
 
     @JvmStatic

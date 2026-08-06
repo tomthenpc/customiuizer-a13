@@ -1091,6 +1091,86 @@ def _to_jsonable(records: list[HookCostRecord]) -> list[dict[str, Any]]:
     return [r.as_dict() for r in records]
 
 
+def _regression_checks_p1b3(source_root: Path) -> list[dict[str, Any]]:
+    """Static regression checks for P1B-3 QS Tile hot-path cost reduction."""
+    findings: list[dict[str, Any]] = []
+    hook_file = source_root / "mods" / "SystemUILockScreenHooks.kt"
+    if not hook_file.exists():
+        return findings
+
+    text = hook_file.read_text(encoding="utf-8", errors="replace")
+    tracker = ScopeTracker(text)
+
+    # Locate the SecureQSTilesHook function body.
+    fun_match = re.search(r"\s*fun\s+SecureQSTilesHook\s*\([^)]*\)\s*\{", text)
+    if not fun_match:
+        findings.append({
+            "id": "QS_TILE_HOT_PATH_FUNCTION_PRESENT",
+            "source": "mods/SystemUILockScreenHooks.kt",
+            "status": "fail",
+            "message": "SecureQSTilesHook function not found",
+        })
+        return findings
+
+    open_brace = fun_match.end() - 1
+    close_brace = tracker.find_matching_close(open_brace)
+    if close_brace is None:
+        findings.append({
+            "id": "QS_TILE_HOT_PATH_FUNCTION_PRESENT",
+            "source": "mods/SystemUILockScreenHooks.kt",
+            "status": "fail",
+            "message": "Could not parse SecureQSTilesHook function body",
+        })
+        return findings
+
+    fun_body = text[open_brace:close_brace + 1]
+
+    # No HashSet construction in the SecureQSTilesHook hot path.
+    if re.search(r"\bHashSet\b|\bhashSetOf\b", fun_body):
+        findings.append({
+            "id": "QS_TILE_NO_CALLBACK_HASHSET",
+            "source": "mods/SystemUILockScreenHooks.kt",
+            "status": "fail",
+            "message": "SecureQSTilesHook still constructs a HashSet in the hot path",
+        })
+    else:
+        findings.append({
+            "id": "QS_TILE_NO_CALLBACK_HASHSET",
+            "source": "mods/SystemUILockScreenHooks.kt",
+            "status": "pass",
+            "message": "SecureQSTilesHook no longer constructs a HashSet in the hot path",
+        })
+
+    # findClass/findClassIfExists should only appear in the precomputation block,
+    # before the first MethodHook callback object.
+    first_callback = re.search(r"=\s*object\s*:\s*MethodHook\s*\(\s*\)\s*\{", fun_body)
+    if first_callback:
+        callback_region = fun_body[first_callback.start():]
+        if re.search(r"\b(findClass|findClassIfExists)\b", callback_region):
+            findings.append({
+                "id": "QS_TILE_NO_CALLBACK_FIND_CLASS",
+                "source": "mods/SystemUILockScreenHooks.kt",
+                "status": "fail",
+                "message": "findClass/findClassIfExists still present in a SecureQSTilesHook callback",
+            })
+        else:
+            findings.append({
+                "id": "QS_TILE_NO_CALLBACK_FIND_CLASS",
+                "source": "mods/SystemUILockScreenHooks.kt",
+                "status": "pass",
+                "message": "findClass/findClassIfExists are not used in SecureQSTilesHook callbacks",
+            })
+    else:
+        findings.append({
+            "id": "QS_TILE_NO_CALLBACK_FIND_CLASS",
+            "source": "mods/SystemUILockScreenHooks.kt",
+            "status": "fail",
+            "message": "Could not locate a MethodHook callback in SecureQSTilesHook",
+        })
+
+    return findings
+
+
 def _regression_checks(source_root: Path) -> list[dict[str, Any]]:
     """Static regression checks for P1B-0 zero-feature cost reductions."""
     findings: list[dict[str, Any]] = []
@@ -1132,6 +1212,7 @@ def _regression_checks(source_root: Path) -> list[dict[str, Any]]:
                 "status": "pass",
                 "message": "FeatureRuntime is created only when a catalog feature may be enabled",
             })
+    findings.extend(_regression_checks_p1b3(source_root))
     return findings
 
 
