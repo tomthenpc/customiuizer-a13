@@ -9,8 +9,37 @@ class FakeSharedPreferences : SharedPreferences {
 
     var commitResult: Boolean = true
 
+    /** Successful listener registrations observed by this fake. */
     @JvmField
     var registerCount: Int = 0
+
+    /** All listener registration attempts, including those that threw. */
+    @JvmField
+    var registerAttemptCount: Int = 0
+
+    /** Listener unregistrations observed by this fake. */
+    @JvmField
+    var unregisterCount: Int = 0
+
+    /** Snapshot of currently registered listeners, keyed by identity string. */
+    val activeListenerIdentities: Set<String>
+        get() = listeners.map { System.identityHashCode(it).toString(16) }.toSet()
+
+    /** Stack traces for each registration attempt, useful for caller classification in tests. */
+    val registerAttemptStacks = ArrayList<List<String>>()
+
+    /** Returns registration attempts whose stack contains the PreferenceBootstrap baseline path. */
+    val baselineRegisterAttempts: Int
+        get() = registerAttemptStacks.count { stack ->
+            stack.any { it.startsWith("tv.withaibuild.customiuizer.utils.PreferenceBootstrap.start") ||
+                       it.startsWith("tv.withaibuild.customiuizer.utils.PreferenceBootstrap.ensureListenerLocked") }
+        }
+
+    /** Returns registration attempts whose stack contains the MainModule.watchPreferenceChange path. */
+    val systemUiWatcherRegisterAttempts: Int
+        get() = registerAttemptStacks.count { stack ->
+            stack.any { it.startsWith("tv.withaibuild.customiuizer.MainModule.watchPreferenceChange") }
+        }
 
     /**
      * When true, the first call to registerOnSharedPreferenceChangeListener
@@ -50,6 +79,9 @@ class FakeSharedPreferences : SharedPreferences {
         values.clear()
         listeners.clear()
         registerCount = 0
+        registerAttemptCount = 0
+        unregisterCount = 0
+        registerAttemptStacks.clear()
         firstRegisterFailed = false
     }
 
@@ -110,6 +142,8 @@ class FakeSharedPreferences : SharedPreferences {
     override fun edit(): SharedPreferences.Editor = FakeEditor(values)
 
     override fun registerOnSharedPreferenceChangeListener(listener: SharedPreferences.OnSharedPreferenceChangeListener) {
+        registerAttemptCount++
+        registerAttemptStacks.add(Thread.currentThread().stackTrace.map { it.className + "." + it.methodName })
         registerException?.let { throw it }
         if (failFirstRegister && !firstRegisterFailed) {
             firstRegisterFailed = true
@@ -120,6 +154,7 @@ class FakeSharedPreferences : SharedPreferences {
     }
 
     override fun unregisterOnSharedPreferenceChangeListener(listener: SharedPreferences.OnSharedPreferenceChangeListener) {
+        unregisterCount++
         listeners.remove(listener)
     }
 

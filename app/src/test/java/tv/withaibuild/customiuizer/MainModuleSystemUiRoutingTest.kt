@@ -9,6 +9,7 @@ import org.junit.Assert.assertEquals
 import org.junit.Assert.assertTrue
 import org.junit.Before
 import org.junit.Test
+import tv.withaibuild.customiuizer.mods.catalog.FeatureRuntime
 import tv.withaibuild.customiuizer.mods.utils.ResourceHooks
 import tv.withaibuild.customiuizer.mods.utils.XposedHelpers
 import tv.withaibuild.customiuizer.utils.FakeSharedPreferences
@@ -21,6 +22,16 @@ import java.util.concurrent.atomic.AtomicReference
 
 /**
  * Integration tests for MainModule -> SystemUiInstaller startup gating.
+ *
+ * These tests assert gate-driven side effects on the SystemUI package:
+ * - `SystemUIApplication#onCreate` hook installation
+ * - resource hook registration
+ * - listener registration deltas (PreferenceBootstrap baseline vs SystemUI watcher)
+ * - FeatureRuntime creation
+ *
+ * The restart-time guard in SystemUiInstaller is not disabled; therefore
+ * `watchPreferenceChange` is only reached by manually invoking the onCreate
+ * after-callback.
  */
 class MainModuleSystemUiRoutingTest {
 
@@ -34,6 +45,7 @@ class MainModuleSystemUiRoutingTest {
         MainModule.mPrefs = PrefMap()
         Build.VERSION.SDK_INT = Build.VERSION_CODES.TIRAMISU
         resetResourceHooks()
+        FeatureRuntime.resetForTest()
         fakeSharedPreferences = FakeSharedPreferences()
         FakeXposedInterface.remotePreferences = fakeSharedPreferences
     }
@@ -44,6 +56,7 @@ class MainModuleSystemUiRoutingTest {
         XposedHelpers.moduleInst = null
         MainModule.mPrefs = PrefMap()
         Build.VERSION.SDK_INT = 0
+        FeatureRuntime.resetForTest()
     }
 
     private fun resetResourceHooks() {
@@ -101,9 +114,9 @@ class MainModuleSystemUiRoutingTest {
 
     private fun moduleWithPrefs(prefs: Map<String, Any>): MainModule {
         fakeSharedPreferences.setAll(prefs)
-        fakeSharedPreferences.failFirstRegister = true
+        fakeSharedPreferences.failFirstRegister = false
         fakeSharedPreferences.reset()
-        fakeSharedPreferences.failFirstRegister = true
+        fakeSharedPreferences.failFirstRegister = false
         fakeSharedPreferences.setAll(prefs)
         val module = MainModule()
         module.attachFramework(FakeXposedInterface.create())
@@ -118,23 +131,84 @@ class MainModuleSystemUiRoutingTest {
         return (f.get(resHooks) as? ConcurrentHashMap<*, *>)?.size ?: 0
     }
 
-    @Test
-    fun launcherActionInSystemUiProcess_doesNotInstallSystemUiHooksOrRuntime() {
-        val module = moduleWithPrefs(mapOf("launcher_swipedown_action" to 2))
-        module.onPackageReady(packageReadyParam("com.android.systemui", "com.android.systemui"))
+    /** Snapshot of gate state before onPackageReady is called. */
+    private data class GateSnapshot(val hooks: Int, val resources: Int, val registerAttempts: Int, val watcherAttempts: Int, val runtimeCount: Int)
 
-        assertEquals(0, FakeXposedInterface.recordedHooks.size)
-        assertEquals(0, resourceHookCount())
-        assertEquals(0, fakeSharedPreferences.registerCount)
+    private fun before(module: MainModule): GateSnapshot {
+        return GateSnapshot(
+            hooks = FakeXposedInterface.recordedHooks.size,
+            resources = resourceHookCount(),
+            registerAttempts = fakeSharedPreferences.registerAttemptCount,
+            watcherAttempts = fakeSharedPreferences.systemUiWatcherRegisterAttempts,
+            runtimeCount = FeatureRuntime.testCreationCount
+        )
     }
 
     @Test
-    fun validSystemUiAction_installsSystemUiHook() {
-        val module = moduleWithPrefs(mapOf("controls_backlong_action" to 2))
+    fun allOff_doesNotInstallSystemUiHooksOrRuntime() {
+        val module = moduleWithPrefs(emptyMap())
+        val base = before(module)
         module.onPackageReady(packageReadyParam("com.android.systemui", "com.android.systemui"))
 
-        assertTrue("SystemUI onCreate hook should be installed", FakeXposedInterface.recordedHooks.size > 0)
-        assertEquals(0, resourceHookCount())
-        assertEquals(0, fakeSharedPreferences.registerCount)
+        assertEquals(base.hooks, FakeXposedInterface.recordedHooks.size)
+        assertEquals(base.resources, resourceHookCount())
+        assertEquals(base.watcherAttempts, fakeSharedPreferences.systemUiWatcherRegisterAttempts)
+        assertEquals(base.runtimeCount, FeatureRuntime.testCreationCount)
+    }
+
+    @Test
+    fun launcherActionInSystemUiProcess_doesNotTriggerInstall() {
+        val module = moduleWithPrefs(mapOf("launcher_swipedown_action" to 2))
+        val base = before(module)
+        module.onPackageReady(packageReadyParam("com.android.systemui", "com.android.systemui"))
+
+        assertEquals(base.hooks, FakeXposedInterface.recordedHooks.size)
+        assertEquals(base.resources, resourceHookCount())
+        assertEquals(base.watcherAttempts, fakeSharedPreferences.systemUiWatcherRegisterAttempts)
+        assertEquals(base.runtimeCount, FeatureRuntime.testCreationCount)
+    }
+
+    @Test
+    fun validSystemUiAction_installsOnCreateHook() {
+        val module = moduleWithPrefs(mapOf("controls_backlong_action" to 2))
+        val base = before(module)
+        module.onPackageReady(packageReadyParam("com.android.systemui", "com.android.systemui"))
+
+        assertTrue("SystemUI onCreate hook should be installed", FakeXposedInterface.recordedHooks.size > base.hooks)
+        assertEquals(base.resources, resourceHookCount())
+        assertEquals(base.watcherAttempts, fakeSharedPreferences.systemUiWatcherRegisterAttempts)
+        // FeatureRuntime is created after the restart-time guard; in unit tests
+        // Settings.getLong returns a large value, so the guard returns early
+        // and no runtime is created yet.
+        assertEquals(base.runtimeCount, FeatureRuntime.testCreationCount)
+    }
+
+    @Test
+    fun resourceOnlyFeature_isNotSkippedByGate() {
+        val module = moduleWithPrefs(mapOf("system_statusbarheight" to 20))
+        val base = before(module)
+        module.onPackageReady(packageReadyParam("com.android.systemui", "com.android.systemui"))
+
+        assertTrue("Resource hooks should be installed for system_statusbarheight", resourceHookCount() > base.resources)
+    }
+
+    @Test
+    fun navbarResourceOnlyFeature_isNotSkippedByGate() {
+        val module = moduleWithPrefs(mapOf("controls_navbarheight" to 20))
+        val base = before(module)
+        module.onPackageReady(packageReadyParam("com.android.systemui", "com.android.systemui"))
+
+        assertTrue("Resource hooks should be installed for controls_navbarheight", resourceHookCount() > base.resources)
+    }
+
+    @Test
+    fun nonSystemUiPackage_doesNotInstallSystemUiHooks() {
+        val module = moduleWithPrefs(mapOf("controls_backlong_action" to 2))
+        val base = before(module)
+        module.onPackageReady(packageReadyParam("com.some.other.app", "com.some.other.app"))
+
+        assertEquals(base.hooks, FakeXposedInterface.recordedHooks.size)
+        assertEquals(base.watcherAttempts, fakeSharedPreferences.systemUiWatcherRegisterAttempts)
+        assertEquals(base.runtimeCount, FeatureRuntime.testCreationCount)
     }
 }

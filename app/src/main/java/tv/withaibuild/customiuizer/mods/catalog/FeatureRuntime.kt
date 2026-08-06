@@ -40,4 +40,24 @@ class FeatureRuntime(
 
     internal fun isEnvironmentInitialized(): Boolean = environmentLazy.isInitialized()
     internal fun isResolverInitialized(): Boolean = resolverLazy.isInitialized() || resolverForTest != null
+
+    companion object {
+        /** Test-only creation counter. Never used by production logic. */
+        @JvmField
+        var testCreationCount: Int = 0
+
+        /** Test-only record of processes that created a runtime. */
+        val testCreatedProcessNames = mutableListOf<String>()
+
+        @JvmStatic
+        fun resetForTest() {
+            testCreationCount = 0
+            testCreatedProcessNames.clear()
+        }
+    }
+
+    init {
+        testCreationCount++
+        testCreatedProcessNames.add(processName)
+    }
 }

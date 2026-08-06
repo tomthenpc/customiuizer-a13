@@ -30,7 +30,7 @@
 - 交叉污染根因：`SystemUiInstaller.hasAnyGlobalAction()` 扫描所有 `*_action` 偏好，未排除 Launcher 手势域。
 - R1-A 排除规则：抽取 `isSystemUiGlobalActionKey(key)`，按正向 SystemUI 域识别；先去掉 `pref_key_` 前缀，再要求基础键以 `controls_` 或 `system_` 开头并以 `_action` 结尾；`launcher_*_action`、`pref_key_launcher_*_action` 以及其他未知 action 键被拒绝。
 - 新增直接门控测试：`SystemUiGateTest` 覆盖 6 个真实 `launcher_*_action` 键、`pref_key_launcher_*_action`、合法 `controls_*_action`、`system_lockscreenshortcuts_right_action`、未知 action 和 all-defaults。
-- 新增 SystemUI 路由测试：`MainModuleSystemUiRoutingTest` 覆盖 `com.android.systemui` 进程在仅含 `launcher_swipedown_action=2` 时不安装任何 hook、资源或 watcher；在仅含 `controls_backlong_action=2` 时安装 `SystemUIApplication#onCreate` hook。
+- 新增 SystemUI 路由测试：`MainModuleSystemUiRoutingTest` 覆盖 `com.android.systemui` 进程在仅含 `launcher_swipedown_action=2` 时不会安装 `SystemUIApplication#onCreate` hook；在仅含 `controls_backlong_action=2` 时会安装 `SystemUIApplication#onCreate` hook。注意：R1-A 阶段尚未手动触发 onCreate callback、未观测 `setupStatusBar` 执行次数、未统计 `FeatureRuntime` 创建次数，也未区分 PreferenceBootstrap 基线监听器与 SystemUI `watchPreferenceChange` 监听器。
 - 当前 QA 状态：`QA_CONDITIONAL`。原因：R1-B 结构对账与 mutation 验证尚未完成；完整 Release 与真机证据尚未完成。
 
 ## 3. 变更范围核对
