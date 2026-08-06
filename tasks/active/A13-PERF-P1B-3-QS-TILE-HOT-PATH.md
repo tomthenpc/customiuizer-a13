@@ -8,7 +8,7 @@
 | 分支 | `devin/a13-memory-performance-optimization` |
 | 起点 commit | `5f780b8a15727114bd29f01188191a2520ff2509` |
 | 状态 | `COMPLETED` |
-| 终点 commit | 待提交后填入 |
+| 终点 commit | `24053dc` |
 | P0 真实运行时基线 | `RUNTIME_BASELINE_PENDING_DEVICE` |
 | 授权范围 | 仅 Quick Settings Tile 创建路径：`tileHostCls` 构造器 Hook、`FactoryImpl#createTileInternal` Hook 及二者直接使用的模块 Tile 创建辅助逻辑 |
 
