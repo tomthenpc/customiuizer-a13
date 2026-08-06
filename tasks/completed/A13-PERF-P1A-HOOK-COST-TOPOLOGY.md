@@ -9,7 +9,7 @@
 | 起点 commit | `6f2d4374932e14a192b19358a2c53aab0c623d14` |
 | 状态 | `COMPLETED` |
 | 依赖 | `A13-PERF-P0`（基础设施，仍待真实设备基线） |
-| 终点 commit | `待填入` |
+| 终点 commit | `a4f869be2aaab6ee19281b534daf7b9c1f4432b3` |
 | 验证 | `python -m compileall tools`、`python -m unittest discover -s tools/tests -p "test_*.py"`、`python tools/verify.py full`、`git diff --check` 全部通过 |
 
 ## 背景
