@@ -5,10 +5,11 @@
 | 字段 | 值 |
 |------|-----|
 | Base tag | `r13.9.2` (`ac49cae8deb4fe24df2621c0a2f2aae9d510ba86`) |
-| Final SHA | `34ee83b7cd1dcbe63a38b930d0bdef08944ef8df` |
+| 审计代码 HEAD | `34ee83b7cd1dcbe63a38b930d0bdef08944ef8df` |
+| 任务最终 SHA | `d36165d`（提交审计报告与任务文件后） |
 | 分支 | `devin/a13-rom-intelligence-audit` |
-| 提交范围 | `r13.9.2..HEAD` |
-| 提交数 | 252 个非合并提交，0 个合并提交 |
+| 审计范围 | `r13.9.2..34ee83b` |
+| 审计范围提交数 | 252 个非合并提交，0 个合并提交 |
 | 审计日期 | 2026-08-06 |
 
 ## 任务目标
