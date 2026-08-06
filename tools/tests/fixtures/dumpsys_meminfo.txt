@@ -1,0 +1,33 @@
+** MEMINFO in pid 12345 [tv.withaibuild.customiuizer.r13] **
+                         Pss      Private  Private  Swapped     Heap     Heap     Heap
+                       Total  Dirty    Clean    Dirty     Size    Alloc     Free
+                        ------   ------   ------   ------   ------   ------   ------
+  Native Heap:            1234     1234        0        0     2048     1500      548
+  Dalvik Heap:            5678     5678        0        0     8192     6000     2192
+ Dalvik Other:             300      300        0        0
+        Stack:              64       64        0        0
+       Ashmem:               8        8        0        0
+      Gfx dev:             256      256        0        0
+    Other dev:              16       16        0        0
+     .so mmap:             512      100      412        0
+    .jar mmap:             128        0      128        0
+    .apk mmap:             256        0      256        0
+    .ttf mmap:              32        0       32        0
+    .dex mmap:             256        0      256        0
+    .oat mmap:             512        0      512        0
+    .art mmap:             256       64      192        0
+   Other mmap:              32       32        0        0
+      Unknown:             128      128        0        0
+        TOTAL:             9876     8000     1876        0     2400    10240
+
+ App Summary
+                       Pss(KB)
+                        ------
+           Java Heap:     5678
+         Native Heap:     1234
+          Graphics:       256
+           Private Other:   600
+          System:        2108
+
+           TOTAL PSS:     9876
+        Total Private Dirty: 8000

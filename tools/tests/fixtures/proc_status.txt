@@ -1,0 +1,37 @@
+Name:	CustoMIUIzer
+Umask:	0077
+State:	S (sleeping)
+Tgid:	12345
+Ngid:	0
+Pid:	12345
+PPid:	1234
+TracerPid:	0
+Uid:	10123 10123 10123 10123
+Gid:	10123 10123 10123 10123
+FDSize:	256
+Groups:	10123 10124 10125 
+NStgid:	12345
+NSpid:	12345
+NSpgid:	1234
+NSsid:	1234
+VmPeak:	  1200000 kB
+VmSize:	  1150000 kB
+VmLck:	       0 kB
+VmPin:	       0 kB
+VmHWM:	  150000 kB
+VmRSS:	  145000 kB
+RssAnon:	   90000 kB
+RssFile:	   50000 kB
+RssShmem:	    5000 kB
+VmData:	  300000 kB
+VmStk:	     132 kB
+VmExe:	      24 kB
+VmLib:	  120000 kB
+VmPTE:	    1200 kB
+VmPMD:	      16 kB
+VmSwap:	       0 kB
+Threads:	42
+SigQ:	0/12345
+SigPnd:	0000000000000000
+ShdPnd:	0000000000000000
+SigBlk:	0000000000000000
