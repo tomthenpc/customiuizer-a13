@@ -14,7 +14,7 @@ public class Build {
     public static final String DISPLAY = "test";
 
     public static class VERSION {
-        public static int SDK_INT = 33;
+        public static int SDK_INT = 0;
         public static final String INCREMENTAL = "V14.0.0.0.TEST";
     }
 

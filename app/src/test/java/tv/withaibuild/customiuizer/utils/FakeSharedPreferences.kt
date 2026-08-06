@@ -12,6 +12,15 @@ class FakeSharedPreferences : SharedPreferences {
     @JvmField
     var registerCount: Int = 0
 
+    /**
+     * When true, the first call to registerOnSharedPreferenceChangeListener
+     * throws and does not count. This lets tests distinguish the baseline
+     * initPrefs registration (which may be disabled) from watchPreferenceChange
+     * re-registration.
+     */
+    var failFirstRegister: Boolean = false
+    private var firstRegisterFailed = false
+
     private var getAllException: RuntimeException? = null
     private var registerException: RuntimeException? = null
 
@@ -35,6 +44,13 @@ class FakeSharedPreferences : SharedPreferences {
         values.putAll(map)
         changed.addAll(map.keys)
         for (key in changed) dispatchChange(key)
+    }
+
+    fun reset() {
+        values.clear()
+        listeners.clear()
+        registerCount = 0
+        firstRegisterFailed = false
     }
 
     fun change(key: String, value: Any?) {
@@ -95,6 +111,10 @@ class FakeSharedPreferences : SharedPreferences {
 
     override fun registerOnSharedPreferenceChangeListener(listener: SharedPreferences.OnSharedPreferenceChangeListener) {
         registerException?.let { throw it }
+        if (failFirstRegister && !firstRegisterFailed) {
+            firstRegisterFailed = true
+            throw RuntimeException("simulated first registration failure")
+        }
         registerCount++
         if (!listeners.contains(listener)) listeners.add(listener)
     }

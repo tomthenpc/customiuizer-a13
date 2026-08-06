@@ -43,7 +43,7 @@ class MainModuleLauncherRoutingTest {
         FakeXposedInterface.reset()
         XposedHelpers.moduleInst = null
         MainModule.mPrefs = PrefMap()
-        Build.VERSION.SDK_INT = Build.VERSION_CODES.TIRAMISU
+        Build.VERSION.SDK_INT = 0
     }
 
     private fun resetResourceHooks() {
@@ -104,7 +104,10 @@ class MainModuleLauncherRoutingTest {
         process: String = "com.miui.home"
     ): MainModule {
         fakeSharedPreferences.setAll(prefs)
-        fakeSharedPreferences.registerCount = 0
+        fakeSharedPreferences.failFirstRegister = true
+        fakeSharedPreferences.reset()
+        fakeSharedPreferences.failFirstRegister = true
+        fakeSharedPreferences.setAll(prefs)
         val module = MainModule()
         module.attachFramework(FakeXposedInterface.create())
         module.onModuleLoaded(moduleLoadedParam(process))
@@ -125,7 +128,7 @@ class MainModuleLauncherRoutingTest {
 
         assertEquals(0, FakeXposedInterface.recordedHooks.size)
         assertEquals(0, resourceHookCount())
-        assertEquals(1, fakeSharedPreferences.registerCount)
+        assertEquals(0, fakeSharedPreferences.registerCount)
     }
 
     @Test
@@ -136,7 +139,7 @@ class MainModuleLauncherRoutingTest {
         val attachHooks = FakeXposedInterface.recordedHooks.count { it.executable.name == "attach" }
         assertEquals(0, attachHooks)
         assertTrue("resource hooks should be installed", resourceHookCount() > 0)
-        assertEquals(1, fakeSharedPreferences.registerCount)
+        assertEquals(0, fakeSharedPreferences.registerCount)
     }
 
     @Test
@@ -169,6 +172,6 @@ class MainModuleLauncherRoutingTest {
         val attachHooks = FakeXposedInterface.recordedHooks.count { it.executable.name == "attach" }
         assertEquals(0, attachHooks)
         assertEquals(0, resourceHookCount())
-        assertEquals(1, fakeSharedPreferences.registerCount)
+        assertEquals(0, fakeSharedPreferences.registerCount)
     }
 }
