@@ -1,40 +1,46 @@
-# CustoMIUIzer A13（米客 A13）
+# CustoMIUIzer A13
 
 简体中文 | [English](README_EN.md)
 
-CustoMIUIzer A13 是面向 Android 13 的 MIUI / HyperOS 系统界面与交互定制模块，使用独立包名、版本线和 libxposed API。
+CustoMIUIzer A13 是面向 **MIUI 14 / Android 13** 的系统界面与交互定制模块，并为 **HyperOS 1 / Android 13** 提供基于能力探测的兼容路径。项目使用独立包名、版本线和现代 libxposed API。
+
+- 当前版本：`r13.10.1`（versionCode `135`）
+- 应用 ID：`tv.withaibuild.customiuizer.r13`
+- 源码仓库：<https://github.com/tomthenpc/customiuizer-a13>
+- 用户下载：<https://github.com/Xposed-Modules-Repo/tv.withaibuild.customiuizer.r13/releases>
+- 实装框架：[Vector v2.2](https://github.com/JingMatrix/Vector/releases/tag/v2.2)
 
 ## 核心功能
 
-- 状态栏：时钟、日期、温度、网速、电池、信号和图标布局；
-- 系统界面：控制中心、通知、音量、亮度、锁屏、媒体和充电信息；
-- 桌面：图标、文件夹、Dock、最近任务、手势和动画；
-- 系统行为：导航键、按键动作、电源菜单、浮窗、安装器、分享和应用权限。
+- 状态栏时钟、日期、温度、网速、电池、信号与图标布局；
+- 控制中心、通知、音量、亮度、锁屏、媒体与充电界面；
+- Launcher 图标、文件夹、Dock、最近任务、手势与动画；
+- 导航键、按键动作、电源菜单、浮窗、多窗口、安装器、分享与应用权限。
 
 ## 兼容范围
 
-- MIUI 14 / Android 13：主要兼容目标；
-- HyperOS 1 / Android 13：正式兼容目标，以 Contract/Resolver 能力探测选择完整目标，不假设 ROM 内部结构与 MIUI 14 相同；
-- `arm64-v8a`，applicationId `tv.withaibuild.customiuizer.r13`；
-- libxposed `minApiVersion=101`、`targetApiVersion=102`；
-- 不支持 Android 14 及以上版本。
+| 项目 | 支持范围 |
+| --- | --- |
+| 主要系统 | MIUI 14 / Android 13 |
+| 兼容探测目标 | HyperOS 1 / Android 13，具体功能取决于 ROM 与系统应用版本 |
+| SDK | minSdk 33 / targetSdk 34 |
+| ABI | `arm64-v8a` |
+| Xposed 框架 | [Vector v2.2](https://github.com/JingMatrix/Vector/releases/tag/v2.2) |
+| 模块元数据 | `minApiVersion=101`、`targetApiVersion=102`、`staticScope=false` |
 
-已知实机基线：Redmi Note 11T Pro（`xaga`）、MIUI `V14.0.10.0.TLOINXM`、LSPosed 2.1.1。HyperOS 1 / Android 13 仍需按 ROM 提供完整 LSPosed 日志验证。
+不支持 Android 14 及以上版本，也不建议与上游版或其他 CustoMIUIzer 派生模块同时启用。
 
-## 构建与开发
+已知实装基线：Redmi Note 11T Pro（`xaga`）、MIUI `V14.0.10.0.TLOINXM`、Vector v2.2。
 
-需要 JDK 17、Android SDK 和 Python 3。开发门禁：
+## 运行架构
 
-```bash
-python tools/verify.py full
-python -m compileall tools
-python -m unittest discover -s tools/tests -p "test_*.py"
-```
+- SystemUI、Launcher、`system_server` 与普通应用入口按目标进程路由到独立 Installer，避免无关进程加载不属于自己的安装路径；
+- Feature 使用稳定身份、进程范围、安装阶段和一次安装状态，关闭或不兼容的功能跳过无关注册与对象创建；
+- ROM Contract、Resolver 与 Installer 共享目标选择结果，缺失目标时仅安全跳过受影响功能；
+- Receiver、Observer、View 与控制器按所有者管理替换、失效和释放，降低重复注册与长期引用风险；
+- 普通 ROM、反射和回调异常保持隔离，`OutOfMemoryError`、`ThreadDeath` 与 `VirtualMachineError` 不会被伪装成普通兼容失败；
+- DeviceInfo 与 Launcher 高频路径减少重复 Binder、反射、I/O、配置读取和临时对象。
 
-正式构建使用仓库外的 A13 专用签名配置；不得提交密钥、密码、令牌、APK 或本地签名配置。开发时保持关闭功能零后台成本、Hook 热路径低分配、Receiver/Observer 可释放，且不得吞掉 `OutOfMemoryError`。
+本版本变化见 [CHANGELOG.md](CHANGELOG.md)。架构、兼容与验证文档见 [DOCUMENTATION.md](DOCUMENTATION.md)。
 
-- 当前正式版：`r13.10.1`（versionCode `135`）
-- 用户下载：<https://github.com/Xposed-Modules-Repo/tv.withaibuild.customiuizer.r13/releases>
-- 源码：<https://github.com/tomthenpc/customiuizer-a13>
-
-本项目依据 GPL-3.0 分发，派生自 Mikanoshi/CustoMIUIzer，并参考 MonwF/customiuizer 的 Android 13 实现。
+项目依据 GPL-3.0 分发，派生自 Mikanoshi/CustoMIUIzer，并参考 MonwF/customiuizer 的 Android 13 实现。

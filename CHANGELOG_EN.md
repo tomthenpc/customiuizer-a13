@@ -1,23 +1,36 @@
 # Changelog
 
-## r13.9.2 (2026-08-01)
+[简体中文](CHANGELOG.md) | English
 
-### Memory and stability
+## r13.10.1 — 2026-08-06
 
-- When the lock-screen album-art owner detaches, unfinished work is cancelled and the module-owned background, one-frame output cache, and static processed result are released. The source remains available for on-demand regeneration after reattach, preserving behavior;
-- The single bounded queue, latest-generation publication gate, and intermediate Bitmap recycling remain in place so cancelled results cannot repopulate SystemUI memory.
+`versionCode 135`, targeting MIUI 14 / Android 13, capability-detected HyperOS 1 / Android 13 compatibility, `arm64-v8a`, and libxposed API 101/102.
 
-### UI and interaction
+### Core Changes
 
-- Settings transitions now match the current A14 implementation at `350ms`, restoring a more readable navigation pace;
-- Switches inherit the pressed state of their row for immediate feedback. Per-tap alpha animators were removed, reducing temporary render state and interference during repeated taps.
+- Split SystemUI, Launcher, `system_server`, and regular-app entry points into process-routed Installers. Stable feature identities, process scopes, install phases, and install-once state prevent unrelated loading and duplicate installation.
+- Hardened early preference snapshots, empty-snapshot handling, concurrent loading, and failed-install state so preference updates cannot incorrectly reset installed Hooks or trigger duplicate installation.
+- Improved MIUI 14 and HyperOS 1 / Android 13 environment detection, Hook Contracts, target resolution, and variant selection. Missing targets skip only the affected feature without mixing candidates.
+- Unified Hook, reflection, Receiver, Observer, delayed-callback, and diagnostics boundaries. Ordinary compatibility failures remain isolated, while direct or wrapped `OutOfMemoryError`, `ThreadDeath`, and `VirtualMachineError` continue to propagate.
+- Completed owner, replacement, stale-state, and release paths for Receivers, Observers, Views, Handlers, and controllers, and removed blocking waits from selector UI paths.
+- Hardened callback paths for call-interruption control, secure-window removal, temporary overlay hiding during screenshots, notification/share floating-window actions, and multi-window restrictions; aligned installation and compatibility boundaries across status bar, control center, volume, lock screen, and settings Hooks.
+- Replaced Launcher animation-scale reflection with a direct API, cached HotSeats density, touch thresholds, and gesture state per View, and reused the install-time `BaseRecentsImpl` Class in FSG callbacks.
+- Reworked DeviceInfo sampling around fixed buffers and byte-wise sysfs parsing, reducing periodic `Properties`, `RandomAccessFile`, Binder queries, and temporary objects while preserving sampling and failure backoff.
+- Added runtime invariant, Hook-contract, source-hazard, ROM-compatibility, Release compilation, unit-test, Lint, R8, and dependency-integrity gates.
+- Updated the build toolchain and dependency verification, removed the unused `miui.jar` and an invalid external annotation, and normalized shared ignore rules.
 
-### Compatibility and release
+### Verification Scope
 
-- No MIUI 14 / Android 13 or HyperOS 1 / Android 13 ROM Hook target, Contract, or fallback changed;
-- The LSPosed repository now provides a dedicated `SUMMARY`, keeping the module-list card concise instead of flattening the full README;
-- Kotlin/Java compilation, static invariants, unit tests, Lint, version, signing, zip alignment, Xposed metadata, and `debuggable=false` remain release gates. The new changes still require on-device LSPosed-log confirmation.
+- The current code passes Python and Gradle static gates, Release Kotlin/Java compilation, Release unit tests, Release/Vital Lint, R8, strict dependency verification, Manifest checks, and Xposed metadata checks.
+- The known deployed baseline is Redmi Note 11T Pro (`xaga`), MIUI `V14.0.10.0.TLOINXM`, and Vector v2.2. HyperOS 1 feature availability depends on the ROM and system-app versions.
 
-## Historical implementation summary
+## r13.9.2 — 2026-08-01
 
-The A13 line established an independent package and A13 signing identity, libxposed API 101/102, System/SystemUI/Launcher separation, small Kotlin migrations, hardened resource and preference Hooks, receiver/observer/handler lifecycle ownership, bounded caches, cancellable asynchronous work, explicit OOM boundaries, and Contract/Resolver compatibility diagnostics. Git tags and commits retain the detailed history.
+- Cancelled unfinished lock-screen album-art work and released module-owned backgrounds, one-frame caches, and static processed results when the owner View detached;
+- Set settings-page transitions to `350ms`;
+- Reused the containing row's pressed state for switches and removed per-tap alpha animators;
+- Added a dedicated concise LSPosed module summary.
+
+### Historical Core Implementation Summary
+
+The A13 line established an independent package and Android 13 maintenance path; delivered libxposed API 101/102 compatibility; separated System, SystemUI, and Launcher domains; performed staged Kotlin migrations; hardened resource and preference Hooks; governed lifecycles; bounded caches; added cancellable asynchronous work; defined fatal-error boundaries; and introduced Contract/Resolver compatibility diagnostics. Fine-grained history remains in Git commits and historical tags.

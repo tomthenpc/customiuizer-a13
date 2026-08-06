@@ -2,39 +2,45 @@
 
 [简体中文](README.md) | English
 
-CustoMIUIzer A13 customizes Android 13 system UI and interactions on MIUI and HyperOS using an independent package, release line, and modern libxposed API.
+CustoMIUIzer A13 customizes the system UI and interactions on **MIUI 14 / Android 13**, with capability-based compatibility paths for **HyperOS 1 / Android 13**. It uses an independent package, release line, and modern libxposed API.
 
-## Core features
+- Current version: `r13.10.1` (versionCode `135`)
+- Application ID: `tv.withaibuild.customiuizer.r13`
+- Source repository: <https://github.com/tomthenpc/customiuizer-a13>
+- User downloads: <https://github.com/Xposed-Modules-Repo/tv.withaibuild.customiuizer.r13/releases>
+- Deployed framework: [Vector v2.2](https://github.com/JingMatrix/Vector/releases/tag/v2.2)
 
-- Status bar: clock, date, temperature, network speed, battery, signal, and icon layout;
-- System UI: control center, notifications, volume, brightness, lock screen, media, and charging information;
-- Launcher: icons, folders, Dock, recents, gestures, and animations;
-- System behavior: navigation keys, button actions, power menu, floating windows, installer, sharing, and app permissions.
+## Core Features
+
+- Status-bar clock, date, temperature, network speed, battery, signal, and icon layout;
+- Control center, notifications, volume, brightness, lock screen, media, and charging UI;
+- Launcher icons, folders, Dock, recents, gestures, and animations;
+- Navigation keys, button actions, power menu, floating windows, multi-window behavior, installer, sharing, and app permissions.
 
 ## Compatibility
 
-- MIUI 14 / Android 13: primary compatibility target;
-- HyperOS 1 / Android 13: formal target selected through complete Contract/Resolver capability bundles without assuming MIUI 14 internals;
-- `arm64-v8a`, applicationId `tv.withaibuild.customiuizer.r13`;
-- libxposed `minApiVersion=101`, `targetApiVersion=102`;
-- Android 14 and later are not supported.
+| Item | Supported range |
+| --- | --- |
+| Primary system | MIUI 14 / Android 13 |
+| Capability-detected target | HyperOS 1 / Android 13; feature availability depends on the ROM and system-app versions |
+| SDK | minSdk 33 / targetSdk 34 |
+| ABI | `arm64-v8a` |
+| Xposed framework | [Vector v2.2](https://github.com/JingMatrix/Vector/releases/tag/v2.2) |
+| Module metadata | `minApiVersion=101`, `targetApiVersion=102`, `staticScope=false` |
 
-Known device baseline: Redmi Note 11T Pro (`xaga`), MIUI `V14.0.10.0.TLOINXM`, and LSPosed 2.1.1. HyperOS 1 / Android 13 still requires complete ROM-specific LSPosed logs.
+Android 14 and later are not supported. Do not enable this module together with upstream or another CustoMIUIzer-derived module.
 
-## Build and development
+Known deployed baseline: Redmi Note 11T Pro (`xaga`), MIUI `V14.0.10.0.TLOINXM`, and Vector v2.2.
 
-JDK 17, Android SDK, and Python 3 are required. Development gates:
+## Runtime Architecture
 
-```bash
-python tools/verify.py full
-python -m compileall tools
-python -m unittest discover -s tools/tests -p "test_*.py"
-```
+- SystemUI, Launcher, `system_server`, and regular-app entry points are routed to process-specific Installers, avoiding unrelated installation paths in the wrong process;
+- Features use stable identities, process scopes, install phases, and install-once state; disabled or incompatible features skip unrelated registrations and object creation;
+- ROM Contracts, Resolvers, and Installers share the resolved target, while missing targets safely skip only the affected feature;
+- Receiver, Observer, View, and controller lifecycles are owner-bound with replacement, stale-state, and release paths;
+- Ordinary ROM, reflection, and callback failures remain isolated, while `OutOfMemoryError`, `ThreadDeath`, and `VirtualMachineError` are not disguised as compatibility failures;
+- DeviceInfo and Launcher hot paths reduce repeated Binder calls, reflection, I/O, configuration reads, and temporary objects.
 
-Formal builds use an external A13-specific signing configuration. Never commit keys, passwords, tokens, APKs, or local signing files. Disabled features must create no background work; Hook hot paths stay allocation-light; receivers and observers are releasable; `OutOfMemoryError` is never swallowed.
-
-- Current release: `r13.10.1` (versionCode `135`)
-- User downloads: <https://github.com/Xposed-Modules-Repo/tv.withaibuild.customiuizer.r13/releases>
-- Source: <https://github.com/tomthenpc/customiuizer-a13>
+See [CHANGELOG_EN.md](CHANGELOG_EN.md) for release changes and [DOCUMENTATION.md](DOCUMENTATION.md) for architecture, compatibility, and verification documents.
 
 Distributed under GPL-3.0. Derived from Mikanoshi/CustoMIUIzer and informed by MonwF/customiuizer's Android 13 work.

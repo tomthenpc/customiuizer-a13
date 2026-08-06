@@ -1,69 +1,36 @@
-# 更新日志
+# Changelog
 
-## r13.10.1（2026-08-06）
+简体中文 | [English](CHANGELOG_EN.md)
 
-### 性能与资源治理
+## r13.10.1 — 2026-08-06
 
-- 状态栏设备信息采样改为固定缓冲区与逐字节 sysfs 解析，移除周期性 Properties、RandomAccessFile、临时结果对象和屏幕状态 Binder 查询；
-- Launcher HotSeats 手势阈值和触摸状态按 View 实例缓存，减少每个触摸事件中的 density 与 ViewConfiguration 重复读取；
-- Launcher FSG 的 BaseRecentsImpl Class 在 Hook 安装阶段解析一次并由相关 callback 复用。
+`versionCode 135`，面向 MIUI 14 / Android 13、HyperOS 1 / Android 13 兼容探测、`arm64-v8a` 与 libxposed API 101/102。
 
-### 稳定性与兼容性
+### 核心变化
 
-- 保持原有 DeviceInfo 显示类型、文本格式、采样周期、失败退避和屏幕生命周期合同；
-- 保持 Launcher 左右滑动距离、速度、touchSlop、动作 key 和 FSG 调用范围行为；
-- FSG stack-scope 优化因缺少 MIUI 14 / HyperOS 1 Launcher APK 与反编译证据而冻结，不进行无证据替换。
+- 将 SystemUI、Launcher、`system_server` 与普通应用入口拆分为按进程路由的 Installer，并以稳定 Feature 身份、进程范围、安装阶段和一次安装状态避免无关加载与重复安装。
+- 加固启动早期偏好快照、空快照、并发加载和安装失败状态，防止偏好更新将已安装 Hook 错误重置或触发重复安装。
+- 完善 MIUI 14 与 HyperOS 1 / Android 13 的环境识别、Hook Contract、目标解析和 variant 选择；缺失目标时只跳过受影响功能，不跨候选混装。
+- 统一 Hook、反射、Receiver、Observer、延迟回调与诊断边界：普通兼容异常继续隔离，直接或包装的 `OutOfMemoryError`、`ThreadDeath`、`VirtualMachineError` 保持传播。
+- 完善 Receiver、Observer、View、Handler 与控制器的所有者、替换、失效和释放路径，并移除选择器主线程中的阻塞等待。
+- 加固来电不中断、移除安全窗口、截图临时隐藏悬浮窗、通知/分享浮窗、小窗与多窗口限制等回调路径；同步整理状态栏、控制中心、音量、锁屏和设置相关 Hook 的安装与兼容边界。
+- Launcher 动画缩放改用直接 API，HotSeats 手势按 View 缓存密度、触摸阈值与状态，FSG 回调复用安装阶段解析的 `BaseRecentsImpl` Class。
+- DeviceInfo 使用固定缓冲区和逐字节 sysfs 解析，减少周期性 `Properties`、`RandomAccessFile`、Binder 查询和临时对象，同时保持采样与失败退避行为。
+- 增加运行期不变量、Hook 合同、源码危害、ROM 兼容、Release 编译、单元测试、Lint、R8 与依赖完整性门禁。
+- 升级构建工具链与依赖校验，清理未引用的 `miui.jar` 和异常 external annotation，并规范共享忽略规则。
 
-### 工程与仓库
+### 验证范围
 
-- 删除未引用的 miui.jar 和异常 java.lang external annotation；
-- 规范化 IDE、本地工具、构建产物、APK/AAB、系统文件及 ROM intelligence 输入的共享忽略规则；
-- 保留 framework.jar、miuisystem.jar、Gradle wrapper 和项目级共享 Android Studio 配置。
+- 当前代码通过 Python 与 Gradle 静态门禁、Release Kotlin/Java 编译、Release 单元测试、Release/Vital Lint、R8、严格依赖校验、Manifest 与 Xposed 元数据检查。
+- 已知实装基线为 Redmi Note 11T Pro（`xaga`）、MIUI `V14.0.10.0.TLOINXM`、Vector v2.2；HyperOS 1 的具体功能可用性取决于 ROM 与系统应用版本。
 
-### 发布说明
+## r13.9.2 — 2026-08-01
 
-- 面向 MIUI 14 / Android 13；
-- HyperOS 1 / Android 13 继续作为实验兼容目标；
-- 本阶段仅准备 Release Candidate 元数据，不生成 APK；
-- 正式签名 Release APK 必须在完整静态发布门禁通过后，由精确 RC commit 单独构建。
+- 锁屏专辑图所属 View 脱离后取消未完成任务，并释放模块背景、单帧缓存和静态处理结果；
+- 设置页切换动画调整为 `350ms`；
+- 开关复用所在行的按压状态，并移除逐次创建的透明度动画；
+- LSPosed 模块列表使用独立简洁摘要。
 
-## r13.10.0（2026-08-05）
+### 历代核心实现总结
 
-### ROM 兼容与 Hook 合同
-
-- 完善 Android 13 上 MIUI 14 与 HyperOS 1 的 ROM 环境识别、target contract、variant 选择和安装诊断，缺少目标时保持安全跳过，不进行跨候选混装；
-- 加固反射参数、Hook 安装与兼容性失败分类，使 resolver、installer 和诊断记录保持一致。
-
-### 稳定性
-
-- 在 Hook 回调、反射 fallback、Receiver 生命周期、Preference observer、延迟 callback 和 diagnostics 边界统一传播直接或包装的 OutOfMemoryError、ThreadDeath 与 VirtualMachineError；
-- 普通 ROM 差异、反射失败和 callback 异常继续按原有 sentinel、日志或 fallback 隔离，不改变既有功能行为；
-- 增加 cause-chain、原实例身份、状态机顺序与 mutation 合同测试。
-
-### 发布说明
-
-- 面向 MIUI 14 / Android 13；HyperOS 1 / Android 13 继续作为实验兼容目标；
-- 本版通过静态门禁、Release JVM、Release/Vital Lint、R8、正式签名、zipalign、包名、版本和 Xposed 元数据核验；
-- 本地正式 APK 构建完成后仍标记为 BUILD_VERIFIED，实机状态由用户安装使用后确认。
-
-## r13.9.2（2026-08-01）
-
-### 内存与稳定性
-
-- 锁屏专辑图所属 View 脱离窗口时，立即取消未完成任务，并释放模块设置的背景、单帧输出缓存和静态处理结果；保留源图引用供重新附着后按需生成，功能行为不变；
-- 保持一条有界处理队列、latest-generation 发布门禁和中间 Bitmap 回收，避免已取消结果重新占用 SystemUI 内存。
-
-### 界面与交互
-
-- 设置页切换动画按 A14 当前实现调整为 `350ms`，恢复更易感知的页面节奏；
-- 开关直接继承所在行的按压状态，按下即反馈；移除每次点击创建的透明度动画，减少临时渲染状态和连续点击干扰。
-
-### 兼容与发布
-
-- 未修改 MIUI 14 / Android 13 或 HyperOS 1 / Android 13 的 ROM Hook 目标、Contract 或 fallback；
-- LSPosed 仓库增加独立 `SUMMARY`，模块列表只显示简洁摘要，不再展开整段 README；
-- Kotlin/Java 编译、静态不变量、单元测试、Lint、版本、签名、zipalign、Xposed 元数据和 `debuggable=false` 作为发布门禁；新增改动仍需实机 LSPosed 日志确认。
-
-## 历代核心实现总结
-
-A13 版本线已完成独立包名与 A13 专用签名、libxposed API 101/102、System/SystemUI/Launcher 领域拆分、小批量 Kotlin 化、资源与偏好 Hook 加固、Receiver/Observer/Handler 生命周期治理、有界缓存、可取消异步任务、OOM 边界和 Contract/Resolver 兼容诊断。详细历史保留在 Git tag 与提交记录中。
+A13 版本线建立了独立包名和 Android 13 维护线，完成 libxposed API 101/102 兼容、System/SystemUI/Launcher 领域拆分、分批 Kotlin 化、资源与偏好 Hook 加固、生命周期治理、有界缓存、可取消异步任务、致命异常边界与 Contract/Resolver 兼容诊断。细节保留在 Git commits 和历史 tags 中。
