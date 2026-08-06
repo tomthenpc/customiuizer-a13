@@ -2,6 +2,7 @@ package tv.withaibuild.customiuizer.installers;
 
 import android.app.Application;
 import android.content.Context;
+import tv.withaibuild.customiuizer.utils.PrefMap;
 
 import io.github.libxposed.api.XposedModuleInterface.PackageReadyParam;
 import tv.withaibuild.customiuizer.MainModule;
@@ -23,6 +24,8 @@ import tv.withaibuild.customiuizer.mods.catalog.FeatureRuntime;
 public final class LauncherInstaller {
 
     private LauncherInstaller() {}
+
+    // Startup family predicate for Launcher
 
     public static void installPackageReady(final PackageReadyParam lpparam) {
         if (MainModule.mPrefs.getInt("launcher_horizmargin", 0) > 0) LauncherLayoutHooks.HorizontalSpacingRes();
@@ -105,5 +108,62 @@ public final class LauncherInstaller {
                 handleLoadLauncher(lpparam);
             }
         });
+    }
+
+    // Startup family predicate for Launcher
+    public static boolean hasAnyLauncherStartupFeature(PrefMap<String, Object> prefs) {
+        if (prefs.getInt("launcher_swipedown_action", 1) != 1 || prefs.getInt("launcher_swipeup_action", 1) != 1 || prefs.getInt("launcher_swipedown2_action", 1) != 1 || prefs.getInt("launcher_swipeup2_action", 1) != 1) return true;
+        if (prefs.getInt("launcher_swipeleft_action", 1) != 1 || prefs.getInt("launcher_swiperight_action", 1) != 1) return true;
+        if (prefs.getInt("launcher_shake_action", 1) != 1) return true;
+        if (prefs.getInt("launcher_doubletap_action", 1) != 1) return true;
+        if (prefs.getInt("launcher_pinch_action", 1) != 1) return true;
+        if (prefs.getInt("launcher_folder_cols", 1) > 1) return true;
+        if (prefs.getInt("launcher_iconscale", 45) > 45) return true;
+        if (prefs.getInt("launcher_titlefontsize", 5) > 5) return true;
+        if (prefs.getInt("launcher_titletopmargin", 0) > 0) return true;
+        if (prefs.getBoolean("launcher_renameapps")) return true;
+        if (prefs.getBoolean("launcher_darkershadow")) return true;
+        if (prefs.getBoolean("controls_nonavbar")) return true;
+        if (prefs.getBoolean("launcher_infinitescroll")) return true;
+        if (prefs.getBoolean("launcher_hidetitles")) return true;
+        if (prefs.getBoolean("launcher_fixlaunch")) return true;
+        if (prefs.getBoolean("launcher_sensorportrait")) return true;
+        if (prefs.getBoolean("launcher_unlockhotseat")) return true;
+        if (prefs.getStringAsInt("launcher_closefolders", 1) > 1) return true;
+        if (prefs.getInt("system_recents_blur", 100) < 100) return true;
+        if (prefs.getInt("controls_fsg_coverage", 60) != 60) return true;
+        if (prefs.getInt("controls_fsg_width", 100) > 100) return true;
+        if (prefs.getBoolean("controls_fsg_horiz")) return true;
+        if (prefs.getBoolean("system_removecleaner")) return true;
+        if (prefs.getBoolean("system_recents_disable_wallpaperscale") || prefs.getBoolean("launcher_disable_wallpaperscale")) return true;
+        if (prefs.getBoolean("system_fw_sticky")) return true;
+        if (prefs.getBoolean("system_recents_hide_statusbar")) return true;
+        if (prefs.getBoolean("system_fw_splitscreen")) return true;
+        if (prefs.getBoolean("launcher_fixanim")) return true;
+        if (prefs.getBoolean("launcher_hideseekpoints")) return true;
+        if (prefs.getBoolean("launcher_privacyapps_gest") || prefs.getInt("launcher_spread_action", 1) != 1) return true;
+        if (prefs.getBoolean("system_hidefromrecents")) return true;
+        if (prefs.getInt("launcher_folderblur_opacity", 0) > 0) return true;
+        if (prefs.getBoolean("launcher_nounlockanim")) return true;
+        if (prefs.getBoolean("launcher_nozoomanim")) return true;
+        if (prefs.getBoolean("launcher_oldlaunchanim")) return true;
+        if (prefs.getBoolean("launcher_closedrawer")) return true;
+        if (prefs.getInt("launcher_horizwidgetmargin", 0) > 0) return true;
+        if (prefs.getInt("controls_fsg_assist_left_action", 1) > 1 || prefs.getInt("controls_fsg_assist_right_action", 1) > 1) return true;
+        if (prefs.getInt("controls_fsg_swipeandstop_action", 1) > 1) return true;
+        if ((prefs.getStringAsInt("launcher_closefolders", 1) > 1 || prefs.getBoolean("launcher_closedrawer"))) return true;
+        if (prefs.getBoolean("system_resizablewidgets")) return true;
+        if (prefs.getBoolean("launcher_noclockhide")) return true;
+        if (prefs.getBoolean("launcher_nowidgetonly")) return true;
+        if (prefs.getInt("launcher_horizmargin", 0) > 0) return true;
+        if (prefs.getInt("launcher_indicatorheight", 9) > 9) return true;
+        if (prefs.getInt("launcher_indicator_topmargin", 0) > 0) return true;
+        if (prefs.getBoolean("launcher_unlockgrids")) return true;
+        if (prefs.getBoolean("launcher_docktitles")) return true;
+        if (prefs.getBoolean("launcher_disable_log")) return true;
+        if (prefs.getInt("launcher_topmargin", 0) > 0) return true;
+        if (prefs.getInt("launcher_dock_topmargin", 0) > 0) return true;
+        if (prefs.getInt("launcher_dock_bottommargin", 0) > 0) return true;
+        return false;
     }
 }

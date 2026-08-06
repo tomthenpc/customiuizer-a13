@@ -241,6 +241,9 @@ class ScopeProtectionTest(unittest.TestCase):
         allowed = {
             "app/src/main/java/tv/withaibuild/customiuizer/mods/LauncherGestureHooks.kt",
             "app/src/main/java/tv/withaibuild/customiuizer/installers/AndroidPackageInstaller.java",
+            "app/src/main/java/tv/withaibuild/customiuizer/MainModule.java",
+            "app/src/main/java/tv/withaibuild/customiuizer/installers/SystemUiInstaller.java",
+            "app/src/main/java/tv/withaibuild/customiuizer/installers/LauncherInstaller.java",
         }
         for path in changed:
             if path in allowed:

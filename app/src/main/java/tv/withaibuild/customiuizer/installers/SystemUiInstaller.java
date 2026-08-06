@@ -1,6 +1,7 @@
 package tv.withaibuild.customiuizer.installers;
 
 import android.content.Context;
+import tv.withaibuild.customiuizer.utils.PrefMap;
 import android.provider.Settings;
 import android.widget.LinearLayout;
 
@@ -326,5 +327,146 @@ public final class SystemUiInstaller {
                 SystemUILockScreenHooks.HideLockscreenZenModeHook(lpparam);
             }
             if (MainModule.mPrefs.getBoolean("system_nopassword")) SystemLockScreenHooks.NoPasswordHook(lpparam);
+    }
+
+// Startup family predicate for SystemUI
+    public static boolean hasAnySystemUiStartupFeature(PrefMap<String, Object> prefs) {
+        if (hasAnyGlobalAction(prefs)) return true;
+        if (prefs.getInt("system_statusbarheight", 19) > 19) return true;
+        if (prefs.getInt("controls_navbarheight", 19) > 19) return true;
+        if (prefs.getStringAsInt("various_showcallui", 0) > 0 || prefs.getBoolean("controls_volumecursor")) return true;
+        if (prefs.getBoolean("system_fivegtile") || prefs.getBoolean("system_cc_fpstile")) return true;
+        if (prefs.getInt("system_qsgridcolumns", 2) > 2 || prefs.getInt("system_qsgridrows", 1) > 1) return true;
+        if (prefs.getInt("system_qqsgridcolumns", 2) > 2) return true;
+        if (prefs.getBoolean("system_networkindicator_wifi")) return true;
+        if (prefs.getInt("system_drawer_blur", 100) < 100) return true;
+        if (prefs.getInt("system_chargeanimtime", 20) < 20) return true;
+        if (prefs.getInt("system_betterpopups_delay", 0) > 0 && !prefs.getBoolean("system_betterpopups_nohide")) return true;
+        if (prefs.getInt("system_netspeedinterval", 4) != 4) return true;
+        if (prefs.getInt("system_qsgridrows", 1) > 1 || prefs.getBoolean("system_qsnolabels")) return true;
+        if (prefs.getInt("system_lstimeout", 3) > 3) return true;
+        if (prefs.getInt("controls_fsg_assist_left_action", 1) > 1 || prefs.getInt("controls_fsg_assist_right_action", 1) > 1) return true;
+        if (prefs.getInt("controls_navbarleft_action", 1) > 1 || prefs.getInt("controls_navbarleftlong_action", 1) > 1 || prefs.getInt("controls_navbarright_action", 1) > 1 || prefs.getInt("controls_navbarrightlong_action", 1) > 1) return true;
+        if (prefs.getBoolean("system_scramblepin")) return true;
+        if (prefs.getBoolean("system_dttosleep")) return true;
+        if (prefs.getBoolean("system_noscreenlock_act")) return true;
+        if (prefs.getBoolean("system_detailednetspeed") && !prefs.getBoolean("system_detailednetspeed_fakedualrow")) return true;
+        if (prefs.getBoolean("system_albumartonlock")) return true;
+        if (prefs.getStringAsInt("system_expandheadups", 1) > 1) return true;
+        if (prefs.getBoolean("system_betterpopups_nohide")) return true;
+        if (prefs.getBoolean("system_betterpopups_swipedown")) return true;
+        if (prefs.getBoolean("system_betterpopups_center")) return true;
+        if (prefs.getBoolean("system_notifafterunlock")) return true;
+        if (prefs.getBoolean("system_notifrowmenu")) return true;
+        if (prefs.getBoolean("system_compactnotif")) return true;
+        if (prefs.getBoolean("system_removedismiss")) return true;
+        if (prefs.getBoolean("system_drawer_removeshortcut")) return true;
+        if (prefs.getBoolean("controls_nonavbar")) return true;
+        if (prefs.getBoolean("controls_hidenavbar_whenscreenshot")) return true;
+        if (prefs.getBoolean("controls_imebackalticon")) return true;
+        if (prefs.getBoolean("system_visualizer")) return true;
+        if (prefs.getBoolean("system_nosilentvibrate") || prefs.getBoolean("system_qs_force_systemfonts") || prefs.getBoolean("system_volumetimer") || prefs.getBoolean("system_qsnolabels") || prefs.getBoolean("system_cc_volume_showpct") || prefs.getBoolean("system_volumebar_blur_mtk") || prefs.getBoolean("system_cc_hidedate") || prefs.getBoolean("system_cc_hide_shortcuticons") || prefs.getBoolean("system_cc_clocktweak") || prefs.getBoolean("system_cc_tile_roundedrect") || prefs.getStringAsInt("system_cc_bluetooth_tile_style", 1) > 1 || (prefs.getBoolean("system_separatevolume") && prefs.getBoolean("system_separatevolume_slider")) || (prefs.getInt("system_volumedialogdelay_collapsed", 0) > 0 || prefs.getInt("system_volumedialogdelay_expanded", 0) > 0) || (prefs.getInt("system_volumeblur_collapsed", 0) > 0 || prefs.getInt("system_volumeblur_expanded", 0) > 0)) return true;
+        if (prefs.getBoolean("system_disableanynotif")) return true;
+        if (prefs.getBoolean("system_lockscreenshortcuts")) return true;
+        if (prefs.getBoolean("system_4gtolte") || (prefs.getBoolean("system_statusbar_mobiletype_single") && !prefs.getString("system_statusbar_mobile_showname", "").equals(""))) return true;
+        if ((prefs.getBoolean("system_statusbar_netspeed_atright") || prefs.getBoolean("system_statusbar_alarm_atright") || prefs.getBoolean("system_statusbar_sound_atright") || prefs.getBoolean("system_statusbar_dnd_atright") || prefs.getBoolean("system_statusbar_nfc_atright") || prefs.getBoolean("system_statusbar_btbattery_atright") || prefs.getBoolean("system_statusbar_headset_atright") || prefs.getBoolean("system_statusbar_vpn_atright")) || (prefs.getBoolean("system_statusbar_alarm_atleft") || prefs.getBoolean("system_statusbar_sound_atleft") || prefs.getBoolean("system_statusbar_dnd_atleft") || prefs.getBoolean("system_statusbar_gps_atleft")) || prefs.getBoolean("system_statusbar_netspeed_atleft") || (prefs.getBoolean("system_statusbar_dualrows") && prefs.getBoolean("system_statusbar_netspeed_atsecondrow")) || prefs.getBoolean("system_statusbaricons_wifi_mobile_atleft") || prefs.getBoolean("system_statusbaricons_swap_wifi_mobile")) return true;
+        if (prefs.getStringAsInt("system_statusbar_clock_position", 1) > 1 && !prefs.getBoolean("system_statusbar_dualrows")) return true;
+        if (prefs.getBoolean("system_statusbar_batterystyle")) return true;
+        if (prefs.getBoolean("system_statusbar_batterytempandcurrent") || prefs.getBoolean("system_statusbar_showdevicetemperature")) return true;
+        if (prefs.getBoolean("system_statusbar_topmargin") && prefs.getBoolean("system_statusbar_topmargin_unset_lockscreen")) return true;
+        if (prefs.getBoolean("system_statusbar_horizmargin")) return true;
+        if (prefs.getBoolean("system_showpct")) return true;
+        if (prefs.getBoolean("system_hidelsstatusbar")) return true;
+        if (prefs.getBoolean("system_hidelsclock")) return true;
+        if (prefs.getBoolean("system_ls_force_systemfonts")) return true;
+        if (prefs.getBoolean("system_hidelshint")) return true;
+        if (prefs.getBoolean("system_allowdirectreply")) return true;
+        if (prefs.getBoolean("system_allownotifonkeyguard")) return true;
+        if (prefs.getBoolean("system_allownotiffloat")) return true;
+        if (prefs.getBoolean("system_hideqs")) return true;
+        if (prefs.getBoolean("system_lsalarm")) return true;
+        if (prefs.getBoolean("system_statusbarcontrols")) return true;
+        if (prefs.getBoolean("system_nonetspeedseparator")) return true;
+        if (prefs.getBoolean("system_statusbaricons_clock")) return true;
+        if (prefs.getBoolean("system_detailednetspeed_fakedualrow") || (!prefs.getBoolean("system_detailednetspeed") && (prefs.getBoolean("system_detailednetspeed_secunit") || prefs.getBoolean("system_detailednetspeed_low") ) )) return true;
+        if (prefs.getInt("system_netspeed_fontsize", 13) > 13 || prefs.getInt("system_netspeed_verticaloffset", 8) != 8 || prefs.getBoolean("system_detailednetspeed") || prefs.getBoolean("system_detailednetspeed_fakedualrow") || prefs.getBoolean("system_netspeed_bold") || prefs.getInt("system_netspeed_leftmargin", 0) > 0 || prefs.getInt("system_netspeed_fixedcontent_width", 10) > 10 || prefs.getInt("system_netspeed_rightmargin", 0) > 0 || prefs.getStringAsInt("system_detailednetspeed_align", 1) > 1) return true;
+        if (prefs.getBoolean("system_taptounlock")) return true;
+        if (prefs.getBoolean("system_nosos")) return true;
+        if (prefs.getBoolean("system_morenotif")) return true;
+        if (prefs.getBoolean("system_charginginfo")) return true;
+        if (prefs.getBoolean("system_secureqs")) return true;
+        if (prefs.getBoolean("system_mutevisiblenotif")) return true;
+        if (prefs.getBoolean("system_statusbaricons_battery1")) return true;
+        if (prefs.getBoolean("system_statusbaricons_battery3") || prefs.getBoolean("system_statusbaricons_battery4") || prefs.getBoolean("system_statusbaricons_battery2")) return true;
+        if (prefs.getStringAsInt("system_statusbaricons_wifistandard", 1) > 1) return true;
+        if (prefs.getBoolean("system_statusbaricons_signal") || prefs.getBoolean("system_statusbaricons_sim1") || prefs.getBoolean("system_statusbaricons_sim2") || prefs.getBoolean("system_statusbaricons_sim_nodata") || prefs.getBoolean("system_statusbaricons_roaming") || prefs.getBoolean("system_statusbaricons_volte")) return true;
+        if (prefs.getBoolean("system_statusbaricons_vowifi")) return true;
+        if (!prefs.getBoolean("system_statusbaricons_alarm") && prefs.getInt("system_statusbaricons_alarmn", 0) > 0) return true;
+        if (!prefs.getString("system_shortcut_app", "").equals("") || !prefs.getString("system_calendar_app", "").equals("") || !prefs.getString("system_clock_app", "").equals("")) return true;
+        if (prefs.getStringAsInt("system_qshaptics", 1) > 1) return true;
+        if (prefs.getBoolean("system_qs_hideoperator")) return true;
+        if (prefs.getBoolean("system_cc_hideoperator_delimiter")) return true;
+        if (prefs.getBoolean("system_cc_show_stepcount") || prefs.getBoolean("system_drawer_show_stepcount")) return true;
+        if (prefs.getBoolean("system_cc_disable_bluetooth_restrict")) return true;
+        if (prefs.getBoolean("system_cc_collapse_after_clicked")) return true;
+        if (prefs.getBoolean("system_cc_switch_qsandnotification")) return true;
+        if (prefs.getStringAsInt("system_expandnotifs", 1) > 1) return true;
+        if (prefs.getStringAsInt("system_inactivebrightness", 1) > 1) return true;
+        if (prefs.getStringAsInt("system_mobiletypeicon", 1) > 1 || prefs.getBoolean("system_networkindicator_mobile") || prefs.getBoolean("system_statusbar_mobiletype_show_wificonnected")) return true;
+        if (prefs.getStringAsInt("system_statusbaricons_bluetooth", 1) > 1) return true;
+        if (prefs.getBoolean("system_epm")) return true;
+        if ((prefs.getBoolean("system_statusbaricons_wifi") || prefs.getBoolean("system_statusbaricons_dualwifi") || prefs.getBoolean("system_statusbaricons_alarm") || prefs.getBoolean("system_statusbaricons_profile") || prefs.getBoolean("system_statusbaricons_sound") || prefs.getBoolean("system_statusbaricons_dnd") || prefs.getBoolean("system_statusbaricons_secondspace") || prefs.getBoolean("system_statusbaricons_headset") || prefs.getBoolean("system_statusbaricons_nfc") || prefs.getBoolean("system_statusbaricons_vpn") || prefs.getBoolean("system_statusbaricons_airplane") || prefs.getBoolean("system_statusbaricons_hotspot") || prefs.getBoolean("system_statusbaricons_nosims") || prefs.getBoolean("system_statusbaricons_gps") || prefs.getBoolean("system_statusbaricons_btbattery") || prefs.getBoolean("system_statusbaricons_ble_unlock") || prefs.getBoolean("system_statusbaricons_volte"))) return true;
+        if (prefs.getBoolean("system_statusbaricons_privacy") || prefs.getBoolean("system_statusbaricons_mute") || prefs.getBoolean("system_statusbaricons_speaker") || prefs.getBoolean("system_statusbaricons_record")) return true;
+        if (prefs.getInt("system_messagingstylelines", 0) > 0) return true;
+        if (prefs.getBoolean("system_betterpopups_allowfloat")) return true;
+        if (prefs.getBoolean("system_betterpopups_autoclose_expanded")) return true;
+        if (prefs.getBoolean("system_betterpopups_disablewhenmute")) return true;
+        if (prefs.getBoolean("system_securecontrolcenter")) return true;
+        if (prefs.getBoolean("system_minimalnotifview")) return true;
+        if (prefs.getBoolean("system_notifchannelsettings")) return true;
+        if (prefs.getStringAsInt("system_maxsbicons", 0) != 0) return true;
+        if (prefs.getBoolean("system_statusbar_mobiletype_single")) return true;
+        if (prefs.getBoolean("system_statusbar_dualsimin2rows")) return true;
+        if (prefs.getBoolean("system_statusbar_dualrows")) return true;
+        if (prefs.getInt("system_ccgridcolumns", 4) > 4 || prefs.getInt("system_ccgridrows", 4) != 4) return true;
+        if (prefs.getStringAsInt("system_colorizenotifs", 1) > 1) return true;
+        if (prefs.getBoolean("system_notify_openinfw")) return true;
+        if (prefs.getBoolean("system_fw_noblacklist")) return true;
+        if (prefs.getBoolean("system_notify_openinfw") || prefs.getBoolean("system_notifrowmenu") || prefs.getBoolean("system_betterpopups_allowfloat")) return true;
+        if (prefs.getBoolean("system_nosafevolume")) return true;
+        if (prefs.getBoolean("system_lockscreen_hidezenmode")) return true;
+        if (prefs.getBoolean("system_nopassword")) return true;
+        if (prefs.getBoolean("system_statusbar_topmargin")) return true;
+        if (prefs.getBoolean("system_cc_enable_style_switch")) return true;
+        if (prefs.getBoolean("system_qs_force_systemfonts")) return true;
+        if (prefs.getBoolean("system_detailednetspeed_fakedualrow")) return true;
+        if (prefs.getBoolean("system_volumetimer")) return true;
+        if (prefs.getBoolean("system_cc_tile_roundedrect")) return true;
+        if ((prefs.getInt("system_statusbar_iconsize", 6)) > 6) return true;
+        if (prefs.getBoolean("system_cc_show_stepcount")) return true;
+        if ((prefs.getBoolean("system_statusbaricons_swap_wifi_mobile")) || (prefs.getBoolean("system_statusbaricons_wifi_mobile_atleft"))) return true;
+        if (prefs.getBoolean("system_screenshot_overlay")) return true;
+        if (prefs.getBoolean("system_hidestatusbar_whenscreenshot")) return true;
+        if (prefs.getBoolean("system_statusbar_clocktweak") ||
+                prefs.getBoolean("system_cc_clocktweak") ||
+                prefs.getBoolean("system_cc_hidedate") ||
+                !prefs.getString("system_cc_dateformat", "").isEmpty()) return true;
+        if (prefs.getBoolean("system_hidemoreicon")) return true;
+        if (prefs.getBoolean("system_batteryindicator")) return true;
+        return false;
+    }
+
+    private static boolean hasAnyGlobalAction(PrefMap<String, Object> prefs) {
+        for (java.util.Map.Entry<String, Object> entry : prefs.entrySet()) {
+            String key = entry.getKey();
+            Object value = entry.getValue();
+            if (key != null && key.endsWith("_action") && value instanceof Integer && (Integer) value > 1) {
+                return true;
+            }
+        }
+        if (prefs.getStringAsInt("controls_volumemedia_up", 0) > 0 || prefs.getStringAsInt("controls_volumemedia_down", 0) > 0) {
+            return !prefs.getStringSet("controls_mediaplayer_apps").isEmpty();
+        }
+        return false;
     }
 }

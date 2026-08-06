@@ -151,7 +151,9 @@ public class MainModule extends XposedModule {
         }
 
         if (scope == ProcessScope.SYSTEM_UI) {
-            SystemUiInstaller.install(lpparam, this::watchPreferenceChange);
+            if (SystemUiInstaller.hasAnySystemUiStartupFeature(mPrefs)) {
+                SystemUiInstaller.install(lpparam, this::watchPreferenceChange);
+            }
             return;
         }
 
