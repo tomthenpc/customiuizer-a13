@@ -460,7 +460,8 @@ public final class SystemUiInstaller {
         for (java.util.Map.Entry<String, Object> entry : prefs.entrySet()) {
             String key = entry.getKey();
             Object value = entry.getValue();
-            if (key != null && key.endsWith("_action") && value instanceof Integer && (Integer) value > 1) {
+            // Launcher actions (e.g. swipe gestures) are not global system actions.
+            if (key != null && !key.startsWith("pref_key_launcher_") && key.endsWith("_action") && value instanceof Integer && (Integer) value > 1) {
                 return true;
             }
         }

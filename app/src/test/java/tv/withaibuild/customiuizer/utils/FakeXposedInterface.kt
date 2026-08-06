@@ -1,5 +1,6 @@
 package tv.withaibuild.customiuizer.utils
 
+import android.content.SharedPreferences
 import io.github.libxposed.api.XposedInterface
 import java.lang.reflect.InvocationHandler
 import java.lang.reflect.Method
@@ -35,10 +36,14 @@ object FakeXposedInterface {
     @JvmField
     val interceptedExecutables = mutableListOf<java.lang.reflect.Executable>()
 
+    @JvmField
+    var remotePreferences: SharedPreferences? = null
+
     @JvmStatic
     fun reset() {
         recordedHooks.clear()
         interceptedExecutables.clear()
+        remotePreferences = null
     }
 
     private class RootHandler(private val classLoader: ClassLoader) : InvocationHandler {
@@ -58,7 +63,7 @@ object FakeXposedInterface {
                 "getInvoker" -> null
                 "log" -> null
                 "getModuleApplicationInfo" -> null
-                "getRemotePreferences" -> null
+                "getRemotePreferences" -> remotePreferences
                 "listRemoteFiles" -> emptyArray<String>()
                 "openRemoteFile" -> null
                 else -> null

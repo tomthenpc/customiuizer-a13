@@ -9,6 +9,9 @@ class FakeSharedPreferences : SharedPreferences {
 
     var commitResult: Boolean = true
 
+    @JvmField
+    var registerCount: Int = 0
+
     private var getAllException: RuntimeException? = null
     private var registerException: RuntimeException? = null
 
@@ -92,6 +95,7 @@ class FakeSharedPreferences : SharedPreferences {
 
     override fun registerOnSharedPreferenceChangeListener(listener: SharedPreferences.OnSharedPreferenceChangeListener) {
         registerException?.let { throw it }
+        registerCount++
         if (!listeners.contains(listener)) listeners.add(listener)
     }
 
