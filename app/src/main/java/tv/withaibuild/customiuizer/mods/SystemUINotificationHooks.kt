@@ -287,12 +287,8 @@ object SystemUINotificationHooks {
                     null
                 } ?: return
 
-                try {
-                    invokeNotificationCompat(launchMiniWindowActivityMethod, appMiniWindowManager, pkgName, pendingIntent)
-                    param.returnAndSkip(null)
-                } catch (e: XposedHelpers.InvocationTargetError) {
-                    param.throwAndSkip(e)
-                }
+                invokeNotificationCompat(launchMiniWindowActivityMethod, appMiniWindowManager, pkgName, pendingIntent)
+                param.returnAndSkip(null)
             }
         })
     }

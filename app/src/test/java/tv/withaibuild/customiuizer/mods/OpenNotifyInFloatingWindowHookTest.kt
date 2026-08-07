@@ -594,7 +594,7 @@ class OpenNotifyInFloatingWindowHookTest {
     }
 
     @Test
-    fun startNotificationIntent_before_launchOrdinaryFailure_propagatesInvocationTargetError() {
+    fun startNotificationIntent_before_launchOrdinaryFailure_legacyHookLevelProceedsWithOriginal() {
         val prefs = PrefMap<String, Any>()
         prefs["system_notify_openinfw"] = true
         prefs["system_notify_openinfw_in_whitelist"] = false
@@ -608,15 +608,41 @@ class OpenNotifyInFloatingWindowHookTest {
         AppMiniWindowManager.getInstance().throwOnCall = RuntimeException("launch failed")
         val chain = FakeChain(executable, null, listOf(pendingIntent, null, entry, null, false, false), null, null)
 
-        try {
-            hook.intercept(chain)
-            fail("expected XposedHelpers.InvocationTargetError to propagate")
-        } catch (e: XposedHelpers.InvocationTargetError) {
-            assertNotNull(e.cause)
-            assertEquals("launch failed", (e.cause as? RuntimeException)?.message)
-        }
+        // helper-level: invokeNotificationCompat converts the ordinary target exception
+        // to XposedHelpers.InvocationTargetError.
+        // hook-level: MethodHook.beforeHook catches/logs ordinary throwables and does not
+        // rethrow, so intercept proceeds with the original method.
+        hook.intercept(chain)
 
-        assertFalse("original method must not be called after launch failure", chain.proceeded)
+        assertTrue("ordinary launch failure must fall through to original startNotificationIntent", chain.proceeded)
+        assertTrue(AppMiniWindowManager.getInstance().calls.isEmpty())
+    }
+
+    @Test
+    fun startNotificationIntent_before_launchOrdinaryFailure_matchesLegacyHookLevelBehavior() {
+        val prefs = PrefMap<String, Any>()
+        prefs["system_notify_openinfw"] = true
+        prefs["system_notify_openinfw_in_whitelist"] = false
+        installHook(prefs)
+        val hook = getRecordedHook()
+
+        val executable = getRecordedExecutable()
+
+        val entry = NotificationEntry().apply { mSbn = fakeSbn() }
+        val pendingIntent = fakePendingIntent("com.target.app")
+        AppMiniWindowManager.getInstance().throwOnCall = RuntimeException("launch failed")
+        val chain = FakeChain(executable, null, listOf(pendingIntent, null, entry, null, false, false), null, null)
+
+        // This is the authoritative hook-level oracle:
+        // - invokeNotificationCompat produces XposedHelpers.InvocationTargetError
+        //   (helper-level parity with XposedHelpers.callMethod).
+        // - MethodHook.beforeHook() catches ordinary InvocationTargetError, logs it,
+        //   and does not rethrow.
+        // - Because returnAndSkip() was never reached, intercept() calls
+        //   chain.proceed() and the original method continues.
+        hook.intercept(chain)
+
+        assertTrue("legacy hook-level behavior: ordinary launch failure lets original proceed", chain.proceeded)
         assertTrue(AppMiniWindowManager.getInstance().calls.isEmpty())
     }
 
@@ -638,7 +664,7 @@ class OpenNotifyInFloatingWindowHookTest {
     }
 
     @Test
-    fun startNotificationIntent_before_launchSideEffectThenThrow_propagatesInvocationTargetError() {
+    fun startNotificationIntent_before_launchSideEffectThenThrow_legacyHookLevelProceedsWithOriginal() {
         val prefs = PrefMap<String, Any>()
         prefs["system_notify_openinfw"] = true
         prefs["system_notify_openinfw_in_whitelist"] = false
@@ -652,20 +678,18 @@ class OpenNotifyInFloatingWindowHookTest {
         AppMiniWindowManager.getInstance().sideEffectThenThrow = RuntimeException("after side effect")
         val chain = FakeChain(executable, null, listOf(pendingIntent, null, entry, null, false, false), null, null)
 
-        try {
-            hook.intercept(chain)
-            fail("expected XposedHelpers.InvocationTargetError to propagate")
-        } catch (e: XposedHelpers.InvocationTargetError) {
-            assertNotNull(e.cause)
-            assertEquals("after side effect", (e.cause as? RuntimeException)?.message)
-        }
+        // The side effect is observed before the ordinary exception is thrown.
+        // At hook-level the exception is absorbed by beforeHook() and the
+        // original method proceeds. This preserves the pre-existing legacy
+        // side-effect ambiguity.
+        hook.intercept(chain)
 
-        assertFalse("original method must not be called after launch failure", chain.proceeded)
+        assertTrue("side-effect-then-throw must fall through to original startNotificationIntent", chain.proceeded)
         assertEquals(1, AppMiniWindowManager.getInstance().calls.size)
     }
 
     @Test
-    fun startNotificationIntent_before_processManagerOrdinaryException_propagatesToMethodHookBoundary() {
+    fun startNotificationIntent_before_processManagerOrdinaryException_legacyHookLevelProceedsWithOriginal() {
         val prefs = PrefMap<String, Any>()
         prefs["system_notify_openinfw"] = true
         prefs["system_notify_openinfw_in_whitelist"] = false
@@ -677,16 +701,14 @@ class OpenNotifyInFloatingWindowHookTest {
         ProcessManager.throwOnGet = RuntimeException("foreground unavailable")
         val entry = NotificationEntry().apply { mSbn = fakeSbn() }
         val pendingIntent = fakePendingIntent("com.target.app")
-        val before = fakeBeforeCallback(executable, listOf(pendingIntent, null, entry, null, false, false))
+        val chain = FakeChain(executable, null, listOf(pendingIntent, null, entry, null, false, false), null, null)
 
-        assertThrows(
-            "ProcessManager.getForegroundInfo() is not wrapped; ordinary exceptions propagate out of before()",
-            RuntimeException::class.java
-        ) {
-            invokeBeforeDirectly(hook, before)
-        }
+        // ProcessManager.getForegroundInfo() is not wrapped; the RuntimeException
+        // escapes before() but beforeHook() catches/logs ordinary throwables and
+        // intercept proceeds with the original method.
+        hook.intercept(chain)
 
-        assertFalse(isSkipped(before))
+        assertTrue("ProcessManager ordinary exception must fall through to original startNotificationIntent", chain.proceeded)
         assertTrue(AppMiniWindowManager.getInstance().calls.isEmpty())
     }
 

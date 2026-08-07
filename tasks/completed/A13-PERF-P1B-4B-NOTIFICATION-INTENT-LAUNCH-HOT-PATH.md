@@ -7,10 +7,10 @@
 | 任务 | `A13-PERF-P1B-4B-NOTIFICATION-INTENT-LAUNCH-HOT-PATH` |
 | 分支 | `devin/a13-memory-performance-optimization` |
 | 起点 commit | `7f0f37c` |
-| 状态 | `QA_REOPENED_R2` |
-| blockers | 异常语义、fail-open 边界和 ROM symbol 缺失策略需在 R2 完成并验证 |
-| QA-1 | `COMPLETED` |
-| 终点 commit | `6106284` |
+| 状态 | `QA_ACCEPTED_DEVICE_EVIDENCE_PENDING` |
+| blockers | none for static/correctness QA |
+| QA-1 | `IN_PROGRESS` |
+| 终点 commit | `12550954ddf96933c70336799ddf0b061b2b6f8c` |
 | P0 真实运行时基线 | `RUNTIME_BASELINE_PENDING_DEVICE` |
 | 授权范围 | 仅 `MiuiStatusBarNotificationActivityStarter#startNotificationIntent` 及该回调直接调用、属于本模块的通知点击启动辅助逻辑 |
 
@@ -62,10 +62,24 @@
 - 工作区干净并推送。
 - 不声明未经真机测量的性能收益。
 
-## R2 修复记录
+## R3 修复记录
 
-- 建立 `XposedHelpers` legacy 异常 oracle：普通目标异常包装为 `XposedHelpers.InvocationTargetError`，致命错误（`OutOfMemoryError` / `ThreadDeath` / `VirtualMachineError`）直接抛出。\n- 安装阶段 fail-closed：`isSubstituteNotification` 或 `mPkgName` 缺失时直接返回，不安装 Hook。\n- 回调 pre-side-effect 普通异常 fail-open：`mSbn` / `isSubstitute` / `mPkgName` 读取失败时立即 `return`，原方法继续。\n- `mPkgName` 字段值为 `null` 时按 legacy 使用空字符串 `""`。\n- `launchMiniWindowActivity` 普通失败不再 catch-and-return，而是 `throwAndSkip(XposedHelpers.InvocationTargetError)`，保持异常可观测并跳过原方法。\n- `ProcessManager.getForegroundInfo()` 普通异常保持直接传播。\n- `OpenNotifyInFloatingWindowHookTest` 从 28 个用例扩展至 35 个，覆盖上述边界。\n- 重新生成 `A13_LEGACY_EXCEPTION_REGISTRY.json`。\n\n## 最终状态约束
+- 明确区分 **helper-level** 与 **hook-level** 异常 oracle。
+- **Helper-level**：`invokeNotificationCompat` 将普通 `InvocationTargetException` 包装为 `XposedHelpers.InvocationTargetError`；fatal 错误直接抛出；`IllegalAccessException` → `IllegalAccessError`；`IllegalArgumentException` 直接传播。
+- **Hook-level**：`MethodHook.beforeHook()` 捕获并记录 ordinary `Throwable` 后不重新抛出，因此 `launchMiniWindowActivity` / `ProcessManager.getForegroundInfo()` 的普通异常最终使 `chain.proceed()` 被调用，**原方法继续执行**。
+- 删除 R2 的 `throwAndSkip(XposedHelpers.InvocationTargetError)` 路径，标记为 `R2_THROW_AND_SKIP_ORDINARY_LAUNCH = REJECTED_SEMANTIC_DEVIATION`。
+- 保留 `invokeNotificationCompat` 的 fatal / nested fatal cause-chain 检测。
+- 安装阶段 fail-closed：`isSubstituteNotification` 或 `mPkgName` 缺失时直接返回，不安装 Hook。
+- 回调 pre-side-effect 普通异常 fail-open：`mSbn` / `isSubstitute` / `mPkgName` 读取失败时立即 `return`，原方法继续。
+- `mPkgName` 字段值为 `null` 时按 legacy 使用空字符串 `""` 。
+- `OpenNotifyInFloatingWindowHookTest` 扩展至 36 个用例；新增 `startNotificationIntent_before_launchOrdinaryFailure_matchesLegacyHookLevelBehavior` 作为 hook-level 权威 oracle；修正 `launchOrdinaryFailure`、`launchSideEffectThenThrow`、`ProcessManagerOrdinaryException` 三个测试，使其使用 `hook.intercept(chain)` 并断言 `chain.proceeded == true`。
+- 执行 Mutation A-G：每个临时缺陷均被现有测试捕获并恢复。
+- 重新生成 `A13_LEGACY_EXCEPTION_REGISTRY.json`、`A13_HOOK_COST_MAP.json`。
+- 通过 R8 / `assembleDebug` / `verify full` / `lint` / Python 全量测试。
 
-- 工程完成状态只能是 `ENGINEERING_COMPLETE_DEVICE_EVIDENCE_PENDING`。
+## 最终状态约束
+
+- R3 全部通过后工程完成状态改为 `QA_ACCEPTED_DEVICE_EVIDENCE_PENDING`。
 - P0 真实运行时基线继续为 `RUNTIME_BASELINE_PENDING_DEVICE`。
 - 不自动开始下一阶段。
+- 不声明 `CURRENT_HEAD_SIGNED_RELEASE = VERIFIED`。
