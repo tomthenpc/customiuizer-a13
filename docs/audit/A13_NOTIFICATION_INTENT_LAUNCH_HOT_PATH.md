@@ -24,7 +24,7 @@ MainModule.onPackageReady (com.android.systemui)
 
 `system_notify_openinfw` 为 `false` 时不安装 Hook，不产生回调开销。
 
-## 3. 修改前调用链
+## 3. 修改后调用链
 
 ### 3.1 startNotificationIntent before 回调
 
@@ -32,9 +32,9 @@ MainModule.onPackageReady (com.android.systemui)
 MiuiStatusBarNotificationActivityStarter.startNotificationIntent(PendingIntent, ...)
   └─ before(param)
        1. param.getArg(0) as? PendingIntent ?: return
-       2. XposedHelpers.getObjectField(param.getArg(2), "mSbn") ?: return       // CALLBACK_TIME_REFLECTION
-       3. XposedHelpers.callMethod(mSbn, "isSubstituteNotification") as? Boolean // CALLBACK_TIME_REFLECTION
-       4. if (true)  XposedHelpers.getObjectField(mSbn, "mPkgName") as? String   // CALLBACK_TIME_REFLECTION
+       2. mSbnFieldsByMethod[member].get(param.getArg(2)) ?: return       // CACHED_METADATA_USE
+       3. isSubstituteNotificationMethod.invoke(mSbn) as? Boolean                 // CACHED_METADATA_USE
+       4. if (true)  mPkgNameField.get(mSbn) as? String                           // CACHED_METADATA_USE
           else       pendingIntent.creatorPackage ?: ""
        5. ProcessManager.getForegroundInfo()
        6. foregroundInfo.mForegroundPackageName
@@ -142,8 +142,8 @@ MiuiStatusBarNotificationActivityStarter.startNotificationIntent(PendingIntent, 
 
 | 操作 | 当前分类 | 优化后分类 | 说明 |
 |---|---|---|---|
-| `XposedHelpers.findClass("com.android.systemui.Dependency", ...)` | `CALLBACK_TIME_REFLECTION` | `REGISTRATION_TIME_REFLECTION` | 稳定类，可在安装阶段缓存 |
-| `XposedHelpers.findClassIfExists("...AppMiniWindowManager", ...)` | `CALLBACK_TIME_REFLECTION` | `REGISTRATION_TIME_REFLECTION` | 稳定类，可在安装阶段缓存；缺失时安全跳过 |
+| `XposedHelpers.findClass("com.android.systemui.Dependency", ...)` | `REGISTRATION_TIME_REFLECTION` | `REGISTRATION_TIME_REFLECTION` | 安装阶段缓存 |
+| `XposedHelpers.findClassIfExists("...AppMiniWindowManager", ...)` | `REGISTRATION_TIME_REFLECTION` | `REGISTRATION_TIME_REFLECTION` | 安装阶段缓存；缺失时安全跳过 |
 | `XposedHelpers.getObjectField(arg2, "mSbn")` | `CALLBACK_TIME_REFLECTION` | `CACHED_METADATA_USE` | `arg2` 的具体参数类型取决于 ROM 重载，可用 `Method.parameterTypes` 在安装阶段或第一次回调确定 |
 | `XposedHelpers.callMethod(mSbn, "isSubstituteNotification")` | `CALLBACK_TIME_REFLECTION` | `CACHED_METADATA_USE` | `StatusBarNotification` 稳定方法 |
 | `XposedHelpers.getObjectField(mSbn, "mPkgName")` | `CALLBACK_TIME_REFLECTION` | `CACHED_METADATA_USE` | `StatusBarNotification` 稳定字段 |
@@ -180,10 +180,31 @@ MiuiStatusBarNotificationActivityStarter.startNotificationIntent(PendingIntent, 
 
 ## 12. 实现后验证
 
+- `python tools/verify.py fast --tests OpenNotifyInFloatingWindowHookTest`：通过（28 个 JVM 场景）。
 - `python tools/verify.py full`：通过。
-- `python -m unittest discover -s tools/tests -p "test_*.py"`：944 项通过，2 项跳过。
 - `python -m compileall tools`：通过。
-- `python tools/a13_hook_cost_scan.py --output docs/audit/A13_HOOK_COST_MAP.json`：已重新生成，回归检查全部通过。
+- `python -m unittest discover -s tools/tests -p "test_*.py"`：通过（1043 项，2 项跳过）。
 - `.\gradlew.bat :app:minifyReleaseWithR8`：通过。
 - `.\gradlew.bat :app:assembleDebug`：通过。
-- 正式 Release 签名构建：本地未配置 A13 签名（`CUSTOMIUIZER_A13_KEYSTORE_PROPERTIES` 未设置），未执行；等签名配置就位后可按既有流程构建。
+- `OpenNotifyInFloatingWindowHookTest` 覆盖：
+  - 功能开关关闭时不注册；
+  - PendingIntent 为空 / arg2 为空 / mSbn 为空 的安全返回；
+  - substitute 通知使用 `StatusBarNotification#mPkgName` 字段，而非 `getPackageName()`；
+  - 非 substitute 通知使用 `PendingIntent.creatorPackage`；
+  - 前台是 `pkgName` 或 `com.miui.home` 时返回；
+  - 白名单/黑名单 XOR 语义；
+  - `NotificationEntry` 与 `ExpandableNotificationRow` 两种 `startNotificationIntent` 重载映射各自的 `mSbn` 字段；
+  - 无 `mSbn` 字段的未知重载 fail-open；
+  - `Dependency#get` 返回 null 或普通异常时安全返回；
+  - `Dependency#get` 抛出 `OutOfMemoryError`/`ThreadDeath`/`VirtualMachineError`（含包装）时继续抛出；
+  - `launchMiniWindowActivity` 普通异常时不 skip；
+  - `launchMiniWindowActivity` 抛出 fatal 错误时继续抛出；
+  - `returnAndSkip` 仅在 `launchMiniWindowActivity` 成功后调用。
+
+## 13. R1 QA 关键结论
+
+- 已修复 `SUBSTITUTE_NOTIFICATION_PACKAGE_SEMANTICS`：substitute 包名从 `getPackageName()` 改为安装阶段解析的 `mPkgName` 字段，与 P1B-3 之前基线一致。
+- 已引入 `rethrowNotificationFatal`：在 install 阶段与回调 `Field.get` / `Method.invoke` 中重新抛出 `OutOfMemoryError` / `ThreadDeath` / `VirtualMachineError`（含 cause 链），避免在反射失败路径上静默吞掉 fatal 错误。
+- `returnAndSkip(null)` 严格位于 `launchMiniWindowActivity` 成功后，保证普通 launch 失败不会错误地跳过原方法。
+- 多 overload `mSbn` 映射已支持 `NotificationEntry` 与 `ExpandableNotificationRow`，对无 `mSbn` 字段的 overload 安全 fail-open。
+- 白名单 XOR 语义与 `ProcessManager.getForegroundInfo()` 实时查询保持不变。

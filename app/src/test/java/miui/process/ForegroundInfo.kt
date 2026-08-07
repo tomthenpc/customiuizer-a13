@@ -1,3 +1,3 @@
 package miui.process
 
-class ForegroundInfo(val mForegroundPackageName: String? = null)
+class ForegroundInfo(@JvmField var mForegroundPackageName: String? = null)

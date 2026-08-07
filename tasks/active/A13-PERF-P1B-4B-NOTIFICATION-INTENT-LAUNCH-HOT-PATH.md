@@ -8,6 +8,8 @@
 | 分支 | `devin/a13-memory-performance-optimization` |
 | 起点 commit | `7f0f37c` |
 | 状态 | `QA_CONDITIONAL` |
+| blockers | - |
+| QA-1 | `COMPLETED` |
 | 终点 commit | 待填入 |
 | P0 真实运行时基线 | `RUNTIME_BASELINE_PENDING_DEVICE` |
 | 授权范围 | 仅 `MiuiStatusBarNotificationActivityStarter#startNotificationIntent` 及该回调直接调用、属于本模块的通知点击启动辅助逻辑 |

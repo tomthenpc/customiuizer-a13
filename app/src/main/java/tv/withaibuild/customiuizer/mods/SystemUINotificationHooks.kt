@@ -32,6 +32,20 @@ import java.lang.reflect.Method
 @Suppress("UNUSED_PARAMETER")
 object SystemUINotificationHooks {
 
+    private fun rethrowNotificationFatal(t: Throwable) {
+        var current: Throwable? = t
+        var depth = 0
+        while (current != null && depth < 8) {
+            if (current is OutOfMemoryError) throw current
+            if (current is ThreadDeath) throw current
+            if (current is VirtualMachineError) throw current
+            val next = current.cause
+            if (next == current) return
+            current = next
+            depth++
+        }
+    }
+
     @JvmStatic
     fun HideDismissViewHook(lpparam: PackageReadyParam) {
         ModuleHelper.findAndHookMethod("com.android.systemui.statusbar.phone.MiuiNotificationPanelViewController", lpparam.classLoader, "updateDismissView", object : MethodHook() {
@@ -132,11 +146,13 @@ object SystemUINotificationHooks {
         val starterClass = try {
             XposedHelpers.findClass("com.android.systemui.statusbar.phone.MiuiStatusBarNotificationActivityStarter", classLoader)
         } catch (t: Throwable) {
+            rethrowNotificationFatal(t)
             return
         }
         val dependencyClass = try {
             XposedHelpers.findClass("com.android.systemui.Dependency", classLoader)
         } catch (t: Throwable) {
+            rethrowNotificationFatal(t)
             return
         }
         val appMiniWindowManagerClass = XposedHelpers.findClassIfExists(
@@ -146,6 +162,7 @@ object SystemUINotificationHooks {
         val statusBarNotificationClass = try {
             XposedHelpers.findClass("android.service.notification.StatusBarNotification", classLoader)
         } catch (t: Throwable) {
+            rethrowNotificationFatal(t)
             return
         }
 
@@ -153,6 +170,14 @@ object SystemUINotificationHooks {
             XposedHelpers.findMethodBestMatch(statusBarNotificationClass, "isSubstituteNotification")
                 .also { it.isAccessible = true }
         } catch (t: Throwable) {
+            rethrowNotificationFatal(t)
+            null
+        }
+
+        val mPkgNameField = try {
+            XposedHelpers.findFieldIfExists(statusBarNotificationClass, "mPkgName")?.also { it.isAccessible = true }
+        } catch (t: Throwable) {
+            rethrowNotificationFatal(t)
             null
         }
 
@@ -160,6 +185,7 @@ object SystemUINotificationHooks {
             XposedHelpers.findMethodBestMatch(dependencyClass, "get", Class::class.java)
                 .also { it.isAccessible = true }
         } catch (t: Throwable) {
+            rethrowNotificationFatal(t)
             return
         }
         val launchMiniWindowActivityMethod = try {
@@ -170,6 +196,7 @@ object SystemUINotificationHooks {
                 PendingIntent::class.java
             ).also { it.isAccessible = true }
         } catch (t: Throwable) {
+            rethrowNotificationFatal(t)
             return
         }
 
@@ -193,17 +220,24 @@ object SystemUINotificationHooks {
                 val mSbn = try {
                     mSbnField.get(param.getArg(2))
                 } catch (t: Throwable) {
+                    rethrowNotificationFatal(t)
                     null
                 } ?: return
 
                 val isSubstitute = try {
                     isSubstituteNotificationMethod?.invoke(mSbn) as? Boolean
                 } catch (t: Throwable) {
+                    rethrowNotificationFatal(t)
                     null
                 } ?: false
 
                 val pkgName: String = if (isSubstitute) {
-                    (mSbn as? StatusBarNotification)?.getPackageName() ?: ""
+                    try {
+                        mPkgNameField?.get(mSbn) as? String ?: ""
+                    } catch (t: Throwable) {
+                        rethrowNotificationFatal(t)
+                        ""
+                    }
                 } else {
                     pendingIntent.creatorPackage ?: ""
                 }
@@ -226,12 +260,14 @@ object SystemUINotificationHooks {
                 val appMiniWindowManager = try {
                     dependencyGetMethod.invoke(null, appMiniWindowManagerClass)
                 } catch (t: Throwable) {
+                    rethrowNotificationFatal(t)
                     null
                 } ?: return
 
                 try {
                     launchMiniWindowActivityMethod.invoke(appMiniWindowManager, pkgName, pendingIntent)
                 } catch (t: Throwable) {
+                    rethrowNotificationFatal(t)
                     return
                 }
                 param.returnAndSkip(null)
