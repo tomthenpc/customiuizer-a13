@@ -10,7 +10,7 @@
 | 状态 | `QA_REOPENED_R2` |
 | blockers | 异常语义、fail-open 边界和 ROM symbol 缺失策略需在 R2 完成并验证 |
 | QA-1 | `COMPLETED` |
-| 终点 commit | 待填入 |
+| 终点 commit | `6106284` |
 | P0 真实运行时基线 | `RUNTIME_BASELINE_PENDING_DEVICE` |
 | 授权范围 | 仅 `MiuiStatusBarNotificationActivityStarter#startNotificationIntent` 及该回调直接调用、属于本模块的通知点击启动辅助逻辑 |
 
