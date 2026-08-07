@@ -8,7 +8,7 @@
 | 分支 | `devin/a13-memory-performance-optimization` |
 | 起点 commit | `ec05f5e948167742da6520cdf64b9fd32d360b3e` |
 | 状态 | `ENGINEERING_COMPLETE_DEVICE_EVIDENCE_PENDING` |
-| 终点 commit | `TBD_FINAL_SHA` |
+| 终点 commit | `395e09338d6a9b663847d91ebddb06cb2ee9c44e` |
 | P0 真实运行时基线 | `RUNTIME_BASELINE_PENDING_DEVICE` |
 | 授权范围 | 仅 `MiuiNotificationMenuRow#createMenuViews` 及该回调直接调用、属于本模块的通知菜单辅助逻辑 |
 
