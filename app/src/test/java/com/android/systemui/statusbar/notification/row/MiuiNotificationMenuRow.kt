@@ -18,6 +18,7 @@ open class MiuiNotificationMenuRow {
     var mMenuMargin: Int = 0
     var mMenuContainer: LinearLayout? = null
     var originalClearsAndAddsSystemItems: Boolean = true
+    var failGetMenuView: Boolean = false
 
     fun createMenuViews(animate: Boolean, fromLeft: Boolean) {
         if (originalClearsAndAddsSystemItems) {
@@ -33,9 +34,10 @@ open class MiuiNotificationMenuRow {
         val context = mContext ?: return
         val container = mMenuContainer ?: return
         val item = MiuiNotificationMenuItem(context, 0, null, 0)
-        item.menuView.tag = tag
+        val menuView = item.getMenuView()
+        menuView.tag = tag
         mMenuItems.add(item)
-        container.addView(item.menuView, LinearLayout.LayoutParams(-2, -2))
+        container.addView(menuView, LinearLayout.LayoutParams(-2, -2))
     }
 
     inner class MiuiNotificationMenuItem(
@@ -44,6 +46,13 @@ open class MiuiNotificationMenuRow {
         val icon: Drawable?,
         val iconResId: Int
     ) {
-        val menuView: View = RecordingMenuItemView(context)
+        private val view = RecordingMenuItemView(context)
+
+        fun getMenuView(): View {
+            if (this@MiuiNotificationMenuRow.failGetMenuView && titleResId != 0) {
+                throw RuntimeException("getMenuView simulated failure")
+            }
+            return view
+        }
     }
 }

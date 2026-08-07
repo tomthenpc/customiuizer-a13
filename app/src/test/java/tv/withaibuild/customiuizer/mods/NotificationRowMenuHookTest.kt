@@ -5,7 +5,6 @@ import android.app.PendingIntentFactory
 import android.app.RecordingActivityManager
 import android.content.Context
 import android.content.Intent
-import android.provider.Settings
 import android.view.View
 import android.widget.LinearLayout
 import com.android.systemui.Dependency
@@ -18,7 +17,9 @@ import org.junit.After
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertNotNull
 import org.junit.Assert.assertNull
+import org.junit.Assert.assertSame
 import org.junit.Assert.assertTrue
+import org.junit.Assert.fail
 import org.junit.Before
 import org.junit.Test
 import tv.withaibuild.customiuizer.MainModule
@@ -28,6 +29,7 @@ import tv.withaibuild.customiuizer.mods.utils.XposedHelpers
 import tv.withaibuild.customiuizer.utils.FakeXposedInterface
 import tv.withaibuild.customiuizer.utils.PrefMap
 import java.lang.reflect.InvocationHandler
+import java.lang.reflect.InvocationTargetException
 import java.lang.reflect.Method
 import java.lang.reflect.Proxy
 
@@ -141,6 +143,129 @@ class NotificationRowMenuHookTest {
     private fun clickForceClose(row: MiuiNotificationMenuRow) = clickModule(row, 1)
     private fun clickOpenFloatingWindow(row: MiuiNotificationMenuRow) = clickModule(row, 2)
 
+    private fun hooksInstance(): Any {
+        val field = SystemNotificationMoreHooks::class.java.getDeclaredField("INSTANCE").apply { isAccessible = true }
+        return field.get(null)!!
+    }
+
+    private fun rethrowFatalMethod(): Method {
+        return SystemNotificationMoreHooks::class.java.getDeclaredMethod("rethrowFatal", Throwable::class.java).apply {
+            isAccessible = true
+        }
+    }
+
+    @Test
+    fun rethrowFatal_directOutOfMemoryError_rethrows() {
+        try {
+            rethrowFatalMethod().invoke(hooksInstance(), OutOfMemoryError("oom"))
+            fail("expected OutOfMemoryError to escape")
+        } catch (e: InvocationTargetException) {
+            assertTrue(e.targetException is OutOfMemoryError)
+        }
+    }
+
+    @Test
+    fun rethrowFatal_directStackOverflowError_rethrows() {
+        try {
+            rethrowFatalMethod().invoke(hooksInstance(), StackOverflowError("soe"))
+            fail("expected StackOverflowError to escape")
+        } catch (e: InvocationTargetException) {
+            assertTrue(e.targetException is StackOverflowError)
+        }
+    }
+
+    @Test
+    fun rethrowFatal_directThreadDeath_rethrows() {
+        try {
+            rethrowFatalMethod().invoke(hooksInstance(), ThreadDeath())
+            fail("expected ThreadDeath to escape")
+        } catch (e: InvocationTargetException) {
+            assertTrue(e.targetException is ThreadDeath)
+        }
+    }
+
+    @Test
+    fun rethrowFatal_wrappedOutOfMemoryError_rethrows() {
+        try {
+            rethrowFatalMethod().invoke(hooksInstance(), RuntimeException("wrapper", OutOfMemoryError("oom")))
+            fail("expected wrapped OutOfMemoryError to escape")
+        } catch (e: InvocationTargetException) {
+            assertTrue(e.targetException is OutOfMemoryError)
+        }
+    }
+
+    @Test
+    fun rethrowFatal_wrappedThreadDeath_rethrows() {
+        try {
+            rethrowFatalMethod().invoke(hooksInstance(), RuntimeException("wrapper", ThreadDeath()))
+            fail("expected wrapped ThreadDeath to escape")
+        } catch (e: InvocationTargetException) {
+            assertTrue(e.targetException is ThreadDeath)
+        }
+    }
+
+    @Test
+    fun rethrowFatal_runtimeException_doesNotRethrow() {
+        rethrowFatalMethod().invoke(hooksInstance(), RuntimeException("ordinary"))
+    }
+
+    @Test
+    fun rethrowFatal_noSuchMethodError_doesNotRethrow() {
+        rethrowFatalMethod().invoke(hooksInstance(), NoSuchMethodError("missing"))
+    }
+
+    @Test
+    fun rethrowFatal_noSuchFieldError_doesNotRethrow() {
+        rethrowFatalMethod().invoke(hooksInstance(), NoSuchFieldError("missing"))
+    }
+
+    @Test
+    fun rethrowFatal_verifyError_doesNotRethrow() {
+        rethrowFatalMethod().invoke(hooksInstance(), VerifyError("verify"))
+    }
+
+    @Test
+    fun rethrowFatal_incompatibleClassChangeError_doesNotRethrow() {
+        rethrowFatalMethod().invoke(hooksInstance(), IncompatibleClassChangeError("icce"))
+    }
+
+    @Test
+    fun missingMenuContainerValue_doesNotMutateMenuItems() {
+        installHook()
+        val hook = getRecordedHook("com.android.systemui.statusbar.notification.row.MiuiNotificationMenuRow", "createMenuViews")
+
+        val row = createRow()
+        val afterCb = fakeAfterCallback(row, listOf(false, false))
+        row.createMenuViews(false, false)
+        row.mMenuContainer = null
+        hook.afterHook(afterCb)
+
+        val module = moduleItems(row)
+        assertEquals(0, module.size)
+        assertEquals(2, row.mMenuItems.size)
+    }
+
+    @Test
+    fun getMenuViewFailure_doesNotMutateMenuItemsOrContainer() {
+        installHook()
+        val hook = getRecordedHook("com.android.systemui.statusbar.notification.row.MiuiNotificationMenuRow", "createMenuViews")
+
+        val row = createRow()
+        row.failGetMenuView = true
+        val afterCb = fakeAfterCallback(row, listOf(false, false))
+        row.createMenuViews(false, false)
+
+        try {
+            hook.afterHook(afterCb)
+        } catch (t: Throwable) {
+            fail("getMenuView failure must not escape")
+        }
+
+        assertEquals(2, row.mMenuItems.size)
+        val container = row.mMenuContainer as RecordingMenuContainer
+        assertEquals(2, container.addedChildren.size)
+    }
+
     @Test
     fun createMenuViews_after_addsThreeModuleItems() {
         installHook()
@@ -209,7 +334,7 @@ class NotificationRowMenuHookTest {
     }
 
     @Test
-    fun createMenuViews_originalClearsBeforeAfter_doesNotAccumulate() {
+    fun clearRebuildFixture_eachCycleHasThreeModuleItems() {
         installHook()
         val hook = getRecordedHook("com.android.systemui.statusbar.notification.row.MiuiNotificationMenuRow", "createMenuViews")
 
@@ -221,12 +346,13 @@ class NotificationRowMenuHookTest {
         hook.afterHook(afterCb)
 
         assertEquals(5, row.mMenuItems.size)
+        assertEquals(3, moduleItems(row).size)
         val container = row.mMenuContainer as RecordingMenuContainer
         assertEquals(5, container.addedChildren.size)
     }
 
     @Test
-    fun createMenuViews_originalPreservesBeforeAfter_accumulates() {
+    fun preserveFixture_secondCycleAccumulatesModuleItems() {
         installHook()
         val hook = getRecordedHook("com.android.systemui.statusbar.notification.row.MiuiNotificationMenuRow", "createMenuViews")
 
@@ -234,9 +360,11 @@ class NotificationRowMenuHookTest {
         row.originalClearsAndAddsSystemItems = false
         val preserveItem = Any()
         row.mMenuItems.add(preserveItem)
+
         val afterCb = fakeAfterCallback(row, listOf(false, false))
         row.createMenuViews(false, false)
         hook.afterHook(afterCb)
+        row.createMenuViews(false, false)
         hook.afterHook(afterCb)
 
         assertEquals(7, row.mMenuItems.size)
@@ -410,5 +538,30 @@ class NotificationRowMenuHookTest {
         clickOpenFloatingWindow(row)
 
         assertEquals(0, AppMiniWindowManager.getInstance().calls.size)
+    }
+
+    @Test
+    fun callMethodCompat_cachedInvokeFailure_doesNotFallBackToRuntimeReflection() {
+        installHook()
+
+        val method = SystemNotificationMoreHooks::class.java.getDeclaredMethod(
+            "callMethodCompat",
+            Any::class.java,
+            Method::class.java,
+            String::class.java,
+            Array<Any>::class.java
+        ).apply { isAccessible = true }
+
+        val target = object {
+            @Suppress("unused")
+            fun boom(): String {
+                throw RuntimeException("already executed")
+            }
+        }
+
+        val declaredMethod = target.javaClass.getDeclaredMethod("boom")
+        val result = method.invoke(hooksInstance(), target, declaredMethod, "boom", emptyArray<Any>())
+
+        assertNull(result)
     }
 }
