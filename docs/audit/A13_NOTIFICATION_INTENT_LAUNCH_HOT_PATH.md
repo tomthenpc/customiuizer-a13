@@ -180,7 +180,7 @@ MiuiStatusBarNotificationActivityStarter.startNotificationIntent(PendingIntent, 
 
 ## 12. 实现后验证
 
-- `python tools/verify.py fast --tests OpenNotifyInFloatingWindowHookTest`：通过（28 个 JVM 场景）。
+- `python tools/verify.py fast --tests OpenNotifyInFloatingWindowHookTest`：通过（35 个 JVM 场景，R2 新增 7 个异常边界场景）。
 - `python tools/verify.py full`：通过。
 - `python -m compileall tools`：通过。
 - `python -m unittest discover -s tools/tests -p "test_*.py"`：通过（1043 项，2 项跳过）。
@@ -208,3 +208,54 @@ MiuiStatusBarNotificationActivityStarter.startNotificationIntent(PendingIntent, 
 - `returnAndSkip(null)` 严格位于 `launchMiniWindowActivity` 成功后，保证普通 launch 失败不会错误地跳过原方法。
 - 多 overload `mSbn` 映射已支持 `NotificationEntry` 与 `ExpandableNotificationRow`，对无 `mSbn` 字段的 overload 安全 fail-open。
 - 白名单 XOR 语义与 `ProcessManager.getForegroundInfo()` 实时查询保持不变。
+
+## 14. R2 异常语义与 fail-open 边界
+
+R2 在 R1 基础上收紧异常传播语义，建立与 `XposedHelpers` legacy 调用（`callMethod` / `callStaticMethod`）等价的异常 oracle。
+
+### 14.1 致命错误传播
+
+保持 R1 的 `rethrowNotificationFatal`：遇到 `OutOfMemoryError`、`ThreadDeath`、`VirtualMachineError`（含 `InvocationTargetException`/wrapper cause 链）时直接抛出，不允许吞掉。这包括 `mSbn Field.get`、`isSubstituteNotification Method.invoke`、`mPkgName Field.get`、`Dependency#get Method.invoke`、`launchMiniWindowActivity Method.invoke` 的目标异常链。
+
+### 14.2 安装阶段 fail-closed
+
+以下 symbol 缺失或无法解析时，`OpenNotifyInFloatingWindowHook` 直接返回，**不安装** `startNotificationIntent` Hook：
+
+- `android.service.notification.StatusBarNotification` 类不存在；
+- `StatusBarNotification#isSubstituteNotification()` 方法不存在；
+- `StatusBarNotification#mPkgName` 字段不存在。
+
+这是 DEFENSIVE_FAIL_CLOSED：缺少必要 ROM 元数据时，宁可不生效，也不让 miniwindow 以空/错误的包名启动。
+
+### 14.3 回调阶段 pre-side-effect fail-open
+
+`isSubstituteNotification` 或 `mPkgName` 读取发生 **ordinary** 异常（非 fatal）时，回调立即 `return`，让原 `startNotificationIntent` 继续执行。这些操作发生在实际副作用（启动 miniwindow）之前，因此安全 fail-open。
+
+- `mSbn Field.get` 失败 → `return`；
+- `isSubstituteNotification()` 返回/抛出 ordinary 异常 → `return`；
+- `mPkgName Field.get` 失败 → `return`（注意：字段值为 `null` 时按 legacy 使用空字符串 `""`，不算异常）。
+
+### 14.4 副作用后异常 legacy 传播
+
+`Dependency#get` 返回 `null` 时 fail-open；ordinary 目标异常时 fail-open。
+
+`AppMiniWindowManager#launchMiniWindowActivity` 属于实际副作用点。调用失败后不再 catch 并 `return`，而是使用 `invokeNotificationCompat` 将目标异常转换为与 `XposedHelpers.InvocationTargetError` 等价的 `Error` 并调用 `param.throwAndSkip(e)`：
+
+- 普通异常：抛出 `XposedHelpers.InvocationTargetError(cause)`，`returnAndSkip` 不发生，原方法被跳过且异常保持可观测；
+- 致命错误：直接抛出，不包装；
+- 异常前已发生 side effect（如 `launchMiniWindowActivity` 内部部分执行）会保留，测试验证 `calls.size == 1` 且异常传播。
+
+### 14.5 新增/更新的 JVM 测试覆盖
+
+R2 新增/修改 `OpenNotifyInFloatingWindowHookTest` 场景：
+
+- `isSubstitute` 普通方法失败 → fail-open（原方法继续）；
+- `isSubstitute` 包装致命错误 → 继续抛出；
+- `mPkgName` 字段值为 `null` → 使用空字符串启动；
+- `mPkgName Field.get` 普通失败 → fail-open；
+- 安装阶段 `isSubstituteNotification` 缺失 → 零 Hook；
+- 安装阶段 `mPkgName` 缺失 → 零 Hook；
+- `launchMiniWindowActivity` 普通异常 → 传播 `XposedHelpers.InvocationTargetError`；
+- `launchMiniWindowActivity` side-effect-then-throw → 传播且 side effect 保留；
+- `launchMiniWindowActivity` 包装致命错误 → 继续抛出；
+- `ProcessManager.getForegroundInfo()` 普通异常 → 直接传播到 `MethodHook` 边界。

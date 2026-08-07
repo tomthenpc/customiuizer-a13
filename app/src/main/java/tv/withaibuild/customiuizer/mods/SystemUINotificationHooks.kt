@@ -27,6 +27,7 @@ import java.io.File
 import java.io.FileOutputStream
 import java.io.InputStream
 import java.lang.reflect.Field
+import java.lang.reflect.InvocationTargetException
 import java.lang.reflect.Method
 
 @Suppress("UNUSED_PARAMETER")
@@ -43,6 +44,28 @@ object SystemUINotificationHooks {
             if (next == current) return
             current = next
             depth++
+        }
+    }
+
+    /**
+     * Invokes a cached [Method] with legacy Xposed-style target exception propagation.
+     *
+     * - Fatal errors in the [InvocationTargetException] cause chain are re-thrown directly.
+     * - Ordinary target exceptions are wrapped in [XposedHelpers.InvocationTargetError],
+     *   matching the contract of [XposedHelpers.callMethod].
+     * - [IllegalAccessException] is converted to [IllegalAccessError].
+     * - [IllegalArgumentException] is propagated.
+     */
+    private fun invokeNotificationCompat(method: Method, receiver: Any?, vararg args: Any?): Any? {
+        return try {
+            method.invoke(receiver, *args)
+        } catch (e: InvocationTargetException) {
+            rethrowNotificationFatal(e)
+            throw XposedHelpers.InvocationTargetError(e.cause ?: e)
+        } catch (e: IllegalAccessException) {
+            throw IllegalAccessError(e.message)
+        } catch (e: IllegalArgumentException) {
+            throw e
         }
     }
 
@@ -172,14 +195,14 @@ object SystemUINotificationHooks {
         } catch (t: Throwable) {
             rethrowNotificationFatal(t)
             null
-        }
+        } ?: return
 
         val mPkgNameField = try {
             XposedHelpers.findFieldIfExists(statusBarNotificationClass, "mPkgName")?.also { it.isAccessible = true }
         } catch (t: Throwable) {
             rethrowNotificationFatal(t)
             null
-        }
+        } ?: return
 
         val dependencyGetMethod = try {
             XposedHelpers.findMethodBestMatch(dependencyClass, "get", Class::class.java)
@@ -221,22 +244,22 @@ object SystemUINotificationHooks {
                     mSbnField.get(param.getArg(2))
                 } catch (t: Throwable) {
                     rethrowNotificationFatal(t)
-                    null
+                    return
                 } ?: return
 
                 val isSubstitute = try {
-                    isSubstituteNotificationMethod?.invoke(mSbn) as? Boolean
+                    isSubstituteNotificationMethod.invoke(mSbn) as? Boolean
                 } catch (t: Throwable) {
                     rethrowNotificationFatal(t)
-                    null
+                    return
                 } ?: false
 
                 val pkgName: String = if (isSubstitute) {
                     try {
-                        mPkgNameField?.get(mSbn) as? String ?: ""
+                        mPkgNameField.get(mSbn) as? String ?: ""
                     } catch (t: Throwable) {
                         rethrowNotificationFatal(t)
-                        ""
+                        return
                     }
                 } else {
                     pendingIntent.creatorPackage ?: ""
@@ -265,12 +288,11 @@ object SystemUINotificationHooks {
                 } ?: return
 
                 try {
-                    launchMiniWindowActivityMethod.invoke(appMiniWindowManager, pkgName, pendingIntent)
-                } catch (t: Throwable) {
-                    rethrowNotificationFatal(t)
-                    return
+                    invokeNotificationCompat(launchMiniWindowActivityMethod, appMiniWindowManager, pkgName, pendingIntent)
+                    param.returnAndSkip(null)
+                } catch (e: XposedHelpers.InvocationTargetError) {
+                    param.throwAndSkip(e)
                 }
-                param.returnAndSkip(null)
             }
         })
     }

@@ -15,6 +15,7 @@ open class StatusBarNotification {
     open var mTag: String? = null
     open var mAppUid: Int = 0
     open var isSubstitute: Boolean = false
+    open var throwOnIsSubstitute: Throwable? = null
 
     constructor()
 
@@ -59,7 +60,10 @@ open class StatusBarNotification {
 
     open fun getPackageName(): String? = mPackageName
 
-    open fun isSubstituteNotification(): Boolean = isSubstitute
+    open fun isSubstituteNotification(): Boolean {
+        throwOnIsSubstitute?.let { throw it }
+        return isSubstitute
+    }
 
     open fun getAppUid(): Int = mAppUid
 

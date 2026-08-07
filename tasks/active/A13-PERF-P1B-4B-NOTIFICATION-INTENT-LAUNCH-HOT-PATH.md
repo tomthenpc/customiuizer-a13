@@ -7,8 +7,8 @@
 | 任务 | `A13-PERF-P1B-4B-NOTIFICATION-INTENT-LAUNCH-HOT-PATH` |
 | 分支 | `devin/a13-memory-performance-optimization` |
 | 起点 commit | `7f0f37c` |
-| 状态 | `QA_CONDITIONAL` |
-| blockers | - |
+| 状态 | `QA_REOPENED_R2` |
+| blockers | 异常语义、fail-open 边界和 ROM symbol 缺失策略需在 R2 完成并验证 |
 | QA-1 | `COMPLETED` |
 | 终点 commit | 待填入 |
 | P0 真实运行时基线 | `RUNTIME_BASELINE_PENDING_DEVICE` |
@@ -62,7 +62,9 @@
 - 工作区干净并推送。
 - 不声明未经真机测量的性能收益。
 
-## 最终状态约束
+## R2 修复记录
+
+- 建立 `XposedHelpers` legacy 异常 oracle：普通目标异常包装为 `XposedHelpers.InvocationTargetError`，致命错误（`OutOfMemoryError` / `ThreadDeath` / `VirtualMachineError`）直接抛出。\n- 安装阶段 fail-closed：`isSubstituteNotification` 或 `mPkgName` 缺失时直接返回，不安装 Hook。\n- 回调 pre-side-effect 普通异常 fail-open：`mSbn` / `isSubstitute` / `mPkgName` 读取失败时立即 `return`，原方法继续。\n- `mPkgName` 字段值为 `null` 时按 legacy 使用空字符串 `""`。\n- `launchMiniWindowActivity` 普通失败不再 catch-and-return，而是 `throwAndSkip(XposedHelpers.InvocationTargetError)`，保持异常可观测并跳过原方法。\n- `ProcessManager.getForegroundInfo()` 普通异常保持直接传播。\n- `OpenNotifyInFloatingWindowHookTest` 从 28 个用例扩展至 35 个，覆盖上述边界。\n- 重新生成 `A13_LEGACY_EXCEPTION_REGISTRY.json`。\n\n## 最终状态约束
 
 - 工程完成状态只能是 `ENGINEERING_COMPLETE_DEVICE_EVIDENCE_PENDING`。
 - P0 真实运行时基线继续为 `RUNTIME_BASELINE_PENDING_DEVICE`。

@@ -21,9 +21,14 @@ import tv.withaibuild.customiuizer.mods.utils.ModuleHelper
 import tv.withaibuild.customiuizer.mods.utils.XposedHelpers
 import tv.withaibuild.customiuizer.utils.FakeXposedInterface
 import tv.withaibuild.customiuizer.utils.PrefMap
+import java.io.File
 import java.lang.reflect.InvocationHandler
+import java.lang.reflect.InvocationTargetException
 import java.lang.reflect.Method
 import java.lang.reflect.Proxy
+import java.net.URL
+import java.net.URLClassLoader
+import java.nio.file.Files
 
 class OpenNotifyInFloatingWindowHookTest {
 
@@ -98,6 +103,79 @@ class OpenNotifyInFloatingWindowHookTest {
         SystemUINotificationHooks.OpenNotifyInFloatingWindowHook(lpparam())
     }
 
+    private fun installHook(prefs: PrefMap<String, Any>, classLoader: ClassLoader) {
+        MainModule.mPrefs = prefs
+        val lpparam = Proxy.newProxyInstance(
+            parentClassLoader,
+            arrayOf(XposedModuleInterface.PackageReadyParam::class.java)
+        ) { _, method, _ ->
+            when (method.name) {
+                "getPackageName" -> "com.android.systemui"
+                "getProcessName" -> "com.android.systemui"
+                "getClassLoader" -> classLoader
+                else -> null
+            }
+        } as XposedModuleInterface.PackageReadyParam
+        SystemUINotificationHooks.OpenNotifyInFloatingWindowHook(lpparam)
+    }
+
+    private fun classLoaderWithFakeStatusBarNotification(
+        hasIsSubstituteMethod: Boolean,
+        hasMPkgNameField: Boolean,
+        staticIsSubstitute: Boolean = false
+    ): ClassLoader {
+        val javaHome = File(System.getProperty("java.home") ?: "")
+        val javac = listOfNotNull(
+            javaHome.parentFile?.resolve("bin/javac.exe"),
+            javaHome.resolve("bin/javac.exe"),
+            javaHome.parentFile?.resolve("bin/javac"),
+            javaHome.resolve("bin/javac")
+        ).firstOrNull { it.exists() } ?: throw IllegalStateException(
+            "javac not found near java.home=${javaHome.absolutePath}; cannot compile fake StatusBarNotification"
+        )
+
+        val tempDir = Files.createTempDirectory("fake-statusbar").toFile()
+        tempDir.deleteOnExit()
+
+        val pkgDir = File(tempDir, "android/service/notification").apply { mkdirs() }
+        val source = File(pkgDir, "StatusBarNotification.java")
+        val method = if (hasIsSubstituteMethod) {
+            if (staticIsSubstitute) "public static boolean isSubstituteNotification() { return true; }" else "public boolean isSubstituteNotification() { return true; }"
+        } else ""
+        val field = if (hasMPkgNameField) "public String mPkgName;" else ""
+        source.writeText(
+            """
+            package android.service.notification;
+            public class StatusBarNotification {
+                $field
+                $method
+            }
+            """.trimIndent()
+        )
+
+        val process = ProcessBuilder(
+            javac.absolutePath,
+            "-d", tempDir.absolutePath,
+            source.absolutePath
+        ).apply { environment()["JAVA_HOME"] = javaHome.absolutePath }
+            .start()
+        val output = process.inputStream.bufferedReader().readText() + process.errorStream.bufferedReader().readText()
+        val exitCode = process.waitFor()
+        if (exitCode != 0) throw IllegalStateException("failed to compile fake StatusBarNotification: $output")
+
+        val fakeOnlyLoader = URLClassLoader(arrayOf(tempDir.toURI().toURL()), null)
+        return object : ClassLoader(parentClassLoader) {
+            override fun loadClass(name: String, resolve: Boolean): Class<*> {
+                if (name == "android.service.notification.StatusBarNotification") {
+                    val c = fakeOnlyLoader.loadClass(name)
+                    if (resolve) resolveClass(c)
+                    return c
+                }
+                return super.loadClass(name, resolve)
+            }
+        }
+    }
+
     private fun getRecordedHook(parameterCount: Int = 6, arg2Class: Class<*>? = null): HookerClassHelper.MethodHook {
         val recorded = getRecordedEntries(parameterCount, arg2Class)
         assertTrue("expected hook for startNotificationIntent", recorded.isNotEmpty())
@@ -123,6 +201,25 @@ class OpenNotifyInFloatingWindowHookTest {
         val field = HookerClassHelper.BeforeHookCallback::class.java.getDeclaredField("skipped")
         field.isAccessible = true
         return field.getBoolean(before)
+    }
+
+    private fun getThrowable(before: HookerClassHelper.BeforeHookCallback): Throwable? {
+        val field = HookerClassHelper.BeforeHookCallback::class.java.getDeclaredField("throwable")
+        field.isAccessible = true
+        return field.get(before) as? Throwable
+    }
+
+    private fun invokeBeforeDirectly(hook: HookerClassHelper.MethodHook, before: HookerClassHelper.BeforeHookCallback) {
+        val method = HookerClassHelper.MethodHook::class.java.getDeclaredMethod(
+            "before",
+            HookerClassHelper.BeforeHookCallback::class.java
+        )
+        method.isAccessible = true
+        try {
+            method.invoke(hook, before)
+        } catch (e: InvocationTargetException) {
+            throw e.cause ?: e
+        }
     }
 
     @Test
@@ -497,7 +594,7 @@ class OpenNotifyInFloatingWindowHookTest {
     }
 
     @Test
-    fun startNotificationIntent_before_launchOrdinaryFailure_doesNotSkip() {
+    fun startNotificationIntent_before_launchOrdinaryFailure_propagatesInvocationTargetError() {
         val prefs = PrefMap<String, Any>()
         prefs["system_notify_openinfw"] = true
         prefs["system_notify_openinfw_in_whitelist"] = false
@@ -509,10 +606,17 @@ class OpenNotifyInFloatingWindowHookTest {
         val entry = NotificationEntry().apply { mSbn = fakeSbn() }
         val pendingIntent = fakePendingIntent("com.target.app")
         AppMiniWindowManager.getInstance().throwOnCall = RuntimeException("launch failed")
-        val before = fakeBeforeCallback(executable, listOf(pendingIntent, null, entry, null, false, false))
-        hook.beforeHook(before)
+        val chain = FakeChain(executable, null, listOf(pendingIntent, null, entry, null, false, false), null, null)
 
-        assertFalse(isSkipped(before))
+        try {
+            hook.intercept(chain)
+            fail("expected XposedHelpers.InvocationTargetError to propagate")
+        } catch (e: XposedHelpers.InvocationTargetError) {
+            assertNotNull(e.cause)
+            assertEquals("launch failed", (e.cause as? RuntimeException)?.message)
+        }
+
+        assertFalse("original method must not be called after launch failure", chain.proceeded)
         assertTrue(AppMiniWindowManager.getInstance().calls.isEmpty())
     }
 
@@ -534,7 +638,7 @@ class OpenNotifyInFloatingWindowHookTest {
     }
 
     @Test
-    fun startNotificationIntent_before_launchSideEffectThenThrow_observesSideEffectAndDoesNotSkip() {
+    fun startNotificationIntent_before_launchSideEffectThenThrow_propagatesInvocationTargetError() {
         val prefs = PrefMap<String, Any>()
         prefs["system_notify_openinfw"] = true
         prefs["system_notify_openinfw_in_whitelist"] = false
@@ -546,15 +650,22 @@ class OpenNotifyInFloatingWindowHookTest {
         val entry = NotificationEntry().apply { mSbn = fakeSbn() }
         val pendingIntent = fakePendingIntent("com.target.app")
         AppMiniWindowManager.getInstance().sideEffectThenThrow = RuntimeException("after side effect")
-        val before = fakeBeforeCallback(executable, listOf(pendingIntent, null, entry, null, false, false))
-        hook.beforeHook(before)
+        val chain = FakeChain(executable, null, listOf(pendingIntent, null, entry, null, false, false), null, null)
 
-        assertFalse(isSkipped(before))
+        try {
+            hook.intercept(chain)
+            fail("expected XposedHelpers.InvocationTargetError to propagate")
+        } catch (e: XposedHelpers.InvocationTargetError) {
+            assertNotNull(e.cause)
+            assertEquals("after side effect", (e.cause as? RuntimeException)?.message)
+        }
+
+        assertFalse("original method must not be called after launch failure", chain.proceeded)
         assertEquals(1, AppMiniWindowManager.getInstance().calls.size)
     }
 
     @Test
-    fun startNotificationIntent_before_processManagerOrdinaryException_doesNotSkipAndDoesNotLaunch() {
+    fun startNotificationIntent_before_processManagerOrdinaryException_propagatesToMethodHookBoundary() {
         val prefs = PrefMap<String, Any>()
         prefs["system_notify_openinfw"] = true
         prefs["system_notify_openinfw_in_whitelist"] = false
@@ -568,12 +679,11 @@ class OpenNotifyInFloatingWindowHookTest {
         val pendingIntent = fakePendingIntent("com.target.app")
         val before = fakeBeforeCallback(executable, listOf(pendingIntent, null, entry, null, false, false))
 
-        // ProcessManager.getForegroundInfo() is not wrapped; exception propagates to MethodHook boundary
-        // and is logged; the before callback does not complete.
-        try {
-            hook.beforeHook(before)
-        } catch (t: Throwable) {
-            rethrowIfFatal(t)
+        assertThrows(
+            "ProcessManager.getForegroundInfo() is not wrapped; ordinary exceptions propagate out of before()",
+            RuntimeException::class.java
+        ) {
+            invokeBeforeDirectly(hook, before)
         }
 
         assertFalse(isSkipped(before))
@@ -668,6 +778,143 @@ class OpenNotifyInFloatingWindowHookTest {
 
         assertFalse("unknown overload should fail-open (not skip)", isSkipped(before))
         assertTrue(AppMiniWindowManager.getInstance().calls.isEmpty())
+    }
+
+    @Test
+    fun startNotificationIntent_before_isSubstituteOrdinaryFailure_failOpen() {
+        val prefs = PrefMap<String, Any>()
+        prefs["system_notify_openinfw"] = true
+        prefs["system_notify_openinfw_in_whitelist"] = false
+        installHook(prefs)
+        val hook = getRecordedHook()
+
+        val executable = getRecordedExecutable()
+
+        val sbn = fakeSbn().apply { throwOnIsSubstitute = RuntimeException("isSubstitute failed") }
+        val entry = NotificationEntry().apply { mSbn = sbn }
+        val pendingIntent = fakePendingIntent("com.target.app")
+        val chain = FakeChain(executable, null, listOf(pendingIntent, null, entry, null, false, false), null, null)
+
+        hook.intercept(chain)
+
+        assertTrue("pre-side-effect ordinary failure must fail-open to original", chain.proceeded)
+        assertTrue(AppMiniWindowManager.getInstance().calls.isEmpty())
+    }
+
+    @Test(expected = OutOfMemoryError::class)
+    fun startNotificationIntent_before_isSubstituteNestedFatal_rethrowsFatal() {
+        val prefs = PrefMap<String, Any>()
+        prefs["system_notify_openinfw"] = true
+        prefs["system_notify_openinfw_in_whitelist"] = false
+        installHook(prefs)
+        val hook = getRecordedHook()
+
+        val executable = getRecordedExecutable()
+
+        val sbn = fakeSbn().apply { throwOnIsSubstitute = RuntimeException(RuntimeException(OutOfMemoryError("oom"))) }
+        val entry = NotificationEntry().apply { mSbn = sbn }
+        val pendingIntent = fakePendingIntent("com.target.app")
+        val chain = FakeChain(executable, null, listOf(pendingIntent, null, entry, null, false, false), null, null)
+
+        hook.intercept(chain)
+    }
+
+    @Test
+    fun startNotificationIntent_before_mPkgNameNullValue_launchesWithEmptyPackageName() {
+        val prefs = PrefMap<String, Any>()
+        prefs["system_notify_openinfw"] = true
+        prefs["system_notify_openinfw_in_whitelist"] = false
+        installHook(prefs)
+        val hook = getRecordedHook()
+
+        val executable = getRecordedExecutable()
+
+        val sbn = fakeSubstituteSbn().apply { mPkgName = null }
+        val entry = NotificationEntry().apply { mSbn = sbn }
+        val pendingIntent = fakePendingIntent("com.creator.app")
+        val before = fakeBeforeCallback(executable, listOf(pendingIntent, null, entry, null, false, false))
+        hook.beforeHook(before)
+
+        assertTrue(isSkipped(before))
+        assertEquals(1, AppMiniWindowManager.getInstance().calls.size)
+        assertEquals("legacy empty mPkgName must be used when value is null", "", AppMiniWindowManager.getInstance().calls[0].first)
+    }
+
+    @Test
+    fun startNotificationIntent_before_mPkgNameReadOrdinaryFailure_failOpen() {
+        val prefs = PrefMap<String, Any>()
+        prefs["system_notify_openinfw"] = true
+        prefs["system_notify_openinfw_in_whitelist"] = false
+        val classLoader = classLoaderWithFakeStatusBarNotification(
+            hasIsSubstituteMethod = true,
+            hasMPkgNameField = true,
+            staticIsSubstitute = true
+        )
+        installHook(prefs, classLoader)
+        val hook = getRecordedHook()
+
+        val executable = getRecordedExecutable()
+
+        val entry = NotificationEntry().apply { mSbn = "not-a-statusbar-instance" }
+        val pendingIntent = fakePendingIntent("com.target.app")
+        val chain = FakeChain(executable, null, listOf(pendingIntent, null, entry, null, false, false), null, null)
+
+        hook.intercept(chain)
+
+        assertTrue("mPkgName read ordinary failure must fail-open to original", chain.proceeded)
+        assertTrue(AppMiniWindowManager.getInstance().calls.isEmpty())
+    }
+
+    @Test
+    fun startNotificationIntent_before_install_isSubstituteMethodMissing_zeroHooks() {
+        val prefs = PrefMap<String, Any>()
+        prefs["system_notify_openinfw"] = true
+        val classLoader = classLoaderWithFakeStatusBarNotification(
+            hasIsSubstituteMethod = false,
+            hasMPkgNameField = true
+        )
+        installHook(prefs, classLoader)
+        assertTrue(
+            "missing isSubstituteNotification must prevent hook installation",
+            FakeXposedInterface.recordedHooks.none {
+                it.executable.declaringClass.name == "com.android.systemui.statusbar.phone.MiuiStatusBarNotificationActivityStarter"
+            }
+        )
+    }
+
+    @Test
+    fun startNotificationIntent_before_install_mPkgNameFieldMissing_zeroHooks() {
+        val prefs = PrefMap<String, Any>()
+        prefs["system_notify_openinfw"] = true
+        val classLoader = classLoaderWithFakeStatusBarNotification(
+            hasIsSubstituteMethod = true,
+            hasMPkgNameField = false
+        )
+        installHook(prefs, classLoader)
+        assertTrue(
+            "missing mPkgName field must prevent hook installation",
+            FakeXposedInterface.recordedHooks.none {
+                it.executable.declaringClass.name == "com.android.systemui.statusbar.phone.MiuiStatusBarNotificationActivityStarter"
+            }
+        )
+    }
+
+    @Test(expected = OutOfMemoryError::class)
+    fun startNotificationIntent_before_launchNestedWrappedFatal_rethrowsFatal() {
+        val prefs = PrefMap<String, Any>()
+        prefs["system_notify_openinfw"] = true
+        prefs["system_notify_openinfw_in_whitelist"] = false
+        installHook(prefs)
+        val hook = getRecordedHook()
+
+        val executable = getRecordedExecutable()
+
+        val entry = NotificationEntry().apply { mSbn = fakeSbn() }
+        val pendingIntent = fakePendingIntent("com.target.app")
+        AppMiniWindowManager.getInstance().throwOnCall = RuntimeException(RuntimeException(OutOfMemoryError("oom")))
+        val chain = FakeChain(executable, null, listOf(pendingIntent, null, entry, null, false, false), null, null)
+
+        hook.intercept(chain)
     }
 
     private fun rethrowIfFatal(t: Throwable) {
