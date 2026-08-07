@@ -5653,7 +5653,6 @@
   "provenance": {
     "installer_source": "app/src/main/java/tv/withaibuild/customiuizer/installers/SystemUiInstaller.java",
     "inventory": "docs/audit/A13_SYSTEMUI_GATE_INVENTORY.json",
-    "repo_root": "C:\\Users\\tv\\Downloads\\Peengeek\\customiuizer-a13-forDevin",
     "resource_source": "app/src/main/java/tv/withaibuild/customiuizer/mods/SystemUIStatusBarHooks.kt"
   },
   "records": [

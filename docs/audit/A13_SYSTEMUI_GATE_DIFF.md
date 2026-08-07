@@ -10,6 +10,15 @@ Schema version: 1.0
 - Unconditional dispatchers: 5
 - Catalog SystemUI entries: 13
 
+## Match Coverage
+
+- Matched atomic units: 197
+- Matched unique installer conditions: 113
+- Matched unique startup conditions: 111
+- Matched unique feature IDs: 8
+- Total installer atomic units: 187
+- Total startup atomic units: 206
+
 ## Counts
 
 - COMPARATOR_MISMATCH: 0

@@ -1744,7 +1744,6 @@ def diff_from_repo(repo_root: Path) -> DiffResult:
         "inventory": inventory_path.relative_to(repo_root).as_posix(),
         "installer_source": installer_path.relative_to(repo_root).as_posix(),
         "resource_source": resource_source_file,
-        "repo_root": str(repo_root.resolve()),
     }
     return result
 
@@ -1768,6 +1767,15 @@ def render_markdown(result: DiffResult) -> str:
         f"- Conditional dispatchers: {result.conditional_dispatchers}",
         f"- Unconditional dispatchers: {result.unconditional_dispatchers}",
         f"- Catalog SystemUI entries: {result.catalog_systemui_entries}",
+        "",
+        "## Match Coverage",
+        "",
+        f"- Matched atomic units: {result.matched_atomic_units}",
+        f"- Matched unique installer conditions: {result.matched_unique_installer_conditions}",
+        f"- Matched unique startup conditions: {result.matched_unique_startup_conditions}",
+        f"- Matched unique feature IDs: {result.matched_unique_feature_ids}",
+        f"- Total installer atomic units: {result.total_installer_atomic_units}",
+        f"- Total startup atomic units: {result.total_startup_atomic_units}",
         "",
         "## Counts",
         "",

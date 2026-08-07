@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import importlib
+import io
 import json
 import os
 import shutil
@@ -16,6 +17,8 @@ from typing import Any
 _tools_dir = Path(__file__).resolve().parent.parent
 if str(_tools_dir) not in sys.path:
     sys.path.insert(0, str(_tools_dir))
+
+REPO_ROOT = Path(__file__).resolve().parent.parent.parent
 
 diff_mod = importlib.import_module("a13_systemui_gate_diff")
 inv_mod = importlib.import_module("a13_systemui_gate_inventory")
@@ -317,11 +320,12 @@ class RepoIsolationTests(unittest.TestCase):
             self.assertNotEqual(result_a.counts, result_b.counts)
             self.assertEqual(result_a.counts["MATCH"], 1)
             self.assertEqual(result_b.counts["GATE_ONLY_UNEXPLAINED"], 1)
-            provenance_a = result_a.provenance["repo_root"]
-            provenance_b = result_b.provenance["repo_root"]
-            real_repo = str(Path(__file__).resolve().parent.parent.parent)
-            self.assertNotIn(real_repo, provenance_a)
-            self.assertNotIn(real_repo, provenance_b)
+            # Provenance must not contain an absolute repo_root or any temp path.
+            for result in (result_a, result_b):
+                self.assertNotIn("repo_root", result.provenance)
+                text = json.dumps(result.to_dict(), sort_keys=True)
+                self.assertNotIn(str(repo_a.resolve()), text)
+                self.assertNotIn(str(repo_b.resolve()), text)
         finally:
             shutil.rmtree(repo_a)
             shutil.rmtree(repo_b)
@@ -447,6 +451,65 @@ class SummaryStatTests(unittest.TestCase):
         self.assertEqual(result.matched_atomic_units, 1)
         self.assertEqual(result.matched_unique_installer_conditions, 1)
         self.assertEqual(result.matched_unique_startup_conditions, 1)
+
+
+class MutationIntegrationTests(unittest.TestCase):
+    """Counter-proof mutation suites against the real repository."""
+
+    def _capture_run(self, runner):
+        out = io.StringIO()
+        old = sys.stdout
+        sys.stdout = out
+        try:
+            return runner(REPO_ROOT)
+        finally:
+            sys.stdout = old
+
+    def test_inventory_mutations_pass(self):
+        """A-F inventory-level counter-proofs flag the expected categories."""
+        self.assertEqual(self._capture_run(diff_mod.run_mutations), 0)
+
+    def test_source_mutations_pass(self):
+        """A-G source-level counter-proofs isolate mutations in temp repos."""
+        self.assertEqual(self._capture_run(diff_mod.run_source_mutations), 0)
+
+
+class DeterministicOutputTests(unittest.TestCase):
+    """Identical source in different checkout paths must produce identical output."""
+
+    _REQUIRED_FILES = [
+        Path("docs/audit/A13_SYSTEMUI_GATE_INVENTORY.json"),
+        Path("app/src/main/java/tv/withaibuild/customiuizer/installers/SystemUiInstaller.java"),
+        Path("app/src/main/java/tv/withaibuild/customiuizer/mods/catalog/FeatureCatalog.kt"),
+        Path("app/src/main/java/tv/withaibuild/customiuizer/mods/SystemUIStatusBarHooks.kt"),
+    ]
+
+    def _create_mirror_repo(self, prefix: str) -> Path:
+        temp = Path(tempfile.mkdtemp(prefix=prefix))
+        for rel in self._REQUIRED_FILES:
+            dst = temp / rel
+            dst.parent.mkdir(parents=True, exist_ok=True)
+            shutil.copy2(REPO_ROOT / rel, dst)
+        return temp
+
+    def _stringify_dict(self, data: dict[str, Any]) -> str:
+        return json.dumps(data, sort_keys=True, indent=2)
+
+    def test_identical_source_different_checkout_paths(self):
+        repo_a = self._create_mirror_repo("a13_diff_det_a_")
+        repo_b = self._create_mirror_repo("a13_diff_det_b_")
+        try:
+            result_a = diff_mod.diff_from_repo(repo_a)
+            result_b = diff_mod.diff_from_repo(repo_b)
+            self.assertEqual(result_a.to_dict(), result_b.to_dict())
+            self.assertEqual(diff_mod.render_markdown(result_a), diff_mod.render_markdown(result_b))
+
+            text = self._stringify_dict(result_a.to_dict())
+            self.assertNotIn(str(repo_a.resolve()), text)
+            self.assertNotIn(str(repo_b.resolve()), text)
+        finally:
+            shutil.rmtree(repo_a)
+            shutil.rmtree(repo_b)
 
 
 if __name__ == "__main__":
