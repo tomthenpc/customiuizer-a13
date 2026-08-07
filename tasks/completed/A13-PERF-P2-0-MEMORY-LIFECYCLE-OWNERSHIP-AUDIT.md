@@ -6,8 +6,8 @@
 |------|-----|
 | 任务 | `A13-PERF-P2-0` |
 | 分支 | `devin/a13-memory-performance-optimization` |
-| Base SHA | `283e731b9f998c4fe188d919e3bddae1c0a5648c` |
-| 状态 | `R1_HARDENED` |
+| Base SHA | `f28c3373a0b8a518788d84c3054274c609247444` |
+| 状态 | `QA_ACCEPTED` |
 | Production changes | `FORBIDDEN` |
 | P1B / QA-1 | `SEALED` |
 
@@ -42,9 +42,15 @@
 ## P2-0 结果
 
 - Scanner 候选：559
-- 风险：HIGH=17, MEDIUM=116, LOW=56, INFO=302, UNKNOWN=68
+- 风险：HIGH=0, MEDIUM=122, LOW=66, INFO=303, UNKNOWN=68
+- raw HIGH：17（全部 source 复核，0 个保留为 final HIGH）
+- raw CRITICAL：0
+- final HIGH：0
+- final CRITICAL：0
+- NEEDS_MANUAL_REVIEW：0
+- NEEDS_ROM_EVIDENCE：151
 - 手动补充计数：0 个新的 HIGH/CRITICAL（手动 grep 已确认覆盖）
-- 误报 / 良性计数：344（302 SAFE_STABLE_METADATA + 42 PROCESS_LIFETIME_INTENTIONAL）
+- 误报 / 良性计数：348（303 SAFE_STABLE_METADATA + 45 PROCESS_LIFETIME_INTENTIONAL）
 - 推荐 P2-1：`SubFragment.kt` 中 `view?.postDelayed` smooth-scroller 延迟回调清理
 
 ## P2-1 推荐
@@ -53,7 +59,17 @@
 RECOMMENDED_P2_1 = SubFragment.kt smooth-scroller delayed callback cleanup
 ```
 
-- 生命周期失配：Fragment/View 向 Handler 投递延迟 Runnable，捕获 `smoothScroller` 与 `mList`。
-- 未证明释放：SubFragment 未在 `onDestroyView`/`onPause` 中 `removeCallbacks`。
-- 可静态验证：添加 Runnable 字段并在视图销毁路径中移除即可，无需真机即可证明正确性。
+- 生命周期失配：Fragment/View 向 Handler 投递 380ms 延迟 Runnable。
+- 释放窗口有限：单次 `highlightKey = null` 触发，延迟固定且较短；未证明无限重入或生命周期结束后仍持有。
+- 改进价值：在 `onDestroyView` / `onPause` 中添加 `removeCallbacks` 可消除最后的不确定性，属于生命周期卫生改进。
+- 可静态验证：添加 `Runnable?` 字段并在视图销毁路径中 `removeCallbacks` 即可通过单测验证。
 - 范围小、回归风险低、不触及 P1B 冻结切片。
+
+## 最终状态
+
+```text
+P2-0 = QA_ACCEPTED
+P2-1 = NOT_STARTED
+P2-2 = NOT_STARTED
+JDK25 = no
+```

@@ -416,6 +416,115 @@ class ExactMatch {
         self.assertEqual(listener[0].classification, "LIFECYCLE_MANAGED")
         self.assertEqual(receiver[0].classification, "LIFECYCLE_MANAGED")
 
+    # R2 negative identity-proof tests
+
+    def test_receiver_let_alias_unbalanced(self):
+        """identity?.let { receiver.unregister(it) } must match identity."""
+        repo = self._make_repo({
+            "Alias.kt": """
+class Alias {
+    fun on() {
+        context.registerReceiver(receiverA, filter)
+    }
+    fun off() {
+        context?.let { it.unregisterReceiver(receiverB) }
+    }
+}
+"""
+        })
+        mls.REPO_ROOT = repo
+        candidates = mls.scan(repo)
+        regs = [c for c in candidates if c.root_kind == "BROADCAST_RECEIVER_REGISTRATION"]
+        self.assertEqual(len(regs), 1)
+        self.assertIn("UNBALANCED", regs[0].classification)
+
+    def test_receiver_target_let_alias_balanced(self):
+        """receiver?.let { it.unregister(identity) } must match identity."""
+        repo = self._make_repo({
+            "Alias.kt": """
+class Alias {
+    fun on() {
+        context?.registerReceiver(receiverA, filter)
+    }
+    fun off() {
+        context?.let {
+            try { it.unregisterReceiver(receiverA) } catch (t: Throwable) {}
+        }
+    }
+}
+"""
+        })
+        mls.REPO_ROOT = repo
+        candidates = mls.scan(repo)
+        regs = [c for c in candidates if c.root_kind == "BROADCAST_RECEIVER_REGISTRATION"]
+        self.assertEqual(len(regs), 1)
+        self.assertEqual(regs[0].classification, "LIFECYCLE_MANAGED")
+
+    def test_handler_runnable_let_alias_balanced(self):
+        """runnableField?.let { handler.removeCallbacks(it) } must match."""
+        repo = self._make_repo({
+            "MainFragment.kt": """
+class MainFragment {
+    private var mRunnable: Runnable? = null
+    private var mHandler: Handler? = null
+    fun schedule() {
+        mRunnable?.let { mHandler?.removeCallbacks(it) }
+        val runnable = Runnable { doWork() }
+        mRunnable = runnable
+        mHandler?.postDelayed(runnable, 800)
+    }
+    fun destroy() {
+        mRunnable?.let { mHandler?.removeCallbacks(it) }
+    }
+}
+"""
+        })
+        mls.REPO_ROOT = repo
+        candidates = mls.scan(repo)
+        posts = [c for c in candidates if c.root_kind == "HANDLER" and "postDelayed" in (c.root_description or "")]
+        self.assertEqual(len(posts), 1)
+        self.assertEqual(posts[0].classification, "LIFECYCLE_MANAGED")
+
+    def test_remove_all_listeners_bounded(self):
+        """removeAllListeners before addListener is bounded replacement, not HIGH."""
+        repo = self._make_repo({
+            "AnimatorHooks.kt": """
+class AnimatorHooks {
+    fun bind(anim: AnimatorSet) {
+        anim.pause()
+        anim.removeAllListeners()
+        anim.addListener(object : AnimatorListenerAdapter() {
+            override fun onAnimationEnd(a: Animator?) {}
+        })
+        anim.resume()
+    }
+}
+"""
+        })
+        mls.REPO_ROOT = repo
+        candidates = mls.scan(repo)
+        listeners = [c for c in candidates if c.root_kind in ("LISTENER_REGISTRATION", "CALLBACK_REGISTRATION")]
+        self.assertEqual(len(listeners), 1)
+        self.assertEqual(listeners[0].classification, "BOUNDED_REPLACEMENT_RETENTION")
+        self.assertNotEqual(listeners[0].risk, "HIGH")
+
+    def test_raw_high_without_source_proof_not_reviewed(self):
+        """A raw HIGH with no release and no per-source rule must be NEEDS_MANUAL_REVIEW."""
+        repo = self._make_repo({
+            "Unproven.kt": """
+class Unproven {
+    fun on() {
+        context.registerReceiver(receiverA, filter)
+    }
+}
+"""
+        })
+        mls.REPO_ROOT = repo
+        candidates = mls.scan(repo)
+        regs = [c for c in candidates if c.root_kind == "BROADCAST_RECEIVER_REGISTRATION"]
+        self.assertEqual(len(regs), 1)
+        self.assertEqual(regs[0].review_status, "NEEDS_MANUAL_REVIEW")
+
 
 if __name__ == "__main__":
     unittest.main()

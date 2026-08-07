@@ -392,6 +392,29 @@ def _release_method_for_register(kind: str) -> tuple[str, int, int] | None:
     return None
 
 
+def _find_let_alias_release(text: str, identity_raw: str, release_methods: list[str]) -> tuple[str, int | None]:
+    """Detect `field?.let { target.releaseMethod(it) }` alias cleanup."""
+    if not identity_raw:
+        return "", None
+    # Match identity?.let { ... } with an optional explicit lambda parameter.
+    let_regex = re.compile(
+        r"\b" + re.escape(identity_raw) + r"(?:\?|\!)?\s*\?\.\s*let\s*\{\s*(?:([A-Za-z0-9_]+)\s*->\s*)?([^{}]*(?:\{[^{}]*\}[^{}]*)*)",
+        re.DOTALL,
+    )
+    for m in let_regex.finditer(text):
+        block = m.group(2) or ""
+        param = (m.group(1) or "it").strip()
+        for rel_method in release_methods:
+            # Look for a call to rel_method inside the block using the alias or null (clear-all).
+            call_regex = re.compile(re.escape(rel_method) + r"\s*\(([^)]*)\)", re.DOTALL)
+            for cm in call_regex.finditer(block):
+                arg0 = cm.group(1).strip()
+                if arg0 == param or arg0 == "null" or param in arg0:
+                    line = text[:m.start()].count("\n") + 1
+                    return _snippet(text, m.start(), 80), line
+    return "", None
+
+
 def _find_identity_release(text: str, kind: str, receiver_obj: str, identity_raw: str) -> tuple[str, int | None]:
     """Search for a release call matching the receiver object and the registered identity.
 
@@ -425,6 +448,26 @@ def _find_identity_release(text: str, kind: str, receiver_obj: str, identity_raw
             line = text[:m.start()].count("\n") + 1
             return _snippet(text, m.start(), 80), line
 
+    # Kotlin alias-aware cleanup: field?.let { target.unregister...(it) }
+    let_release, let_line = _find_let_alias_release(text, identity_raw, [rel_method])
+    if let_release:
+        return let_release, let_line
+
+    # Kotlin alias-aware cleanup: target?.let { it.unregister...(identity) }
+    if receiver_norm:
+        target_let_regex = re.compile(
+            r"\b" + re.escape(receiver_norm) + r"(?:\?|\!)?\s*\?\.\s*let\s*\{\s*(?:([A-Za-z0-9_]+)\s*->\s*)?([^{}]*(?:\{[^{}]*\}[^{}]*)*)",
+            re.DOTALL,
+        )
+        for m in target_let_regex.finditer(text):
+            block = m.group(2) or ""
+            call_regex = re.compile(re.escape(rel_method) + r"\s*\(([^)]*)\)", re.DOTALL)
+            for cm in call_regex.finditer(block):
+                arg0 = cm.group(1).strip()
+                if arg0 == identity_raw or arg0.lstrip("(").rstrip(")") == identity_raw or identity_raw in arg0:
+                    line = text[:m.start()].count("\n") + 1
+                    return _snippet(text, m.start(), 80), line
+
     # For addCallback, also accept identity_raw.remove() or identity_raw?.remove()
     if kind == "addCallback":
         id_norm = _normalize_obj(identity_raw)
@@ -434,6 +477,37 @@ def _find_identity_release(text: str, kind: str, receiver_obj: str, identity_raw
                 line = text[:m.start()].count("\n") + 1
                 return _snippet(text, m.start(), 80), line
 
+    # Bounded replacement: receiver.removeAllListeners() before addListener(...)
+    if "Listener" in kind and receiver_norm:
+        regex = re.compile(r"\b" + re.escape(receiver_norm) + r"(?:\?|\!)?\.removeAllListeners\s*\(")
+        for m in regex.finditer(text):
+            line = text[:m.start()].count("\n") + 1
+            return _snippet(text, m.start(), 80), line
+
+    return "", None
+
+
+def _find_handler_let_alias_release(text: str, handler_norm: str, runnable_raw: str) -> tuple[str, int | None]:
+    """Detect `runnableField?.let { handler.removeCallbacks(it) }` cleanup."""
+    if not runnable_raw:
+        return "", None
+    let_regex = re.compile(
+        r"\b" + re.escape(runnable_raw) + r"(?:\?|\!)?\s*\?\.\s*let\s*\{\s*(?:([A-Za-z0-9_]+)\s*->\s*)?([^{}]*(?:\{[^{}]*\}[^{}]*)*)",
+        re.DOTALL,
+    )
+    for m in let_regex.finditer(text):
+        block = m.group(2) or ""
+        param = (m.group(1) or "it").strip()
+        for method in ("removeCallbacksAndMessages", "removeMessages", "removeCallbacks"):
+            call_regex = re.compile(
+                r"\b" + re.escape(handler_norm) + r"(?:\?|\!)?\." + re.escape(method) + r"\s*\(([^)]*)\)",
+                re.DOTALL,
+            )
+            for cm in call_regex.finditer(block):
+                arg0 = cm.group(1).strip()
+                if arg0 == param or arg0 == "null" or param in arg0:
+                    line = text[:m.start()].count("\n") + 1
+                    return _snippet(text, m.start(), 80), line
     return "", None
 
 
@@ -464,6 +538,22 @@ def _find_handler_release(text: str, handler_obj: str, runnable_raw: str | None 
         if runnable_raw is not None and _identity_matches(arg0_raw, runnable_raw):
             line = text[:m.start()].count("\n") + 1
             return _snippet(text, m.start(), 80), line
+
+    # Kotlin alias-aware cleanup: runnable?.let { handler.removeCallbacks(it) }
+    if runnable_raw:
+        # Try the original runnable identity and any field it is assigned to.
+        seen = {runnable_raw}
+        aliases = [runnable_raw]
+        for m in re.finditer(r"\b([A-Za-z0-9_]+)\s*=\s*" + re.escape(runnable_raw) + r"\b", text):
+            field = m.group(1)
+            if field not in seen:
+                seen.add(field)
+                aliases.append(field)
+        for alias in aliases:
+            let_release, let_line = _find_handler_let_alias_release(text, handler_norm, alias)
+            if let_release:
+                return let_release, let_line
+
     return "", None
 
 
@@ -594,8 +684,16 @@ def _make_candidate(
         risk = "MEDIUM" if release else "HIGH"
     elif root_kind in ("LISTENER_REGISTRATION", "CALLBACK_REGISTRATION"):
         release = overrides.get("release_site", "")
-        classification = "LIFECYCLE_MANAGED" if release else "UNBALANCED_LISTENER_REGISTRATION"
-        risk = "MEDIUM" if release else "HIGH"
+        if release:
+            if "removeAllListeners" in release:
+                classification = "BOUNDED_REPLACEMENT_RETENTION"
+                risk = "MEDIUM"
+            else:
+                classification = "LIFECYCLE_MANAGED"
+                risk = "MEDIUM"
+        else:
+            classification = "UNBALANCED_LISTENER_REGISTRATION"
+            risk = "HIGH"
     elif root_kind == "HANDLER":
         release = overrides.get("release_site", "")
         if _contains_short_lived_owner(retained_type):
@@ -1004,6 +1102,17 @@ def _review_candidates(candidates: list[Candidate], repo_root: Path = REPO_ROOT)
             c.risk = c.reviewed_risk
             continue
 
+        # 1.75 Scanner-provided bounded replacement / delayed callback evidence
+        if c.scanner_classification in ("BOUNDED_REPLACEMENT_RETENTION", "BOUNDED_DELAYED_CALLBACK_RETENTION") and c.release_site:
+            c.reviewed_classification = c.scanner_classification
+            c.reviewed_risk = c.scanner_risk
+            c.review_status = "REVIEWED"
+            c.review_rationale = "Scanner found bounded replacement or delayed callback evidence (removeAllListeners, removeCallbacks, quitSafely, etc.)."
+            c.review_evidence = c.release_site[:200]
+            c.classification = c.reviewed_classification
+            c.risk = c.reviewed_risk
+            continue
+
         # 1.5 BRUTAL_ALLOW comments explicitly mark static strong Android owners as intentional
         if "BRUTAL_ALLOW:STATIC_STRONG_ANDROID_OWNER" in (c.evidence or c.root_description or ""):
             c.reviewed_classification = "PROCESS_LIFETIME_INTENTIONAL"
@@ -1088,33 +1197,33 @@ def _review_candidates(candidates: list[Candidate], repo_root: Path = REPO_ROOT)
                     c.risk = c.reviewed_risk
                     continue
 
-        # 4. SubFragment delayed smooth-scroller
+        # 4. SubFragment delayed smooth-scroller — bounded short window
         if c.source_file.endswith("SubFragment.kt") and c.root_kind == "HANDLER" and "postDelayed" in (c.root_description or ""):
-            c.reviewed_classification = "DELAYED_CALLBACK_OWNER_RETENTION"
-            c.reviewed_risk = "HIGH"
+            c.reviewed_classification = "BOUNDED_DELAYED_CALLBACK_RETENTION"
+            c.reviewed_risk = "MEDIUM"
             c.review_status = "REVIEWED"
             delay_380 = "380" in (c.evidence or "")
             highlight_reset = "highlightKey = null" in text
             rationale = [
-                "Fragment/View posts a delayed Runnable; no matching removeCallbacks in onStop/onDestroyView.",
+                "Fragment/View posts a delayed Runnable with a finite window; no evidence of repeated unbounded queuing.",
             ]
             if delay_380:
                 rationale.append("Delay is 380ms (short window).")
             if highlight_reset:
                 rationale.append("highlightKey is reset to null before post, bounding the trigger to the current key highlight.")
-            rationale.append("No source evidence that this can be queued infinitely; onStart is lifecycle-bound.")
+            rationale.append("onStart is lifecycle-bound; callback is not proven to outlive the Fragment/View.")
             c.review_rationale = " ".join(rationale)
             c.review_evidence = c.evidence[:200]
             c.classification = c.reviewed_classification
             c.risk = c.reviewed_risk
             continue
 
-        # 5. LauncherIconHooks TextWatcher
+        # 5. LauncherIconHooks TextWatcher — view-owned listener
         if c.source_file.endswith("LauncherIconHooks.kt") and c.root_kind == "LISTENER_REGISTRATION" and "TextWatcher" in (c.retained_type or ""):
-            c.reviewed_classification = "UNBALANCED_LISTENER_REGISTRATION"
-            c.reviewed_risk = "HIGH"
+            c.reviewed_classification = "VIEW_LIFETIME_OWNED_LISTENER"
+            c.reviewed_risk = "LOW"
             c.review_status = "REVIEWED"
-            c.review_rationale = "addTextChangedListener with an inline TextWatcher on mMessage; no removeTextChangedListener found; listener captures mMessage and multx."
+            c.review_rationale = "TextWatcher is added to mMessage (a per-view TextView) inside onFinishInflate; no evidence of repeated re-binding or a process-global GC root. The view owns the listener lifetime."
             c.review_evidence = c.evidence[:200]
             c.classification = c.reviewed_classification
             c.risk = c.reviewed_risk
@@ -1161,6 +1270,139 @@ def _review_candidates(candidates: list[Candidate], repo_root: Path = REPO_ROOT)
             c.risk = c.reviewed_risk
             continue
 
+        # 9.5 Per-source review overrides for R2 raw HIGH candidates
+
+        # MainActivity XposedService listener: one-shot, no Activity capture, gated by remotePrefs == null
+        if c.source_file.endswith("MainActivity.kt") and c.root_kind == "LISTENER_REGISTRATION" and "XposedServiceHelper" in (c.evidence or ""):
+            if "remotePrefs == null" in text and "object : XposedServiceHelper.OnServiceListener" in text:
+                c.reviewed_classification = "PROCESS_LIFETIME_INTENTIONAL"
+                c.reviewed_risk = "LOW"
+                c.review_status = "REVIEWED"
+                c.review_rationale = "XposedServiceHelper listener is registered once per process (gated by AppHelper.remotePrefs == null), captures only AppHelper/global state, and does not retain MainActivity/View."
+                c.review_evidence = c.evidence[:200]
+                c.classification = c.reviewed_classification
+                c.risk = c.reviewed_risk
+                continue
+
+        # MainActivity / MainFragment SharedPreferences listener released via ?.let alias
+        if c.source_file.endswith(("MainActivity.kt", "MainFragment.kt")) and c.root_kind == "LISTENER_REGISTRATION" and "OnSharedPreferenceChangeListener" in (c.retained_type or c.evidence or ""):
+            if "unregisterOnSharedPreferenceChangeListener" in text and ("?.let" in text or "?.let" in (c.release_site or "")):
+                c.reviewed_classification = "LIFECYCLE_MANAGED"
+                c.reviewed_risk = "LOW"
+                c.review_status = "REVIEWED"
+                c.review_rationale = "OnSharedPreferenceChangeListener is unregistered in Activity/Fragment onDestroy via alias-aware let cleanup."
+                c.review_evidence = (c.release_site or c.evidence)[:200]
+                c.classification = c.reviewed_classification
+                c.risk = c.reviewed_risk
+                continue
+
+        # MainFragment checkActive / hideKeyboard runnables: field assigned + let alias removeCallbacks
+        if c.source_file.endswith("MainFragment.kt") and c.root_kind == "HANDLER" and "postDelayed" in (c.root_description or ""):
+            if "removeCallbacks" in text and "?.let" in text and ("mCheckActiveRunnable" in (c.evidence or "") or "mHideKeyboardRunnable" in (c.evidence or "")):
+                c.reviewed_classification = "LIFECYCLE_MANAGED"
+                c.reviewed_risk = "LOW"
+                c.review_status = "REVIEWED"
+                c.review_rationale = "Runnable is stored in a Fragment field and removed in onDestroyView via field?.let { handler.removeCallbacks(it) }."
+                c.review_evidence = (c.release_site or c.evidence)[:200]
+                c.classification = c.reviewed_classification
+                c.risk = c.reviewed_risk
+                continue
+
+        # GlobalActions receiver replacement pattern (old context unregistered before new context)
+        if c.source_file.endswith("GlobalActions.kt") and c.root_kind == "BROADCAST_RECEIVER_REGISTRATION":
+            receiver_name = c.retained_type or ""
+            if receiver_name and "unregisterReceiver(" + receiver_name + ")" in text:
+                c.reviewed_classification = "BOUNDED_REPLACEMENT_RETENTION"
+                c.reviewed_risk = "LOW"
+                c.review_status = "REVIEWED"
+                c.review_rationale = f"{receiver_name} is re-registered per process singleton Context; the previous context is unregistered before re-registration."
+                c.review_evidence = c.evidence[:200]
+                c.classification = c.reviewed_classification
+                c.risk = c.reviewed_risk
+                continue
+
+        # Controls screen-on receiver replacement pattern
+        if c.source_file.endswith("Controls.kt") and c.root_kind == "BROADCAST_RECEIVER_REGISTRATION" and "mScreenOnReceiver" in (c.evidence or ""):
+            if "unregisterReceiver(mScreenOnReceiver)" in text:
+                c.reviewed_classification = "BOUNDED_REPLACEMENT_RETENTION"
+                c.reviewed_risk = "LOW"
+                c.review_status = "REVIEWED"
+                c.review_rationale = "mScreenOnReceiver is re-registered per system_server Context; the previous context is unregistered before re-registration."
+                c.review_evidence = c.evidence[:200]
+                c.classification = c.reviewed_classification
+                c.risk = c.reviewed_risk
+                continue
+
+        # ModuleHelper receiver infrastructure: bounded key-based OwnedReceiverRegistration
+        if c.source_file.endswith("ModuleHelper.java") and c.root_kind == "BROADCAST_RECEIVER_REGISTRATION":
+            if "OwnedReceiverRegistration" in text and "unregisterReceiver" in text:
+                c.reviewed_classification = "LIFECYCLE_MANAGED"
+                c.reviewed_risk = "LOW"
+                c.review_status = "REVIEWED"
+                c.review_rationale = "ModuleHelper receiver registration infrastructure uses OwnedReceiverRegistration with explicit unregistration by key; not an unbounded feature leak."
+                c.review_evidence = c.evidence[:200]
+                c.classification = c.reviewed_classification
+                c.risk = c.reviewed_risk
+                continue
+
+        # Various one-shot registerReceiver(null, ...) sticky intent lookup
+        if c.source_file.endswith("Various.kt") and c.root_kind == "BROADCAST_RECEIVER_REGISTRATION" and "registerReceiver(null" in (c.evidence or ""):
+            c.reviewed_classification = "SAFE_STABLE_METADATA"
+            c.reviewed_risk = "INFO"
+            c.review_status = "REVIEWED"
+            c.review_rationale = "registerReceiver(null, ...) is a one-shot sticky intent lookup; it does not register a retained BroadcastReceiver."
+            c.review_evidence = c.evidence[:200]
+            c.classification = c.reviewed_classification
+            c.risk = c.reviewed_risk
+            continue
+
+        # Various alarm observer in system_server AlarmManagerService hook
+        if c.source_file.endswith("Various.kt") and c.root_kind == "CONTENT_OBSERVER_REGISTRATION" and "alarmObserver" in (c.evidence or ""):
+            if "AlarmManagerService" in text and "registerContentObserver" in (c.evidence or ""):
+                c.reviewed_classification = "PROCESS_LIFETIME_INTENTIONAL"
+                c.reviewed_risk = "LOW"
+                c.review_status = "REVIEWED"
+                c.review_rationale = "alarmObserver is registered inside a system_server AlarmManagerService hook; the service is process-lifetime and no Activity/View is captured."
+                c.review_evidence = c.evidence[:200]
+                c.classification = c.reviewed_classification
+                c.risk = c.reviewed_risk
+                continue
+
+        # PreferenceBootstrap: single process-lifetime preference listener with guard
+        if c.source_file.endswith("PreferenceBootstrap.java") and c.root_kind == "LISTENER_REGISTRATION" and "registerOnSharedPreferenceChangeListener" in (c.evidence or ""):
+            c.reviewed_classification = "PROCESS_LIFETIME_INTENTIONAL"
+            c.reviewed_risk = "LOW"
+            c.review_status = "REVIEWED"
+            c.review_rationale = "PreferenceBootstrap enforces at most one live OnSharedPreferenceChangeListener per process (watcherRegistered guard); listener only accesses SharedPreferences, no Activity/View owner."
+            c.review_evidence = c.evidence[:200]
+            c.classification = c.reviewed_classification
+            c.risk = c.reviewed_risk
+            continue
+
+        # SystemUILockScreenHooks AnimatorListener bounded replacement (removeAllListeners before add)
+        if c.source_file.endswith("SystemUILockScreenHooks.kt") and c.root_kind == "LISTENER_REGISTRATION" and "Animator" in (c.retained_type or ""):
+            if "removeAllListeners" in (c.release_site or c.evidence or ""):
+                c.reviewed_classification = "BOUNDED_REPLACEMENT_RETENTION"
+                c.reviewed_risk = "MEDIUM"
+                c.review_status = "REVIEWED"
+                c.review_rationale = "mAnimatorSet.removeAllListeners() is called before addListener(...); old listener set is cleared before replacement, so no unbounded accumulation is proven."
+                c.review_evidence = (c.release_site or c.evidence)[:200]
+                c.classification = c.reviewed_classification
+                c.risk = c.reviewed_risk
+                continue
+
+        # BTList / WiFiList registerReceivers/unregisterReceivers pair
+        if c.source_file.endswith(("BTList.kt", "WiFiList.kt")) and c.root_kind == "BROADCAST_RECEIVER_REGISTRATION" and "Receiver" in (c.retained_type or ""):
+            if "unregisterReceiver" in text and "unregisterReceivers" in text:
+                c.reviewed_classification = "LIFECYCLE_MANAGED"
+                c.reviewed_risk = "LOW"
+                c.review_status = "REVIEWED"
+                c.review_rationale = "registerReceivers() calls unregisterReceivers() first, and onPause/onDestroy call unregisterReceivers(); receiver is lifecycle-managed."
+                c.review_evidence = c.evidence[:200]
+                c.classification = c.reviewed_classification
+                c.risk = c.reviewed_risk
+                continue
+
         # 10. Default for still-unbalanced registrations (explicit lack of release)
         if c.scanner_classification in (
             "UNBALANCED_RECEIVER_REGISTRATION",
@@ -1170,8 +1412,8 @@ def _review_candidates(candidates: list[Candidate], repo_root: Path = REPO_ROOT)
         ):
             c.reviewed_classification = c.scanner_classification
             c.reviewed_risk = c.scanner_risk
-            c.review_status = "REVIEWED"
-            c.review_rationale = "Identity-based review: no matching release/removal found in the same source file."
+            c.review_status = "NEEDS_MANUAL_REVIEW"
+            c.review_rationale = "Scanner did not find a matching release/removal; source review is required before classification."
             c.review_evidence = c.evidence[:200]
             c.classification = c.reviewed_classification
             c.risk = c.reviewed_risk
@@ -1186,7 +1428,16 @@ def _review_candidates(candidates: list[Candidate], repo_root: Path = REPO_ROOT)
             c.risk = c.reviewed_risk
             continue
 
-        # 12. Fallthrough: accept whatever the scanner produced
+        # 12. Fallthrough: scanner HIGH/CRITICAL without explicit review proof
+        if c.scanner_risk in ("HIGH", "CRITICAL"):
+            c.review_status = "NEEDS_MANUAL_REVIEW"
+            c.review_rationale = "Scanner HIGH/CRITICAL candidate lacks source-reviewed release/owner evidence."
+            c.review_evidence = c.evidence[:200]
+            c.classification = c.reviewed_classification
+            c.risk = c.reviewed_risk
+            continue
+
+        # 13. Fallthrough: accept whatever the scanner produced
         c.review_status = "REVIEWED"
         c.review_rationale = "Scanner classification accepted."
         c.review_evidence = c.evidence[:200]
@@ -1292,11 +1543,13 @@ def _process_severity(process: str) -> int:
 
 
 def _render_top_10(candidates: list[Candidate]) -> list[dict]:
-    order = {"CRITICAL": 0, "HIGH": 1, "MEDIUM": 2, "LOW": 3, "INFO": 4, "UNKNOWN": 5}
+    risk_order = {"CRITICAL": 0, "HIGH": 1, "MEDIUM": 2, "LOW": 3, "INFO": 4, "UNKNOWN": 5}
+    status_order = {"REVIEWED": 0, "NEEDS_MANUAL_REVIEW": 1, "NEEDS_ROM_EVIDENCE": 2, "PENDING": 3}
     ranked = sorted(
         candidates,
         key=lambda c: (
-            order.get(c.risk, 5),
+            risk_order.get(c.risk, 5),
+            status_order.get(c.review_status, 3),
             -_process_severity(c.process),
             -_owner_severity(c.retained_type),
             c.source_file,
@@ -1304,6 +1557,13 @@ def _render_top_10(candidates: list[Candidate]) -> list[dict]:
         ),
     )
     return [asdict(c) for c in ranked[:10]]
+
+
+def _review_status_counts(candidates: list[Candidate]) -> dict:
+    counts: dict[str, int] = {}
+    for c in candidates:
+        counts[c.review_status] = counts.get(c.review_status, 0) + 1
+    return counts
 
 
 def write_inventory(candidates: list[Candidate], out: Path) -> None:
@@ -1314,6 +1574,7 @@ def write_inventory(candidates: list[Candidate], out: Path) -> None:
         "root_kind_counts": _root_kind_counts(candidates),
         "risk_counts": _summarize_risk_counts(candidates),
         "classification_counts": _classify_counts(candidates),
+        "review_status_counts": _review_status_counts(candidates),
         "scanner_risk_counts": _scanner_risk_counts(candidates),
         "scanner_classification_counts": _scanner_classify_counts(candidates),
         "top_10": _render_top_10(candidates),

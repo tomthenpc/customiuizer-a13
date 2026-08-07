@@ -162,11 +162,40 @@ def main() -> int:
     lines.append(f"- **False-positive / benign count**: {benign} (`SAFE_STABLE_METADATA` + `PROCESS_LIFETIME_INTENTIONAL`) classified as not requiring production change.")
     lines.append("")
 
-    # P2-1 recommendation — derived from the top reviewed candidate
+    # P2-1 recommendation — derive from the first reviewed, non-frozen, actionable cleanup
     lines.append("## Recommended P2-1 slice")
     lines.append("")
-    top = top10[0] if top10 else None
-    if top and "SubFragment" in top["source_file"] and top["classification"] == "DELAYED_CALLBACK_OWNER_RETENTION":
+    P1B_FROZEN = (
+        "SystemUILockScreenHooks", "SystemUINotificationHooks", "SystemAudioAndVolumeHooks",
+        "P1B", "P0", "MainModule", "XposedHelpers", "ModuleHelper",
+    )
+    P2_ACTIONABLE = (
+        "BOUNDED_DELAYED_CALLBACK_RETENTION",
+        "BOUNDED_REPLACEMENT_RETENTION",
+        "UNBALANCED_LISTENER_REGISTRATION",
+        "DELAYED_CALLBACK_OWNER_RETENTION",
+        "UNBALANCED_RECEIVER_REGISTRATION",
+        "UNBALANCED_OBSERVER_REGISTRATION",
+    )
+    top = None
+    frozen = ""
+    for c in candidates:
+        if c["review_status"] != "REVIEWED":
+            continue
+        if c["risk"] in ("INFO", "LOW", "UNKNOWN"):
+            continue
+        stem = c["source_file"].split("/")[-1]
+        if any(f in c["source_file"] or f in stem for f in P1B_FROZEN):
+            continue
+        if c["classification"] in P2_ACTIONABLE:
+            top = c
+            break
+    if top is None:
+        # fall back to top10 and flag frozen-slice intersections
+        top = top10[0] if top10 else None
+        frozen = " (intersects a P1B/P0 frozen slice; a dedicated P2 task should authorize reopening that slice before production change)" if top and any(f in top["source_file"] for f in P1B_FROZEN) else ""
+
+    if top and "SubFragment" in top["source_file"] and top["classification"] == "BOUNDED_DELAYED_CALLBACK_RETENTION":
         rec = "SubFragment.kt smooth-scroller delayed callback cleanup"
     elif top:
         source = top["source_file"].split("/")[-1]
@@ -185,6 +214,8 @@ def main() -> int:
             lines.append(f"- **Review rationale**: {top['review_rationale']}")
         else:
             lines.append(f"- **Evidence**: `{top['evidence'][:120].replace(chr(10), ' ')}...`")
+        if frozen:
+            lines.append(f"- **Frozen slice note**: {frozen}")
     lines.append("- **Scope small**: one file or a single callback site, no new architecture.")
     lines.append("- **Regression risk low**: the fix only adds a matching `removeCallbacks` / `removeListener` call in an existing lifecycle teardown path.")
     lines.append("")

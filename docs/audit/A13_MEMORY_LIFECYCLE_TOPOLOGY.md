@@ -14,24 +14,22 @@
 
 | Risk | Count |
 |------|-------|
-| HIGH | 17 |
-| MEDIUM | 116 |
-| LOW | 56 |
-| INFO | 302 |
+| MEDIUM | 122 |
+| LOW | 66 |
+| INFO | 303 |
 | UNKNOWN | 68 |
 
 | Classification | Count |
 |----------------|-------|
-| SAFE_STABLE_METADATA | 302 |
+| SAFE_STABLE_METADATA | 303 |
 | UNKNOWN_REQUIRES_MANUAL_REVIEW | 123 |
-| PROCESS_LIFETIME_INTENTIONAL | 42 |
+| PROCESS_LIFETIME_INTENTIONAL | 45 |
 | WEAK_EDGE_WITH_MANAGED_ROOT | 34 |
 | UNBOUNDED_OWNER_COLLECTION | 26 |
-| LIFECYCLE_MANAGED | 15 |
-| UNBALANCED_RECEIVER_REGISTRATION | 8 |
-| UNBALANCED_LISTENER_REGISTRATION | 5 |
-| DELAYED_CALLBACK_OWNER_RETENTION | 3 |
-| UNBALANCED_OBSERVER_REGISTRATION | 1 |
+| LIFECYCLE_MANAGED | 22 |
+| BOUNDED_REPLACEMENT_RETENTION | 4 |
+| BOUNDED_DELAYED_CALLBACK_RETENTION | 1 |
+| VIEW_LIFETIME_OWNED_LISTENER | 1 |
 
 | Root kind | Count |
 |-----------|-------|
@@ -105,34 +103,34 @@
 
 ### BROADCAST_RECEIVER_REGISTRATION
 
-- `app/src/main/java/tv/withaibuild/customiuizer/mods/Controls.kt:158` — mScreenOnReceiver — UNBALANCED_RECEIVER_REGISTRATION (HIGH)
-- `app/src/main/java/tv/withaibuild/customiuizer/mods/GlobalActions.kt:828` — mGlobalReceiver — UNBALANCED_RECEIVER_REGISTRATION (HIGH)
-- `app/src/main/java/tv/withaibuild/customiuizer/mods/GlobalActions.kt:937` — mSBReceiver — UNBALANCED_RECEIVER_REGISTRATION (HIGH)
+- `app/src/main/java/tv/withaibuild/customiuizer/mods/Controls.kt:158` — mScreenOnReceiver — BOUNDED_REPLACEMENT_RETENTION (LOW)
+- `app/src/main/java/tv/withaibuild/customiuizer/mods/GlobalActions.kt:828` — mGlobalReceiver — BOUNDED_REPLACEMENT_RETENTION (LOW)
+- `app/src/main/java/tv/withaibuild/customiuizer/mods/GlobalActions.kt:937` — mSBReceiver — BOUNDED_REPLACEMENT_RETENTION (LOW)
 - `app/src/main/java/tv/withaibuild/customiuizer/mods/Various.kt:513` — showReceiver — LIFECYCLE_MANAGED (MEDIUM)
-- `app/src/main/java/tv/withaibuild/customiuizer/mods/Various.kt:769` — null — UNBALANCED_RECEIVER_REGISTRATION (HIGH)
-- `app/src/main/java/tv/withaibuild/customiuizer/mods/utils/ModuleHelper.java:720` — receiver — UNBALANCED_RECEIVER_REGISTRATION (HIGH)
-- `app/src/main/java/tv/withaibuild/customiuizer/mods/utils/ModuleHelper.java:801` — receiver — UNBALANCED_RECEIVER_REGISTRATION (HIGH)
-- `app/src/main/java/tv/withaibuild/customiuizer/subs/BTList.kt:160` — devicesReceiver — UNBALANCED_RECEIVER_REGISTRATION (HIGH)
-- `app/src/main/java/tv/withaibuild/customiuizer/subs/WiFiList.kt:196` — wifiReceiver — UNBALANCED_RECEIVER_REGISTRATION (HIGH)
+- `app/src/main/java/tv/withaibuild/customiuizer/mods/Various.kt:769` — null — SAFE_STABLE_METADATA (INFO)
+- `app/src/main/java/tv/withaibuild/customiuizer/mods/utils/ModuleHelper.java:720` — receiver — LIFECYCLE_MANAGED (LOW)
+- `app/src/main/java/tv/withaibuild/customiuizer/mods/utils/ModuleHelper.java:801` — receiver — LIFECYCLE_MANAGED (LOW)
+- `app/src/main/java/tv/withaibuild/customiuizer/subs/BTList.kt:160` — devicesReceiver — LIFECYCLE_MANAGED (LOW)
+- `app/src/main/java/tv/withaibuild/customiuizer/subs/WiFiList.kt:196` — wifiReceiver — LIFECYCLE_MANAGED (MEDIUM)
 
 ### CONTENT_OBSERVER_REGISTRATION
 
 - `app/src/main/java/tv/withaibuild/customiuizer/mods/SystemStatusBarMoreHooks.kt:135` — alarmObserver — LIFECYCLE_MANAGED (MEDIUM)
 - `app/src/main/java/tv/withaibuild/customiuizer/mods/SystemUIMonitorAndTileHooks.kt:103` — contentObserver — LIFECYCLE_MANAGED (MEDIUM)
 - `app/src/main/java/tv/withaibuild/customiuizer/mods/SystemUIMonitorAndTileHooks.kt:104` — contentObserver — LIFECYCLE_MANAGED (MEDIUM)
-- `app/src/main/java/tv/withaibuild/customiuizer/mods/Various.kt:862` — alarmObserver — UNBALANCED_OBSERVER_REGISTRATION (HIGH)
+- `app/src/main/java/tv/withaibuild/customiuizer/mods/Various.kt:862` — alarmObserver — PROCESS_LIFETIME_INTENTIONAL (LOW)
 
 ### LISTENER_REGISTRATION
 
-- `app/src/main/java/tv/withaibuild/customiuizer/MainActivity.kt:44` — XposedServiceHelper.OnServiceListener — UNBALANCED_LISTENER_REGISTRATION (HIGH)
-- `app/src/main/java/tv/withaibuild/customiuizer/MainActivity.kt:79` — Activity — UNBALANCED_LISTENER_REGISTRATION (HIGH)
+- `app/src/main/java/tv/withaibuild/customiuizer/MainActivity.kt:44` — XposedServiceHelper.OnServiceListener — PROCESS_LIFETIME_INTENTIONAL (LOW)
+- `app/src/main/java/tv/withaibuild/customiuizer/MainActivity.kt:79` — Activity — LIFECYCLE_MANAGED (MEDIUM)
 - `app/src/main/java/tv/withaibuild/customiuizer/SubFragmentWithSearch.kt:84` — searchTextWatcher — LIFECYCLE_MANAGED (MEDIUM)
 - `app/src/main/java/tv/withaibuild/customiuizer/mods/LauncherGestureHooks.kt:236` — shakeMgr — LIFECYCLE_MANAGED (MEDIUM)
-- `app/src/main/java/tv/withaibuild/customiuizer/mods/LauncherIconHooks.kt:169` — TextWatcher — UNBALANCED_LISTENER_REGISTRATION (HIGH)
-- `app/src/main/java/tv/withaibuild/customiuizer/mods/SystemUILockScreenHooks.kt:451` — AnimatorListenerAdapter — UNBALANCED_LISTENER_REGISTRATION (HIGH)
+- `app/src/main/java/tv/withaibuild/customiuizer/mods/LauncherIconHooks.kt:169` — TextWatcher — VIEW_LIFETIME_OWNED_LISTENER (LOW)
+- `app/src/main/java/tv/withaibuild/customiuizer/mods/SystemUILockScreenHooks.kt:451` — AnimatorListenerAdapter — BOUNDED_REPLACEMENT_RETENTION (MEDIUM)
 - `app/src/main/java/tv/withaibuild/customiuizer/mods/SystemUIStatusBarHooks.kt:1389` — attachStateListener — LIFECYCLE_MANAGED (MEDIUM)
 - `app/src/main/java/tv/withaibuild/customiuizer/mods/utils/LockScreenAlbumArtController.kt:271` — listener — LIFECYCLE_MANAGED (LOW)
-- `app/src/main/java/tv/withaibuild/customiuizer/utils/PreferenceBootstrap.java:233` — l — UNBALANCED_LISTENER_REGISTRATION (HIGH)
+- `app/src/main/java/tv/withaibuild/customiuizer/utils/PreferenceBootstrap.java:233` — l — PROCESS_LIFETIME_INTENTIONAL (LOW)
 
 ### CALLBACK_REGISTRATION
 
@@ -141,10 +139,10 @@
 ## Async roots (Handler / Runnable / Thread / Executor)
 
 - `app/src/main/java/tv/withaibuild/customiuizer/MainFragment.kt:88` — HANDLER — retained `Handler` — PROCESS_LIFETIME_INTENTIONAL (MEDIUM)
-- `app/src/main/java/tv/withaibuild/customiuizer/MainFragment.kt:100` — HANDLER — retained `Fragment` — DELAYED_CALLBACK_OWNER_RETENTION (HIGH)
+- `app/src/main/java/tv/withaibuild/customiuizer/MainFragment.kt:100` — HANDLER — retained `Fragment` — LIFECYCLE_MANAGED (MEDIUM)
 - `app/src/main/java/tv/withaibuild/customiuizer/MainFragment.kt:202` — HANDLER — retained `Handler` — PROCESS_LIFETIME_INTENTIONAL (MEDIUM)
-- `app/src/main/java/tv/withaibuild/customiuizer/MainFragment.kt:209` — HANDLER — retained `Fragment` — DELAYED_CALLBACK_OWNER_RETENTION (HIGH)
-- `app/src/main/java/tv/withaibuild/customiuizer/SubFragment.kt:234` — HANDLER — retained `Fragment` — DELAYED_CALLBACK_OWNER_RETENTION (HIGH)
+- `app/src/main/java/tv/withaibuild/customiuizer/MainFragment.kt:209` — HANDLER — retained `Fragment` — LIFECYCLE_MANAGED (MEDIUM)
+- `app/src/main/java/tv/withaibuild/customiuizer/SubFragment.kt:234` — HANDLER — retained `Fragment` — BOUNDED_DELAYED_CALLBACK_RETENTION (MEDIUM)
 - `app/src/main/java/tv/withaibuild/customiuizer/mods/GlobalActions.kt:76` — HANDLER — retained `Handler` — PROCESS_LIFETIME_INTENTIONAL (MEDIUM)
 - `app/src/main/java/tv/withaibuild/customiuizer/mods/GlobalActions.kt:259` — HANDLER — retained `Runnable` — PROCESS_LIFETIME_INTENTIONAL (MEDIUM)
 - `app/src/main/java/tv/withaibuild/customiuizer/mods/GlobalActions.kt:288` — HANDLER — retained `Runnable` — PROCESS_LIFETIME_INTENTIONAL (MEDIUM)
@@ -177,14 +175,14 @@
 
 ## Collection roots
 
-- `app/src/main/java/tv/withaibuild/customiuizer/MainActivity.kt:44` — `XposedServiceHelper.OnServiceListener` — UNBALANCED_LISTENER_REGISTRATION (HIGH)
+- `app/src/main/java/tv/withaibuild/customiuizer/MainActivity.kt:44` — `XposedServiceHelper.OnServiceListener` — PROCESS_LIFETIME_INTENTIONAL (LOW)
 - `app/src/main/java/tv/withaibuild/customiuizer/mods/PackagePermissions.kt:15` — `MutableSet<String>` — SAFE_STABLE_METADATA (INFO)
 - `app/src/main/java/tv/withaibuild/customiuizer/mods/SystemFreeformAndMultiWindowHooks.kt:34` — `ConcurrentHashMap<String, Pair<Float, Rect?>` — UNBOUNDED_OWNER_COLLECTION (MEDIUM)
 - `app/src/main/java/tv/withaibuild/customiuizer/mods/SystemNotificationAndShareHooks.kt:30` — `ArrayList<String>` — UNBOUNDED_OWNER_COLLECTION (MEDIUM)
 - `app/src/main/java/tv/withaibuild/customiuizer/mods/SystemNotificationMoreHooks.kt:407` — `MainModule.mPrefs.getStringSet` — UNKNOWN_REQUIRES_MANUAL_REVIEW (MEDIUM)
 - `app/src/main/java/tv/withaibuild/customiuizer/mods/SystemNotificationMoreHooks.kt:410` — `MainModule.mPrefs.getStringSet` — UNKNOWN_REQUIRES_MANUAL_REVIEW (MEDIUM)
 - `app/src/main/java/tv/withaibuild/customiuizer/mods/SystemUILockScreenHooks.kt:51` — `ArrayList<String>` — UNBOUNDED_OWNER_COLLECTION (MEDIUM)
-- `app/src/main/java/tv/withaibuild/customiuizer/mods/SystemUILockScreenHooks.kt:451` — `AnimatorListenerAdapter` — UNBALANCED_LISTENER_REGISTRATION (HIGH)
+- `app/src/main/java/tv/withaibuild/customiuizer/mods/SystemUILockScreenHooks.kt:451` — `AnimatorListenerAdapter` — BOUNDED_REPLACEMENT_RETENTION (MEDIUM)
 - `app/src/main/java/tv/withaibuild/customiuizer/mods/SystemUIStatusBarHooks.kt:58` — `List<String>` — SAFE_STABLE_METADATA (INFO)
 - `app/src/main/java/tv/withaibuild/customiuizer/mods/SystemUIStatusBarHooks.kt:59` — `ArrayList<WeakReference<View>` — WEAK_EDGE_WITH_MANAGED_ROOT (LOW)
 - `app/src/main/java/tv/withaibuild/customiuizer/mods/SystemUIStatusBarHooks.kt:59` — `List<String>?` — WEAK_EDGE_WITH_MANAGED_ROOT (LOW)
@@ -247,13 +245,13 @@
 
 ## Safe metadata roots
 
-- Total SAFE_STABLE_METADATA candidates: 302
+- Total SAFE_STABLE_METADATA candidates: 303
 - Examples: `Method`, `Field`, `Class`, `String` constants, `Int`/`Long` config, reflection metadata.
 - These are stable process-lifetime metadata, not short-lived Android owner retention.
 
 ## Unknowns / manual-review queue
 
-- Total UNKNOWN or MEDIUM candidates requiring manual review: 184
+- Total UNKNOWN or MEDIUM candidates requiring manual review: 190
 - These need ROM/runtime evidence to confirm release path, owner lifetime, or callback capture.
 - WeakReference edges still require their registration root to be reviewed.
 
@@ -261,54 +259,53 @@
 
 | Rank | ID | Risk | Classification | Process | Source | Line | Retained | Notes |
 |------|----|------|----------------|---------|--------|------|----------|-------|
-| 1 | mlp-00170 | HIGH | UNBALANCED_LISTENER_REGISTRATION | com.android.systemui | SystemUILockScreenHooks.kt | 451 | `AnimatorListenerAdapter` | ull) mAnimatorSet.pause() mAnimatorSet.removeAllListeners() mAnimatorSet.addList... |
-| 2 | mlp-00064 | HIGH | UNBALANCED_LISTENER_REGISTRATION | com.miui.home | LauncherIconHooks.kt | 169 | `TextWatcher` | ram.getThisObject(), "mMessage") as? TextView if (mMessage != null) mMessage.add... |
-| 3 | mlp-00002 | HIGH | UNBALANCED_LISTENER_REGISTRATION | tv.withaibuild.customiuizer.r13 | MainActivity.kt | 79 | `Activity` | AppHelper.onLocalPreferenceChanged(AppHelper.remotePrefs, key, value) } AppHelpe... |
-| 4 | mlp-00007 | HIGH | DELAYED_CALLBACK_OWNER_RETENTION | tv.withaibuild.customiuizer.r13 | MainFragment.kt | 100 | `Fragment` | UiThread { showXposedDialog(act) } } } mCheckActiveRunnable = runnable mMainHand... |
-| 5 | mlp-00009 | HIGH | DELAYED_CALLBACK_OWNER_RETENTION | tv.withaibuild.customiuizer.r13 | MainFragment.kt | 209 | `Fragment` | Keyboard(act, view) } mHideKeyboardRunnable = hideRunnable mMainHandler?.postDel... |
-| 6 | mlp-00011 | HIGH | DELAYED_CALLBACK_OWNER_RETENTION | tv.withaibuild.customiuizer.r13 | SubFragment.kt | 234 | `Fragment` | inearSmoothScroller.SNAP_TO_START } } smoothScroller.targetPosition = position v... |
-| 7 | mlp-00001 | HIGH | UNBALANCED_LISTENER_REGISTRATION | tv.withaibuild.customiuizer.r13 | MainActivity.kt | 44 | `XposedServiceHelper.OnServiceListener` | AppHelper.setMirrorIgnoreKeys(ignoreKeys) if (AppHelper.remotePrefs == null) { X... |
-| 8 | mlp-00025 | HIGH | UNBALANCED_RECEIVER_REGISTRATION | tv.withaibuild.customiuizer.r13 | Controls.kt | 158 | `mScreenOnReceiver` | if (t is OutOfMemoryError) throw t } } mContext.registerReceiver(mScreenOnReceiv... |
-| 9 | mlp-00050 | HIGH | UNBALANCED_RECEIVER_REGISTRATION | tv.withaibuild.customiuizer.r13 | GlobalActions.kt | 828 | `mGlobalReceiver` | rasitic") //intentFilter.addAction(ACTION_PREFIX + "QueryXposedService") mGlobal... |
-| 10 | mlp-00051 | HIGH | UNBALANCED_RECEIVER_REGISTRATION | tv.withaibuild.customiuizer.r13 | GlobalActions.kt | 937 | `mSBReceiver` | "FastReboot") intentFilter.addAction(ACTION_PREFIX + "ScrollToTop") mStatusBarCo... |
+| 1 | mlp-00095 | MEDIUM | UNBOUNDED_OWNER_COLLECTION | system_server | SystemFreeformAndMultiWindowHooks.kt | 34 | `ConcurrentHashMap<String, Pair<Float, Rect?>` | t java.lang.reflect.Modifier import java.util.concurrent.ConcurrentHashMap objec... |
+| 2 | mlp-00107 | MEDIUM | UNBOUNDED_OWNER_COLLECTION | system_server | SystemNotificationAndShareHooks.kt | 30 | `ArrayList<String>` | .mods.utils.XposedHelpers import tv.withaibuild.customiuizer.utils.HookUtils obj... |
+| 3 | mlp-00142 | MEDIUM | LIFECYCLE_MANAGED | system_server | SystemStatusBarMoreHooks.kt | 135 | `alarmObserver` | bility(thisObject, lastState) } } } resolver.registerContentObserver(Settings.Sy... |
+| 4 | mlp-00169 | MEDIUM | UNBOUNDED_OWNER_COLLECTION | com.android.systemui | SystemUILockScreenHooks.kt | 51 | `ArrayList<String>` | EY = "customiuizer.secure_qs_tile_spec" private val cameraResetTag = ResourceHoo... |
+| 5 | mlp-00170 | MEDIUM | BOUNDED_REPLACEMENT_RETENTION | com.android.systemui | SystemUILockScreenHooks.kt | 451 | `AnimatorListenerAdapter` | ull) mAnimatorSet.pause() mAnimatorSet.removeAllListeners() mAnimatorSet.addList... |
+| 6 | mlp-00178 | MEDIUM | LIFECYCLE_MANAGED | com.android.systemui | SystemUIMonitorAndTileHooks.kt | 103 | `contentObserver` | } } } resolver.registerContentObserver(Settings.Global.getUriFor("fiveg_user_ena... |
+| 7 | mlp-00179 | MEDIUM | LIFECYCLE_MANAGED | com.android.systemui | SystemUIMonitorAndTileHooks.kt | 104 | `contentObserver` | ContentObserver(Settings.Global.getUriFor("fiveg_user_enable"), false, contentOb... |
+| 8 | mlp-00199 | MEDIUM | LIFECYCLE_MANAGED | com.android.systemui | SystemUIStatusBarHooks.kt | 1389 | `attachStateListener` | v.removeOnAttachStateChangeListener(this) } } meter.addOnAttachStateChangeListen... |
+| 9 | mlp-00058 | MEDIUM | LIFECYCLE_MANAGED | com.miui.home | LauncherGestureHooks.kt | 236 | `shakeMgr` | .SENSOR_SERVICE) as? android.hardware.SensorManager ?: return shakeMgr.reset() s... |
+| 10 | mlp-00002 | MEDIUM | LIFECYCLE_MANAGED | tv.withaibuild.customiuizer.r13 | MainActivity.kt | 79 | `Activity` | AppHelper.onLocalPreferenceChanged(AppHelper.remotePrefs, key, value) } AppHelpe... |
 
 ## Top 3 strongest retention chains
 
-### 1. `SystemUILockScreenHooks.kt:451` — UNBALANCED_LISTENER_REGISTRATION (HIGH)
+### 1. `SystemFreeformAndMultiWindowHooks.kt:34` — UNBOUNDED_OWNER_COLLECTION (MEDIUM)
 
-- **Root**: `LISTENER_REGISTRATION` retaining `AnimatorListenerAdapter` in process `com.android.systemui`.
-- **Registration site**: `) mAnimatorSet.removeAllListeners() mAnimatorSet.addListener(object : AnimatorListenerAdapter() { override f`
-- **Review rationale**: Identity-based review: no matching release/removal found in the same source file.
+- **Root**: `KOTLIN_OBJECT_FIELD` retaining `ConcurrentHashMap<String, Pair<Float, Rect?>` in process `system_server`.
+- **Review rationale**: Collection of short-lived Android owners held from a process-lifetime root.
 
-### 2. `LauncherIconHooks.kt:169` — UNBALANCED_LISTENER_REGISTRATION (HIGH)
+### 2. `SystemNotificationAndShareHooks.kt:30` — UNBOUNDED_OWNER_COLLECTION (MEDIUM)
 
-- **Root**: `LISTENER_REGISTRATION` retaining `TextWatcher` in process `com.miui.home`.
-- **Registration site**: `tView if (mMessage != null) mMessage.addTextChangedListener(object : TextWatcher { overr`
-- **Review rationale**: addTextChangedListener with an inline TextWatcher on mMessage; no removeTextChangedListener found; listener captures mMessage and multx.
+- **Root**: `KOTLIN_OBJECT_FIELD` retaining `ArrayList<String>` in process `system_server`.
+- **Review rationale**: Collection of short-lived Android owners held from a process-lifetime root.
 
-### 3. `MainActivity.kt:79` — UNBALANCED_LISTENER_REGISTRATION (HIGH)
+### 3. `SystemStatusBarMoreHooks.kt:135` — LIFECYCLE_MANAGED (MEDIUM)
 
-- **Root**: `LISTENER_REGISTRATION` retaining `Activity` in process `tv.withaibuild.customiuizer.r13`.
-- **Registration site**: `hanged(AppHelper.remotePrefs, key, value) } AppHelper.appPrefs?.registerOnSharedPreferenceChangeListener(prefsChanged) }`
-- **Review rationale**: Identity-based review: no matching release/removal found in the same source file.
+- **Root**: `CONTENT_OBSERVER_REGISTRATION` retaining `alarmObserver` in process `system_server`.
+- **Registration site**: `} } } resolver.registerContentObserver(Settings.System.getUriFor("next_alarm_clock_formatted")`
+- **Release site**: `ystemStatusBarMoreHooks.unregisterAlarmObserver") { resolver.unregisterContentObserver(alarmObserver) }`
+- **Review rationale**: Identity-matched release path found in source.
 
 ## Manual supplemental coverage
 
 - **Candidates reviewed**: 408 of 559
-- **HIGH/CRITICAL manually reviewed**: 17
+- **HIGH/CRITICAL manually reviewed**: 0
 - **MEDIUM/UNKNOWN needing ROM/runtime evidence**: 151
-- **False-positive / benign count**: 344 (`SAFE_STABLE_METADATA` + `PROCESS_LIFETIME_INTENTIONAL`) classified as not requiring production change.
+- **False-positive / benign count**: 348 (`SAFE_STABLE_METADATA` + `PROCESS_LIFETIME_INTENTIONAL`) classified as not requiring production change.
 
 ## Recommended P2-1 slice
 
 ```
-RECOMMENDED_P2_1 = SystemUILockScreenHooks.kt:451 unbalanced listener registration
+RECOMMENDED_P2_1 = SubFragment.kt smooth-scroller delayed callback cleanup
 ```
 
 ### Why this is ranked first
 
-- **Top candidate**: `SystemUILockScreenHooks.kt:451` — `AnimatorListenerAdapter` — UNBALANCED_LISTENER_REGISTRATION (HIGH).
-- **Review rationale**: Identity-based review: no matching release/removal found in the same source file.
+- **Top candidate**: `SubFragment.kt:234` — `Fragment` — BOUNDED_DELAYED_CALLBACK_RETENTION (MEDIUM).
+- **Review rationale**: Fragment/View posts a delayed Runnable with a finite window; no evidence of repeated unbounded queuing. Delay is 380ms (short window). highlightKey is reset to null before post, bounding the trigger to the current key highlight. onStart is lifecycle-bound; callback is not proven to outlive the Fragment/View.
 - **Scope small**: one file or a single callback site, no new architecture.
 - **Regression risk low**: the fix only adds a matching `removeCallbacks` / `removeListener` call in an existing lifecycle teardown path.
 
