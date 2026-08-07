@@ -7,8 +7,8 @@
 | 任务 | `A13-PERF-P1B-4A-NOTIFICATION-MENU-HOT-PATH` |
 | 分支 | `devin/a13-memory-performance-optimization` |
 | 起点 commit | `ec05f5e948167742da6520cdf64b9fd32d360b3e` |
-| 状态 | `QA_REOPENED` |
-| 终点 commit | `b58ced9` |
+| 状态 | `ENGINEERING_COMPLETE_DEVICE_EVIDENCE_PENDING` |
+| 终点 commit | `TBD_FINAL_SHA` |
 | P0 真实运行时基线 | `RUNTIME_BASELINE_PENDING_DEVICE` |
 | 授权范围 | 仅 `MiuiNotificationMenuRow#createMenuViews` 及该回调直接调用、属于本模块的通知菜单辅助逻辑 |
 
@@ -29,7 +29,7 @@
 - 不处理 `MiuiStatusBarNotificationActivityStarter#startNotificationIntent`。
 - 不处理通知点击、启动 Intent、解锁后启动。
 - 不处理通知监听服务、排序、折叠、过滤、重要性。
-- 不处理状态栏、锁屏、Quick Settings、音量、Launcher。
+- 不处理状态栏、锁屏、 Quick Settings、音量、Launcher。
 - 不处理管理应用 UI。
 - 不新增通知菜单功能、视觉或交互修改。
 - 不支持 Android 14 或 HyperOS 2。
@@ -54,6 +54,21 @@
 - 全部 Python 测试、Android 编译测试、lint、R8 和正式 Release 签名通过。
 - 工作区干净并推送。
 - 不声明未经真机测量的性能收益。
+
+## 本次修正内容
+
+1. 修复 `STALE_ROW_BINDING_RISK`：将 `pkgName`、`appUid`、`user`、`miniWindowPkg`、`notifyIntent` 的动态读取从创建时移到点击时。
+2. 修复 `CONTEXT_SEMANTICS_DRIFT`：所有分支统一使用安装阶段捕获的 `mContext`，不再混用 `view.context`。
+3. 修复 `OPTIONAL_FIELD_NULL_SAFETY`：`mSbn` / `mParent` / `mMenuMargin` / `mMenuContainer` 等字段缺失或 null 时安全降级。
+4. 修复 `RUNTIME_SUBTYPE_RESOLUTION`：当 `mSbn` / `mParent` 声明类型为基类、运行时为子类时，使用运行时 fallback 反射。
+5. 新增 `rethrowFatal` / `callMethodCompat` / `resolveString` / `resolveInt` / `resolveUser` helper，统一错误处理和 nullable 处理。
+6. 更新 `NotificationRowMenuHookTest` 与相关 fakes，覆盖 ROM clear/preserve 生命周期、创建时/点击时数据隔离、基类 fallback、主用户/多用户 force stop、浮窗启动、缺失字段降级。
+
+## 工程验证
+
+- `python tools/verify.py fast --tests NotificationRowMenuHookTest` 通过。
+- `A13_HOOK_COST_MAP.*` 由 `a13_hook_cost_scan.py` 重新生成待 QA-1/P6 完成。
+- P0 真实设备运行时基线仍保持 `RUNTIME_BASELINE_PENDING_DEVICE`。
 
 ## 最终状态约束
 

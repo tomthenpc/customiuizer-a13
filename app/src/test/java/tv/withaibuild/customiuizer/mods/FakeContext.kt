@@ -1,5 +1,6 @@
 package tv.withaibuild.customiuizer.mods
 
+import android.app.ActivityManager
 import android.app.FakeKeyguardManager
 import android.content.BroadcastReceiver
 import android.content.Context
@@ -7,13 +8,17 @@ import android.content.ContextWrapper
 import android.content.Intent
 import android.content.IntentFilter
 import android.content.pm.PackageManager
+import android.content.res.Configuration
+import android.content.res.FakeAssetManagerFactory
 import android.content.res.Resources
+import android.util.DisplayMetrics
 import android.os.Handler
 import android.os.Looper
 
 class FakeContext : ContextWrapper(null) {
 
     var keyguardManager: FakeKeyguardManager? = FakeKeyguardManager()
+    var fakeActivityManager: ActivityManager? = null
     val sentBroadcasts: MutableList<Intent> = mutableListOf()
     val registeredReceivers: MutableList<BroadcastReceiver> = mutableListOf()
     val startedActivities: MutableList<Intent> = mutableListOf()
@@ -31,10 +36,14 @@ class FakeContext : ContextWrapper(null) {
 
     override fun getSystemService(name: String): Any? {
         if (Context.KEYGUARD_SERVICE == name) return keyguardManager
+        if (Context.ACTIVITY_SERVICE == name) return fakeActivityManager
         return null
     }
 
-    override fun getResources(): Resources = Resources.getSystem()
+    override fun getResources(): Resources {
+        val metrics = DisplayMetrics().apply { density = 1f }
+        return Resources(FakeAssetManagerFactory.create(), metrics, Configuration())
+    }
 
     override fun getPackageManager(): PackageManager = fakePackageManager ?: super.getPackageManager()
 
@@ -65,4 +74,8 @@ class FakeContext : ContextWrapper(null) {
         if (receiver != null) registeredReceivers.add(receiver)
         return null
     }
+
+    override fun createPackageContext(packageName: String, flags: Int): Context = this
+
+    override fun createDeviceProtectedStorageContext(): Context = this
 }

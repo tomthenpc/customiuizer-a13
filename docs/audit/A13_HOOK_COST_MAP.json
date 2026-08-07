@@ -10513,11 +10513,11 @@
       "notes": "args=(\"com.android.server.notification.GroupHelper\", lpparam.classLoader, \"adjustNotificationBundling\", List::class.java, Boo"
     },
     {
-      "hook_id": "08989d67b006cc15810b65a7",
+      "hook_id": "3f9d428c80120eab09204aca",
       "feature_id": "wallpaperScaleLevel",
       "feature_name": "SystemNotificationMoreHooks",
       "source_file": "app/src/main/java/tv/withaibuild/customiuizer/mods/SystemNotificationMoreHooks.kt",
-      "source_line": 39,
+      "source_line": 40,
       "registration_function": "NoMoreIconHook",
       "target_class": "com.android.systemui.statusbar.phone.NotificationIconAreaController",
       "target_method": "setIconsVisibility",
@@ -10550,11 +10550,11 @@
       "notes": "args=(\"com.android.systemui.statusbar.phone.NotificationIconAreaController\", lpparam.classLoader, \"setIconsVisibility\", objec"
     },
     {
-      "hook_id": "0a211bd315eb2db59ac3bfcd",
+      "hook_id": "e1c7448740f6e49827f9b693",
       "feature_id": "wallpaperScaleLevel",
       "feature_name": "SystemNotificationMoreHooks",
       "source_file": "app/src/main/java/tv/withaibuild/customiuizer/mods/SystemNotificationMoreHooks.kt",
-      "source_line": 49,
+      "source_line": 50,
       "registration_function": "ShowNotificationsAfterUnlockHook",
       "target_class": "com.android.systemui.statusbar.notification.ExpandedNotification",
       "target_method": "hasShownAfterUnlock",
@@ -10587,11 +10587,11 @@
       "notes": "args=(\"com.android.systemui.statusbar.notification.ExpandedNotification\", lpparam.classLoader, \"hasShownAfterUnlock\", HookerC"
     },
     {
-      "hook_id": "546edfe5dd9d662e12ce6540",
+      "hook_id": "df2b6bd5e773df2b910506a9",
       "feature_id": "wallpaperScaleLevel",
       "feature_name": "SystemNotificationMoreHooks",
       "source_file": "app/src/main/java/tv/withaibuild/customiuizer/mods/SystemNotificationMoreHooks.kt",
-      "source_line": 50,
+      "source_line": 51,
       "registration_function": "ShowNotificationsAfterUnlockHook",
       "target_class": "com.android.systemui.statusbar.notification.ExpandedNotification",
       "target_method": "setHasShownAfterUnlock",
@@ -10624,11 +10624,11 @@
       "notes": "args=(\"com.android.systemui.statusbar.notification.ExpandedNotification\", lpparam.classLoader, \"setHasShownAfterUnlock\", Bool"
     },
     {
-      "hook_id": "94675b3758331d3780e6f429",
+      "hook_id": "7bb408b1131ece0f4d73e63d",
       "feature_id": "wallpaperScaleLevel",
       "feature_name": "SystemNotificationMoreHooks",
       "source_file": "app/src/main/java/tv/withaibuild/customiuizer/mods/SystemNotificationMoreHooks.kt",
-      "source_line": 187,
+      "source_line": 192,
       "registration_function": "NotificationRowMenuHook",
       "target_class": "menuRowClass",
       "target_method": "createMenuViews",
@@ -10661,11 +10661,11 @@
       "notes": "args=(menuRowClass, \"createMenuViews\", Boolean::class.javaPrimitiveType, Boolean::class.javaPrimitiveType, object : MethodHoo"
     },
     {
-      "hook_id": "0d1744cc3001d640e11826b2",
+      "hook_id": "dce8814bea34bea4dcf3b6e5",
       "feature_id": "wallpaperScaleLevel",
       "feature_name": "SystemNotificationMoreHooks",
       "source_file": "app/src/main/java/tv/withaibuild/customiuizer/mods/SystemNotificationMoreHooks.kt",
-      "source_line": 323,
+      "source_line": 388,
       "registration_function": "SelectiveVibrationHook",
       "target_class": "com.android.server.vibrator.VibratorManagerService",
       "target_method": "systemReady",
@@ -10698,11 +10698,11 @@
       "notes": "args=(\"com.android.server.vibrator.VibratorManagerService\", lpparam.classLoader, \"systemReady\", object : MethodHook() {\n     "
     },
     {
-      "hook_id": "b8a0d029d43e02ff93fd6514",
+      "hook_id": "0910da2a982e98f04a977feb",
       "feature_id": "wallpaperScaleLevel",
       "feature_name": "SystemNotificationMoreHooks",
       "source_file": "app/src/main/java/tv/withaibuild/customiuizer/mods/SystemNotificationMoreHooks.kt",
-      "source_line": 341,
+      "source_line": 406,
       "registration_function": "after",
       "target_class": "com.android.server.vibrator.VibratorManagerService",
       "target_method": "vibrate",
@@ -10735,11 +10735,11 @@
       "notes": "args=(\"com.android.server.vibrator.VibratorManagerService\", lpparam.classLoader, \"vibrate\", object : MethodHook() {\n         "
     },
     {
-      "hook_id": "bb28e07cdfc2acb57300bdc2",
+      "hook_id": "4638fccb2da499a1009e33b0",
       "feature_id": "wallpaperScaleLevel",
       "feature_name": "SystemNotificationMoreHooks",
       "source_file": "app/src/main/java/tv/withaibuild/customiuizer/mods/SystemNotificationMoreHooks.kt",
-      "source_line": 351,
+      "source_line": 416,
       "registration_function": "NoDuckingHook",
       "target_class": "com.android.server.audio.FocusRequester",
       "target_method": "handleFocusLoss",
@@ -10772,11 +10772,11 @@
       "notes": "args=(\"com.android.server.audio.FocusRequester\", lpparam.classLoader, \"handleFocusLoss\", object : MethodHook() {\n            "
     },
     {
-      "hook_id": "57618081d45aa5fc08996e54",
+      "hook_id": "bf8cd34737adc43c18d6211b",
       "feature_id": "wallpaperScaleLevel",
       "feature_name": "SystemNotificationMoreHooks",
       "source_file": "app/src/main/java/tv/withaibuild/customiuizer/mods/SystemNotificationMoreHooks.kt",
-      "source_line": 362,
+      "source_line": 427,
       "registration_function": "OrientationLockHook",
       "target_class": "windowClass",
       "target_method": "unknown",
@@ -10809,11 +10809,11 @@
       "notes": "args=(windowClass, lpparam.classLoader, rotMethod, object : MethodHook() {\n            override fun after(param: AfterHookCal"
     },
     {
-      "hook_id": "8c6858b303876393f7208f4a",
+      "hook_id": "ec7cc5bdd59ea393d48b25e6",
       "feature_id": "wallpaperScaleLevel",
       "feature_name": "SystemNotificationMoreHooks",
       "source_file": "app/src/main/java/tv/withaibuild/customiuizer/mods/SystemNotificationMoreHooks.kt",
-      "source_line": 381,
+      "source_line": 446,
       "registration_function": "DisableAnyNotificationBlockHook",
       "target_class": "android.app.NotificationChannel",
       "target_method": "isBlockable",
@@ -10839,18 +10839,18 @@
       "retained_android_owner": "false",
       "listener_has_unregister_path": "unknown",
       "delayed_callback_has_cancel_path": "unknown",
-      "duplicate_target_group": "2 sites: app/src/main/java/tv/withaibuild/customiuizer/mods/SystemNotificationMoreHooks.kt:381, app/src/main/java/tv/withaibuild/customiuizer/mods/SystemNotificationMoreHooks.kt:391",
+      "duplicate_target_group": "2 sites: app/src/main/java/tv/withaibuild/customiuizer/mods/SystemNotificationMoreHooks.kt:446, app/src/main/java/tv/withaibuild/customiuizer/mods/SystemNotificationMoreHooks.kt:456",
       "system_mechanism_alternative": "unknown",
       "static_priority_score": 0,
       "confidence": "high",
       "notes": "args=(\"android.app.NotificationChannel\", lpparam.classLoader, \"isBlockable\", HookerClassHelper.returnConstant(true))"
     },
     {
-      "hook_id": "de76d661a6520e069804b1f6",
+      "hook_id": "6785dc7037d86c9e5083cc0e",
       "feature_id": "wallpaperScaleLevel",
       "feature_name": "SystemNotificationMoreHooks",
       "source_file": "app/src/main/java/tv/withaibuild/customiuizer/mods/SystemNotificationMoreHooks.kt",
-      "source_line": 382,
+      "source_line": 447,
       "registration_function": "DisableAnyNotificationBlockHook",
       "target_class": "android.app.NotificationChannel",
       "target_method": "setBlockable",
@@ -10876,18 +10876,18 @@
       "retained_android_owner": "false",
       "listener_has_unregister_path": "unknown",
       "delayed_callback_has_cancel_path": "unknown",
-      "duplicate_target_group": "2 sites: app/src/main/java/tv/withaibuild/customiuizer/mods/SystemNotificationMoreHooks.kt:382, app/src/main/java/tv/withaibuild/customiuizer/mods/SystemNotificationMoreHooks.kt:392",
+      "duplicate_target_group": "2 sites: app/src/main/java/tv/withaibuild/customiuizer/mods/SystemNotificationMoreHooks.kt:447, app/src/main/java/tv/withaibuild/customiuizer/mods/SystemNotificationMoreHooks.kt:457",
       "system_mechanism_alternative": "unknown",
       "static_priority_score": 0,
       "confidence": "high",
       "notes": "args=(\"android.app.NotificationChannel\", lpparam.classLoader, \"setBlockable\", Boolean::class.javaPrimitiveType, object : Meth"
     },
     {
-      "hook_id": "365d1766479417f14d4d96d1",
+      "hook_id": "9ff3fc52251bcde28fa3af36",
       "feature_id": "wallpaperScaleLevel",
       "feature_name": "SystemNotificationMoreHooks",
       "source_file": "app/src/main/java/tv/withaibuild/customiuizer/mods/SystemNotificationMoreHooks.kt",
-      "source_line": 391,
+      "source_line": 456,
       "registration_function": "DisableAnyNotificationBlockHook",
       "target_class": "android.app.NotificationChannel",
       "target_method": "isBlockable",
@@ -10913,18 +10913,18 @@
       "retained_android_owner": "false",
       "listener_has_unregister_path": "unknown",
       "delayed_callback_has_cancel_path": "unknown",
-      "duplicate_target_group": "2 sites: app/src/main/java/tv/withaibuild/customiuizer/mods/SystemNotificationMoreHooks.kt:381, app/src/main/java/tv/withaibuild/customiuizer/mods/SystemNotificationMoreHooks.kt:391",
+      "duplicate_target_group": "2 sites: app/src/main/java/tv/withaibuild/customiuizer/mods/SystemNotificationMoreHooks.kt:446, app/src/main/java/tv/withaibuild/customiuizer/mods/SystemNotificationMoreHooks.kt:456",
       "system_mechanism_alternative": "unknown",
       "static_priority_score": 0,
       "confidence": "high",
       "notes": "args=(\"android.app.NotificationChannel\", lpparam.classLoader, \"isBlockable\", HookerClassHelper.returnConstant(true))"
     },
     {
-      "hook_id": "055d46915f86d646f0ce367b",
+      "hook_id": "200c912c9c78735cdf000efc",
       "feature_id": "wallpaperScaleLevel",
       "feature_name": "SystemNotificationMoreHooks",
       "source_file": "app/src/main/java/tv/withaibuild/customiuizer/mods/SystemNotificationMoreHooks.kt",
-      "source_line": 392,
+      "source_line": 457,
       "registration_function": "DisableAnyNotificationBlockHook",
       "target_class": "android.app.NotificationChannel",
       "target_method": "setBlockable",
@@ -10950,18 +10950,18 @@
       "retained_android_owner": "false",
       "listener_has_unregister_path": "unknown",
       "delayed_callback_has_cancel_path": "unknown",
-      "duplicate_target_group": "2 sites: app/src/main/java/tv/withaibuild/customiuizer/mods/SystemNotificationMoreHooks.kt:382, app/src/main/java/tv/withaibuild/customiuizer/mods/SystemNotificationMoreHooks.kt:392",
+      "duplicate_target_group": "2 sites: app/src/main/java/tv/withaibuild/customiuizer/mods/SystemNotificationMoreHooks.kt:447, app/src/main/java/tv/withaibuild/customiuizer/mods/SystemNotificationMoreHooks.kt:457",
       "system_mechanism_alternative": "unknown",
       "static_priority_score": 0,
       "confidence": "high",
       "notes": "args=(\"android.app.NotificationChannel\", lpparam.classLoader, \"setBlockable\", Boolean::class.javaPrimitiveType, object : Meth"
     },
     {
-      "hook_id": "1a1a3ed8826882def91bdea6",
+      "hook_id": "b9bbbbcad00909854278e0e2",
       "feature_id": "wallpaperScaleLevel",
       "feature_name": "SystemNotificationMoreHooks",
       "source_file": "app/src/main/java/tv/withaibuild/customiuizer/mods/SystemNotificationMoreHooks.kt",
-      "source_line": 404,
+      "source_line": 469,
       "registration_function": "DisableAnyNotificationHook",
       "target_class": "com.miui.systemui.NotificationCloudData\\$Companion",
       "target_method": "getFloatBlacklist",
@@ -10994,11 +10994,11 @@
       "notes": "args=(\"com.miui.systemui.NotificationCloudData\\$Companion\", lpparam.classLoader, \"getFloatBlacklist\", Context::class.java, ob"
     },
     {
-      "hook_id": "c870c3885b030259da4bc170",
+      "hook_id": "c05096cd70df5139f3da7a88",
       "feature_id": "wallpaperScaleLevel",
       "feature_name": "SystemNotificationMoreHooks",
       "source_file": "app/src/main/java/tv/withaibuild/customiuizer/mods/SystemNotificationMoreHooks.kt",
-      "source_line": 410,
+      "source_line": 475,
       "registration_function": "before",
       "target_class": "miui.util.NotificationFilterHelper",
       "target_method": "isNotificationForcedEnabled",
@@ -11031,11 +11031,11 @@
       "notes": "args=(\"miui.util.NotificationFilterHelper\", lpparam.classLoader, \"isNotificationForcedEnabled\", HookerClassHelper.returnConst"
     },
     {
-      "hook_id": "7d4c2adaa3a62d28189a0b4b",
+      "hook_id": "2bf5af7668e493bb78adcd8c",
       "feature_id": "wallpaperScaleLevel",
       "feature_name": "SystemNotificationMoreHooks",
       "source_file": "app/src/main/java/tv/withaibuild/customiuizer/mods/SystemNotificationMoreHooks.kt",
-      "source_line": 411,
+      "source_line": 476,
       "registration_function": "before",
       "target_class": "miui.util.NotificationFilterHelper",
       "target_method": "isNotificationForcedFor",
@@ -11068,11 +11068,11 @@
       "notes": "args=(\"miui.util.NotificationFilterHelper\", lpparam.classLoader, \"isNotificationForcedFor\", Context::class.java, String::clas"
     },
     {
-      "hook_id": "4ce241dbc0da469106a4d171",
+      "hook_id": "2e97872fa0a1ed05bf589776",
       "feature_id": "wallpaperScaleLevel",
       "feature_name": "SystemNotificationMoreHooks",
       "source_file": "app/src/main/java/tv/withaibuild/customiuizer/mods/SystemNotificationMoreHooks.kt",
-      "source_line": 412,
+      "source_line": 477,
       "registration_function": "before",
       "target_class": "miui.util.NotificationFilterHelper",
       "target_method": "canSystemNotificationBeBlocked",
@@ -11105,11 +11105,11 @@
       "notes": "args=(\"miui.util.NotificationFilterHelper\", lpparam.classLoader, \"canSystemNotificationBeBlocked\", String::class.java, Hooker"
     },
     {
-      "hook_id": "c7cbd62887e7eac097aca7b0",
+      "hook_id": "2d1d05f1b0029313efdb985c",
       "feature_id": "wallpaperScaleLevel",
       "feature_name": "SystemNotificationMoreHooks",
       "source_file": "app/src/main/java/tv/withaibuild/customiuizer/mods/SystemNotificationMoreHooks.kt",
-      "source_line": 413,
+      "source_line": 478,
       "registration_function": "before",
       "target_class": "miui.util.NotificationFilterHelper",
       "target_method": "containNonBlockableChannel",
@@ -11142,11 +11142,11 @@
       "notes": "args=(\"miui.util.NotificationFilterHelper\", lpparam.classLoader, \"containNonBlockableChannel\", String::class.java, HookerClas"
     },
     {
-      "hook_id": "b2edde9a030b659a65f17027",
+      "hook_id": "4b4b6735725ba795c10ce955",
       "feature_id": "wallpaperScaleLevel",
       "feature_name": "SystemNotificationMoreHooks",
       "source_file": "app/src/main/java/tv/withaibuild/customiuizer/mods/SystemNotificationMoreHooks.kt",
-      "source_line": 414,
+      "source_line": 479,
       "registration_function": "before",
       "target_class": "miui.util.NotificationFilterHelper",
       "target_method": "getNotificationForcedEnabledList",
@@ -11179,11 +11179,11 @@
       "notes": "args=(\"miui.util.NotificationFilterHelper\", lpparam.classLoader, \"getNotificationForcedEnabledList\", object : MethodHook() {\n"
     },
     {
-      "hook_id": "6a1ac5ca48173e7077321785",
+      "hook_id": "4dac3104d1b3531836ad47fe",
       "feature_id": "wallpaperScaleLevel",
       "feature_name": "SystemNotificationMoreHooks",
       "source_file": "app/src/main/java/tv/withaibuild/customiuizer/mods/SystemNotificationMoreHooks.kt",
-      "source_line": 423,
+      "source_line": 488,
       "registration_function": "NotificationImportanceHook",
       "target_class": "com.android.settings.notification.BaseNotificationSettings",
       "target_method": "setPrefVisible",
@@ -11216,11 +11216,11 @@
       "notes": "args=(\"com.android.settings.notification.BaseNotificationSettings\", lpparam.classLoader, \"setPrefVisible\", object : MethodHoo"
     },
     {
-      "hook_id": "666a7cab5575c61ab614a6d2",
+      "hook_id": "9aeac16bff0759c79e180c6b",
       "feature_id": "wallpaperScaleLevel",
       "feature_name": "SystemNotificationMoreHooks",
       "source_file": "app/src/main/java/tv/withaibuild/customiuizer/mods/SystemNotificationMoreHooks.kt",
-      "source_line": 434,
+      "source_line": 499,
       "registration_function": "before",
       "target_class": "com.android.settings.notification.ChannelNotificationSettings",
       "target_method": "setupChannelDefaultPrefs",
@@ -11253,11 +11253,11 @@
       "notes": "args=(\"com.android.settings.notification.ChannelNotificationSettings\", lpparam.classLoader, \"setupChannelDefaultPrefs\", objec"
     },
     {
-      "hook_id": "47d1ce83ba5ffc0ba8abba37",
+      "hook_id": "39ba7bd000880ff87acefd4a",
       "feature_id": "wallpaperScaleLevel",
       "feature_name": "SystemNotificationMoreHooks",
       "source_file": "app/src/main/java/tv/withaibuild/customiuizer/mods/SystemNotificationMoreHooks.kt",
-      "source_line": 473,
+      "source_line": 538,
       "registration_function": "MaxNotificationIconsHook",
       "target_class": "com.android.systemui.statusbar.phone.NotificationIconContainer",
       "target_method": "miuiShowNotificationIcons",
@@ -11290,11 +11290,11 @@
       "notes": "args=(\"com.android.systemui.statusbar.phone.NotificationIconContainer\", lpparam.classLoader, \"miuiShowNotificationIcons\", Boo"
     },
     {
-      "hook_id": "7c5c348d15e5f4f6017e82ff",
+      "hook_id": "5372f1c4e03c349db32e9fa7",
       "feature_id": "wallpaperScaleLevel",
       "feature_name": "SystemNotificationMoreHooks",
       "source_file": "app/src/main/java/tv/withaibuild/customiuizer/mods/SystemNotificationMoreHooks.kt",
-      "source_line": 492,
+      "source_line": 557,
       "registration_function": "MoreNotificationsHook",
       "target_class": "com.android.systemui.statusbar.notification.policy.NotificationCountLimitPolicy",
       "target_method": "checkNotificationCountLimit",
@@ -11327,11 +11327,11 @@
       "notes": "args=(\"com.android.systemui.statusbar.notification.policy.NotificationCountLimitPolicy\", lpparam.classLoader, \"checkNotificat"
     },
     {
-      "hook_id": "d60eb606b79e787aa052aa79",
+      "hook_id": "5ff947ec1485efde76bb2090",
       "feature_id": "wallpaperScaleLevel",
       "feature_name": "SystemNotificationMoreHooks",
       "source_file": "app/src/main/java/tv/withaibuild/customiuizer/mods/SystemNotificationMoreHooks.kt",
-      "source_line": 509,
+      "source_line": 574,
       "registration_function": "AutoDismissExpandedPopupsHook",
       "target_class": "com.android.systemui.statusbar.phone.HeadsUpManagerPhone\\$HeadsUpEntryPhone",
       "target_method": "setExpanded",
@@ -11364,11 +11364,11 @@
       "notes": "args=(\"com.android.systemui.statusbar.phone.HeadsUpManagerPhone\\$HeadsUpEntryPhone\", lpparam.classLoader, \"setExpanded\", Bool"
     },
     {
-      "hook_id": "2c16d95acfc2d45cdbaa43e2",
+      "hook_id": "69f6cc15dbc62253d24cc0ed",
       "feature_id": "wallpaperScaleLevel",
       "feature_name": "SystemNotificationMoreHooks",
       "source_file": "app/src/main/java/tv/withaibuild/customiuizer/mods/SystemNotificationMoreHooks.kt",
-      "source_line": 529,
+      "source_line": 594,
       "registration_function": "MinimalNotificationViewHook",
       "target_class": "com.android.systemui.statusbar.phone.StatusBar",
       "target_method": "updateNotification",
@@ -11401,11 +11401,11 @@
       "notes": "args=(\"com.android.systemui.statusbar.phone.StatusBar\", lpparam.classLoader, \"updateNotification\", object : MethodHook() {\n  "
     },
     {
-      "hook_id": "b0a8112e6d9996dd0397101b",
+      "hook_id": "6df769239b28ebe8c8d50f6f",
       "feature_id": "wallpaperScaleLevel",
       "feature_name": "SystemNotificationMoreHooks",
       "source_file": "app/src/main/java/tv/withaibuild/customiuizer/mods/SystemNotificationMoreHooks.kt",
-      "source_line": 550,
+      "source_line": 615,
       "registration_function": "NotificationChannelSettingsHook",
       "target_class": "com.android.systemui.statusbar.notification.row.MiuiNotificationMenuRow",
       "target_method": "onClickInfoItem",
@@ -11438,11 +11438,11 @@
       "notes": "args=(\"com.android.systemui.statusbar.notification.row.MiuiNotificationMenuRow\", lpparam.classLoader, \"onClickInfoItem\", obje"
     },
     {
-      "hook_id": "72d6e10c4b29d2d6b062dc3c",
+      "hook_id": "64055906c819452073010bcb",
       "feature_id": "wallpaperScaleLevel",
       "feature_name": "SystemNotificationMoreHooks",
       "source_file": "app/src/main/java/tv/withaibuild/customiuizer/mods/SystemNotificationMoreHooks.kt",
-      "source_line": 591,
+      "source_line": 656,
       "registration_function": "MuteVisibleNotificationsHook",
       "target_class": "com.android.systemui.statusbar.notification.policy.NotificationAlertController",
       "target_method": "buzzBeepBlink",
@@ -11475,11 +11475,11 @@
       "notes": "args=(\"com.android.systemui.statusbar.notification.policy.NotificationAlertController\", lpparam.classLoader, \"buzzBeepBlink\","
     },
     {
-      "hook_id": "c2bdc4e39767024587cfc48a",
+      "hook_id": "11bd0270e8657358c7841a1e",
       "feature_id": "wallpaperScaleLevel",
       "feature_name": "SystemNotificationMoreHooks",
       "source_file": "app/src/main/java/tv/withaibuild/customiuizer/mods/SystemNotificationMoreHooks.kt",
-      "source_line": 604,
+      "source_line": 669,
       "registration_function": "BetterPopupsCenteredHook",
       "target_class": "com.android.systemui.statusbar.policy.HeadsUpManagerInjector",
       "target_method": "miuiHeadsUpInset",
@@ -11512,11 +11512,11 @@
       "notes": "args=(\"com.android.systemui.statusbar.policy.HeadsUpManagerInjector\", lpparam.classLoader, \"miuiHeadsUpInset\", Context::class"
     },
     {
-      "hook_id": "4f10b5ab3e15f1b433d27038",
+      "hook_id": "6bf1d6109e5aaee913bd913a",
       "feature_id": "wallpaperScaleLevel",
       "feature_name": "SystemNotificationMoreHooks",
       "source_file": "app/src/main/java/tv/withaibuild/customiuizer/mods/SystemNotificationMoreHooks.kt",
-      "source_line": 627,
+      "source_line": 692,
       "registration_function": "WallpaperScaleLevelHook",
       "target_class": "com.android.server.wm.WallpaperController",
       "target_method": "mMaxWallpaperScale",
@@ -11549,11 +11549,11 @@
       "notes": "args=(\"com.android.server.wm.WallpaperController\", lpparam.classLoader, object : MethodHook() {\n            override fun afte"
     },
     {
-      "hook_id": "0d08ea6c0184604849b48c8c",
+      "hook_id": "be4a274d1d589d7fbd50975d",
       "feature_id": "wallpaperScaleLevel",
       "feature_name": "SystemNotificationMoreHooks",
       "source_file": "app/src/main/java/tv/withaibuild/customiuizer/mods/SystemNotificationMoreHooks.kt",
-      "source_line": 643,
+      "source_line": 708,
       "registration_function": "Disable72hStrongAuthHook",
       "target_class": "com.android.server.locksettings.LockSettingsStrongAuth",
       "target_method": "rescheduleStrongAuthTimeoutAlarm",
@@ -11586,11 +11586,11 @@
       "notes": "args=(\"com.android.server.locksettings.LockSettingsStrongAuth\", lpparam.classLoader, \"rescheduleStrongAuthTimeoutAlarm\", Long"
     },
     {
-      "hook_id": "fb1b8d9c3c297e770404774a",
+      "hook_id": "b816c5e8dbc4211c635acf03",
       "feature_id": "wallpaperScaleLevel",
       "feature_name": "SystemNotificationMoreHooks",
       "source_file": "app/src/main/java/tv/withaibuild/customiuizer/mods/SystemNotificationMoreHooks.kt",
-      "source_line": 519,
+      "source_line": 584,
       "registration_function": "before",
       "target_class": "mRemoveAlertRunnable",
       "target_method": "register/callback",

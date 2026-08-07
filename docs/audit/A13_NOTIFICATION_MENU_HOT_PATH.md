@@ -24,82 +24,75 @@ MainModule.onPackageReady (com.android.systemui)
             └─ ModuleHelper.findAndHookMethod("com.android.systemui.statusbar.notification.row.MiuiNotificationMenuRow", lpparam.classLoader, "createMenuViews", boolean, boolean, afterHook)
 ```
 
-## 3. 修改前调用链
+## 3. 修改后调用链
 
 ### 3.1 createMenuViews after 回调
 
 ```text
 MiuiNotificationMenuRow.createMenuViews(boolean, boolean)
   └─ after(param)
-       1. XposedHelpers.getObjectField(param.thisObject, "mContext") as? Context ?: return       // CALLBACK_TIME_REFLECTION
-       2. XposedHelpers.getObjectField(param.thisObject, "mMenuItems") as? ArrayList<Any> ?: return // CALLBACK_TIME_REFLECTION
-       3. val menuItem: Constructor<*> = MiuiNotificationMenuItem.constructors[0]                  // 反射访问 Constructor
-       4. menuItem.newInstance(param.thisObject, mContext, appInfoDescId, null, appInfoIconResId)   // 创建 MenuItem 实例（+ Object[] varargs）
-       5. menuItem.newInstance(param.thisObject, mContext, forceCloseDescId, null, forceCloseIconResId)
-       6. menuItem.newInstance(param.thisObject, mContext, openInFwDescId, null, openInFwIconResId)
-       7. if (any null) return
-       8. XposedHelpers.getObjectField(param.thisObject, "mSbn")                                    // CALLBACK_TIME_REFLECTION
-       9. XposedHelpers.getObjectField(param.thisObject, "mParent")                                 // CALLBACK_TIME_REFLECTION
-       10. mMenuItems.add(infoBtn); mMenuItems.add(forceCloseBtn); mMenuItems.add(openFwBtn)
-       11. XposedHelpers.setObjectField(param.thisObject, "mMenuItems", mMenuItems)                 // 冗余 setObjectField
-       12. XposedHelpers.getObjectField(param.thisObject, "mMenuMargin") as? Int ?: 0              // CALLBACK_TIME_REFLECTION
-       13. XposedHelpers.getObjectField(param.thisObject, "mMenuContainer") as? LinearLayout ?: return // CALLBACK_TIME_REFLECTION
-       14. XposedHelpers.callMethod(infoBtn, "getMenuView") as? View ?: return                    // CALLBACK_TIME_REFLECTION
-       15. XposedHelpers.callMethod(forceCloseBtn, "getMenuView") as? View ?: return
-       16. XposedHelpers.callMethod(openFwBtn, "getMenuView") as? View ?: return
-       17. 创建 View.OnClickListener lambda，捕获 notification / expandNotifyRow / mContext / lpparam
-       18. mInfoBtn.setOnClickListener(itemClick); ...
-       19. 创建 LinearLayout.LayoutParams(-2, -2) 并设置 margin
-       20. mMenuContainer.addView(mInfoBtn, layoutParams); ...
-       21. val menuWidth = TypedValue.applyDimension(COMPLEX_UNIT_DIP, 52f, mContext.resources.displayMetrics).toInt()
-       22. val titleId = mContext.resources.getIdentifier("modal_menu_title", "id", lpparam.packageName)  // 字符串资源查找
-       23. for (obj in mMenuItems) {                                                                  // Iterator 分配
-              val menuView = XposedHelpers.callMethod(obj, "getMenuView") as? View ?: continue      // 每条 menu item 反射 getMenuView
-              (menuView.findViewById<TextView>(titleId))?.maxWidth = menuWidth
+       1. mContextField.get(param.thisObject) as? Context ?: return          // 安装阶段缓存的 Field 读取
+       2. mMenuItemsField.get(param.thisObject) as? ArrayList<Any> ?: return // 安装阶段缓存的 Field 读取
+       3. 使用安装阶段缓存的 menuItemConstructor 创建三个 MiuiNotificationMenuItem
+       4. mMenuItems.add(infoBtn); mMenuItems.add(forceCloseBtn); mMenuItems.add(openFwBtn)
+       5. mMenuMarginField?.get(param.thisObject) as? Int ?: 0              // 安装阶段缓存的可选 Field 读取
+       6. mMenuContainerField.get(param.thisObject) as? LinearLayout ?: return // 安装阶段缓存的 Field 读取
+       7. getMenuViewMethod.invoke(infoBtn) as? View ?: return              // 安装阶段缓存的 Method invoke
+       8. getMenuViewMethod.invoke(forceCloseBtn) as? View ?: return
+       9. getMenuViewMethod.invoke(openFwBtn) as? View ?: return
+       10. 创建 View.OnClickListener lambda，捕获 mContext / mMenuRow / 缓存的 Field 与 Method
+       11. mInfoBtn.setOnClickListener(itemClick); ...
+       12. 创建 LinearLayout.LayoutParams(-2, -2) 并设置 margin
+       13. mMenuContainer.addView(mInfoBtn, layoutParams); ...
+       14. val menuWidth = TypedValue.applyDimension(COMPLEX_UNIT_DIP, 52f, mContext.resources.displayMetrics).toInt()
+       15. val realTitleId = if (titleId != 0) titleId else mContext.resources.getIdentifier("modal_menu_title", "id", lpparam.packageName)
+       16. for (i in 0 until mMenuItems.size) {                                    // 索引循环，无 Iterator
+              val menuView = getMenuViewMethod.invoke(mMenuItems[i]) as? View ?: continue
+              (menuView.findViewById<TextView>(realTitleId))?.maxWidth = menuWidth
            }
 ```
 
 ### 3.2 点击监听辅助逻辑
 
-`View.OnClickListener` 被触发时执行：
+`View.OnClickListener` 被触发时执行（**所有实例数据均在点击时通过缓存的 Field 重新读取，不使用创建时的快照**）：
 
 - 应用信息 / 强制停止分支：
-  - `XposedHelpers.callMethod(notification, "getPackageName")`
-  - `XposedHelpers.callMethod(notification, "getAppUid")`
-  - `XposedHelpers.callStaticMethod(UserHandle::class.java, "getUserId", uid)`
+  - `mSbnField?.get(menuRow)` 获取当前 notification 实例
+  - `getPackageNameMethod.invoke(notification)` 或 `XposedHelpers.callMethod(notification, "getPackageName")` fallback
+  - `getAppUidMethod.invoke(notification)` 或 `XposedHelpers.callMethod(notification, "getAppUid")` fallback
+  - `UserHandle#getUserId` 或 `appUid / ANDROID_PER_USER_RANGE` fallback
 - 强制停止分支：
   - `mContext.getSystemService(Context.ACTIVITY_SERVICE) as? ActivityManager`
-  - `XposedHelpers.callMethod(am, "forceStopPackage" / "forceStopPackageAsUser", ...)`
-  - `mContext.packageManager.getApplicationInfo(pkgName, 0)`
-  - `mContext.packageManager.getApplicationLabel(...)`
-  - `Toast.makeText(..., mContext.getString(R.string.forcestop_toast, appName), ...)`
+  - `forceStopPackageMethod.invoke(am, pkgName)` 或 `XposedHelpers.callMethod(am, "forceStopPackage", pkgName)` fallback
+  - `forceStopPackageAsUserMethod.invoke(am, pkgName, user)` 或 `XposedHelpers.callMethod(am, "forceStopPackageAsUser", pkgName, user)` fallback
+  - `mContext.packageManager.getApplicationInfo` / `getApplicationLabel`（失败降级，不阻断 force stop）
+  - `Toast.makeText(..., ModuleHelper.getModuleRes(mContext).getString(R.string.force_closed, appName), ...)`（失败降级）
 - 浮窗打开分支：
-  - `XposedHelpers.findClass("com.android.systemui.Dependency", lpparam.classLoader)`            // CALLBACK_TIME_REFLECTION
-  - `XposedHelpers.findClassIfExists("com.android.systemui.statusbar.notification.policy.AppMiniWindowManager", lpparam.classLoader)` // CALLBACK_TIME_REFLECTION
-  - `XposedHelpers.findClass("com.android.systemui.statusbar.notification.modal.ModalController", lpparam.classLoader)` // CALLBACK_TIME_REFLECTION
-  - `XposedHelpers.callStaticMethod(Dependency, "get", AppMiniWindowManagerClass)`
-  - `XposedHelpers.callMethod(expandNotifyRow, "getMiniWindowTargetPkg")`
-  - `XposedHelpers.callMethod(expandNotifyRow, "getPendingIntent") as? PendingIntent`
-  - `XposedHelpers.callStaticMethod(Dependency, "get", ModalControllerClass)`
-  - `XposedHelpers.callMethod(ModalController, "animExitModelCollapsePanels")`
-  - `XposedHelpers.callMethod(AppMiniWindowManager, "launchMiniWindowActivity", miniWindowPkg, notifyIntent)`
+  - `mParentField?.get(menuRow)` 获取当前 expandNotifyRow 实例
+  - `getMiniWindowTargetPkgMethod.invoke(currentParent)` 或 `XposedHelpers.callMethod(currentParent, "getMiniWindowTargetPkg")` fallback
+  - `getPendingIntentMethod.invoke(currentParent)` 或 `XposedHelpers.callMethod(currentParent, "getPendingIntent")` fallback
+  - `dependencyGetMethod.invoke(null, appMiniWindowManagerClass)` 获取 `AppMiniWindowManager`
+  - `dependencyGetMethod.invoke(null, modalControllerClass)` 获取 `ModalController`
+  - `animExitModelCollapsePanelsMethod.invoke(modalController)` 或 `XposedHelpers.callMethod(modalController, "animExitModelCollapsePanels")` fallback
+  - `launchMiniWindowActivityMethod.invoke(appMiniWindowManager, miniWindowPkg, notifyIntent)` 或 `XposedHelpers.callMethod(appMiniWindowManager, "launchMiniWindowActivity", miniWindowPkg, notifyIntent)` fallback
 
-## 4. 修改前成本清单
+## 4. 修改后成本清单
 
 | 类别 | 数量（createMenuViews after） | 说明 |
 |---|---|---|
-| `CALLBACK_TIME_REFLECTION` | `getObjectField` x 6、`callMethod` x 3（new items `getMenuView`）+ `mMenuItems.size`（loop）+ `getIdentifier` x 1 | 稳定字段/方法反复查询 |
+| `CALLBACK_TIME_REFLECTION_LOOKUP` | 0 | 所有 `findClass` / `findMethodBestMatch` / `findConstructorBestMatch` / `findFieldIfExists` 均在安装阶段完成 |
+| `CALLBACK_TIME_REFLECTION_INVOKE` | 少量 | 点击时通过缓存的 `Field.get` 重新读取 `mSbn` / `mParent`；通过缓存的 `Method.invoke` 调用 `getPackageName` / `getAppUid` / `getMiniWindowTargetPkg` / `getPendingIntent` / force stop 等；稳定元数据已缓存 |
 | `MainModule.mPrefs.get*` | 0 | 回调内无直接偏好读取，功能由 installer 门控 |
 | 复合偏好解析 | 0 | 无 split / set / map 解析 |
-| 临时 List/Set/Map | 0 | 复用 `mMenuItems`，未新建集合；Iterator 由 `for` 循环分配 |
-| 临时数组 | 3+ | 每个 `Constructor.newInstance` 产生 varargs 数组；后续 `callMethod`/`callStaticMethod` 也产生 `Object[]` |
-| 字符串拼接/格式化 | 1 | `mContext.resources.getIdentifier` 字符串查找；点击时 `Toast` 格式化字符串 |
-| lambda / 匿名对象 | 1 | 每个 `createMenuViews` 创建一个 `View.OnClickListener` lambda |
+| 临时 List/Set/Map | 0 | 复用 `mMenuItems`，未新建集合；`for` 改为索引循环 |
+| 临时数组 | 3+ | 每个 `Constructor.newInstance` 产生 varargs 数组；必要的 `Method.invoke` 调用仍存在 |
+| 字符串拼接/格式化 | 1 | `getIdentifier("modal_menu_title")` 退居 fallback（`com.android.systemui.R$id` 存在时直接取静态 int）；点击时 Toast 格式化保留 |
+| lambda / 匿名对象 | 1 | 每个 `createMenuViews` 创建一个 `View.OnClickListener` lambda；捕获 `mContext`、`mMenuRow` 与缓存的反射元数据 |
 | Drawable / Intent / Bundle | 1 `Intent` 每次点击 | `ACTION_CLOSE_SYSTEM_DIALOGS` 在 appInfo / forceClose 分支各一次 |
 | View | 3 | 模块新增的 `MiuiNotificationMenuItem` 视图 |
 | 系统服务 / Binder | `ActivityManager` / `PackageManager` 在 forceClose 分支 | 按点击按需查询 |
-| 日志 | 3 | `infoBtn`/`forceCloseBtn`/`openFwBtn` 构造失败时 `XposedHelpers.log(t)`；`UserHandle.getUserId` 失败时记录 |
-| catch 后重复重试 | 0 | 失败即返回 null，不重复反射 |
+| 日志 | 0（正常路径） | 安装阶段失败或构造异常时仍记录；热路径正常无日志 |
+| catch 后重复重试 | 0 | 失败即返回，不重复反射 |
 
 ## 5. 功能门控
 
@@ -112,35 +105,24 @@ MiuiNotificationMenuRow.createMenuViews(boolean, boolean)
 - **affects_menu_click_behavior**：是
 - **can_skip_when_disabled**： installer 层已跳过；回调内无需再次判断。
 
-## 6. 已实施优化
+## 6. 已实施关键修复
 
 1. 在 `NotificationRowMenuHook` 安装阶段解析 `MiuiNotificationMenuRow` 的 `mContext` / `mMenuItems` / `mSbn` / `mParent` / `mMenuMargin` / `mMenuContainer` 为 `Field`。
 2. 缓存 `MiuiNotificationMenuItem` 构造器、`getMenuView` 方法、`modal_menu_title` 资源 id。
-3. 缓存 `StatusBarNotification#getPackageName`、`#getAppUid`，`UserHandle#getUserId`（静态），`ExpandableNotificationRow#getMiniWindowTargetPkg`、`#getPendingIntent`。
-4. 将 `Dependency`、`AppMiniWindowManager`、`ModalController` 类及方法解析移到安装阶段；点击时只使用 `Method.invoke`。
+3. 缓存 `StatusBarNotification#getPackageName`、`#getAppUid`，`UserHandle#getUserId`（静态），`ExpandableNotificationRow#getMiniWindowTargetPkg`、`#getPendingIntent`；缺失时使用运行时 fallback 反射。
+4. 将 `Dependency`、`AppMiniWindowManager`、`ModalController` 类及方法解析移到安装阶段；点击时只使用 `Method.invoke` 或 fallback。
 5. 移除 `XposedHelpers.setObjectField(thisObject, "mMenuItems", mMenuItems)` 冗余调用。
 6. 将 `for (obj in mMenuItems)` 改为索引循环，减少 `Iterator`。
-7. 保留 `Constructor.newInstance` 创建三个菜单项；保留 `View.OnClickListener` 创建；保留 `Intent` 创建（必要点击行为）；保留 `Toast` 格式化（点击分支）。
+7. 修复 `STALE_ROW_BINDING_RISK`：点击时重新读取 `mSbn` / `mParent`，确保使用用户点击时的最新 notification / parent binding。
+8. 修复 `CONTEXT_SEMANTICS_DRIFT`：所有分支统一使用安装阶段捕获的 `mContext`，不再混用 `view.context`。
+9. 修复可选字段 null-safety：`mSbn` / `mParent` / `mMenuMargin` 缺失时安全降级。
+10. 增加 `rethrowFatal` helper：`VirtualMachineError` 与 `ThreadDeath` 继续抛出，避免误吞致命异常。
+11. 保留运行时 subtype fallback：`mSbn` / `mParent` 声明类型为基类但运行时为子类时，回退到 `XposedHelpers.callMethod` 运行时反射。
+12. `UserHandle.getUserId` 不可用时，使用 `appUid / ANDROID_PER_USER_RANGE` 作为安全 fallback。
 
-## 7. 修改后成本清单
-
-| 类别 | 数量（createMenuViews after） | 说明 |
-|---|---|---|
-| `CALLBACK_TIME_REFLECTION` | 0 | 字段/方法查找全部移至安装阶段；回调使用 `Field.get` / `Method.invoke` / `Constructor.newInstance` |
-| `MainModule.mPrefs.get*` | 0 | 回调内无偏好读取，功能由 installer 门控 |
-| 复合偏好解析 | 0 | 无 split / set / map 解析 |
-| 临时 List/Set/Map | 0 | 复用 `mMenuItems`，未新建集合；`for` 改为索引循环 |
-| 临时数组 | 3+ | 每个 `Constructor.newInstance` 产生 varargs 数组；必要的 `Method.invoke` 静态/实例调用仍存在 |
-| 字符串拼接/格式化 | 1 | `getIdentifier("modal_menu_title")` 退居 fallback（`com.android.systemui.R$id` 存在时直接取静态 int）；点击时 Toast 格式化保留 |
-| lambda / 匿名对象 | 1 | 每个 `createMenuViews` 创建一个 `View.OnClickListener` lambda；捕获 `pkgName` / `user` / `miniWindowPkg` / `notifyIntent` 等稳定数据 |
-| Drawable / Intent / Bundle | 1 `Intent` 每次点击 | `ACTION_CLOSE_SYSTEM_DIALOGS` 在 appInfo / forceClose 分支各一次 |
-| View | 3 | 模块新增的 `MiuiNotificationMenuItem` 视图 |
-| 系统服务 / Binder | `ActivityManager` / `PackageManager` 在 forceClose 分支 | 按点击按需查询 |
-| 日志 | 0（正常路径） | 安装阶段失败或构造异常时仍记录；热路径正常无日志 |
-| catch 后重复重试 | 0 | 失败即返回，不重复反射 |
-
-## 8. 保留动态反射原因
+## 7. 保留动态反射原因
 
 - `MiuiNotificationMenuItem` 构造器和 `getMenuView` 方法在目标 ROM 上必须存在，属于稳定元数据，全部提前缓存。
-- 点击分支中 `notification.getPackageName()`、`getAppUid()` 等调用依赖具体 `StatusBarNotification` 实例，但这些是 Method.invoke 调用，不是反射查找。
-- 回调内唯一需要在运行时使用反射的原因是目标类/方法无法在安装阶段以跨 ROM 确定的形式获取；本路径中稳定的类/方法均可在安装阶段解析。
+- 点击分支中 `notification.getPackageName()`、`getAppUid()` 等调用依赖具体 `StatusBarNotification` 实例；方法已缓存，调用为 `Method.invoke`。
+- 回调内唯一需要在运行时使用反射 lookup 的原因是目标类/方法无法在安装阶段以跨 ROM 确定的形式获取；本路径中稳定的类/方法均可在安装阶段解析。
+- 为兼容 ROM 中将 `mSbn` / `mParent` 声明为基类、运行时为子类的情形，保留 `XposedHelpers.callMethod` 运行时 fallback。

@@ -30,6 +30,7 @@ import tv.withaibuild.customiuizer.mods.utils.ModuleHelper
 import tv.withaibuild.customiuizer.mods.utils.XposedHelpers
 import java.lang.reflect.Constructor
 import java.lang.reflect.InvocationHandler
+import java.lang.reflect.Method
 import java.lang.reflect.Proxy
 
 object SystemNotificationMoreHooks {
@@ -72,13 +73,13 @@ object SystemNotificationMoreHooks {
         val menuRowClass = try {
             XposedHelpers.findClass("com.android.systemui.statusbar.notification.row.MiuiNotificationMenuRow", classLoader)
         } catch (t: Throwable) {
-            if (t is OutOfMemoryError) throw t
+            rethrowFatal(t)
             null
         } ?: return
         val menuItemClass = try {
             XposedHelpers.findClass("com.android.systemui.statusbar.notification.row.MiuiNotificationMenuRow.MiuiNotificationMenuItem", classLoader)
         } catch (t: Throwable) {
-            if (t is OutOfMemoryError) throw t
+            rethrowFatal(t)
             null
         } ?: return
 
@@ -94,47 +95,51 @@ object SystemNotificationMoreHooks {
         val menuItemConstructor = try {
             XposedHelpers.findConstructorBestMatch(menuItemClass, menuRowClass, Context::class.java, Int::class.javaPrimitiveType, Drawable::class.java, Int::class.javaPrimitiveType)
         } catch (t: Throwable) {
-            if (t is OutOfMemoryError) throw t
+            rethrowFatal(t)
             null
         }
         val getMenuViewMethod = try {
             XposedHelpers.findMethodBestMatch(menuItemClass, "getMenuView")
         } catch (t: Throwable) {
-            if (t is OutOfMemoryError) throw t
+            rethrowFatal(t)
             null
         }
 
-        val sbnClass = mSbnField.type
-        val getPackageNameMethod = try {
-            XposedHelpers.findMethodBestMatch(sbnClass, "getPackageName")
-        } catch (t: Throwable) {
-            if (t is OutOfMemoryError) throw t
-            null
+        val sbnClass = mSbnField?.type
+        val getPackageNameMethod = sbnClass?.let {
+            try {
+                XposedHelpers.findMethodBestMatch(it, "getPackageName")
+            } catch (t: Throwable) {
+                rethrowFatal(t)
+                null
+            }
         }
-        val getAppUidMethod = try {
-            XposedHelpers.findMethodBestMatch(sbnClass, "getAppUid")
-        } catch (t: Throwable) {
-            if (t is OutOfMemoryError) throw t
-            null
+        val getAppUidMethod = sbnClass?.let {
+            try {
+                XposedHelpers.findMethodBestMatch(it, "getAppUid")
+            } catch (t: Throwable) {
+                rethrowFatal(t)
+                null
+            }
         }
 
         val getUserIdMethod = try {
             XposedHelpers.findMethodBestMatch(UserHandle::class.java, "getUserId", Int::class.javaPrimitiveType)
         } catch (t: Throwable) {
-            if (t is OutOfMemoryError) throw t
+            rethrowFatal(t)
             null
         }
 
         val parentClass = mParentField?.type
         val getMiniWindowTargetPkgMethod = parentClass?.let {
             try { XposedHelpers.findMethodBestMatch(it, "getMiniWindowTargetPkg") } catch (t: Throwable) {
-                if (t is OutOfMemoryError) throw t
+                rethrowFatal(t)
                 null
             }
         }
         val getPendingIntentMethod = parentClass?.let {
             try { XposedHelpers.findMethodBestMatch(it, "getPendingIntent") } catch (t: Throwable) {
-                if (t is OutOfMemoryError) throw t
+                rethrowFatal(t)
                 null
             }
         }
@@ -142,7 +147,7 @@ object SystemNotificationMoreHooks {
         val dependencyClass = XposedHelpers.findClassIfExists("com.android.systemui.Dependency", classLoader)
         val dependencyGetMethod = dependencyClass?.let {
             try { XposedHelpers.findMethodBestMatch(it, "get", Class::class.java) } catch (t: Throwable) {
-                if (t is OutOfMemoryError) throw t
+                rethrowFatal(t)
                 null
             }
         }
@@ -150,7 +155,7 @@ object SystemNotificationMoreHooks {
         val appMiniWindowManagerClass = XposedHelpers.findClassIfExists("com.android.systemui.statusbar.notification.policy.AppMiniWindowManager", classLoader)
         val launchMiniWindowActivityMethod = appMiniWindowManagerClass?.let {
             try { XposedHelpers.findMethodBestMatch(it, "launchMiniWindowActivity", String::class.java, PendingIntent::class.java) } catch (t: Throwable) {
-                if (t is OutOfMemoryError) throw t
+                rethrowFatal(t)
                 null
             }
         }
@@ -158,7 +163,7 @@ object SystemNotificationMoreHooks {
         val modalControllerClass = XposedHelpers.findClassIfExists("com.android.systemui.statusbar.notification.modal.ModalController", classLoader)
         val animExitModelCollapsePanelsMethod = modalControllerClass?.let {
             try { XposedHelpers.findMethodBestMatch(it, "animExitModelCollapsePanels") } catch (t: Throwable) {
-                if (t is OutOfMemoryError) throw t
+                rethrowFatal(t)
                 null
             }
         }
@@ -166,13 +171,13 @@ object SystemNotificationMoreHooks {
         val forceStopPackageMethod = try {
             XposedHelpers.findMethodBestMatch(ActivityManager::class.java, "forceStopPackage", String::class.java)
         } catch (t: Throwable) {
-            if (t is OutOfMemoryError) throw t
+            rethrowFatal(t)
             null
         }
         val forceStopPackageAsUserMethod = try {
             XposedHelpers.findMethodBestMatch(ActivityManager::class.java, "forceStopPackageAsUser", String::class.java, Int::class.javaPrimitiveType)
         } catch (t: Throwable) {
-            if (t is OutOfMemoryError) throw t
+            rethrowFatal(t)
             null
         }
 
@@ -180,7 +185,7 @@ object SystemNotificationMoreHooks {
             val rIdClass = XposedHelpers.findClass("com.android.systemui.R\$id", classLoader)
             XposedHelpers.getStaticIntField(rIdClass, "modal_menu_title")
         } catch (t: Throwable) {
-            if (t is OutOfMemoryError) throw t
+            rethrowFatal(t)
             0
         }
 
@@ -195,28 +200,25 @@ object SystemNotificationMoreHooks {
                 val infoBtn: Any? = try {
                     menuItemConstructor.newInstance(param.thisObject, mContext, appInfoDescId, null, appInfoIconResId)
                 } catch (t: Throwable) {
-                    if (t is OutOfMemoryError) throw t
+                    rethrowFatal(t)
                     XposedHelpers.log(t)
                     null
                 }
                 val forceCloseBtn: Any? = try {
                     menuItemConstructor.newInstance(param.thisObject, mContext, forceCloseDescId, null, forceCloseIconResId)
                 } catch (t: Throwable) {
-                    if (t is OutOfMemoryError) throw t
+                    rethrowFatal(t)
                     XposedHelpers.log(t)
                     null
                 }
                 val openFwBtn: Any? = try {
                     menuItemConstructor.newInstance(param.thisObject, mContext, openInFwDescId, null, openInFwIconResId)
                 } catch (t: Throwable) {
-                    if (t is OutOfMemoryError) throw t
+                    rethrowFatal(t)
                     XposedHelpers.log(t)
                     null
                 }
                 if (infoBtn == null || forceCloseBtn == null || openFwBtn == null) return
-
-                val notification = mSbnField?.get(param.thisObject)
-                val expandNotifyRow = mParentField?.get(param.thisObject)
 
                 mMenuItems.add(infoBtn)
                 mMenuItems.add(forceCloseBtn)
@@ -229,48 +231,55 @@ object SystemNotificationMoreHooks {
                 val mForceCloseBtn = getMenuViewMethod.invoke(forceCloseBtn) as? View ?: return
                 val mOpenFwBtn = getMenuViewMethod.invoke(openFwBtn) as? View ?: return
 
-                val pkgName = notification?.let { getPackageNameMethod?.invoke(it) as? String }
-                val appUid = notification?.let { (getAppUidMethod?.invoke(it) as? Int) ?: 0 } ?: 0
-                var user = 0
-                try {
-                    user = (getUserIdMethod?.invoke(null, appUid) as? Int) ?: 0
-                } catch (t: Throwable) {
-                    if (t is OutOfMemoryError) throw t
-                    XposedHelpers.log(t)
-                }
-
-                val miniWindowPkg = expandNotifyRow?.let { getMiniWindowTargetPkgMethod?.invoke(it) }
-                val notifyIntent = expandNotifyRow?.let { getPendingIntentMethod?.invoke(it) as? PendingIntent }
+                val menuRow = param.thisObject
 
                 val itemClick = View.OnClickListener { view ->
                     if (view == null) return@OnClickListener
-                    if (pkgName == null) return@OnClickListener
+
+                    val currentNotification = mSbnField?.get(menuRow)
+                    val pkgName = resolveString(currentNotification, getPackageNameMethod, "getPackageName")
+                    val appUid = resolveInt(currentNotification, getAppUidMethod, "getAppUid") ?: 0
+                    val user = resolveUser(appUid, getUserIdMethod)
 
                     when (view) {
                         mInfoBtn -> {
-                            ModuleHelper.openAppInfo(view.context, pkgName, user)
-                            view.context.sendBroadcast(Intent(Intent.ACTION_CLOSE_SYSTEM_DIALOGS))
+                            if (pkgName == null) return@OnClickListener
+                            ModuleHelper.openAppInfo(mContext, pkgName, user)
+                            mContext.sendBroadcast(Intent(Intent.ACTION_CLOSE_SYSTEM_DIALOGS))
                         }
                         mForceCloseBtn -> {
-                            val am = view.context.getSystemService(Context.ACTIVITY_SERVICE) as? ActivityManager ?: return@OnClickListener
+                            if (pkgName == null) return@OnClickListener
+                            val am = mContext.getSystemService(Context.ACTIVITY_SERVICE) as? ActivityManager ?: return@OnClickListener
                             if (user != 0)
-                                forceStopPackageAsUserMethod?.invoke(am, pkgName, user)
+                                callMethodCompat(am, forceStopPackageAsUserMethod, "forceStopPackageAsUser", pkgName, user)
                             else
-                                forceStopPackageMethod?.invoke(am, pkgName)
+                                callMethodCompat(am, forceStopPackageMethod, "forceStopPackage", pkgName)
                             try {
-                                val appName = view.context.packageManager.getApplicationLabel(view.context.packageManager.getApplicationInfo(pkgName, 0))
-                                Toast.makeText(view.context, ModuleHelper.getModuleRes(view.context).getString(R.string.force_closed, appName), Toast.LENGTH_SHORT).show()
+                                val appName = mContext.packageManager.getApplicationLabel(mContext.packageManager.getApplicationInfo(pkgName, 0))
+                                Toast.makeText(mContext, ModuleHelper.getModuleRes(mContext).getString(R.string.force_closed, appName), Toast.LENGTH_SHORT).show()
                             } catch (t: Throwable) {
-                                if (t is OutOfMemoryError) throw t
+                                rethrowFatal(t)
                             }
                         }
                         mOpenFwBtn -> {
-                            if (dependencyGetMethod != null && appMiniWindowManagerClass != null && modalControllerClass != null && miniWindowPkg != null) {
-                                val appMiniWindowManager = dependencyGetMethod.invoke(null, appMiniWindowManagerClass)
-                                val modalController = dependencyGetMethod.invoke(null, modalControllerClass)
-                                animExitModelCollapsePanelsMethod?.invoke(modalController)
-                                launchMiniWindowActivityMethod?.invoke(appMiniWindowManager, miniWindowPkg, notifyIntent)
-                            }
+                            val currentParent = mParentField?.get(menuRow)
+                            val miniWindowPkg = resolveString(currentParent, getMiniWindowTargetPkgMethod, "getMiniWindowTargetPkg")
+                            val notifyIntent = callMethodCompat(currentParent, getPendingIntentMethod, "getPendingIntent") as? PendingIntent
+                            if (miniWindowPkg == null) return@OnClickListener
+                            val appMiniWindowManager = try {
+                                dependencyGetMethod?.invoke(null, appMiniWindowManagerClass)
+                            } catch (t: Throwable) {
+                                rethrowFatal(t)
+                                null
+                            } ?: return@OnClickListener
+                            val modalController = try {
+                                dependencyGetMethod?.invoke(null, modalControllerClass)
+                            } catch (t: Throwable) {
+                                rethrowFatal(t)
+                                null
+                            } ?: return@OnClickListener
+                            callMethodCompat(modalController, animExitModelCollapsePanelsMethod, "animExitModelCollapsePanels")
+                            callMethodCompat(appMiniWindowManager, launchMiniWindowActivityMethod, "launchMiniWindowActivity", miniWindowPkg, notifyIntent)
                         }
                     }
                 }
@@ -303,6 +312,62 @@ object SystemNotificationMoreHooks {
                 }
             }
         })
+    }
+
+    private const val ANDROID_PER_USER_RANGE = 100000
+
+    private fun rethrowFatal(t: Throwable) {
+        var current: Throwable? = t
+        for (depth in 0 until 8) {
+            if (current == null) return
+            if (current is VirtualMachineError) throw current
+            if (current is ThreadDeath) throw current
+            val next = current.cause
+            if (next == null || next === current) return
+            current = next
+        }
+    }
+
+    private fun callMethodCompat(obj: Any?, method: Method?, name: String, vararg args: Any?): Any? {
+        if (obj == null) return null
+        if (method != null) {
+            return try {
+                method.invoke(obj, *args)
+            } catch (t: Throwable) {
+                rethrowFatal(t)
+                XposedHelpers.log(t)
+                null
+            }
+        }
+        return try {
+            if (args.isEmpty()) XposedHelpers.callMethod(obj, name) else XposedHelpers.callMethod(obj, name, *args)
+        } catch (t: Throwable) {
+            rethrowFatal(t)
+            XposedHelpers.log(t)
+            null
+        }
+    }
+
+    private fun resolveString(obj: Any?, method: Method?, name: String): String? {
+        return callMethodCompat(obj, method, name) as? String
+    }
+
+    private fun resolveInt(obj: Any?, method: Method?, name: String): Int? {
+        return callMethodCompat(obj, method, name) as? Int
+    }
+
+    private fun resolveUser(appUid: Int, getUserIdMethod: Method?): Int {
+        if (appUid == 0) return 0
+        if (getUserIdMethod != null) {
+            return try {
+                (getUserIdMethod.invoke(null, appUid) as? Int) ?: 0
+            } catch (t: Throwable) {
+                rethrowFatal(t)
+                XposedHelpers.log(t)
+                0
+            }
+        }
+        return appUid / ANDROID_PER_USER_RANGE
     }
 
     private fun checkVibration(pkgName: String, thisObject: Any): Boolean {
