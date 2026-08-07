@@ -19,6 +19,11 @@ public class SystemUIApplication extends Application {
         return contentResolver;
     }
 
+    @Override
+    public SystemUIApplication getApplicationContext() {
+        return this;
+    }
+
     public void onCreate() {
         // no-op for tests
     }

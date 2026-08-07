@@ -35,7 +35,7 @@ public class SparseArray<E> implements Cloneable {
     @SuppressWarnings("unchecked")
     public E get(int key, E valueIfKeyNotFound) {
         int i = binarySearch(key);
-        if (i < 0 || mValues[i] == null) {
+        if (i < 0) {
             return valueIfKeyNotFound;
         }
         return (E) mValues[i];
