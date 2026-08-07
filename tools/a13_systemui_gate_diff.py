@@ -8,6 +8,9 @@ canonical structural diff with provenance rather than a simple key-set diff.
 
 import argparse
 import copy
+import importlib
+import shutil
+import tempfile
 import json
 import os
 import re
@@ -18,10 +21,6 @@ from pathlib import Path
 from typing import Any
 
 REPO_ROOT = Path(__file__).resolve().parent.parent
-INVENTORY_PATH = REPO_ROOT / "docs/audit/A13_SYSTEMUI_GATE_INVENTORY.json"
-DIFF_JSON = REPO_ROOT / "docs/audit/A13_SYSTEMUI_GATE_DIFF.json"
-DIFF_MD = REPO_ROOT / "docs/audit/A13_SYSTEMUI_GATE_DIFF.md"
-SYSTEMUI_INSTALLER_PATH = REPO_ROOT / "app/src/main/java/tv/withaibuild/customiuizer/installers/SystemUiInstaller.java"
 
 SCHEMA_VERSION = "1.0"
 
@@ -810,6 +809,12 @@ def classify_mismatch(a: Node, b: Node) -> str:
     if isinstance(a, COMPARE) and isinstance(b, COMPARE):
         if a.op != b.op:
             return "COMPARATOR_MISMATCH"
+        if isinstance(a.left, PREF_ACCESS) and isinstance(b.left, PREF_ACCESS):
+            if a.left.method == b.left.method and a.left.key == b.left.key:
+                if a.left.default != b.left.default:
+                    return "DEFAULT_MISMATCH"
+                if a.right != b.right:
+                    return "COMPARATOR_MISMATCH"
         if a.left == b.left:
             if a.right != b.right:
                 return "COMPARATOR_MISMATCH"
@@ -823,8 +828,6 @@ def classify_mismatch(a: Node, b: Node) -> str:
     if type(a) != type(b):
         return "COMPOSITE_CONDITION_MISMATCH"
     return "COMPOSITE_CONDITION_MISMATCH"
-
-
 def explanation_for(mismatch: str, a: Node, b: Node) -> str:
     if mismatch == "DEFAULT_MISMATCH":
         return f"same preference key but effective default differs: {to_expr(a)} vs {to_expr(b)}"
@@ -838,6 +841,67 @@ def explanation_for(mismatch: str, a: Node, b: Node) -> str:
 # ---------------------------------------------------------------------------
 # Global action domain detection
 # ---------------------------------------------------------------------------
+
+
+
+def _strip_comments(text: str) -> str:
+    """Remove // and /* */ comments from a Java/Kotlin snippet."""
+    text = re.sub(r"//.*", "", text)
+    text = re.sub(r"/\*.*?\*/", "", text, flags=re.S)
+    return text
+
+
+def _replace_in_method(text: str, method_name: str, old: str, new: str) -> str:
+    """Replace `old` with `new` only inside the first method definition named `method_name`."""
+    pattern = re.compile(
+        r"\b(?:public|private|protected)?\s*(?:static\s+)?(?:[\w\[\]<>]+\s+)?(?:fun\s+)?"
+        + re.escape(method_name)
+        + r"\s*\([^)]*\)\s*\{",
+        re.S,
+    )
+    m = pattern.search(text)
+    if not m:
+        return text
+    start = m.end() - 1
+    depth = 0
+    end = start
+    for i in range(start, len(text)):
+        if text[i] == "{":
+            depth += 1
+        elif text[i] == "}":
+            depth -= 1
+            if depth == 0:
+                end = i
+                break
+    body = text[start + 1 : end]
+    new_body = body.replace(old, new)
+    return text[: start + 1] + new_body + text[end:]
+
+
+def _replace_method_body(text: str, method_name: str, new_body: str) -> str:
+    """Replace the whole body of the first method definition named `method_name`."""
+    pattern = re.compile(
+        r"\b(?:public|private|protected)?\s*(?:static\s+)?(?:[\w\[\]<>]+\s+)?(?:fun\s+)?"
+        + re.escape(method_name)
+        + r"\s*\([^)]*\)\s*\{",
+        re.S,
+    )
+    m = pattern.search(text)
+    if not m:
+        return text
+    start = m.end() - 1
+    depth = 0
+    end = start
+    for i in range(start, len(text)):
+        if text[i] == "{":
+            depth += 1
+        elif text[i] == "}":
+            depth -= 1
+            if depth == 0:
+                end = i
+                break
+    signature = text[m.start() : start + 1]
+    return text[: m.start()] + signature + "\n" + new_body.rstrip("\n") + "\n    }" + text[end + 1 :]
 
 
 def _extract_method_return(text: str, method_name: str) -> str | None:
@@ -896,17 +960,15 @@ def _extract_installer_local_vars(text: str) -> dict[str, str]:
     return vars
 
 
-def _extract_resource_units(file_path: str | None) -> list[tuple[Node, dict[str, Any]]]:
-    """Extract resource hook conditions from SystemUIStatusBarHooks.setupStatusBar.
+def _extract_resource_units(resource_text: str | None, source_file: str = "") -> list[tuple[Node, dict[str, Any]]]:
+    """Extract resource hook conditions from SystemUIStatusBarHooks.setupStatusBar text.
 
     These are not in the install() method but run as part of SystemUI startup,
     so they are treated as additional installer conditions for coverage.
     """
-    if file_path is None or not os.path.exists(file_path):
+    if not resource_text:
         return []
-    with open(file_path, encoding="utf-8") as f:
-        text = f.read()
-    body = _extract_method_body(text, "setupStatusBar")
+    body = _extract_method_body(resource_text, "setupStatusBar")
     if not body:
         return []
 
@@ -958,7 +1020,7 @@ def _extract_resource_units(file_path: str | None) -> list[tuple[Node, dict[str,
         for u in atomic_units(ast):
             pseudo_entry = {
                 "id": f"setupStatusBar_if_{cond_id}",
-                "source_file": file_path,
+                "source_file": source_file,
                 "source_method": "setupStatusBar",
                 "start_line": 0,
                 "end_line": 0,
@@ -972,22 +1034,45 @@ def _extract_resource_units(file_path: str | None) -> list[tuple[Node, dict[str,
 
 
 def _parse_global_action_domain(method_body: str | None) -> dict[str, Any]:
-    """Heuristic parse of isSystemUiGlobalActionKey to detect contamination."""
-    if method_body is None:
-        return {"contaminated": False, "reason": "method not found"}
-    # Look for required positive predicates.
-    has_endswith_action = 'endsWith("_action")' in method_body or "endsWith(\"_action\")" in method_body
-    has_controls_prefix = 'startsWith("controls_")' in method_body or 'startsWith(\"controls_\")' in method_body
-    has_system_prefix = 'startsWith("system_")' in method_body or 'startsWith(\"system_\")' in method_body
-    # If it requires both the _action suffix and a controls_/system_ prefix, it is safe.
-    if has_endswith_action and (has_controls_prefix and has_system_prefix):
-        return {"contaminated": False, "reason": "positive domain requires _action and (controls_|system_)"}
-    # If it only checks _action or is unconditional, it is contaminated.
-    if has_endswith_action:
-        return {"contaminated": True, "reason": "domain only checks _action suffix, missing controls_/system_ prefix filter"}
-    return {"contaminated": False, "reason": "unrecognized domain predicate"}
+    """Heuristic parse of isSystemUiGlobalActionKey.
 
+    Fail-closed: only PARSED_SAFE when the method clearly requires both the
+    _action suffix and a controls_/system_ prefix.  If the method only checks
+    the _action suffix it is PARSED_CONTAMINATED.  Any other structure (missing
+    method, missing predicate, or parser-unrecognized form) is UNKNOWN.
+    """
+    if method_body is None or not method_body.strip():
+        return {
+            "status": "UNKNOWN",
+            "contaminated": False,
+            "reason": "method body missing or empty",
+        }
+    body = _strip_comments(method_body)
+    has_action = '.endsWith("_action")' in body or '.endsWith(\'_action\')' in body
+    has_controls = '.startsWith("controls_")' in body
+    has_system = '.startsWith("system_")' in body
 
+    if not has_action:
+        return {
+            "status": "UNKNOWN",
+            "contaminated": False,
+            "reason": "no recognizable endsWith(\"_action\") predicate",
+        }
+
+    # Positive domain: requires _action and both recognized SystemUI prefixes.
+    if has_controls and has_system:
+        return {
+            "status": "PARSED_SAFE",
+            "contaminated": False,
+            "reason": "positive domain requires _action suffix and (controls_|system_) prefix",
+        }
+
+    # Contaminated: it checks _action but lacks the full prefix filter.
+    return {
+        "status": "PARSED_CONTAMINATED",
+        "contaminated": True,
+        "reason": "domain only checks _action suffix, missing controls_/system_ prefix filter",
+    }
 def is_global_action_key(key: str, domain: dict[str, Any]) -> bool:
     if not key or not key.endswith("_action"):
         return False
@@ -1061,6 +1146,12 @@ class DiffResult:
     conditional_dispatchers: int = 0
     unconditional_dispatchers: int = 0
     catalog_systemui_entries: int = 0
+    matched_atomic_units: int = 0
+    matched_unique_installer_conditions: int = 0
+    matched_unique_startup_conditions: int = 0
+    matched_unique_feature_ids: int = 0
+    total_installer_atomic_units: int = 0
+    total_startup_atomic_units: int = 0
     records: list[DiffRecord] = field(default_factory=list)
     categories: dict[str, list[DiffRecord]] = field(default_factory=dict)
     counts: dict[str, int] = field(default_factory=dict)
@@ -1106,10 +1197,14 @@ class DiffResult:
                 "conditional_dispatchers": self.conditional_dispatchers,
                 "unconditional_dispatchers": self.unconditional_dispatchers,
                 "catalog_systemui_entries": self.catalog_systemui_entries,
+                "matched_atomic_units": self.matched_atomic_units,
+                "matched_unique_installer_conditions": self.matched_unique_installer_conditions,
+                "matched_unique_startup_conditions": self.matched_unique_startup_conditions,
+                "matched_unique_feature_ids": self.matched_unique_feature_ids,
+                "total_installer_atomic_units": self.total_installer_atomic_units,
+                "total_startup_atomic_units": self.total_startup_atomic_units,
             },
         }
-
-
 def _condition_from_entry(entry: dict[str, Any], local_vars: dict[str, str] | None = None) -> Node:
     expr = entry.get("normalized_expression", "")
     if entry.get("phase") == "FEATURE_CATALOG_GATE":
@@ -1224,12 +1319,16 @@ def _is_dynamic_action_condition(node: Node, domain: dict[str, Any]) -> bool:
 def _audit(
     inventory: dict[str, Any],
     installer_text: str,
+    resource_text: str | None = None,
+    resource_source_file: str = "",
 ) -> DiffResult:
     result = DiffResult()
     result.provenance = {
         "inventory": "docs/audit/A13_SYSTEMUI_GATE_INVENTORY.json",
         "installer_source": "app/src/main/java/tv/withaibuild/customiuizer/installers/SystemUiInstaller.java",
     }
+    if resource_source_file:
+        result.provenance["resource_source"] = resource_source_file
 
     install_conditions = inventory.get("INSTALL_CONDITIONS", [])
     startup_conditions = inventory.get("STARTUP_GATE_CONDITIONS", [])
@@ -1245,6 +1344,7 @@ def _audit(
     installer_local_vars = _extract_installer_local_vars(installer_text)
     global_action_body = _extract_method_return(installer_text, "isSystemUiGlobalActionKey")
     result.global_action_domain = _parse_global_action_domain(global_action_body)
+    ga_status = result.global_action_domain.get("status", "UNKNOWN")
 
     startup_keys: set[str] = set()
     for e in startup_conditions:
@@ -1254,18 +1354,13 @@ def _audit(
         catalog_keys.update(e.get("declared_preference_keys", []))
         catalog_keys.update(e.get("condition_preference_keys", []))
 
-    # Build startup units.
     startup_units = _collect_startup_units(startup_conditions, local_vars=installer_local_vars)
     startup_used: set[int] = set()
-
-    # Build a map of startup condition id to entry.
     startup_by_id = {e.get("id", ""): e for e in startup_conditions}
 
-    # First handle the dynamic global action gate.
     global_action_startup = [e for e in startup_conditions if "hasAnyGlobalAction" in e.get("normalized_expression", "")]
     for ga in global_action_startup:
-        ast = _condition_from_entry(ga)
-        if result.global_action_domain.get("contaminated"):
+        if ga_status == "PARSED_CONTAMINATED":
             result.add(
                 _make_record(
                     None,
@@ -1275,6 +1370,19 @@ def _audit(
                     "DOMAIN_CONTAMINATION",
                     "BLOCKER",
                     "Global action domain is contaminated (accepts non-SystemUI _action keys): "
+                    + result.global_action_domain.get("reason", ""),
+                )
+            )
+        elif ga_status == "UNKNOWN":
+            result.add(
+                _make_record(
+                    None,
+                    ga,
+                    None,
+                    "",
+                    "SEMANTIC_REVIEW_REQUIRED",
+                    "BLOCKER",
+                    "Global action domain parser could not recognize the method body: "
                     + result.global_action_domain.get("reason", ""),
                 )
             )
@@ -1291,21 +1399,28 @@ def _audit(
                 )
             )
 
-    # Match installer units against startup units.
     installer_units = _collect_installer_units(install_conditions, local_vars=installer_local_vars)
     install_used: set[int] = set()
-
-    resource_path = str(
-        REPO_ROOT
-        / "app/src/main/java/tv/withaibuild/customiuizer/mods/SystemUIStatusBarHooks.kt"
-    )
-    resource_units = _extract_resource_units(resource_path)
+    resource_units = _extract_resource_units(resource_text, source_file=resource_source_file)
     resource_used: set[int] = set()
 
     for iu, install_entry in installer_units:
-        # Determine if this unit belongs to the dynamic action domain.
+        action_keys = [k for k in preference_keys(iu) if k.endswith("_action")]
+        if ga_status == "UNKNOWN" and action_keys:
+            result.add(
+                _make_record(
+                    install_entry,
+                    None,
+                    None,
+                    install_entry.get("feature_id", ""),
+                    "SEMANTIC_REVIEW_REQUIRED",
+                    "BLOCKER",
+                    f"Dynamic action key(s) {action_keys} require semantic review because the global action domain parser is in an unrecognized state.",
+                )
+            )
+            install_used.add(id(install_entry))
+            continue
         if _is_dynamic_action_condition(iu, result.global_action_domain):
-            # Covered by the dynamic global action gate if the key is valid.
             all_valid = all(
                 is_global_action_key(k, result.global_action_domain) or is_systemui_key(k, startup_keys, catalog_keys)
                 for k in preference_keys(iu)
@@ -1322,19 +1437,18 @@ def _audit(
                         f"Installer uses non-SystemUI action key(s): {preference_keys(iu)}",
                     )
                 )
-                continue
-            # Otherwise it is covered by the dynamic gate.
-            result.add(
-                _make_record(
-                    install_entry,
-                    None,
-                    None,
-                    install_entry.get("feature_id", ""),
-                    "MATCH",
-                    "OK",
-                    "Covered by the dynamic global action gate.",
+            else:
+                result.add(
+                    _make_record(
+                        install_entry,
+                        None,
+                        None,
+                        install_entry.get("feature_id", ""),
+                        "MATCH",
+                        "OK",
+                        "Covered by the dynamic global action gate.",
+                    )
                 )
-            )
             install_used.add(id(install_entry))
             continue
 
@@ -1361,7 +1475,6 @@ def _audit(
             _, _, startup_entry = candidate
             mtype = classify_mismatch(iu, _condition_from_entry(startup_entry))
             if mtype == "MATCH":
-                # Could happen if candidate matched but not canonical (unlikely)
                 mtype = "COMPOSITE_CONDITION_MISMATCH"
             result.add(
                 _make_record(
@@ -1377,8 +1490,6 @@ def _audit(
             install_used.add(id(install_entry))
             continue
 
-        # No candidate at all.
-        # Check domain contamination for non-action keys.
         for k in preference_keys(iu):
             if not is_systemui_key(k, startup_keys, catalog_keys):
                 result.add(
@@ -1407,10 +1518,7 @@ def _audit(
             )
         install_used.add(id(install_entry))
 
-    # FeatureCatalog / dispatcher audit.
     catalog_by_feature = {e.get("feature_id", ""): e for e in catalog_entries}
-    # Conditional dispatchers were already covered by install conditions with feature_id.
-    # Unconditional dispatchers need Catalog condition vs startup coverage.
     for dispatch in dispatch_calls:
         feature_id = dispatch.get("feature_id", "")
         catalog = catalog_by_feature.get(feature_id)
@@ -1474,7 +1582,6 @@ def _audit(
                         )
                     )
 
-    # Conditional dispatcher install conditions vs Catalog.
     for install_entry in install_conditions:
         feature_id = install_entry.get("feature_id", "")
         if not feature_id:
@@ -1497,7 +1604,6 @@ def _audit(
         catalog_ast = _condition_from_entry(catalog)
         if canonical(install_ast) == canonical(catalog_ast):
             continue
-        # If not equal, report installer/catalog mismatch.
         mtype = classify_mismatch(install_ast, catalog_ast)
         result.add(
             _make_record(
@@ -1505,13 +1611,12 @@ def _audit(
                 None,
                 catalog,
                 feature_id,
-                f"INSTALLER_CATALOG_MISMATCH",
+                "INSTALLER_CATALOG_MISMATCH",
                 "BLOCKER",
                 explanation_for(mtype, install_ast, catalog_ast),
             )
         )
 
-    # Resource hooks (setupStatusBar) provide additional coverage for startup gates.
     for i, (su, startup_entry) in enumerate(startup_units):
         if i in startup_used:
             continue
@@ -1532,15 +1637,25 @@ def _audit(
                 )
             )
 
-    # Remaining startup units are GATE_ONLY.
     for i, (su, startup_entry) in enumerate(startup_units):
         if i in startup_used:
             continue
-        # OPAQUE conditions like hasAnyGlobalAction already handled.
         if "hasAnyGlobalAction" in startup_entry.get("normalized_expression", ""):
             continue
         keys = preference_keys(su)
-        if _is_dynamic_action_condition(su, result.global_action_domain):
+        if ga_status == "UNKNOWN" and any(k.endswith("_action") for k in keys):
+            result.add(
+                _make_record(
+                    None,
+                    startup_entry,
+                    None,
+                    "",
+                    "SEMANTIC_REVIEW_REQUIRED",
+                    "BLOCKER",
+                    f"Startup action gate for {keys} cannot be verified because the global action domain parser is in an unrecognized state.",
+                )
+            )
+        elif _is_dynamic_action_condition(su, result.global_action_domain):
             result.add(
                 _make_record(
                     None,
@@ -1577,7 +1692,6 @@ def _audit(
                 )
             )
 
-    # Infrastructure exclusions.
     for install_entry in install_conditions:
         if install_entry.get("phase") in ("PACKAGE_GUARD", "PRE_RESTART_GUARD_INFRASTRUCTURE", "RESTART_GUARD"):
             result.add(
@@ -1592,12 +1706,48 @@ def _audit(
                 )
             )
 
+    result.total_installer_atomic_units = len(installer_units)
+    result.total_startup_atomic_units = len(startup_units)
+    match_records = [r for r in result.records if r.mismatch_type == "MATCH"]
+    result.matched_atomic_units = len(match_records)
+    result.matched_unique_installer_conditions = len({r.installer_condition_id for r in match_records if r.installer_condition_id})
+    result.matched_unique_startup_conditions = len({r.startup_condition_id for r in match_records if r.startup_condition_id})
+    result.matched_unique_feature_ids = len({r.feature_id for r in match_records if r.feature_id})
+
     result.finalize()
     return result
+def diff_from_inventory(
+    inventory: dict[str, Any],
+    installer_text: str,
+    resource_text: str | None = None,
+    resource_source_file: str = "",
+) -> DiffResult:
+    return _audit(inventory, installer_text, resource_text, resource_source_file)
 
 
-def diff_from_inventory(inventory: dict[str, Any], installer_text: str) -> DiffResult:
-    return _audit(inventory, installer_text)
+def diff_from_repo(repo_root: Path) -> DiffResult:
+    """Read real repo sources and run the differential audit."""
+    inventory_path = repo_root / "docs/audit/A13_SYSTEMUI_GATE_INVENTORY.json"
+    installer_path = repo_root / "app/src/main/java/tv/withaibuild/customiuizer/installers/SystemUiInstaller.java"
+    resource_path = repo_root / "app/src/main/java/tv/withaibuild/customiuizer/mods/SystemUIStatusBarHooks.kt"
+
+    inventory = json.loads(inventory_path.read_text(encoding="utf-8"))
+    installer_text = installer_path.read_text(encoding="utf-8")
+    resource_text = resource_path.read_text(encoding="utf-8") if resource_path.exists() else None
+    resource_source_file = (
+        resource_path.relative_to(repo_root).as_posix()
+        if resource_path.exists()
+        else ""
+    )
+    result = diff_from_inventory(inventory, installer_text, resource_text, resource_source_file)
+    result.provenance = {
+        "inventory": inventory_path.relative_to(repo_root).as_posix(),
+        "installer_source": installer_path.relative_to(repo_root).as_posix(),
+        "resource_source": resource_source_file,
+        "repo_root": str(repo_root.resolve()),
+    }
+    return result
+
 
 
 # ---------------------------------------------------------------------------
@@ -1649,14 +1799,10 @@ def render_markdown(result: DiffResult) -> str:
 
 
 def write_diff(repo_root: Path, verify: bool = False) -> tuple[Path, Path, str, str]:
-    inventory_path = repo_root / "docs/audit/A13_SYSTEMUI_GATE_INVENTORY.json"
-    installer_path = repo_root / "app/src/main/java/tv/withaibuild/customiuizer/installers/SystemUiInstaller.java"
     json_path = repo_root / "docs/audit/A13_SYSTEMUI_GATE_DIFF.json"
     md_path = repo_root / "docs/audit/A13_SYSTEMUI_GATE_DIFF.md"
 
-    inventory = json.loads(inventory_path.read_text(encoding="utf-8"))
-    installer_text = installer_path.read_text(encoding="utf-8")
-    result = diff_from_inventory(inventory, installer_text)
+    result = diff_from_repo(repo_root)
 
     json_data = result.to_dict()
     json_text = json.dumps(json_data, indent=2, sort_keys=True, ensure_ascii=False)
@@ -1764,12 +1910,14 @@ _MUTATIONS: list[tuple[str, Callable[[dict[str, Any]], None], dict[str, int]]] =
 def run_mutations(repo_root: Path) -> int:
     inventory_path = repo_root / "docs/audit/A13_SYSTEMUI_GATE_INVENTORY.json"
     installer_path = repo_root / "app/src/main/java/tv/withaibuild/customiuizer/installers/SystemUiInstaller.java"
+    resource_path = repo_root / "app/src/main/java/tv/withaibuild/customiuizer/mods/SystemUIStatusBarHooks.kt"
 
     inventory = json.loads(inventory_path.read_text(encoding="utf-8"))
     installer_text = installer_path.read_text(encoding="utf-8")
+    resource_source = str(resource_path.relative_to(repo_root))
+    resource_text = resource_path.read_text(encoding="utf-8") if resource_path.exists() else None
 
-    base_result = diff_from_inventory(inventory, installer_text)
-    baseline = base_result.counts
+    baseline = diff_from_inventory(inventory, installer_text, resource_text=resource_text, resource_source_file=resource_source).counts
     print(f"Baseline: INSTALLER_ONLY={baseline['INSTALLER_ONLY']}, "
           f"GATE_ONLY_UNEXPLAINED={baseline['GATE_ONLY_UNEXPLAINED']}, "
           f"DOMAIN_CONTAMINATION={baseline['DOMAIN_CONTAMINATION']}, "
@@ -1782,14 +1930,253 @@ def run_mutations(repo_root: Path) -> int:
     for name, mutate, expected in _MUTATIONS:
         mutant = copy.deepcopy(inventory)
         mutate(mutant)
-        counts = diff_from_inventory(mutant, installer_text).counts
+        counts = diff_from_inventory(mutant, installer_text, resource_text=resource_text, resource_source_file=resource_source).counts
         ok = True
         details = []
         for key, delta in expected.items():
             actual = counts.get(key, 0)
-            if actual < delta:
+            if actual <= baseline.get(key, 0):
                 ok = False
-                details.append(f"{key} expected >= {delta}, got {actual}")
+                details.append(f"{key} expected > {baseline.get(key, 0)}, got {actual}")
+        if ok:
+            print(f"PASS {name}")
+        else:
+            print(f"FAIL {name}: {', '.join(details)}")
+            all_ok = False
+
+    return 0 if all_ok else 1
+
+
+def _load_inventory_tool():
+    """Load the inventory generator from the sibling tools directory."""
+    tools_dir = Path(__file__).resolve().parent
+    if str(tools_dir) not in sys.path:
+        sys.path.insert(0, str(tools_dir))
+    return importlib.import_module("a13_systemui_gate_inventory")
+
+
+# ---------------------------------------------------------------------------
+# End-to-end source mutation harness.
+#
+# Each mutation copies the minimum source files to a temporary repo, mutates
+# one source file, regenerates the inventory, and runs the diff audit.  This
+# proves the full source -> inventory -> diff chain and the fail-closed global
+# action parser.
+# ---------------------------------------------------------------------------
+
+
+def _copy_source_skeleton(repo_root: Path, temp_root: Path) -> None:
+    """Copy just enough source for the inventory/diff tools to run."""
+    rels = [
+        Path("app/src/main/java/tv/withaibuild/customiuizer/installers/SystemUiInstaller.java"),
+        Path("app/src/main/java/tv/withaibuild/customiuizer/mods/catalog/FeatureCatalog.kt"),
+        Path("app/src/main/java/tv/withaibuild/customiuizer/mods/SystemUIStatusBarHooks.kt"),
+        Path("app/src/main/java/tv/withaibuild/customiuizer/installers/AndroidPackageInstaller.java"),
+        Path("app/src/main/java/tv/withaibuild/customiuizer/installers/LauncherInstaller.java"),
+    ]
+    for rel in rels:
+        src = repo_root / rel
+        if not src.exists():
+            continue
+        dst = temp_root / rel
+        dst.parent.mkdir(parents=True, exist_ok=True)
+        shutil.copy2(src, dst)
+
+
+def _remove_feature_spec(catalog_text: str, spec_id: str) -> str:
+    """Remove the first FeatureSpec block containing id = <spec_id>."""
+    marker = f'id = "{spec_id}"'
+    pos = catalog_text.find(marker)
+    if pos == -1:
+        return catalog_text
+    # Find the opening "FeatureSpec(" that starts this block.
+    open_pos = catalog_text.rfind("FeatureSpec(", 0, pos)
+    if open_pos == -1:
+        return catalog_text
+    close_pos = _find_balanced(catalog_text, open_pos + len("FeatureSpec(") - 1)
+    if close_pos == -1:
+        return catalog_text
+    # Consume the following comma, if present.
+    end = close_pos + 1
+    while end < len(catalog_text) and catalog_text[end] in " \t\r\n":
+        end += 1
+    if end < len(catalog_text) and catalog_text[end] == ",":
+        end += 1
+    return catalog_text[:open_pos] + catalog_text[end:]
+
+
+def _find_balanced(text: str, open_pos: int) -> int:
+    """Find the matching ')' for '(' at open_pos, skipping strings/comments."""
+    if text[open_pos] != "(":
+        return -1
+    depth = 1
+    i = open_pos + 1
+    n = len(text)
+    while i < n:
+        ch = text[i]
+        if ch in ('"', "'"):
+            j = i + 1
+            while j < n and text[j] != ch:
+                if text[j] == "\\":
+                    j += 2
+                else:
+                    j += 1
+            i = j + 1
+            continue
+        if ch == "(" and i + 1 < n and text[i + 1] == "*":
+            end = text.find("*/", i + 2)
+            i = end + 2 if end != -1 else n
+            continue
+        if i + 1 < n and text[i] == "/" and text[i + 1] == "/":
+            nl = text.find("\n", i)
+            i = nl + 1 if nl != -1 else n
+            continue
+        if ch == "(":
+            depth += 1
+        elif ch == ")":
+            depth -= 1
+            if depth == 0:
+                return i
+        i += 1
+    return -1
+
+
+_SOURCE_MUTATIONS: list[tuple[str, dict[str, Any]]] = [
+    {
+        "name": "A: remove startup system_statusbarheight gate",
+        "target": {"INSTALLER_ONLY": 1},
+        "mutate": lambda text, catalog: (
+            _replace_in_method(
+                text,
+                "hasAnySystemUiStartupFeature",
+                '        if (prefs.getInt("system_statusbarheight", 19) > 19) return true;\n',
+                '',
+            ),
+            catalog,
+        ),
+    },
+    {
+        "name": "B: change system_statusbarheight default to 18",
+        "target": {"DEFAULT_MISMATCH": 1},
+        "mutate": lambda text, catalog: (
+            _replace_in_method(
+                text,
+                "hasAnySystemUiStartupFeature",
+                'if (prefs.getInt("system_statusbarheight", 19) > 19) return true;',
+                'if (prefs.getInt("system_statusbarheight", 18) > 19) return true;',
+            ),
+            catalog,
+        ),
+    },
+    {
+        "name": "C: change betterpopups_delay && to ||",
+        "target": {"COMPOSITE_CONDITION_MISMATCH": 1},
+        "mutate": lambda text, catalog: (
+            _replace_in_method(
+                text,
+                "hasAnySystemUiStartupFeature",
+                'if (prefs.getInt("system_betterpopups_delay", 0) > 0 && !prefs.getBoolean("system_betterpopups_nohide")) return true;',
+                'if (prefs.getInt("system_betterpopups_delay", 0) > 0 || !prefs.getBoolean("system_betterpopups_nohide")) return true;',
+            ),
+            catalog,
+        ),
+    },
+    {
+        "name": "D: change system_statusbarheight comparator to ==",
+        "target": {"COMPARATOR_MISMATCH": 1},
+        "mutate": lambda text, catalog: (
+            _replace_in_method(
+                text,
+                "hasAnySystemUiStartupFeature",
+                'if (prefs.getInt("system_statusbarheight", 19) > 19) return true;',
+                'if (prefs.getInt("system_statusbarheight", 19) == 19) return true;',
+            ),
+            catalog,
+        ),
+    },
+    {
+        "name": "E: remove noMoreIcon FeatureSpec from catalog",
+        "target": {"FEATURE_CATALOG_GATE_UNKNOWN": 1},
+        "mutate": lambda text, catalog: (text, _remove_feature_spec(catalog, "noMoreIcon")),
+    },
+    {
+        "name": "F: make isSystemUiGlobalActionKey accept any _action",
+        "target": {"DOMAIN_CONTAMINATION": 1},
+        "mutate": lambda text, catalog: (
+            _replace_method_body(
+                text,
+                "isSystemUiGlobalActionKey",
+                '''        return key != null && key.endsWith("_action");''',
+            ),
+            catalog,
+        ),
+    },
+    {
+        "name": "G: rewrite isSystemUiGlobalActionKey with parser-unrecognized predicates",
+        "target": {"SEMANTIC_REVIEW_REQUIRED": 1},
+        "mutate": lambda text, catalog: (
+            _replace_method_body(
+                text,
+                "isSystemUiGlobalActionKey",
+                '''        if (key == null) return false;
+        String tail = key.substring(key.length() - 7);
+        if (!tail.equals("_action")) return false;
+        return key.indexOf("controls_") == 0 || key.indexOf("system_") == 0;''',
+            ),
+            catalog,
+        ),
+    },
+]
+
+
+def run_source_mutations(repo_root: Path) -> int:
+    """Run source-level mutations in isolated temp repos."""
+    baseline_result = diff_from_repo(repo_root)
+    baseline = baseline_result.counts
+    baseline_status = baseline_result.global_action_domain.get("status", "UNKNOWN")
+    print(f"Baseline: status={baseline_status}, "
+          f"INSTALLER_ONLY={baseline['INSTALLER_ONLY']}, "
+          f"GATE_ONLY_UNEXPLAINED={baseline['GATE_ONLY_UNEXPLAINED']}, "
+          f"DOMAIN_CONTAMINATION={baseline['DOMAIN_CONTAMINATION']}, "
+          f"DEFAULT_MISMATCH={baseline['DEFAULT_MISMATCH']}, "
+          f"COMPARATOR_MISMATCH={baseline['COMPARATOR_MISMATCH']}, "
+          f"COMPOSITE_CONDITION_MISMATCH={baseline['COMPOSITE_CONDITION_MISMATCH']}, "
+          f"FEATURE_CATALOG_GATE_UNKNOWN={baseline['FEATURE_CATALOG_GATE_UNKNOWN']}, "
+          f"SEMANTIC_REVIEW_REQUIRED={baseline['SEMANTIC_REVIEW_REQUIRED']}")
+
+    inv_tool = _load_inventory_tool()
+    all_ok = True
+
+    for mut in _SOURCE_MUTATIONS:
+        name = mut["name"]
+        target = mut["target"]
+        with tempfile.TemporaryDirectory() as td:
+            temp_root = Path(td)
+            _copy_source_skeleton(repo_root, temp_root)
+            installer_path = temp_root / "app/src/main/java/tv/withaibuild/customiuizer/installers/SystemUiInstaller.java"
+            catalog_path = temp_root / "app/src/main/java/tv/withaibuild/customiuizer/mods/catalog/FeatureCatalog.kt"
+
+            installer_text = installer_path.read_text(encoding="utf-8")
+            catalog_text = catalog_path.read_text(encoding="utf-8")
+            new_installer, new_catalog = mut["mutate"](installer_text, catalog_text)
+            installer_path.write_text(new_installer, encoding="utf-8", newline="\n")
+            catalog_path.write_text(new_catalog, encoding="utf-8", newline="\n")
+
+            inv_tool.write_inventory(temp_root, verify=False)
+            result = diff_from_repo(temp_root)
+            counts = result.counts
+
+        ok = True
+        details = []
+        for key, want in target.items():
+            if counts.get(key, 0) <= baseline.get(key, 0):
+                ok = False
+                details.append(f"{key} expected > {baseline.get(key, 0)}, got {counts.get(key, 0)}")
+        # Source mutation G additionally checks the domain status.
+        if name.startswith("G:") and result.global_action_domain.get("status") != "UNKNOWN":
+            ok = False
+            details.append(f"global_action_domain.status expected UNKNOWN, got {result.global_action_domain.get('status')}")
+
         if ok:
             print(f"PASS {name}")
         else:
@@ -1803,11 +2190,14 @@ def main() -> int:
     parser = argparse.ArgumentParser(description="SystemUI startup gate differential audit")
     parser.add_argument("--output", type=Path, default=REPO_ROOT, help="repo root path")
     parser.add_argument("--verify", action="store_true", help="verify existing diff files are up to date")
-    parser.add_argument("--mutations", action="store_true", help="run mutation-style counter-proof tests")
+    parser.add_argument("--mutations", action="store_true", help="run inventory-level mutation-style counter-proof tests")
+    parser.add_argument("--source-mutations", action="store_true", help="run source-level mutation-style counter-proof tests")
     args = parser.parse_args()
 
     if args.mutations:
         return run_mutations(args.output)
+    if args.source_mutations:
+        return run_source_mutations(args.output)
 
     try:
         path, md_path, _, _ = write_diff(args.output, verify=args.verify)

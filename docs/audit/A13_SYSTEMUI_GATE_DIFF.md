@@ -32,7 +32,7 @@ Schema version: 1.0
 ## Global Action Domain
 
 - contaminated: False
-- reason: positive domain requires _action and (controls_|system_)
+- reason: positive domain requires _action suffix and (controls_|system_) prefix
 
 ## Records
 
@@ -1231,61 +1231,61 @@ Schema version: 1.0
 
 ### MATCH — setupStatusBar_if_1
 - severity: OK
-- installer: C:\Users\tv\Downloads\Peengeek\customiuizer-a13-forDevin\app\src\main\java\tv\withaibuild\customiuizer\mods\SystemUIStatusBarHooks.kt lines 0-0
+- installer: app/src/main/java/tv/withaibuild/customiuizer/mods/SystemUIStatusBarHooks.kt lines 0-0
 - startup: app/src/main/java/tv/withaibuild/customiuizer/installers/SystemUiInstaller.java lines 439-439
 - explanation: Startup gate covered by SystemUIStatusBarHooks.setupStatusBar resource hook condition.
 
 ### MATCH — setupStatusBar_if_3
 - severity: OK
-- installer: C:\Users\tv\Downloads\Peengeek\customiuizer-a13-forDevin\app\src\main\java\tv\withaibuild\customiuizer\mods\SystemUIStatusBarHooks.kt lines 0-0
+- installer: app/src/main/java/tv/withaibuild/customiuizer/mods/SystemUIStatusBarHooks.kt lines 0-0
 - startup: app/src/main/java/tv/withaibuild/customiuizer/installers/SystemUiInstaller.java lines 440-440
 - explanation: Startup gate covered by SystemUIStatusBarHooks.setupStatusBar resource hook condition.
 
 ### MATCH — setupStatusBar_if_4
 - severity: OK
-- installer: C:\Users\tv\Downloads\Peengeek\customiuizer-a13-forDevin\app\src\main\java\tv\withaibuild\customiuizer\mods\SystemUIStatusBarHooks.kt lines 0-0
+- installer: app/src/main/java/tv/withaibuild/customiuizer/mods/SystemUIStatusBarHooks.kt lines 0-0
 - startup: app/src/main/java/tv/withaibuild/customiuizer/installers/SystemUiInstaller.java lines 441-441
 - explanation: Startup gate covered by SystemUIStatusBarHooks.setupStatusBar resource hook condition.
 
 ### MATCH — setupStatusBar_if_5
 - severity: OK
-- installer: C:\Users\tv\Downloads\Peengeek\customiuizer-a13-forDevin\app\src\main\java\tv\withaibuild\customiuizer\mods\SystemUIStatusBarHooks.kt lines 0-0
+- installer: app/src/main/java/tv/withaibuild/customiuizer/mods/SystemUIStatusBarHooks.kt lines 0-0
 - startup: app/src/main/java/tv/withaibuild/customiuizer/installers/SystemUiInstaller.java lines 442-442
 - explanation: Startup gate covered by SystemUIStatusBarHooks.setupStatusBar resource hook condition.
 
 ### MATCH — setupStatusBar_if_7
 - severity: OK
-- installer: C:\Users\tv\Downloads\Peengeek\customiuizer-a13-forDevin\app\src\main\java\tv\withaibuild\customiuizer\mods\SystemUIStatusBarHooks.kt lines 0-0
+- installer: app/src/main/java/tv/withaibuild/customiuizer/mods/SystemUIStatusBarHooks.kt lines 0-0
 - startup: app/src/main/java/tv/withaibuild/customiuizer/installers/SystemUiInstaller.java lines 443-443
 - explanation: Startup gate covered by SystemUIStatusBarHooks.setupStatusBar resource hook condition.
 
 ### MATCH — setupStatusBar_if_8
 - severity: OK
-- installer: C:\Users\tv\Downloads\Peengeek\customiuizer-a13-forDevin\app\src\main\java\tv\withaibuild\customiuizer\mods\SystemUIStatusBarHooks.kt lines 0-0
+- installer: app/src/main/java/tv/withaibuild/customiuizer/mods/SystemUIStatusBarHooks.kt lines 0-0
 - startup: app/src/main/java/tv/withaibuild/customiuizer/installers/SystemUiInstaller.java lines 444-444
 - explanation: Startup gate covered by SystemUIStatusBarHooks.setupStatusBar resource hook condition.
 
 ### MATCH — setupStatusBar_if_9
 - severity: OK
-- installer: C:\Users\tv\Downloads\Peengeek\customiuizer-a13-forDevin\app\src\main\java\tv\withaibuild\customiuizer\mods\SystemUIStatusBarHooks.kt lines 0-0
+- installer: app/src/main/java/tv/withaibuild/customiuizer/mods/SystemUIStatusBarHooks.kt lines 0-0
 - startup: app/src/main/java/tv/withaibuild/customiuizer/installers/SystemUiInstaller.java lines 445-445
 - explanation: Startup gate covered by SystemUIStatusBarHooks.setupStatusBar resource hook condition.
 
 ### MATCH — setupStatusBar_if_10
 - severity: OK
-- installer: C:\Users\tv\Downloads\Peengeek\customiuizer-a13-forDevin\app\src\main\java\tv\withaibuild\customiuizer\mods\SystemUIStatusBarHooks.kt lines 0-0
+- installer: app/src/main/java/tv/withaibuild/customiuizer/mods/SystemUIStatusBarHooks.kt lines 0-0
 - startup: app/src/main/java/tv/withaibuild/customiuizer/installers/SystemUiInstaller.java lines 446-446
 - explanation: Startup gate covered by SystemUIStatusBarHooks.setupStatusBar resource hook condition.
 
 ### MATCH — setupStatusBar_if_11
 - severity: OK
-- installer: C:\Users\tv\Downloads\Peengeek\customiuizer-a13-forDevin\app\src\main\java\tv\withaibuild\customiuizer\mods\SystemUIStatusBarHooks.kt lines 0-0
+- installer: app/src/main/java/tv/withaibuild/customiuizer/mods/SystemUIStatusBarHooks.kt lines 0-0
 - startup: app/src/main/java/tv/withaibuild/customiuizer/installers/SystemUiInstaller.java lines 447-447
 - explanation: Startup gate covered by SystemUIStatusBarHooks.setupStatusBar resource hook condition.
 
 ### MATCH — setupStatusBar_if_11
 - severity: OK
-- installer: C:\Users\tv\Downloads\Peengeek\customiuizer-a13-forDevin\app\src\main\java\tv\withaibuild\customiuizer\mods\SystemUIStatusBarHooks.kt lines 0-0
+- installer: app/src/main/java/tv/withaibuild/customiuizer/mods/SystemUIStatusBarHooks.kt lines 0-0
 - startup: app/src/main/java/tv/withaibuild/customiuizer/installers/SystemUiInstaller.java lines 447-447
 - explanation: Startup gate covered by SystemUIStatusBarHooks.setupStatusBar resource hook condition.
 

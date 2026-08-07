@@ -5270,7 +5270,7 @@
         "feature_id": "",
         "installer_condition_id": "setupStatusBar_if_1",
         "installer_expression": "MainModule.mPrefs.getBoolean(\"system_statusbar_topmargin\")",
-        "installer_file": "C:\\Users\\tv\\Downloads\\Peengeek\\customiuizer-a13-forDevin\\app\\src\\main\\java\\tv\\withaibuild\\customiuizer\\mods\\SystemUIStatusBarHooks.kt",
+        "installer_file": "app/src/main/java/tv/withaibuild/customiuizer/mods/SystemUIStatusBarHooks.kt",
         "installer_lines": [
           0,
           0
@@ -5296,7 +5296,7 @@
         "feature_id": "",
         "installer_condition_id": "setupStatusBar_if_3",
         "installer_expression": "MainModule.mPrefs.getBoolean(\"system_cc_enable_style_switch\")",
-        "installer_file": "C:\\Users\\tv\\Downloads\\Peengeek\\customiuizer-a13-forDevin\\app\\src\\main\\java\\tv\\withaibuild\\customiuizer\\mods\\SystemUIStatusBarHooks.kt",
+        "installer_file": "app/src/main/java/tv/withaibuild/customiuizer/mods/SystemUIStatusBarHooks.kt",
         "installer_lines": [
           0,
           0
@@ -5322,7 +5322,7 @@
         "feature_id": "",
         "installer_condition_id": "setupStatusBar_if_4",
         "installer_expression": "MainModule.mPrefs.getBoolean(\"system_qs_force_systemfonts\")",
-        "installer_file": "C:\\Users\\tv\\Downloads\\Peengeek\\customiuizer-a13-forDevin\\app\\src\\main\\java\\tv\\withaibuild\\customiuizer\\mods\\SystemUIStatusBarHooks.kt",
+        "installer_file": "app/src/main/java/tv/withaibuild/customiuizer/mods/SystemUIStatusBarHooks.kt",
         "installer_lines": [
           0,
           0
@@ -5348,7 +5348,7 @@
         "feature_id": "",
         "installer_condition_id": "setupStatusBar_if_5",
         "installer_expression": "MainModule.mPrefs.getBoolean(\"system_detailednetspeed_fakedualrow\")",
-        "installer_file": "C:\\Users\\tv\\Downloads\\Peengeek\\customiuizer-a13-forDevin\\app\\src\\main\\java\\tv\\withaibuild\\customiuizer\\mods\\SystemUIStatusBarHooks.kt",
+        "installer_file": "app/src/main/java/tv/withaibuild/customiuizer/mods/SystemUIStatusBarHooks.kt",
         "installer_lines": [
           0,
           0
@@ -5374,7 +5374,7 @@
         "feature_id": "",
         "installer_condition_id": "setupStatusBar_if_7",
         "installer_expression": "MainModule.mPrefs.getBoolean(\"system_volumetimer\")",
-        "installer_file": "C:\\Users\\tv\\Downloads\\Peengeek\\customiuizer-a13-forDevin\\app\\src\\main\\java\\tv\\withaibuild\\customiuizer\\mods\\SystemUIStatusBarHooks.kt",
+        "installer_file": "app/src/main/java/tv/withaibuild/customiuizer/mods/SystemUIStatusBarHooks.kt",
         "installer_lines": [
           0,
           0
@@ -5400,7 +5400,7 @@
         "feature_id": "",
         "installer_condition_id": "setupStatusBar_if_8",
         "installer_expression": "MainModule.mPrefs.getBoolean(\"system_cc_tile_roundedrect\")",
-        "installer_file": "C:\\Users\\tv\\Downloads\\Peengeek\\customiuizer-a13-forDevin\\app\\src\\main\\java\\tv\\withaibuild\\customiuizer\\mods\\SystemUIStatusBarHooks.kt",
+        "installer_file": "app/src/main/java/tv/withaibuild/customiuizer/mods/SystemUIStatusBarHooks.kt",
         "installer_lines": [
           0,
           0
@@ -5426,7 +5426,7 @@
         "feature_id": "",
         "installer_condition_id": "setupStatusBar_if_9",
         "installer_expression": "iconSize > 6",
-        "installer_file": "C:\\Users\\tv\\Downloads\\Peengeek\\customiuizer-a13-forDevin\\app\\src\\main\\java\\tv\\withaibuild\\customiuizer\\mods\\SystemUIStatusBarHooks.kt",
+        "installer_file": "app/src/main/java/tv/withaibuild/customiuizer/mods/SystemUIStatusBarHooks.kt",
         "installer_lines": [
           0,
           0
@@ -5452,7 +5452,7 @@
         "feature_id": "",
         "installer_condition_id": "setupStatusBar_if_10",
         "installer_expression": "MainModule.mPrefs.getBoolean(\"system_cc_show_stepcount\")",
-        "installer_file": "C:\\Users\\tv\\Downloads\\Peengeek\\customiuizer-a13-forDevin\\app\\src\\main\\java\\tv\\withaibuild\\customiuizer\\mods\\SystemUIStatusBarHooks.kt",
+        "installer_file": "app/src/main/java/tv/withaibuild/customiuizer/mods/SystemUIStatusBarHooks.kt",
         "installer_lines": [
           0,
           0
@@ -5478,7 +5478,7 @@
         "feature_id": "",
         "installer_condition_id": "setupStatusBar_if_11",
         "installer_expression": "swapWifiSignal || moveSignalLeft",
-        "installer_file": "C:\\Users\\tv\\Downloads\\Peengeek\\customiuizer-a13-forDevin\\app\\src\\main\\java\\tv\\withaibuild\\customiuizer\\mods\\SystemUIStatusBarHooks.kt",
+        "installer_file": "app/src/main/java/tv/withaibuild/customiuizer/mods/SystemUIStatusBarHooks.kt",
         "installer_lines": [
           0,
           0
@@ -5504,7 +5504,7 @@
         "feature_id": "",
         "installer_condition_id": "setupStatusBar_if_11",
         "installer_expression": "swapWifiSignal || moveSignalLeft",
-        "installer_file": "C:\\Users\\tv\\Downloads\\Peengeek\\customiuizer-a13-forDevin\\app\\src\\main\\java\\tv\\withaibuild\\customiuizer\\mods\\SystemUIStatusBarHooks.kt",
+        "installer_file": "app/src/main/java/tv/withaibuild/customiuizer/mods/SystemUIStatusBarHooks.kt",
         "installer_lines": [
           0,
           0
@@ -5647,11 +5647,14 @@
   },
   "global_action_domain": {
     "contaminated": false,
-    "reason": "positive domain requires _action and (controls_|system_)"
+    "reason": "positive domain requires _action suffix and (controls_|system_) prefix",
+    "status": "PARSED_SAFE"
   },
   "provenance": {
     "installer_source": "app/src/main/java/tv/withaibuild/customiuizer/installers/SystemUiInstaller.java",
-    "inventory": "docs/audit/A13_SYSTEMUI_GATE_INVENTORY.json"
+    "inventory": "docs/audit/A13_SYSTEMUI_GATE_INVENTORY.json",
+    "repo_root": "C:\\Users\\tv\\Downloads\\Peengeek\\customiuizer-a13-forDevin",
+    "resource_source": "app/src/main/java/tv/withaibuild/customiuizer/mods/SystemUIStatusBarHooks.kt"
   },
   "records": [
     {
@@ -10761,7 +10764,7 @@
       "feature_id": "",
       "installer_condition_id": "setupStatusBar_if_1",
       "installer_expression": "MainModule.mPrefs.getBoolean(\"system_statusbar_topmargin\")",
-      "installer_file": "C:\\Users\\tv\\Downloads\\Peengeek\\customiuizer-a13-forDevin\\app\\src\\main\\java\\tv\\withaibuild\\customiuizer\\mods\\SystemUIStatusBarHooks.kt",
+      "installer_file": "app/src/main/java/tv/withaibuild/customiuizer/mods/SystemUIStatusBarHooks.kt",
       "installer_lines": [
         0,
         0
@@ -10787,7 +10790,7 @@
       "feature_id": "",
       "installer_condition_id": "setupStatusBar_if_3",
       "installer_expression": "MainModule.mPrefs.getBoolean(\"system_cc_enable_style_switch\")",
-      "installer_file": "C:\\Users\\tv\\Downloads\\Peengeek\\customiuizer-a13-forDevin\\app\\src\\main\\java\\tv\\withaibuild\\customiuizer\\mods\\SystemUIStatusBarHooks.kt",
+      "installer_file": "app/src/main/java/tv/withaibuild/customiuizer/mods/SystemUIStatusBarHooks.kt",
       "installer_lines": [
         0,
         0
@@ -10813,7 +10816,7 @@
       "feature_id": "",
       "installer_condition_id": "setupStatusBar_if_4",
       "installer_expression": "MainModule.mPrefs.getBoolean(\"system_qs_force_systemfonts\")",
-      "installer_file": "C:\\Users\\tv\\Downloads\\Peengeek\\customiuizer-a13-forDevin\\app\\src\\main\\java\\tv\\withaibuild\\customiuizer\\mods\\SystemUIStatusBarHooks.kt",
+      "installer_file": "app/src/main/java/tv/withaibuild/customiuizer/mods/SystemUIStatusBarHooks.kt",
       "installer_lines": [
         0,
         0
@@ -10839,7 +10842,7 @@
       "feature_id": "",
       "installer_condition_id": "setupStatusBar_if_5",
       "installer_expression": "MainModule.mPrefs.getBoolean(\"system_detailednetspeed_fakedualrow\")",
-      "installer_file": "C:\\Users\\tv\\Downloads\\Peengeek\\customiuizer-a13-forDevin\\app\\src\\main\\java\\tv\\withaibuild\\customiuizer\\mods\\SystemUIStatusBarHooks.kt",
+      "installer_file": "app/src/main/java/tv/withaibuild/customiuizer/mods/SystemUIStatusBarHooks.kt",
       "installer_lines": [
         0,
         0
@@ -10865,7 +10868,7 @@
       "feature_id": "",
       "installer_condition_id": "setupStatusBar_if_7",
       "installer_expression": "MainModule.mPrefs.getBoolean(\"system_volumetimer\")",
-      "installer_file": "C:\\Users\\tv\\Downloads\\Peengeek\\customiuizer-a13-forDevin\\app\\src\\main\\java\\tv\\withaibuild\\customiuizer\\mods\\SystemUIStatusBarHooks.kt",
+      "installer_file": "app/src/main/java/tv/withaibuild/customiuizer/mods/SystemUIStatusBarHooks.kt",
       "installer_lines": [
         0,
         0
@@ -10891,7 +10894,7 @@
       "feature_id": "",
       "installer_condition_id": "setupStatusBar_if_8",
       "installer_expression": "MainModule.mPrefs.getBoolean(\"system_cc_tile_roundedrect\")",
-      "installer_file": "C:\\Users\\tv\\Downloads\\Peengeek\\customiuizer-a13-forDevin\\app\\src\\main\\java\\tv\\withaibuild\\customiuizer\\mods\\SystemUIStatusBarHooks.kt",
+      "installer_file": "app/src/main/java/tv/withaibuild/customiuizer/mods/SystemUIStatusBarHooks.kt",
       "installer_lines": [
         0,
         0
@@ -10917,7 +10920,7 @@
       "feature_id": "",
       "installer_condition_id": "setupStatusBar_if_9",
       "installer_expression": "iconSize > 6",
-      "installer_file": "C:\\Users\\tv\\Downloads\\Peengeek\\customiuizer-a13-forDevin\\app\\src\\main\\java\\tv\\withaibuild\\customiuizer\\mods\\SystemUIStatusBarHooks.kt",
+      "installer_file": "app/src/main/java/tv/withaibuild/customiuizer/mods/SystemUIStatusBarHooks.kt",
       "installer_lines": [
         0,
         0
@@ -10943,7 +10946,7 @@
       "feature_id": "",
       "installer_condition_id": "setupStatusBar_if_10",
       "installer_expression": "MainModule.mPrefs.getBoolean(\"system_cc_show_stepcount\")",
-      "installer_file": "C:\\Users\\tv\\Downloads\\Peengeek\\customiuizer-a13-forDevin\\app\\src\\main\\java\\tv\\withaibuild\\customiuizer\\mods\\SystemUIStatusBarHooks.kt",
+      "installer_file": "app/src/main/java/tv/withaibuild/customiuizer/mods/SystemUIStatusBarHooks.kt",
       "installer_lines": [
         0,
         0
@@ -10969,7 +10972,7 @@
       "feature_id": "",
       "installer_condition_id": "setupStatusBar_if_11",
       "installer_expression": "swapWifiSignal || moveSignalLeft",
-      "installer_file": "C:\\Users\\tv\\Downloads\\Peengeek\\customiuizer-a13-forDevin\\app\\src\\main\\java\\tv\\withaibuild\\customiuizer\\mods\\SystemUIStatusBarHooks.kt",
+      "installer_file": "app/src/main/java/tv/withaibuild/customiuizer/mods/SystemUIStatusBarHooks.kt",
       "installer_lines": [
         0,
         0
@@ -10995,7 +10998,7 @@
       "feature_id": "",
       "installer_condition_id": "setupStatusBar_if_11",
       "installer_expression": "swapWifiSignal || moveSignalLeft",
-      "installer_file": "C:\\Users\\tv\\Downloads\\Peengeek\\customiuizer-a13-forDevin\\app\\src\\main\\java\\tv\\withaibuild\\customiuizer\\mods\\SystemUIStatusBarHooks.kt",
+      "installer_file": "app/src/main/java/tv/withaibuild/customiuizer/mods/SystemUIStatusBarHooks.kt",
       "installer_lines": [
         0,
         0
@@ -11276,7 +11279,13 @@
     "catalog_systemui_entries": 13,
     "conditional_dispatchers": 8,
     "install_conditions": 108,
+    "matched_atomic_units": 197,
+    "matched_unique_feature_ids": 8,
+    "matched_unique_installer_conditions": 113,
+    "matched_unique_startup_conditions": 111,
     "startup_conditions": 119,
+    "total_installer_atomic_units": 187,
+    "total_startup_atomic_units": 206,
     "unconditional_dispatchers": 5
   }
 }
