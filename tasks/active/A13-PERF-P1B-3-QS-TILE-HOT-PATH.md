@@ -172,7 +172,7 @@
 | Original engineering final | `3cf73a0` | 原始工程最终（历史记录） |
 | Independent QA base | `3744bd95eea2dad35724f5c51aed924b1e70845d` | QA-1 起始基线 |
 | QA R1 | `95b5d8e18dd6bc2c08e9639ac0b82610b0721796` | shared-class spec identity 与 wrapped fatal 修复 |
-| QA R2 | 见本次提交 | after-unlock round trip / lifecycle / mutation C/D/E 证据补全 |
+| QA R2 | `33ff7b1` | after-unlock round trip / lifecycle / mutation C/D/E 证据补全 |
 
 ## 最终状态
 
