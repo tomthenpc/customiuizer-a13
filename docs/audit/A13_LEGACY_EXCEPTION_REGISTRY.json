@@ -1,6 +1,6 @@
 {
   "schemaVersion": 4,
-  "inputDigest": "8f3c5608f55529fb09eab1ca44495f571ed070aa1c490d1f0819cf055e49757b",
+  "inputDigest": "0cb4b40ff61ef49404cdeddc0a05e5b33d7d33bff2a90ca8506abb68531bccd4",
   "totalLegacyCallSites": 515,
   "totalLegacyGroups": 206,
   "firstBatchSize": 4,
@@ -294,8 +294,8 @@
       "exitCondition": "Create a typed system_server FeatureSpec for USB default mode and expose a cross-process contract for the Settings variant (P3.3C)."
     }
   ],
-  "sourceCommit": "0ca93c2472b83eb8ee47fb569f427c1c7c07386f",
-  "sourceTree": "0bca399b57d0b8706190b420975428ce16f70fb9",
+  "sourceCommit": "3744bd95eea2dad35724f5c51aed924b1e70845d",
+  "sourceTree": "91c64575c785f60520e367db147ac91f90a8bb3d",
   "generatorVersion": "7b7847444be4cdcd",
-  "generatedAt": "2026-08-07T05:49:44+00:00"
+  "generatedAt": "2026-08-07T08:03:01+00:00"
 }

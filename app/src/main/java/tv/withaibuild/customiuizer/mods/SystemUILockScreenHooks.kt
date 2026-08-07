@@ -46,8 +46,23 @@ import java.util.LinkedHashMap
 @Suppress("UNUSED_PARAMETER")
 object SystemUILockScreenHooks {
 
+    private const val TILE_SPEC_KEY = "customiuizer.secure_qs_tile_spec"
     private val cameraResetTag = ResourceHooks.getFakeResId("camera_reset_tag")
     private val securedTiles = ArrayList<String>()
+
+    private fun rethrowIfFatal(t: Throwable) {
+        var current: Throwable? = t
+        var depth = 0
+        while (current != null && depth < 8) {
+            if (current is OutOfMemoryError) throw current
+            if (current is ThreadDeath) throw current
+            if (current is VirtualMachineError) throw current
+            val next = current.cause
+            if (next == current) return
+            current = next
+            depth++
+        }
+    }
 
     @JvmStatic
     fun LockScreenTopMarginHook(lpparam: PackageReadyParam) {
@@ -575,9 +590,9 @@ object SystemUILockScreenHooks {
                                 }
                                 XposedHelpers.setAdditionalInstanceField(tile, "mCalledAfterUnlock", true)
                                 val clickHandler = XposedHelpers.findMethodExact(tile.javaClass, "handleClick", View::class.java)
-                                clickHandler.invoke(tile, arrayOfNulls<Any>(1))
+                                clickHandler.invoke(tile, null as View?)
                             } catch (t: Throwable) {
-                                if (t is OutOfMemoryError || t is ThreadDeath || t is VirtualMachineError) throw t
+                                rethrowIfFatal(t)
                                 XposedHelpers.log(t)
                             }
                         }
@@ -607,9 +622,12 @@ object SystemUILockScreenHooks {
                     else -> tileName
                 }
 
-                if (!isSecureTile(name) || securedTiles.contains(tileClass)) return
+                if (!isSecureTile(name)) return
 
-                val originalTileName = tileName
+                XposedHelpers.setAdditionalInstanceField(tile, TILE_SPEC_KEY, tileName)
+
+                if (securedTiles.contains(tileClass)) return
+
                 val tileHook = object : MethodHook() {
                     override fun before(param2: BeforeHookCallback) {
                         val mCalledAfterUnlock = XposedHelpers.getAdditionalInstanceField(param2.getThisObject(), "mCalledAfterUnlock") as? Boolean
@@ -621,9 +639,14 @@ object SystemUILockScreenHooks {
                             XposedHelpers.getAdditionalStaticField(keyguardViewMediatorClass, "isScreenLockDisabled") as? Boolean ?: false
                         } else false
                         if (isScreenLockDisabled) return
+
+                        val exactTileName = XposedHelpers.getAdditionalInstanceField(param2.getThisObject(), TILE_SPEC_KEY) as? String
+                        if (exactTileName == null) return
+
                         val mContext = qTileContextField?.get(param2.getThisObject()) as? Context ?: return
                         val kgMgr = mContext.getSystemService(Context.KEYGUARD_SERVICE) as? KeyguardManager ?: return
                         if (!kgMgr.isKeyguardLocked || !kgMgr.isKeyguardSecure) return
+                        val thisObject = param2.getThisObject()
                         Handler(mContext.mainLooper).post {
                             try {
                                 if (dependencyClass == null || dependencyGetMethod == null || centralSurfacesClass == null) return@post
@@ -637,7 +660,7 @@ object SystemUILockScreenHooks {
                                 val runnable = Runnable {
                                     ModuleHelper.guarded {
                                         val intent = Intent(handleQSTileClickAction)
-                                        intent.putExtra("tileName", originalTileName)
+                                        intent.putExtra("tileName", exactTileName)
                                         intent.putExtra("expandAfter", expandAfter)
                                         intent.putExtra("usingCenter", usingControlCenter)
                                         mContext.sendBroadcast(intent)
@@ -645,7 +668,7 @@ object SystemUILockScreenHooks {
                                 }
                                 postQSRunnableDismissingKeyguardMethod?.invoke(mStatusBar, !keepOpened, runnable)
                             } catch (t: Throwable) {
-                                if (t is OutOfMemoryError || t is ThreadDeath || t is VirtualMachineError) throw t
+                                rethrowIfFatal(t)
                                 XposedHelpers.log(t)
                             }
                         }

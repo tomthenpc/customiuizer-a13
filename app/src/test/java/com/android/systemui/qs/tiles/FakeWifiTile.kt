@@ -3,7 +3,7 @@ package com.android.systemui.qs.tiles
 import android.view.View
 import com.android.systemui.qs.tileimpl.QSTileImpl
 
-class FakeWifiTile : QSTileImpl() {
+open class FakeWifiTile : QSTileImpl() {
     override fun handleClick(v: View?) {
         // stub
     }

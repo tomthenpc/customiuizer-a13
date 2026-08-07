@@ -20,6 +20,7 @@ import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse
 import org.junit.Assert.assertNotNull
 import org.junit.Assert.assertTrue
+import org.junit.Assert.fail
 import org.junit.Before
 import org.junit.Test
 import tv.withaibuild.customiuizer.MainModule
@@ -29,7 +30,6 @@ import tv.withaibuild.customiuizer.mods.utils.XposedHelpers
 import tv.withaibuild.customiuizer.utils.FakeXposedInterface
 import tv.withaibuild.customiuizer.utils.PrefMap
 import java.lang.reflect.InvocationHandler
-import java.lang.reflect.InvocationTargetException
 import java.lang.reflect.Method
 import java.lang.reflect.Proxy
 import java.util.LinkedHashMap
@@ -404,5 +404,278 @@ class SecureQSTilesHookTest {
         // Should not throw even if CentralSurfaces post method is a stub; it will be invoked with the cached Method.
         clickHook.beforeHook(before)
         assertTrue("should still skip because keyguard is secure", isSkipped(before))
+    }
+
+    @Test
+    fun createTileInternal_bindsExactSpecPerInstance() {
+        val prefs = PrefMap<String, Any>()
+        prefs["system_secureqs"] = true
+        prefs["system_secureqs_custom"] = true
+        installHook(prefs)
+
+        val factory = newFactory()
+        val after = getRecordedHook("com.android.systemui.qs.tileimpl.MiuiQSFactory", "createTileInternal")
+
+        val tile1 = factory.createTileInternal("custom(foo)")
+        after.afterHook(fakeAfterCallback(factory, listOf("custom(foo)"), tile1))
+
+        val tile2 = factory.createTileInternal("custom(bar)")
+        after.afterHook(fakeAfterCallback(factory, listOf("custom(bar)"), tile2))
+
+        assertEquals("first tile must keep exact spec", "custom(foo)",
+            XposedHelpers.getAdditionalInstanceField(tile1, "customiuizer.secure_qs_tile_spec"))
+        assertEquals("second tile must keep exact spec", "custom(bar)",
+            XposedHelpers.getAdditionalInstanceField(tile2, "customiuizer.secure_qs_tile_spec"))
+    }
+
+    @Test
+    fun createTileInternal_bindsExactSpecPerInstance_reverseOrder() {
+        val prefs = PrefMap<String, Any>()
+        prefs["system_secureqs"] = true
+        prefs["system_secureqs_custom"] = true
+        installHook(prefs)
+
+        val factory = newFactory()
+        val after = getRecordedHook("com.android.systemui.qs.tileimpl.MiuiQSFactory", "createTileInternal")
+
+        val tile1 = factory.createTileInternal("custom(bar)")
+        after.afterHook(fakeAfterCallback(factory, listOf("custom(bar)"), tile1))
+
+        val tile2 = factory.createTileInternal("custom(foo)")
+        after.afterHook(fakeAfterCallback(factory, listOf("custom(foo)"), tile2))
+
+        assertEquals("first tile must keep exact spec", "custom(bar)",
+            XposedHelpers.getAdditionalInstanceField(tile1, "customiuizer.secure_qs_tile_spec"))
+        assertEquals("second tile must keep exact spec", "custom(foo)",
+            XposedHelpers.getAdditionalInstanceField(tile2, "customiuizer.secure_qs_tile_spec"))
+    }
+
+    @Test
+    fun createTileInternal_sameClassDifferentSpecs_hooksOnce() {
+        val prefs = PrefMap<String, Any>()
+        prefs["system_secureqs"] = true
+        prefs["system_secureqs_custom"] = true
+        installHook(prefs)
+
+        val factory = newFactory()
+        val after = getRecordedHook("com.android.systemui.qs.tileimpl.MiuiQSFactory", "createTileInternal")
+
+        val tile1 = factory.createTileInternal("custom(foo)")
+        after.afterHook(fakeAfterCallback(factory, listOf("custom(foo)"), tile1))
+
+        val tile2 = factory.createTileInternal("custom(bar)")
+        after.afterHook(fakeAfterCallback(factory, listOf("custom(bar)"), tile2))
+
+        assertEquals("handleClick should be hooked exactly once per class", 1,
+            recordedHookCount("com.android.systemui.qs.tiles.FakeNfcTile", "handleClick"))
+    }
+
+    @Test
+    fun handleClick_before_usesInstanceSpecNotClosureAndFailsOpenWhenMissing() {
+        val prefs = PrefMap<String, Any>()
+        prefs["system_secureqs"] = true
+        prefs["system_secureqs_custom"] = true
+        installHook(prefs)
+
+        val factory = newFactory()
+        val createAfter = getRecordedHook("com.android.systemui.qs.tileimpl.MiuiQSFactory", "createTileInternal")
+
+        val tile = newTileWithContext("custom(bar)", newContext())
+        createAfter.afterHook(fakeAfterCallback(factory, listOf("custom(bar)"), tile))
+
+        val clickHook = getRecordedHook("com.android.systemui.qs.tiles.FakeNfcTile", "handleClick")
+
+        val context = tile.mContext as FakeContext
+        context.keyguardManager?.locked = true
+        context.keyguardManager?.secure = true
+        val keyguardClass = XposedHelpers.findClass("com.android.systemui.keyguard.KeyguardViewMediator", parentClassLoader)
+        XposedHelpers.setAdditionalStaticField(keyguardClass, "isScreenLockDisabled", false)
+
+        val view = View(context)
+        val before = fakeBeforeCallback(tile, listOf(view))
+        clickHook.beforeHook(before)
+
+        assertTrue("should skip when spec is present and keyguard is secure", isSkipped(before))
+
+        XposedHelpers.removeAdditionalInstanceField(tile, "customiuizer.secure_qs_tile_spec")
+
+        val beforeMissing = fakeBeforeCallback(tile, listOf(view))
+        clickHook.beforeHook(beforeMissing)
+
+        assertFalse("missing spec should fail-open and not skip", isSkipped(beforeMissing))
+    }
+
+    @Test
+    fun mCalledAfterUnlock_isPerInstance() {
+        val prefs = PrefMap<String, Any>()
+        prefs["system_secureqs"] = true
+        prefs["system_secureqs_custom"] = true
+        installHook(prefs)
+
+        val factory = newFactory()
+        val createAfter = getRecordedHook("com.android.systemui.qs.tileimpl.MiuiQSFactory", "createTileInternal")
+
+        val tileFoo = newTileWithContext("custom(foo)", newContext())
+        createAfter.afterHook(fakeAfterCallback(factory, listOf("custom(foo)"), tileFoo))
+
+        val tileBar = newTileWithContext("custom(bar)", newContext())
+        createAfter.afterHook(fakeAfterCallback(factory, listOf("custom(bar)"), tileBar))
+
+        XposedHelpers.setAdditionalInstanceField(tileFoo, "mCalledAfterUnlock", true)
+
+        val clickHook = getRecordedHook("com.android.systemui.qs.tiles.FakeNfcTile", "handleClick")
+
+        val view = View(tileBar.mContext)
+        val before = fakeBeforeCallback(tileBar, listOf(view))
+        clickHook.beforeHook(before)
+
+        assertFalse("bar should not skip when foo is marked", isSkipped(before))
+        assertEquals("foo flag should remain", true,
+            XposedHelpers.getAdditionalInstanceField(tileFoo, "mCalledAfterUnlock") as? Boolean)
+    }
+
+    @Test
+    fun afterUnlockRoundTrip_usesCorrectExactSpecForSharedClass() {
+        val prefs = PrefMap<String, Any>()
+        prefs["system_secureqs"] = true
+        prefs["system_secureqs_custom"] = true
+        installHook(prefs)
+
+        val factory = newFactory()
+        val createAfter = getRecordedHook("com.android.systemui.qs.tileimpl.MiuiQSFactory", "createTileInternal")
+
+        val host = QSTileHost()
+        val context = newContext()
+        host.mContext = context
+
+        val tileFoo = FakeNfcTile()
+        tileFoo.mContext = context
+        XposedHelpers.setAdditionalInstanceField(tileFoo, "customiuizer.secure_qs_tile_spec", "custom(foo)")
+        host.mTiles["custom(foo)"] = tileFoo
+
+        val tileBar = FakeNfcTile()
+        tileBar.mContext = context
+        XposedHelpers.setAdditionalInstanceField(tileBar, "customiuizer.secure_qs_tile_spec", "custom(bar)")
+        host.mTiles["custom(bar)"] = tileBar
+
+        val constructorAfter = getRecordedHook("com.android.systemui.qs.QSTileHost", "<init>")
+        constructorAfter.afterHook(fakeAfterCallback(host))
+
+        val receiver = context.registeredReceivers.first()
+        val intent = FakeIntent("tv.withaibuild.customiuizer.mods.action.HandleQSTileClick")
+        intent.putExtra("tileName", "custom(bar)")
+        intent.putExtra("expandAfter", false)
+        intent.putExtra("usingCenter", false)
+        receiver.onReceive(context, intent)
+
+        assertEquals("mCalledAfterUnlock should be set on bar tile", true,
+            XposedHelpers.getAdditionalInstanceField(tileBar, "mCalledAfterUnlock"))
+        assertEquals("foo tile should not be marked", true,
+            XposedHelpers.getAdditionalInstanceField(tileFoo, "mCalledAfterUnlock") == null)
+    }
+
+    @Test
+    fun hostReceiver_replacementKeepsLatestActive() {
+        val prefs = PrefMap<String, Any>()
+        prefs["system_secureqs"] = true
+        installHook(prefs)
+
+        val constructorAfter = getRecordedHook("com.android.systemui.qs.QSTileHost", "<init>")
+
+        val host1 = QSTileHost()
+        val context1 = newContext()
+        host1.mContext = context1
+        constructorAfter.afterHook(fakeAfterCallback(host1))
+
+        val host2 = QSTileHost()
+        val context2 = newContext()
+        host2.mContext = context2
+        constructorAfter.afterHook(fakeAfterCallback(host2))
+
+        val receivers = context2.registeredReceivers
+        assertTrue("host2 should register a receiver", receivers.isNotEmpty())
+
+        val field = ModuleHelper::class.java.getDeclaredField("moduleReceivers")
+        field.isAccessible = true
+        val moduleReceivers = field.get(null) as java.util.concurrent.ConcurrentHashMap<*, *>
+        val active = moduleReceivers["systemui.afterUnlockReceiver"]
+        assertNotNull("active receiver must be present", active)
+    }
+
+    @Test
+    fun qSTileHostReceiver_rethrowsWrappedOutOfMemoryFromClick() {
+        runReceiverFatalTest(OutOfMemoryError("oom"), "expected OutOfMemoryError") { it is OutOfMemoryError }
+    }
+
+    @Test
+    fun qSTileHostReceiver_rethrowsWrappedThreadDeathFromClick() {
+        runReceiverFatalTest(ThreadDeath(), "expected ThreadDeath") { it is ThreadDeath }
+    }
+
+    @Test
+    fun qSTileHostReceiver_rethrowsWrappedVirtualMachineErrorFromClick() {
+        runReceiverFatalTest(StackOverflowError("so"), "expected VirtualMachineError") { it is VirtualMachineError }
+    }
+
+    @Test
+    fun qSTileHostReceiver_logsOrdinaryRuntimeExceptionFromClick() {
+        val prefs = PrefMap<String, Any>()
+        prefs["system_secureqs"] = true
+        installHook(prefs)
+
+        val host = QSTileHost()
+        val context = newContext()
+        host.mContext = context
+
+        val tile = ThrowingWifiTile(RuntimeException("ordinary"))
+        tile.mContext = context
+        host.mTiles["wifi"] = tile
+
+        val constructorAfter = getRecordedHook("com.android.systemui.qs.QSTileHost", "<init>")
+        constructorAfter.afterHook(fakeAfterCallback(host))
+
+        val receiver = context.registeredReceivers.first()
+        val intent = FakeIntent("tv.withaibuild.customiuizer.mods.action.HandleQSTileClick")
+        intent.putExtra("tileName", "wifi")
+        intent.putExtra("expandAfter", false)
+        intent.putExtra("usingCenter", false)
+        // Should not throw
+        receiver.onReceive(context, intent)
+    }
+
+    private fun runReceiverFatalTest(cause: Throwable, message: String, check: (Throwable) -> Boolean) {
+        val prefs = PrefMap<String, Any>()
+        prefs["system_secureqs"] = true
+        installHook(prefs)
+
+        val host = QSTileHost()
+        val context = newContext()
+        host.mContext = context
+
+        val tile = ThrowingWifiTile(cause)
+        tile.mContext = context
+        host.mTiles["wifi"] = tile
+
+        val constructorAfter = getRecordedHook("com.android.systemui.qs.QSTileHost", "<init>")
+        constructorAfter.afterHook(fakeAfterCallback(host))
+
+        val receiver = context.registeredReceivers.first()
+        val intent = FakeIntent("tv.withaibuild.customiuizer.mods.action.HandleQSTileClick")
+        intent.putExtra("tileName", "wifi")
+        intent.putExtra("expandAfter", false)
+        intent.putExtra("usingCenter", false)
+
+        try {
+            receiver.onReceive(context, intent)
+            fail(message)
+        } catch (t: Throwable) {
+            assertTrue(message, check(t))
+        }
+    }
+
+    open inner class ThrowingWifiTile(val cause: Throwable) : FakeWifiTile() {
+        override fun handleClick(v: View?) {
+            throw cause
+        }
     }
 }

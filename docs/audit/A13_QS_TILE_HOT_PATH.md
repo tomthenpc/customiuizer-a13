@@ -172,3 +172,56 @@ QSTile.handleClick(View)
 - **未缓存的实例**：未缓存任何 `QSTileHost`、`MiuiQSFactory`、`QSTile`、`Context`、`Handler`、`View`、`CentralSurfaces` 或 `ControlCenterControllerImpl` 实例。
 - **未新增项**：无新线程、Handler、listener、observer、全局锁或无上限缓存；`securedTiles` 仍为有界 `ArrayList<String>`。
 - **P0 基线**：`RUNTIME_BASELINE_PENDING_DEVICE`，未声明未经真机测量的性能收益。
+
+## 10. P1B-3 CORRECTNESS QA
+
+### 10.1 Root cause
+
+原 `SecureQSTilesHook` 在 `createTileInternal` `after` 回调中把 **首个** tile 的 exact spec（如 `custom(foo)`）以闭包形式 capture 进 `tileHook.before` 回调，并以 `tileClass` canonical name 作为 hook-dedupe key。这导致：
+
+```text
+custom(foo) → FakeNfcTile instance A (first) → install class hook, capture originalTileName = "custom(foo)"
+custom(bar) → FakeNfcTile instance B (second) → dedupe returns, no new hook
+B click     → class hook runs, uses captured "custom(foo)"
+```
+
+### 10.2 Exact instance spec binding
+
+修复后，`after` 回调在 `isSecureTile(name)` 之后、class-dedupe **之前**，先对当前 tile 实例写入 additional instance field：
+
+```text
+TILE_SPEC_KEY = "customiuizer.secure_qs_tile_spec"
+```
+
+- 第一个 `custom(foo)` 和第二个 `custom(bar)` 都会得到自己的 exact spec。
+- `tileHook.before` 回调从 `param2.getThisObject()` 读取该实例 field，不再使用 closure-captured spec。
+- 当实例上不存在该 field 时，before 回调 fail-open（return，不执行 `returnAndSkip`）。
+
+### 10.3 Hook dedupe contract
+
+`securedTiles` 仍只保存 class-name String，职责不变：保证每个 tile concrete class 的 `handleClick` / `handleSecondaryClick` 只被 hook 一次。dedupe 发生在 per-instance binding 之后，因此 shared class 的新实例仍可得到正确的 spec，只是不重复安装 hook。
+
+### 10.4 After-unlock round trip
+
+`mAfterUnlockReceiver.onReceive` 仍使用 exact `tileName` 查找 `mTiles[tileName]`，并在命中 tile 上设置 `mCalledAfterUnlock = true`。该 flag 是 additional instance field，因此 `custom(foo)` 和 `custom(bar)` 即使共享 class 也能独立标记。随后的 `handleClick` hook 读取自己实例上的 `mCalledAfterUnlock`，清除后继续执行原始 `handleClick`。
+
+### 10.5 Receiver lifecycle
+
+`QSTileHost` 构造器 `after` 回调继续通过 `ModuleHelper.registerModuleReceiver(..., "systemui.afterUnlockReceiver", ...)` 注册 receiver。`ModuleHelper` 在成功注册新 receiver 后会 `releaseReceiver(previous)`，确保只有一个 active receiver 对 `HandleQSTileClick` action 生效。未引入第二套 receiver registry 或 WeakReference 架构。
+
+### 10.6 Wrapped fatal behavior
+
+`SecureQSTilesHook` 增加 `rethrowIfFatal(t: Throwable)`，在以下 catch 点调用：
+
+- `tileHook.before` 内 `Handler.post` 的 `try/catch`
+- `mAfterUnlockReceiver.onReceive` 的 `try/catch`
+
+该 helper 最多遍历 8 层 cause chain，遇到 `OutOfMemoryError`、`ThreadDeath`、`VirtualMachineError` 直接抛出；其他异常保持 log/fail-safe。
+
+### 10.7 R3 corrective provenance
+
+- 基线：`3744bd95eea2dad35724f5c51aed924b1e70845d`
+- 修复文件：`app/src/main/java/tv/withaibuild/customiuizer/mods/SystemUILockScreenHooks.kt`
+- 测试文件：`app/src/test/java/tv/withaibuild/customiuizer/mods/SecureQSTilesHookTest.kt`
+- 测试新增：same class / two specs, reverse order, hook installed once, per-instance exact spec, missing-spec fail-open, per-instance `mCalledAfterUnlock`, after-unlock correct tile, host receiver replacement, wrapped fatal。
+- 未新增 global map / Android-owner cache，未改变 Handler/Runnable 结构，未改变 preference 读取时机。

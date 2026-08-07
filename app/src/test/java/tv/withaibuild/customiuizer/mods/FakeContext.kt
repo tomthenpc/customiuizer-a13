@@ -15,7 +15,7 @@ import android.util.DisplayMetrics
 import android.os.Handler
 import android.os.Looper
 
-class FakeContext : ContextWrapper(null) {
+open class FakeContext : ContextWrapper(null) {
 
     var keyguardManager: FakeKeyguardManager? = FakeKeyguardManager()
     var fakeActivityManager: ActivityManager? = null
@@ -24,13 +24,15 @@ class FakeContext : ContextWrapper(null) {
     val startedActivities: MutableList<Intent> = mutableListOf()
     var fakePackageManager: PackageManager? = null
 
-    private val looper: Looper by lazy {
+    private val defaultLooper: Looper by lazy {
         val ctor = Looper::class.java.getDeclaredConstructor()
         ctor.isAccessible = true
         ctor.newInstance()
     }
 
-    override fun getMainLooper(): Looper = looper
+    var mainLooperOverride: Looper? = null
+
+    override fun getMainLooper(): Looper = mainLooperOverride ?: defaultLooper
 
     override fun getApplicationContext(): Context = this
 
