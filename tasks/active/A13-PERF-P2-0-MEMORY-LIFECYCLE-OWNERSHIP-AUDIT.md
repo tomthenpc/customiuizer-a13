@@ -7,7 +7,7 @@
 | 任务 | `A13-PERF-P2-0` |
 | 分支 | `devin/a13-memory-performance-optimization` |
 | Base SHA | `283e731b9f998c4fe188d919e3bddae1c0a5648c` |
-| 状态 | `AUDIT_COMPLETE` |
+| 状态 | `R1_HARDENED` |
 | Production changes | `FORBIDDEN` |
 | P1B / QA-1 | `SEALED` |
 
@@ -41,10 +41,10 @@
 
 ## P2-0 结果
 
-- Scanner 候选：282
-- 风险：HIGH=4, MEDIUM=96, LOW=57, INFO=117, UNKNOWN=8
+- Scanner 候选：559
+- 风险：HIGH=17, MEDIUM=116, LOW=56, INFO=302, UNKNOWN=68
 - 手动补充计数：0 个新的 HIGH/CRITICAL（手动 grep 已确认覆盖）
-- 误报 / 良性计数：122（117 SAFE_STABLE_METADATA + 5 PROCESS_LIFETIME_INTENTIONAL）
+- 误报 / 良性计数：344（302 SAFE_STABLE_METADATA + 42 PROCESS_LIFETIME_INTENTIONAL）
 - 推荐 P2-1：`SubFragment.kt` 中 `view?.postDelayed` smooth-scroller 延迟回调清理
 
 ## P2-1 推荐
