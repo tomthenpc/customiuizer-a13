@@ -11,7 +11,8 @@
 | 原始 P1B-4A 阶段 checkpoint commit | `929e5d0f315b6bd6a9ac4bbfec9de321b441e97d` |
 | QA corrective R1 engineering commit | `ecd6a95a247afee1cbe9a7cf1ff11e12f75c779a` |
 | QA corrective R1 docs commit | `929e5d0f315b6bd6a9ac4bbfec9de321b441e97d` |
-| 状态 | `QA_REOPENED`（R2 进行中；ROM 生命周期证据缺失） |
+| QA corrective R2 closure commit | `53c83e4ae8a7b1d17a5bdd74d8fe95d69820d583` |
+| 状态 | `QA_CONDITIONAL`（R2 已关闭；ROM 生命周期证据缺失；blocking finding: `ROM_LIFECYCLE_EVIDENCE_REQUIRED`） |
 | P0 真实运行时基线 | `RUNTIME_BASELINE_PENDING_DEVICE` |
 | 授权范围 | 仅 `MiuiNotificationMenuRow#createMenuViews` 及该回调直接调用、属于本模块的通知菜单辅助逻辑 |
 
