@@ -1,6 +1,6 @@
 # A13 Notification Menu Creation Hot-Path Cost Audit
 
-> Branch: `devin/a13-memory-performance-optimization`
+> Branch: `devin/a13-memory-performance-optimization`<br>
 > Scope: `SystemNotificationMoreHooks.NotificationRowMenuHook` -> `MiuiNotificationMenuRow#createMenuViews`
 
 P0 真实设备基线为 `RUNTIME_BASELINE_PENDING_DEVICE`，任何性能收益数字均为静态推断，不声称具体 KB、MB、百分比、延迟或耗电变化。
@@ -33,21 +33,21 @@ MiuiNotificationMenuRow.createMenuViews(boolean, boolean)
   └─ after(param)
        1. mContextField.get(param.thisObject) as? Context ?: return          // 安装阶段缓存的 Field 读取
        2. mMenuItemsField.get(param.thisObject) as? ArrayList<Any> ?: return // 安装阶段缓存的 Field 读取
-       3. 使用安装阶段缓存的 menuItemConstructor 创建三个 MiuiNotificationMenuItem
-       4. mMenuItems.add(infoBtn); mMenuItems.add(forceCloseBtn); mMenuItems.add(openFwBtn)
-       5. mMenuMarginField?.get(param.thisObject) as? Int ?: 0              // 安装阶段缓存的可选 Field 读取
-       6. mMenuContainerField.get(param.thisObject) as? LinearLayout ?: return // 安装阶段缓存的 Field 读取
-       7. getMenuViewMethod.invoke(infoBtn) as? View ?: return              // 安装阶段缓存的 Method invoke
-       8. getMenuViewMethod.invoke(forceCloseBtn) as? View ?: return
-       9. getMenuViewMethod.invoke(openFwBtn) as? View ?: return
-       10. 创建 View.OnClickListener lambda，捕获 mContext / mMenuRow / 缓存的 Field 与 Method
-       11. mInfoBtn.setOnClickListener(itemClick); ...
-       12. 创建 LinearLayout.LayoutParams(-2, -2) 并设置 margin
-       13. mMenuContainer.addView(mInfoBtn, layoutParams); ...
+       3. mMenuContainerField.get(param.thisObject) as? LinearLayout ?: return // 安装阶段缓存的 Field 读取
+       4. 使用安装阶段缓存的 menuItemConstructor 创建三个 MiuiNotificationMenuItem
+       5. getMenuViewSafe(infoBtn, getMenuViewMethod) ?: return              // 安全包装：普通异常记录并返回 null，fatal 重抛
+       6. getMenuViewSafe(forceCloseBtn, getMenuViewMethod) ?: return
+       7. getMenuViewSafe(openFwBtn, getMenuViewMethod) ?: return
+       8. 创建 View.OnClickListener lambda，捕获 mContext / mMenuRow / 缓存的 Field 与 Method
+       9. mInfoBtn.setOnClickListener(itemClick); ...
+       10. mMenuMarginField?.get(param.thisObject) as? Int ?: 0              // 安装阶段缓存的可选 Field 读取
+       11. 创建 LinearLayout.LayoutParams(-2, -2) 并设置 margin
+       12. mMenuItems.add(infoBtn); mMenuItems.add(forceCloseBtn); mMenuItems.add(openFwBtn)   // 全部前置成功后首次 list 修改
+       13. mMenuContainer.addView(mInfoBtn, layoutParams); ...              // 与 list 修改原子提交
        14. val menuWidth = TypedValue.applyDimension(COMPLEX_UNIT_DIP, 52f, mContext.resources.displayMetrics).toInt()
        15. val realTitleId = if (titleId != 0) titleId else mContext.resources.getIdentifier("modal_menu_title", "id", lpparam.packageName)
        16. for (i in 0 until mMenuItems.size) {                                    // 索引循环，无 Iterator
-              val menuView = getMenuViewMethod.invoke(mMenuItems[i]) as? View ?: continue
+              val menuView = getMenuViewSafe(mMenuItems[i], getMenuViewMethod) ?: continue
               (menuView.findViewById<TextView>(realTitleId))?.maxWidth = menuWidth
            }
 ```
@@ -58,7 +58,7 @@ MiuiNotificationMenuRow.createMenuViews(boolean, boolean)
 
 - 应用信息 / 强制停止分支：
   - `mSbnField?.get(menuRow)` 获取当前 notification 实例
-  - `getPackageNameMethod.invoke(notification)` 或 `XposedHelpers.callMethod(notification, "getPackageName")` fallback
+  - `getPackageNameMethod.invoke(notification)` 或 `XposedHelpers.callMethod(notification, "getPackageName")` fallback（仅在 cachedMethod 不存在时）
   - `getAppUidMethod.invoke(notification)` 或 `XposedHelpers.callMethod(notification, "getAppUid")` fallback
   - `UserHandle#getUserId` 或 `appUid / ANDROID_PER_USER_RANGE` fallback
 - 强制停止分支：
@@ -91,8 +91,8 @@ MiuiNotificationMenuRow.createMenuViews(boolean, boolean)
 | Drawable / Intent / Bundle | 1 `Intent` 每次点击 | `ACTION_CLOSE_SYSTEM_DIALOGS` 在 appInfo / forceClose 分支各一次 |
 | View | 3 | 模块新增的 `MiuiNotificationMenuItem` 视图 |
 | 系统服务 / Binder | `ActivityManager` / `PackageManager` 在 forceClose 分支 | 按点击按需查询 |
-| 日志 | 0（正常路径） | 安装阶段失败或构造异常时仍记录；热路径正常无日志 |
-| catch 后重复重试 | 0 | 失败即返回，不重复反射 |
+| 日志 | 0（正常路径） | 安装阶段失败或构造异常时仍记录；热路径正常无日志；`getMenuViewSafe` 普通异常记录并返回 |
+| catch 后重复重试 | 0 | 失败即返回，不重复反射；`getMenuView` 失败不触发 fallback 到其他方法 |
 
 ## 5. 功能门控
 
@@ -115,14 +115,16 @@ MiuiNotificationMenuRow.createMenuViews(boolean, boolean)
 6. 将 `for (obj in mMenuItems)` 改为索引循环，减少 `Iterator`。
 7. 修复 `STALE_ROW_BINDING_RISK`：点击时重新读取 `mSbn` / `mParent`，确保使用用户点击时的最新 notification / parent binding。
 8. 修复 `CONTEXT_SEMANTICS_DRIFT`：所有分支统一使用安装阶段捕获的 `mContext`，不再混用 `view.context`。
-9. 修复可选字段 null-safety：`mSbn` / `mParent` / `mMenuMargin` 缺失时安全降级。
-10. 增加 `rethrowFatal` helper：`VirtualMachineError` 与 `ThreadDeath` 继续抛出，避免误吞致命异常。
-11. 保留运行时 subtype fallback：`mSbn` / `mParent` 声明类型为基类但运行时为子类时，回退到 `XposedHelpers.callMethod` 运行时反射。
-12. `UserHandle.getUserId` 不可用时，使用 `appUid / ANDROID_PER_USER_RANGE` 作为安全 fallback。
+9. 修复可选字段 null-safety：`mSbn` / `mParent` / `mMenuMargin` / `mMenuContainer` 缺失时安全降级。
+10. 修复 `PARTIAL_MENU_MUTATION`：`mMenuItems` 和 `mMenuContainer` 修改推迟到容器、三个 menu item、三个 menu view、listener 均准备完成后；`mMenuContainer == null`、`getMenuView == null` 或 `getMenuView` 普通异常时 zero mutation。
+11. 增加 `rethrowFatal` helper：`VirtualMachineError` 与 `ThreadDeath` 继续抛出（含 wrapped cause chain），避免误吞致命异常；`NoSuchMethodError` / `NoSuchFieldError` / `VerifyError` / `IncompatibleClassChangeError` 不自动 fatal。
+12. `callMethodCompat` 合同明确：cached 存在时调用一次；cached 不存在时运行时 fallback；cached 调用失败后不回退，避免副作用重复。
+13. `UserHandle.getUserId` 不可用时，使用 `appUid / ANDROID_PER_USER_RANGE` 作为安全 fallback。
 
 ## 7. 保留动态反射原因
 
 - `MiuiNotificationMenuItem` 构造器和 `getMenuView` 方法在目标 ROM 上必须存在，属于稳定元数据，全部提前缓存。
 - 点击分支中 `notification.getPackageName()`、`getAppUid()` 等调用依赖具体 `StatusBarNotification` 实例；方法已缓存，调用为 `Method.invoke`。
 - 回调内唯一需要在运行时使用反射 lookup 的原因是目标类/方法无法在安装阶段以跨 ROM 确定的形式获取；本路径中稳定的类/方法均可在安装阶段解析。
-- 为兼容 ROM 中将 `mSbn` / `mParent` 声明为基类、运行时为子类的情形，保留 `XposedHelpers.callMethod` 运行时 fallback。
+- 为兼容 ROM 中将 `mSbn` / `mParent` 声明为基类、运行时为子类的情形，保留 `XposedHelpers.callMethod` 运行时 fallback（在 cached Method 缺失时）。
+- `getMenuView` 调用失败后不尝试运行时 fallback，避免 target 可能已执行的副作用被重复。
