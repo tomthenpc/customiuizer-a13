@@ -8,7 +8,8 @@
 |------|-----|
 | 任务编号 | `A13-PERF-QA-1` / `P1B-2` |
 | 分支 | `devin/a13-memory-performance-optimization` |
-| 当前 HEAD | `0ca93c2`（由 `git rev-parse --short HEAD` 确认） |
+| 审计 HEAD | `0ca93c2`（由 `git rev-parse --short HEAD` 确认） |
+| QA 修正 commit | `c661e4c` |
 | 基线基座 SHA | `3d38cdd53a6190c68187a803badaf201dfda25cd` |
 | 原始工程实现 SHA | `74b54e5c525aa3059bf3e88667f63f558ac7260f` |
 | 原始关闭点 SHA | `5f780b8a15727114bd29f01188191a2520ff2509` |

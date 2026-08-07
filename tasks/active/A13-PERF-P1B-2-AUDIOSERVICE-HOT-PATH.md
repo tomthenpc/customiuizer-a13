@@ -9,6 +9,7 @@
 | 起点 commit | `3d38cdd53a6190c68187a803badaf201dfda25cd` |
 | 状态 | `QA_CONDITIONAL` |
 | 终点 commit | `5f780b8` |
+| QA 修正 commit | `c661e4c`（P1B-2 correctness QA / R1 修正） |
 | P0 真实运行时基线 | `RUNTIME_BASELINE_PENDING_DEVICE` |
 | 授权范围 | 仅 `AudioService$VolumeStreamState#readSettings` 与 `AudioService#createStreamStates` 两个目标路径的辅助逻辑 |
 
