@@ -5,17 +5,23 @@
 | Field | Value |
 |-------|-------|
 | Task | `A13-PERF-P2-0` |
-| Base SHA | `5f00b0492c9cfc2cc62e171d424c269eeed3f492` |
+| Base SHA | `4dbe02599bfe09ea7efb5b0d94c2f35cb614d72a` |
 | Branch | `devin/a13-memory-performance-optimization` |
 | Scope | `app/src/main/java/**` |
 | Production changes | `FORBIDDEN` in P2-0 |
+| P2-0 state | `QA_ACCEPTED / FROZEN` |
+| P2-1 state | `NOT_STARTED` |
+| JDK25 migration | `READY_TO_BRANCH` |
+| P1B | `SEALED` |
+| QA-1 | `SEALED` |
+| P1B-4A | `ROM_LIFECYCLE_EVIDENCE_PENDING` |
 
 ## Summary counts
 
 | Risk | Count |
 |------|-------|
-| MEDIUM | 122 |
-| LOW | 66 |
+| MEDIUM | 96 |
+| LOW | 92 |
 | INFO | 303 |
 | UNKNOWN | 68 |
 
@@ -25,11 +31,12 @@
 | UNKNOWN_REQUIRES_MANUAL_REVIEW | 123 |
 | PROCESS_LIFETIME_INTENTIONAL | 45 |
 | WEAK_EDGE_WITH_MANAGED_ROOT | 34 |
-| UNBOUNDED_OWNER_COLLECTION | 26 |
+| PROCESS_LIFETIME_METADATA_COLLECTION | 25 |
 | LIFECYCLE_MANAGED | 22 |
 | BOUNDED_REPLACEMENT_RETENTION | 4 |
 | BOUNDED_DELAYED_CALLBACK_RETENTION | 1 |
 | VIEW_LIFETIME_OWNED_LISTENER | 1 |
+| PROCESS_LIFETIME_CONFIG_COLLECTION | 1 |
 
 | Root kind | Count |
 |-----------|-------|
@@ -177,41 +184,41 @@
 
 - `app/src/main/java/tv/withaibuild/customiuizer/MainActivity.kt:44` — `XposedServiceHelper.OnServiceListener` — PROCESS_LIFETIME_INTENTIONAL (LOW)
 - `app/src/main/java/tv/withaibuild/customiuizer/mods/PackagePermissions.kt:15` — `MutableSet<String>` — SAFE_STABLE_METADATA (INFO)
-- `app/src/main/java/tv/withaibuild/customiuizer/mods/SystemFreeformAndMultiWindowHooks.kt:34` — `ConcurrentHashMap<String, Pair<Float, Rect?>` — UNBOUNDED_OWNER_COLLECTION (MEDIUM)
-- `app/src/main/java/tv/withaibuild/customiuizer/mods/SystemNotificationAndShareHooks.kt:30` — `ArrayList<String>` — UNBOUNDED_OWNER_COLLECTION (MEDIUM)
+- `app/src/main/java/tv/withaibuild/customiuizer/mods/SystemFreeformAndMultiWindowHooks.kt:34` — `ConcurrentHashMap<String, Pair<Float, Rect?>` — PROCESS_LIFETIME_CONFIG_COLLECTION (LOW)
+- `app/src/main/java/tv/withaibuild/customiuizer/mods/SystemNotificationAndShareHooks.kt:30` — `ArrayList<String>` — PROCESS_LIFETIME_METADATA_COLLECTION (LOW)
 - `app/src/main/java/tv/withaibuild/customiuizer/mods/SystemNotificationMoreHooks.kt:407` — `MainModule.mPrefs.getStringSet` — UNKNOWN_REQUIRES_MANUAL_REVIEW (MEDIUM)
 - `app/src/main/java/tv/withaibuild/customiuizer/mods/SystemNotificationMoreHooks.kt:410` — `MainModule.mPrefs.getStringSet` — UNKNOWN_REQUIRES_MANUAL_REVIEW (MEDIUM)
-- `app/src/main/java/tv/withaibuild/customiuizer/mods/SystemUILockScreenHooks.kt:51` — `ArrayList<String>` — UNBOUNDED_OWNER_COLLECTION (MEDIUM)
+- `app/src/main/java/tv/withaibuild/customiuizer/mods/SystemUILockScreenHooks.kt:51` — `ArrayList<String>` — PROCESS_LIFETIME_METADATA_COLLECTION (LOW)
 - `app/src/main/java/tv/withaibuild/customiuizer/mods/SystemUILockScreenHooks.kt:451` — `AnimatorListenerAdapter` — BOUNDED_REPLACEMENT_RETENTION (MEDIUM)
 - `app/src/main/java/tv/withaibuild/customiuizer/mods/SystemUIStatusBarHooks.kt:58` — `List<String>` — SAFE_STABLE_METADATA (INFO)
 - `app/src/main/java/tv/withaibuild/customiuizer/mods/SystemUIStatusBarHooks.kt:59` — `ArrayList<WeakReference<View>` — WEAK_EDGE_WITH_MANAGED_ROOT (LOW)
 - `app/src/main/java/tv/withaibuild/customiuizer/mods/SystemUIStatusBarHooks.kt:59` — `List<String>?` — WEAK_EDGE_WITH_MANAGED_ROOT (LOW)
 - `app/src/main/java/tv/withaibuild/customiuizer/mods/SystemUIStatusBarHooks.kt:1389` — `attachStateListener` — LIFECYCLE_MANAGED (MEDIUM)
-- `app/src/main/java/tv/withaibuild/customiuizer/mods/catalog/FeatureInstallRegistry.kt:34` — `ConcurrentHashMap<String, FeatureSpec>` — UNBOUNDED_OWNER_COLLECTION (MEDIUM)
-- `app/src/main/java/tv/withaibuild/customiuizer/mods/catalog/FeatureInstallRegistry.kt:35` — `ConcurrentHashMap<String, String>` — UNBOUNDED_OWNER_COLLECTION (MEDIUM)
-- `app/src/main/java/tv/withaibuild/customiuizer/mods/catalog/FeatureInstallRegistry.kt:36` — `ConcurrentHashMap<FeatureStateKey, FeatureState>` — UNBOUNDED_OWNER_COLLECTION (MEDIUM)
-- `app/src/main/java/tv/withaibuild/customiuizer/mods/diagnostics/DiagnosticRecorder.kt:32` — `LinkedHashMap<String,` — UNBOUNDED_OWNER_COLLECTION (MEDIUM)
-- `app/src/main/java/tv/withaibuild/customiuizer/mods/diagnostics/DiagnosticRecorder.kt:35` — `HashMap<String,` — UNBOUNDED_OWNER_COLLECTION (MEDIUM)
-- `app/src/main/java/tv/withaibuild/customiuizer/mods/utils/FeatureInstallState.kt:15` — `HashMap<Int, FeatureState>` — UNBOUNDED_OWNER_COLLECTION (MEDIUM)
+- `app/src/main/java/tv/withaibuild/customiuizer/mods/catalog/FeatureInstallRegistry.kt:34` — `ConcurrentHashMap<String, FeatureSpec>` — PROCESS_LIFETIME_METADATA_COLLECTION (LOW)
+- `app/src/main/java/tv/withaibuild/customiuizer/mods/catalog/FeatureInstallRegistry.kt:35` — `ConcurrentHashMap<String, String>` — PROCESS_LIFETIME_METADATA_COLLECTION (LOW)
+- `app/src/main/java/tv/withaibuild/customiuizer/mods/catalog/FeatureInstallRegistry.kt:36` — `ConcurrentHashMap<FeatureStateKey, FeatureState>` — PROCESS_LIFETIME_METADATA_COLLECTION (LOW)
+- `app/src/main/java/tv/withaibuild/customiuizer/mods/diagnostics/DiagnosticRecorder.kt:32` — `LinkedHashMap<String,` — PROCESS_LIFETIME_METADATA_COLLECTION (LOW)
+- `app/src/main/java/tv/withaibuild/customiuizer/mods/diagnostics/DiagnosticRecorder.kt:35` — `HashMap<String,` — PROCESS_LIFETIME_METADATA_COLLECTION (LOW)
+- `app/src/main/java/tv/withaibuild/customiuizer/mods/utils/FeatureInstallState.kt:15` — `HashMap<Int, FeatureState>` — PROCESS_LIFETIME_METADATA_COLLECTION (LOW)
 - `app/src/main/java/tv/withaibuild/customiuizer/mods/utils/HookTargetResolver.kt:37` — `HashMap<String, Any?>` — UNKNOWN_REQUIRES_MANUAL_REVIEW (UNKNOWN)
 - `app/src/main/java/tv/withaibuild/customiuizer/mods/utils/HookTargetResolver.kt:38` — `HashMap<String, ResolutionLog>` — UNKNOWN_REQUIRES_MANUAL_REVIEW (UNKNOWN)
 - `app/src/main/java/tv/withaibuild/customiuizer/mods/utils/LockScreenAlbumArtController.kt:45` — `View.OnAttachStateChangeListener` — LIFECYCLE_MANAGED (LOW)
 - `app/src/main/java/tv/withaibuild/customiuizer/mods/utils/LockScreenAlbumArtController.kt:47` — `View.OnAttachStateChangeListener?` — WEAK_EDGE_WITH_MANAGED_ROOT (LOW)
-- `app/src/main/java/tv/withaibuild/customiuizer/mods/utils/ModuleHelper.java:63` — `ConcurrentHashMap<String,` — UNBOUNDED_OWNER_COLLECTION (MEDIUM)
-- `app/src/main/java/tv/withaibuild/customiuizer/mods/utils/ModuleHelper.java:695` — `ConcurrentHashMap<String,` — UNBOUNDED_OWNER_COLLECTION (MEDIUM)
-- `app/src/main/java/tv/withaibuild/customiuizer/mods/utils/ModuleHelper.java:697` — `ConcurrentHashMap<String,` — UNBOUNDED_OWNER_COLLECTION (MEDIUM)
-- `app/src/main/java/tv/withaibuild/customiuizer/mods/utils/ModuleHelper.java:769` — `ConcurrentHashMap<String,` — UNBOUNDED_OWNER_COLLECTION (MEDIUM)
-- `app/src/main/java/tv/withaibuild/customiuizer/mods/utils/ModuleHelper.java:771` — `ConcurrentHashMap<String,` — UNBOUNDED_OWNER_COLLECTION (MEDIUM)
-- `app/src/main/java/tv/withaibuild/customiuizer/mods/utils/ModuleHelper.java:852` — `ConcurrentHashMap<String,` — UNBOUNDED_OWNER_COLLECTION (MEDIUM)
+- `app/src/main/java/tv/withaibuild/customiuizer/mods/utils/ModuleHelper.java:63` — `ConcurrentHashMap<String,` — PROCESS_LIFETIME_METADATA_COLLECTION (LOW)
+- `app/src/main/java/tv/withaibuild/customiuizer/mods/utils/ModuleHelper.java:695` — `ConcurrentHashMap<String,` — PROCESS_LIFETIME_METADATA_COLLECTION (LOW)
+- `app/src/main/java/tv/withaibuild/customiuizer/mods/utils/ModuleHelper.java:697` — `ConcurrentHashMap<String,` — PROCESS_LIFETIME_METADATA_COLLECTION (LOW)
+- `app/src/main/java/tv/withaibuild/customiuizer/mods/utils/ModuleHelper.java:769` — `ConcurrentHashMap<String,` — PROCESS_LIFETIME_METADATA_COLLECTION (LOW)
+- `app/src/main/java/tv/withaibuild/customiuizer/mods/utils/ModuleHelper.java:771` — `ConcurrentHashMap<String,` — PROCESS_LIFETIME_METADATA_COLLECTION (LOW)
+- `app/src/main/java/tv/withaibuild/customiuizer/mods/utils/ModuleHelper.java:852` — `ConcurrentHashMap<String,` — PROCESS_LIFETIME_METADATA_COLLECTION (LOW)
 - `app/src/main/java/tv/withaibuild/customiuizer/mods/utils/ModuleHelper.java:928` — `ConcurrentHashMap<String,` — UNKNOWN_REQUIRES_MANUAL_REVIEW (UNKNOWN)
 - `app/src/main/java/tv/withaibuild/customiuizer/mods/utils/ModuleHelper.java:958` — `ConcurrentHashMap<String,` — UNKNOWN_REQUIRES_MANUAL_REVIEW (UNKNOWN)
-- `app/src/main/java/tv/withaibuild/customiuizer/mods/utils/ModuleHelper.java:1085` — `ConcurrentHashMap<String,` — UNBOUNDED_OWNER_COLLECTION (MEDIUM)
+- `app/src/main/java/tv/withaibuild/customiuizer/mods/utils/ModuleHelper.java:1085` — `ConcurrentHashMap<String,` — PROCESS_LIFETIME_METADATA_COLLECTION (LOW)
 - `app/src/main/java/tv/withaibuild/customiuizer/mods/utils/ProcessScope.kt:51` — `Set<String>` — SAFE_STABLE_METADATA (INFO)
 - `app/src/main/java/tv/withaibuild/customiuizer/mods/utils/ResourceHooks.java:97` — `ConcurrentHashMap<String,` — UNKNOWN_REQUIRES_MANUAL_REVIEW (UNKNOWN)
-- `app/src/main/java/tv/withaibuild/customiuizer/mods/utils/StepCounterController.kt:179` — `mutableListOf<StepViewRef>` — UNBOUNDED_OWNER_COLLECTION (MEDIUM)
-- `app/src/main/java/tv/withaibuild/customiuizer/mods/utils/XposedHelpers.java:72` — `ConcurrentHashMap<MemberCacheKey.Method,` — UNBOUNDED_OWNER_COLLECTION (MEDIUM)
-- `app/src/main/java/tv/withaibuild/customiuizer/mods/utils/XposedHelpers.java:73` — `ConcurrentHashMap<MemberCacheKey.Constructor,` — UNBOUNDED_OWNER_COLLECTION (MEDIUM)
-- `app/src/main/java/tv/withaibuild/customiuizer/mods/utils/XposedHelpers.java:187` — `HashMap<String,` — UNBOUNDED_OWNER_COLLECTION (MEDIUM)
+- `app/src/main/java/tv/withaibuild/customiuizer/mods/utils/StepCounterController.kt:179` — `mutableListOf<StepViewRef>` — PROCESS_LIFETIME_METADATA_COLLECTION (LOW)
+- `app/src/main/java/tv/withaibuild/customiuizer/mods/utils/XposedHelpers.java:72` — `ConcurrentHashMap<MemberCacheKey.Method,` — PROCESS_LIFETIME_METADATA_COLLECTION (LOW)
+- `app/src/main/java/tv/withaibuild/customiuizer/mods/utils/XposedHelpers.java:73` — `ConcurrentHashMap<MemberCacheKey.Constructor,` — PROCESS_LIFETIME_METADATA_COLLECTION (LOW)
+- `app/src/main/java/tv/withaibuild/customiuizer/mods/utils/XposedHelpers.java:187` — `HashMap<String,` — PROCESS_LIFETIME_METADATA_COLLECTION (LOW)
 - `app/src/main/java/tv/withaibuild/customiuizer/prefs/PreferenceEx.kt:37` — `View.OnLongClickListener` — UNKNOWN_REQUIRES_MANUAL_REVIEW (UNKNOWN)
 - `app/src/main/java/tv/withaibuild/customiuizer/prefs/PreferenceSchema.kt:325` — `Map<String, PreferenceEntry>` — SAFE_STABLE_METADATA (INFO)
 - `app/src/main/java/tv/withaibuild/customiuizer/prefs/SpinnerEx.kt:26` — `ArrayList<Int>` — UNKNOWN_REQUIRES_MANUAL_REVIEW (UNKNOWN)
@@ -227,12 +234,12 @@
 - `app/src/main/java/tv/withaibuild/customiuizer/utils/AppDataAdapter.kt:34` — `LinkedHashSet<String>` — UNKNOWN_REQUIRES_MANUAL_REVIEW (UNKNOWN)
 - `app/src/main/java/tv/withaibuild/customiuizer/utils/AppHelper.kt:48` — `Set<String>` — SAFE_STABLE_METADATA (INFO)
 - `app/src/main/java/tv/withaibuild/customiuizer/utils/BitmapCachedLoader.kt:32` — `HashMap<String, MutableList<T>` — UNKNOWN_REQUIRES_MANUAL_REVIEW (UNKNOWN)
-- `app/src/main/java/tv/withaibuild/customiuizer/utils/Helpers.kt:78` — `ArrayList<AppData>` — UNBOUNDED_OWNER_COLLECTION (MEDIUM)
-- `app/src/main/java/tv/withaibuild/customiuizer/utils/Helpers.kt:80` — `ArrayList<AppData>` — UNBOUNDED_OWNER_COLLECTION (MEDIUM)
-- `app/src/main/java/tv/withaibuild/customiuizer/utils/Helpers.kt:82` — `ArrayList<AppData>` — UNBOUNDED_OWNER_COLLECTION (MEDIUM)
-- `app/src/main/java/tv/withaibuild/customiuizer/utils/Helpers.kt:84` — `ArrayList<AppData>` — UNBOUNDED_OWNER_COLLECTION (MEDIUM)
-- `app/src/main/java/tv/withaibuild/customiuizer/utils/Helpers.kt:86` — `ArrayList<ModData>` — UNBOUNDED_OWNER_COLLECTION (MEDIUM)
-- `app/src/main/java/tv/withaibuild/customiuizer/utils/Helpers.kt:117` — `HashSet<String>` — UNBOUNDED_OWNER_COLLECTION (MEDIUM)
+- `app/src/main/java/tv/withaibuild/customiuizer/utils/Helpers.kt:78` — `ArrayList<AppData>` — PROCESS_LIFETIME_METADATA_COLLECTION (LOW)
+- `app/src/main/java/tv/withaibuild/customiuizer/utils/Helpers.kt:80` — `ArrayList<AppData>` — PROCESS_LIFETIME_METADATA_COLLECTION (LOW)
+- `app/src/main/java/tv/withaibuild/customiuizer/utils/Helpers.kt:82` — `ArrayList<AppData>` — PROCESS_LIFETIME_METADATA_COLLECTION (LOW)
+- `app/src/main/java/tv/withaibuild/customiuizer/utils/Helpers.kt:84` — `ArrayList<AppData>` — PROCESS_LIFETIME_METADATA_COLLECTION (LOW)
+- `app/src/main/java/tv/withaibuild/customiuizer/utils/Helpers.kt:86` — `ArrayList<ModData>` — PROCESS_LIFETIME_METADATA_COLLECTION (LOW)
+- `app/src/main/java/tv/withaibuild/customiuizer/utils/Helpers.kt:117` — `HashSet<String>` — PROCESS_LIFETIME_METADATA_COLLECTION (LOW)
 - `app/src/main/java/tv/withaibuild/customiuizer/utils/LockedAppAdapter.kt:29` — `ArrayList<AppData>` — UNKNOWN_REQUIRES_MANUAL_REVIEW (UNKNOWN)
 - `app/src/main/java/tv/withaibuild/customiuizer/utils/LockedAppAdapter.kt:31` — `HashSet<String>` — UNKNOWN_REQUIRES_MANUAL_REVIEW (UNKNOWN)
 - `app/src/main/java/tv/withaibuild/customiuizer/utils/PreferenceAdapter.kt:22` — `ArrayList<String>` — UNKNOWN_REQUIRES_MANUAL_REVIEW (UNKNOWN)
@@ -251,49 +258,64 @@
 
 ## Unknowns / manual-review queue
 
-- Total UNKNOWN or MEDIUM candidates requiring manual review: 190
+- Total UNKNOWN or MEDIUM candidates requiring manual review: 164
 - These need ROM/runtime evidence to confirm release path, owner lifetime, or callback capture.
 - WeakReference edges still require their registration root to be reviewed.
 
 ## Top 10 retention candidates
 
-| Rank | ID | Risk | Classification | Process | Source | Line | Retained | Notes |
-|------|----|------|----------------|---------|--------|------|----------|-------|
-| 1 | mlp-00095 | MEDIUM | UNBOUNDED_OWNER_COLLECTION | system_server | SystemFreeformAndMultiWindowHooks.kt | 34 | `ConcurrentHashMap<String, Pair<Float, Rect?>` | t java.lang.reflect.Modifier import java.util.concurrent.ConcurrentHashMap objec... |
-| 2 | mlp-00107 | MEDIUM | UNBOUNDED_OWNER_COLLECTION | system_server | SystemNotificationAndShareHooks.kt | 30 | `ArrayList<String>` | .mods.utils.XposedHelpers import tv.withaibuild.customiuizer.utils.HookUtils obj... |
-| 3 | mlp-00142 | MEDIUM | LIFECYCLE_MANAGED | system_server | SystemStatusBarMoreHooks.kt | 135 | `alarmObserver` | bility(thisObject, lastState) } } } resolver.registerContentObserver(Settings.Sy... |
-| 4 | mlp-00169 | MEDIUM | UNBOUNDED_OWNER_COLLECTION | com.android.systemui | SystemUILockScreenHooks.kt | 51 | `ArrayList<String>` | EY = "customiuizer.secure_qs_tile_spec" private val cameraResetTag = ResourceHoo... |
-| 5 | mlp-00170 | MEDIUM | BOUNDED_REPLACEMENT_RETENTION | com.android.systemui | SystemUILockScreenHooks.kt | 451 | `AnimatorListenerAdapter` | ull) mAnimatorSet.pause() mAnimatorSet.removeAllListeners() mAnimatorSet.addList... |
-| 6 | mlp-00178 | MEDIUM | LIFECYCLE_MANAGED | com.android.systemui | SystemUIMonitorAndTileHooks.kt | 103 | `contentObserver` | } } } resolver.registerContentObserver(Settings.Global.getUriFor("fiveg_user_ena... |
-| 7 | mlp-00179 | MEDIUM | LIFECYCLE_MANAGED | com.android.systemui | SystemUIMonitorAndTileHooks.kt | 104 | `contentObserver` | ContentObserver(Settings.Global.getUriFor("fiveg_user_enable"), false, contentOb... |
-| 8 | mlp-00199 | MEDIUM | LIFECYCLE_MANAGED | com.android.systemui | SystemUIStatusBarHooks.kt | 1389 | `attachStateListener` | v.removeOnAttachStateChangeListener(this) } } meter.addOnAttachStateChangeListen... |
-| 9 | mlp-00058 | MEDIUM | LIFECYCLE_MANAGED | com.miui.home | LauncherGestureHooks.kt | 236 | `shakeMgr` | .SENSOR_SERVICE) as? android.hardware.SensorManager ?: return shakeMgr.reset() s... |
-| 10 | mlp-00002 | MEDIUM | LIFECYCLE_MANAGED | tv.withaibuild.customiuizer.r13 | MainActivity.kt | 79 | `Activity` | AppHelper.onLocalPreferenceChanged(AppHelper.remotePrefs, key, value) } AppHelpe... |
+| Rank | ID | Risk | Status | Classification | Process | Source | Line | Retained | Notes |
+|------|----|------|--------|----------------|---------|--------|------|----------|-------|
+| 1 | mlp-00078 | MEDIUM | NEEDS_ROM_EVIDENCE | UNKNOWN_REQUIRES_MANUAL_REVIEW | system_server | SystemChargingAndWallpaperHooks.kt | 111 | `wallpaperHandler` | ler == null) { wallpaperHandler = Handler(Looper.getMainLooper()) XposedHelpers.... |
+| 2 | mlp-00079 | MEDIUM | NEEDS_ROM_EVIDENCE | UNKNOWN_REQUIRES_MANUAL_REVIEW | system_server | SystemChargingAndWallpaperHooks.kt | 183 | `wallpaperRunnable` | } } wallpaperHandler.postDelayed(wallpaperRunnable, 1800) XposedHelpers.setAddit... |
+| 3 | mlp-00083 | MEDIUM | NEEDS_ROM_EVIDENCE | UNKNOWN_REQUIRES_MANUAL_REVIEW | system_server | SystemDisplayAndWindowHooks.kt | 126 | `currentTouchTime` | } currentTouchTime = 0L } XposedHelpers.setAdditionalInstanceField(view, "curren... |
+| 4 | mlp-00084 | MEDIUM | NEEDS_ROM_EVIDENCE | UNKNOWN_REQUIRES_MANUAL_REVIEW | system_server | SystemDisplayAndWindowHooks.kt | 127 | `currentTouchX` | sedHelpers.setAdditionalInstanceField(view, "currentTouchTime", currentTouchTime... |
+| 5 | mlp-00085 | MEDIUM | NEEDS_ROM_EVIDENCE | UNKNOWN_REQUIRES_MANUAL_REVIEW | system_server | SystemDisplayAndWindowHooks.kt | 128 | `currentTouchY` | XposedHelpers.setAdditionalInstanceField(view, "currentTouchX", currentTouchX) X... |
+| 6 | mlp-00086 | MEDIUM | NEEDS_ROM_EVIDENCE | UNKNOWN_REQUIRES_MANUAL_REVIEW | system_server | SystemDisplayAndWindowHooks.kt | 151 | `initBlurRatio` | ) val initBlurRatio = MainModule.mPrefs.getInt("system_drawer_blur", 100) Xposed... |
+| 7 | mlp-00087 | MEDIUM | NEEDS_ROM_EVIDENCE | UNKNOWN_REQUIRES_MANUAL_REVIEW | system_server | SystemDisplayAndWindowHooks.kt | 152 | `initBlurRatio` | onalInstanceField(notificationShadeDepthController, "mCustomBlurModifier", initB... |
+| 8 | mlp-00088 | MEDIUM | NEEDS_ROM_EVIDENCE | UNKNOWN_REQUIRES_MANUAL_REVIEW | system_server | SystemDisplayAndWindowHooks.kt | 158 | `opt` | XposedHelpers.getObjectField(owner, "notificationShadeDepthController") XposedHe... |
+| 9 | mlp-00089 | MEDIUM | NEEDS_ROM_EVIDENCE | UNKNOWN_REQUIRES_MANUAL_REVIEW | system_server | SystemDisplayAndWindowHooks.kt | 159 | `opt` | rs.setAdditionalInstanceField(currentDepthController, "mCustomBlurModifier", opt... |
+| 10 | mlp-00090 | MEDIUM | NEEDS_ROM_EVIDENCE | UNKNOWN_REQUIRES_MANUAL_REVIEW | system_server | SystemDisplayAndWindowHooks.kt | 170 | `blurRatio` | val mBlurUtils = XposedHelpers.getObjectField(parentCtrl, "blurUtilsExt") Xposed... |
+
+## Top evidence-pending candidates
+
+| Rank | ID | Risk | Status | Classification | Process | Source | Line | Retained | Notes |
+|------|----|------|--------|----------------|---------|--------|------|----------|-------|
+| 1 | mlp-00077 | MEDIUM | NEEDS_ROM_EVIDENCE | PROCESS_LIFETIME_INTENTIONAL | system_server | SystemChargingAndWallpaperHooks.kt | 110 | `Handler` | "mWallpaperHandler") as? Handler if (wallpaperHandler == null) { wallpaperHandle... |
+| 2 | mlp-00078 | MEDIUM | NEEDS_ROM_EVIDENCE | UNKNOWN_REQUIRES_MANUAL_REVIEW | system_server | SystemChargingAndWallpaperHooks.kt | 111 | `wallpaperHandler` | ler == null) { wallpaperHandler = Handler(Looper.getMainLooper()) XposedHelpers.... |
+| 3 | mlp-00079 | MEDIUM | NEEDS_ROM_EVIDENCE | UNKNOWN_REQUIRES_MANUAL_REVIEW | system_server | SystemChargingAndWallpaperHooks.kt | 183 | `wallpaperRunnable` | } } wallpaperHandler.postDelayed(wallpaperRunnable, 1800) XposedHelpers.setAddit... |
+| 4 | mlp-00083 | MEDIUM | NEEDS_ROM_EVIDENCE | UNKNOWN_REQUIRES_MANUAL_REVIEW | system_server | SystemDisplayAndWindowHooks.kt | 126 | `currentTouchTime` | } currentTouchTime = 0L } XposedHelpers.setAdditionalInstanceField(view, "curren... |
+| 5 | mlp-00084 | MEDIUM | NEEDS_ROM_EVIDENCE | UNKNOWN_REQUIRES_MANUAL_REVIEW | system_server | SystemDisplayAndWindowHooks.kt | 127 | `currentTouchX` | sedHelpers.setAdditionalInstanceField(view, "currentTouchTime", currentTouchTime... |
+| 6 | mlp-00085 | MEDIUM | NEEDS_ROM_EVIDENCE | UNKNOWN_REQUIRES_MANUAL_REVIEW | system_server | SystemDisplayAndWindowHooks.kt | 128 | `currentTouchY` | XposedHelpers.setAdditionalInstanceField(view, "currentTouchX", currentTouchX) X... |
+| 7 | mlp-00086 | MEDIUM | NEEDS_ROM_EVIDENCE | UNKNOWN_REQUIRES_MANUAL_REVIEW | system_server | SystemDisplayAndWindowHooks.kt | 151 | `initBlurRatio` | ) val initBlurRatio = MainModule.mPrefs.getInt("system_drawer_blur", 100) Xposed... |
+| 8 | mlp-00087 | MEDIUM | NEEDS_ROM_EVIDENCE | UNKNOWN_REQUIRES_MANUAL_REVIEW | system_server | SystemDisplayAndWindowHooks.kt | 152 | `initBlurRatio` | onalInstanceField(notificationShadeDepthController, "mCustomBlurModifier", initB... |
+| 9 | mlp-00088 | MEDIUM | NEEDS_ROM_EVIDENCE | UNKNOWN_REQUIRES_MANUAL_REVIEW | system_server | SystemDisplayAndWindowHooks.kt | 158 | `opt` | XposedHelpers.getObjectField(owner, "notificationShadeDepthController") XposedHe... |
+| 10 | mlp-00089 | MEDIUM | NEEDS_ROM_EVIDENCE | UNKNOWN_REQUIRES_MANUAL_REVIEW | system_server | SystemDisplayAndWindowHooks.kt | 159 | `opt` | rs.setAdditionalInstanceField(currentDepthController, "mCustomBlurModifier", opt... |
 
 ## Top 3 strongest retention chains
 
-### 1. `SystemFreeformAndMultiWindowHooks.kt:34` — UNBOUNDED_OWNER_COLLECTION (MEDIUM)
+### 1. `SystemChargingAndWallpaperHooks.kt:111` — UNKNOWN_REQUIRES_MANUAL_REVIEW (MEDIUM)
 
-- **Root**: `KOTLIN_OBJECT_FIELD` retaining `ConcurrentHashMap<String, Pair<Float, Rect?>` in process `system_server`.
-- **Review rationale**: Collection of short-lived Android owners held from a process-lifetime root.
+- **Root**: `ADDITIONAL_INSTANCE_FIELD` retaining `wallpaperHandler` in process `system_server`.
+- **Review rationale**: Scanner cannot prove the release path or owner lifetime from source alone; ROM/runtime evidence required.
 
-### 2. `SystemNotificationAndShareHooks.kt:30` — UNBOUNDED_OWNER_COLLECTION (MEDIUM)
+### 2. `SystemChargingAndWallpaperHooks.kt:183` — UNKNOWN_REQUIRES_MANUAL_REVIEW (MEDIUM)
 
-- **Root**: `KOTLIN_OBJECT_FIELD` retaining `ArrayList<String>` in process `system_server`.
-- **Review rationale**: Collection of short-lived Android owners held from a process-lifetime root.
+- **Root**: `ADDITIONAL_INSTANCE_FIELD` retaining `wallpaperRunnable` in process `system_server`.
+- **Review rationale**: Scanner cannot prove the release path or owner lifetime from source alone; ROM/runtime evidence required.
 
-### 3. `SystemStatusBarMoreHooks.kt:135` — LIFECYCLE_MANAGED (MEDIUM)
+### 3. `SystemDisplayAndWindowHooks.kt:126` — UNKNOWN_REQUIRES_MANUAL_REVIEW (MEDIUM)
 
-- **Root**: `CONTENT_OBSERVER_REGISTRATION` retaining `alarmObserver` in process `system_server`.
-- **Registration site**: `} } } resolver.registerContentObserver(Settings.System.getUriFor("next_alarm_clock_formatted")`
-- **Release site**: `ystemStatusBarMoreHooks.unregisterAlarmObserver") { resolver.unregisterContentObserver(alarmObserver) }`
-- **Review rationale**: Identity-matched release path found in source.
+- **Root**: `ADDITIONAL_INSTANCE_FIELD` retaining `currentTouchTime` in process `system_server`.
+- **Review rationale**: Scanner cannot prove the release path or owner lifetime from source alone; ROM/runtime evidence required.
 
 ## Manual supplemental coverage
 
 - **Candidates reviewed**: 408 of 559
-- **HIGH/CRITICAL manually reviewed**: 0
+- **RAW HIGH/CRITICAL SOURCE-REVIEWED**: 26 (CRITICAL=0)
+- **FINAL HIGH/CRITICAL**: 0
 - **MEDIUM/UNKNOWN needing ROM/runtime evidence**: 151
+- **Collection breakdown**: owner=0, metadata/state=25, config=1, unknown=0
 - **False-positive / benign count**: 348 (`SAFE_STABLE_METADATA` + `PROCESS_LIFETIME_INTENTIONAL`) classified as not requiring production change.
 
 ## Recommended P2-1 slice
@@ -313,9 +335,14 @@ RECOMMENDED_P2_1 = SubFragment.kt smooth-scroller delayed callback cleanup
 
 ```
 P2-1 = NOT_STARTED
-P2-0 = AUDIT_COMPLETE
+P2-0 = QA_ACCEPTED / FROZEN
+P1B = SEALED
+QA-1 = SEALED
+P1B-4A = ROM_LIFECYCLE_EVIDENCE_PENDING
+JDK25_MIGRATION = READY_TO_BRANCH
+A13_PERFORMANCE_STABLE_BASE = <R3 FINAL SHA>
 ```
 
 ## Static scanner note
 
-The scanner only discovers *candidates*. It does not prove runtime memory leaks. All HIGH/CRITICAL items were manually reviewed; MEDIUM/UNKNOWN items need ROM/runtime evidence before production change.
+The scanner only discovers *candidates*. It does not prove runtime memory leaks. All raw HIGH/CRITICAL items were source-reviewed and downgraded where evidence did not support a HIGH/CRITICAL classification. MEDIUM/UNKNOWN items need ROM/runtime evidence before production change.

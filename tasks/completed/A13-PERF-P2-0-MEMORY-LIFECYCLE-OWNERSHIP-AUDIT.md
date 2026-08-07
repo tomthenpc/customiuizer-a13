@@ -6,8 +6,8 @@
 |------|-----|
 | 任务 | `A13-PERF-P2-0` |
 | 分支 | `devin/a13-memory-performance-optimization` |
-| Base SHA | `f28c3373a0b8a518788d84c3054274c609247444` |
-| 状态 | `QA_ACCEPTED` |
+| Base SHA | `4dbe02599bfe09ea7efb5b0d94c2f35cb614d72a` |
+| 状态 | `QA_ACCEPTED / FROZEN` |
 | Production changes | `FORBIDDEN` |
 | P1B / QA-1 | `SEALED` |
 
@@ -42,8 +42,8 @@
 ## P2-0 结果
 
 - Scanner 候选：559
-- 风险：HIGH=0, MEDIUM=122, LOW=66, INFO=303, UNKNOWN=68
-- raw HIGH：17（全部 source 复核，0 个保留为 final HIGH）
+- 风险：HIGH=0, MEDIUM=96, LOW=92, INFO=303, UNKNOWN=68
+- raw HIGH：26（R1 raw HIGH = 17；R2/R3 final scanner raw HIGH = 26；全部 source 复核，0 个保留为 final HIGH）
 - raw CRITICAL：0
 - final HIGH：0
 - final CRITICAL：0
@@ -51,7 +51,23 @@
 - NEEDS_ROM_EVIDENCE：151
 - 手动补充计数：0 个新的 HIGH/CRITICAL（手动 grep 已确认覆盖）
 - 误报 / 良性计数：348（303 SAFE_STABLE_METADATA + 45 PROCESS_LIFETIME_INTENTIONAL）
+- Collection 复核结果：
+  - `UNBOUNDED_OWNER_COLLECTION`：0（原 26 个全部按 element/value 类型重新分类）
+  - `PROCESS_LIFETIME_METADATA_COLLECTION`：25（XposedHelpers 反射缓存、FeatureInstallRegistry、Helpers AppData/ModData、DiagnosticRecorder、ModuleHelper registries、StepCounterController stepViews 等）
+  - `PROCESS_LIFETIME_CONFIG_COLLECTION`：1（`SystemFreeformAndMultiWindowHooks.fwApps`）
+  - `UNKNOWN_COLLECTION_CARDINALITY`：0
 - 推荐 P2-1：`SubFragment.kt` 中 `view?.postDelayed` smooth-scroller 延迟回调清理
+
+## R3 修正点
+
+- 修正 `UNBOUNDED_OWNER_COLLECTION` 泛化逻辑：不再把 `ArrayList<String>` / `Map<String, String>` / reflection cache 等 blanket 标为 owner collection。
+- 新增 collection 分类：`PROCESS_LIFETIME_METADATA_COLLECTION`、`PROCESS_LIFETIME_CONFIG_COLLECTION`、`UNKNOWN_COLLECTION_CARDINALITY`。
+- 26 个原 `UNBOUNDED_OWNER_COLLECTION` 逐条按 element/value 类型复核：25 个降为 metadata/state，1 个 `fwApps` 归为 config。
+- 修正 raw HIGH ledger：`raw HIGH = 26`（R1 17 → R2/R3 26），`final HIGH = 0`。
+- 修正 review 计数：区分 `RAW HIGH/CRITICAL SOURCE-REVIEWED` 与 `FINAL HIGH/CRITICAL`。
+- 修正 Top10 / Top3 排序：证据不确定性作为优先级因素，`NEEDS_ROM_EVIDENCE` 候选可进入 Top10；新增 `Top evidence-pending` 列表。
+- P2-1 推荐保持为 `SubFragment.kt` smooth-scroller，独立于 Top1。
+- 新增 6 个 collection 语义回归测试。
 
 ## P2-1 推荐
 
@@ -68,8 +84,12 @@ RECOMMENDED_P2_1 = SubFragment.kt smooth-scroller delayed callback cleanup
 ## 最终状态
 
 ```text
-P2-0 = QA_ACCEPTED
+P2-0 = QA_ACCEPTED / FROZEN
 P2-1 = NOT_STARTED
 P2-2 = NOT_STARTED
-JDK25 = no
+P1B = SEALED
+QA-1 = SEALED
+P1B-4A = ROM_LIFECYCLE_EVIDENCE_PENDING
+JDK25_MIGRATION = READY_TO_BRANCH
+A13_PERFORMANCE_STABLE_BASE = <R3 FINAL SHA>
 ```

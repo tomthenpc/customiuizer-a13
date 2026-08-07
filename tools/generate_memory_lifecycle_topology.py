@@ -31,10 +31,16 @@ def main() -> int:
         "| Field | Value |",
         "|-------|-------|",
         "| Task | `A13-PERF-P2-0` |",
-        "| Base SHA | `5f00b0492c9cfc2cc62e171d424c269eeed3f492` |",
+        "| Base SHA | `4dbe02599bfe09ea7efb5b0d94c2f35cb614d72a` |",
         "| Branch | `devin/a13-memory-performance-optimization` |",
         "| Scope | `app/src/main/java/**` |",
         "| Production changes | `FORBIDDEN` in P2-0 |",
+        "| P2-0 state | `QA_ACCEPTED / FROZEN` |",
+        "| P2-1 state | `NOT_STARTED` |",
+        "| JDK25 migration | `READY_TO_BRANCH` |",
+        "| P1B | `SEALED` |",
+        "| QA-1 | `SEALED` |",
+        "| P1B-4A | `ROM_LIFECYCLE_EVIDENCE_PENDING` |",
         "",
         "## Summary counts",
         "",
@@ -123,13 +129,26 @@ def main() -> int:
     # Top 10
     lines.append("## Top 10 retention candidates")
     lines.append("")
-    lines.append("| Rank | ID | Risk | Classification | Process | Source | Line | Retained | Notes |")
-    lines.append("|------|----|------|----------------|---------|--------|------|----------|-------|")
+    lines.append("| Rank | ID | Risk | Status | Classification | Process | Source | Line | Retained | Notes |")
+    lines.append("|------|----|------|--------|----------------|---------|--------|------|----------|-------|")
     for i, c in enumerate(top10, 1):
         source = c["source_file"].split("/")[-1]
         notes = (c["evidence"][:80].replace("|", "\\|").replace("\n", " ") + "...") if c["evidence"] else ""
-        lines.append(f"| {i} | {c['id']} | {c['risk']} | {c['classification']} | {c['process']} | {source} | {c['source_line']} | `{c['retained_type']}` | {notes} |")
+        lines.append(f"| {i} | {c['id']} | {c['risk']} | {c['review_status']} | {c['classification']} | {c['process']} | {source} | {c['source_line']} | `{c['retained_type']}` | {notes} |")
     lines.append("")
+
+    # Top evidence-pending candidates
+    top_evidence = data.get("top_evidence_pending", [])
+    if top_evidence:
+        lines.append("## Top evidence-pending candidates")
+        lines.append("")
+        lines.append("| Rank | ID | Risk | Status | Classification | Process | Source | Line | Retained | Notes |")
+        lines.append("|------|----|------|--------|----------------|---------|--------|------|----------|-------|")
+        for i, c in enumerate(top_evidence, 1):
+            source = c["source_file"].split("/")[-1]
+            notes = (c["evidence"][:80].replace("|", "\\|").replace("\n", " ") + "...") if c["evidence"] else ""
+            lines.append(f"| {i} | {c['id']} | {c['risk']} | {c['review_status']} | {c['classification']} | {c['process']} | {source} | {c['source_line']} | `{c['retained_type']}` | {notes} |")
+        lines.append("")
 
     # Top 3 chains — derived from the reviewed inventory top 10
     lines.append("## Top 3 strongest retention chains")
@@ -153,12 +172,20 @@ def main() -> int:
     # Manual coverage — derived from the reviewed inventory
     lines.append("## Manual supplemental coverage")
     lines.append("")
-    manual_high = sum(1 for c in candidates if c["risk"] in ("HIGH", "CRITICAL") and c["review_status"] == "REVIEWED")
+    raw_high = data["scanner_risk_counts"].get("HIGH", 0) + data["scanner_risk_counts"].get("CRITICAL", 0)
+    final_high = by_risk.get("HIGH", 0) + by_risk.get("CRITICAL", 0)
+    raw_critical = data["scanner_risk_counts"].get("CRITICAL", 0)
     manual_medium = sum(1 for c in candidates if c["risk"] in ("MEDIUM", "UNKNOWN") and c["review_status"] == "NEEDS_ROM_EVIDENCE")
     benign = sum(1 for c in candidates if c["classification"] in ("SAFE_STABLE_METADATA", "PROCESS_LIFETIME_INTENTIONAL"))
+    owner_collections = by_class.get("UNBOUNDED_OWNER_COLLECTION", 0)
+    metadata_collections = by_class.get("PROCESS_LIFETIME_METADATA_COLLECTION", 0) + by_class.get("PROCESS_LIFETIME_STATE_COLLECTION", 0)
+    config_collections = by_class.get("PROCESS_LIFETIME_CONFIG_COLLECTION", 0)
+    unknown_collections = by_class.get("UNKNOWN_COLLECTION_CARDINALITY", 0)
     lines.append(f"- **Candidates reviewed**: {len([c for c in candidates if c['review_status'] == 'REVIEWED'])} of {len(candidates)}")
-    lines.append(f"- **HIGH/CRITICAL manually reviewed**: {manual_high}")
+    lines.append(f"- **RAW HIGH/CRITICAL SOURCE-REVIEWED**: {raw_high} (CRITICAL={raw_critical})")
+    lines.append(f"- **FINAL HIGH/CRITICAL**: {final_high}")
     lines.append(f"- **MEDIUM/UNKNOWN needing ROM/runtime evidence**: {manual_medium}")
+    lines.append(f"- **Collection breakdown**: owner={owner_collections}, metadata/state={metadata_collections}, config={config_collections}, unknown={unknown_collections}")
     lines.append(f"- **False-positive / benign count**: {benign} (`SAFE_STABLE_METADATA` + `PROCESS_LIFETIME_INTENTIONAL`) classified as not requiring production change.")
     lines.append("")
 
@@ -223,13 +250,18 @@ def main() -> int:
     lines.append("")
     lines.append("```")
     lines.append("P2-1 = NOT_STARTED")
-    lines.append("P2-0 = AUDIT_COMPLETE")
+    lines.append("P2-0 = QA_ACCEPTED / FROZEN")
+    lines.append("P1B = SEALED")
+    lines.append("QA-1 = SEALED")
+    lines.append("P1B-4A = ROM_LIFECYCLE_EVIDENCE_PENDING")
+    lines.append("JDK25_MIGRATION = READY_TO_BRANCH")
+    lines.append("A13_PERFORMANCE_STABLE_BASE = <R3 FINAL SHA>")
     lines.append("```")
     lines.append("")
 
     lines.append("## Static scanner note")
     lines.append("")
-    lines.append("The scanner only discovers *candidates*. It does not prove runtime memory leaks. All HIGH/CRITICAL items were manually reviewed; MEDIUM/UNKNOWN items need ROM/runtime evidence before production change.")
+    lines.append("The scanner only discovers *candidates*. It does not prove runtime memory leaks. All raw HIGH/CRITICAL items were source-reviewed and downgraded where evidence did not support a HIGH/CRITICAL classification. MEDIUM/UNKNOWN items need ROM/runtime evidence before production change.")
     lines.append("")
 
     OUT.write_text("\n".join(lines), encoding="utf-8")

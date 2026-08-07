@@ -245,6 +245,129 @@ def _collection_type(type_str: str) -> str | None:
     return None
 
 
+def _extract_generic_args(type_str: str) -> list[str]:
+    """Extract top-level generic arguments from a type string.
+    Returns empty list for non-generic or unbalanced input.
+    """
+    start = type_str.find("<")
+    if start == -1:
+        return []
+    depth = 0
+    current = ""
+    args: list[str] = []
+    for ch in type_str[start + 1 :]:
+        if ch == "<":
+            depth += 1
+            current += ch
+        elif ch == ">":
+            if depth == 0:
+                if current:
+                    args.append(current.strip(", "))
+                return args
+            depth -= 1
+            current += ch
+        elif ch == "," and depth == 0:
+            if current:
+                args.append(current.strip(", "))
+            current = ""
+        else:
+            current += ch
+    if current:
+        args.append(current.strip(", "))
+    return args
+
+
+def _extract_type_leaves(type_str: str) -> list[str]:
+    """Return base type names from a (possibly generic) type string."""
+    args = _extract_generic_args(type_str)
+    if not args:
+        return [re.sub(r"[<>,?]", "", type_str).strip()]
+    leaves: list[str] = []
+    for a in args:
+        leaves.extend(_extract_type_leaves(a))
+    return leaves
+
+
+def _contains_owner_in_leaves(type_str: str) -> bool:
+    """True if any concrete leaf type is a short-lived Android owner.
+    WeakReference/SoftReference leaves are excluded because the edge is weak.
+    """
+    leaves = _extract_type_leaves(type_str)
+    for leaf in leaves:
+        if re.search(r"\b(?:WeakReference|SoftReference|WeakHashMap)\b", leaf, re.I):
+            continue
+        if _contains_short_lived_owner(leaf):
+            return True
+    return False
+
+
+def _is_known_metadata_type(type_str: str) -> bool:
+    """True if the type is a known non-owner metadata/config type.
+    This is intentionally conservative; unknown custom classes are not included.
+    """
+    leaves = _extract_type_leaves(type_str)
+    metadata_tokens = (
+        "String", "CharSequence", "Int", "Long", "Float", "Double", "Boolean",
+        "Byte", "Short", "Integer", "Any", "Object", "Class", "Method", "Field",
+        "Constructor", "Member", "Optional", "ThreadLocal", "AtomicInteger",
+        "AtomicLong", "Date", "Pair", "Triple", "Rect", "AppData", "ModData",
+        "FeatureSpec", "FeatureState", "FeatureStateKey", "DiagnosticSnapshot",
+        "PreferenceObserver", "MemberCacheKey", "ReceiverRegistration",
+        "OwnedReceiverBucket", "OwnedReceiverRegistration", "StepViewRef",
+    )
+    for leaf in leaves:
+        base = leaf.split(".")[-1].split("<")[0]
+        if _contains_owner(base):
+            return False
+        if base in metadata_tokens:
+            continue
+        if _is_safe_metadata(base):
+            continue
+        if re.match(r"^\?$|^\*?$|^in |^out |^extends |^super ", base):
+            continue
+        return False
+    return bool(leaves)
+
+
+def _is_known_config_type(type_str: str) -> bool:
+    """True if the collection values are concrete configuration values (no owner).
+    Strings, booleans, and numeric primitives alone do not make a config collection.
+    """
+    leaves = _extract_type_leaves(type_str)
+    for leaf in leaves:
+        base = leaf.split(".")[-1].split("<")[0]
+        if _contains_owner(base):
+            return False
+    for leaf in leaves:
+        base = leaf.split(".")[-1].split("<")[0]
+        if re.match(r"^(Rect|Pair|.*Config|PreferenceEntry)$", base, re.I):
+            return True
+    return False
+
+
+def _classify_collection(retained_type: str, path: Path, text: str) -> tuple[str, str]:
+    """Classify a static/object collection by its element/value type ownership.
+    Returns (classification, risk).
+    """
+    # Weak-reference collections are bounded by the weak edge.
+    if _contains_weak(retained_type):
+        return "WEAK_EDGE_WITH_MANAGED_ROOT", "LOW"
+
+    # Owner-containing elements: true unbounded owner collection.
+    if _contains_owner_in_leaves(retained_type):
+        return "UNBOUNDED_OWNER_COLLECTION", "HIGH"
+
+    # Known non-owner metadata / config: process-lifetime, but still note cardinality.
+    if _is_known_metadata_type(retained_type):
+        # Distinguish config from metadata by values.
+        if _is_known_config_type(retained_type):
+            return "PROCESS_LIFETIME_CONFIG_COLLECTION", "LOW"
+        return "PROCESS_LIFETIME_METADATA_COLLECTION", "LOW"
+
+    # Unknown or unparseable element/value type: needs evidence.
+    return "UNKNOWN_COLLECTION_CARDINALITY", "MEDIUM"
+
+
 def _field_name(snippet: str) -> str:
     m = re.search(r"(?:val|var|lateinit\s+var)\s+([A-Za-z0-9_]+)", snippet)
     if m:
@@ -656,12 +779,7 @@ def _make_candidate(
             risk = "LOW"
             edge = "WEAK"
         elif _collection_type(retained_type):
-            if _contains_short_lived_owner(retained_type):
-                classification = "UNBOUNDED_OWNER_COLLECTION"
-                risk = "HIGH"
-            else:
-                classification = "UNBOUNDED_OWNER_COLLECTION"
-                risk = "MEDIUM"
+            classification, risk = _classify_collection(retained_type, path, text)
         elif _contains_short_lived_owner(retained_type):
             classification = "STRONG_SHORT_OWNER_FROM_PROCESS_ROOT"
             risk = "HIGH"
@@ -1250,12 +1368,17 @@ def _review_candidates(candidates: list[Candidate], repo_root: Path = REPO_ROOT)
                 c.risk = c.reviewed_risk
                 continue
 
-        # 8. Unbounded owner collection (high-confidence static / object)
-        if c.scanner_classification == "UNBOUNDED_OWNER_COLLECTION":
+        # 8. Collection classification — reviewed according to element/value ownership
+        if c.scanner_classification in ("UNBOUNDED_OWNER_COLLECTION", "PROCESS_LIFETIME_METADATA_COLLECTION", "PROCESS_LIFETIME_CONFIG_COLLECTION"):
             c.reviewed_classification = c.scanner_classification
             c.reviewed_risk = c.scanner_risk
             c.review_status = "REVIEWED"
-            c.review_rationale = "Collection of short-lived Android owners held from a process-lifetime root."
+            if c.scanner_classification == "UNBOUNDED_OWNER_COLLECTION":
+                c.review_rationale = "Collection element/value type contains a short-lived Android owner."
+            elif c.scanner_classification == "PROCESS_LIFETIME_CONFIG_COLLECTION":
+                c.review_rationale = "Collection holds process-lifetime configuration values; no Android owner retained."
+            else:
+                c.review_rationale = "Collection holds process-lifetime metadata/state values; no Android owner retained."
             c.classification = c.reviewed_classification
             c.risk = c.reviewed_risk
             continue
@@ -1542,14 +1665,58 @@ def _process_severity(process: str) -> int:
     }.get(process, 40)
 
 
+_ACTIONABLE_CLASSIFICATIONS = frozenset({
+    "UNBOUNDED_OWNER_COLLECTION",
+    "DELAYED_CALLBACK_OWNER_RETENTION",
+    "BOUNDED_DELAYED_CALLBACK_RETENTION",
+    "BOUNDED_REPLACEMENT_RETENTION",
+    "UNBALANCED_LISTENER_REGISTRATION",
+    "UNBALANCED_RECEIVER_REGISTRATION",
+    "UNBALANCED_OBSERVER_REGISTRATION",
+    "UNKNOWN_COLLECTION_CARDINALITY",
+    "UNPROVEN_RELEASE_PATH",
+    "UNKNOWN_REQUIRES_MANUAL_REVIEW",
+})
+
+
+def _actionability(c: Candidate) -> int:
+    """Lower = more actionable (cleanup, unknown release, owner retention)."""
+    if c.classification in _ACTIONABLE_CLASSIFICATIONS:
+        return 0
+    # Needs ROM evidence is still actionable in the sense of needing investigation.
+    if c.review_status == "NEEDS_ROM_EVIDENCE":
+        return 1
+    if c.review_status == "NEEDS_MANUAL_REVIEW":
+        return 0
+    return 2
+
+
 def _render_top_10(candidates: list[Candidate]) -> list[dict]:
     risk_order = {"CRITICAL": 0, "HIGH": 1, "MEDIUM": 2, "LOW": 3, "INFO": 4, "UNKNOWN": 5}
-    status_order = {"REVIEWED": 0, "NEEDS_MANUAL_REVIEW": 1, "NEEDS_ROM_EVIDENCE": 2, "PENDING": 3}
+    # Evidence uncertainty is a priority factor, but must not hide the actual risk level.
+    status_order = {"NEEDS_MANUAL_REVIEW": 0, "NEEDS_ROM_EVIDENCE": 1, "REVIEWED": 2, "PENDING": 3}
     ranked = sorted(
         candidates,
         key=lambda c: (
             risk_order.get(c.risk, 5),
+            _actionability(c),
             status_order.get(c.review_status, 3),
+            -_process_severity(c.process),
+            -_owner_severity(c.retained_type),
+            c.source_file,
+            c.source_line,
+        ),
+    )
+    return [asdict(c) for c in ranked[:10]]
+
+
+def _render_top_evidence_pending(candidates: list[Candidate]) -> list[dict]:
+    pending = [c for c in candidates if c.review_status in ("NEEDS_ROM_EVIDENCE", "NEEDS_MANUAL_REVIEW", "PENDING")]
+    risk_order = {"CRITICAL": 0, "HIGH": 1, "MEDIUM": 2, "LOW": 3, "INFO": 4, "UNKNOWN": 5}
+    ranked = sorted(
+        pending,
+        key=lambda c: (
+            risk_order.get(c.risk, 5),
             -_process_severity(c.process),
             -_owner_severity(c.retained_type),
             c.source_file,
@@ -1578,6 +1745,7 @@ def write_inventory(candidates: list[Candidate], out: Path) -> None:
         "scanner_risk_counts": _scanner_risk_counts(candidates),
         "scanner_classification_counts": _scanner_classify_counts(candidates),
         "top_10": _render_top_10(candidates),
+        "top_evidence_pending": _render_top_evidence_pending(candidates),
         "candidates": [asdict(c) for c in candidates],
     }
     out.write_text(json.dumps(data, indent=2, sort_keys=False, ensure_ascii=False), encoding="utf-8")

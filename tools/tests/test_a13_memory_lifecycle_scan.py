@@ -525,6 +525,97 @@ class Unproven {
         self.assertEqual(len(regs), 1)
         self.assertEqual(regs[0].review_status, "NEEDS_MANUAL_REVIEW")
 
+    # R3 collection semantics regression tests
+
+    def test_arraylist_string_not_owner_collection(self):
+        repo = self._make_repo({
+            "HookedTiles.kt": """
+object HookedTiles {
+    val hookedTiles = ArrayList<String>()
+}
+"""
+        })
+        mls.REPO_ROOT = repo
+        candidates = mls.scan(repo)
+        cols = [c for c in candidates if c.root_kind in ("KOTLIN_OBJECT_FIELD", "STATIC_FIELD")]
+        self.assertEqual(len(cols), 1)
+        self.assertNotEqual(cols[0].classification, "UNBOUNDED_OWNER_COLLECTION")
+        self.assertEqual(cols[0].classification, "PROCESS_LIFETIME_METADATA_COLLECTION")
+
+    def test_hashmap_view_is_owner_collection(self):
+        repo = self._make_repo({
+            "ViewCache.kt": """
+object ViewCache {
+    val views = HashMap<String, android.view.View>()
+}
+"""
+        })
+        mls.REPO_ROOT = repo
+        candidates = mls.scan(repo)
+        cols = [c for c in candidates if c.root_kind in ("KOTLIN_OBJECT_FIELD", "STATIC_FIELD")]
+        self.assertEqual(len(cols), 1)
+        self.assertEqual(cols[0].classification, "UNBOUNDED_OWNER_COLLECTION")
+
+    def test_hashmap_activity_is_owner_collection(self):
+        repo = self._make_repo({
+            "ActivityCache.kt": """
+object ActivityCache {
+    val activities = HashMap<String, android.app.Activity>()
+}
+"""
+        })
+        mls.REPO_ROOT = repo
+        candidates = mls.scan(repo)
+        cols = [c for c in candidates if c.root_kind in ("KOTLIN_OBJECT_FIELD", "STATIC_FIELD")]
+        self.assertEqual(len(cols), 1)
+        self.assertEqual(cols[0].classification, "UNBOUNDED_OWNER_COLLECTION")
+
+    def test_concurrenthashmap_pair_rect_is_config_collection(self):
+        repo = self._make_repo({
+            "FwApps.kt": """
+object FwApps {
+    val fwApps = ConcurrentHashMap<String, Pair<Float, android.graphics.Rect?>>()
+}
+"""
+        })
+        mls.REPO_ROOT = repo
+        candidates = mls.scan(repo)
+        cols = [c for c in candidates if c.root_kind in ("KOTLIN_OBJECT_FIELD", "STATIC_FIELD")]
+        self.assertEqual(len(cols), 1)
+        self.assertEqual(cols[0].classification, "PROCESS_LIFETIME_CONFIG_COLLECTION")
+
+    def test_reflection_cache_is_metadata_collection(self):
+        repo = self._make_repo({
+            "ReflectionCache.kt": """
+object ReflectionCache {
+    val methodCache = ConcurrentHashMap<String, java.lang.reflect.Method>()
+    val constructorCache = ConcurrentHashMap<String, java.lang.reflect.Constructor<*>>()
+}
+"""
+        })
+        mls.REPO_ROOT = repo
+        candidates = mls.scan(repo)
+        cols = [c for c in candidates if c.root_kind in ("KOTLIN_OBJECT_FIELD", "STATIC_FIELD")]
+        self.assertEqual(len(cols), 2)
+        for c in cols:
+            self.assertEqual(c.classification, "PROCESS_LIFETIME_METADATA_COLLECTION")
+
+    def test_unknown_custom_collection_is_unknown_cardinality(self):
+        repo = self._make_repo({
+            "UnknownCache.kt": """
+class UnknownType
+object UnknownCache {
+    val cache = HashMap<String, UnknownType>()
+}
+"""
+        })
+        mls.REPO_ROOT = repo
+        candidates = mls.scan(repo)
+        cols = [c for c in candidates if c.root_kind in ("KOTLIN_OBJECT_FIELD", "STATIC_FIELD")]
+        self.assertEqual(len(cols), 1)
+        self.assertEqual(cols[0].classification, "UNKNOWN_COLLECTION_CARDINALITY")
+        self.assertEqual(cols[0].review_status, "NEEDS_ROM_EVIDENCE")
+
 
 if __name__ == "__main__":
     unittest.main()
