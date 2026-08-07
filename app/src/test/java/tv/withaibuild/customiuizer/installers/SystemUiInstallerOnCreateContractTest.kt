@@ -8,7 +8,6 @@ import io.github.libxposed.api.XposedModuleInterface
 import org.junit.After
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertNotNull
-import org.junit.Assert.assertSame
 import org.junit.Assert.assertTrue
 import org.junit.Before
 import org.junit.Test
@@ -153,7 +152,7 @@ class SystemUiInstallerOnCreateContractTest {
     }
 
     @Test
-    fun sameWatchPreferencesInstanceIsUsed() {
+    fun suppliedWatchPreferencesRunnableIsInvoked() {
         val watchCalls = AtomicInteger(0)
         val lpparam = packageReadyParam("com.android.systemui", "com.android.systemui")
         val watchPreferences = Runnable { watchCalls.incrementAndGet() }
@@ -161,7 +160,7 @@ class SystemUiInstallerOnCreateContractTest {
         MainModule.mPrefs["controls_backlong_action"] = 2
         SystemUiInstaller.install(lpparam, watchPreferences)
 
-        // The callback should receive the exact Runnable supplied to install().
+        // The supplied Runnable must be invoked on the first onCreate callback.
         executeSystemUiOnCreate()
         assertEquals(1, watchCalls.get())
     }
