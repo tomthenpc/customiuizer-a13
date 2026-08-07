@@ -1,8 +1,10 @@
 package tv.withaibuild.customiuizer.mods
 
+import android.content.BroadcastReceiver
 import android.content.Context
 import android.content.FakeIntent
 import android.content.Intent
+
 import android.view.View
 import com.android.systemui.Dependency
 import com.android.systemui.controlcenter.policy.ControlCenterControllerImpl
@@ -673,8 +675,319 @@ class SecureQSTilesHookTest {
         }
     }
 
+    @Test
+    fun afterUnlockRoundTrip_fullSharedClassLifecycle() {
+        val prefs = PrefMap<String, Any>()
+        prefs["system_secureqs"] = true
+        prefs["system_secureqs_custom"] = true
+        installHook(prefs)
+
+        val factory = newFactory()
+        val createAfter = getRecordedHook("com.android.systemui.qs.tileimpl.MiuiQSFactory", "createTileInternal")
+
+        val tileFoo = newTileWithContext("custom(foo)", newContext())
+        createAfter.afterHook(fakeAfterCallback(factory, listOf("custom(foo)"), tileFoo))
+
+        val tileBar = newTileWithContext("custom(bar)", newContext())
+        createAfter.afterHook(fakeAfterCallback(factory, listOf("custom(bar)"), tileBar))
+
+        val host = QSTileHost()
+        val context = tileBar.mContext as FakeContext
+        host.mContext = context
+        host.mTiles["custom(foo)"] = tileFoo
+        host.mTiles["custom(bar)"] = tileBar
+
+        context.keyguardManager?.locked = true
+        context.keyguardManager?.secure = true
+
+        val centralSurfaces = CentralSurfaces()
+        val controlCenter = ControlCenterControllerImpl()
+        Dependency.setMock(CentralSurfaces::class.java, centralSurfaces)
+        Dependency.setMock(ControlCenterControllerImpl::class.java, controlCenter)
+
+        val constructorAfter = getRecordedHook("com.android.systemui.qs.QSTileHost", "<init>")
+        constructorAfter.afterHook(fakeAfterCallback(host))
+
+        val clickHook = getRecordedHook("com.android.systemui.qs.tiles.FakeNfcTile", "handleClick")
+        val view = View(context)
+        val before = fakeBeforeCallback(tileBar, listOf(view))
+
+        clickHook.beforeHook(before)
+
+        assertTrue("bar before hook should skip", isSkipped(before))
+        assertEquals("one runnable should be posted", 1, centralSurfaces.postedRunnables.size)
+
+        val posted = centralSurfaces.postedRunnables.first()
+        assertTrue("posted dismissing-runnable should be true by default (keepOpened false)", posted.first)
+        posted.second.run()
+
+        assertEquals("one broadcast should be sent", 1, context.sentBroadcasts.size)
+
+        val receiver = context.registeredReceivers.first()
+        val broadcast = FakeIntent("tv.withaibuild.customiuizer.mods.action.HandleQSTileClick")
+        broadcast.putExtra("tileName", "custom(bar)")
+        broadcast.putExtra("expandAfter", false)
+        broadcast.putExtra("usingCenter", false)
+        receiver.onReceive(context, broadcast)
+
+        assertEquals("bar should execute original handleClick once", 1, (tileBar as FakeNfcTile).clickCount)
+        assertEquals("foo should not execute original handleClick", 0, (tileFoo as FakeNfcTile).clickCount)
+        assertEquals("foo flag should not be set", true,
+            XposedHelpers.getAdditionalInstanceField(tileFoo, "mCalledAfterUnlock") == null)
+    }
+
+    @Test
+    fun mCalledAfterUnlock_isPerInstance_strong() {
+        val prefs = PrefMap<String, Any>()
+        prefs["system_secureqs"] = true
+        prefs["system_secureqs_custom"] = true
+        installHook(prefs)
+
+        val factory = newFactory()
+        val createAfter = getRecordedHook("com.android.systemui.qs.tileimpl.MiuiQSFactory", "createTileInternal")
+
+        val tileFoo = newTileWithContext("custom(foo)", newContext())
+        createAfter.afterHook(fakeAfterCallback(factory, listOf("custom(foo)"), tileFoo))
+
+        val tileBar = newTileWithContext("custom(bar)", newContext())
+        createAfter.afterHook(fakeAfterCallback(factory, listOf("custom(bar)"), tileBar))
+
+        XposedHelpers.setAdditionalInstanceField(tileFoo, "mCalledAfterUnlock", true)
+
+        val context = tileBar.mContext as FakeContext
+        context.keyguardManager?.locked = true
+        context.keyguardManager?.secure = true
+        val keyguardClass = XposedHelpers.findClass("com.android.systemui.keyguard.KeyguardViewMediator", parentClassLoader)
+        XposedHelpers.setAdditionalStaticField(keyguardClass, "isScreenLockDisabled", false)
+
+        val clickHook = getRecordedHook("com.android.systemui.qs.tiles.FakeNfcTile", "handleClick")
+        val view = View(context)
+        val before = fakeBeforeCallback(tileBar, listOf(view))
+        clickHook.beforeHook(before)
+
+        assertTrue("bar with its own spec and keyguard secure should skip", isSkipped(before))
+        assertEquals("foo flag should not be touched", true,
+            XposedHelpers.getAdditionalInstanceField(tileFoo, "mCalledAfterUnlock") as? Boolean)
+    }
+
+    @Test
+    fun createTileInternal_rebindsSpecOnSameInstance() {
+        val prefs = PrefMap<String, Any>()
+        prefs["system_secureqs"] = true
+        prefs["system_secureqs_custom"] = true
+        installHook(prefs)
+
+        val factory = newFactory()
+        val after = getRecordedHook("com.android.systemui.qs.tileimpl.MiuiQSFactory", "createTileInternal")
+
+        val tile = factory.createTileInternal("custom(foo)")
+        after.afterHook(fakeAfterCallback(factory, listOf("custom(foo)"), tile))
+
+        after.afterHook(fakeAfterCallback(factory, listOf("custom(bar)"), tile))
+
+        assertEquals("spec should be rebound to custom(bar)", "custom(bar)",
+            XposedHelpers.getAdditionalInstanceField(tile, "customiuizer.secure_qs_tile_spec"))
+
+        val clickHook = getRecordedHook("com.android.systemui.qs.tiles.FakeNfcTile", "handleClick")
+        val context = newContext()
+        tile.mContext = context
+        context.keyguardManager?.locked = true
+        context.keyguardManager?.secure = true
+        val keyguardClass = XposedHelpers.findClass("com.android.systemui.keyguard.KeyguardViewMediator", parentClassLoader)
+        XposedHelpers.setAdditionalStaticField(keyguardClass, "isScreenLockDisabled", false)
+
+        val host = QSTileHost()
+        host.mContext = context
+        host.mTiles["custom(bar)"] = tile
+
+        val constructorAfter = getRecordedHook("com.android.systemui.qs.QSTileHost", "<init>")
+        constructorAfter.afterHook(fakeAfterCallback(host))
+
+        val centralSurfaces = CentralSurfaces()
+        val controlCenter = ControlCenterControllerImpl()
+        Dependency.setMock(CentralSurfaces::class.java, centralSurfaces)
+        Dependency.setMock(ControlCenterControllerImpl::class.java, controlCenter)
+
+        val view = View(context)
+        val before = fakeBeforeCallback(tile, listOf(view))
+
+        clickHook.beforeHook(before)
+
+        assertTrue("should skip with rebound spec and keyguard secure", isSkipped(before))
+        assertEquals("one runnable should be posted", 1, centralSurfaces.postedRunnables.size)
+
+        centralSurfaces.postedRunnables.first().second.run()
+
+        assertEquals("one broadcast should be sent", 1, context.sentBroadcasts.size)
+
+        val receiver = context.registeredReceivers.first()
+        val broadcast = FakeIntent("tv.withaibuild.customiuizer.mods.action.HandleQSTileClick")
+        broadcast.putExtra("tileName", "custom(bar)")
+        broadcast.putExtra("expandAfter", false)
+        broadcast.putExtra("usingCenter", false)
+        receiver.onReceive(context, broadcast)
+
+        assertEquals("rebound tile should execute original handleClick once", 1, (tile as FakeNfcTile).clickCount)
+    }
+
+    @Test
+    fun hostReceiver_successfulReplacement_unregistersOldReceiver() {
+        val prefs = PrefMap<String, Any>()
+        prefs["system_secureqs"] = true
+        installHook(prefs)
+
+        val constructorAfter = getRecordedHook("com.android.systemui.qs.QSTileHost", "<init>")
+
+        val host1 = QSTileHost()
+        val context1 = newContext()
+        host1.mContext = context1
+        constructorAfter.afterHook(fakeAfterCallback(host1))
+        val receiver1 = context1.registeredReceivers.first()
+
+        val host2 = QSTileHost()
+        val context2 = newContext()
+        host2.mContext = context2
+        constructorAfter.afterHook(fakeAfterCallback(host2))
+        val receiver2 = context2.registeredReceivers.first()
+
+        assertEquals("context2 should register one receiver", 1, context2.registeredReceivers.size)
+        assertFalse("context1 registered list should no longer contain receiver1", context1.registeredReceivers.contains(receiver1))
+        assertTrue("context1 should have unregistered receiver1", context1.unregisteredReceivers.contains(receiver1))
+
+        val field = ModuleHelper::class.java.getDeclaredField("moduleReceivers")
+        field.isAccessible = true
+        val moduleReceivers = field.get(null) as java.util.concurrent.ConcurrentHashMap<*, *>
+        val active = moduleReceivers["systemui.afterUnlockReceiver"]
+        assertNotNull(active)
+        val activeEntry = active!!
+        val activeReceiver = activeEntry.javaClass.getDeclaredField("receiver").apply { isAccessible = true }.get(activeEntry) as BroadcastReceiver
+        assertEquals("active receiver should be receiver2", receiver2, activeReceiver)
+
+        val staleField = ModuleHelper::class.java.getDeclaredField("staleModuleReceivers")
+        staleField.isAccessible = true
+        val staleMap = staleField.get(null) as java.util.concurrent.ConcurrentHashMap<*, *>
+        val staleDeque = staleMap["systemui.afterUnlockReceiver"] as? java.util.Deque<*>
+        assertTrue("stale registry should not contain receiver1 on success path", staleDeque?.none { reg ->
+            reg?.javaClass?.getDeclaredField("receiver")?.apply { isAccessible = true }?.get(reg) == receiver1
+        } ?: true)
+    }
+
+    @Test
+    fun hostReceiver_registerFailure_keepsOldReceiverActive() {
+        val prefs = PrefMap<String, Any>()
+        prefs["system_secureqs"] = true
+        installHook(prefs)
+
+        val constructorAfter = getRecordedHook("com.android.systemui.qs.QSTileHost", "<init>")
+
+        val host1 = QSTileHost()
+        val context1 = newContext()
+        host1.mContext = context1
+        constructorAfter.afterHook(fakeAfterCallback(host1))
+        val receiver1 = context1.registeredReceivers.first()
+
+        val host2 = QSTileHost()
+        val context2 = newContext()
+        context2.failRegisterReceiver = true
+        host2.mContext = context2
+        constructorAfter.afterHook(fakeAfterCallback(host2))
+
+        assertTrue("context2 should not register a new receiver", context2.registeredReceivers.isEmpty())
+        assertFalse("receiver1 should not be unregistered", context1.unregisteredReceivers.contains(receiver1))
+
+        val field = ModuleHelper::class.java.getDeclaredField("moduleReceivers")
+        field.isAccessible = true
+        val moduleReceivers = field.get(null) as java.util.concurrent.ConcurrentHashMap<*, *>
+        val active = moduleReceivers["systemui.afterUnlockReceiver"]
+        assertNotNull(active)
+        val activeEntry = active!!
+        val activeReceiver = activeEntry.javaClass.getDeclaredField("receiver").apply { isAccessible = true }.get(activeEntry) as BroadcastReceiver
+        assertEquals("active receiver should still be receiver1", receiver1, activeReceiver)
+    }
+
+    @Test
+    fun hostReceiver_unregisterFailure_movesOldReceiverToStale() {
+        val prefs = PrefMap<String, Any>()
+        prefs["system_secureqs"] = true
+        installHook(prefs)
+
+        val constructorAfter = getRecordedHook("com.android.systemui.qs.QSTileHost", "<init>")
+
+        val host1 = QSTileHost()
+        val context1 = newContext()
+        context1.failUnregisterReceiver = true
+        host1.mContext = context1
+        constructorAfter.afterHook(fakeAfterCallback(host1))
+        val receiver1 = context1.registeredReceivers.first()
+
+        val host2 = QSTileHost()
+        val context2 = newContext()
+        host2.mContext = context2
+        constructorAfter.afterHook(fakeAfterCallback(host2))
+        val receiver2 = context2.registeredReceivers.first()
+
+        assertFalse("receiver1 should not be unregistered", context1.unregisteredReceivers.contains(receiver1))
+
+        val field = ModuleHelper::class.java.getDeclaredField("moduleReceivers")
+        field.isAccessible = true
+        val moduleReceivers = field.get(null) as java.util.concurrent.ConcurrentHashMap<*, *>
+        val active = moduleReceivers["systemui.afterUnlockReceiver"]
+        assertNotNull(active)
+        val activeEntry = active!!
+        val activeReceiver = activeEntry.javaClass.getDeclaredField("receiver").apply { isAccessible = true }.get(activeEntry) as BroadcastReceiver
+        assertEquals("active should be receiver2", receiver2, activeReceiver)
+
+        val staleField = ModuleHelper::class.java.getDeclaredField("staleModuleReceivers")
+        staleField.isAccessible = true
+        val staleMap = staleField.get(null) as java.util.concurrent.ConcurrentHashMap<*, *>
+        val staleDeque = staleMap["systemui.afterUnlockReceiver"] as? java.util.Deque<*>
+        assertTrue("stale registry should contain receiver1", staleDeque?.any { reg ->
+            reg?.javaClass?.getDeclaredField("receiver")?.apply { isAccessible = true }?.get(reg) == receiver1
+        } ?: false)
+    }
+
+    @Test
+    fun tileHook_before_rethrowsWrappedFatalFromPost() {
+        val prefs = PrefMap<String, Any>()
+        prefs["system_secureqs"] = true
+        prefs["system_secureqs_wifi"] = true
+        installHook(prefs)
+
+        val factory = newFactory()
+        val createAfter = getRecordedHook("com.android.systemui.qs.tileimpl.MiuiQSFactory", "createTileInternal")
+
+        val context = newContext()
+        context.keyguardManager?.locked = true
+        context.keyguardManager?.secure = true
+        val keyguardClass = XposedHelpers.findClass("com.android.systemui.keyguard.KeyguardViewMediator", parentClassLoader)
+        XposedHelpers.setAdditionalStaticField(keyguardClass, "isScreenLockDisabled", false)
+
+        Dependency.setMock(CentralSurfaces::class.java, CentralSurfaces())
+        Dependency.setMock(ControlCenterControllerImpl::class.java, ThrowingControlCenterControllerImpl(OutOfMemoryError("oom")))
+
+        val tile = newTileWithContext("wifi", context)
+        createAfter.afterHook(fakeAfterCallback(factory, listOf("wifi"), tile))
+
+        val clickHook = getRecordedHook("com.android.systemui.qs.tiles.FakeWifiTile", "handleClick")
+        val view = View(context)
+        val before = fakeBeforeCallback(tile, listOf(view))
+
+        try {
+            clickHook.beforeHook(before)
+            fail("expected OutOfMemoryError")
+        } catch (t: Throwable) {
+            assertTrue("expected wrapped OOM to escape through Handler post", t is OutOfMemoryError)
+        }
+    }
+
     open inner class ThrowingWifiTile(val cause: Throwable) : FakeWifiTile() {
         override fun handleClick(v: View?) {
+            throw cause
+        }
+    }
+
+    class ThrowingControlCenterControllerImpl(val cause: Throwable) : ControlCenterControllerImpl() {
+        override fun isUseControlCenter(): Boolean {
             throw cause
         }
     }

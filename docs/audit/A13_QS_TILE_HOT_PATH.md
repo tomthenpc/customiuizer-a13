@@ -225,3 +225,60 @@ TILE_SPEC_KEY = "customiuizer.secure_qs_tile_spec"
 - 测试文件：`app/src/test/java/tv/withaibuild/customiuizer/mods/SecureQSTilesHookTest.kt`
 - 测试新增：same class / two specs, reverse order, hook installed once, per-instance exact spec, missing-spec fail-open, per-instance `mCalledAfterUnlock`, after-unlock correct tile, host receiver replacement, wrapped fatal。
 - 未新增 global map / Android-owner cache，未改变 Handler/Runnable 结构，未改变 preference 读取时机。
+
+### 10.8 R2 QA evidence（本轮补全）
+
+#### 10.8.1 True shared-class after-unlock round trip
+
+`SecureQSTilesHookTest.afterUnlockRoundTrip_usesCorrectExactSpecForSharedClass` 与 `afterUnlockRoundTrip_fullSharedClassLifecycle` 验证：
+
+- `custom(foo)` 与 `custom(bar)` 可共存于同一 `QSTileHost.mTiles`。
+- `mAfterUnlockReceiver.onReceive(Intent)` 根据 `tileName` extra 精确查找对应 tile 实例。
+- 命中后在 tile 实例上设置 `mCalledAfterUnlock = true`，并 `invoke` 该 tile 的 `handleClick`。
+- `tileHook.before` 从当前实例读取 `mCalledAfterUnlock`、读取 `TILE_SPEC_KEY`、发送的 broadcast 仍携带自己的 exact tileName。
+- 另一同名类实例的 `mCalledAfterUnlock` 与 click count 不受影响。
+
+#### 10.8.2 Per-instance `mCalledAfterUnlock`
+
+`SecureQSTilesHookTest.mCalledAfterUnlock_isPerInstance_strong` 验证：
+
+- 对 `custom(foo)` 实例设置 `mCalledAfterUnlock = true` 后，点击 `custom(bar)` 实例不会导致 `bar` 的 `handleClick` 被错误放行。
+- `foo` 实例上的 flag 不被 `bar` 的 `before` 回调清除。
+
+#### 10.8.3 Same-instance spec rebinding
+
+`SecureQSTilesHookTest.createTileInternal_rebindsSpecOnSameInstance` 验证：
+
+- 同一 tile 实例先以 `custom(foo)` 创建、再以 `custom(bar)` 创建时，`TILE_SPEC_KEY` 会被覆盖为 `custom(bar)`。
+- `tileHook.before` 使用最新 spec 发送 broadcast，保证 receiver 能正确命中。
+
+#### 10.8.4 Receiver lifecycle
+
+`SecureQSTilesHookTest` 新增以下生命周期场景：
+
+- `hostReceiver_successfulReplacement_unregistersOldReceiver`：新 host 注册成功时，旧 receiver 被移除，stale 注册表不含旧 receiver。
+- `hostReceiver_registerFailure_keepsOldReceiverActive`：新 host 注册失败时，旧 receiver 仍保持 active。
+- `hostReceiver_unregisterFailure_movesOldReceiverToStale`：旧 receiver unregister 失败时，该注册进入 bounded stale 注册表，active 仍为新 receiver。
+
+#### 10.8.5 Wrapped fatal async path
+
+`SecureQSTilesHookTest.tileHook_before_rethrowsWrappedFatalFromPost` 验证：
+
+- 在 `Handler.post { ... }` 内部抛出 `OutOfMemoryError` 时，即使被 `RuntimeException`/`InvocationTargetException` 包装，`rethrowIfFatal` 仍能剥离并继续抛出致命异常。
+
+#### 10.8.6 Mutation tests C/D/E
+
+所有 mutation 仅临时注入、记录失败后已完全还原，最终生产文件与 HEAD 一致。
+
+- **Mutation C — `mCalledAfterUnlock` 改为 class/shared static semantics**：临时将 `setAdditionalInstanceField(tile, "mCalledAfterUnlock", ...)` 与 `getAdditionalInstanceField(param2.getThisObject(), ...)` 改为 `tile.javaClass` 上的 static 语义。运行 `*SecureQSTiles*` 测试得到 4 个失败，包括 `afterUnlockRoundTrip_usesCorrectExactSpecForSharedClass`、`afterUnlockRoundTrip_fullSharedClassLifecycle`、`handleClick_before_returnsWhenCalledAfterUnlock`、`createTileInternal_rebindsSpecOnSameInstance`。
+- **Mutation D — 拒绝在 same instance 上 rebind `TILE_SPEC_KEY`**：临时将 `setAdditionalInstanceField(tile, TILE_SPEC_KEY, tileName)` 改为仅在首次创建时写入。`createTileInternal_rebindsSpecOnSameInstance` 失败。
+- **Mutation E — `ModuleHelper.releaseReceiver` 不再将 unregister 失败加入 stale 注册表**：临时移除 `addToStale(...)` 调用。`hostReceiver_unregisterFailure_movesOldReceiverToStale` 失败。
+
+#### 10.8.7 Unit test infrastructure
+
+为支持 `Handler.post` 在 JVM 测试中同步/可 drain 执行，新增测试专属 `android.os.Looper` 与 `android.os.Handler` shadows：
+
+- `app/src/test/java/android/os/Looper.kt`
+- `app/src/test/java/android/os/Handler.kt`
+
+这些 shadows 仅供 `testDebugUnitTest` source set 使用，不进入生产 APK。

@@ -21,8 +21,11 @@ open class FakeContext : ContextWrapper(null) {
     var fakeActivityManager: ActivityManager? = null
     val sentBroadcasts: MutableList<Intent> = mutableListOf()
     val registeredReceivers: MutableList<BroadcastReceiver> = mutableListOf()
+    val unregisteredReceivers: MutableList<BroadcastReceiver> = mutableListOf()
     val startedActivities: MutableList<Intent> = mutableListOf()
     var fakePackageManager: PackageManager? = null
+    var failRegisterReceiver: Boolean = false
+    var failUnregisterReceiver: Boolean = false
 
     private val defaultLooper: Looper by lazy {
         val ctor = Looper::class.java.getDeclaredConstructor()
@@ -58,11 +61,13 @@ open class FakeContext : ContextWrapper(null) {
     }
 
     override fun registerReceiver(receiver: BroadcastReceiver?, filter: IntentFilter): Intent? {
+        if (failRegisterReceiver) throw RuntimeException("registerReceiver failed")
         if (receiver != null) registeredReceivers.add(receiver)
         return null
     }
 
     override fun registerReceiver(receiver: BroadcastReceiver?, filter: IntentFilter, flags: Int): Intent? {
+        if (failRegisterReceiver) throw RuntimeException("registerReceiver failed")
         if (receiver != null) registeredReceivers.add(receiver)
         return null
     }
@@ -73,8 +78,17 @@ open class FakeContext : ContextWrapper(null) {
         broadcastPermission: String?,
         scheduler: Handler?
     ): Intent? {
+        if (failRegisterReceiver) throw RuntimeException("registerReceiver failed")
         if (receiver != null) registeredReceivers.add(receiver)
         return null
+    }
+
+    override fun unregisterReceiver(receiver: BroadcastReceiver?) {
+        if (failUnregisterReceiver) throw RuntimeException("unregisterReceiver failed")
+        if (receiver != null) {
+            registeredReceivers.remove(receiver)
+            unregisteredReceivers.add(receiver)
+        }
     }
 
     override fun createPackageContext(packageName: String, flags: Int): Context = this
