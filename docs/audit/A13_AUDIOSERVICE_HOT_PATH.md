@@ -128,7 +128,7 @@ MainModule.onSystemServerStarting
 - `mult` 从 `MainModule.mPrefs` 提到 `VolumeStepsHook` 外部，callback 内只进行数组乘法。
 - `DEVICE_OUT_ALL`、`DEVICE_OUT_DEFAULT`、`DEFAULT_STREAM_VOLUME` 提前解析，callback 内直接遍历/取值。
 - `Settings.System.getIntForUser` 的 `Method` 与 `mContentResolver` 的 `Field` 提前解析，callback 内 `Method.invoke`。
-- `synchronized` 使用 `VolumeStreamState.class` 对象，不再调用 `param.member.declaringClass`。
+- `synchronized` 使用 `param.member.declaringClass`（即 `AudioService$VolumeStreamState` 类对象），与基线一致。
 
 ### 3.3 不允许的优化
 
@@ -141,13 +141,16 @@ MainModule.onSystemServerStarting
 
 - 所有解析阶段工作都在 `SYSTEM_SERVER_STARTING` 单线程安装路径完成。
 - 回调内只使用 `final` 不可变 `Field` / `Method` 引用；这些方法/字段在解析后不可变。
-- `readSettings` 仍对 `VolumeStreamState.class` 加锁，与修改前语义一致。
+- `readSettings` 仍对 `param.member.declaringClass`（即 `AudioService$VolumeStreamState` 类对象）加锁，与修改前及基线语义一致。
 
 ## 5. 失败路径
 
 - 若目标 ROM 缺失某个反射成员，解析阶段标记为 `UNSUPPORTED`，直接跳过对应 Hook 安装，不在回调中重复尝试。
-- 若 callback 运行中遇到异常，继续抛出 `OutOfMemoryError` / `ThreadDeath` / `VirtualMachineError`，其他异常捕获并记录一次（使用现有 `XposedHelpers.log`），避免高频重复日志。
-- 不吞掉所有异常的空 catch。
+- callback 内通过 `rethrowAudioFatal(t)` 处理反射调用异常：
+  - 致命错误（`OutOfMemoryError` / `ThreadDeath` / `VirtualMachineError`，包括被包装在 cause 链中前 8 层的情况）继续向上抛出。
+  - 非致命的单设备反射异常（`getSettingNameForDevice` / `getIntForUser` / `getValidIndex` 抛出）被重新抛出为 `throw t`，让框架只记录一次并继续执行原方法；此时 `mIndexMap` 保留已成功写入的部分 map，与基线 legacy 行为一致。
+- `mStreamType != 1` 或任何单设备失败均不调用 `param.returnAndSkip(null)`，原方法继续执行。
+- 不允许空 catch 吞掉所有异常。
 
 ## 6. 实现证据
 
@@ -160,7 +163,9 @@ MainModule.onSystemServerStarting
   - `AudioService$VolumeStreamState`、`android.media.AudioSystem`、`android.provider.Settings$System` 以及所有需要的 `Field` / `Method` 在注册时解析。
   - `DEVICE_OUT_ALL_SET`、`DEVICE_OUT_DEFAULT`、`DEFAULT_STREAM_VOLUME`、`mContentResolver`、`mIndexMap`、`this$0`、`mStreamType`、`getSettingNameForDevice`、`getValidIndex`、`Settings.System.getIntForUser` 全部缓存。
   - callback 内不再调用 `XposedHelpers.findClass` / `getObjectField` / `callMethod` / `callStaticMethod`，仅使用缓存的 `Field.get` / `Method.invoke`。
-  - `synchronized` 对象改为 `volumeStreamStateClass`，避免 `param.member.declaringClass` 反射。
+  - 新增 `rethrowAudioFatal(t)` 辅助方法；单设备反射异常（`getSettingNameForDevice` / `getIntForUser` / `getValidIndex`）由 `continue` 改为 `throw t`，确保不 skip original、框架只记录一次异常，且部分 map 与基线一致。
+  - `mIndexMapField.set` 不再被吞异常的 try/catch 包裹，map 写回要么成功、要么按真实异常传播。
+  - `synchronized` 对象改为 `param.member.declaringClass`（即 `AudioService$VolumeStreamState` 类对象），与基线一致。
 
 ## 7. 测试验证
 
@@ -171,10 +176,25 @@ MainModule.onSystemServerStarting
   - `readSettingsHook_buildsIndexMap_forStreamType1`：验证 `mStreamType == 1` 时按 `AudioSystem.DEVICE_OUT_ALL_SET` 遍历并调用 `getValidIndex(50, true)`。
   - `readSettingsHook_keepsIndexMapEmpty_forMissingSettingsValue`：验证非默认设备 `def=-1` 时跳过，仅默认设备 `DEVICE_OUT_DEFAULT=2` 使用 `DEFAULT_STREAM_VOLUME` 计算。
 
+- 新增 `AudioServiceHotPathCorrectnessTest.kt` 进一步覆盖行为等价性：
+  - `volumeSteps_preferenceMutationAfterInstall_contract`：安装后修改 `system_volumesteps`，验证当前使用 install-time `mult`、legacy 使用 callback-time `mult` 的契约。
+  - `volumeSteps_repeatedCreateStreamStates_preservesLegacyBehavior`：验证重复 `createStreamStates` 时 `MAX_STREAM_VOLUME` 累计缩放与 legacy 一致。
+  - `readSettings_fullSuccess_matchesLegacyIndexMap` / `readSettings_missingSettingValue_matchesLegacyDefaultDeviceOnly`：完整成功与缺省设置值路径的 map 与 legacy 一致。
+  - `readSettings_getSettingNameForDeviceFailure_*` / `readSettings_getIntForUserFailure_*` / `readSettings_getValidIndexFailure_*`：单设备反射失败时不 skip original，且部分 map 与 legacy 一致。
+  - `readSettings_lockOwner_matchesMethodDeclaringClass`：`synchronized` 锁对象为 `param.member.declaringClass`。
+  - `readSettings_skipOriginal_matrix`：`streamType != 1`、完整成功、单设备失败三种情况下的 skip 契约。
+  - `rethrowAudioFatal_*` 系列：直接/包装 `OutOfMemoryError`、`ThreadDeath` 必须抛出；普通 `RuntimeException` 不抛出。
+
 - 新增 `ChildFirstClassLoader.kt` 用于在单元测试中隔离 fake `android.media.AudioSystem`、`android.provider.Settings`、`android.util.Log` 与真实 `android.jar` stub，保证 `AudioService` fake 类可被加载并测试反射热路径。
 
 - 运行结果：
-  - `python tools/verify.py fast --tests AudioServiceHotPathCallbackTest` 通过。
-  - `python tools/verify.py fast --changed` 通过。
-  - `gradlew :app:testDebugUnitTest` 878 tests completed, 0 failed。
-  - `tools/a13_hook_cost_scan.py --verify-stability` 通过，输出 669 条稳定记录到 `docs/audit/A13_PERF_BASELINE.json`。
+  - `gradlew :app:testDebugUnitTest` —— PASS。
+  - `python tools/verify.py fast --tests AudioServiceHotPath` —— PASS。
+  - `python tools/verify.py fast --changed` —— PASS。
+  - `python tools/verify.py full` —— PASS。
+  - `python -m compileall tools` —— PASS。
+  - `python -m unittest discover -s tools/tests -p "test_*.py"` —— PASS。
+  - `tools/build_legacy_exception_registry.py --build` —— PASS。
+  - `tools/a13_hook_cost_scan.py --verify-stability` —— PASS。
+
+- 审计文档：`docs/audit/A13_AUDIOSERVICE_CORRECTNESS_AUDIT.md` 已创建。

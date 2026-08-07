@@ -7,8 +7,8 @@
 | 任务 | `A13-PERF-P1B-4A-NOTIFICATION-MENU-HOT-PATH` |
 | 分支 | `devin/a13-memory-performance-optimization` |
 | 起点 commit | `ec05f5e948167742da6520cdf64b9fd32d360b3e` |
-| 原始 P1B-4A 优化工程 commit | `ecd6a95a247afee1cbe9a7cf1ff11e12f75c779a` |
-| 原始 P1B-4A 阶段 checkpoint commit | `929e5d0f315b6bd6a9ac4bbfec9de321b441e97d` |
+| 原始 P1B-4A 优化工程 commit | `b58ced964df92f1d8cc738b085d202ce3e0cb3d0` |
+| 原始 P1B-4A 阶段 checkpoint / docs commit | `69c1441d6752fd0c240dab535561f21852b187f2` |
 | QA corrective R1 engineering commit | `ecd6a95a247afee1cbe9a7cf1ff11e12f75c779a` |
 | QA corrective R1 docs commit | `929e5d0f315b6bd6a9ac4bbfec9de321b441e97d` |
 | QA corrective R2 closure commit | `53c83e4ae8a7b1d17a5bdd74d8fe95d69820d583` |

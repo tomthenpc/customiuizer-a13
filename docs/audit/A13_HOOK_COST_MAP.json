@@ -7331,11 +7331,11 @@
       "notes": "args=(\"com.android.settings.MiuiSoundSettings\", lpparam.classLoader, \"onCreate\", Bundle::class.java, object : MethodHook() {\n"
     },
     {
-      "hook_id": "0dfde12bc4cbde855784a697",
+      "hook_id": "85347ba0056b7faa60e3cbee",
       "feature_id": "notificationVolume",
       "feature_name": "SystemAudioAndVolumeHooks",
       "source_file": "app/src/main/java/tv/withaibuild/customiuizer/mods/SystemAudioAndVolumeHooks.kt",
-      "source_line": 120,
+      "source_line": 132,
       "registration_function": "VolumeStepsHook",
       "target_class": "audioClass",
       "target_method": "createStreamStates",
@@ -7368,11 +7368,11 @@
       "notes": "args=(audioClass, \"createStreamStates\", object : MethodHook() {\n            override fun before(param: BeforeHookCallback) {\n"
     },
     {
-      "hook_id": "361cee1f405a3709b490390b",
+      "hook_id": "bd35be6a94f0fe54c6444d35",
       "feature_id": "notificationVolume",
       "feature_name": "SystemAudioAndVolumeHooks",
       "source_file": "app/src/main/java/tv/withaibuild/customiuizer/mods/SystemAudioAndVolumeHooks.kt",
-      "source_line": 203,
+      "source_line": 215,
       "registration_function": "installNotificationVolumeReadSettingsHook",
       "target_class": "volumeStreamStateClass",
       "target_method": "readSettings",

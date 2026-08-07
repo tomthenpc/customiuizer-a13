@@ -8,6 +8,7 @@ public final class Settings {
         public static final int MISSING = -2;
         private static int overrideValue = MISSING;
         private static long overrideLong = java.lang.Long.MAX_VALUE;
+        private static Throwable throwOnGetIntForUser = null;
 
         public static void setOverrideValue(int value) {
             overrideValue = value;
@@ -17,7 +18,18 @@ public final class Settings {
             overrideLong = value;
         }
 
+        public static void setThrowOnGetIntForUser(Throwable t) {
+            throwOnGetIntForUser = t;
+        }
+
         public static int getIntForUser(ContentResolver resolver, String name, int def, int user) {
+            if (throwOnGetIntForUser != null) {
+                Throwable t = throwOnGetIntForUser;
+                throwOnGetIntForUser = null;
+                if (t instanceof RuntimeException) throw (RuntimeException) t;
+                if (t instanceof Error) throw (Error) t;
+                throw new RuntimeException(t);
+            }
             if (overrideValue == MISSING) return def;
             return overrideValue;
         }

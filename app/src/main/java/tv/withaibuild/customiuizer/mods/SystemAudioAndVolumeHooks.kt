@@ -103,11 +103,23 @@ object SystemAudioAndVolumeHooks {
                     val mRingVolume = XposedHelpers.callMethod(param.thisObject, "findPreference", "ring_volume")
                     XposedHelpers.callMethod(mRingVolume, "setTitle", callsResId)
                 } catch (t: Throwable) {
-                    if (t is OutOfMemoryError || t is ThreadDeath || t is VirtualMachineError) throw t
+                    rethrowAudioFatal(t)
                     XposedHelpers.log("NotificationVolumeSettingsHook", "Unable to find class/method in Settings to hook")
                 }
             }
         })
+    }
+
+    private fun rethrowAudioFatal(t: Throwable) {
+        var current: Throwable? = t
+        for (depth in 0 until 8) {
+            if (current == null) return
+            if (current is VirtualMachineError) throw current
+            if (current is ThreadDeath) throw current
+            val next = current.cause
+            if (next == null || next === current) return
+            current = next
+        }
     }
 
     @JvmStatic
@@ -195,7 +207,7 @@ object SystemAudioAndVolumeHooks {
         val deviceOutDefault = try {
             deviceOutDefaultField.getInt(null)
         } catch (t: Throwable) {
-            if (t is OutOfMemoryError || t is ThreadDeath || t is VirtualMachineError) throw t
+            rethrowAudioFatal(t)
             XposedHelpers.log("NotificationVolumeServiceHook", "AudioService readSettings hook skipped: cannot read DEVICE_OUT_DEFAULT")
             return
         }
@@ -206,7 +218,7 @@ object SystemAudioAndVolumeHooks {
                 val streamType = try {
                     mStreamTypeField.getInt(thisObject)
                 } catch (t: Throwable) {
-                    if (t is OutOfMemoryError || t is ThreadDeath || t is VirtualMachineError) throw t
+                    rethrowAudioFatal(t)
                     return
                 }
                 if (streamType != 1) return
@@ -214,60 +226,60 @@ object SystemAudioAndVolumeHooks {
                 val outerThis = try {
                     outerThisField.get(thisObject)
                 } catch (t: Throwable) {
-                    if (t is OutOfMemoryError || t is ThreadDeath || t is VirtualMachineError) throw t
+                    rethrowAudioFatal(t)
                     return
                 }
                 val contentResolver = try {
                     mContentResolverField.get(outerThis)
                 } catch (t: Throwable) {
-                    if (t is OutOfMemoryError || t is ThreadDeath || t is VirtualMachineError) throw t
+                    rethrowAudioFatal(t)
                     return
                 }
                 val indexMap = try {
                     mIndexMapField.get(thisObject) as? SparseIntArray
                 } catch (t: Throwable) {
-                    if (t is OutOfMemoryError || t is ThreadDeath || t is VirtualMachineError) throw t
+                    rethrowAudioFatal(t)
                     return
                 } ?: return
 
                 val deviceOutAll = try {
                     deviceOutAllSetField.get(null)
                 } catch (t: Throwable) {
-                    if (t is OutOfMemoryError || t is ThreadDeath || t is VirtualMachineError) throw t
+                    rethrowAudioFatal(t)
                     return
                 } as? Set<*> ?: return
 
                 val defaultStreamVolume = try {
                     defaultStreamVolumeField.get(null)
                 } catch (t: Throwable) {
-                    if (t is OutOfMemoryError || t is ThreadDeath || t is VirtualMachineError) throw t
+                    rethrowAudioFatal(t)
                     return
                 } as? IntArray ?: return
 
-                synchronized(volumeStreamStateClass) {
+                synchronized(param.member.declaringClass) {
                     for (rawDeviceType in deviceOutAll) {
                         val deviceType = rawDeviceType as? Int ?: continue
                         val name = try {
                             getSettingNameForDeviceMethod.invoke(thisObject, deviceType) as? String
                         } catch (t: Throwable) {
-                            if (t is OutOfMemoryError || t is ThreadDeath || t is VirtualMachineError) throw t
-                            continue
+                            rethrowAudioFatal(t)
+                            throw t
                         } ?: continue
 
                         val defaultValue = if (deviceType == deviceOutDefault) defaultStreamVolume[streamType] else -1
                         val index = try {
                             getIntForUserMethod.invoke(null, contentResolver, name, defaultValue, -2) as? Int
                         } catch (t: Throwable) {
-                            if (t is OutOfMemoryError || t is ThreadDeath || t is VirtualMachineError) throw t
-                            continue
+                            rethrowAudioFatal(t)
+                            throw t
                         } ?: continue
 
                         if (index != -1) {
                             val validIndex = try {
                                 getValidIndexMethod.invoke(thisObject, 10 * index, true) as? Int
                             } catch (t: Throwable) {
-                                if (t is OutOfMemoryError || t is ThreadDeath || t is VirtualMachineError) throw t
-                                continue
+                                rethrowAudioFatal(t)
+                                throw t
                             } ?: continue
 
                             indexMap.put(deviceType, validIndex)
@@ -275,11 +287,7 @@ object SystemAudioAndVolumeHooks {
                     }
                 }
 
-                try {
-                    mIndexMapField.set(thisObject, indexMap)
-                } catch (t: Throwable) {
-                    if (t is OutOfMemoryError || t is ThreadDeath || t is VirtualMachineError) throw t
-                }
+                mIndexMapField.set(thisObject, indexMap)
                 param.returnAndSkip(null)
             }
         })

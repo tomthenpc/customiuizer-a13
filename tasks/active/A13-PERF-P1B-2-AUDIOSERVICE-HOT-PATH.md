@@ -55,12 +55,20 @@
 
 ## 验证结果
 
-- `python tools/verify.py fast --changed` OK
-- `python tools/verify.py fast --tests AudioServiceHotPathCallbackTest` OK
-- `python tools/verify.py full` OK
-- `python -m compileall tools` OK
-- `python -m unittest discover -s tools/tests -p "test_*.py"` OK (944 tests, 2 skipped)
-- `git diff --check` OK
-- `gradlew :app:assembleDebug` BUILD SUCCESSFUL
-- `tools/a13_hook_cost_scan.py --verify-stability` OK
-- Runtime baseline: `RUNTIME_BASELINE_PENDING_DEVICE`
+| 验证项 | 命令 | 状态 |
+|--------|------|------|
+| Android 单元测试 | `gradlew :app:testDebugUnitTest` | PASS |
+| 快速验证（AudioService 相关测试） | `python tools/verify.py fast --tests AudioServiceHotPath` | PASS |
+| 快速验证（变更） | `python tools/verify.py fast --changed` | PASS |
+| 完整验证 | `python tools/verify.py full` | PASS |
+| Python 工具编译 | `python -m compileall tools` | PASS |
+| Python 单元测试 | `python -m unittest discover -s tools/tests -p "test_*.py"` | PASS |
+| 构建 legacy exception registry | `tools/build_legacy_exception_registry.py --build` | PASS |
+| Hook 成本扫描稳定性 | `tools/a13_hook_cost_scan.py --verify-stability` | PASS |
+| 其他历史验证 | `git diff --check` | OK |
+| 其他历史验证 | `gradlew :app:assembleDebug` | BUILD SUCCESSFUL |
+| 真实运行时基线 | — | `RUNTIME_BASELINE_PENDING_DEVICE` |
+
+## 证据
+
+- `docs/audit/A13_AUDIOSERVICE_CORRECTNESS_AUDIT.md` 已创建，记录 A13-PERF-QA-1 / P1B-2 行为矩阵、修正点、测试证据与验证结果。

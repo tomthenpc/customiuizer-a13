@@ -29,13 +29,22 @@ class AudioService {
         val requestedDeviceTypes = mutableListOf<Int>()
         val validIndexCalls = mutableListOf<Pair<Int, Int>>()
 
+        var failGetSettingNameForDeviceAt: Int = -1
+        var failGetValidIndexAt: Int = -1
+
         fun getSettingNameForDevice(deviceType: Int): String {
+            if (deviceType == failGetSettingNameForDeviceAt) {
+                throw RuntimeException("simulated getSettingNameForDevice failure for $deviceType")
+            }
             requestedDeviceTypes.add(deviceType)
             return "volume_${mStreamType}_$deviceType"
         }
 
         fun getValidIndex(index: Int, allowMax: Boolean): Int {
             val deviceType = requestedDeviceTypes.lastOrNull() ?: -1
+            if (deviceType == failGetValidIndexAt) {
+                throw RuntimeException("simulated getValidIndex failure for $deviceType")
+            }
             validIndexCalls.add(deviceType to index)
             return index.coerceIn(0, 100)
         }
