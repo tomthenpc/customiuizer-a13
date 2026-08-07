@@ -8,7 +8,7 @@
 | 分支 | `devin/a13-memory-performance-optimization` |
 | 起点 commit | `0b034f36a7810bcf2cc184a8b424330981ad390c` |
 | 状态 | `QA_ACCEPTED_DEVICE_EVIDENCE_PENDING` |
-| 终点 commit | `1a15dcb8f66b6d900d3c7504d7f06f3a1c898478` |
+| 终点 commit | `cd89c38f02834db5baf24e5ab08b345c187085fe` |
 | 验证 | `python -m compileall tools`、`python -m unittest discover -s tools/tests -p "test_*.py"`、`python tools/a13_hook_cost_scan.py --verify-stability`、`python tools/source_hazard_scan.py`、`python tools/verify.py full`、`git diff --check` 通过；Release 构建编译/R8/lint 通过，打包因缺少签名配置失败 |
 | 授权 | 已获得业务源码修改授权，但仅限零功能成本范围 |
 | 依赖 | `A13-PERF-P0`（基础设施），`A13-PERF-P1A`（静态地图） |

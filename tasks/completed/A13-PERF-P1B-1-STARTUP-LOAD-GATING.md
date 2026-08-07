@@ -15,7 +15,7 @@
 | R1-B2 audit SHA | `442ade1c5b780aead006b542775111f61499cf0b` |
 | R1-B2 proof-hardening SHA | `a36b5a2f23e0f7e04d86abde179fdaaf7dbb115f` |
 | QA documentation checkpoint | `0722912e6bc7c7f7bb7e45172ac56355a591ebeb` |
-| Final QA closure SHA | 见本文件所属 commit（本轮 closure commit） |
+| Final QA closure SHA | `58d0defa1f01b42e78a4c7e2cb30f9e2c9c5c6d0` |
 
 ## 目标
 

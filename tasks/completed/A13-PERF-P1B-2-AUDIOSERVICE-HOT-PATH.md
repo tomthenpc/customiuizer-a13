@@ -7,9 +7,10 @@
 | 任务 | `A13-PERF-P1B-2-AUDIOSERVICE-HOT-PATH` |
 | 分支 | `devin/a13-memory-performance-optimization` |
 | 起点 commit | `3d38cdd53a6190c68187a803badaf201dfda25cd` |
-| 状态 | `QA_CONDITIONAL` |
-| 终点 commit | `5f780b8` |
-| QA 修正 commit | `c661e4c`（P1B-2 correctness QA / R1 修正） |
+| 状态 | `QA_ACCEPTED_DEVICE_EVIDENCE_PENDING` |
+| 终点 commit | `5f780b8a15727114bd29f01188191a2520ff2509` |
+| QA 修正 commit | `c661e4c33b913a6abcef08ae32e08977ec2b566c` |
+| engineering provenance | `c661e4c` 后 production 无回退；`git diff c661e4c..HEAD -- app/src/main/java/tv/withaibuild/customiuizer/mods/SystemAudioAndVolumeHooks.kt` 为空 |
 | P0 真实运行时基线 | `RUNTIME_BASELINE_PENDING_DEVICE` |
 | 授权范围 | 仅 `AudioService$VolumeStreamState#readSettings` 与 `AudioService#createStreamStates` 两个目标路径的辅助逻辑 |
 

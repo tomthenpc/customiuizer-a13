@@ -8,7 +8,11 @@
 | 分支 | `devin/a13-memory-performance-optimization` |
 | 起点 commit | `5f780b8a15727114bd29f01188191a2520ff2509` |
 | 状态 | `QA_ACCEPTED_DEVICE_EVIDENCE_PENDING` |
-| Engineering Final SHA | `3cf73a0` |
+| 终点 commit | `1ea342dbcefed45a9ca1d4b8cc4762a14d91a37b` |
+| QA R1 engineering | `95b5d8eb51a5a070d85f7d5ec90a0180e09c0b2a` |
+| QA R2 closure | `33ff7b16a8bf14d2d9c6c40af3154c0cc8d41c70` |
+| QA R3 final closure | `1ea342dbcefed45a9ca1d4b8cc4762a14d91a37b` |
+| Engineering Final SHA | `1ea342dbcefed45a9ca1d4b8cc4762a14d91a37b` |
 | P0 真实运行时基线 | `RUNTIME_BASELINE_PENDING_DEVICE` |
 | 授权范围 | 仅 Quick Settings Tile 创建路径：`tileHostCls` 构造器 Hook、`FactoryImpl#createTileInternal` Hook 及二者直接使用的模块 Tile 创建辅助逻辑 |
 

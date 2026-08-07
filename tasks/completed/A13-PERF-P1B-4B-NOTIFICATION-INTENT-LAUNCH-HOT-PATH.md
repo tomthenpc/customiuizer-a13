@@ -10,7 +10,10 @@
 | 状态 | `QA_ACCEPTED_DEVICE_EVIDENCE_PENDING` |
 | blockers | none for static/correctness QA |
 | QA-1 | `IN_PROGRESS` |
-| 终点 commit | `12550954ddf96933c70336799ddf0b061b2b6f8c` |
+| 终点 commit | `90633b97e9b242e490bbc8ee2d666b0f1ef07a8b` |
+| QA R1 | `640829f2aac4deab692c4ef72dfecd0f92fbbc42` |
+| QA R2 | `12550954ddf96933c70336799ddf0b061b2b6f8c` |
+| QA R3 final closure | `90633b97e9b242e490bbc8ee2d666b0f1ef07a8b` |
 | P0 真实运行时基线 | `RUNTIME_BASELINE_PENDING_DEVICE` |
 | 授权范围 | 仅 `MiuiStatusBarNotificationActivityStarter#startNotificationIntent` 及该回调直接调用、属于本模块的通知点击启动辅助逻辑 |
 
