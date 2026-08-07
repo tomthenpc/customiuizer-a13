@@ -543,6 +543,55 @@ def _uiautomator_dump(adb: probe.Adb, artifacts: ArtifactPaths, rep: int, iterat
     return ""
 
 
+def _build_notification_panel_steps(display: DisplayInfo) -> list[ScenarioStep]:
+    """Build 10 open/close cycles for notification_panel_open_close scenario."""
+    steps: list[ScenarioStep] = []
+    for i in range(10):
+        steps.append(ScenarioStep(
+            f"Cycle {i+1}/10: Swipe down to open notification panel",
+            [_make_swipe(display, from_top=True)],
+            1.5,
+        ))
+        steps.append(ScenarioStep(
+            f"Cycle {i+1}/10: Swipe up to close panel",
+            [_make_swipe(display, from_top=False)],
+            1.5,
+        ))
+    return steps
+
+
+def _build_qs_panel_steps(display: DisplayInfo) -> list[ScenarioStep]:
+    """Build 10 open/QS-expand/close cycles for qs_panel_expand_collapse scenario."""
+    steps: list[ScenarioStep] = []
+    for i in range(10):
+        # First swipe opens notification shade
+        steps.append(ScenarioStep(
+            f"Cycle {i+1}/10: Swipe down to open notification panel",
+            [_make_swipe(display, from_top=True)],
+            1.0,
+        ))
+        # Second swipe expands QS fully
+        # Use a swipe starting lower (height * 0.08 -> 0.67)
+        x1, y1, x2, y2 = _swipe_coords(display, from_top=True)
+        # Modify start y to be below the status bar but still top portion
+        h = display.height or 2400
+        y1_qs = int(h * 0.08)
+        y2_qs = int(h * 0.67)
+        x = display.width // 2 if display.width else 540
+        steps.append(ScenarioStep(
+            f"Cycle {i+1}/10: Swipe down again to expand QS fully",
+            [f"input swipe {x} {y1_qs} {x} {y2_qs} 300"],
+            1.5,
+        ))
+        # Close
+        steps.append(ScenarioStep(
+            f"Cycle {i+1}/10: Swipe up to close panel",
+            [_make_swipe(display, from_top=False)],
+            1.5,
+        ))
+    return steps
+
+
 def _build_notification_menu_steps(
     run_id: str,
     rep: int,
@@ -920,10 +969,15 @@ def _run_scenario(
             all_pre.append(sample_dict)
 
         # Build and execute steps
-        steps = scenario.steps
         iteration_plan: list[dict[str, Any]] = []
-        if scenario.requires_notification:
+        if scenario.scenario_id == "notification_panel_open_close":
+            steps = _build_notification_panel_steps(display)
+        elif scenario.scenario_id == "qs_panel_expand_collapse":
+            steps = _build_qs_panel_steps(display)
+        elif scenario.requires_notification:
             steps, iteration_plan = _build_notification_menu_steps(run_id, rep, display)
+        else:
+            steps = scenario.steps
 
         step_failed = False
         rep_status = STATUS_OK
@@ -1130,17 +1184,28 @@ def _run_scenario(
 # Multi-device guard and run command
 # ---------------------------------------------------------------------------
 
-def _ensure_single_device(adb: probe.Adb) -> tuple[bool, list[dict[str, str]]]:
+def _ensure_single_device(adb: probe.Adb) -> tuple[bool, list[dict[str, str]], str]:
+    """Ensure exactly one usable target device. Returns (ok, online, reason)."""
     try:
         devices = adb.devices()
         online = [d for d in devices if d.get("state") == "device"]
         if not online:
-            return False, []
-        if len(online) > 1 and not adb.device:
-            return False, online
-        return True, online
-    except probe.ProbeError:
-        return False, []
+            return False, [], "no_device_online"
+
+        selected = adb.device
+        if selected:
+            for d in online:
+                if d.get("serial") == selected:
+                    return True, [d], ""
+            # Selected serial not in online list (offline, unauthorized, or missing)
+            return False, [], f"selected_serial_not_online: {selected}"
+
+        if len(online) > 1:
+            return False, online, "multiple_devices_requires_serial"
+
+        return True, online, ""
+    except probe.ProbeError as exc:
+        return False, [], f"probe_error: {exc.message}"
 
 
 def cmd_run(
@@ -1155,12 +1220,12 @@ def cmd_run(
     _print(f"Module state: {module_state} (source=OPERATOR_DECLARED)")
     _print(f"Output: {output_dir}")
 
-    ok, online = _ensure_single_device(adb)
+    ok, online, reason = _ensure_single_device(adb)
     if not ok:
         if not online:
-            _print(f"{STATUS_DEVICE_NOT_CONNECTED}: no device online")
+            _print(f"{STATUS_DEVICE_NOT_CONNECTED}: {reason}")
         else:
-            _print(f"MULTIPLE_DEVICES: {len(online)} devices online, use --device")
+            _print(f"{STATUS_DEVICE_NOT_CONNECTED}: {reason}")
         return EXIT_DEVICE
 
     clock_tick = _resolve_clock_tick_with_provenance(adb)
@@ -1255,29 +1320,12 @@ SCENARIOS = {
     ),
 }
 
-# Fill steps with display-dependent swipes at runtime in _run_scenario for non-notification scenarios
-# For notification scenario, steps are built per-repetition with unique tags.
-
-
-def _fill_steps_with_display(steps: list[ScenarioStep], display: DisplayInfo) -> list[ScenarioStep]:
-    """Replace placeholder swipe steps with display-aware coordinates."""
-    filled = []
-    for step in steps:
-        new_commands = []
-        for cmd in step.commands:
-            new_commands.append(cmd)
-        # For placeholder steps (empty command, descriptions contain 'swipe'),
-        # we cannot reliably distinguish. Instead rely on scenario building.
-        filled.append(ScenarioStep(step.description, new_commands, step.wait_after_s, step.critical))
-    return filled
-
-
 # ---------------------------------------------------------------------------
 # CLI
 # ---------------------------------------------------------------------------
 
 def main(argv: list[str] | None = None) -> int:
-    parser = argparse.ArgumentParser(description="A13 runtime baseline scenario orchestrator (R2)")
+    parser = argparse.ArgumentParser(description="A13 runtime baseline scenario orchestrator (R3)")
     parser.add_argument("--adb", default=None, help="path to adb executable")
     parser.add_argument("--device", default=None, help="target device serial")
     subparsers = parser.add_subparsers(dest="command", required=True)

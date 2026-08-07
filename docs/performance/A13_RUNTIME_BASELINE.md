@@ -58,9 +58,9 @@
 | 场景 ID | 操作 | 目标进程 | 重复次数 | 预热 | 关联 |
 |---------|------|----------|----------|------|------|
 | `boot_stable` | 开机到桌面后静置 5 分钟 | system_server, SystemUI | 1 | 300s | 全部 |
-| `notification_panel_open_close` | 下拉并收起通知栏 10 次 | SystemUI, system_server | 5 | 10s | P1B-4A |
+| `notification_panel_open_close` | 10 个 open/close 周期（20 条 `input swipe`/轮） | SystemUI, system_server | 5 | 10s | P1B-4A |
 | `volume_adjust_10` | 音量上 5 次 + 音量下 5 次 | system_server | 5 | 10s | P1B-2 |
-| `qs_panel_expand_collapse` | 展开 QS 面板并收起 10 次 | SystemUI, system_server | 5 | 10s | P1B-4A 间接 |
+| `qs_panel_expand_collapse` | 10 个 open/QS-expand/close 周期（30 条 `input swipe`/轮） | SystemUI, system_server | 5 | 10s | P1B-4A 间接 |
 | `notification_menu_create_delete` | 每轮迭代：post 唯一 tag 通知→verify→open shade→long-press→BACK close→swipe-dismiss→close shade。重复 10 次/轮 × 5 轮 | SystemUI, system_server | 5 | 10s | P1B-4A |
 
 ### 4.2 场景详细操作
@@ -77,15 +77,21 @@
    - `/proc/uptime`
 4. 如果 `sys.boot_completed != 1`，标记 `BOOT_RECENCY_UNVERIFIED`。
 5. 如果 uptime 超出约定窗口，标记 `BOOT_RECENCY_UNVERIFIED`。
+
+> **boot recency 语义**：`BOOT_RECENCY = OPERATOR_CONTROLLED`。脚本只记录上述三个值，不能证明“刚开机 5 分钟”。操作者负责在约定的 boot/recency 窗口内启动脚本。
 6. 静置 5 分钟（由脚本执行 sleep），然后采集 system_server 和 SystemUI 的单次样本。
 
 #### notification_panel_open_close
 
 1. 预热 10 秒。
 2. 采集 pre-sample。
-3. 执行 10 次：`input swipe 540 0 540 800 300`（下拉打开），等待 1.5s，`input swipe 540 800 540 0 300`（上滑关闭），等待 1.5s。
+3. 执行 10 次：
+   - `input swipe <center_x> 0 <center_x> <height*0.67> 300`（下拉打开），等待 1.5s
+   - `input swipe <center_x> <height*0.67> <center_x> 0 300`（上滑关闭），等待 1.5s
 4. 等待 2 秒稳定。
 5. 采集 post-sample。
+
+> 实际每轮 20 条 swipe 命令。
 
 #### volume_adjust_10
 
@@ -100,9 +106,14 @@
 
 1. 预热 10 秒。
 2. 采集 pre-sample。
-3. 执行 10 次：下拉打开通知面板（`input swipe 540 0 540 800 300`），等待 1s，再次下拉展开 QS（`input swipe 540 200 540 800 300`），等待 1.5s，上滑关闭（`input swipe 540 800 540 0 300`），等待 1.5s。
+3. 执行 10 次：
+   - 下拉打开通知面板（`input swipe <center_x> 0 <center_x> <height*0.67> 300`），等待 1s
+   - 再次下拉展开 QS（`input swipe <center_x> <height*0.08> <center_x> <height*0.67> 300`），等待 1.5s
+   - 上滑关闭（`input swipe <center_x> <height*0.67> <center_x> 0 300`），等待 1.5s
 4. 等待 2 秒稳定。
 5. 采集 post-sample。
+
+> 实际每轮 30 条 swipe 命令。
 
 #### notification_menu_create_delete
 
@@ -120,8 +131,9 @@
    - uiautomator dump BEFORE / AFTER 保存到 artifacts。
    - 使用 `KEYCODE_BACK` 关闭菜单（`menu_close_method = KEYCODE_BACK`）。
    - 在通知面板打开时 swipe-dismiss 目标通知。
-   - （可选）验证通知已消失。
    - 上滑关闭面板。
+
+> 注意：当前 tooling 不实现 cleanup 后 absence verification。
 4. 等待 2 秒稳定。
 5. 采集 post-sample。
 
@@ -402,3 +414,13 @@ P0_DEVICE_EVIDENCE = RUNTIME_BASELINE_PENDING_DEVICE
 13. **doctor 无 KEYCODE_MENU**：`input --help` 替代实体按键测试，避免改变 UI。
 14. **坐标适配**：解析 `wm size` 计算 center_x / swipe y；非 1080p 标记 `NON_1080P_REQUIRES_CALIBRATION`。
 15. **通知 capability precondition**：`cmd_notification_available && post_available` 是必需前置条件。
+
+## 14. R3 窄修记录
+
+1. **`notification_panel_open_close` 实际命令**：每轮 10 个 open/close 周期，共 20 条 `input swipe` 命令，由 `_build_notification_panel_steps` 在 runner 中生成。
+2. **`qs_panel_expand_collapse` 实际命令**：每轮 10 个 open/expand/close 周期，共 30 条 `input swipe` 命令，由 `_build_qs_panel_steps` 在 runner 中生成。
+3. **`_fill_steps_with_display` 已删除**：去除误导性空实现；由 `_build_*_steps` helper 直接生成 display-aware 命令。
+4. **selected device guard 强化**：`--device <serial>` 必须在线且 state == device；缺失、offline、unauthorized 均失败。
+5. **runner command evidence tests**：新增 `test_notification_panel_runner_executes_twenty_swipes`、`test_qs_runner_executes_full_workload`，检查真实传给 `_adb_shell()` 的 command log。
+6. **设备选择测试**：新增 one online / multiple / selected valid / selected missing / selected offline 5 项测试。
+7. **文档一致性**：删除 `optional verify absence` 未实现声明；明确 `BOOT_RECENCY = OPERATOR_CONTROLLED`。

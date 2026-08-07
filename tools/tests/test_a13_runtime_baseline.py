@@ -213,6 +213,9 @@ class NotificationOrderingTest(unittest.TestCase):
         source = inspect.getsource(rtb)
         self.assertNotIn("cmd notification remove", source)
 
+    def test_fill_steps_with_display_removed(self):
+        self.assertFalse(hasattr(rtb, "_fill_steps_with_display"))
+
 
 # -----------------------------------------------------------------------------
 # PID pair validity and aggregation
@@ -320,7 +323,7 @@ class CLIExitCodeTest(unittest.TestCase):
     def test_scenario_failed_returns_exit_scenario(
         self, mock_ensure, mock_tick, mock_cap, mock_disp, mock_run
     ):
-        mock_ensure.return_value = (True, [{"serial": "abc", "state": "device"}])
+        mock_ensure.return_value = (True, [{"serial": "abc", "state": "device"}], "")
         mock_tick.return_value = rtb.ClockTickInfo(100, "DEVICE_GETCONF", "100")
         mock_cap.return_value = rtb.NotificationCapability(cmd_notification_available=True, post_available=True)
         mock_disp.return_value = rtb.DisplayInfo()
@@ -332,14 +335,14 @@ class CLIExitCodeTest(unittest.TestCase):
 
     @patch("a13_runtime_baseline._ensure_single_device")
     def test_no_device_returns_exit_device(self, mock_ensure):
-        mock_ensure.return_value = (False, [])
+        mock_ensure.return_value = (False, [], "no_device_online")
         adb = MagicMock(spec=probe.Adb)
         code = rtb.cmd_run(adb, ["all"], "enabled_features_off", None, Path("/tmp"))
         self.assertEqual(code, rtb.EXIT_DEVICE)
 
     @patch("a13_runtime_baseline._ensure_single_device")
     def test_multiple_devices_returns_exit_device(self, mock_ensure):
-        mock_ensure.return_value = (False, [{"serial": "a"}, {"serial": "b"}])
+        mock_ensure.return_value = (False, [{"serial": "a"}, {"serial": "b"}], "multiple_devices")
         adb = MagicMock(spec=probe.Adb)
         code = rtb.cmd_run(adb, ["all"], "enabled_features_off", None, Path("/tmp"))
         self.assertEqual(code, rtb.EXIT_DEVICE)
@@ -349,7 +352,7 @@ class CLIExitCodeTest(unittest.TestCase):
              patch("a13_runtime_baseline._resolve_clock_tick_with_provenance") as mock_tick, \
              patch("a13_runtime_baseline._probe_notification_capability") as mock_cap, \
              patch("a13_runtime_baseline._probe_display") as mock_disp:
-            mock_ensure.return_value = (True, [{"serial": "abc", "state": "device"}])
+            mock_ensure.return_value = (True, [{"serial": "abc", "state": "device"}], "")
             mock_tick.return_value = rtb.ClockTickInfo(100, "DEVICE_GETCONF", "100")
             mock_cap.return_value = rtb.NotificationCapability(cmd_notification_available=True, post_available=True)
             mock_disp.return_value = rtb.DisplayInfo()
@@ -493,6 +496,67 @@ class EndToEndRunnerTest(unittest.TestCase):
             self.assertIsNotNone(manifest["boot_info"])
             self.assertEqual(manifest["boot_info"]["sys_boot_completed"], "1")
 
+    def test_notification_panel_runner_executes_twenty_swipes(self):
+        # Real runner: 10 open + 10 close = 20 swipe commands
+        commands = []
+
+        with patch("a13_runtime_baseline._adb_shell") as mock_shell:
+            def side_effect(adb, command, timeout=30):
+                commands.append(command)
+                return _make_default_adb_response(command)
+
+            mock_shell.side_effect = side_effect
+            with tempfile.TemporaryDirectory() as tmpdir:
+                adb = MagicMock(spec=probe.Adb)
+                adb.device = "abc"
+                clock = rtb.ClockTickInfo(100, "DEVICE_GETCONF", "100")
+                cap = rtb.NotificationCapability()
+                display = rtb.DisplayInfo(width=1080, height=2400, coordinate_confidence="1080P_PORTRAIT_ASSUMED")
+                device_info = {"device": "test", "rom": "test", "android_version": "13", "build_variant": "user"}
+
+                status, manifest = rtb._run_scenario(
+                    adb, rtb.SCENARIOS["notification_panel_open_close"], "enabled_features_off", 1,
+                    Path(tmpdir), "20260807T140000", clock, cap, display, device_info, "abc"
+                )
+                self.assertEqual(status, rtb.EXIT_OK)
+                swipes = [c for c in commands if c.startswith("input swipe")]
+                self.assertEqual(len(swipes), 20)
+                opens = [c for c in swipes if "540 0 540 1608" in c]
+                closes = [c for c in swipes if "540 1608 540 0" in c]
+                self.assertEqual(len(opens), 10)
+                self.assertEqual(len(closes), 10)
+
+    def test_qs_runner_executes_full_workload(self):
+        commands = []
+
+        with patch("a13_runtime_baseline._adb_shell") as mock_shell:
+            def side_effect(adb, command, timeout=30):
+                commands.append(command)
+                return _make_default_adb_response(command)
+
+            mock_shell.side_effect = side_effect
+            with tempfile.TemporaryDirectory() as tmpdir:
+                adb = MagicMock(spec=probe.Adb)
+                adb.device = "abc"
+                clock = rtb.ClockTickInfo(100, "DEVICE_GETCONF", "100")
+                cap = rtb.NotificationCapability()
+                display = rtb.DisplayInfo(width=1080, height=2400, coordinate_confidence="1080P_PORTRAIT_ASSUMED")
+                device_info = {"device": "test", "rom": "test", "android_version": "13", "build_variant": "user"}
+
+                status, manifest = rtb._run_scenario(
+                    adb, rtb.SCENARIOS["qs_panel_expand_collapse"], "enabled_features_off", 1,
+                    Path(tmpdir), "20260807T140000", clock, cap, display, device_info, "abc"
+                )
+                self.assertEqual(status, rtb.EXIT_OK)
+                swipes = [c for c in commands if c.startswith("input swipe")]
+                self.assertEqual(len(swipes), 30)
+                first_opens = [c for c in swipes if "540 0 540 1608" in c]
+                qs_expands = [c for c in swipes if "540 192 540 1608" in c]
+                closes = [c for c in swipes if "540 1608 540 0" in c]
+                self.assertEqual(len(first_opens), 10)
+                self.assertEqual(len(qs_expands), 10)
+                self.assertEqual(len(closes), 10)
+
 
 # -----------------------------------------------------------------------------
 # Multi-device guard
@@ -504,7 +568,7 @@ class MultiDeviceGuardTest(unittest.TestCase):
         adb = MagicMock(spec=probe.Adb)
         adb.devices.return_value = [{"serial": "abc", "state": "device"}]
         adb.device = "abc"
-        ok, _ = rtb._ensure_single_device(adb)
+        ok, _, _ = rtb._ensure_single_device(adb)
         self.assertTrue(ok)
 
     def test_multiple_devices_blocked(self):
@@ -514,7 +578,7 @@ class MultiDeviceGuardTest(unittest.TestCase):
             {"serial": "b", "state": "device"},
         ]
         adb.device = None
-        ok, _ = rtb._ensure_single_device(adb)
+        ok, _, _ = rtb._ensure_single_device(adb)
         self.assertFalse(ok)
 
     def test_specified_device_allows_multiple(self):
@@ -524,7 +588,35 @@ class MultiDeviceGuardTest(unittest.TestCase):
             {"serial": "b", "state": "device"},
         ]
         adb.device = "a"
-        ok, _ = rtb._ensure_single_device(adb)
+        ok, _, reason = rtb._ensure_single_device(adb)
+        self.assertTrue(ok)
+
+    def test_selected_serial_missing(self):
+        adb = MagicMock(spec=probe.Adb)
+        adb.devices.return_value = [
+            {"serial": "a", "state": "device"},
+            {"serial": "b", "state": "device"},
+        ]
+        adb.device = "c"
+        ok, _, reason = rtb._ensure_single_device(adb)
+        self.assertFalse(ok)
+        self.assertIn("selected_serial_not_online", reason)
+
+    def test_selected_serial_offline(self):
+        adb = MagicMock(spec=probe.Adb)
+        adb.devices.return_value = [
+            {"serial": "a", "state": "offline"},
+            {"serial": "b", "state": "device"},
+        ]
+        adb.device = "a"
+        ok, _, reason = rtb._ensure_single_device(adb)
+        self.assertFalse(ok)
+
+    def test_one_online_no_serial(self):
+        adb = MagicMock(spec=probe.Adb)
+        adb.devices.return_value = [{"serial": "abc", "state": "device"}]
+        adb.device = None
+        ok, _, _ = rtb._ensure_single_device(adb)
         self.assertTrue(ok)
 
 

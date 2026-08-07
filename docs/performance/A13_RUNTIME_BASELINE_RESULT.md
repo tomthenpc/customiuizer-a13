@@ -9,10 +9,17 @@
 ## 1. 状态
 
 ```text
-P0_TOOLING = READY_FOR_DEVICE_SMOKE_TEST
+P0_TOOLING = QA_REOPENED_BLOCKER → READY_FOR_DEVICE_SMOKE_TEST (R3 narrow fix applied)
 P0_EXECUTION = BLOCKED_DEVICE_NOT_CONNECTED
 P0_DEVICE_EVIDENCE = RUNTIME_BASELINE_PENDING_DEVICE
 ```
+
+R3 narrow fixes applied:
+- `notification_panel_open_close` now emits 20 real `input swipe` commands per repetition.
+- `qs_panel_expand_collapse` now emits 30 real `input swipe` commands per repetition.
+- `_fill_steps_with_display` misleading dead abstraction removed.
+- selected `--device` serial must be online and state == device.
+- runner command evidence tests added; device selection tests added.
 
 ## 2. 执行结果
 
