@@ -6,7 +6,7 @@
 |------|-----|
 | 任务 | `A13-PERF-P1B-4B-NOTIFICATION-INTENT-LAUNCH-HOT-PATH` |
 | 分支 | `devin/a13-memory-performance-optimization` |
-| 起点 commit | `7f0f37c` |
+| 起点 commit | `7f0f37c08fec440a014d51448aa5364040d84113` |
 | 状态 | `QA_ACCEPTED_DEVICE_EVIDENCE_PENDING` |
 | blockers | none for static/correctness QA |
 | QA-1 | `IN_PROGRESS` |

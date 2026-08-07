@@ -7,8 +7,8 @@
 | 任务 | `A13-PERF-QA-1` |
 | 分支 | `devin/a13-memory-performance-optimization` |
 | QA 起点 commit | `b8eead54594bfbc850309a1ead2f617a8122b411` |
-| 状态 | `STATIC_CLOSURE_READY_FOR_SIGNED_RELEASE` |
-| QA 终点 commit | 待填入 |
+| 状态 | `COMPLETED_STATIC_DEVICE_EVIDENCE_PENDING` |
+| QA 终点 commit | `THIS_COMMIT`（本文件最终封版 commit；exact SHA 见最终执行报告） |
 | P0 真实运行时基线 | `RUNTIME_BASELINE_PENDING_DEVICE` |
 
 ## 审计对象
@@ -42,24 +42,34 @@
 
 P0 真实运行时基线继续保持 `RUNTIME_BASELINE_PENDING_DEVICE`；P1B-4A ROM lifecycle evidence 继续独立 pending。
 
-## 静态/Release 验证
+## 历史 Release 证据（来自 `4d1203be5f6b73238903c6c17a97256f3579d396`，prior signed Release，不作为新 metadata corrective HEAD 证据）
 
-- `python -m compileall tools`：PASS
-- `python -m unittest discover -s tools/tests -p "test_*.py"`：PASS（1043 项，2 项跳过）
-- `python tools/a13_hook_cost_scan.py --verify`：PASS
-- `python tools/source_hazard_scan.py`：PASS
-- `python tools/verify.py full`：PASS
-- `gradlew :app:testDebugUnitTest --rerun-tasks --no-build-cache --no-daemon`：PASS（1046 JVM 测试）
-- `gradlew :app:compileReleaseKotlin :app:compileReleaseJavaWithJavac :app:testReleaseUnitTest :app:lintRelease :app:minifyReleaseWithR8`：PASS
-- `gradlew :app:lintVitalAnalyzeRelease :app:lintVitalReportRelease`：PASS
-- `gradlew :app:signingReport`：release signing resolved
-- `gradlew :app:assembleRelease`：BUILD SUCCESSFUL
-- `apksigner verify --verbose --print-certs`：Verifies=true，v2=true，signers=1，cert SHA-256=15CE32F03E4D8E62DF9390F77431862E59BF2CF95CD5A72F0C7330CDFCCA2934
-- artifact identity：package=`tv.withaibuild.customiuizer.r13`，versionCode=135，versionName=`r13.10.1`，debuggable=false，testOnly=false
-- `git diff --check`：PASS
+```text
+PRIOR_SIGNED_RELEASE_LOCAL_EVIDENCE
+HEAD = 4d1203be5f6b73238903c6c17a97256f3579d396
+APK SHA-256 = 903C3E5443568328F6F9AFD8BA343A7572760B17D859F60B2AE265A92557F5A8
 
-## 完成定义
+apksigner reported:
+Verifies = true
+Verified using v2 scheme = true
+Number of signers = 1
+certificate SHA-256 = 15CE32F03E4D8E62DF9390F77431862E59BF2CF95CD5A72F0C7330CDFCCA2934
+
+artifact identity:
+applicationId = tv.withaibuild.customiuizer.r13
+versionCode = 135
+versionName = r13.10.1
+debuggable = false
+testOnly = false
+```
+
+> 上述 prior artifact 不担保新的 metadata corrective HEAD；本轮从 `QA1_CORRECTED_FINAL_HEAD` 重新构建并重新验证后的 APK 见下文。
+
+## 当前 corrective metadata 完成定义
 
 - 所有 P1B Slice QA 状态已更新为 `QA_ACCEPTED_DEVICE_EVIDENCE_PENDING` 或 `QA_CONDITIONAL` 并记录阻塞原因。
+- P1B-1 / P1B-3 / P1B-4B / QA-1 内部错误 SHA 已修正为 `git rev-parse` 精确值。
+- P1B-2 provenance 明确区分原始 closure、QA corrective production 与 QA corrective metadata。
+- 新增 `tools/tests/test_a13_p1b_phase_provenance.py`，确保 phase ledger 中所有 authoritative full SHA 均能被 `git cat-file -e` 验证。
 - P0 真机基线保持 `RUNTIME_BASELINE_PENDING_DEVICE`。
-- 正式签名 Release APK 构建并通过 `apksigner` 验证。
+- 从最终 metadata corrective HEAD 重建正式签名 Release APK 并通过 `apksigner` 验证。
