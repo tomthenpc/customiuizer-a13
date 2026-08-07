@@ -524,7 +524,7 @@
       "comparators": [],
       "default_kinds": [],
       "default_values": [],
-      "end_line": 69,
+      "end_line": 84,
       "feature_id": "tempHideOverlaySystemUI",
       "id": "install_installById_1",
       "install_target": "FeatureDispatcher",
@@ -537,7 +537,7 @@
       "raw_expression": "FeatureDispatcher.installById(\"tempHideOverlaySystemUI\", systemuiRuntime)",
       "source_file": "app/src/main/java/tv/withaibuild/customiuizer/installers/SystemUiInstaller.java",
       "source_method": "install",
-      "start_line": 68
+      "start_line": 84
     },
     {
       "accessors": [],
@@ -546,7 +546,7 @@
       "comparators": [],
       "default_kinds": [],
       "default_values": [],
-      "end_line": 73,
+      "end_line": 93,
       "feature_id": "hideStatusBarBeforeScreenshot",
       "id": "install_installById_2",
       "install_target": "FeatureDispatcher",
@@ -559,7 +559,7 @@
       "raw_expression": "FeatureDispatcher.installById(\"hideStatusBarBeforeScreenshot\", systemuiRuntime)",
       "source_file": "app/src/main/java/tv/withaibuild/customiuizer/installers/SystemUiInstaller.java",
       "source_method": "install",
-      "start_line": 72
+      "start_line": 93
     },
     {
       "accessors": [],
@@ -568,7 +568,7 @@
       "comparators": [],
       "default_kinds": [],
       "default_values": [],
-      "end_line": 93,
+      "end_line": 114,
       "feature_id": "statusBarClockTweak",
       "id": "install_installById_3",
       "install_target": "FeatureDispatcher",
@@ -581,7 +581,7 @@
       "raw_expression": "FeatureDispatcher.installById(\"statusBarClockTweak\", systemuiRuntime)",
       "source_file": "app/src/main/java/tv/withaibuild/customiuizer/installers/SystemUiInstaller.java",
       "source_method": "install",
-      "start_line": 92
+      "start_line": 114
     },
     {
       "accessors": [],
@@ -590,7 +590,7 @@
       "comparators": [],
       "default_kinds": [],
       "default_values": [],
-      "end_line": 106,
+      "end_line": 125,
       "feature_id": "noMoreIcon",
       "id": "install_installById_4",
       "install_target": "FeatureDispatcher",
@@ -603,7 +603,7 @@
       "raw_expression": "FeatureDispatcher.installById(\"noMoreIcon\", systemuiRuntime)",
       "source_file": "app/src/main/java/tv/withaibuild/customiuizer/installers/SystemUiInstaller.java",
       "source_method": "install",
-      "start_line": 105
+      "start_line": 125
     },
     {
       "accessors": [],
@@ -612,7 +612,7 @@
       "comparators": [],
       "default_kinds": [],
       "default_values": [],
-      "end_line": 139,
+      "end_line": 152,
       "feature_id": "batteryIndicator",
       "id": "install_installById_5",
       "install_target": "FeatureDispatcher",
@@ -625,7 +625,7 @@
       "raw_expression": "FeatureDispatcher.installById(\"batteryIndicator\", systemuiRuntime)",
       "source_file": "app/src/main/java/tv/withaibuild/customiuizer/installers/SystemUiInstaller.java",
       "source_method": "install",
-      "start_line": 137
+      "start_line": 152
     }
   ],
   "GLOBAL_ACTION_DOMAIN_RULES": [

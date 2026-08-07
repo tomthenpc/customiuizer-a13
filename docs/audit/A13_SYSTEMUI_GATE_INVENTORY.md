@@ -3198,7 +3198,7 @@ It does not judge INSTALLER_ONLY, GATE_ONLY, DEFAULT_MISMATCH, etc.
 ### install_installById_1
 - source_file: `app/src/main/java/tv/withaibuild/customiuizer/installers/SystemUiInstaller.java`
 - source_method: `install`
-- lines: 68-69
+- lines: 84-84
 - phase: `POST_RESTART_GUARD_RUNTIME`
 - parse_status: `PARSED`
 - branch_kind: `IF`
@@ -3208,7 +3208,7 @@ It does not judge INSTALLER_ONLY, GATE_ONLY, DEFAULT_MISMATCH, etc.
 ### install_installById_2
 - source_file: `app/src/main/java/tv/withaibuild/customiuizer/installers/SystemUiInstaller.java`
 - source_method: `install`
-- lines: 72-73
+- lines: 93-93
 - phase: `POST_RESTART_GUARD_RUNTIME`
 - parse_status: `PARSED`
 - branch_kind: `IF`
@@ -3218,7 +3218,7 @@ It does not judge INSTALLER_ONLY, GATE_ONLY, DEFAULT_MISMATCH, etc.
 ### install_installById_3
 - source_file: `app/src/main/java/tv/withaibuild/customiuizer/installers/SystemUiInstaller.java`
 - source_method: `install`
-- lines: 92-93
+- lines: 114-114
 - phase: `POST_RESTART_GUARD_RUNTIME`
 - parse_status: `PARSED`
 - branch_kind: `IF`
@@ -3228,7 +3228,7 @@ It does not judge INSTALLER_ONLY, GATE_ONLY, DEFAULT_MISMATCH, etc.
 ### install_installById_4
 - source_file: `app/src/main/java/tv/withaibuild/customiuizer/installers/SystemUiInstaller.java`
 - source_method: `install`
-- lines: 105-106
+- lines: 125-125
 - phase: `POST_RESTART_GUARD_RUNTIME`
 - parse_status: `PARSED`
 - branch_kind: `IF`
@@ -3238,7 +3238,7 @@ It does not judge INSTALLER_ONLY, GATE_ONLY, DEFAULT_MISMATCH, etc.
 ### install_installById_5
 - source_file: `app/src/main/java/tv/withaibuild/customiuizer/installers/SystemUiInstaller.java`
 - source_method: `install`
-- lines: 137-139
+- lines: 152-152
 - phase: `POST_RESTART_GUARD_RUNTIME`
 - parse_status: `PARSED`
 - branch_kind: `IF`

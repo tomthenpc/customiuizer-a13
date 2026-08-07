@@ -369,5 +369,57 @@ class IntegrationTests(unittest.TestCase):
             self.assertIn(key, data)
 
 
+def _line_of(text: str, needle: str) -> int:
+    """Return the 1-based line number of the first line containing needle."""
+    for i, line in enumerate(text.splitlines(), 1):
+        if needle in line:
+            return i
+    return 0
+
+
+class DispatcherLineNumberTests(unittest.TestCase):
+    def test_unconditional_install_by_id_uses_absolute_file_line(self) -> None:
+        """A call inside a method body must report the real file line, not a body-local offset."""
+        prefix = "\n" * 100
+        installer = prefix + '''public class SystemUiInstaller {
+    public static void install(PackageReadyParam lpparam, Runnable watchPreferences) {
+        if (!lpparam.getPackageName().equals("com.android.systemui")) return;
+        FeatureDispatcher.installById("fixture_feature", runtime);
+    }
+    public static boolean hasAnySystemUiStartupFeature(PrefMap<String, Object> p) { return false; }
+    private static boolean hasAnyGlobalAction(PrefMap<String, Object> p) { return false; }
+    static boolean isWithinSystemUiRestartGuard(long a, long b) { return false; }
+}'''
+        with tempfile.TemporaryDirectory() as t:
+            repo = _make_repo(Path(t), installer)
+            inv_obj = inv.inventory_from_sources(repo)
+        self.assertEqual(len(inv_obj.feature_dispatch_calls), 1)
+        entry = inv_obj.feature_dispatch_calls[0]
+        self.assertEqual(entry.feature_id, "fixture_feature")
+        expected = _line_of(installer, 'FeatureDispatcher.installById("fixture_feature"')
+        self.assertGreater(expected, 100)
+        self.assertEqual(entry.start_line, expected)
+        self.assertEqual(entry.end_line, expected)
+
+    def test_real_feature_dispatcher_calls_have_absolute_source_lines(self) -> None:
+        data = inv.to_json(inv.inventory_from_sources(REPO_ROOT))
+        installer_text = (REPO_ROOT / inv.INSTALLER_REL).read_text(encoding="utf-8")
+        dispatchers = {e["feature_id"]: e for e in data["FEATURE_DISPATCH_CALLS"]}
+        for feature_id in (
+            "tempHideOverlaySystemUI",
+            "hideStatusBarBeforeScreenshot",
+            "statusBarClockTweak",
+            "noMoreIcon",
+            "batteryIndicator",
+        ):
+            with self.subTest(feature_id=feature_id):
+                self.assertIn(feature_id, dispatchers, f"missing dispatcher for {feature_id}")
+                entry = dispatchers[feature_id]
+                expected = _line_of(installer_text, f'FeatureDispatcher.installById("{feature_id}"')
+                self.assertGreater(expected, 0)
+                self.assertEqual(entry["start_line"], expected)
+                self.assertEqual(entry["end_line"], expected)
+
+
 if __name__ == "__main__":
     unittest.main()

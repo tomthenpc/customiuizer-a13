@@ -1071,7 +1071,12 @@ def parse_feature_catalog(repo_root: Path) -> list[ConditionEntry]:
 
 
 def _find_install_by_id_calls(
-    body_text: str, body_start: int, source_file: str, source_method: str, phase: str
+    body_text: str,
+    body_start: int,
+    full_text: str,
+    source_file: str,
+    source_method: str,
+    phase: str,
 ) -> list[ConditionEntry]:
     """Find all unconditional FeatureDispatcher.installById(...) calls in a body."""
     results: list[ConditionEntry] = []
@@ -1089,8 +1094,8 @@ def _find_install_by_id_calls(
                 id=f"{source_method}_installById_{len(results) + 1}",
                 source_file=source_file,
                 source_method=source_method,
-                start_line=get_line_number(body_text, body_start + m.start()),
-                end_line=get_line_number(body_text, body_start + call_close),
+                start_line=get_line_number(full_text, body_start + m.start()),
+                end_line=get_line_number(full_text, body_start + call_close),
                 raw_expression=call_text,
                 normalized_expression=call_text,
                 feature_id=feature_id,
@@ -1104,6 +1109,7 @@ def _find_install_by_id_calls(
 def _bind_install_by_id(
     body_text: str,
     body_start: int,
+    full_text: str,
     conditions: list[ConditionEntry],
     source_file: str,
     source_method: str,
@@ -1145,8 +1151,8 @@ def _bind_install_by_id(
                 id=f"{source_method}_installById_{len(unconditional) + 1}",
                 source_file=source_file,
                 source_method=source_method,
-                start_line=get_line_number(body_text, call_start),
-                end_line=get_line_number(body_text, call_end),
+                start_line=get_line_number(full_text, call_start),
+                end_line=get_line_number(full_text, call_end),
                 raw_expression=call_text,
                 normalized_expression=call_text,
                 feature_id=feature_id,
@@ -1251,6 +1257,7 @@ def inventory_from_sources(repo_root: Path) -> Inventory:
             _bind_install_by_id(
                 install_body.text,
                 install_body.start_offset,
+                installer_text,
                 install_conditions,
                 source_file_installer,
                 "install",
