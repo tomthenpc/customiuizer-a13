@@ -218,25 +218,35 @@ TILE_SPEC_KEY = "customiuizer.secure_qs_tile_spec"
 
 该 helper 最多遍历 8 层 cause chain，遇到 `OutOfMemoryError`、`ThreadDeath`、`VirtualMachineError` 直接抛出；其他异常保持 log/fail-safe。
 
-### 10.7 R3 corrective provenance
+### 10.7 R3 evidence closure provenance
 
-- 基线：`3744bd95eea2dad35724f5c51aed924b1e70845d`
-- 修复文件：`app/src/main/java/tv/withaibuild/customiuizer/mods/SystemUILockScreenHooks.kt`
-- 测试文件：`app/src/test/java/tv/withaibuild/customiuizer/mods/SecureQSTilesHookTest.kt`
-- 测试新增：same class / two specs, reverse order, hook installed once, per-instance exact spec, missing-spec fail-open, per-instance `mCalledAfterUnlock`, after-unlock correct tile, host receiver replacement, wrapped fatal。
-- 未新增 global map / Android-owner cache，未改变 Handler/Runnable 结构，未改变 preference 读取时机。
+- 基线：`1a5e5b736514a821831b47bf29ea408444741788`
+- 修复/增强文件：`app/src/test/java/tv/withaibuild/customiuizer/mods/SecureQSTilesHookTest.kt`
+- 基础设施：`app/src/test/java/android/content/Intent.kt`、`app/src/test/java/android/os/Handler.kt`、`app/src/test/java/android/os/Looper.kt`
+- 测试增强：`afterUnlockRoundTrip_fullSharedClassLifecycle` 改为验证 production 实际发送的 broadcast；新增 after-unlock flag 消费断言。
+- 未新增 global map / Android-owner cache，未改变 Handler/Runnable 结构，未改变 preference 读取时机，生产文件 `SystemUILockScreenHooks.kt` 与 `ModuleHelper.java` 无最终 diff。
 
-### 10.8 R2 QA evidence（本轮补全）
+### 10.8 R3 QA evidence closure
 
-#### 10.8.1 True shared-class after-unlock round trip
+#### 10.8.1 True production-generated broadcast round trip
 
-`SecureQSTilesHookTest.afterUnlockRoundTrip_usesCorrectExactSpecForSharedClass` 与 `afterUnlockRoundTrip_fullSharedClassLifecycle` 验证：
+`SecureQSTilesHookTest.afterUnlockRoundTrip_fullSharedClassLifecycle` 现在验证完整链路：
 
-- `custom(foo)` 与 `custom(bar)` 可共存于同一 `QSTileHost.mTiles`。
-- `mAfterUnlockReceiver.onReceive(Intent)` 根据 `tileName` extra 精确查找对应 tile 实例。
-- 命中后在 tile 实例上设置 `mCalledAfterUnlock = true`，并 `invoke` 该 tile 的 `handleClick`。
-- `tileHook.before` 从当前实例读取 `mCalledAfterUnlock`、读取 `TILE_SPEC_KEY`、发送的 broadcast 仍携带自己的 exact tileName。
-- 另一同名类实例的 `mCalledAfterUnlock` 与 click count 不受影响。
+1. `createTileInternal("custom(foo)")` → production 在 `tileFoo` 上写入 `TILE_SPEC_KEY = "custom(foo)"`。
+2. `createTileInternal("custom(bar)")` → production 在 `tileBar` 上写入 `TILE_SPEC_KEY = "custom(bar)"`。
+3. `tileHook.before(bar)` 在 keyguard 锁定安全状态下跳过，通过 `Handler.post` 将 dismiss-keyguard runnable 交给 `CentralSurfaces`。
+4. 该 runnable 被 production 直接执行，创建 `Intent`，写入 `tileName = exactTileName`、`expandAfter`、`usingCenter`，并 `sendBroadcast`。
+5. 测试使用 `context.sentBroadcasts.single()` 作为 `actualBroadcast`，断言：
+   - `action == "tv.withaibuild.customiuizer.mods.action.HandleQSTileClick"`
+   - `tileName == "custom(bar)"`
+   - `tileName != "custom(foo)"`
+   - `expandAfter == expected`
+   - `usingCenter == expected`
+6. 将该 **production-generated** `actualBroadcast` 交给 active receiver；receiver 用 `tileName` extra 精确命中 `tileBar`。
+7. `mAfterUnlockReceiver.onReceive` 在 `tileBar` 上设置 `mCalledAfterUnlock = true`，并 `invoke` `handleClick`（在 JVM fake 中直接触发 original，因此 `bar.clickCount == 1`）。
+8. 显式第二次 `beforeHook` 模拟 JVM fake 可能未触发的 hook entry，证明 `bar` 的 flag 被消费并清零，且 `foo` 的 flag 不受影响。
+
+该测试不再手工构造 `FakeIntent` 或手工填写 `tileName`。
 
 #### 10.8.2 Per-instance `mCalledAfterUnlock`
 
@@ -264,21 +274,28 @@ TILE_SPEC_KEY = "customiuizer.secure_qs_tile_spec"
 
 `SecureQSTilesHookTest.tileHook_before_rethrowsWrappedFatalFromPost` 验证：
 
-- 在 `Handler.post { ... }` 内部抛出 `OutOfMemoryError` 时，即使被 `RuntimeException`/`InvocationTargetException` 包装，`rethrowIfFatal` 仍能剥离并继续抛出致命异常。
+- 在 `Handler.post { ... }` 内部抛出 `OutOfMemoryError` 时，即使被 `RuntimeException`/`InvocationTargetException` 包装，`rethrowIfFatal` 仍能遍历 cause chain 并继续抛出致命异常。
 
-#### 10.8.6 Mutation tests C/D/E
+#### 10.8.6 Actual-broadcast wrong-spec mutation
+
+临时将 `tileHook.before` 内 `intent.putExtra("tileName", exactTileName)` 改为 `intent.putExtra("tileName", "custom(foo)")`。运行 `afterUnlockRoundTrip_fullSharedClassLifecycle` 失败：广播携带错误 spec、receiver 命中 `tileFoo`、`bar.clickCount == 0`、`foo.clickCount == 1`。证明测试直接依赖 production 生成的 `Intent`，而非手工 `FakeIntent`。
+
+#### 10.8.7 Mutation matrix C/D/E/F/G
 
 所有 mutation 仅临时注入、记录失败后已完全还原，最终生产文件与 HEAD 一致。
 
-- **Mutation C — `mCalledAfterUnlock` 改为 class/shared static semantics**：临时将 `setAdditionalInstanceField(tile, "mCalledAfterUnlock", ...)` 与 `getAdditionalInstanceField(param2.getThisObject(), ...)` 改为 `tile.javaClass` 上的 static 语义。运行 `*SecureQSTiles*` 测试得到 4 个失败，包括 `afterUnlockRoundTrip_usesCorrectExactSpecForSharedClass`、`afterUnlockRoundTrip_fullSharedClassLifecycle`、`handleClick_before_returnsWhenCalledAfterUnlock`、`createTileInternal_rebindsSpecOnSameInstance`。
-- **Mutation D — 拒绝在 same instance 上 rebind `TILE_SPEC_KEY`**：临时将 `setAdditionalInstanceField(tile, TILE_SPEC_KEY, tileName)` 改为仅在首次创建时写入。`createTileInternal_rebindsSpecOnSameInstance` 失败。
-- **Mutation E — `ModuleHelper.releaseReceiver` 不再将 unregister 失败加入 stale 注册表**：临时移除 `addToStale(...)` 调用。`hostReceiver_unregisterFailure_movesOldReceiverToStale` 失败。
+- **C — `mCalledAfterUnlock` class/shared**：临时改为 `tile.javaClass` static 语义。`*SecureQSTiles*` 中 4 个测试失败。
+- **D — fatal cause traversal disabled**：临时将 `rethrowIfFatal` 改为仅检查 outer throwable，不再遍历 `cause`。`tileHook_before_rethrowsWrappedFatalFromPost`、`qSTileHostReceiver_rethrowsWrapped*`、`afterUnlockRoundTrip_fullSharedClassLifecycle` 共 5 个测试失败。
+- **E — successful replacement does not release previous**：临时移除 `registerModuleReceiver` 成功后对 `previous` 的 `releaseReceiver`。`hostReceiver_successfulReplacement_unregistersOldReceiver` 失败。
+- **F — same-instance rebind blocked**：临时将 `setAdditionalInstanceField(tile, TILE_SPEC_KEY, tileName)` 改为仅在首次创建时写入。`createTileInternal_rebindsSpecOnSameInstance` 失败（历史 R2 mutation）。
+- **G — stale registration not tracked**：临时移除 `releaseReceiver` catch 中的 `addToStale`。`hostReceiver_unregisterFailure_movesOldReceiverToStale` 失败（历史 R2 mutation）。
 
-#### 10.8.7 Unit test infrastructure
+#### 10.8.8 Unit test infrastructure
 
-为支持 `Handler.post` 在 JVM 测试中同步/可 drain 执行，新增测试专属 `android.os.Looper` 与 `android.os.Handler` shadows：
+为支持 `Handler.post`、`Looper.getMainLooper()` 以及 `Intent` extras 在 JVM 测试中可验证，新增测试专属 shadows：
 
 - `app/src/test/java/android/os/Looper.kt`
 - `app/src/test/java/android/os/Handler.kt`
+- `app/src/test/java/android/content/Intent.kt`
 
 这些 shadows 仅供 `testDebugUnitTest` source set 使用，不进入生产 APK。

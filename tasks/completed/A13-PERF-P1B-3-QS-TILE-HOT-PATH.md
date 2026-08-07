@@ -7,10 +7,7 @@
 | 任务 | `A13-PERF-P1B-3-QS-TILE-HOT-PATH` |
 | 分支 | `devin/a13-memory-performance-optimization` |
 | 起点 commit | `5f780b8a15727114bd29f01188191a2520ff2509` |
-| 状态 | `QA_CONDITIONAL` |
-| blocking finding | `AFTER_UNLOCK_ROUND_TRIP_EVIDENCE` — 已关闭 |
-| blocking finding | `RECEIVER_REPLACEMENT_LIFECYCLE_EVIDENCE` — 已关闭 |
-| blocking finding | `MUTATION_CDE_INCOMPLETE` — 已关闭 |
+| 状态 | `QA_ACCEPTED_DEVICE_EVIDENCE_PENDING` |
 | Engineering Final SHA | `3cf73a0` |
 | P0 真实运行时基线 | `RUNTIME_BASELINE_PENDING_DEVICE` |
 | 授权范围 | 仅 Quick Settings Tile 创建路径：`tileHostCls` 构造器 Hook、`FactoryImpl#createTileInternal` Hook 及二者直接使用的模块 Tile 创建辅助逻辑 |
@@ -70,10 +67,12 @@
 
 ## 新增/修改文件
 
-- `app/src/main/java/tv/withaibuild/customiuizer/mods/SystemUILockScreenHooks.kt`
+- `app/src/main/java/tv/withaibuild/customiuizer/mods/SystemUILockScreenHooks.kt`（生产逻辑，R3 无最终 diff）
+- `app/src/main/java/tv/withaibuild/customiuizer/mods/utils/ModuleHelper.java`（生产逻辑，R3 无最终 diff）
 - `app/src/test/java/tv/withaibuild/customiuizer/mods/SecureQSTilesHookTest.kt`
 - `app/src/test/java/tv/withaibuild/customiuizer/mods/FakeContext.kt`
 - `app/src/test/java/tv/withaibuild/customiuizer/mods/ControlCenterControllerImpl.kt`
+- `app/src/test/java/android/content/Intent.kt`
 - `app/src/test/java/android/os/Handler.kt`
 - `app/src/test/java/android/os/Looper.kt`
 - `app/src/test/java/android/content/FakeIntent.kt`
@@ -96,10 +95,15 @@
 
 ## 验证结果
 
+### 环境
+
+- 所有 Android 验证均为 `LOCAL_VERIFICATION_PASS`。
+- GitHub CI status：none（远端无 status checks）。
+
 ### Python / 静态门禁
 
 - `python -m compileall tools` OK
-- `python -m unittest discover -s tools/tests -p "test_*.py"` OK（1043 tests, 2 skipped）
+- `python -m unittest discover -s tools/tests -p "test_*.py"` OK
 - `python tools/a13_hook_cost_scan.py --verify` OK（Stability check passed）
 - `python tools/source_hazard_scan.py` 报告 10 条 `CATCH_THROWABLE_NO_FATAL` 在 `SystemUINotificationHooks.kt`，均为 pre-existing，不属于 P1B-3 范围
 - `python tools/verify.py full` OK
@@ -113,16 +117,16 @@
   - `check-hook-contract-parity` OK
   - `:app:compileDebugKotlin` OK
   - `:app:compileDebugJavaWithJavac` OK
-  - `:app:testDebugUnitTest` OK（1017 tests, 0 failures）
+  - `:app:testDebugUnitTest` OK
   - `:app:lintDebug` OK
-- `\gradlew.bat :app:testDebugUnitTest --rerun-tasks --no-build-cache` OK（1017 tests, 0 failures）
-- `\gradlew.bat :app:minifyReleaseWithR8 --no-daemon` OK（BUILD SUCCESSFUL）
-- `\gradlew.bat :app:testDebugUnitTest --tests "*SecureQSTiles*" --rerun-tasks --no-build-cache` OK（BUILD SUCCESSFUL）
+- `\gradlew.bat :app:testDebugUnitTest --rerun-tasks --no-build-cache --no-daemon` OK
+- `\gradlew.bat :app:minifyReleaseWithR8 --no-daemon` OK
+- `\gradlew.bat :app:testDebugUnitTest --tests "*SecureQSTiles*" --rerun-tasks --no-build-cache --no-daemon` OK
 
-### 新增 JVM 单元测试覆盖
+### 新增/增强 JVM 单元测试覆盖
 
 - `SecureQSTilesHookTest.afterUnlockRoundTrip_usesCorrectExactSpecForSharedClass`
-- `SecureQSTilesHookTest.afterUnlockRoundTrip_fullSharedClassLifecycle`
+- `SecureQSTilesHookTest.afterUnlockRoundTrip_fullSharedClassLifecycle`（R3 改为验证 production-generated actual broadcast）
 - `SecureQSTilesHookTest.mCalledAfterUnlock_isPerInstance_strong`
 - `SecureQSTilesHookTest.createTileInternal_rebindsSpecOnSameInstance`
 - `SecureQSTilesHookTest.hostReceiver_successfulReplacement_unregistersOldReceiver`
@@ -130,13 +134,16 @@
 - `SecureQSTilesHookTest.hostReceiver_unregisterFailure_movesOldReceiverToStale`
 - `SecureQSTilesHookTest.tileHook_before_rethrowsWrappedFatalFromPost`
 
-### Mutation tests C/D/E
+### Mutation matrix C/D/E/F/G
 
 所有 mutation 仅临时注入、记录失败证据后已完全还原；生产文件最终无差异。
 
-- **Mutation C — `mCalledAfterUnlock` 改为 class/shared static semantics**：临时将 `XposedHelpers.setAdditionalInstanceField(tile, "mCalledAfterUnlock", ...)` 与 `getAdditionalInstanceField(param2.getThisObject(), ...)` 改为 `tile.javaClass` 上的 static 语义。`\gradlew.bat :app:testDebugUnitTest --tests "*SecureQSTiles*"` 出现 4 个失败（包括 `afterUnlockRoundTrip_usesCorrectExactSpecForSharedClass`、`afterUnlockRoundTrip_fullSharedClassLifecycle`、`handleClick_before_returnsWhenCalledAfterUnlock`、`createTileInternal_rebindsSpecOnSameInstance`），证明当前测试能够捕获 class-level 共享 flag 回归。已还原。
-- **Mutation D — 拒绝在 same instance 上 rebind `TILE_SPEC_KEY`**：临时将 `XposedHelpers.setAdditionalInstanceField(tile, TILE_SPEC_KEY, tileName)` 改为仅在首次创建时写入。`SecureQSTilesHookTest.createTileInternal_rebindsSpecOnSameInstance` 失败，证明 spec rebind 路径有效。已还原。
-- **Mutation E — `ModuleHelper.releaseReceiver` 不再将 unregister 失败加入 stale 注册表**：临时移除 `addToStale(...)` 调用。`SecureQSTilesHookTest.hostReceiver_unregisterFailure_movesOldReceiverToStale` 失败，证明 bounded stale 路径有效。已还原。
+- **C — `mCalledAfterUnlock` 改为 class/shared static semantics**：临时将 `setAdditionalInstanceField(tile, "mCalledAfterUnlock", ...)` 与 `getAdditionalInstanceField(param2.getThisObject(), ...)` 改为 `tile.javaClass` 上的 static 语义。`*SecureQSTiles*` 中 4 个测试失败。
+- **D — fatal cause traversal disabled**：临时将 `rethrowIfFatal` 改为仅检查 outer throwable。`*SecureQSTiles*` 中 5 个测试失败。
+- **E — successful replacement does not release previous**：临时移除 `registerModuleReceiver` 成功后对 `previous` 的 `releaseReceiver`。`hostReceiver_successfulReplacement_unregistersOldReceiver` 失败。
+- **F — same-instance rebind blocked**：临时将 `setAdditionalInstanceField(tile, TILE_SPEC_KEY, tileName)` 改为仅在首次创建时写入。`createTileInternal_rebindsSpecOnSameInstance` 失败（历史 R2 mutation）。
+- **G — stale registration not tracked**：临时移除 `releaseReceiver` catch 中的 `addToStale`。`hostReceiver_unregisterFailure_movesOldReceiverToStale` 失败（历史 R2 mutation）。
+- **Actual-broadcast wrong-spec mutation**：临时将 `tileHook.before` 内 `intent.putExtra("tileName", exactTileName)` 改为固定 `custom(foo)`。`afterUnlockRoundTrip_fullSharedClassLifecycle` 失败。
 
 ### 正式 Release APK（历史工程产物）
 
@@ -148,7 +155,7 @@
   - `Verified using v2 scheme (APK Signature Scheme v2): true`
   - `Number of signers: 1`
   - 证书 SHA-256：`15ce32f03e4d8e62df9390f77431862e59bf2cf95cd5a72f0c7330cdfcca2934`
-- 注意：该 APK 属于 `HISTORICAL_ENGINEERING_SIGNED_ARTIFACT`，不包含后续 QA corrective fix（`95b5d8e` 及之后），不能证明当前 QA corrective HEAD。当前 HEAD 的签名 Release 验证推迟到 QA-1 阶段关闭时完成。
+- 注意：该 APK 属于 `HISTORICAL_ENGINEERING_SIGNED_ARTIFACT`，不包含后续 QA corrective fix，不能证明当前 QA corrective HEAD。当前 HEAD 的签名 Release 验证推迟到 QA-1 阶段关闭时完成。
 
 ## 范围完整性核对
 
@@ -172,12 +179,17 @@
 | Original engineering final | `3cf73a0` | 原始工程最终（历史记录） |
 | Independent QA base | `3744bd95eea2dad35724f5c51aed924b1e70845d` | QA-1 起始基线 |
 | QA R1 | `95b5d8e18dd6bc2c08e9639ac0b82610b0721796` | shared-class spec identity 与 wrapped fatal 修复 |
-| QA R2 | `33ff7b1` | after-unlock round trip / lifecycle / mutation C/D/E 证据补全 |
+| QA R2 evidence | `33ff7b161620191cee8bd200cc6dc412cbf5f254` | after-unlock round trip / lifecycle / mutation C/D/E 证据补全 |
+| QA R2 docs | `1a5e5b736514a821831b47bf29ea408444741788` | 记录 QA R2 SHA |
+| QA R3 evidence closure | 见本次提交 | actual-broadcast round trip、fatal traversal、replacement release 证据闭合 |
 
 ## 最终状态
 
-- 工程实现与本地验证已完成。
-- AFTER_UNLOCK_ROUND_TRIP_EVIDENCE、RECEIVER_REPLACEMENT_LIFECYCLE_EVIDENCE、MUTATION_CDE_INCOMPLETE 三处 QA 条件已关闭。
+- `ACTUAL_BROADCAST_ROUND_TRIP_EVIDENCE` = CLOSED
+- `MUTATION_FATAL_AND_REPLACEMENT_EVIDENCE` = CLOSED
+- `AFTER_UNLOCK_ROUND_TRIP_EVIDENCE` = CLOSED
+- `RECEIVER_REPLACEMENT_LIFECYCLE_EVIDENCE` = CLOSED
+- `MUTATION_CDE_INCOMPLETE` = CLOSED
 - 历史 Release APK 已标记为 `HISTORICAL_ENGINEERING_SIGNED_ARTIFACT`，不证明当前 QA corrective HEAD。
 - P0 真机运行时基线仍为 `RUNTIME_BASELINE_PENDING_DEVICE`，未进行真机功能和性能验证。
-- 当前状态：`QA_CONDITIONAL`（P0 真机运行时基线完成前不晋级为 `QA_ACCEPTED_DEVICE_EVIDENCE_PENDING`）。
+- 当前状态：`QA_ACCEPTED_DEVICE_EVIDENCE_PENDING`（静态/正确性/lifecycle QA 已接受，device runtime evidence 仍待 P0 完成）。

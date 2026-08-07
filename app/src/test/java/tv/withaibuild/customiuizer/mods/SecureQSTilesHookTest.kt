@@ -20,6 +20,7 @@ import io.github.libxposed.api.XposedModuleInterface
 import org.junit.After
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse
+import org.junit.Assert.assertNotEquals
 import org.junit.Assert.assertNotNull
 import org.junit.Assert.assertTrue
 import org.junit.Assert.fail
@@ -723,16 +724,31 @@ class SecureQSTilesHookTest {
 
         assertEquals("one broadcast should be sent", 1, context.sentBroadcasts.size)
 
+        val actualBroadcast = context.sentBroadcasts.single()
+        assertEquals("action", "tv.withaibuild.customiuizer.mods.action.HandleQSTileClick", actualBroadcast.action)
+        val actualTileName = actualBroadcast.getStringExtra("tileName")
+        assertEquals("production broadcast must carry bar exact spec", "custom(bar)", actualTileName)
+        assertNotEquals("production broadcast must not carry foo spec", "custom(foo)", actualTileName)
+        assertEquals("expandAfter", false, actualBroadcast.getBooleanExtra("expandAfter", true))
+        assertEquals("usingCenter", true, actualBroadcast.getBooleanExtra("usingCenter", false))
+
         val receiver = context.registeredReceivers.first()
-        val broadcast = FakeIntent("tv.withaibuild.customiuizer.mods.action.HandleQSTileClick")
-        broadcast.putExtra("tileName", "custom(bar)")
-        broadcast.putExtra("expandAfter", false)
-        broadcast.putExtra("usingCenter", false)
-        receiver.onReceive(context, broadcast)
+        receiver.onReceive(context, actualBroadcast)
 
         assertEquals("bar should execute original handleClick once", 1, (tileBar as FakeNfcTile).clickCount)
         assertEquals("foo should not execute original handleClick", 0, (tileFoo as FakeNfcTile).clickCount)
         assertEquals("foo flag should not be set", true,
+            XposedHelpers.getAdditionalInstanceField(tileFoo, "mCalledAfterUnlock") == null)
+
+        // Simulate the before-hook entry that the JVM fake may not trigger via Method.invoke,
+        // proving the after-unlock flag is consumed per-instance on bar and not shared with foo.
+        val secondBefore = fakeBeforeCallback(tileBar, listOf(view))
+        clickHook.beforeHook(secondBefore)
+
+        assertFalse("second before hook should not skip when mCalledAfterUnlock is set", isSkipped(secondBefore))
+        assertEquals("bar mCalledAfterUnlock should be cleared after consumption", false,
+            XposedHelpers.getAdditionalInstanceField(tileBar, "mCalledAfterUnlock") as? Boolean)
+        assertEquals("foo mCalledAfterUnlock should remain untouched", true,
             XposedHelpers.getAdditionalInstanceField(tileFoo, "mCalledAfterUnlock") == null)
     }
 
