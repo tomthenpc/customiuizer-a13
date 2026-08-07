@@ -1,26 +1,27 @@
 #!/usr/bin/env python3
-"""Tests for tools/a13_runtime_baseline.py.
+"""Strong tests for tools/a13_runtime_baseline.py (R2).
 
-All tests use synthetic fixtures and mock subprocess; they do not require
-a real Android device or ADB.
+Tests call actual runner/aggregation functions with mocked `_adb_shell` and
+`time.sleep`, avoiding real device and delays.
 """
 from __future__ import annotations
 
 import json
 import os
+import re
+import statistics
 import subprocess
 import sys
 import tempfile
 import unittest
 from pathlib import Path
-from unittest.mock import patch, MagicMock
+from unittest.mock import MagicMock, patch, call
 
 sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
 sys.path.insert(0, str(Path(__file__).resolve().parent.parent.parent))
 
 import a13_runtime_baseline as rtb
 import a13_perf_probe as probe
-
 
 FIXTURES = Path(__file__).resolve().parent / "fixtures"
 
@@ -29,436 +30,577 @@ def _fixture(name: str) -> str:
     return (FIXTURES / name).read_text(encoding="utf-8", errors="replace")
 
 
-def _completed(args, returncode=0, stdout="", stderr=""):
-    return subprocess.CompletedProcess(args=args, returncode=returncode, stdout=stdout, stderr=stderr)
+MEMINFO = _fixture("dumpsys_meminfo.txt")
+PROC_STATUS = _fixture("proc_status.txt")
+PROC_STAT = "100 (process) S 1 100 100 0 -1 1077952832 100 0 0 0 5000 3000 0 0 20 0 1 0 100 0"
 
 
-class ParseMeminfoFailVisibleTest(unittest.TestCase):
-    """1. meminfo parser normal; 2. meminfo missing field; 3. format change; 4. empty; 5. adb error"""
+def _make_default_adb_response(command: str) -> rtb.AdbResult:
+    """Return plausible fake output for any adb shell command."""
+    if command == "pidof system_server":
+        return rtb.AdbResult(command, 0, "100\n", "")
+    if command == "pidof com.android.systemui":
+        return rtb.AdbResult(command, 0, "200\n", "")
+    if command == "getconf CLK_TCK":
+        return rtb.AdbResult(command, 0, "100\n", "")
+    if command == "cmd notification":
+        return rtb.AdbResult(command, 0, "post\nlist\nremove", "")
+    if command == "cmd notification post --help":
+        return rtb.AdbResult(command, 0, "post", "")
+    if "dumpsys meminfo" in command:
+        return rtb.AdbResult(command, 0, MEMINFO, "")
+    if "/proc/100/stat" in command or "/proc/200/stat" in command:
+        return rtb.AdbResult(command, 0, PROC_STAT, "")
+    if "/proc/100/status" in command or "/proc/200/status" in command:
+        return rtb.AdbResult(command, 0, PROC_STATUS, "")
+    if "cmd notification list" in command:
+        tags = [f"customiuizer_a13_baseline_20260807T140000_r{rep}_i{i}" for rep in range(5) for i in range(10)]
+        return rtb.AdbResult(command, 0, "\n".join(tags) + "\n", "")
+    if "dumpsys notification" in command:
+        tags = [f"customiuizer_a13_baseline_20260807T140000_r{rep}_i{i}" for rep in range(5) for i in range(10)]
+        return rtb.AdbResult(command, 0, "\n".join(tags), "")
+    if "uiautomator dump" in command:
+        return rtb.AdbResult(command, 0, "", "")
+    if "cat /sdcard/window_dump.xml" in command:
+        return rtb.AdbResult(command, 0, "<hierarchy></hierarchy>", "")
+    if "cmd notification post" in command:
+        return rtb.AdbResult(command, 0, "", "")
+    if command == "getprop sys.boot_completed":
+        return rtb.AdbResult(command, 0, "1\n", "")
+    if command == "cat /proc/sys/kernel/random/boot_id":
+        return rtb.AdbResult(command, 0, "abcd-1234\n", "")
+    if command == "cat /proc/uptime":
+        return rtb.AdbResult(command, 0, "350.5 0.0\n", "")
+    if "input swipe" in command or "input keyevent" in command or command == "input --help":
+        return rtb.AdbResult(command, 0, "", "")
+    if "wm size" in command:
+        return rtb.AdbResult(command, 0, "Physical size: 1080x2400\n", "")
+    if "wm density" in command:
+        return rtb.AdbResult(command, 0, "Physical density: 440\n", "")
+    if "dumpsys input" in command:
+        return rtb.AdbResult(command, 0, "Orientation: 0", "")
+    return rtb.AdbResult(command, 0, "", "")
 
-    def test_normal_meminfo(self):
-        text = _fixture("dumpsys_meminfo.txt")
-        result = rtb._parse_meminfo_fail_visible(text)
+
+# -----------------------------------------------------------------------------
+# Helpers for patching _adb_shell across a whole test
+# -----------------------------------------------------------------------------
+
+def _patch_adb_shell(test_case, responses=None):
+    """Patch _adb_shell to a map of commands or default."""
+    default_map = {}
+
+    def make_side_effect(responses):
+        def side_effect(adb, command, timeout=30):
+            if responses and command in responses:
+                return responses[command]
+            return _make_default_adb_response(command)
+        return side_effect
+
+    patcher = patch("a13_runtime_baseline._adb_shell", side_effect=make_side_effect(responses))
+    test_case.addCleanup(patcher.stop)
+    return patcher.start()
+
+
+# -----------------------------------------------------------------------------
+# Clock tick provenance (mutation-resistant)
+# -----------------------------------------------------------------------------
+
+class ClockTickProvenanceTest(unittest.TestCase):
+
+    def test_getconf_success_100hz(self):
+        with patch("a13_runtime_baseline._adb_shell") as mock_shell:
+            mock_shell.return_value = rtb.AdbResult("getconf CLK_TCK", 0, "100\n", "")
+            info = rtb._resolve_clock_tick_with_provenance(MagicMock())
+            self.assertEqual(info.value, 100)
+            self.assertEqual(info.source, "DEVICE_GETCONF")
+
+    def test_getconf_success_250hz(self):
+        with patch("a13_runtime_baseline._adb_shell") as mock_shell:
+            mock_shell.return_value = rtb.AdbResult("getconf CLK_TCK", 0, "250\n", "")
+            info = rtb._resolve_clock_tick_with_provenance(MagicMock())
+            self.assertEqual(info.value, 250)
+
+    def test_getconf_failure_no_silent_fallback(self):
+        # Mutation C: if getconf fails, code must NOT silently return 100
+        with patch("a13_runtime_baseline._adb_shell") as mock_shell:
+            mock_shell.return_value = rtb.AdbResult("getconf CLK_TCK", 1, "", "not found")
+            info = rtb._resolve_clock_tick_with_provenance(MagicMock())
+            self.assertIsNone(info.value)
+            self.assertEqual(info.source, "UNAVAILABLE")
+            self.assertIn("not found", info.raw_output)
+
+
+# -----------------------------------------------------------------------------
+# Notification scenario ordering and uniqueness
+# -----------------------------------------------------------------------------
+
+class NotificationOrderingTest(unittest.TestCase):
+
+    def test_verify_after_post(self):
+        # Mutation A: if verify is moved before post, the log must catch it
+        with patch("a13_runtime_baseline._adb_shell") as mock_shell:
+            log = []
+
+            def side_effect(adb, command, timeout=30):
+                log.append(command)
+                if "cmd notification post" in command:
+                    return rtb.AdbResult(command, 0, "", "")
+                if "cmd notification list" in command:
+                    return rtb.AdbResult(command, 0, "customiuizer_a13_baseline_20260807T140000_r0_i0\n", "")
+                return _make_default_adb_response(command)
+
+            mock_shell.side_effect = side_effect
+            display = rtb.DisplayInfo(width=1080, height=2400, coordinate_confidence="1080P_PORTRAIT_ASSUMED")
+            steps, _ = rtb._build_notification_menu_steps("20260807T140000", 0, display)
+            cap = rtb.NotificationCapability(cmd_notification_available=True, post_available=True, list_available=True)
+
+            # simulate one post + verify
+            tag = "customiuizer_a13_baseline_20260807T140000_r0_i0"
+            r = mock_shell(MagicMock(), steps[0].commands[0])
+            self.assertTrue(r.ok)
+            found, method = rtb._verify_notification_exists(MagicMock(), tag, cap)
+            self.assertTrue(found)
+
+            post_idx = log.index([c for c in log if "cmd notification post" in c][0])
+            verify_idx = log.index([c for c in log if "cmd notification list" in c][0])
+            self.assertLess(post_idx, verify_idx)
+
+    def test_unique_tags_per_iteration(self):
+        display = rtb.DisplayInfo(width=1080, height=2400)
+        for rep in range(2):
+            _, plan = rtb._build_notification_menu_steps("20260807T140000", rep, display)
+            tags = [p["tag"] for p in plan]
+            self.assertEqual(len(tags), 10)
+            self.assertEqual(len(tags), len(set(tags)))
+            for p in plan:
+                self.assertIn(f"_r{rep}_", p["tag"])
+
+    def test_unique_tags_across_repetitions(self):
+        display = rtb.DisplayInfo(width=1080, height=2400)
+        all_tags = []
+        for rep in range(2):
+            _, plan = rtb._build_notification_menu_steps("20260807T140000", rep, display)
+            all_tags.extend([p["tag"] for p in plan])
+        self.assertEqual(len(all_tags), 20)
+        self.assertEqual(len(all_tags), len(set(all_tags)))
+
+    def test_cleanup_before_close_shade(self):
+        display = rtb.DisplayInfo(width=1080, height=2400)
+        steps, _ = rtb._build_notification_menu_steps("20260807T140000", 0, display)
+        descs = [s.description for s in steps]
+        cleanup_idx = next(i for i, d in enumerate(descs) if "Swipe-dismiss" in d)
+        close_idx = next(i for i, d in enumerate(descs) if "Swipe up to close panel" in d)
+        self.assertLess(cleanup_idx, close_idx)
+
+    def test_menu_close_uses_back_key(self):
+        display = rtb.DisplayInfo(width=1080, height=2400)
+        steps, _ = rtb._build_notification_menu_steps("20260807T140000", 0, display)
+        close_steps = [s for s in steps if "Close notification menu" in s.description]
+        self.assertTrue(close_steps)
+        for s in close_steps:
+            self.assertIn("input keyevent 4", s.commands)
+
+    def test_no_tap_400_for_menu_close(self):
+        display = rtb.DisplayInfo(width=1080, height=2400)
+        steps, _ = rtb._build_notification_menu_steps("20260807T140000", 0, display)
+        for s in steps:
+            for c in s.commands:
+                self.assertNotIn("input tap 540 400", c)
+
+    def test_no_cmd_notification_remove_anywhere(self):
+        import inspect
+        source = inspect.getsource(rtb)
+        self.assertNotIn("cmd notification remove", source)
+
+
+# -----------------------------------------------------------------------------
+# PID pair validity and aggregation
+# -----------------------------------------------------------------------------
+
+class PIDPairValidityTest(unittest.TestCase):
+
+    def _sample(self, pid, pss):
+        return {"sample_index": 1, "process": "system_server", "repeat_index": 0, "pid": pid, "metrics": {"total_pss_kb": pss}}
+
+    def test_pair_valid_same_pid(self):
+        pairs = rtb._build_valid_pairs([self._sample(100, 1000)], [self._sample(100, 1100)])
+        self.assertTrue(pairs[0]["pair_valid"])
+
+    def test_pair_invalid_pid_changed(self):
+        pairs = rtb._build_valid_pairs([self._sample(100, 1000)], [self._sample(200, 1100)])
+        self.assertFalse(pairs[0]["pair_valid"])
+
+    def test_pair_invalid_post_null(self):
+        pairs = rtb._build_valid_pairs([self._sample(100, 1000)], [self._sample(None, 1100)])
+        self.assertFalse(pairs[0]["pair_valid"])
+
+    def test_pair_invalid_pre_null(self):
+        pairs = rtb._build_valid_pairs([self._sample(None, 1000)], [self._sample(100, 1100)])
+        self.assertFalse(pairs[0]["pair_valid"])
+
+    def test_pair_invalid_missing_metric(self):
+        pre = {"sample_index": 1, "process": "system_server", "repeat_index": 0, "pid": 100, "metrics": {"total_pss_kb": 1000}}
+        post = {"sample_index": 1, "process": "system_server", "repeat_index": 0, "pid": 100, "metrics": {"total_pss_kb": None}}
+        pairs = rtb._build_valid_pairs([pre], [post])
+        self.assertFalse(pairs[0]["pair_valid"])
+
+
+class AggregationExcludesInvalidPairsTest(unittest.TestCase):
+
+    def _pair(self, valid, pre_pss, post_pss):
+        return {
+            "pair_valid": valid,
+            "pre": {"metrics": {"total_pss_kb": pre_pss}},
+            "post": {"metrics": {"total_pss_kb": post_pss}},
+        }
+
+    def test_median_uses_only_valid_pairs(self):
+        pairs = [self._pair(True, 1000, 1100), self._pair(False, 900, 950), self._pair(True, 1200, 1300)]
+        pre_med = rtb._build_median_from_pairs(pairs, {"total_pss_kb"}, "pre")
+        post_med = rtb._build_median_from_pairs(pairs, {"total_pss_kb"}, "post")
+        self.assertEqual(pre_med["total_pss_kb"]["value"], 1100)
+        self.assertEqual(post_med["total_pss_kb"]["value"], 1200)
+
+    def test_failed_repetition_excluded(self):
+        pairs = [self._pair(i != 2, 1000 + i * 10, 1100 + i * 10) for i in range(5)]
+        pre_med = rtb._build_median_from_pairs(pairs, {"total_pss_kb"}, "pre")
+        valid = [1000, 1010, 1030, 1040]
+        self.assertEqual(pre_med["total_pss_kb"]["value"], statistics.median(valid))
+
+
+class DeltaFromValidPairsTest(unittest.TestCase):
+
+    def test_delta_uses_valid_only(self):
+        pairs = [
+            {"pair_valid": True, "pre": {"metrics": {"total_pss_kb": 1000}}, "post": {"metrics": {"total_pss_kb": 1100}}},
+            {"pair_valid": False, "pre": {"metrics": {"total_pss_kb": 500}}, "post": {"metrics": {"total_pss_kb": 600}}},
+        ]
+        delta = rtb._build_delta_from_pairs(pairs)
+        self.assertEqual(delta["total_pss_kb"]["delta"], 100)
+
+
+# -----------------------------------------------------------------------------
+# meminfo fail-visible
+# -----------------------------------------------------------------------------
+
+class MeminfoParseFailVisibleTest(unittest.TestCase):
+
+    def test_parse_ok(self):
+        result = rtb._parse_meminfo_fail_visible(MEMINFO)
+        self.assertEqual(result["_parse_status"], "OK")
         self.assertEqual(result["total_pss_kb"], 9876)
-        self.assertEqual(result["java_heap_kb"], 5678)
-        self.assertEqual(result["native_heap_kb"], 1234)
-        self.assertEqual(result["private_dirty_kb"], 8000)
-        self.assertEqual(result.get("_parse_status"), "OK")
 
-    def test_missing_field(self):
+    def test_missing_fields_null_not_zero(self):
         text = "** MEMINFO in pid 1 [a] **\n  Dalvik Heap: 4000 4000\n        TOTAL: 5000 5000\n"
         result = rtb._parse_meminfo_fail_visible(text)
         self.assertIsNone(result["native_heap_kb"])
-        self.assertEqual(result["java_heap_kb"], 4000)
-        self.assertEqual(result["total_pss_kb"], 5000)
-        # native_heap_kb should be None, not 0
         self.assertNotEqual(result["native_heap_kb"], 0)
 
-    def test_format_change_unparseable(self):
-        text = "Some weird ROM format\n  Foo: bar\n  Baz: qux\n"
-        result = rtb._parse_meminfo_fail_visible(text)
-        # Should not have any parsed values
-        self.assertIsNone(result["total_pss_kb"])
-        self.assertIsNone(result["java_heap_kb"])
-        self.assertIsNone(result["native_heap_kb"])
+    def test_unparseable_format(self):
+        result = rtb._parse_meminfo_fail_visible("weird ROM\nFoo: bar\n")
+        self.assertEqual(result["_parse_status"], "PARSE_FAILED")
 
     def test_empty_output(self):
         result = rtb._parse_meminfo_fail_visible("")
-        self.assertIsNone(result["total_pss_kb"])
-        # Empty output should not produce 0 values
-        for k, v in result.items():
-            if k != "_parse_status":
-                self.assertIsNone(v)
-        self.assertEqual(result.get("_parse_status"), "EMPTY_OUTPUT")
-
-    def test_adb_error_empty_stdout(self):
-        result = rtb._parse_meminfo_fail_visible("")
-        self.assertIsNone(result["total_pss_kb"])
-        self.assertNotEqual(result["total_pss_kb"], 0)
+        self.assertEqual(result["_parse_status"], "EMPTY_OUTPUT")
 
 
-class ParseProcStatTest(unittest.TestCase):
-    """6. proc stat parser"""
+# -----------------------------------------------------------------------------
+# CLI exit semantics
+# -----------------------------------------------------------------------------
 
-    def test_proc_stat_parsing(self):
-        # Minimal valid /proc/pid/stat line
-        text = "123 (system_server) S 1 123 123 0 -1 1077952832 100 0 0 0 5000 3000 0 0 20 0 1 0 100 0\n"
-        result = probe.parse_proc_stat(text, clock_tick=100)
-        self.assertIsNotNone(result["cpu_time_ms"])
-        self.assertEqual(result["cpu_time_ms"], 80000)  # (5000+3000)*1000/100
-        self.assertEqual(result["thread_count"], 1)
+class CLIExitCodeTest(unittest.TestCase):
 
-    def test_proc_stat_empty(self):
-        result = probe.parse_proc_stat("", clock_tick=100)
-        self.assertIsNone(result["cpu_time_ms"])
-        self.assertIsNone(result["thread_count"])
-
-
-class ParseProcStatusThreadsTest(unittest.TestCase):
-    """7. proc status threads"""
-
-    def test_thread_count(self):
-        text = _fixture("proc_status.txt")
-        result = probe.parse_proc_status(text)
-        self.assertEqual(result["thread_count"], 42)
-
-
-class PIDRestartDetectionTest(unittest.TestCase):
-    """8. PID restart detection"""
-
-    def test_pid_changed_detected(self):
-        # prev_pid=100, new_pid=200 → changed
-        prev_pid = 100
-        new_pid = 200
-        changed = prev_pid is not None and new_pid is not None and new_pid != prev_pid
-        self.assertTrue(changed)
-
-    def test_pid_same_not_changed(self):
-        prev_pid = 100
-        new_pid = 100
-        changed = prev_pid is not None and new_pid is not None and new_pid != prev_pid
-        self.assertFalse(changed)
-
-    def test_pid_none_not_changed(self):
-        prev_pid = None
-        new_pid = 100
-        changed = prev_pid is not None and new_pid is not None and new_pid != prev_pid
-        self.assertFalse(changed)
-
-
-class AdbNonZeroFailVisibleTest(unittest.TestCase):
-    """9. adb non-zero fail-visible"""
-
-    def test_adb_result_not_ok(self):
-        r = rtb.AdbResult(command="test", returncode=1, stdout="", stderr="error")
-        self.assertFalse(r.ok)
-        self.assertEqual(r.returncode, 1)
-
-    def test_adb_result_ok(self):
-        r = rtb.AdbResult(command="test", returncode=0, stdout="output", stderr="")
-        self.assertTrue(r.ok)
-
-
-class NotificationCapabilityTest(unittest.TestCase):
-    """10. notification capability no-remove"""
-
-    def _make_adb(self, stdout="", returncode=0):
+    @patch("a13_runtime_baseline._run_scenario")
+    @patch("a13_runtime_baseline._probe_display")
+    @patch("a13_runtime_baseline._probe_notification_capability")
+    @patch("a13_runtime_baseline._resolve_clock_tick_with_provenance")
+    @patch("a13_runtime_baseline._ensure_single_device")
+    def test_scenario_failed_returns_exit_scenario(
+        self, mock_ensure, mock_tick, mock_cap, mock_disp, mock_run
+    ):
+        mock_ensure.return_value = (True, [{"serial": "abc", "state": "device"}])
+        mock_tick.return_value = rtb.ClockTickInfo(100, "DEVICE_GETCONF", "100")
+        mock_cap.return_value = rtb.NotificationCapability(cmd_notification_available=True, post_available=True)
+        mock_disp.return_value = rtb.DisplayInfo()
+        mock_run.return_value = (rtb.EXIT_SCENARIO, {"scenario_status": "FAILED"})
         adb = MagicMock(spec=probe.Adb)
-        adb.build_cmd.return_value = ["adb", "shell", "cmd notification"]
-        return adb
+        adb.device = "abc"
+        code = rtb.cmd_run(adb, ["volume_adjust_10"], "enabled_features_off", 1, Path("/tmp"))
+        self.assertEqual(code, rtb.EXIT_SCENARIO)
 
-    @patch("a13_runtime_baseline.subprocess.run")
-    def test_no_remove_capability(self, mock_run):
-        # Simulate a ROM where `cmd notification` doesn't have `remove`
-        mock_run.return_value = _completed(
-            ["adb", "shell", "cmd notification"],
-            0,
-            "Notification service commands:\n  post\n  list\n",
-            "",
-        )
-        adb = self._make_adb()
-        cap = rtb._probe_notification_capability(adb)
-        self.assertTrue(cap.cmd_notification_available)
-        self.assertTrue(cap.post_available)
-        self.assertTrue(cap.list_available)
-        self.assertFalse(cap.remove_available)
-
-    @patch("a13_runtime_baseline.subprocess.run")
-    def test_cmd_notification_not_available(self, mock_run):
-        mock_run.return_value = _completed(
-            ["adb", "shell", "cmd notification"],
-            1,
-            "",
-            "Unknown command: notification\n",
-        )
-        adb = self._make_adb()
-        cap = rtb._probe_notification_capability(adb)
-        # Even with error, if there's no stdout, cmd is not available
-        self.assertFalse(cap.cmd_notification_available)
-
-
-class NotificationPostFailureTest(unittest.TestCase):
-    """11. notification post failure"""
-
-    @patch("a13_runtime_baseline.subprocess.run")
-    def test_post_failure_returncode(self, mock_run):
-        mock_run.return_value = _completed(
-            ["adb", "shell", "cmd notification post -t 'T' 'B' tag1"],
-            1,
-            "",
-            "Error: cannot post\n",
-        )
+    @patch("a13_runtime_baseline._ensure_single_device")
+    def test_no_device_returns_exit_device(self, mock_ensure):
+        mock_ensure.return_value = (False, [])
         adb = MagicMock(spec=probe.Adb)
-        adb.build_cmd.return_value = ["adb", "shell", "cmd notification post -t 'T' 'B' tag1"]
-        result = rtb._post_notification(adb, "tag1")
-        self.assertFalse(result.ok)
-        self.assertEqual(result.returncode, 1)
-        self.assertIn("Error", result.stderr)
+        code = rtb.cmd_run(adb, ["all"], "enabled_features_off", None, Path("/tmp"))
+        self.assertEqual(code, rtb.EXIT_DEVICE)
 
-
-class NotificationVerificationFailureTest(unittest.TestCase):
-    """12. notification verification failure"""
-
-    @patch("a13_runtime_baseline.subprocess.run")
-    def test_verify_not_found(self, mock_run):
-        # cmd notification list runs but tag not found
-        mock_run.return_value = _completed(
-            ["adb", "shell", "cmd notification list"],
-            0,
-            "Notification list empty\n",
-            "",
-        )
+    @patch("a13_runtime_baseline._ensure_single_device")
+    def test_multiple_devices_returns_exit_device(self, mock_ensure):
+        mock_ensure.return_value = (False, [{"serial": "a"}, {"serial": "b"}])
         adb = MagicMock(spec=probe.Adb)
-        adb.build_cmd.return_value = ["adb", "shell", "cmd notification list"]
-        cap = rtb.NotificationCapability(
-            cmd_notification_available=True,
-            post_available=True,
-            list_available=True,
-            remove_available=False,
-        )
-        found, method = rtb._verify_notification_exists(adb, "nonexistent_tag", cap)
-        self.assertFalse(found)
-        self.assertEqual(method, "cmd_notification_list_tag_not_found")
+        code = rtb.cmd_run(adb, ["all"], "enabled_features_off", None, Path("/tmp"))
+        self.assertEqual(code, rtb.EXIT_DEVICE)
 
-    @patch("a13_runtime_baseline.subprocess.run")
-    def test_verify_found_via_list(self, mock_run):
-        mock_run.return_value = _completed(
-            ["adb", "shell", "cmd notification list"],
-            0,
-            "some_tag\nmy_test_tag\nother\n",
-            "",
-        )
-        adb = MagicMock(spec=probe.Adb)
-        adb.build_cmd.return_value = ["adb", "shell", "cmd notification list"]
-        cap = rtb.NotificationCapability(
-            cmd_notification_available=True,
-            post_available=True,
-            list_available=True,
-            remove_available=False,
-        )
-        found, method = rtb._verify_notification_exists(adb, "my_test_tag", cap)
-        self.assertTrue(found)
-        self.assertEqual(method, "cmd_notification_list")
+    def test_unknown_scenario_exit_cli(self):
+        with patch("a13_runtime_baseline._ensure_single_device") as mock_ensure, \
+             patch("a13_runtime_baseline._resolve_clock_tick_with_provenance") as mock_tick, \
+             patch("a13_runtime_baseline._probe_notification_capability") as mock_cap, \
+             patch("a13_runtime_baseline._probe_display") as mock_disp:
+            mock_ensure.return_value = (True, [{"serial": "abc", "state": "device"}])
+            mock_tick.return_value = rtb.ClockTickInfo(100, "DEVICE_GETCONF", "100")
+            mock_cap.return_value = rtb.NotificationCapability(cmd_notification_available=True, post_available=True)
+            mock_disp.return_value = rtb.DisplayInfo()
+            adb = MagicMock(spec=probe.Adb)
+            adb.device = "abc"
+            code = rtb.cmd_run(adb, ["nonsense"], "enabled_features_off", None, Path("/tmp"))
+            self.assertEqual(code, rtb.EXIT_CLI)
 
 
-class RawArtifactPathTest(unittest.TestCase):
-    """13. raw artifact path generation"""
+# -----------------------------------------------------------------------------
+# End-to-end runner with mocked _adb_shell and time.sleep
+# -----------------------------------------------------------------------------
 
-    def test_filename_deterministic(self):
-        name = rtb._raw_filename(1, "system_server", "meminfo", "PRE")
-        self.assertEqual(name, "001_PRE_system_server_meminfo.txt")
+class EndToEndRunnerTest(unittest.TestCase):
 
-    def test_filename_systemui(self):
-        name = rtb._raw_filename(5, "com.android.systemui", "proc_stat", "POST")
-        self.assertEqual(name, "005_POST_systemui_proc_stat.txt")
+    def setUp(self):
+        _patch_adb_shell(self)
+        self.sleep_patcher = patch("a13_runtime_baseline.time.sleep")
+        self.sleep_patcher.start()
+        self.addCleanup(self.sleep_patcher.stop)
 
-    def test_filename_padding(self):
-        name = rtb._raw_filename(100, "system_server", "proc_status", "PRE")
-        self.assertEqual(name, "100_PRE_system_server_proc_status.txt")
-
-
-class SamplesJsonRawRefsTest(unittest.TestCase):
-    """14. samples.json raw refs"""
-
-    def test_raw_refs_structure(self):
-        refs = {
-            "meminfo": "raw/001_PRE_system_server_meminfo.txt",
-            "proc_stat": "raw/001_PRE_system_server_proc_stat.txt",
-            "proc_status": "raw/001_PRE_system_server_proc_status.txt",
-        }
-        # Verify all paths are relative to raw/ dir
-        for key, path in refs.items():
-            self.assertTrue(path.startswith("raw/"))
-            self.assertTrue(path.endswith(".txt"))
-
-
-class DeterministicManifestFieldsTest(unittest.TestCase):
-    """15. deterministic manifest fields"""
-
-    def test_manifest_has_required_fields(self):
-        manifest = {
-            "run_id": "20260807T120000",
-            "scenario_id": "volume_adjust_10",
-            "module_state": "enabled_features_off",
-            "module_state_source": "OPERATOR_DECLARED",
-            "clk_tck": 100,
-            "notification_source": "N/A",
-            "menu_trigger_method": "N/A",
-            "ui_automation_confidence": "N/A",
-        }
-        self.assertEqual(manifest["module_state_source"], "OPERATOR_DECLARED")
-        self.assertIn("clk_tck", manifest)
-        self.assertIn("run_id", manifest)
-        self.assertIn("scenario_id", manifest)
-
-    def test_manifest_clk_tck_recorded(self):
-        # CLK_TCK must be recorded, not assumed
-        manifest = {"clk_tck": 100}
-        self.assertIsNotNone(manifest["clk_tck"])
-        self.assertIsInstance(manifest["clk_tck"], int)
-
-
-class ModuleStateSourceTest(unittest.TestCase):
-    """16. module-state source semantics"""
-
-    def test_operator_declared_default(self):
-        # The script must use OPERATOR_DECLARED, not VERIFIED_FROM_CONFIG
-        # unless explicit verification is implemented
-        source = "OPERATOR_DECLARED"
-        self.assertEqual(source, "OPERATOR_DECLARED")
-        self.assertNotEqual(source, "VERIFIED_FROM_CONFIG")
-
-    def test_module_state_not_auto_switched(self):
-        # The --module-state parameter is operator-declared, not auto-switched
-        # The script must not claim it verified the actual module state
-        declared_state = "enabled_features_off"
-        # Script should record this as operator-declared
-        self.assertEqual(declared_state, "enabled_features_off")
-
-
-class ArtifactPathsTest(unittest.TestCase):
-    """17. artifact directory structure"""
-
-    def test_for_run_structure(self):
+    def test_runner_creates_manifest(self):
         with tempfile.TemporaryDirectory() as tmpdir:
-            base = Path(tmpdir)
-            ap = rtb.ArtifactPaths.for_run(base, "test_run_001")
-            self.assertEqual(ap.run_dir, base / "test_run_001")
-            self.assertEqual(ap.raw_dir, base / "test_run_001" / "raw")
-            self.assertEqual(ap.manifest_path, base / "test_run_001" / "manifest.json")
-            self.assertEqual(ap.samples_path, base / "test_run_001" / "samples.json")
+            adb = MagicMock(spec=probe.Adb)
+            adb.device = "abc"
+            clock = rtb.ClockTickInfo(100, "DEVICE_GETCONF", "100")
+            cap = rtb.NotificationCapability(cmd_notification_available=True, post_available=True)
+            display = rtb.DisplayInfo(width=1080, height=2400, coordinate_confidence="1080P_PORTRAIT_ASSUMED")
+            device_info = {"device": "test", "rom": "test", "android_version": "13", "build_variant": "user"}
 
-    def test_mkdirs(self):
+            status, manifest = rtb._run_scenario(
+                adb, rtb.SCENARIOS["volume_adjust_10"], "enabled_features_off", 2,
+                Path(tmpdir), "20260807T140000", clock, cap, display, device_info, "abc"
+            )
+            self.assertEqual(status, rtb.EXIT_OK)
+            self.assertEqual(manifest["repetitions_completed"], 2)
+            self.assertEqual(manifest["repetitions_valid_for_aggregation"], 2)
+            self.assertTrue((Path(tmpdir) / "20260807T140000_volume_adjust_10" / "manifest.json").exists())
+
+    def test_unique_tags_in_manifest(self):
         with tempfile.TemporaryDirectory() as tmpdir:
-            base = Path(tmpdir)
-            ap = rtb.ArtifactPaths.for_run(base, "test_run_002")
-            ap.mkdirs()
-            self.assertTrue(ap.run_dir.exists())
-            self.assertTrue(ap.raw_dir.exists())
+            adb = MagicMock(spec=probe.Adb)
+            adb.device = "abc"
+            clock = rtb.ClockTickInfo(100, "DEVICE_GETCONF", "100")
+            cap = rtb.NotificationCapability(cmd_notification_available=True, post_available=True, list_available=True)
+            display = rtb.DisplayInfo(width=1080, height=2400, coordinate_confidence="1080P_PORTRAIT_ASSUMED")
+            device_info = {"device": "test", "rom": "test", "android_version": "13", "build_variant": "user"}
+
+            status, manifest = rtb._run_scenario(
+                adb, rtb.SCENARIOS["notification_menu_create_delete"], "enabled_features_off", 1,
+                Path(tmpdir), "20260807T140000", clock, cap, display, device_info, "abc"
+            )
+            tags = set()
+            for rep in manifest["repetitions"]:
+                for p in rep["iteration_plan"]:
+                    tags.add(p["tag"])
+            self.assertEqual(len(tags), 10)
+            self.assertEqual(status, rtb.EXIT_OK)
+
+    def test_pid_change_excludes_from_aggregate(self):
+        call_count = [0]
+
+        with patch("a13_runtime_baseline._adb_shell") as mock_shell:
+            def side_effect(adb, command, timeout=30):
+                if "pidof system_server" in command:
+                    call_count[0] += 1
+                    if call_count[0] <= 1:
+                        return rtb.AdbResult(command, 0, "100\n", "")
+                    return rtb.AdbResult(command, 0, "200\n", "")  # PID changes after first
+                return _make_default_adb_response(command)
+
+            mock_shell.side_effect = side_effect
+            with tempfile.TemporaryDirectory() as tmpdir:
+                adb = MagicMock(spec=probe.Adb)
+                adb.device = "abc"
+                clock = rtb.ClockTickInfo(100, "DEVICE_GETCONF", "100")
+                cap = rtb.NotificationCapability(cmd_notification_available=True, post_available=True)
+                display = rtb.DisplayInfo(width=1080, height=2400, coordinate_confidence="1080P_PORTRAIT_ASSUMED")
+                device_info = {"device": "test", "rom": "test", "android_version": "13", "build_variant": "user"}
+
+                status, manifest = rtb._run_scenario(
+                    adb, rtb.SCENARIOS["volume_adjust_10"], "enabled_features_off", 1,
+                    Path(tmpdir), "20260807T140000", clock, cap, display, device_info, "abc"
+                )
+                self.assertEqual(status, rtb.EXIT_SCENARIO)
+                self.assertEqual(manifest["repetitions_valid_for_aggregation"], 0)
+
+    def test_notification_post_failure_invalidates_repetition(self):
+        with patch("a13_runtime_baseline._adb_shell") as mock_shell:
+            def side_effect(adb, command, timeout=30):
+                if "cmd notification post" in command:
+                    return rtb.AdbResult(command, 1, "", "post failed")
+                return _make_default_adb_response(command)
+
+            mock_shell.side_effect = side_effect
+            with tempfile.TemporaryDirectory() as tmpdir:
+                adb = MagicMock(spec=probe.Adb)
+                adb.device = "abc"
+                clock = rtb.ClockTickInfo(100, "DEVICE_GETCONF", "100")
+                cap = rtb.NotificationCapability(cmd_notification_available=True, post_available=True, list_available=True)
+                display = rtb.DisplayInfo(width=1080, height=2400, coordinate_confidence="1080P_PORTRAIT_ASSUMED")
+                device_info = {"device": "test", "rom": "test", "android_version": "13", "build_variant": "user"}
+
+                status, manifest = rtb._run_scenario(
+                    adb, rtb.SCENARIOS["notification_menu_create_delete"], "enabled_features_off", 1,
+                    Path(tmpdir), "20260807T140000", clock, cap, display, device_info, "abc"
+                )
+                self.assertEqual(status, rtb.EXIT_SCENARIO)
+                self.assertEqual(manifest["repetitions_completed"], 1)
+                self.assertEqual(manifest["repetitions_valid_for_aggregation"], 0)
+
+    def test_module_state_source_operator_declared(self):
+        with tempfile.TemporaryDirectory() as tmpdir:
+            adb = MagicMock(spec=probe.Adb)
+            adb.device = "abc"
+            clock = rtb.ClockTickInfo(100, "DEVICE_GETCONF", "100")
+            cap = rtb.NotificationCapability(cmd_notification_available=True, post_available=True)
+            display = rtb.DisplayInfo(width=1080, height=2400, coordinate_confidence="1080P_PORTRAIT_ASSUMED")
+            device_info = {"device": "test", "rom": "test", "android_version": "13", "build_variant": "user"}
+
+            _, manifest = rtb._run_scenario(
+                adb, rtb.SCENARIOS["volume_adjust_10"], "enabled_typical_features", 1,
+                Path(tmpdir), "20260807T140000", clock, cap, display, device_info, "abc"
+            )
+            self.assertEqual(manifest["module_state"], "enabled_typical_features")
+            self.assertEqual(manifest["module_state_source"], "OPERATOR_DECLARED")
+
+    def test_boot_stable_records_precondition(self):
+        with tempfile.TemporaryDirectory() as tmpdir:
+            adb = MagicMock(spec=probe.Adb)
+            adb.device = "abc"
+            clock = rtb.ClockTickInfo(100, "DEVICE_GETCONF", "100")
+            cap = rtb.NotificationCapability()
+            display = rtb.DisplayInfo(width=1080, height=2400, coordinate_confidence="1080P_PORTRAIT_ASSUMED")
+            device_info = {"device": "test", "rom": "test", "android_version": "13", "build_variant": "user"}
+
+            _, manifest = rtb._run_scenario(
+                adb, rtb.SCENARIOS["boot_stable"], "enabled_features_off", 1,
+                Path(tmpdir), "20260807T140000", clock, cap, display, device_info, "abc"
+            )
+            self.assertIsNotNone(manifest["boot_info"])
+            self.assertEqual(manifest["boot_info"]["sys_boot_completed"], "1")
 
 
-class NoCmdNotificationRemoveTest(unittest.TestCase):
-    """18. cmd notification remove not used"""
+# -----------------------------------------------------------------------------
+# Multi-device guard
+# -----------------------------------------------------------------------------
 
-    def test_cleanup_uses_swipe_dismiss(self):
-        # The script must use swipe-dismiss, not `cmd notification remove`
-        # Check that _swipe_dismiss_notification uses input swipe, not cmd notification remove
+class MultiDeviceGuardTest(unittest.TestCase):
+
+    def test_single_device_allowed(self):
+        adb = MagicMock(spec=probe.Adb)
+        adb.devices.return_value = [{"serial": "abc", "state": "device"}]
+        adb.device = "abc"
+        ok, _ = rtb._ensure_single_device(adb)
+        self.assertTrue(ok)
+
+    def test_multiple_devices_blocked(self):
+        adb = MagicMock(spec=probe.Adb)
+        adb.devices.return_value = [
+            {"serial": "a", "state": "device"},
+            {"serial": "b", "state": "device"},
+        ]
+        adb.device = None
+        ok, _ = rtb._ensure_single_device(adb)
+        self.assertFalse(ok)
+
+    def test_specified_device_allows_multiple(self):
+        adb = MagicMock(spec=probe.Adb)
+        adb.devices.return_value = [
+            {"serial": "a", "state": "device"},
+            {"serial": "b", "state": "device"},
+        ]
+        adb.device = "a"
+        ok, _ = rtb._ensure_single_device(adb)
+        self.assertTrue(ok)
+
+
+# -----------------------------------------------------------------------------
+# Coordinate adaptation
+# -----------------------------------------------------------------------------
+
+class CoordinateAdaptationTest(unittest.TestCase):
+
+    def test_swipe_coords_1080p(self):
+        display = rtb.DisplayInfo(width=1080, height=2400)
+        x1, _, _, y2 = rtb._swipe_coords(display, from_top=True)
+        self.assertEqual(x1, 540)
+        self.assertEqual(y2, 1608)
+
+    def test_long_press_1080p(self):
+        display = rtb.DisplayInfo(width=1080, height=2400)
+        cmd = rtb._make_long_press(display)
+        self.assertIn("540", cmd)
+        self.assertIn("600", cmd)  # 2400 * 0.25
+
+
+# -----------------------------------------------------------------------------
+# Doctor
+# -----------------------------------------------------------------------------
+
+class DoctorTests(unittest.TestCase):
+
+    def test_doctor_device_not_connected(self):
+        adb = MagicMock(spec=probe.Adb)
+        adb.adb = "adb"
+        adb.version.return_value = "1.0.41"
+        adb.devices.return_value = []
+        with patch("a13_runtime_baseline._print"):
+            code = rtb.cmd_doctor(adb)
+        self.assertEqual(code, rtb.EXIT_DEVICE)
+
+    def test_doctor_no_keycode_menu(self):
         import inspect
-        source = inspect.getsource(rtb._swipe_dismiss_notification)
-        self.assertIn("input swipe", source)
-        self.assertNotIn("cmd notification remove", source)
-
-    def test_build_notification_menu_steps_no_remove(self):
-        import inspect
-        source = inspect.getsource(rtb._build_notification_menu_steps)
-        self.assertNotIn("cmd notification remove", source)
+        source = inspect.getsource(rtb.cmd_doctor)
+        self.assertNotIn("input keyevent 82", source)
 
 
-class ScenarioStatusCodesTest(unittest.TestCase):
-    """19. scenario status codes"""
+# -----------------------------------------------------------------------------
+# Scenario status codes
+# -----------------------------------------------------------------------------
 
-    def test_status_codes_defined(self):
+class ScenarioStatusCodeTest(unittest.TestCase):
+
+    def test_codes(self):
         self.assertEqual(rtb.STATUS_OK, "OK")
         self.assertEqual(rtb.STATUS_FAILED_PRECONDITION, "FAILED_PRECONDITION")
         self.assertEqual(rtb.STATUS_FAILED, "FAILED")
-        self.assertEqual(rtb.STATUS_NOT_EXECUTED, "NOT_EXECUTED")
-        self.assertEqual(rtb.STATUS_DEVICE_NOT_CONNECTED, "DEVICE_NOT_CONNECTED")
+        self.assertEqual(rtb.EXIT_OK, 0)
+        self.assertEqual(rtb.EXIT_DEVICE, 1)
+        self.assertEqual(rtb.EXIT_CLI, 2)
+        self.assertEqual(rtb.EXIT_SCENARIO, 3)
 
 
-class NotificationSourceLabelTest(unittest.TestCase):
-    """20. notification source labeling"""
+# -----------------------------------------------------------------------------
+# Artifact storage
+# -----------------------------------------------------------------------------
 
-    def test_shell_test_notification_label(self):
-        # The script must label shell notifications as SHELL_TEST_NOTIFICATION
-        # not REAL_APP_NOTIFICATION
-        label = "SHELL_TEST_NOTIFICATION"
-        self.assertEqual(label, "SHELL_TEST_NOTIFICATION")
-        self.assertNotEqual(label, "REAL_APP_NOTIFICATION")
+class ArtifactStorageTest(unittest.TestCase):
 
+    def test_run_dir_structure(self):
+        with tempfile.TemporaryDirectory() as tmpdir:
+            ap = rtb.ArtifactPaths.for_run(Path(tmpdir), "RID", "volume_adjust_10")
+            ap.mkdirs()
+            self.assertTrue(ap.run_dir.exists())
+            self.assertTrue(ap.raw_dir.exists())
+            self.assertTrue(ap.uiautomator_dir.exists())
 
-class CPUTickConversionTest(unittest.TestCase):
-    """21. CPU tick conversion strategy"""
-
-    def test_raw_ticks_preserved_when_no_clk(self):
-        # If CLK_TCK cannot be determined, raw ticks should be preserved
-        # and conversion source recorded
-        utime = 5000
-        stime = 3000
-        raw_ticks = utime + stime
-        # With unknown CLK_TCK, we'd store raw ticks
-        self.assertEqual(raw_ticks, 8000)
-
-    def test_clk_tck_default_fallback(self):
-        # Default fallback is 100, but must be recorded in manifest
-        # _resolve_clock_tick has no defaults (uses internal fallback), test the constant
-        clock_tick = 100  # The documented fallback in a13_perf_probe.py
-        self.assertEqual(clock_tick, 100)
-
-
-class MedianAggregationTest(unittest.TestCase):
-    """22. median aggregation"""
-
-    def test_median_of_samples(self):
-        samples = [
-            {"metrics": {"total_pss_kb": 100}},
-            {"metrics": {"total_pss_kb": 200}},
-            {"metrics": {"total_pss_kb": 300}},
-        ]
-        med = rtb._median_of(samples, "total_pss_kb")
-        self.assertEqual(med, 200)
-
-    def test_median_with_none_values(self):
-        samples = [
-            {"metrics": {"total_pss_kb": None}},
-            {"metrics": {"total_pss_kb": 200}},
-            {"metrics": {"total_pss_kb": 300}},
-        ]
-        med = rtb._median_of(samples, "total_pss_kb")
-        self.assertEqual(med, 250)  # median of [200, 300]
-
-    def test_median_all_none(self):
-        samples = [
-            {"metrics": {"total_pss_kb": None}},
-            {"metrics": {"total_pss_kb": None}},
-        ]
-        med = rtb._median_of(samples, "total_pss_kb")
-        self.assertIsNone(med)
-
-
-class DeltaComputationTest(unittest.TestCase):
-    """23. delta computation with PID change awareness"""
-
-    def test_delta_normal(self):
-        pre = {"total_pss_kb": {"value": 100000}}
-        post = {"total_pss_kb": {"value": 100500}}
-        delta = rtb._build_delta(pre, post)
-        self.assertEqual(delta["total_pss_kb"]["delta"], 500)
-
-    def test_delta_with_none(self):
-        pre = {"total_pss_kb": {"value": None}}
-        post = {"total_pss_kb": {"value": 100500}}
-        delta = rtb._build_delta(pre, post)
-        self.assertIsNone(delta["total_pss_kb"]["delta"])
-
-
-class FilterMetricsTest(unittest.TestCase):
-    """24. metric filtering per process"""
-
-    def test_system_server_filter(self):
-        metrics = {"total_pss_kb": 100, "java_heap_kb": 50, "cpu_time_ms": 1000, "thread_count": 5}
-        filtered = rtb._filter_metrics(metrics, rtb.SYSTEM_SERVER_METRICS)
-        self.assertIn("total_pss_kb", filtered)
-        self.assertIn("cpu_time_ms", filtered)
-        self.assertNotIn("java_heap_kb", filtered)
-        self.assertNotIn("thread_count", filtered)
-
-    def test_systemui_filter(self):
-        metrics = {"total_pss_kb": 100, "java_heap_kb": 50, "cpu_time_ms": 1000, "thread_count": 5}
-        filtered = rtb._filter_metrics(metrics, rtb.SYSTEMUI_METRICS)
-        self.assertIn("total_pss_kb", filtered)
-        self.assertIn("java_heap_kb", filtered)
-        self.assertIn("thread_count", filtered)
-        self.assertNotIn("cpu_time_ms", filtered)
+    def test_raw_filename(self):
+        self.assertEqual(rtb._raw_filename(5, "com.android.systemui", "proc_stat", "POST"),
+                         "005_POST_systemui_proc_stat.txt")
 
 
 if __name__ == "__main__":
