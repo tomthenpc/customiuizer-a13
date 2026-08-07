@@ -194,6 +194,7 @@ object SystemNotificationMoreHooks {
             override fun after(param: AfterHookCallback) {
                 val mContext = mContextField.get(param.thisObject) as? Context ?: return
                 val mMenuItems = mMenuItemsField.get(param.thisObject) as? ArrayList<Any> ?: return
+                val mMenuContainer = mMenuContainerField.get(param.thisObject) as? LinearLayout ?: return
 
                 if (menuItemConstructor == null || getMenuViewMethod == null) return
 
@@ -220,16 +221,9 @@ object SystemNotificationMoreHooks {
                 }
                 if (infoBtn == null || forceCloseBtn == null || openFwBtn == null) return
 
-                mMenuItems.add(infoBtn)
-                mMenuItems.add(forceCloseBtn)
-                mMenuItems.add(openFwBtn)
-
-                val menuMargin = (mMenuMarginField?.get(param.thisObject) as? Int) ?: 0
-                val mMenuContainer = mMenuContainerField.get(param.thisObject) as? LinearLayout ?: return
-
-                val mInfoBtn = getMenuViewMethod.invoke(infoBtn) as? View ?: return
-                val mForceCloseBtn = getMenuViewMethod.invoke(forceCloseBtn) as? View ?: return
-                val mOpenFwBtn = getMenuViewMethod.invoke(openFwBtn) as? View ?: return
+                val mInfoBtn = getMenuViewSafe(infoBtn, getMenuViewMethod) ?: return
+                val mForceCloseBtn = getMenuViewSafe(forceCloseBtn, getMenuViewMethod) ?: return
+                val mOpenFwBtn = getMenuViewSafe(openFwBtn, getMenuViewMethod) ?: return
 
                 val menuRow = param.thisObject
 
@@ -287,9 +281,14 @@ object SystemNotificationMoreHooks {
                 mForceCloseBtn.setOnClickListener(itemClick)
                 mOpenFwBtn.setOnClickListener(itemClick)
 
+                val menuMargin = (mMenuMarginField?.get(param.thisObject) as? Int) ?: 0
                 val layoutParams = LinearLayout.LayoutParams(-2, -2)
                 layoutParams.leftMargin = menuMargin
                 layoutParams.rightMargin = menuMargin
+
+                mMenuItems.add(infoBtn)
+                mMenuItems.add(forceCloseBtn)
+                mMenuItems.add(openFwBtn)
                 mMenuContainer.addView(mInfoBtn, layoutParams)
                 mMenuContainer.addView(mForceCloseBtn, layoutParams)
                 mMenuContainer.addView(mOpenFwBtn, layoutParams)
@@ -306,7 +305,7 @@ object SystemNotificationMoreHooks {
                 if (realTitleId != 0) {
                     for (i in 0 until mMenuItems.size) {
                         val obj = mMenuItems[i]
-                        val menuView = getMenuViewMethod.invoke(obj) as? View ?: continue
+                        val menuView = getMenuViewSafe(obj, getMenuViewMethod) ?: continue
                         (menuView.findViewById<TextView>(realTitleId))?.maxWidth = menuWidth
                     }
                 }
@@ -325,6 +324,17 @@ object SystemNotificationMoreHooks {
             val next = current.cause
             if (next == null || next === current) return
             current = next
+        }
+    }
+
+    private fun getMenuViewSafe(menuItem: Any?, method: Method?): View? {
+        if (menuItem == null || method == null) return null
+        return try {
+            method.invoke(menuItem) as? View
+        } catch (t: Throwable) {
+            rethrowFatal(t)
+            XposedHelpers.log(t)
+            null
         }
     }
 
