@@ -289,6 +289,133 @@ object Order {
         c2 = [mls.asdict(c) for c in mls.scan(repo)]
         self.assertEqual(c1, c2)
 
+    # Negative identity-proof tests (R1)
+
+    def test_register_receiver_mismatched_not_balanced(self):
+        repo = self._make_repo({
+            "MismatchedReceiver.kt": """
+class MismatchedReceiver {
+    fun on() {
+        context.registerReceiver(receiverA, filter)
+    }
+    fun off() {
+        context.unregisterReceiver(receiverB)
+    }
+}
+"""
+        })
+        mls.REPO_ROOT = repo
+        candidates = mls.scan(repo)
+        regs = [c for c in candidates if c.root_kind == "BROADCAST_RECEIVER_REGISTRATION"]
+        self.assertEqual(len(regs), 1)
+        self.assertEqual(regs[0].classification, "UNBALANCED_RECEIVER_REGISTRATION")
+        self.assertEqual(regs[0].risk, "HIGH")
+
+    def test_register_observer_mismatched_not_balanced(self):
+        repo = self._make_repo({
+            "MismatchedObserver.kt": """
+class MismatchedObserver {
+    fun on() {
+        resolver.registerContentObserver(uri, false, observerA)
+    }
+    fun off() {
+        resolver.unregisterContentObserver(observerB)
+    }
+}
+"""
+        })
+        mls.REPO_ROOT = repo
+        candidates = mls.scan(repo)
+        regs = [c for c in candidates if c.root_kind == "CONTENT_OBSERVER_REGISTRATION"]
+        self.assertEqual(len(regs), 1)
+        self.assertEqual(regs[0].classification, "UNBALANCED_OBSERVER_REGISTRATION")
+        self.assertEqual(regs[0].risk, "HIGH")
+
+    def test_listener_mismatched_not_balanced(self):
+        repo = self._make_repo({
+            "MismatchedListener.kt": """
+class MismatchedListener {
+    fun on() {
+        target.addListener(listenerA)
+    }
+    fun off() {
+        target.removeListener(listenerB)
+    }
+}
+"""
+        })
+        mls.REPO_ROOT = repo
+        candidates = mls.scan(repo)
+        regs = [c for c in candidates if c.root_kind in ("LISTENER_REGISTRATION", "CALLBACK_REGISTRATION")]
+        self.assertEqual(len(regs), 1)
+        self.assertEqual(regs[0].classification, "UNBALANCED_LISTENER_REGISTRATION")
+        self.assertEqual(regs[0].risk, "HIGH")
+
+    def test_handler_mismatched_not_balanced(self):
+        repo = self._make_repo({
+            "MainActivity.kt": """
+class MainActivity {
+    fun schedule() {
+        handlerA.postDelayed({ updateView() }, 1000)
+    }
+    fun cleanup() {
+        handlerB.removeCallbacksAndMessages(null)
+    }
+}
+"""
+        })
+        mls.REPO_ROOT = repo
+        candidates = mls.scan(repo)
+        posts = [c for c in candidates if c.root_kind == "HANDLER" and c.retained_type.lower().startswith("activity")]
+        self.assertEqual(len(posts), 1)
+        self.assertIn("DELAYED", posts[0].classification)
+        self.assertEqual(posts[0].risk, "HIGH")
+
+    def test_executor_mismatched_not_balanced(self):
+        repo = self._make_repo({
+            "MismatchedExecutor.kt": """
+class MismatchedExecutor {
+    val executorA = Executors.newSingleThreadExecutor()
+    val executorB = Executors.newSingleThreadExecutor()
+    fun cleanup() {
+        executorB.shutdown()
+    }
+}
+"""
+        })
+        mls.REPO_ROOT = repo
+        candidates = mls.scan(repo)
+        exes = [c for c in candidates if c.root_kind == "THREAD_EXECUTOR"]
+        self.assertEqual(len(exes), 2)
+        a = [c for c in exes if c.retained_type == "executorA"]
+        self.assertEqual(len(a), 1)
+        self.assertIn("UNPROVEN", a[0].classification)
+        self.assertEqual(a[0].risk, "HIGH")
+
+    def test_exact_identity_release_balanced(self):
+        repo = self._make_repo({
+            "ExactMatch.kt": """
+class ExactMatch {
+    fun on() {
+        target.addListener(listenerA)
+        context.registerReceiver(receiverA, filter)
+    }
+    fun off() {
+        target.removeListener(listenerA)
+        context.unregisterReceiver(receiverA)
+    }
+}
+"""
+        })
+        mls.REPO_ROOT = repo
+        candidates = mls.scan(repo)
+        listener = [c for c in candidates if c.root_kind in ("LISTENER_REGISTRATION", "CALLBACK_REGISTRATION")]
+        receiver = [c for c in candidates if c.root_kind == "BROADCAST_RECEIVER_REGISTRATION"]
+        self.assertEqual(len(listener), 1)
+        self.assertEqual(len(receiver), 1)
+        self.assertEqual(listener[0].classification, "LIFECYCLE_MANAGED")
+        self.assertEqual(receiver[0].classification, "LIFECYCLE_MANAGED")
+
 
 if __name__ == "__main__":
     unittest.main()

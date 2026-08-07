@@ -31,7 +31,7 @@ def main() -> int:
         "| Field | Value |",
         "|-------|-------|",
         "| Task | `A13-PERF-P2-0` |",
-        "| Base SHA | `283e731b9f998c4fe188d919e3bddae1c0a5648c` |",
+        "| Base SHA | `5f00b0492c9cfc2cc62e171d424c269eeed3f492` |",
         "| Branch | `devin/a13-memory-performance-optimization` |",
         "| Scope | `app/src/main/java/**` |",
         "| Production changes | `FORBIDDEN` in P2-0 |",
@@ -131,90 +131,62 @@ def main() -> int:
         lines.append(f"| {i} | {c['id']} | {c['risk']} | {c['classification']} | {c['process']} | {source} | {c['source_line']} | `{c['retained_type']}` | {notes} |")
     lines.append("")
 
-    # Top 3 chains
+    # Top 3 chains — derived from the reviewed inventory top 10
     lines.append("## Top 3 strongest retention chains")
     lines.append("")
-    chains = [
-        (
-            "1. LauncherIconHooks TextWatcher on `mMessage` (com.miui.home)",
-            [
-                "Root: `TextView mMessage` receives `addTextChangedListener(object : TextWatcher { ... })`.",
-                "Edge: STRONG listener registration with no matching `removeTextChangedListener`.",
-                "Captured owner: `mMessage` (TextView) and `multx` (Float) are captured by the anonymous listener.",
-                "Lifecycle: The listener is added inside an `after` hook each time the view is bound; repeated binding may accumulate listeners.",
-                "Cardinality: unbounded with view rebinding; release path not proven.",
-                "Risk: HIGH — unbalanced listener on a Launcher UI object.",
-            ]
-        ),
-        (
-            "2. SubFragment delayed smooth-scroller (tv.withaibuild.customiuizer.r13)",
-            [
-                "Root: `view?.postDelayed({ ... }, 380)` inside `SubFragment.scrollToKey()/`.",
-                "Edge: STRONG delayed Runnable held by the view's Handler.",
-                "Captured owner: the lambda captures `smoothScroller` and `mList` (RecyclerView) which hold the Fragment's context.",
-                "Lifecycle: The Fragment/View may be destroyed before 380ms elapse; no `removeCallbacks` is called in `onDestroyView`.",
-                "Cardinality: one per scroll; can queue multiple if called repeatedly.",
-                "Risk: HIGH — short-lived Fragment/View retained by a delayed callback with no explicit release.",
-            ]
-        ),
-        (
-            "3. WebPage OnBackPressedDispatcher callback (tv.withaibuild.customiuizer.r13)",
-            [
-                "Root: `requireActivity().onBackPressedDispatcher.addCallback(this, callback)`.",
-                "Edge: STRONG callback registration using the Fragment as `LifecycleOwner`.",
-                "Captured owner: `callback` is an anonymous `OnBackPressedCallback` that captures `webView` and `mWebView`.",
-                "Lifecycle: The callback is lifecycle-aware (removed automatically when the Fragment is destroyed), so the static risk is lower, but the scanner cannot confirm the release contract from source alone.",
-                "Risk: scanner says HIGH, but after manual review the lifecycle-aware dispatcher lowers it to MEDIUM / false-positive unless `callback` also captures a non-lifecycle object.",
-            ]
-        ),
-    ]
-    for title, bullets in chains:
+    for i, c in enumerate(top10[:3], 1):
+        source = c["source_file"].split("/")[-1]
+        title = f"{i}. `{source}:{c['source_line']}` — {c['classification']} ({c['risk']})"
         lines.append(f"### {title}")
         lines.append("")
-        for b in bullets:
-            lines.append(f"- {b}")
+        lines.append(f"- **Root**: `{c['root_kind']}` retaining `{c['retained_type']}` in process `{c['process']}`.")
+        if c.get("registration_site"):
+            lines.append(f"- **Registration site**: `{c['registration_site'][:120].replace(chr(10), ' ')}`")
+        if c.get("release_site"):
+            lines.append(f"- **Release site**: `{c['release_site'][:120].replace(chr(10), ' ')}`")
+        if c.get("review_rationale"):
+            lines.append(f"- **Review rationale**: {c['review_rationale']}")
+        else:
+            lines.append(f"- **Evidence**: `{c['evidence'][:120].replace(chr(10), ' ')}...`")
         lines.append("")
 
-    # Manual coverage
+    # Manual coverage — derived from the reviewed inventory
     lines.append("## Manual supplemental coverage")
     lines.append("")
-    lines.append("Manual `rg`/`grep` cross-check performed over `app/src/main/java/**` for the keyword groups in section 25 of the task:")
-    lines.append("")
-    lines.append("| Pattern | Manual grep hits | Scanner candidates | Notes |")
-    lines.append("|---------|------------------|--------------------|-------|")
-    lines.append("| `registerReceiver` | 30 | 9 | Utility registrations in `ModuleHelper` hide actual callers; scanner counts 9 top-level sites. |")
-    lines.append("| `registerContentObserver` | 6 | 4 | One `getIntExtra`/null-receiver site is not a retained observer. |")
-    lines.append("| `addListener`/`registerListener`/`addCallback`/etc. | 173 | 10 | Many `setOnXxxListener` assignments are one-shot view listeners, not add/remove registries. |")
-    lines.append("| `postDelayed` / `post(` | 49 | 33 | Includes `Handler` construction and `sendMessageDelayed`. |")
-    lines.append("| `WeakReference` / `WeakHashMap` / `SoftReference` | 44 | 29 | Field declarations only; call-site WeakReference not all captured. |")
-    lines.append("| `Thread` / `Executor` / `ExecutorService` / `Timer` | 35 | 4 | Most are imports or type references, not field roots. |")
-    lines.append("| `setAdditionalInstanceField` | 83 | 77 | 6 sites are `get`/`remove` helpers, not set roots. |")
-    lines.append("| `HashMap` / `ArrayList` / `ArrayDeque` / `SparseArray` / etc. | 252 | field-level collection roots in counts | Many are local or generic references. |")
-    lines.append("")
-    lines.append("- **Manual supplemental count**: 0 new HIGH/CRITICAL candidates discovered beyond the scanner output.")
-    lines.append("- **False-positive / benign count**: 122 (117 `SAFE_STABLE_METADATA` + 5 `PROCESS_LIFETIME_INTENTIONAL`) classified as not requiring production change.")
+    manual_high = sum(1 for c in candidates if c["risk"] in ("HIGH", "CRITICAL") and c["review_status"] == "REVIEWED")
+    manual_medium = sum(1 for c in candidates if c["risk"] in ("MEDIUM", "UNKNOWN") and c["review_status"] == "NEEDS_ROM_EVIDENCE")
+    benign = sum(1 for c in candidates if c["classification"] in ("SAFE_STABLE_METADATA", "PROCESS_LIFETIME_INTENTIONAL"))
+    lines.append(f"- **Candidates reviewed**: {len([c for c in candidates if c['review_status'] == 'REVIEWED'])} of {len(candidates)}")
+    lines.append(f"- **HIGH/CRITICAL manually reviewed**: {manual_high}")
+    lines.append(f"- **MEDIUM/UNKNOWN needing ROM/runtime evidence**: {manual_medium}")
+    lines.append(f"- **False-positive / benign count**: {benign} (`SAFE_STABLE_METADATA` + `PROCESS_LIFETIME_INTENTIONAL`) classified as not requiring production change.")
     lines.append("")
 
-    # P2-1 recommendation
+    # P2-1 recommendation — derived from the top reviewed candidate
     lines.append("## Recommended P2-1 slice")
     lines.append("")
+    top = top10[0] if top10 else None
+    if top and "SubFragment" in top["source_file"] and top["classification"] == "DELAYED_CALLBACK_OWNER_RETENTION":
+        rec = "SubFragment.kt smooth-scroller delayed callback cleanup"
+    elif top:
+        source = top["source_file"].split("/")[-1]
+        rec = f"{source}:{top['source_line']} {top['classification'].lower().replace('_', ' ')}"
+    else:
+        rec = "TBD"
     lines.append("```")
-    lines.append("RECOMMENDED_P2_1 = SubFragment.kt smooth-scroller delayed callback cleanup")
+    lines.append(f"RECOMMENDED_P2_1 = {rec}")
     lines.append("```")
     lines.append("")
     lines.append("### Why this is ranked first")
     lines.append("")
-    lines.append("- **Lifecycle mismatch**: a `Fragment` / `View` posts a delayed `Runnable` that captures `smoothScroller` and `mList`.")
-    lines.append("- **No proven release**: `SubFragment` has no `removeCallbacks` call for this specific delayed runnable in `onDestroyView` / `onPause`.")
-    lines.append("- **Multiplicity**: `scrollToKey()` can be invoked repeatedly, queuing multiple delayed runnables.")
-    lines.append("- **Statically verifiable**: fix is adding a `Runnable` field and `removeCallbacks` in the Fragment's view destruction path; can be tested with a unit test that checks the runnable is removed.")
-    lines.append("- **Scope small**: one file, one feature, no new architecture.")
-    lines.append("- **Regression risk low**: the delayed scroll is a UI convenience; removing it when the view is gone is safe.")
-    lines.append("- **Does not intersect P1B frozen slices**: `SubFragment.kt` is not in `SystemUILockScreenHooks`, `SystemUINotificationHooks`, `P1B-4A`, `SystemAudioAndVolumeHooks`, or P0 tooling.")
-    lines.append("")
-    lines.append("### Alternative top candidate")
-    lines.append("")
-    lines.append("- `LauncherIconHooks.kt:169` `addTextChangedListener` on `mMessage` is the highest-risk process (Launcher) and has the clearest unbalanced listener pattern, but it intersects the P1B-1 / Launcher slice; a dedicated P2 task should authorize reopening that slice before production change.")
+    if top:
+        lines.append(f"- **Top candidate**: `{top['source_file'].split('/')[-1]}:{top['source_line']}` — `{top['retained_type']}` — {top['classification']} ({top['risk']}).")
+        if top.get("review_rationale"):
+            lines.append(f"- **Review rationale**: {top['review_rationale']}")
+        else:
+            lines.append(f"- **Evidence**: `{top['evidence'][:120].replace(chr(10), ' ')}...`")
+    lines.append("- **Scope small**: one file or a single callback site, no new architecture.")
+    lines.append("- **Regression risk low**: the fix only adds a matching `removeCallbacks` / `removeListener` call in an existing lifecycle teardown path.")
     lines.append("")
     lines.append("### P2-1 status")
     lines.append("")
