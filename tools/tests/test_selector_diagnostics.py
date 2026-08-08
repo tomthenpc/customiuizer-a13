@@ -71,6 +71,7 @@ class SelectorDiagnosticsContractTest(unittest.TestCase):
     def test_all_operations_present_and_unique(self):
         operations = [
             "ActivitySelector.loadActivities",
+            "ActivitySelector.loadActivities.start",
             "AppSelector.privacy.toggle",
             "AppSelector.applock.toggle",
             "AppSelector.loadApps",
@@ -90,12 +91,13 @@ class SelectorDiagnosticsContractTest(unittest.TestCase):
         all_found = []
         for text in self.texts.values():
             all_found.extend(re.findall(r'SettingsDiagnostics\.failure\("([^"]+)",', text))
-        self.assertEqual(8, len(all_found))
-        self.assertEqual(8, len(set(all_found)), "operation names must be unique")
+        self.assertEqual(9, len(all_found))
+        self.assertEqual(9, len(set(all_found)), "operation names must be unique")
 
     def test_all_catch_blocks_have_full_fatal_guard(self):
         operations = [
             "ActivitySelector.loadActivities",
+            "ActivitySelector.loadActivities.start",
             "AppSelector.privacy.toggle",
             "AppSelector.applock.toggle",
             "AppSelector.loadApps",
@@ -118,12 +120,12 @@ class SelectorDiagnosticsContractTest(unittest.TestCase):
         self.assertIsNotNone(body)
         self.assertNotIn("process", body)
 
-    def test_activity_selector_success_path_has_run_on_ui_thread(self):
+    def test_activity_selector_success_path_uses_main_executor(self):
         text = self.texts["ActivitySelector"]
-        self.assertIn("act.runOnUiThread(process)", text)
-        try_body = self._extract_try_body_before_call("ActivitySelector.loadActivities")
-        self.assertIsNotNone(try_body)
-        self.assertIn("act.runOnUiThread(process)", try_body)
+        # act.runOnUiThread has been replaced with mainExecutor.execute
+        self.assertNotIn("act.runOnUiThread(process)", text)
+        self.assertNotIn("runOnUiThread", text)
+        self.assertIn("mainExecutor.execute", text)
 
     def test_app_selector_privacy_success(self):
         text = self.texts["AppSelector"]
