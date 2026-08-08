@@ -74,6 +74,7 @@ class SelectorDiagnosticsContractTest(unittest.TestCase):
             "AppSelector.privacy.toggle",
             "AppSelector.applock.toggle",
             "AppSelector.loadApps",
+            "AppSelector.loadApps.start",
             "ShortcutSelector.loadIconResource",
             "ShortcutSelector.persistIcon",
             "SortableList.loadDragShadow",
@@ -89,8 +90,8 @@ class SelectorDiagnosticsContractTest(unittest.TestCase):
         all_found = []
         for text in self.texts.values():
             all_found.extend(re.findall(r'SettingsDiagnostics\.failure\("([^"]+)",', text))
-        self.assertEqual(7, len(all_found))
-        self.assertEqual(7, len(set(all_found)), "operation names must be unique")
+        self.assertEqual(8, len(all_found))
+        self.assertEqual(8, len(set(all_found)), "operation names must be unique")
 
     def test_all_catch_blocks_have_full_fatal_guard(self):
         operations = [
@@ -98,6 +99,7 @@ class SelectorDiagnosticsContractTest(unittest.TestCase):
             "AppSelector.privacy.toggle",
             "AppSelector.applock.toggle",
             "AppSelector.loadApps",
+            "AppSelector.loadApps.start",
             "ShortcutSelector.loadIconResource",
             "ShortcutSelector.persistIcon",
             "SortableList.loadDragShadow",
@@ -140,8 +142,14 @@ class SelectorDiagnosticsContractTest(unittest.TestCase):
         text = self.texts["AppSelector"]
         try_body = self._extract_try_body_before_call("AppSelector.loadApps")
         self.assertIsNotNone(try_body)
-        self.assertIn("initialized = true", try_body)
-        self.assertIn("act.runOnUiThread(process)", try_body)
+        self.assertIn("success = true", try_body)
+
+        # initialized = true is now set in the mainExecutor completion block,
+        # not directly in the try body. Verify it exists in the source.
+        self.assertIn("initialized = true", text)
+        # act.runOnUiThread has been replaced with mainExecutor.execute
+        self.assertNotIn("act.runOnUiThread(process)", text)
+        self.assertIn("mainExecutor.execute", text)
 
         catch_body = self._extract_catch_body_after_call("AppSelector.loadApps")
         self.assertIsNotNone(catch_body)

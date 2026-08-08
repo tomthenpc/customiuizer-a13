@@ -20,6 +20,7 @@ import tv.withaibuild.customiuizer.utils.Helpers
 import tv.withaibuild.customiuizer.utils.SettingsDiagnostics
 import tv.withaibuild.customiuizer.utils.LockedAppAdapter
 import tv.withaibuild.customiuizer.utils.PrivacyAppAdapter
+import java.lang.ref.WeakReference
 
 class AppSelector : SubFragmentWithSearch() {
 
@@ -35,6 +36,8 @@ class AppSelector : SubFragmentWithSearch() {
     private var isActivity = false
     private var key: String? = null
     private var process: Runnable? = null
+    private var pendingAppLoadStart: Runnable? = null
+    private var appLoadInFlight = false
 
     override fun onCreate(savedInstanceState: Bundle?) {
         this.padded = false
@@ -265,35 +268,83 @@ class AppSelector : SubFragmentWithSearch() {
     override fun onActivityCreated(savedInstanceState: Bundle?) {
         super.onActivityCreated(savedInstanceState)
 
-        val act = activity
         if (initialized) {
             process?.run()
+        } else if (appLoadInFlight) {
+            return
         } else {
-            view?.postDelayed({
-                if (act != null) {
-                    Thread {
-                        try {
-                            if (isActivity || privacy || applock || (multi && key != null)) {
-                                if (openwith) {
-                                    if (Helpers.openWithAppsList == null) Helpers.getOpenWithApps(act)
-                                } else if (share) {
-                                    if (Helpers.shareAppsList == null) Helpers.getShareApps(act)
-                                } else {
-                                    if (Helpers.installedAppsList == null) Helpers.getInstalledApps(act)
-                                }
-                            } else {
-                                if (Helpers.launchableAppsList == null) Helpers.getLaunchableApps(act)
-                            }
-                            initialized = true
-                            act.runOnUiThread(process)
-                        } catch (e: Throwable) {
-                            if (e is OutOfMemoryError || e is ThreadDeath || e is VirtualMachineError) throw e
-                            SettingsDiagnostics.failure("AppSelector.loadApps", e)
+            val postView = view ?: return
+            pendingAppLoadStart?.let { previous ->
+                postView.removeCallbacks(previous)
+            }
+            val appContext = requireContext().applicationContext
+            val fragmentRef = WeakReference(this)
+            val loadIsActivity = isActivity
+            val loadPrivacy = privacy
+            val loadApplock = applock
+            val loadMulti = multi
+            val loadKey = key
+            val loadOpenwith = openwith
+            val loadShare = share
+            val runnable = object : Runnable {
+                override fun run() {
+                    try {
+                        if (pendingAppLoadStart === this) {
+                            pendingAppLoadStart = null
                         }
-                    }.start()
+                        appLoadInFlight = true
+                        Thread {
+                            var success = false
+                            try {
+                                if (loadIsActivity || loadPrivacy || loadApplock || (loadMulti && loadKey != null)) {
+                                    if (loadOpenwith) {
+                                        if (Helpers.openWithAppsList == null) Helpers.getOpenWithApps(appContext)
+                                    } else if (loadShare) {
+                                        if (Helpers.shareAppsList == null) Helpers.getShareApps(appContext)
+                                    } else {
+                                        if (Helpers.installedAppsList == null) Helpers.getInstalledApps(appContext)
+                                    }
+                                } else {
+                                    if (Helpers.launchableAppsList == null) Helpers.getLaunchableApps(appContext)
+                                }
+                                success = true
+                            } catch (e: Throwable) {
+                                if (e is OutOfMemoryError || e is ThreadDeath || e is VirtualMachineError) throw e
+                                SettingsDiagnostics.failure("AppSelector.loadApps", e)
+                            }
+                            appContext.mainExecutor.execute {
+                                val fragment = fragmentRef.get() ?: return@execute
+                                fragment.appLoadInFlight = false
+                                if (success) {
+                                    fragment.initialized = true
+                                    if (fragment.isAdded && fragment.view != null) {
+                                        fragment.process?.run()
+                                    }
+                                }
+                            }
+                        }.start()
+                    } catch (e: Throwable) {
+                        if (e is OutOfMemoryError || e is ThreadDeath || e is VirtualMachineError) throw e
+                        SettingsDiagnostics.failure("AppSelector.loadApps.start", e)
+                        appLoadInFlight = false
+                    }
                 }
-            }, animDur.toLong())
+            }
+            pendingAppLoadStart = runnable
+            if (!postView.postDelayed(runnable, animDur.toLong())) {
+                if (pendingAppLoadStart === runnable) {
+                    pendingAppLoadStart = null
+                }
+            }
         }
+    }
+
+    override fun onDestroyView() {
+        pendingAppLoadStart?.let { pending ->
+            view?.removeCallbacks(pending)
+        }
+        pendingAppLoadStart = null
+        super.onDestroyView()
     }
 
     override fun onActivityResult(requestCode: Int, resultCode: Int, data: Intent?) {
