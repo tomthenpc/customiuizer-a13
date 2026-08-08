@@ -2,12 +2,15 @@
 
 ## Status
 
-P2-2 = QA_ACCEPTED
+P2-2 = QA_ACCEPTED / FROZEN
 
 RESULT =
 AppSelector delayed load kickoff is View-lifecycle cancellable;
 background package queries retain applicationContext rather than Activity;
-completion uses weak Fragment ownership and only applies to a live current View.
+completion uses weak Fragment ownership and only applies to a live current View;
+failure-after-view-recreation retry gap closed via retryAppLoadAfterInFlight;
+background Thread structurally created in companion object worker,
+capturing only applicationContext + immutable booleans + WeakReference.
 
 ## Base
 

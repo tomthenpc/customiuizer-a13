@@ -38,6 +38,7 @@ class AppSelector : SubFragmentWithSearch() {
     private var process: Runnable? = null
     private var pendingAppLoadStart: Runnable? = null
     private var appLoadInFlight = false
+    private var retryAppLoadAfterInFlight = false
 
     override fun onCreate(savedInstanceState: Bundle?) {
         this.padded = false
@@ -271,71 +272,65 @@ class AppSelector : SubFragmentWithSearch() {
         if (initialized) {
             process?.run()
         } else if (appLoadInFlight) {
-            return
+            retryAppLoadAfterInFlight = true
         } else {
-            val postView = view ?: return
-            pendingAppLoadStart?.let { previous ->
-                postView.removeCallbacks(previous)
-            }
-            val appContext = requireContext().applicationContext
-            val fragmentRef = WeakReference(this)
-            val loadIsActivity = isActivity
-            val loadPrivacy = privacy
-            val loadApplock = applock
-            val loadMulti = multi
-            val loadKey = key
-            val loadOpenwith = openwith
-            val loadShare = share
-            val runnable = object : Runnable {
-                override fun run() {
-                    try {
-                        if (pendingAppLoadStart === this) {
-                            pendingAppLoadStart = null
-                        }
-                        appLoadInFlight = true
-                        Thread {
-                            var success = false
-                            try {
-                                if (loadIsActivity || loadPrivacy || loadApplock || (loadMulti && loadKey != null)) {
-                                    if (loadOpenwith) {
-                                        if (Helpers.openWithAppsList == null) Helpers.getOpenWithApps(appContext)
-                                    } else if (loadShare) {
-                                        if (Helpers.shareAppsList == null) Helpers.getShareApps(appContext)
-                                    } else {
-                                        if (Helpers.installedAppsList == null) Helpers.getInstalledApps(appContext)
-                                    }
-                                } else {
-                                    if (Helpers.launchableAppsList == null) Helpers.getLaunchableApps(appContext)
-                                }
-                                success = true
-                            } catch (e: Throwable) {
-                                if (e is OutOfMemoryError || e is ThreadDeath || e is VirtualMachineError) throw e
-                                SettingsDiagnostics.failure("AppSelector.loadApps", e)
-                            }
-                            appContext.mainExecutor.execute {
-                                val fragment = fragmentRef.get() ?: return@execute
-                                fragment.appLoadInFlight = false
-                                if (success) {
-                                    fragment.initialized = true
-                                    if (fragment.isAdded && fragment.view != null) {
-                                        fragment.process?.run()
-                                    }
-                                }
-                            }
-                        }.start()
-                    } catch (e: Throwable) {
-                        if (e is OutOfMemoryError || e is ThreadDeath || e is VirtualMachineError) throw e
-                        SettingsDiagnostics.failure("AppSelector.loadApps.start", e)
-                        appLoadInFlight = false
+            scheduleAppLoad()
+        }
+    }
+
+    private fun scheduleAppLoad() {
+        val postView = view ?: return
+        pendingAppLoadStart?.let { previous ->
+            postView.removeCallbacks(previous)
+        }
+        val appContext = requireContext().applicationContext
+        val fragmentRef = WeakReference(this)
+        val loadIsActivity = isActivity
+        val loadPrivacy = privacy
+        val loadApplock = applock
+        val loadMulti = multi
+        val loadKey = key
+        val loadOpenwith = openwith
+        val loadShare = share
+        val runnable = object : Runnable {
+            override fun run() {
+                try {
+                    if (pendingAppLoadStart === this) {
+                        pendingAppLoadStart = null
                     }
+                    appLoadInFlight = true
+                    startAppLoadWorker(
+                        appContext, fragmentRef,
+                        loadIsActivity, loadPrivacy, loadApplock,
+                        loadMulti, loadKey, loadOpenwith, loadShare
+                    )
+                } catch (e: Throwable) {
+                    if (e is OutOfMemoryError || e is ThreadDeath || e is VirtualMachineError) throw e
+                    SettingsDiagnostics.failure("AppSelector.loadApps.start", e)
+                    appLoadInFlight = false
+                    retryAppLoadAfterInFlight = false
                 }
             }
-            pendingAppLoadStart = runnable
-            if (!postView.postDelayed(runnable, animDur.toLong())) {
-                if (pendingAppLoadStart === runnable) {
-                    pendingAppLoadStart = null
-                }
+        }
+        pendingAppLoadStart = runnable
+        if (!postView.postDelayed(runnable, animDur.toLong())) {
+            if (pendingAppLoadStart === runnable) {
+                pendingAppLoadStart = null
             }
+        }
+    }
+
+    private fun onAppLoadFinished(success: Boolean) {
+        val retry = retryAppLoadAfterInFlight
+        appLoadInFlight = false
+        retryAppLoadAfterInFlight = false
+        if (success) {
+            initialized = true
+            if (isAdded && view != null) {
+                process?.run()
+            }
+        } else if (retry && isAdded && view != null) {
+            scheduleAppLoad()
         }
     }
 
@@ -344,6 +339,7 @@ class AppSelector : SubFragmentWithSearch() {
             view?.removeCallbacks(pending)
         }
         pendingAppLoadStart = null
+        retryAppLoadAfterInFlight = false
         super.onDestroyView()
     }
 
@@ -354,5 +350,43 @@ class AppSelector : SubFragmentWithSearch() {
             finish()
         }
         super.onActivityResult(requestCode, resultCode, data)
+    }
+
+    companion object {
+        private fun startAppLoadWorker(
+            appContext: Context,
+            fragmentRef: WeakReference<AppSelector>,
+            loadIsActivity: Boolean,
+            loadPrivacy: Boolean,
+            loadApplock: Boolean,
+            loadMulti: Boolean,
+            loadKey: String?,
+            loadOpenwith: Boolean,
+            loadShare: Boolean
+        ) {
+            Thread {
+                var success = false
+                try {
+                    if (loadIsActivity || loadPrivacy || loadApplock || (loadMulti && loadKey != null)) {
+                        if (loadOpenwith) {
+                            if (Helpers.openWithAppsList == null) Helpers.getOpenWithApps(appContext)
+                        } else if (loadShare) {
+                            if (Helpers.shareAppsList == null) Helpers.getShareApps(appContext)
+                        } else {
+                            if (Helpers.installedAppsList == null) Helpers.getInstalledApps(appContext)
+                        }
+                    } else {
+                        if (Helpers.launchableAppsList == null) Helpers.getLaunchableApps(appContext)
+                    }
+                    success = true
+                } catch (e: Throwable) {
+                    if (e is OutOfMemoryError || e is ThreadDeath || e is VirtualMachineError) throw e
+                    SettingsDiagnostics.failure("AppSelector.loadApps", e)
+                }
+                appContext.mainExecutor.execute {
+                    fragmentRef.get()?.onAppLoadFinished(success)
+                }
+            }.start()
+        }
     }
 }
