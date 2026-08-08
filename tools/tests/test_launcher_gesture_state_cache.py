@@ -243,6 +243,7 @@ class ScopeProtectionTest(unittest.TestCase):
             "app/src/main/java/tv/withaibuild/customiuizer/mods/SystemAudioAndVolumeHooks.kt",
             "app/src/main/java/tv/withaibuild/customiuizer/mods/SystemUILockScreenHooks.kt",
             "app/src/main/java/tv/withaibuild/customiuizer/mods/SystemUINotificationHooks.kt",
+            "app/src/main/java/tv/withaibuild/customiuizer/mods/SystemStatusBarClockAndMoreHooks.kt",
             "app/src/main/java/tv/withaibuild/customiuizer/installers/AndroidPackageInstaller.java",
             "app/src/main/java/tv/withaibuild/customiuizer/MainModule.java",
             "app/src/main/java/tv/withaibuild/customiuizer/installers/SystemUiInstaller.java",

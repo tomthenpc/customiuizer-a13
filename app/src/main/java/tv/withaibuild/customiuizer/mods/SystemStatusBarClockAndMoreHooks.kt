@@ -49,6 +49,66 @@ object SystemStatusBarClockAndMoreHooks {
         return format
     }
 
+    internal class StatusBarClockFormatCache {
+        private val unresolvedResId = Int.MIN_VALUE
+        private var resIdNoAmpm = unresolvedResId
+        private var resIdWithAmpm = unresolvedResId
+        private var cachedRawFormat: String? = null
+        private var cachedShowSeconds = false
+        private var cachedIs24 = false
+        private var cachedHourIn2d = false
+        private var cachedResolvedFormat: String? = null
+
+        fun resolveResourceId(resources: Resources, showAmpm: Boolean): Int {
+            if (showAmpm) {
+                if (resIdWithAmpm == unresolvedResId) {
+                    resIdWithAmpm = resources.getIdentifier("fmt_time_12hour_minute_pm", "string", "com.android.systemui")
+                }
+                return resIdWithAmpm
+            } else {
+                if (resIdNoAmpm == unresolvedResId) {
+                    resIdNoAmpm = resources.getIdentifier("fmt_time_12hour_minute", "string", "com.android.systemui")
+                }
+                return resIdNoAmpm
+            }
+        }
+
+        fun resolveFormat(
+            rawFormat: String,
+            showSeconds: Boolean,
+            is24: Boolean,
+            hourIn2d: Boolean
+        ): String {
+            val cached = cachedResolvedFormat
+            if (cached != null &&
+                rawFormat == cachedRawFormat &&
+                showSeconds == cachedShowSeconds &&
+                is24 == cachedIs24 &&
+                hourIn2d == cachedHourIn2d
+            ) {
+                return cached
+            }
+            var fmtString = rawFormat
+            if (showSeconds) {
+                fmtString = fmtString.replaceFirst(":mm", ":mm:ss")
+            }
+            var hourStr = "h"
+            if (is24) {
+                hourStr = "H"
+            }
+            if (hourIn2d) {
+                hourStr += hourStr
+            }
+            val resolved = replaceClockHourToken(fmtString, hourStr)
+            cachedRawFormat = rawFormat
+            cachedShowSeconds = showSeconds
+            cachedIs24 = is24
+            cachedHourIn2d = hourIn2d
+            cachedResolvedFormat = resolved
+            return resolved
+        }
+    }
+
     @JvmStatic
     fun StatusBarClockTweakHook(lpparam: PackageReadyParam) {
         val statusbarClockTweak = MainModule.mPrefs.getBoolean("system_statusbar_clocktweak")
@@ -136,6 +196,7 @@ object SystemStatusBarClockAndMoreHooks {
                 val thisClockId = clock.id
                 if (clockId == thisClockId && statusbarClockTweak) {
                     XposedHelpers.setAdditionalInstanceField(clock, "clockName", "clock")
+                    XposedHelpers.setAdditionalInstanceField(clock, "statusBarClockFormatCache", StatusBarClockFormatCache())
                     if (getShowSeconds()) {
                         XposedHelpers.setAdditionalInstanceField(clock, "showSeconds", true)
                     }
@@ -176,20 +237,27 @@ object SystemStatusBarClockAndMoreHooks {
                         val is24 = MainModule.mPrefs.getBoolean("system_statusbar_clock_24hour_format")
                         val showAmpm = MainModule.mPrefs.getBoolean("system_statusbar_clock_show_ampm")
                         val hourIn2d = MainModule.mPrefs.getBoolean("system_statusbar_clock_leadingzero")
-                        val fmt = if (showAmpm) "fmt_time_12hour_minute_pm" else "fmt_time_12hour_minute"
-                        val fmtResId = mContext.resources.getIdentifier(fmt, "string", "com.android.systemui")
-                        var fmtString = mContext.getString(fmtResId)
-                        if (showSeconds) {
-                            fmtString = fmtString.replaceFirst(":mm", ":mm:ss")
+                        val formatCache = XposedHelpers.getAdditionalInstanceField(clock, "statusBarClockFormatCache") as? StatusBarClockFormatCache
+                        if (formatCache != null) {
+                            val fmtResId = formatCache.resolveResourceId(mContext.resources, showAmpm)
+                            val rawFormat = mContext.getString(fmtResId)
+                            timeFmt = formatCache.resolveFormat(rawFormat, showSeconds, is24, hourIn2d)
+                        } else {
+                            val fmt = if (showAmpm) "fmt_time_12hour_minute_pm" else "fmt_time_12hour_minute"
+                            val fmtResId = mContext.resources.getIdentifier(fmt, "string", "com.android.systemui")
+                            var fmtString = mContext.getString(fmtResId)
+                            if (showSeconds) {
+                                fmtString = fmtString.replaceFirst(":mm", ":mm:ss")
+                            }
+                            var hourStr = "h"
+                            if (is24) {
+                                hourStr = "H"
+                            }
+                            if (hourIn2d) {
+                                hourStr += hourStr
+                            }
+                            timeFmt = replaceClockHourToken(fmtString, hourStr)
                         }
-                        var hourStr = "h"
-                        if (is24) {
-                            hourStr = "H"
-                        }
-                        if (hourIn2d) {
-                            hourStr += hourStr
-                        }
-                        timeFmt = replaceClockHourToken(fmtString, hourStr)
                     }
                 }
                 if (timeFmt != null) {
