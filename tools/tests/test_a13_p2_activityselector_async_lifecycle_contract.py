@@ -377,20 +377,116 @@ class ActivitySelectorAsyncLifecycleContractTest(unittest.TestCase):
         self.assertIn("fragmentRef.get()", self.completion)
         self.assertIn("onActivityLoadFinished", self.completion)
 
-    # --- 35. initialized field exists ---
+    # --- 35. initialized field absent (R1: cache semantics removed) ---
 
-    def test_35_initialized_field(self):
-        self.assertRegex(self.source, r"private\s+var\s+initialized\s*=\s*false")
+    def test_35_initialized_field_absent(self):
+        # R1 removes the initialized cache field introduced by R0.
+        self.assertNotRegex(
+            self.source,
+            r"private\s+var\s+initialized\s*=\s*false",
+            "initialized field must not exist (R1 removes cache semantics)",
+        )
+        # No read/write of initialized anywhere in the source.
+        self.assertNotIn("initialized", self.source)
 
-    # --- 36. initialized checked in onActivityCreated ---
+    # --- 36. no cache fast-path in onActivityCreated ---
 
-    def test_36_initialized_checked_in_on_activity_created(self):
-        self.assertIn("initialized", self.on_activity_created)
+    def test_36_no_cache_fast_path_in_on_activity_created(self):
+        # onActivityCreated must be: inFlight -> retry; else -> scheduleActivityLoad.
+        # No cache fast-path (e.g. initialized/loaded/hasLoaded/activitiesReady/cacheValid).
+        for forbidden in (
+            "initialized",
+            "hasLoaded",
+            "activitiesReady",
+            "cacheValid",
+        ):
+            self.assertNotIn(forbidden, self.on_activity_created,
+                f"onActivityCreated must not contain cache flag {forbidden}")
+        # Must NOT short-circuit to renderActivities() based on existing activities.
+        self.assertNotRegex(
+            self.on_activity_created,
+            r"activities\.size\s*>\s*0",
+            "onActivityCreated must not fast-path on existing activities",
+        )
+        # Must still set retry demand when in-flight.
+        self.assertIn("retryActivityLoadAfterInFlight = true", self.on_activity_created)
+        # Must still schedule a fresh load when not in-flight.
+        self.assertIn("scheduleActivityLoad()", self.on_activity_created)
+        self.assertIn("activityLoadInFlight", self.on_activity_created)
 
-    # --- 37. initialized set on success ---
+    # --- 37. result commit is live-view gated (R1: commit inside gate) ---
 
-    def test_37_initialized_set_on_success(self):
-        self.assertIn("initialized = true", self.on_activity_load_finished)
+    def test_37_result_commit_live_view_gated(self):
+        # activities.clear()/addAll must be INSIDE the live-view gate,
+        # not before it. Extract the success branch body.
+        success_match = re.search(
+            r"if\s*\(\s*success\s*\)\s*\{(.*?)\}\s*else",
+            self.on_activity_load_finished,
+            re.DOTALL,
+        )
+        self.assertIsNotNone(success_match, "Must have if (success) branch")
+        success_body = success_match.group(1)
+        # The live-view gate must come before the activities mutation.
+        gate_idx = success_body.find("isAdded")
+        clear_idx = success_body.find("activities.clear()")
+        addall_idx = success_body.find("activities.addAll(loadedActivities)")
+        self.assertGreater(gate_idx, -1, "success branch must have live-view gate")
+        self.assertGreater(clear_idx, -1, "success branch must clear activities")
+        self.assertGreater(addall_idx, -1, "success branch must addAll activities")
+        self.assertLess(gate_idx, clear_idx,
+            "live-view gate must come before activities.clear()")
+        self.assertLess(gate_idx, addall_idx,
+            "live-view gate must come before activities.addAll")
+
+    # --- 37b. no-view result discarded (R1: no commit when view == null) ---
+
+    def test_37b_no_view_result_discarded(self):
+        # When success but no live view, the fragment activities field must NOT
+        # be mutated. The activities.clear()/addAll must be inside the
+        # isAdded && view != null gate, so a no-view completion discards results.
+        success_match = re.search(
+            r"if\s*\(\s*success\s*\)\s*\{(.*?)\}\s*else",
+            self.on_activity_load_finished,
+            re.DOTALL,
+        )
+        self.assertIsNotNone(success_match)
+        success_body = success_match.group(1)
+        # The gate must wrap the mutations: find the inner if block.
+        inner_gate = re.search(
+            r"if\s*\(\s*isAdded\s*&&\s*view\s*!=\s*null\s*\)\s*\{(.*?)\}",
+            success_body,
+            re.DOTALL,
+        )
+        self.assertIsNotNone(inner_gate,
+            "success branch must have inner isAdded && view != null gate")
+        inner_body = inner_gate.group(1)
+        self.assertIn("activities.clear()", inner_body)
+        self.assertIn("activities.addAll(loadedActivities)", inner_body)
+        # Outside the inner gate (before it) there must be no activities mutation.
+        before_gate = success_body[: success_body.find("if (isAdded")]
+        self.assertNotIn("activities.clear()", before_gate,
+            "activities.clear must not run before live-view gate")
+        self.assertNotIn("activities.addAll", before_gate,
+            "activities.addAll must not run before live-view gate")
+
+    # --- 37c. onDestroyView clears activities before super (R1) ---
+
+    def test_37c_on_destroy_view_clears_activities_before_super(self):
+        self.assertIn("activities.clear()", self.on_destroy_view)
+        super_idx = self.on_destroy_view.find("super.onDestroyView")
+        clear_idx = self.on_destroy_view.find("activities.clear()")
+        self.assertGreater(super_idx, 0, "onDestroyView must call super.onDestroyView")
+        self.assertGreater(clear_idx, 0, "onDestroyView must clear activities")
+        self.assertLess(clear_idx, super_idx,
+            "activities.clear() must come before super.onDestroyView()")
+
+    # --- 37d. onDestroyView must NOT clear activityLoadInFlight (R1) ---
+
+    def test_37d_on_destroy_view_must_not_clear_in_flight(self):
+        # activityLoadInFlight reflects actual worker lifetime; clearing it in
+        # onDestroyView would let a new View wrongly start a second query.
+        self.assertNotIn("activityLoadInFlight = false", self.on_destroy_view)
+        self.assertNotIn("activityLoadInFlight = true", self.on_destroy_view)
 
     # --- 38. progressBar GONE in renderActivities ---
 
@@ -438,8 +534,11 @@ class ActivitySelectorAsyncLifecycleNegativeTest(unittest.TestCase):
             violations.append("missing activityLoadInFlight field")
         if not re.search(r"private\s+var\s+retryActivityLoadAfterInFlight\s*=\s*false", source):
             violations.append("missing retryActivityLoadAfterInFlight field")
-        if not re.search(r"private\s+var\s+initialized\s*=\s*false", source):
-            violations.append("missing initialized field")
+        # R1: initialized cache field must NOT exist.
+        if re.search(r"private\s+var\s+initialized\s*=\s*false", source):
+            violations.append("initialized cache field present (R1 forbids it)")
+        if "initialized" in source:
+            violations.append("initialized reference present (R1 forbids it)")
 
         # scheduleActivityLoad checks
         if not sched:
@@ -469,8 +568,11 @@ class ActivitySelectorAsyncLifecycleNegativeTest(unittest.TestCase):
             violations.append("onActivityCreated does not call scheduleActivityLoad")
         if "activityLoadInFlight" not in on_ac:
             violations.append("no single-flight check")
-        if "initialized" not in on_ac:
-            violations.append("no initialized check")
+        # R1: no cache fast-path.
+        if "initialized" in on_ac:
+            violations.append("onActivityCreated has initialized cache fast-path")
+        if re.search(r"activities\.size\s*>\s*0", on_ac):
+            violations.append("onActivityCreated fast-paths on existing activities")
 
         # onActivityLoadFinished checks
         if not finished:
@@ -482,8 +584,9 @@ class ActivitySelectorAsyncLifecycleNegativeTest(unittest.TestCase):
                 violations.append("completion not clearing inFlight")
             if "retryActivityLoadAfterInFlight = false" not in finished:
                 violations.append("completion not clearing retry")
-            if "initialized = true" not in finished:
-                violations.append("completion not setting initialized")
+            # R1: initialized must NOT be set in completion.
+            if "initialized = true" in finished:
+                violations.append("completion sets initialized (R1 forbids it)")
             if "activities.clear()" not in finished:
                 violations.append("completion not clearing activities")
             if "activities.addAll(loadedActivities)" not in finished:
@@ -498,6 +601,20 @@ class ActivitySelectorAsyncLifecycleNegativeTest(unittest.TestCase):
                 violations.append("completion does not retry via scheduleActivityLoad")
             if not re.search(r"else\s+if\s*\(\s*retry\s*&&\s*isAdded\s*&&\s*view\s*!=\s*null\s*\)", finished):
                 violations.append("failure retry not gated by retry flag")
+            # R1: activities.clear/addAll must be inside the live-view gate.
+            success_match = re.search(
+                r"if\s*\(\s*success\s*\)\s*\{(.*?)\}\s*else",
+                finished,
+                re.DOTALL,
+            )
+            if success_match:
+                success_body = success_match.group(1)
+                gate_idx = success_body.find("isAdded")
+                clear_idx = success_body.find("activities.clear()")
+                if gate_idx < 0:
+                    violations.append("success branch missing live-view gate")
+                elif clear_idx >= 0 and clear_idx < gate_idx:
+                    violations.append("activities.clear before live-view gate")
 
         # renderActivities checks
         if not render:
@@ -522,12 +639,21 @@ class ActivitySelectorAsyncLifecycleNegativeTest(unittest.TestCase):
                 violations.append("onDestroyView missing null clear")
             if "retryActivityLoadAfterInFlight = false" not in on_dv:
                 violations.append("onDestroyView missing retry clear")
+            # R1: activities must be cleared in onDestroyView.
+            if "activities.clear()" not in on_dv:
+                violations.append("onDestroyView missing activities clear")
+            # R1: activityLoadInFlight must NOT be cleared in onDestroyView.
+            if "activityLoadInFlight = false" in on_dv:
+                violations.append("onDestroyView clears activityLoadInFlight (R1 forbids it)")
             super_idx = on_dv.find("super.onDestroyView")
             remove_idx = on_dv.find("removeCallbacks")
+            clear_act_idx = on_dv.find("activities.clear()")
             if super_idx <= 0:
                 violations.append("onDestroyView missing super.onDestroyView")
             elif remove_idx > 0 and remove_idx > super_idx:
                 violations.append("removeCallbacks after super")
+            if clear_act_idx > 0 and clear_act_idx > super_idx:
+                violations.append("activities.clear after super")
 
         # Worker ownership checks
         if not companion:
@@ -673,14 +799,15 @@ class ActivitySelectorAsyncLifecycleNegativeTest(unittest.TestCase):
         self.assertIn("failure retry not gated by retry flag", violations)
 
     def test_K_unconditional_retry_fails(self):
-        # Inject scheduleActivityLoad into the success branch
+        # Inject scheduleActivityLoad into the success branch (R1 layout:
+        # success -> if (isAdded && view != null) { activities.clear() ... }).
         mutated = self.original.replace(
-            "if (success) {\n            activities.clear()",
-            "if (success) {\n            scheduleActivityLoad()\n            activities.clear()",
+            "if (success) {\n            if (isAdded && view != null) {\n                activities.clear()",
+            "if (success) {\n            scheduleActivityLoad()\n            if (isAdded && view != null) {\n                activities.clear()",
         )
         finished = _extract_on_activity_load_finished(mutated)
         success_section = re.search(
-            r"if\s*\(\s*success\s*\)\s*\{(.*?)\}",
+            r"if\s*\(\s*success\s*\)\s*\{(.*?)\}\s*else",
             finished,
             re.DOTALL,
         )
@@ -708,6 +835,93 @@ class ActivitySelectorAsyncLifecycleNegativeTest(unittest.TestCase):
         )
         render = _extract_render_activities(mutated)
         self.assertNotIn('putExtra("activity"', render)
+
+    # ===== R1 mutation tests: cache semantics must NOT be reintroduced =====
+
+    def test_R1_A_initialized_field_reintroduced_fails(self):
+        # Adding `private var initialized = false` must FAIL the contract.
+        mutated = self.original.replace(
+            "private val activities = ArrayList<AppData>()\n",
+            "private val activities = ArrayList<AppData>()\n    private var initialized = false\n",
+        )
+        violations = self._check_contracts(mutated)
+        self.assertTrue(
+            any("initialized" in v for v in violations),
+            "Reintroducing initialized field must fail contract",
+        )
+
+    def test_R1_B_initialized_fast_path_reintroduced_fails(self):
+        # Adding `if (initialized) renderActivities()` to onActivityCreated
+        # must FAIL the contract.
+        mutated = self.original.replace(
+            "if (activityLoadInFlight) {\n            retryActivityLoadAfterInFlight = true",
+            "if (initialized) {\n            renderActivities()\n        } else if (activityLoadInFlight) {\n            retryActivityLoadAfterInFlight = true",
+        )
+        on_ac = _extract_on_activity_created(mutated)
+        self.assertIn("initialized", on_ac,
+            "Mutation should reintroduce initialized fast-path")
+        violations = self._check_contracts(mutated)
+        self.assertTrue(
+            any("initialized" in v for v in violations),
+            "Reintroducing initialized fast-path must fail contract",
+        )
+
+    def test_R1_C_commit_before_live_view_gate_fails(self):
+        # Moving activities.clear/addAll before the live-view gate must FAIL.
+        mutated = self.original.replace(
+            "if (success) {\n            if (isAdded && view != null) {\n"
+            "                activities.clear()\n                activities.addAll(loadedActivities)\n"
+            "                renderActivities()\n            }",
+            "if (success) {\n            activities.clear()\n"
+            "            activities.addAll(loadedActivities)\n"
+            "            if (isAdded && view != null) {\n                renderActivities()\n            }",
+        )
+        violations = self._check_contracts(mutated)
+        self.assertIn("activities.clear before live-view gate", violations)
+
+    def test_R1_D_remove_activities_clear_on_destroy_fails(self):
+        # Removing activities.clear() from onDestroyView must FAIL.
+        mutated = self.original.replace(
+            "        activities.clear()\n        super.onDestroyView()",
+            "        super.onDestroyView()",
+        )
+        violations = self._check_contracts(mutated)
+        self.assertIn("onDestroyView missing activities clear", violations)
+
+    def test_R1_E_clear_inflight_on_destroy_fails(self):
+        # Adding activityLoadInFlight = false to onDestroyView must FAIL.
+        mutated = self.original.replace(
+            "        retryActivityLoadAfterInFlight = false\n        activities.clear()",
+            "        retryActivityLoadAfterInFlight = false\n        activityLoadInFlight = false\n        activities.clear()",
+        )
+        on_dv = _extract_on_destroy_view(mutated)
+        self.assertIn("activityLoadInFlight = false", on_dv,
+            "Mutation should add activityLoadInFlight = false to onDestroyView")
+        violations = self._check_contracts(mutated)
+        self.assertIn(
+            "onDestroyView clears activityLoadInFlight (R1 forbids it)",
+            violations,
+        )
+
+    def test_R1_F_worker_writes_fragment_activities_fails(self):
+        # Worker directly writing Fragment activities must FAIL (covered by
+        # existing test_C/test_F semantics; re-verify explicitly).
+        mutated = self.original.replace(
+            "loadedActivities.add(appData)",
+            "activities.add(appData)",
+        )
+        violations = self._check_contracts(mutated)
+        self.assertIn("Thread body mutates Fragment activities", violations)
+
+    def test_R1_G_unconditional_retry_fails(self):
+        # Failure becoming unconditional retry (dropping the retry flag gate)
+        # must FAIL (covered by existing test_J semantics; re-verify).
+        mutated = self.original.replace(
+            "else if (retry && isAdded && view != null)",
+            "else if (isAdded && view != null)",
+        )
+        violations = self._check_contracts(mutated)
+        self.assertIn("failure retry not gated by retry flag", violations)
 
 
 if __name__ == "__main__":

@@ -247,6 +247,9 @@ class ScopeProtectionTest(unittest.TestCase):
             "app/src/main/java/tv/withaibuild/customiuizer/MainModule.java",
             "app/src/main/java/tv/withaibuild/customiuizer/installers/SystemUiInstaller.java",
             "app/src/main/java/tv/withaibuild/customiuizer/installers/LauncherInstaller.java",
+            # P2-3 R1: ActivitySelector async lifecycle / worker ownership
+            # correction — view-scoped results, no Fragment-lifetime cache.
+            "app/src/main/java/tv/withaibuild/customiuizer/subs/ActivitySelector.kt",
         }
         for path in changed:
             if path in allowed:

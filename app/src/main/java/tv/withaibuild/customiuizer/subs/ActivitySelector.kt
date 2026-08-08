@@ -25,7 +25,6 @@ class ActivitySelector : SubFragmentWithSearch() {
     private var key: String? = null
     private var user = 0
     private val activities = ArrayList<AppData>()
-    private var initialized = false
     private var pendingActivityLoadStart: Runnable? = null
     private var activityLoadInFlight = false
     private var retryActivityLoadAfterInFlight = false
@@ -44,9 +43,7 @@ class ActivitySelector : SubFragmentWithSearch() {
         pkg = args.getString("package")
         user = args.getInt("user")
 
-        if (initialized) {
-            renderActivities()
-        } else if (activityLoadInFlight) {
+        if (activityLoadInFlight) {
             retryActivityLoadAfterInFlight = true
         } else {
             scheduleActivityLoad()
@@ -90,10 +87,9 @@ class ActivitySelector : SubFragmentWithSearch() {
         activityLoadInFlight = false
         retryActivityLoadAfterInFlight = false
         if (success) {
-            activities.clear()
-            activities.addAll(loadedActivities)
-            initialized = true
             if (isAdded && view != null) {
+                activities.clear()
+                activities.addAll(loadedActivities)
                 renderActivities()
             }
         } else if (retry && isAdded && view != null) {
@@ -149,6 +145,7 @@ class ActivitySelector : SubFragmentWithSearch() {
         }
         pendingActivityLoadStart = null
         retryActivityLoadAfterInFlight = false
+        activities.clear()
         super.onDestroyView()
     }
 

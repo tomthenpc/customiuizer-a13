@@ -2,7 +2,11 @@
 
 ## Status
 
-P2-3 = QA_ACCEPTED
+P2-3 = QA_REOPENED_R1
+
+R1 reopen reasons:
+- NEW_FRAGMENT_CACHE_SEMANTICS_NOT_PRESENT_IN_BASE
+- VIEW_DESTROYED_METADATA_RETENTION_UNNECESSARILY_EXTENDED
 
 RESULT =
 ActivitySelector delayed kickoff is View-lifecycle cancellable;
@@ -10,7 +14,8 @@ PackageManager worker retains applicationContext/package snapshot rather than Ac
 background results are built in worker-local storage;
 Fragment activities field is updated only on main thread;
 completion applies UI only to a live current View;
-view recreation does not start duplicate activity queries.
+view recreation does not start duplicate activity queries;
+R1: results are view-scoped — no Fragment-lifetime cache, activities cleared onDestroyView.
 
 ## Base
 
@@ -25,14 +30,26 @@ view recreation does not start duplicate activity queries.
 
 ## initialized Symbol Provenance
 
-ActivitySelector has NO `initialized` field. Source search confirms `initialized`
-only exists in AppSelector.kt (P2-2) and ColorCircle.kt. ActivitySelector currently
-re-queries PackageManager on every onActivityCreated call with no caching.
+ActivitySelector base had no initialized state.
 
-P2-3 introduces a new `initialized` field specific to ActivitySelector, with
-semantics: once a successful activity-list load completes, the results are cached
-in the Fragment `activities` field and `initialized = true` is set. Subsequent
-onActivityCreated calls skip the query and call renderActivities() directly.
+R0 incorrectly introduced one: a `private var initialized = false` field set to
+`true` on first successful load, with a cache fast-path in `onActivityCreated()`
+that skipped the PackageManager query and called `renderActivities()` directly
+when `initialized` was already true. This cache semantics was not present in the
+base ActivitySelector and unnecessarily extended metadata retention beyond the
+View lifetime.
+
+R1 removes that cache behavior and retains only the lifecycle/worker ownership
+correction:
+- `initialized` field, reads, and writes removed.
+- `onActivityCreated()` restored to historical query semantics: in-flight → retry
+  demand; else → schedule a fresh activity metadata query.
+- Success completion commits `loadedActivities` to the Fragment `activities`
+  field only when a live View is present (`isAdded && view != null`); otherwise
+  the result is discarded.
+- `onDestroyView()` clears `activities` before `super.onDestroyView()`.
+- `activityLoadInFlight` is NOT cleared in `onDestroyView()` (it reflects actual
+  worker lifetime; clearing it would let a new View start a duplicate query).
 
 ## Problem
 
