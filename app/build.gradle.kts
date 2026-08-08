@@ -2,7 +2,6 @@ import java.util.Properties
 
 plugins {
     alias(libs.plugins.android.application)
-    alias(libs.plugins.kotlin.android)
 }
 
 val keystorePropertiesPath =
@@ -60,7 +59,6 @@ android {
         versionName = lastVersionName
         val buildTimeProp = (findProperty("buildTime") as? String)?.toLongOrNull() ?: 0L
         buildConfigField("long", "BUILD_TIME", "${buildTimeProp}L")
-        resConfigs(*supportedLocales.toTypedArray())
         ndk {
             abiFilters += "arm64-v8a"
         }
@@ -121,16 +119,14 @@ android {
         sourceCompatibility = JavaVersion.VERSION_17
         targetCompatibility = JavaVersion.VERSION_17
     }
+    java {
+        toolchain {
+            languageVersion = JavaLanguageVersion.of(25)
+        }
+    }
 
     buildFeatures {
         buildConfig = true
-    }
-
-    applicationVariants.all {
-        outputs.all {
-            (this as com.android.build.gradle.api.ApkVariantOutput).outputFileName =
-                "CustoMIUIzer-A13-${versionName}.apk"
-        }
     }
 
     dependenciesInfo {
@@ -145,6 +141,19 @@ android {
     testOptions {
         unitTests {
             isReturnDefaultValues = true
+        }
+    }
+}
+
+androidComponents {
+    onVariants(selector().all()) { variant ->
+        variant.androidResources.localeFilters.addAll(supportedLocales)
+        variant.outputs.forEach { output ->
+            val suffix = when (variant.name) {
+                "debug" -> "-debug"
+                else -> ""
+            }
+            output.outputFileName.set("CustoMIUIzer-A13-$lastVersionName$suffix.apk")
         }
     }
 }
@@ -187,8 +196,7 @@ dependencies {
     compileOnly(libs.libxposed.api)
 
     implementation(libs.libxposed.service)
-    implementation(enforcedPlatform(libs.kotlin.bom))
-    implementation(libs.kotlin.stdlib)
+    implementation(platform(libs.kotlin.bom))
     implementation(libs.commons.lang3)
     implementation(libs.androidx.preference)
     implementation(libs.androidx.palette)

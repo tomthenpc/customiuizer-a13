@@ -1,6 +1,11 @@
+import org.gradle.buildconfiguration.tasks.UpdateDaemonJvm
+
 plugins {
     alias(libs.plugins.android.application) apply false
-    alias(libs.plugins.kotlin.android) apply false
+}
+
+tasks.named<UpdateDaemonJvm>("updateDaemonJvm") {
+    toolchainDownloadUrls.empty()
 }
 
 tasks.register<Delete>("clean") {
