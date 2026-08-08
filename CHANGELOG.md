@@ -2,6 +2,25 @@
 
 简体中文 | [English](CHANGELOG_EN.md)
 
+## r13.11.1 — 2026-08-08
+
+`versionCode 137`，基于已完成的 Android 13 性能、生命周期与构建治理阶段发布。
+
+### 核心变化
+
+- 加固 SubFragment 延迟滚动生命周期，在 View 销毁时取消待执行回调，避免对失效 View 执行延迟操作。
+- 加固 AppSelector 异步应用列表加载，通过 application context、输入快照和 owner 清理减少 Activity / View 生命周期耦合。
+- 加固 ActivitySelector 异步加载，只允许结果在当前有效 View 生命周期内提交，同时保持界面重新创建时重新查询的既有行为。
+- 优化状态栏时钟默认格式高频路径，缓存稳定的格式转换结果和资源解析结果，减少每次时间更新时的重复处理。
+- 保持原有系统时间格式、秒钟、12/24 小时制、AM/PM、前导零与自定义格式行为。
+- 完成 Android 13 Release 编译、单元测试、Lint、R8、严格依赖校验、签名和核心实机加载验证。
+
+### 兼容说明
+
+- MIUI 14 / Android 13 仍为主要目标。
+- HyperOS 1 / Android 13 的部分 SystemUI 定制取决于具体 ROM 内部类和系统应用版本；目标不存在时仅影响对应功能，不阻止模块其他功能加载。
+- 不对尚未完成设备指标采样的内存、CPU、GC 或耗电改进做数值声明。
+
 ## r13.10.1 — 2026-08-06
 
 `versionCode 135`，面向 MIUI 14 / Android 13、HyperOS 1 / Android 13 兼容探测、`arm64-v8a` 与 libxposed API 101/102。

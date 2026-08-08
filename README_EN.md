@@ -4,7 +4,7 @@
 
 CustoMIUIzer A13 customizes the system UI and interactions on **MIUI 14 / Android 13**, with capability-based compatibility paths for **HyperOS 1 / Android 13**. It uses an independent package, release line, and modern libxposed API.
 
-- Current version: `r13.10.1` (versionCode `135`)
+- Current version: `r13.11.1` (versionCode `137`)
 - Application ID: `tv.withaibuild.customiuizer.r13`
 - Source repository: <https://github.com/tomthenpc/customiuizer-a13>
 - User downloads: <https://github.com/Xposed-Modules-Repo/tv.withaibuild.customiuizer.r13/releases>
@@ -30,7 +30,7 @@ CustoMIUIzer A13 customizes the system UI and interactions on **MIUI 14 / Androi
 
 Android 14 and later are not supported. Do not enable this module together with upstream or another CustoMIUIzer-derived module.
 
-Known deployed baseline: Redmi Note 11T Pro (`xaga`), MIUI `V14.0.10.0.TLOINXM`, .
+Known deployed baseline: Redmi Note 11T Pro (`xaga`), MIUI `V14.0.10.0.TLOINXM`.
 
 ## Runtime Architecture
 
@@ -42,5 +42,7 @@ Known deployed baseline: Redmi Note 11T Pro (`xaga`), MIUI `V14.0.10.0.TLOINXM`,
 - DeviceInfo and Launcher hot paths reduce repeated Binder calls, reflection, I/O, configuration reads, and temporary objects.
 
 See [CHANGELOG_EN.md](CHANGELOG_EN.md) for release changes and [DOCUMENTATION.md](DOCUMENTATION.md) for architecture, compatibility, and verification documents.
+
+`r13.11.1` further hardens asynchronous lifecycle handling in settings and app selectors, and optimizes the status-bar clock's default-format refresh path, while retaining the process-routed installer architecture, ROM capability detection, exception boundaries, and lifecycle management introduced in previous releases.
 
 Distributed under GPL-3.0. Derived from Mikanoshi/CustoMIUIzer and informed by MonwF/customiuizer's Android 13 work.

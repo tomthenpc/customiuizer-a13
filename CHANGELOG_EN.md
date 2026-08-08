@@ -2,6 +2,25 @@
 
 [简体中文](CHANGELOG.md) | English
 
+## r13.11.1 — 2026-08-08
+
+`versionCode 137`, released as the completed Android 13 performance, lifecycle, and build-governance milestone.
+
+### Core Changes
+
+- Hardened SubFragment delayed-scrolling lifecycle: pending callbacks are cancelled when the View is destroyed, preventing delayed actions on invalid Views.
+- Hardened AppSelector asynchronous app-list loading by using the application context, input snapshots, and owner cleanup to reduce Activity/View lifecycle coupling.
+- Hardened ActivitySelector asynchronous loading so results are only committed within the current valid View lifecycle, while preserving the existing re-query behavior on View recreation.
+- Optimized the status-bar clock's default-format hot path by caching stable format-conversion and resource-resolution results, reducing repeated work on every time update.
+- Preserved existing system time format, seconds, 12/24-hour mode, AM/PM, leading zero, and custom-format behavior.
+- Completed Android 13 Release compilation, unit tests, Lint, R8, strict dependency verification, signing, and core on-device loading verification.
+
+### Compatibility Notes
+
+- MIUI 14 / Android 13 remains the primary target.
+- HyperOS 1 / Android 13 SystemUI customizations depend on the specific ROM internal classes and system-app versions; a missing target only affects the corresponding feature and does not prevent other module functions from loading.
+- No numerical claims are made for memory, CPU, GC, or power-consumption improvements without completed device metric sampling.
+
 ## r13.10.1 — 2026-08-06
 
 `versionCode 135`, targeting MIUI 14 / Android 13, capability-detected HyperOS 1 / Android 13 compatibility, `arm64-v8a`, and libxposed API 101/102.
@@ -22,7 +41,7 @@
 ### Verification Scope
 
 - The current code passes Python and Gradle static gates, Release Kotlin/Java compilation, Release unit tests, Release/Vital Lint, R8, strict dependency verification, Manifest checks, and Xposed metadata checks.
-- The known deployed baseline is Redmi Note 11T Pro (`xaga`), MIUI `V14.0.10.0.TLOINXM`, . HyperOS 1 feature availability depends on the ROM and system-app versions.
+- The known deployed baseline is Redmi Note 11T Pro (`xaga`), MIUI `V14.0.10.0.TLOINXM`. HyperOS 1 feature availability depends on the ROM and system-app versions.
 
 ## r13.9.2 — 2026-08-01
 

@@ -4,7 +4,7 @@
 
 CustoMIUIzer A13 是面向 **MIUI 14 / Android 13** 的系统界面与交互定制模块，并为 **HyperOS 1 / Android 13** 提供基于能力探测的兼容路径。项目使用独立包名、版本线和现代 libxposed API。
 
-- 当前版本：`r13.10.1`（versionCode `135`）
+- 当前版本：`r13.11.1`（versionCode `137`）
 - 应用 ID：`tv.withaibuild.customiuizer.r13`
 - 源码仓库：<https://github.com/tomthenpc/customiuizer-a13>
 - 用户下载：<https://github.com/Xposed-Modules-Repo/tv.withaibuild.customiuizer.r13/releases>
@@ -42,5 +42,7 @@ CustoMIUIzer A13 是面向 **MIUI 14 / Android 13** 的系统界面与交互定�
 - DeviceInfo 与 Launcher 高频路径减少重复 Binder、反射、I/O、配置读取和临时对象。
 
 本版本变化见 [CHANGELOG.md](CHANGELOG.md)。架构、兼容与验证文档见 [DOCUMENTATION.md](DOCUMENTATION.md)。
+
+`r13.11.1` 进一步加固设置页与应用选择器的异步生命周期，并优化状态栏时钟默认格式的高频刷新路径；同时延续按进程安装、ROM 兼容探测、异常边界和资源生命周期治理。
 
 项目依据 GPL-3.0 分发，派生自 Mikanoshi/CustoMIUIzer，并参考 MonwF/customiuizer 的 Android 13 实现。
