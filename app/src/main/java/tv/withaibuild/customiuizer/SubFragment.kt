@@ -47,6 +47,7 @@ open class SubFragment : PreferenceFragmentBase() {
 
     private var order = 100.0f
     private var highlightKey: String? = null
+    private var pendingHighlightScroll: Runnable? = null
 
     @JvmField
     var padded = true
@@ -231,9 +232,35 @@ open class SubFragment : PreferenceFragmentBase() {
             }
         }
         smoothScroller.targetPosition = position
-        view?.postDelayed({
-            mList.layoutManager?.startSmoothScroll(smoothScroller)
-        }, 380)
+        val postView = view ?: return
+        pendingHighlightScroll?.let { previous ->
+            postView.removeCallbacks(previous)
+        }
+        val runnable = object : Runnable {
+            override fun run() {
+                try {
+                    mList.layoutManager?.startSmoothScroll(smoothScroller)
+                } finally {
+                    if (pendingHighlightScroll === this) {
+                        pendingHighlightScroll = null
+                    }
+                }
+            }
+        }
+        pendingHighlightScroll = runnable
+        if (!postView.postDelayed(runnable, 380)) {
+            if (pendingHighlightScroll === runnable) {
+                pendingHighlightScroll = null
+            }
+        }
+    }
+
+    override fun onDestroyView() {
+        pendingHighlightScroll?.let { pending ->
+            view?.removeCallbacks(pending)
+        }
+        pendingHighlightScroll = null
+        super.onDestroyView()
     }
 
     open fun saveSharedPrefs() {

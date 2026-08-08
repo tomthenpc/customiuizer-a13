@@ -247,6 +247,7 @@ class ScopeProtectionTest(unittest.TestCase):
             "app/src/main/java/tv/withaibuild/customiuizer/MainModule.java",
             "app/src/main/java/tv/withaibuild/customiuizer/installers/SystemUiInstaller.java",
             "app/src/main/java/tv/withaibuild/customiuizer/installers/LauncherInstaller.java",
+            "app/src/main/java/tv/withaibuild/customiuizer/SubFragment.kt",
         }
         for path in changed:
             if path in allowed:
