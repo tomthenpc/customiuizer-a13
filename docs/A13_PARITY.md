@@ -105,19 +105,15 @@ DEAD_UPSTREAM_PATH
 对已有功能：已有 A13 上游用户意图 > A14 实现形状。
 对全新 A14 功能：A14 用户可见合约为产品参考，A13 target 必须独立证明。
 
-## Issue #2 持久状态（F0 记录）
+## Issue #2
 
-Issue #2 不提前被赋予 `A13_STATUS` 或最终 parity 分类；其实际分类在 F2/F3 中完成。
+Issue #2 是**已有 A13 功能**（`controls_fsg_horiz` / `LauncherGestureHooks.FSGesturesHook`）
+在第三方默认桌面下的兼容缺口，不是缺失功能。它不提前被赋予 `A13_STATUS` 或最终 parity
+分类；实际分类在 F2/F3 完成。
 
-```text
-ISSUE_2_TARGET_SELECTION    = PASS
-A13_FEATURE_EXISTS          = YES
-STATIC_MECHANISM_ON_REPRESENTATIVE_SAMPLE = DEFAULT_HOME_GATE
-SELECTED_STATIC_CANDIDATE   = DESIGN_E_BACK_STUB_ONLY_RECOVERY
-PRODUCTION_IMPLEMENTATION   = DEFERRED
-DEVICE_ROOT_CAUSE           = UNVERIFIED
-DEVICE_VALIDATION           = PENDING
-```
+持久状态记录于
+`docs/rom-intelligence/A13_STAGE_F1_R1_FSG_TARGET_CORRECTIVE_REPORT.txt`
+的 `ISSUE #2 DURABLE STATE` 段，本文件不复制。
 
 不重新打开技术分析。不实现 Design E。
 
@@ -144,4 +140,34 @@ ACTUAL_MERGE_BASE           = cc200778ec90285a638015fb037b3a919471c0ad
 | F4 FEATURE PORT BATCHES | 按优先级分批移植或标记为 A13 独立变体 |
 | F5 RELEASE CLOSURE | 验证、构建、发布 r13.x |
 
-F0 不开始架构 parity 或功能移植。
+## 阶段状态
+
+```text
+F0 FOUNDATION           = DONE
+F1 ARCHITECTURE BASELINE = DONE
+F2 FEATURE INVENTORY    = READY
+F4 PRODUCTION PORT      = BLOCKED
+```
+
+F1 结果与完整 A13/A14 结构对比见
+`docs/audit/A13_F1_ARCHITECTURE_BASELINE.md`。
+
+F4 被阻塞的原因（F1 findings）：
+
+```text
+P0-1  PreferenceBootstrap 在强制启动路径吞掉致命 JVM 错误
+P1-1  Application.attach after 回调无幂等守卫（Launcher / GenericApp）
+P1-2  install-once 仅覆盖 catalog 路径
+```
+
+进入 F4 前需要的最小修正批次：
+
+```text
+C1  PreferenceBootstrap 致命边界 + 不变式覆盖扩展
+C2  Application.attach 回调幂等守卫
+C3  HookTargetResolver 致命判定补全 + 致命助手收敛
+```
+
+`C4`（FeatureRuntime 进程键语义）与 `C5`（删除 migration residue）可与 F2 并行。
+
+F2 是功能库存，不是功能实现。
