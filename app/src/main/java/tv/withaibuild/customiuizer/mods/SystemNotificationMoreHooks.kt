@@ -5,7 +5,7 @@ import android.app.Notification
 import android.app.NotificationChannel
 import android.app.PendingIntent
 import android.content.Context
-import android.graphics.drawable.Drawable
+
 import android.content.Intent
 import android.content.res.Resources
 import android.media.AudioManager
@@ -92,12 +92,7 @@ object SystemNotificationMoreHooks {
 
         if (mContextField == null || mMenuItemsField == null || mMenuContainerField == null) return
 
-        val menuItemConstructor = try {
-            XposedHelpers.findConstructorBestMatch(menuItemClass, menuRowClass, Context::class.java, Int::class.javaPrimitiveType, Drawable::class.java, Int::class.javaPrimitiveType)
-        } catch (t: Throwable) {
-            rethrowFatal(t)
-            null
-        }
+        val menuItemConstructor = resolveNotificationMenuItemConstructor(menuItemClass, menuRowClass, classLoader)
         val getMenuViewMethod = try {
             XposedHelpers.findMethodBestMatch(menuItemClass, "getMenuView")
         } catch (t: Throwable) {
@@ -324,6 +319,55 @@ object SystemNotificationMoreHooks {
             val next = current.cause
             if (next == null || next === current) return
             current = next
+        }
+    }
+
+    private fun resolveNotificationMenuItemConstructor(
+        menuItemClass: Class<*>,
+        menuRowClass: Class<*>,
+        classLoader: ClassLoader
+    ): Constructor<*>? {
+        // Step 1: prefer the exact HyperOS ABI signature when the inner class type is available.
+        val gutsContentClass = try {
+            XposedHelpers.findClass(
+                "com.android.systemui.statusbar.notification.row.NotificationGuts\$GutsContent",
+                classLoader
+            )
+        } catch (t: Throwable) {
+            rethrowFatal(t)
+            null
+        }
+        if (gutsContentClass != null) {
+            try {
+                return XposedHelpers.findConstructorBestMatch(
+                    menuItemClass,
+                    menuRowClass,
+                    Context::class.java,
+                    Int::class.javaPrimitiveType,
+                    gutsContentClass,
+                    Int::class.javaPrimitiveType
+                )
+            } catch (t: Throwable) {
+                rethrowFatal(t)
+            }
+        }
+
+        // Step 2: bounded structural fallback. Only accept the shape
+        //   (outer, Context, int, reference, int)
+        // and reject ambiguity. This keeps MIUI14 (Drawable-like 4th arg) and
+        // HyperOS (GutsContent-like 4th arg) compatible without ROM branching.
+        val matches = menuItemClass.declaredConstructors.filter { ctor ->
+            val types = ctor.parameterTypes
+            types.size == 5 &&
+                types[0] == menuRowClass &&
+                types[1] == Context::class.java &&
+                types[2] == Int::class.javaPrimitiveType &&
+                !types[3].isPrimitive &&
+                types[4] == Int::class.javaPrimitiveType
+        }
+        return when (matches.size) {
+            1 -> matches[0].apply { isAccessible = true }
+            else -> null
         }
     }
 

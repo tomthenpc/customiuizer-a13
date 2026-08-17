@@ -1,7 +1,6 @@
 package com.android.systemui.statusbar.notification.row
 
 import android.content.Context
-import android.graphics.drawable.Drawable
 import android.view.View
 import android.widget.LinearLayout
 import tv.withaibuild.customiuizer.mods.BaseExpandableNotificationRow
@@ -43,7 +42,7 @@ open class MiuiNotificationMenuRow {
     inner class MiuiNotificationMenuItem(
         context: Context,
         val titleResId: Int,
-        val icon: Drawable?,
+        val gutsContent: NotificationGuts.GutsContent?,
         val iconResId: Int
     ) {
         private val view = RecordingMenuItemView(context)
