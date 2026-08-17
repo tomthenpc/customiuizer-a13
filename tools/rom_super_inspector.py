@@ -164,33 +164,69 @@ def inspect_super(src: Path, liblp: Any, max_metadata_bytes: int = 8 * 1024 * 10
             result["warnings"].append("liblp returned no partitions")
             return result
 
-        # The LP metadata uses 512-byte logical sectors and stores a
-        # `first_logical_sector` offset for the data region.
-        first_sector = 0
-        try:
-            super_device = liblp.GetMetadataSuperBlockDevice(metadata)
-            first_sector = super_device.first_logical_sector
-        except Exception:
-            pass
-
+        # For a dm-linear extent, target_data is already the absolute
+        # physical sector on the target block device. It must NOT be
+        # mixed with block_device.first_logical_sector, which only
+        # describes where the first usable sector begins on that device.
         for part in metadata.partitions:
-            name = part.name.decode("utf-8", "replace")
+            name = part.name.decode("utf-8", "replace").rstrip("\x00")
             extents: list[dict[str, Any]] = []
             for ei in range(
                 part.first_extent_index,
                 part.first_extent_index + part.num_extents,
             ):
                 if ei >= len(metadata.extents):
+                    result["warnings"].append(
+                        f"partition {name}: extent index {ei} out of range"
+                    )
                     break
                 ext = metadata.extents[ei]
+
+                if ext.target_type not in (
+                    liblp.LP_TARGET_TYPE_LINEAR,
+                    liblp.LP_TARGET_TYPE_ZERO,
+                ):
+                    result["warnings"].append(
+                        f"partition {name} extent {ei}: unsupported target_type={ext.target_type}; skipped"
+                    )
+                    continue
+
+                if ext.target_type == liblp.LP_TARGET_TYPE_ZERO:
+                    # zero extents have no physical backing
+                    continue
+
+                if ext.target_source >= len(metadata.block_devices):
+                    result["warnings"].append(
+                        f"partition {name} extent {ei}: target_source {ext.target_source} out of range"
+                    )
+                    continue
+
+                target_device = metadata.block_devices[ext.target_source]
+                target_device_name = (
+                    target_device.partition_name.decode("utf-8", "replace")
+                    .rstrip("\x00")
+                )
+
+                start_bytes = ext.target_data * 512
+
+                if ext.target_source != 0:
+                    result["warnings"].append(
+                        f"partition {name} extent {ei}: target_source={ext.target_source} "
+                        f"(block device {target_device_name}), start bytes computed for that device; "
+                        "cannot locate within super.img"
+                    )
+
                 extents.append(
                     {
                         "target_source": ext.target_source,
                         "target_type": ext.target_type,
                         "target_data_sector": ext.target_data,
                         "num_sectors": ext.num_sectors,
-                        "start_bytes_in_raw": (first_sector + ext.target_data)
-                        * 512,
+                        "target_device_name": target_device_name,
+                        "target_device_first_logical_sector": int(
+                            target_device.first_logical_sector
+                        ),
+                        "start_bytes_on_target_device": start_bytes,
                         "size_bytes": ext.num_sectors * 512,
                     }
                 )
