@@ -89,6 +89,23 @@ class RomTargetDiffTests(unittest.TestCase):
         self.assertIn(rc, (0, 1, 2), f"unexpected exit {rc}: {err}")
 
 
+@unittest.skipUnless((REPO / "tools" / "rom_super_inspector.py").is_file(), "rom_super_inspector.py not present")
+class RomSuperInspectorTests(unittest.TestCase):
+    def test_help_returns_zero(self):
+        rc, out, _ = run_py("rom_super_inspector.py", "--help")
+        self.assertEqual(rc, 0, f"--help failed: {out}")
+
+    def test_missing_rom_directory_fails(self):
+        missing = REPO / "nonexistent_rom_dir"
+        rc, out, err = run_py("rom_super_inspector.py", "-r", str(missing))
+        self.assertIn(rc, (1, 2), f"expected failure for missing dir: {rc}")
+
+    def test_empty_directory_with_allow_missing_returns_zero(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            rc, out, _ = run_py("rom_super_inspector.py", "-r", tmp, "--allow-missing")
+            self.assertEqual(rc, 0, f"--allow-missing empty dir failed: {rc}")
+
+
 @unittest.skipUnless(
     (REPO / "docs" / "rom-intelligence" / "A13_PROCESS_MATRIX.md").is_file(),
     "process matrix not present",
