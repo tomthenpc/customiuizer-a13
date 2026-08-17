@@ -7,7 +7,7 @@ BASE_SHA:
 fb7683e6d584470de595c4a4a455513f6ebfeb78
 
 FINAL_SHA:
-3690bcb8a7eb05cc34d2503dbb6efe0c0741656a
+84fae61fc19d78578233071494ee630b071a1822
 
 BRANCH:
 devin/a13-rom-intelligence-compat-r13.11.1
@@ -16,7 +16,7 @@ REMOTE_HEAD:
 fb7683e6d584470de595c4a4a455513f6ebfeb78
 
 LOCAL_HEAD:
-3690bcb8a7eb05cc34d2503dbb6efe0c0741656a
+84fae61fc19d78578233071494ee630b071a1822
 
 MERGE_BASE:
 fb7683e6d584470de595c4a4a455513f6ebfeb78
@@ -51,6 +51,7 @@ CHANGED_FILES:
 tools/rom_inventory.py
 tools/rom_super_inspector.py
 tools/tests/test_rom_intelligence.py
+docs/rom-intelligence/A13_STAGE_AB_ROM_INTELLIGENCE_REPORT.txt
 docs/rom-intelligence/A13-Issue-3-static-evidence.md
 docs/rom-intelligence/A13-Issue-3-matrix.csv
 docs/rom-intelligence/A13-Issue-3-matrix.json
