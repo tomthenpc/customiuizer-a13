@@ -1,175 +1,176 @@
 # Issue #1 Launcher Folder Regression Evidence
 
-## Issue subset handled in this batch
+## Stage E2 status
 
-- Feature request: dual-row network-speed spacing → `DEFER`
-- Regression: launcher folder width + folder spacing
-- User launcher: `RELEASE-4.39.14.8060-04191512`
+- `STAGE_E2 = HOLD`
+- `PRODUCTION_AUTHORIZATION = NO`
+- `PRODUCTION_CHANGED = false`
+- Evidence type: exact public APK static analysis only (`ROM evidence != DEVICE evidence`).
 
-## User-visible semantics
+## Exact artifact
 
-| preference | default | title (en/zh-rCN) | user-visible meaning |
-|---|---|---|---|
-| `launcher_folderwidth` | `false` | "Use entire folder's width" / "使用整个文件夹的宽度" | Use entire folder width |
-| `launcher_folderspace` | `false` | "Reduce side padding" / "减少边距" | Reduce folder side padding |
-| `launcher_folder_cols` | `1` (range 1-6) | "Number of columns in folders" / "文件夹排列数量" | Custom folder column count |
+| Field | Value |
+|---|---|
+| `PACKAGE` | `com.miui.home` |
+| `VERSION_NAME` | `RELEASE-4.39.14.8060-04191512` |
+| `VERSION_CODE` | `439148060` |
+| `APK_SIZE` | `24782235` |
+| `APK_SHA256` | `b507f1cbf2d8fbc445398a2402ff9dd3f22580265b0ef9de07b4b37889b3384b` |
+| `CERT_SHA256` | `c9009d01ebf9f5d0302bc71b2fe9aa9a47a432bba17308a3111b75d7b2149025` |
+| `SIGNATURE_VARIANT` | `7b6d` |
+| `ARTIFACT_SOURCE` | MemeOS Updates public mirror (APKMemeOS.com download link) |
+| `EXACT_VERSION` | `YES` (size, SHA-256, certificate, version name and version code all match user-supplied metadata) |
 
-## Production installer gate
+The APK was downloaded to the external evidence cache and verified. It is **not** tracked in the repository.
 
-`LauncherInstaller.handleLoadLauncher` installs the `folderColumns` feature only if:
+## History correction
+
+| Item | Value |
+|---|---|
+| `REAL_FEATURE_INTRODUCTION_SHA` | `c81ea42eca80ea3faaf5e04268e40a5b96a65bfd` |
+| `51a0e78_CLASSIFICATION` | `NAMESPACE_RENAME` |
+| `ISSUE_CREATED` | `2026-07-30` (user-supplied; not from git history) |
+| `61c8868` | `2026-07-31` |
+| `44b4c4c_POSTDATES_ISSUE` | `YES` |
+| `31e48bd_POSTDATES_ISSUE` | `YES` |
+| `INSTALL_GATE_CAUSAL_TO_ORIGINAL_ISSUE` | `NO / UNRESOLVED` |
+
+`c81ea42` (`2026-07-29`) is the first commit that split `mods/Launcher.java` into the Kotlin `LauncherFolderHooks.kt` and introduced the `folderwidth`, `folderspace`, and `mFakeIcon` code paths. `51a0e78` is only the A13 namespace migration (`name.monwf.customiuizer` → `tv.withaibuild.customiuizer`) and did not introduce the feature.
+
+The launcher startup/install gates (`44b4c4c` and `31e48bd`) were committed on `2026-08-06`, both after the issue date (`2026-07-30`). They therefore cannot be the original cause of the reported regression, although they remain a robustness gap: `hasAnyLauncherApplicationFeature` does not consider `launcher_folderwidth` or `launcher_folderspace` as independent install reasons.
+
+## Exact launcher ABI
+
+| Member | DEX evidence |
+|---|---|
+| `Folder` class | `Lcom/miui/home/launcher/Folder;` |
+| `SUPERCLASS` | `Landroid/widget/LinearLayout;` |
+| `onFinishInflate` | `()V` protected |
+| `onLayout` | `(Z I I I I)V` protected |
+| `resetViewsLayoutParams` | `()V` public |
+| `mContent` | `Lcom/miui/home/launcher/FolderGridView;` (extends `Landroid/widget/GridView;`) |
+| `mBackgroundView` | `Landroid/view/ViewGroup;` |
+| `mFakeIcon` | `Landroid/widget/ImageView;` |
+
+`FolderGridView` was also confirmed in the same DEX and its superclass is `Landroid/widget/GridView;`.
+
+## Old implementation (pre-61c8868)
+
+At `c81ea42`:
+
+```kotlin
+val mContent = XposedHelpers.getObjectField(param.getThisObject(), "mContent") as? GridView ?: return
+mContent.numColumns = cols
+```
+
+| Check | Result |
+|---|---|
+| `OLD_mContent_GRIDVIEW_CAST` | `MATCH` for the exact artifact (`mContent` is a `GridView` subclass) |
+| `OLD_WIDTH_WRITE_PATH` | `mContent.layoutParams.width = MATCH_PARENT` only in `onFinishInflate(after)` |
+| `OLD_PADDING_WRITE_PATH` | `mBackgroundView.setPadding(left/3, top, right/3, bottom)` only in `onFinishInflate(after)`, no original padding cache |
+
+## 61c8868 corrective assessment
+
+`61c8868` (`fix(launcher): preserve folder width across layout resets`) made four key changes:
+
+1. Treats `mContent` as a generic `View` for width (`as? View`).
+2. Extracts `applyFolderWidth()` and calls it in `onLayout(before)`.
+3. Adds a `resetViewsLayoutParams(after)` hook that re-applies `MATCH_PARENT`.
+4. Caches the original `mBackgroundView` left/right padding before dividing by 3.
+
+| Check | Result |
+|---|---|
+| `GENERIC_VIEW_CHANGE` | `RELEVANT` — makes width application independent of `mContent` runtime type |
+| `ONLAYOUT_BEFORE_REAPPLY` | `RELEVANT` — re-applies width before `super.onLayout` is called |
+| `RESET_LAYOUTPARAMS_AFTER` | `RELEVANT` — the exact launcher `resetViewsLayoutParams` sets `mContent.getLayoutParams().width` to a fixed dimension resource; the after-hook overwrites it back to `MATCH_PARENT` |
+| `ORIGINAL_PADDING_CACHE` | `RELEVANT` — no launcher call resets `mBackgroundView` padding, but the cache prevents repeated re-inflation from compounding the `/3` shrink |
+| `61c8868_STATIC_RESULT` | `SUPPORTED` for the exact artifact |
+
+### Why `resetViewsLayoutParams` matters
+
+Decompilation of the exact artifact shows the launcher writes:
 
 ```java
-if (MainModule.mPrefs.getInt("launcher_folder_cols", 1) > 1)
-    FeatureDispatcher.installById("folderColumns", launcherRuntime);
+this.mContent.setPadding(...resource ids...);
+android.widget.FrameLayout$LayoutParams lp = (android.widget.FrameLayout$LayoutParams) this.mContent.getLayoutParams();
+lp.width = this.getResources().getDimensionPixelSize(2131165625);  // fixed width
+this.mContent.requestLayout();
 ```
 
-`MainModule.onPackageReady` calls `LauncherInstaller.installApplication` only when `LauncherInstaller.hasAnyLauncherApplicationFeature(mPrefs)` returns `true`.
+Without the `resetViewsLayoutParams` hook, the launcher would reset `mContent` width to a fixed value after `onFinishInflate`. `61c8868` re-applies `MATCH_PARENT` immediately after this method returns.
 
-`hasAnyLauncherApplicationFeature` (and `hasAnyLauncherStartupFeature`) does **not** include `launcher_folderwidth` or `launcher_folderspace`.
+## Current lifecycle
 
-### Install gate matrix
-
-| Setting state | `hasAnyLauncherApplicationFeature` | `folderColumns` installed |
-|---|---|---|
-| folderwidth only, `cols == 1` | false | **NOT INSTALLED** |
-| folderspace only, `cols == 1` | false | **NOT INSTALLED** |
-| cols only (`cols > 1`) | true | installed |
-| cols > 3 + width + space | true | installed |
-
-### UI gate
-
-`Launcher.kt` disables:
-
-- `pref_key_launcher_folderwidth` unless `folder_cols > 1`
-- `pref_key_launcher_folderspace` unless `folder_cols > 3`
-
-This means a user who enables `folderwidth` through the UI normally also has `folder_cols > 1`. However, stale preferences (e.g. set `cols > 1`, enable width/space, then restore `cols == 1` without clearing the checkboxes) can leave `folderwidth == true` with `cols == 1`. In that state the feature is silently not installed.
-
-## Hook behavior
-
-`LauncherFolderHooks.FolderColumnsHook` is the only code path that applies `folderwidth` and `folderspace`.
-
-### `applyFolderWidth`
-
-```kotlin
-lp.width = ViewGroup.LayoutParams.MATCH_PARENT
-```
-
-Hooked in:
-- `Folder.onFinishInflate` after
-- `Folder.onLayout` before
-- `Folder.resetViewsLayoutParams` after
-
-### `folderspace`
-
-```kotlin
-mBackgroundView.setPadding(left / 3, top, right / 3, bottom)
-```
-
-Applied only when `cols > 3 && launcher_folderspace`.
-
-### `mFakeIcon` geometry
-
-```kotlin
-mFakeIcon.layout(
-    contentView.left,
-    contentView.top,
-    contentView.right,
-    contentView.top + contentView.width
-)
-```
-
-The bottom coordinate uses `contentView.width` instead of `contentView.height`. This was already present in the initial `LauncherFolderHooks.kt` commit `51a0e78` and has not changed. Classification: `UNRESOLVED` without launcher source/device evidence.
-
-## Git archaeology
-
-| Commit | Relevance |
+| Aspect | Static finding |
 |---|---|
-| `51a0e78` | First `LauncherFolderHooks.kt` implementation; `cols > 3` gate for `folderspace` and `mFakeIcon` layout using `contentView.width` both present from this commit. |
-| `e30294f` | Privacy-folder receiver registration refactored to stable owner; no folder-width/space logic change. |
-| `61c8868` | `fix(launcher): preserve folder width across layout resets` — extracted `applyFolderWidth`, added `resetViewsLayoutParams` hook, cached original padding, made `mContent` a generic `View` for width. The `cols > 3` and `mFakeIcon` geometry remain unchanged. |
-| `0ffa39a` | `perf(hotpath)` — `getArgs(0)` to `getArg(0)`; no behavior change. |
-| `29ba593` | `perf(launcher): harden callbacks` — added `OutOfMemoryError` rethrow; no behavior change. |
+| `WIDTH_WRITERS` | Launcher `resetViewsLayoutParams` sets `mContent` layout width to a fixed dimen; module `applyFolderWidth` sets it to `MATCH_PARENT` |
+| `WIDTH_OVERWRITE_AFTER_MODULE` | `resetViewsLayoutParams` runs, then the module after-hook overwrites it to `MATCH_PARENT`; `onLayout` itself does not write width, but the module before-hook re-applies `MATCH_PARENT` before `super.onLayout` |
+| `PADDING_WRITERS` | Launcher `resetViewsLayoutParams` sets `mContent` padding; module sets `mBackgroundView` padding |
+| `PADDING_OVERWRITE_AFTER_MODULE` | Launcher does not modify `mBackgroundView` padding, so module padding persists; launcher does overwrite `mContent` padding, but the module does not touch `mContent` padding |
+| `VISUAL_SPACING_TARGET` | `mBackgroundView` is the module's spacing target; `mContent` padding/horizontalSpacing/verticalSpacing are launcher-managed and are not reduced by the module |
 
-The install gate `launcher_folder_cols > 1` was introduced in `P1B-1` (`44b4c4c`) when startup family predicates were added, and has never included `folderwidth` or `folderspace`.
+## `mFakeIcon` geometry
 
-## Launcher ABI / ROM evidence
+The module positions `mFakeIcon` as:
 
-- ROM corpus: HyperOS 1.0.10.0 `veux` available
-- Attempted extraction of `MiuiHome.apk` from `product_a`, `system_a`, `system_ext_a`: not found at `/priv-app/MiuiHome/MiuiHome.apk` or `/app/MiuiHome/MiuiHome.apk`
-- `system_a` and `product_a` are non-EROFS/EXT4; directory listing via `ext4` module is possible but `MiuiHome` path could not be resolved before resource limits
-- `ROM_EVIDENCE_LEVEL = UNRESOLVED`
+```kotlin
+mFakeIcon.layout(contentView.left, contentView.top, contentView.right, contentView.top + contentView.width)
+```
 
-## Hypotheses
+The exact launcher `onLayout` positions it as:
 
-### H1 — Install gate regression
+```java
+mFakeIcon.layout(
+    mContent.getLeft()  (+/- fold padding adjustments),
+    mContent.getTop(),
+    mContent.getRight() (+/- fold padding adjustments),
+    mContent.getTop() + mContentRect.width()
+);
+```
 
-`hasAnyLauncherApplicationFeature` and `handleLoadLauncher` should recognize `launcher_folderwidth` and `launcher_folderspace` as independent reasons to install `FolderColumnsHook`, because the UI allows them only after `folder_cols` is set but the installer gate does not persist that relationship if the user later resets `folder_cols` to 1.
+| Check | Result |
+|---|---|
+| `GEOMETRY` | `EXPECTED` for non-fold devices; `BUG_CANDIDATE` only when `DeviceConfig.isInFoldLargeScreen(context)` is true, because the module does not subtract `mContent` left/right padding |
+| `ISSUE_1_RELEVANCE` | `NO` — `mFakeIcon` is the opening/closing animation placeholder, not the visible folder grid width or spacing |
 
-- Evidence: source code; UI gate in `Launcher.kt`; install gate in `LauncherInstaller.java`.
-- Counter-evidence: in normal UI flow `cols > 1` is required to enable `folderwidth`, so the gate would usually be satisfied.
-- Confidence: HIGH for the gate being incomplete; MEDIUM for it explaining this specific user report.
+## Installer classification
 
-### H2 — `cols > 3` semantic gate for `folderspace`
+| Field | Value |
+|---|---|
+| `ROBUSTNESS_GAP` | `STATIC_VERIFIED` |
+| `ISSUE_1_CAUSAL` | `NO_EVIDENCE` — the install gate is incomplete but post-dates the issue and cannot explain the original regression |
+| `PRODUCTION_ACTION_THIS_BATCH` | `NONE` |
 
-`folderspace` only applies when `cols > 3`. The UI enforces the same threshold, so this is consistent. If the user has `folder_cols` between 2 and 3 and expects `folderspace` to work, the UI should have prevented enabling it, so this is unlikely the primary regression.
+## Issue #4
 
-- Evidence: code and UI both require `cols > 3`.
-- Counter-evidence: not a mismatch between UI and production.
-- Confidence: LOW as primary cause.
+See `A13-Issue-4-scope.md`. Classification remains `OUT_OF_SCOPE_ROM_GENERATION`; no A13 or A14 action; no route to A14 audit; permanently parked.
 
-### H3 — Launcher version ABI variant
+## Root cause classification (Stage E2)
 
-The user launcher `RELEASE-4.39.14.8060-04191512` may have a different `Folder` class layout, field types, or lifecycle. The A13 `CatalogContracts.folderColumns` only requires `onFinishInflate` and `onLayout`; `resetViewsLayoutParams` is optional. If the launcher does not declare these methods or `mContent`/`mBackgroundView` types do not match the casts, the feature silently returns.
+| Field | Value |
+|---|---|
+| `CLASSIFICATION` | `ALREADY_CORRECTED_BY_61C8868` |
+| `FIRST_STATIC_BREAKPOINT` | None identified for the exact artifact |
+| `NEXT_MINIMAL_PRODUCTION_CORRECTIVE` | None required for the exact launcher version; installer gate remains a non-causal robustness gap and is not changed in this batch |
+| `PRODUCTION_AUTHORIZATION_REQUEST` | `NO` |
+| `DEVICE_VALIDATION_REQUIRED` | `YES` before claiming runtime resolution on the user's device |
 
-- Evidence: launcher version string different from base corpus; no ROM APK extracted.
-- Counter-evidence: code uses safe `as?` casts, so no crash implies method/field exists but may be wrong type.
-- Confidence: UNRESOLVED pending launcher DEX.
+## Verification
 
-### H4 — `mFakeIcon` geometry candidate
+Run during Stage E2:
 
-The `mFakeIcon` bottom coordinate uses `contentView.width` instead of `contentView.height`. This may be intentional (square icon) or a latent bug. Without launcher source it cannot be tied to the reported width/padding regression.
+| Command | Result |
+|---|---|
+| `python tools/verify.py fast --changed` | `OK` |
+| `python tools/verify.py full` | `OK` (compileDebugKotlin, compileDebugJavaWithJavac, testDebugUnitTest, lintDebug) |
+| `python -m compileall tools` | `OK` |
+| `python -m unittest discover -s tools/tests -p "test_*.py"` | `OK (1267 tests, skipped=2)` |
+| `git diff --check` | `OK` |
 
-- Evidence: source code.
-- Counter-evidence: unchanged since first implementation; likely intentional square placeholder.
-- Confidence: UNRESOLVED.
+`PRODUCTION_CHANGED = false`
 
-## Primary classification
+`LOCKED_XAGA_RAW_SUPER = DELETED` (the previously locked `C:\Home\xiaomi\rom\A13\_analysis_work\xaga_raw_super.img` was confirmed unlocked and removed)
 
-`MULTIPLE`:
+## Derived metadata
 
-1. `INSTALL_GATE_REGRESSION` — `hasAnyLauncherApplicationFeature` must include `launcher_folderwidth`/`launcher_folderspace`.
-2. `LAUNCHER_VERSION_VARIANT` / `UNRESOLVED` — launcher `RELEASE-4.39.14.8060-04191512` ABI not statically verified.
-
-## Missing test coverage
-
-- `hasAnyLauncherStartupFeature_folderWidthOnly`
-- `hasAnyLauncherStartupFeature_folderSpaceOnly`
-- `folderColumns_installed_withFolderWidthOnly`
-- `folderColumns_installed_withFolderSpaceOnly`
-- `FolderColumnsHook_applyFolderWidth`
-- `FolderColumnsHook_reduceSidePadding`
-- `FolderColumnsHook_mFakeIconGeometry`
-- `FolderColumnsHook_onLayoutLifecycle`
-- `LauncherFolderHooks` fixtures with `mContent`, `mBackgroundView`, `mFakeIcon`
-
-## Next minimal production corrective
-
-Update `LauncherInstaller.java`:
-
-- Add `launcher_folderwidth` and `launcher_folderspace` to `hasAnyLauncherApplicationFeature`.
-- Add `launcher_folderwidth` and `launcher_folderspace` to the install condition in `handleLoadLauncher` so `FolderColumnsHook` is installed when either is enabled.
-
-Expected changed files:
-
-- `app/src/main/java/tv/withaibuild/customiuizer/installers/LauncherInstaller.java`
-
-Expected test files to add/update:
-
-- `app/src/test/java/tv/withaibuild/customiuizer/installers/LauncherInstallerTest.kt`
-- `app/src/test/java/tv/withaibuild/customiuizer/mods/LauncherFolderHooksTest.kt` (new)
-- `app/src/test/java/com/miui/home/launcher/Folder.kt` (expand fixture)
-
-## Device validation
-
-- `DEVICE_VALIDATION_REQUIRED = YES` before claiming the fix resolves the user report, because the primary evidence is source-archaeological and the launcher `RELEASE-4.39.14.8060-04191512` is not in the local ROM corpus.
+- `docs/rom-intelligence/A13_dex_launcher_4.39.14.8060.json` — bounded DEX summary; no APK, DEX, smali, or JADX dump.

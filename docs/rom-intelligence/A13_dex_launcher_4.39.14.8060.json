@@ -1,0 +1,72 @@
+{
+  "artifact": {
+    "package": "com.miui.home",
+    "version_name": "RELEASE-4.39.14.8060-04191512",
+    "version_code": "439148060",
+    "apk_size": 24782235,
+    "apk_sha256": "b507f1cbf2d8fbc445398a2402ff9dd3f22580265b0ef9de07b4b37889b3384b",
+    "cert_sha256": {
+      "META-INF/CERT.RSA": "c9009d01ebf9f5d0302bc71b2fe9aa9a47a432bba17308a3111b75d7b2149025"
+    },
+    "signature_variant": "7b6d",
+    "artifact_source": "MemeOS Updates public mirror (APKMeme,com APK download link)",
+    "exact_version_match": true
+  },
+  "folder_class": {
+    "descriptor": "Lcom/miui/home/launcher/Folder;",
+    "superclass": "Landroid/widget/LinearLayout;",
+    "onFinishInflate": "()V (protected)",
+    "onLayout": "(Z I I I I)V (protected)",
+    "resetViewsLayoutParams": "()V (public)",
+    "mContent": "Lcom/miui/home/launcher/FolderGridView; (extends Landroid/widget/GridView;)",
+    "mBackgroundView": "Landroid/view/ViewGroup;",
+    "mFakeIcon": "Landroid/widget/ImageView;"
+  },
+  "old_implementation": {
+    "mContent_gridview_cast": "MATCH",
+    "width_write_path": "mContent.layoutParams.width = MATCH_PARENT in onFinishInflate(after) only; not re-applied in onLayout or resetViewsLayoutParams",
+    "padding_write_path": "mBackgroundView.setPadding(left/3, top, right/3, bottom) in onFinishInflate(after) only; no original padding cache"
+  },
+  "corrective_61c8868": {
+    "generic_view_change": "RELEVANT",
+    "onLayout_before_reapply": "RELEVANT",
+    "resetViewsLayoutParams_after": "RELEVANT",
+    "original_padding_cache": "RELEVANT",
+    "static_result": "SUPPORTED"
+  },
+  "current_lifecycle": {
+    "width_writers": [
+      "Launcher.resetViewsLayoutParams sets mContent.getLayoutParams().width to a fixed dimension resource",
+      "Module.applyFolderWidth sets mContent.layoutParams.width = MATCH_PARENT"
+    ],
+    "width_overwrite_after_module": [
+      "resetViewsLayoutParams (launcher) writes first; 61c8868 after-hook re-applies MATCH_PARENT",
+      "onLayout (launcher) does not modify mContent width; 61c8868 before-hook re-applies MATCH_PARENT before super.onLayout"
+    ],
+    "padding_writers": [
+      "Launcher.resetViewsLayoutParams sets mContent.setPadding(l, t, r, b)",
+      "Module sets mBackgroundView.setPadding(left/3, top, right/3, bottom)"
+    ],
+    "padding_overwrite_after_module": [
+      "resetViewsLayoutParams does not modify mBackgroundView padding; module mBackgroundView padding persists",
+      "resetViewsLayoutParams overwrites mContent padding; module does not alter mContent padding"
+    ],
+    "visual_spacing_target": "mBackgroundView padding is the module target; mContent padding/horizontalSpacing are launcher-managed and not modulated by the module"
+  },
+  "mFakeIcon": {
+    "geometry": "EXPECTED for non-fold devices; BUG_CANDIDATE for fold-large-screen because module does not subtract mContent left/right padding when positioning mFakeIcon",
+    "issue_1_relevance": "NO"
+  },
+  "installer": {
+    "robustness_gap": "STATIC_VERIFIED",
+    "issue_1_causal": "NO_EVIDENCE",
+    "production_action_this_batch": "NONE"
+  },
+  "issue_4": {
+    "classification": "OUT_OF_SCOPE_ROM_GENERATION",
+    "a13_action": "NONE",
+    "a14_action": "NONE",
+    "route_to_a14_audit": "NO",
+    "park_out_of_scope": "YES"
+  }
+}

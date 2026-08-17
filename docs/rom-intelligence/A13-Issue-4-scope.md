@@ -16,13 +16,13 @@
 
 ## Decision
 
-- `A13_SCOPE = NO`
-- `A14_PRODUCTION_ACTION = NONE`
-- `FURTHER_STATIC_ANALYSIS = NO`
-- `ISSUE_4_CLASSIFICATION = OUT_OF_SCOPE_ROM_GENERATION`
+| Field | Value |
+|---|---|
+| `ISSUE_4_CLASSIFICATION` | `OUT_OF_SCOPE_ROM_GENERATION` |
+| `A13_ACTION` | `NONE` |
+| `A14_ACTION` | `NONE` (out of scope for this A13 repository) |
+| `FURTHER_ANALYSIS` | `NO` |
+| `ROUTE_TO_A14_AUDIT` | `NO` (previous Stage E routing was incorrect; removed) |
+| `PARK_OUT_OF_SCOPE` | `YES` |
 
-## Route
-
-- `ROUTE_TO_A14_AUDIT = YES`
-- Do not modify A13 production or A14 production in this batch.
-- Do not close or edit the GitHub issue itself.
+This repository is scoped to Android 13 / API 33. Issue #4 targets the A14 generation and is permanently parked out of scope. No production changes are made and the GitHub issue itself is not modified.
