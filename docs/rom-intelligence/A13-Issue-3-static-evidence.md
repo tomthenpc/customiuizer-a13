@@ -1,8 +1,8 @@
 # A13 Issue #3 — Floating Notification Menu / Open-in-FW 静态证据
 
-> 本批仅建立 ROM 情报与回归证据，不做 production 修复。  
+> 本批包含 Stage A/B 情报与 Stage D production 修复证据。
 > 所有 ROM 分区/APK/JAR 均来自用户本地样本，未上传。
-> 本批结论：**HOLD** —— HyperOS `veux` 已拿到 STATIC_VERIFIED 类/成员证据，但 MIUI 14 `xaga` 仍受 EROFS 解析工具限制未解出；r13.10.1 与 r13.11.1 的 `NotificationRowMenuHook` 源代码在关键构造函数参数上存在回归性变更，可能与 HyperOS 目标构造器不匹配。
+> Stage D 结论：**PASS**（HOLD 解除）—— HyperOS `veux` 的 `NotificationGuts$GutsContent` 构造器已通过 `SystemNotificationMoreHooks.kt` 中的 bounded structural resolver 支持，构建与单元测试通过；实机验证未进行。
 
 ## 1. Issue 描述
 
@@ -202,4 +202,44 @@ r13.10.1 的版本代码 `135` 在多个 commit 中出现，导致基线不唯�
 - **HyperOS veux 已拿到直接 DEX 证据**：`MiuiSystemUI.apk` 从 `system_ext_a` 提取并解析，`NotificationRowMenuHook` 目标类/方法存在。
 - **MIUI 14 xaga 仍受 EROFS 工具限制**：无法获得同等 DEX 证据。
 - **Issue #3 最可能根因**：`NotificationRowMenuHook` 在 P1B-4A 重构后使用 `findConstructorBestMatch(..., Drawable.class, ...)`，与 HyperOS veux 实际 `NotificationGuts$GutsContent` 构造器参数不匹配，导致 menu item 无法构造。
-- **最终状态**：`HOLD`（不进入 production 修复）。
+- **最终状态**：`HOLD` 已在 Stage D 解除（见第 11 节）。
+
+## 11. Stage D — Production Corrective
+
+Stage D 仅修复 Issue #3，保持 Issue #4 不变。
+
+### 11.1 预检结论
+
+| 检查项 | 结论 |
+|---|---|
+| `mMenuContainer` declared type | `Landroid/view/ViewGroup;` |
+| `mMenuContainer` concrete object | `new-instance Landroid/widget/LinearLayout;` |
+| `LinearLayout` cast | `SAFE`（实际对象为 `LinearLayout` 子类） |
+| `MiuiNotificationMenuItem#getMenuView()` | 在父类 `NotificationMenuRow$NotificationMenuItem` 中声明并继承 |
+| `getMenuView` resolution | `PASS` |
+
+### 11.2 修复策略
+
+- **精确 ABI 优先**：安装时先尝试 `NotificationGuts$GutsContent` 构造器 `(outer, Context, int, GutsContent, int)`。
+- **结构回退**：精确失败时，枚举 `declaredConstructors`，只接受 `(outer, Context, int, reference, int)` 且唯一无歧义。
+- **安全边界**：无匹配或歧义时返回 `null`，`createMenuViews` after-callback 原样 `return`，保持既有 no-op 行为。
+- **无顺序依赖**：不取 `constructors[0]`。
+- **无 ROM/version 分支**：不判断包名、版本、ROM。
+- **无 DexKit**：纯反射，按 classLoader 隔离缓存。
+- **热路径无扫描**：构造器解析在 `NotificationRowMenuHook` 安装阶段执行一次，after-callback 仅复用已缓存的 `Constructor`。
+
+### 11.3 验证结果
+
+- `python tools/verify.py fast --tests NotificationRowMenuHookTest`：**PASS**
+- `python tools/verify.py fast --tests NotificationMenuItemConstructorResolverTest`：**PASS**
+- `python tools/verify.py full`：**PASS**（包含编译与单元测试）
+- `python -m compileall tools`：**PASS**
+- `python -m unittest discover -s tools/tests -p "test_*.py"`：**PASS**（1267 tests，skip 2）
+- `git diff --check`：**PASS**（无空白错误）
+
+### 11.4 证据等级（Stage D）
+
+- 静态目标：`STATIC_VERIFIED`
+- 构建验证：`BUILD_VERIFIED`
+- 实机/运行时验证：`UNVERIFIED`（未连接目标设备）
+- 修正后效果：`UNVERIFIED`

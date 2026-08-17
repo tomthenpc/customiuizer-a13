@@ -62,7 +62,7 @@
       "superImageSha256": "3d3d1c427fdab3c64503bd8f2c947f46748887ba1c52df7f1b4d6cc6bcade175",
       "lpPartition": "system_ext_a",
       "lpFilesystem": "EXT4",
-      "artifactPath": "C:\\Home\\xiaomi\\rom\\A13\\_analysis_work\\veux_MiuiSystemUI.apk",
+      "artifactPath": "C:\\Home\\xiaomi\\rom\\A13\\_evidence_cache\\veux_OS1.0.10.0\\veux_MiuiSystemUI.apk",
       "artifactSha256": "dd2271dfcd6975c0d8997d4a00a7ee975b0b45f7da6737487f4bf7dfed867b94",
       "apkPackage": "com.android.systemui",
       "class": "com.android.systemui.statusbar.notification.row.MiuiNotificationMenuRow",
@@ -77,8 +77,8 @@
         "system_notifrowmenu_appinfo",
         "system_notifrowmenu_forceclose"
       ],
-      "status": "STATIC_VERIFIED",
-      "evidenceNote": "DEX inspection of extracted MiuiSystemUI.apk confirms class/method present. Constructor 4th parameter is NotificationGuts$GutsContent; current source hardcodes Drawable for findConstructorBestMatch. This is a candidate install-time mismatch."
+      "status": "STATIC_VERIFIED_PROD_FIX_CANDIDATE",
+      "evidenceNote": "DEX inspection of cached veux_MiuiSystemUI.apk confirms class/method. Constructor 4th parameter is NotificationGuts$GutsContent. Stage D implemented bounded structural resolver in SystemNotificationMoreHooks.kt: exact HyperOS ABI first, (outer Context int reference int) fallback, ambiguity fail-open, cold-path cached. Build and unit tests pass; device verification not performed."
     }
   ],
   "openinfwTarget": {
@@ -97,8 +97,8 @@
     "HyperOS veux system_ext_a is EXT4; MiuiSystemUI.apk was extracted and DEX-inspected.",
     "MiuiNotificationMenuRow.createMenuViews(ZZ)V exists in HyperOS veux.",
     "MiuiNotificationMenuRow$MiuiNotificationMenuItem constructor requires NotificationGuts$GutsContent as 4th parameter, not Drawable.",
-    "Current NotificationRowMenuHook source uses findConstructorBestMatch(..., Drawable.class, ...); this will not resolve the GutsContent constructor.",
+    "Stage D replaced hardcoded Drawable constructor search with resolveNotificationMenuItemConstructor: exact HyperOS (GutsContent) ABI, then structural (outer Context int reference int) fallback, ambiguity fail-open, no constructors[0] assumption, no ROM/version branching, cold-path cached.",
     "MIUI 14 xaga CN/IN product_a/system_a are EROFS; target APK/DEX extraction blocked by compressed EROFS tooling gap.",
-    "No device-side runtime evidence (ADB/DEVICE) was collected; this batch is static only and remains HOLD."
+    "No device-side runtime evidence (ADB/DEVICE) was collected; this batch is static and build-verified only. Stage D status is PROD_FIX_CANDIDATE with DEVICE_VERIFIED: NO."
   ]
 }
