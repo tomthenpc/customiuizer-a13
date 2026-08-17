@@ -40,7 +40,7 @@ A1 / A2 / A3 / B1 保持 CLOSED。A3 的 `Application.attach` package-identity f
 
 | Installer | 当前形态 | 选型结果 |
 |---|---|---|
-| `GenericAppInstaller` | LEGACY_DIRECT；可进入任意 `GENERIC_APP` 进程 | 5 条路径均 **不迁 catalog**。其中 clipboard / nooverscroll 为局部 fail-open / fatal 缺口 |
+| `GenericAppInstaller` | LEGACY_DIRECT；可进入任意 `GENERIC_APP` 进程 | 5 条路径均 **不迁 catalog**。clipboard / nooverscroll 曾为局部 fail-open / fatal 缺口（B2A-D1 / B2A-D2）；corrective 后仍 **KEEP_LEGACY_SAFE** |
 | `PackageInstallerRouter` | LEGACY_DIRECT；仅 `com.miui.packageinstaller` | 2/2 `KEEP_LEGACY_SAFE` |
 | `SettingsInstaller` | LEGACY_DIRECT；仅 `SETTINGS_MAIN` | 6/6 `KEEP_LEGACY_SAFE`。次要进程排除已证明 |
 | `AndroidPackageInstaller` | **已经 HYBRID** | 4 条 resource/legacy `KEEP_LEGACY_SAFE`；2 条 catalog 路径保持现状。`createRuntime(pkg)` 在本路径上是 `SEMANTICALLY_EQUIVALENT`，全局命名是 `ARCHITECTURE_DEBT`，不是本路径 `CONFIRMED_DEFECT` |
@@ -61,7 +61,7 @@ GenericApp 的反收益最大：任意被选中的用户 App（以及 known pack
 
 - 不允许用「catalog 更统一」作为迁移理由。
 - 本轮 **B2A_PRODUCTION_CANDIDATES = 空集**。
-- clipboard / nooverscroll 的正确修正是局部 `findClassIfExists` / `RuntimeFatality`，不是 catalog。
+- clipboard / nooverscroll 的正确修正是局部 `findClassIfExists` / `RuntimeFatality`，不是 catalog。B2A-D1 / B2A-D2 / B2A-D3 已作为 failure-boundary corrective 落地；GenericApp / Settings / AndroidPackage **仍不是** catalog migration candidates。
 - 在 `FeatureDispatcher` 具备 **按 ProcessScope 惰性注册** 之前，这三个尚未支付 catalog 成本的进程不应成为 catalog 宿主。该 dispatcher 改造本身也不是 B2A。
 - Android 包上已经 catalog 的 `cleanShareMenu` / `cleanOpenWithMenu` 保持 HYBRID；不要为了形状把 4 条 resource 路径再拉进 dispatcher。
 
@@ -237,15 +237,15 @@ REACHABILITY 取值：`PRODUCTION_REACHABLE`（静态路由已证明，仍依赖
 | PROCESS_SCOPE | `GENERIC_APP` |
 | INSTALL_PHASE | `PACKAGE_READY`（**不是** `Application.attach`） |
 | CLASSLOADER_OWNER | `PackageReadyParam.classLoader`（LBE app loader） |
-| HOOK_TARGETS | `com.lbe.security.ui.ClipboardTipDialog.customReadClipboardDialog(Context, String)`（ModuleHelper）。`opt != 3` 时另：`XposedHelpers.findClass("com.lbe.security.ui.SecurityPromptHandler")` + `handleNewRequest` |
+| HOOK_TARGETS | `com.lbe.security.ui.ClipboardTipDialog.customReadClipboardDialog(Context, String)`（ModuleHelper）。`opt != 3` 时另：`findClassIfExists("com.lbe.security.ui.SecurityPromptHandler")` + `handleNewRequest` |
 | CURRENT_INSTALL_ONCE | `isFirstPackage()`；无 registry |
 | LIFECYCLE_OWNER | 无 receiver / observer / 静态 Context。`setAdditionalInstanceField("currentStopped")` 绑在 ROM handler 实例上，after 路径 `removeAdditionalInstanceField`。**PROCESS_SINGLETON** 仅指 hook 本身 |
-| COMPATIBILITY_MODE | Dialog：ModuleHelper fail-open。Handler：`findClass` **抛** `XposedHelpers.ClassNotFoundError extends Error` |
-| FATAL_BOUNDARY | `ClassNotFoundError` 不是 OOM/ThreadDeath/VME。发生在 `onPackageReady` 无 try/catch 路径上 → **安装期 fail-closed**。这是 B2A 路径上的独立缺陷，不是 A3 |
+| COMPATIBILITY_MODE | Dialog：ModuleHelper fail-open。Handler：`findClassIfExists`；class 缺失 `return`，已装的 ClipboardTipDialog 子 hook 保留 |
+| FATAL_BOUNDARY | **B2A-D1 = CONFIRMED_DEFECT，已局部纠正。** `findClassIfExists` + `RuntimeFatality.throwIfFatal` / log fail-open。opt==3 行为不变 |
 | HOT_PATH_COST | 权限请求回调：字段读写 + `gotChoice`。无 DexKit / 磁盘 |
-| CURRENT_RISK | **高（安装期）**：LBE ROM 若重命名 `SecurityPromptHandler`，模块入口抛 Error，可杀死 LBE 进程。opt==3 只 hook dialog，不走这条 |
-| MIGRATION_BENEFIT | **无**。catalog 不会修复 throwing `findClass`，还会在 LBE 加载全量 FeatureCatalog |
-| RECOMMENDATION | **CORRECTIVE_BEFORE_MIGRATION**（局部 `findClassIfExists` + `RuntimeFatality`；纠正后仍应 `KEEP_LEGACY_SAFE`） |
+| CURRENT_RISK | 低。class 缺失不再 fail-closed |
+| MIGRATION_BENEFIT | **无**。catalog 还会在 LBE 加载全量 FeatureCatalog |
+| RECOMMENDATION | **KEEP_LEGACY_SAFE** |
 
 #### various_alarmcompat → AlarmCompatHook
 
@@ -310,11 +310,11 @@ REACHABILITY 取值：`PRODUCTION_REACHABLE`（静态路由已证明，仍依赖
 | CURRENT_INSTALL_ONCE | 同 statusbarcolor attach 模型 |
 | LIFECYCLE_OWNER | 无长生命周期对象。构造 after 只改 View 实例字段 |
 | COMPATIBILITY_MODE | class 缺失 skip；`findAndHookMethodSilently` fail-open。AbsListView 走 ModuleHelper |
-| FATAL_BOUNDARY | **CONFIRMED_DEFECT**。构造 after 内两层 `catch (Throwable)` **只** `if (t is OutOfMemoryError) throw t`（`SystemAudioAndVisualAndMoreHooks.kt:173-178` 与 `:193-198`）。`ThreadDeath` / `VirtualMachineError`（含 `StackOverflowError`）及 wrapped fatal **被吞掉**。同类于已关闭的 B1-D2，但是 **B2A 路径上的新独立缺陷**，不重开 B1 |
+| FATAL_BOUNDARY | **B2A-D2 = CONFIRMED_DEFECT，已局部纠正。** 四个 `catch (Throwable)` 均 `RuntimeFatality.throwIfFatal`。primary `callMethod` → fallback field write 保留 |
 | HOT_PATH_COST | 构造 after：一次 `callMethod` 或字段写入。列表 init：改 `overScrollMode` |
-| CURRENT_RISK | 中。fatal 吞掉违反 AGENTS.md。普通 ROM 失败本意 fail-open，但 catch 过宽 |
-| MIGRATION_BENEFIT | **无**。catalog 不会改 inner catch，还会把全量 catalog 拉进用户 App |
-| RECOMMENDATION | **CORRECTIVE_BEFORE_MIGRATION**（局部 `RuntimeFatality.throwIfFatal`；纠正后仍应 `KEEP_LEGACY_SAFE`） |
+| CURRENT_RISK | 低。普通 ROM 失败仍 fail-open |
+| MIGRATION_BENEFIT | **无**。catalog 还会把全量 catalog 拉进用户 App |
+| RECOMMENDATION | **KEEP_LEGACY_SAFE** |
 
 #### controls_volumemedia_up/down → VolumeMediaPlayerHook
 
@@ -420,7 +420,7 @@ resource helper（`addResource` / `NotificationVolumeSettingsRes`）与 Java met
 | CURRENT_INSTALL_ONCE | `isFirstPackage()` |
 | LIFECYCLE_OWNER | 无静态 Activity。Header 对象插入 ROM list，由 Settings 持有 |
 | COMPATIBILITY_MODE | ModuleHelper；回调内 `findClassIfExists` Header，null 则 return |
-| FATAL_BOUNDARY | 安装/回调走 ModuleHelper / HookerClassHelper。`ResourceHooks.addResource` 只显式重抛 OOM（共享 helper 债，见第 6 节） |
+| FATAL_BOUNDARY | 安装/回调走 ModuleHelper / HookerClassHelper。`ResourceHooks.addResource` 走 canonical `RuntimeFatality`（B2A-D3） |
 | HOT_PATH_COST | `updateHeaderList`：扫 header id。非 target discovery |
 | CURRENT_RISK | 低 |
 | MIGRATION_BENEFIT | 无。Settings 会变成全量 catalog 宿主 |
@@ -535,7 +535,7 @@ resource helper（`addResource` / `NotificationVolumeSettingsRes`）与 Java met
 | CURRENT_INSTALL_ONCE | `isFirstPackage()` |
 | LIFECYCLE_OWNER | 闭包数组 `wifiSharedKey` / `passwordTitle`：**PROCESS_SINGLETON**。`showDeleteDialog` after 在 `canShare` 时清 key。Dialog/View 不静态持有。并发两个 dialog：UNPROVEN |
 | COMPATIBILITY_MODE | ModuleHelper。`WifiDppUtils` 在 before 里 throwing `findClass`；发生在回调内 → HookerClassHelper fail-open |
-| FATAL_BOUNDARY | 回调包装完整。`addResource` 共享 helper 债 |
+| FATAL_BOUNDARY | 回调包装完整。`addResource` 走 B2A-D3 canonical fatal boundary |
 | HOT_PATH_COST | bind/dialog：`getIdentifier` / 静态方法取 PSK |
 | CURRENT_RISK | 低。进程级 key 槽是既有实现 |
 | MIGRATION_BENEFIT | 无 |
@@ -573,7 +573,7 @@ isAnyFeatureEnabled()     // 全关则 return：无 dispatcher、无 watcher、�
 | CURRENT_INSTALL_ONCE | `isFirstPackage()` |
 | LIFECYCLE_OWNER | ResourceHooks **PROCESS_SINGLETON** |
 | COMPATIBILITY_MODE | ResourceHooks 内部 try/catch；缺失资源时无 Java target |
-| FATAL_BOUNDARY | ResourceHooks 只显式重抛 OOM（共享 helper） |
+| FATAL_BOUNDARY | ResourceHooks 统一 `logNonFatal` → `RuntimeFatality.throwIfFatal`（B2A-D3） |
 | HOT_PATH_COST | 资源查询路径读 replacement map。安装期无 ROM scan |
 | CURRENT_RISK | 低。迁 catalog 会让「只改高度」支付全量 dispatcher |
 | MIGRATION_BENEFIT | **负** |
@@ -602,7 +602,7 @@ isAnyFeatureEnabled()     // 全关则 return：无 dispatcher、无 watcher、�
 | CURRENT_INSTALL_ONCE | `isFirstPackage()`。server catalog 是另一进程 |
 | LIFECYCLE_OWNER | ResourceHooks PROCESS_SINGLETON |
 | COMPATIBILITY_MODE | 无 Java contract；纯资源 |
-| FATAL_BOUNDARY | ResourceHooks OOM-only 显式重抛 |
+| FATAL_BOUNDARY | ResourceHooks 统一 `logNonFatal` → `RuntimeFatality.throwIfFatal`（B2A-D3） |
 | HOT_PATH_COST | 资源查询 |
 | CURRENT_RISK | 低。双进程产品路径 |
 | MIGRATION_BENEFIT | 无。再 catalog 会在 android 包进程为 resource-only 用户加载 dispatcher（若用户未开 share/openwith） |
@@ -688,16 +688,17 @@ FeatureDispatcher.createRuntime(pkg, lpparam, lpparam.getClassLoader(), MainModu
 
 ## 6. CONFIRMED_DEFECTS / ARCHITECTURE_DEBT / MIGRATION_RESIDUE
 
-### CONFIRMED_DEFECTS（B2A 路径，静态）
+### CONFIRMED_DEFECTS（B2A 路径）
 
-| ID | 路径 | 事实 | 正确修正方向 |
+| ID | 路径 | 分类 | 状态 |
 |---|---|---|---|
-| B2A-D1 | `SmartClipboardActionHook` | `onPackageReady` 上 throwing `findClass(SecurityPromptHandler)`；`ClassNotFoundError extends Error`；无入口 catch | LOCAL_CORRECTIVE：`findClassIfExists` + `RuntimeFatality`。**不是 catalog** |
-| B2A-D2 | `NoOverscrollAppHook` | 4 个 `catch (Throwable)` 只重抛 `OutOfMemoryError` | LOCAL_CORRECTIVE：`RuntimeFatality.throwIfFatal`。**不是 catalog** |
+| B2A-D1 | `SmartClipboardActionHook` throwing `findClass(SecurityPromptHandler)` | **CONFIRMED_DEFECT** | LOCAL_CORRECTIVE 已落地：`findClassIfExists` + `RuntimeFatality` fail-open。ClipboardTipDialog 子 hook 保留。opt==3 不变。**不是 catalog** |
+| B2A-D2 | `NoOverscrollAppHook` 四个 `catch (Throwable)` 只重抛 OOM | **CONFIRMED_DEFECT** | LOCAL_CORRECTIVE 已落地：四处 `RuntimeFatality.throwIfFatal`。primary → fallback 语义保留。**不是 catalog** |
+| B2A-D3 | `ResourceHooks` catch 只显式重抛直接 OOM（Settings / AndroidPackage 实际调用的 shared primitive） | **CONFIRMED_DEFECT**（从 ARCHITECTURE_DEBT 升级） | LOCAL_CORRECTIVE 已落地：统一 `logNonFatal` 先 `RuntimeFatality.throwIfFatal`。InstallState / mask / COW cache 未改。**不是 catalog / 不是 ResourceHooks refactor** |
 
-两者都是 `CORRECTIVE_BEFORE_MIGRATION`。纠正后预期仍 `KEEP_LEGACY_SAFE`。本轮 **不实现**。
+三项 corrective 后：GenericApp / Settings / AndroidPackage **仍不成为** catalog migration candidates。
 
-不要把它们算进 B1：B1 已 CLOSED；这是 GenericApp 路径上的独立证据。
+不要把它们算进 B1：B1 已 CLOSED。
 
 ### ARCHITECTURE_DEBT（不升级为本轮生产候选项）
 
@@ -707,7 +708,6 @@ FeatureDispatcher.createRuntime(pkg, lpparam, lpparam.getClassLoader(), MainModu
 | `createRuntime(pkg)` 命名 | SEMANTICALLY_EQUIVALENT on ANDROID_PACKAGE |
 | `PACKAGE_INSTALLER` 无 `isMainProcess` | 与 B1 五 scope 同类；无 manifest 不升级 |
 | `GENERIC_APP` 无 `isMainProcess` | 产品需要多 App；次要进程 UNPROVEN |
-| `ResourceHooks` catch 只显式 OOM | 共享 helper；Settings/AndroidPackage resource 路径用到。不在 B2A 改 helper |
 | `FeatureInstallRegistry.isFatal` 不 unwrap cause | catalog 路径债 |
 | AppInfo fallback catch 无 cause-chain | 低概率 |
 | `actionBarColor` / `callsResId` / wifi 闭包数组 | PROCESS_SINGLETON 既有状态 |
@@ -753,16 +753,16 @@ B2A_PRODUCTION_CANDIDATES = []
 
 | Installer | 结果 |
 |---|---|
-| GenericAppInstaller | clipboard / nooverscroll = `CORRECTIVE_BEFORE_MIGRATION`（局部 fatal/fail-open，**非 catalog**）。其余 3 条 `KEEP_LEGACY_SAFE` |
+| GenericAppInstaller | 5/5 `KEEP_LEGACY_SAFE`（D1/D2 局部 corrective 后仍非 catalog） |
 | PackageInstallerRouter | 2/2 `KEEP_LEGACY_SAFE` |
 | SettingsInstaller | 6/6 `KEEP_LEGACY_SAFE`；`SETTINGS_REMOTE` 排除已证明 |
-| AndroidPackageInstaller | 4 resource/legacy `KEEP_LEGACY_SAFE`；2 catalog 路径保持 HYBRID。`createRuntime` = SEMANTICALLY_EQUIVALENT + ARCHITECTURE_DEBT |
+| AndroidPackageInstaller | 4 resource/legacy `KEEP_LEGACY_SAFE`（D3 只修 ResourceHooks fatal boundary）；2 catalog 路径保持 HYBRID。`createRuntime` = SEMANTICALLY_EQUIVALENT + ARCHITECTURE_DEBT |
 
 **不选 catalog migration 的原因不是数量不够，而是没有一条同时满足：concrete catalog benefit，且不把全量 FeatureCatalog 拉进当前未加载 catalog 的进程。**
 
 已 catalog 的 `cleanShareMenu` / `cleanOpenWithMenu` 不是「迁移候选项」；它们已经在正确的 HYBRID 位置。
 
-D1/D2 明确需要 `LOCAL_CORRECTIVE_ONLY`，但与 B1 一样：**选型轮不授权生产修改**。它们不是 CATALOG_MIGRATION / ROUTING_CORRECTIVE / LIFECYCLE_CORRECTIVE。
+D1/D2/D3 是 `LOCAL_CORRECTIVE_ONLY`。它们不是 CATALOG_MIGRATION / ROUTING_CORRECTIVE / LIFECYCLE_CORRECTIVE。
 
 ---
 
@@ -773,7 +773,7 @@ D1/D2 明确需要 `LOCAL_CORRECTIVE_ONLY`，但与 B1 一样：**选型轮不�
 若未来（需单独授权）仍要收敛 GenericApp / Settings / PackageInstaller：
 
 1. **前置：** `FeatureDispatcher` / `registerAll` 改为按 `ProcessScope` 惰性注册。GenericApp 进程不得构建 SystemUI/system_server spec。
-2. B2A-D1 / B2A-D2 局部 corrective **先于** 任何 GenericApp catalog 讨论。
+2. B2A-D1 / B2A-D2 / B2A-D3 局部 corrective 已完成，仍须先于任何 GenericApp catalog 讨论。
 3. 双进程功能保持 **两个 FeatureId**（Settings UI vs system_server；AndroidPackage resource vs server hook；`cleanShareMenu` vs `cleanShareMenuService`）。
 4. `createRuntime` 若改为真实 `processName`，必须同步证明 `ProcessTarget.Package("android")` 在 empty processName 下仍 match；当前传 package 在该路径是等价且对 empty 更稳。
 5. GenericApp 的 package-set 条件（`*_apps.contains(pkg)`）无法用现有只接收 `PrefMap` 的 `FeatureSpec.condition` 表达。`ProcessTarget.Any` 会污染其它 generic 进程的 registry 状态。
@@ -799,7 +799,7 @@ B1 freeze 机器上 Gradle 9.6.1 对严格 `gradle/verification-metadata.xml` �
 
 ## 11. FUTURE_MAINTENANCE_NOTE（不扩大本轮）
 
-- B2A-D1 / B2A-D2 若另开 corrective 任务：只改对应 hook 函数 + 窄测试；不改 installer / catalog / MainModule / ProcessScopes。
+- B2A-D1 / B2A-D2 / B2A-D3 failure-boundary corrective 已落地。GenericApp / Settings / AndroidPackage 仍不是 catalog candidates。
 - `SystemAudioAndVisualAndMoreHooks.kt` 中其它非 B2A 路径的 OOM-only catch 不在本轮。
 - `DisableAnyNotificationHook` 的 systemui 分支留给 SystemUI batch。
 - 不要把 `PreferenceLoadRegistry` 注释里的「will be migrated in a separate phase」当成 B2A 授权。
@@ -810,13 +810,13 @@ B1 freeze 机器上 Gradle 9.6.1 对严格 `gradle/verification-metadata.xml` �
 
 ```text
 B2A_STATIC_RESULT = NO_PRODUCTION_CANDIDATE
+B2A_D1 = CONFIRMED_DEFECT (local corrective applied)
+B2A_D2 = CONFIRMED_DEFECT (local corrective applied)
+B2A_D3 = CONFIRMED_DEFECT (local corrective applied; was ARCHITECTURE_DEBT)
 PHASE_A_REOPENED = NO
 B1_REOPENED = NO
-A1/A2/A3 未发现要求重开的同路径新缺陷
 A3_PACKAGE_IDENTITY_FILTER = STILL_BEFORE_GENERICAPP_ATTACH_HOOKS
-PRODUCTION_CHANGED = NO
-B2A_PRODUCTION_AUTHORIZATION = NO
+CATALOG_CHANGED = NO
+ROUTING_CHANGED = NO
 B2B_STARTED = NO
 ```
-
-未修改任何 production Java/Kotlin。未修改 FeatureCatalog / FeatureDispatcher / MainModule / ProcessScopes。未开始 B2B。未 merge / rebase / force-push / tag / release。

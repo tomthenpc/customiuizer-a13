@@ -60,6 +60,7 @@ import tv.withaibuild.customiuizer.mods.utils.HookerClassHelper.AfterHookCallbac
 import tv.withaibuild.customiuizer.mods.utils.HookerClassHelper.BeforeHookCallback
 import tv.withaibuild.customiuizer.mods.utils.HookerClassHelper.MethodHook
 import tv.withaibuild.customiuizer.mods.utils.ModuleHelper
+import tv.withaibuild.customiuizer.mods.utils.RuntimeFatality
 import tv.withaibuild.customiuizer.mods.utils.XposedHelpers
 import tv.withaibuild.customiuizer.utils.HookUtils
 import java.lang.ref.WeakReference
@@ -712,28 +713,36 @@ object Various {
         } else {
             ModuleHelper.findAndHookMethod("com.lbe.security.ui.ClipboardTipDialog", lpparam.classLoader, "customReadClipboardDialog", Context::class.java, String::class.java, HookerClassHelper.returnConstant(true))
 
-            val securityPromptHandler = XposedHelpers.findClass("com.lbe.security.ui.SecurityPromptHandler", lpparam.classLoader)
-            ModuleHelper.hookAllMethods(securityPromptHandler, "handleNewRequest", object : MethodHook() {
-                override fun before(param: BeforeHookCallback) {
-                    val permissionRequest = param.args[0] ?: return
-                    val permId = XposedHelpers.callMethod(permissionRequest, "getPermission") as? Long ?: return
-                    if (permId == 274877906944L) {
-                        XposedHelpers.setAdditionalInstanceField(param.thisObject, "currentStopped", XposedHelpers.getBooleanField(param.thisObject, "mStopped"))
-                    }
-                }
-
-                override fun after(param: AfterHookCallback) {
-                    val permissionRequest = param.args[0] ?: return
-                    val permId = XposedHelpers.callMethod(permissionRequest, "getPermission") as? Long ?: return
-                    if (permId == 274877906944L) {
-                        val mStopped = XposedHelpers.getAdditionalInstanceField(param.thisObject, "currentStopped") as? Boolean ?: return
-                        if (mStopped) {
-                            XposedHelpers.callMethod(param.thisObject, "gotChoice", 3, true, true)
+            try {
+                val securityPromptHandler = XposedHelpers.findClassIfExists(
+                    "com.lbe.security.ui.SecurityPromptHandler",
+                    lpparam.classLoader
+                ) ?: return
+                ModuleHelper.hookAllMethods(securityPromptHandler, "handleNewRequest", object : MethodHook() {
+                    override fun before(param: BeforeHookCallback) {
+                        val permissionRequest = param.args[0] ?: return
+                        val permId = XposedHelpers.callMethod(permissionRequest, "getPermission") as? Long ?: return
+                        if (permId == 274877906944L) {
+                            XposedHelpers.setAdditionalInstanceField(param.thisObject, "currentStopped", XposedHelpers.getBooleanField(param.thisObject, "mStopped"))
                         }
-                        XposedHelpers.removeAdditionalInstanceField(param.thisObject, "currentStopped")
                     }
-                }
-            })
+
+                    override fun after(param: AfterHookCallback) {
+                        val permissionRequest = param.args[0] ?: return
+                        val permId = XposedHelpers.callMethod(permissionRequest, "getPermission") as? Long ?: return
+                        if (permId == 274877906944L) {
+                            val mStopped = XposedHelpers.getAdditionalInstanceField(param.thisObject, "currentStopped") as? Boolean ?: return
+                            if (mStopped) {
+                                XposedHelpers.callMethod(param.thisObject, "gotChoice", 3, true, true)
+                            }
+                            XposedHelpers.removeAdditionalInstanceField(param.thisObject, "currentStopped")
+                        }
+                    }
+                })
+            } catch (t: Throwable) {
+                RuntimeFatality.throwIfFatal(t)
+                XposedHelpers.log(t)
+            }
         }
     }
 

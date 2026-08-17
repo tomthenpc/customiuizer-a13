@@ -171,11 +171,11 @@ object SystemAudioAndVisualAndMoreHooks {
                     try {
                         XposedHelpers.callMethod(param.thisObject, "setSpringBackEnable", false)
                     } catch (t: Throwable) {
-                        if (t is OutOfMemoryError) throw t
+                        RuntimeFatality.throwIfFatal(t)
                         try {
                             XposedHelpers.setBooleanField(param.thisObject, "mSpringBackEnable", false)
                         } catch (fallback: Throwable) {
-                            if (fallback is OutOfMemoryError) throw fallback
+                            RuntimeFatality.throwIfFatal(fallback)
                         }
                     }
                 }
@@ -191,11 +191,11 @@ object SystemAudioAndVisualAndMoreHooks {
                     try {
                         XposedHelpers.callMethod(param.thisObject, "setSpringEnabled", false)
                     } catch (t: Throwable) {
-                        if (t is OutOfMemoryError) throw t
+                        RuntimeFatality.throwIfFatal(t)
                         try {
                             XposedHelpers.setBooleanField(param.thisObject, "mSpringEnabled", false)
                         } catch (fallback: Throwable) {
-                            if (fallback is OutOfMemoryError) throw fallback
+                            RuntimeFatality.throwIfFatal(fallback)
                         }
                     }
                 }
