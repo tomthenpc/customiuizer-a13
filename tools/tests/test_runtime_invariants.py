@@ -19,6 +19,18 @@ INSTALLER_PATH = (
     / "installers"
     / "SampleInstaller.java"
 )
+PREFERENCE_BOOTSTRAP_PATH = (
+    REPO_ROOT
+    / "app"
+    / "src"
+    / "main"
+    / "java"
+    / "tv"
+    / "withaibuild"
+    / "customiuizer"
+    / "utils"
+    / "PreferenceBootstrap.java"
+)
 
 _spec = importlib.util.spec_from_file_location("runtime_invariants", INVARIANTS_PATH)
 runtime_invariants = importlib.util.module_from_spec(_spec)
@@ -50,6 +62,25 @@ class InstallerOomBoundaryInvariant(unittest.TestCase):
             " return }"
         )
         self.assertEqual(runtime_invariants.check_installer_oom_boundary(path, text), [])
+
+    def test_preference_bootstrap_throwable_without_runtime_fatality_fails(self) -> None:
+        text = "try { prefs.getAll(); } catch (Throwable t) { recordFailure(\"x\", t); }"
+        self.assertTrue(
+            runtime_invariants.check_installer_oom_boundary(PREFERENCE_BOOTSTRAP_PATH, text)
+        )
+
+    def test_preference_bootstrap_runtime_fatality_passes(self) -> None:
+        text = (
+            "try { prefs.getAll(); } catch (Throwable t) {"
+            " RuntimeFatality.throwIfFatal(t);"
+            " recordFailure(\"x\", t);"
+            " return;"
+            " }"
+        )
+        self.assertEqual(
+            runtime_invariants.check_installer_oom_boundary(PREFERENCE_BOOTSTRAP_PATH, text),
+            [],
+        )
 
 
 if __name__ == "__main__":

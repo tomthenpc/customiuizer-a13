@@ -16,6 +16,37 @@ A14 reference SHA:  d20d96b543a49a584970e312da7d704958a155aa
 - A13 不支持：Android 14+。
 - A14 仅作为工程 / 产品语义参考。
 
+## 工程授权方向
+
+```text
+ARCHITECTURE_COMPATIBILITY_PROGRAM = AUTHORIZED
+```
+
+授权范围：
+
+- A13 架构加固
+- A13 兼容架构
+
+不授权：
+
+- 无关功能语义重开
+- 主动 ROM 猎取
+- 未经明确授权的功能实现
+
+阶段顺序：
+
+```text
+A Foundation Correctness
+B Runtime Architecture Convergence
+C Compatibility Architecture
+D A14 Feature Parity
+```
+
+A14 是参考，不是自动代码权威。只有经过 A13 语义、API、ABI、生命周期、ClassLoader
+和资源映射审计的功能才进入 A13。
+
+ROM 证据不被主动猎取；兼容性工作确实需要时才按现有证据等级补充设备/日志证据。
+
 ## 产品决策
 
 灵动额头 / Dynamic Island 是唯一当前已授权排除的功能：
@@ -149,21 +180,33 @@ F2 FEATURE INVENTORY    = READY
 F4 PRODUCTION PORT      = BLOCKED
 ```
 
+架构兼容工程阶段：
+
+```text
+A Foundation Correctness  = IN_PROGRESS
+  A1 PreferenceBootstrap fatal boundary = DONE
+B Runtime Architecture Convergence = PENDING
+C Compatibility Architecture       = PENDING
+D A14 Feature Parity              = PENDING
+```
+
 F1 结果与完整 A13/A14 结构对比见
 `docs/audit/A13_F1_ARCHITECTURE_BASELINE.md`。
 
-F4 被阻塞的原因（F1 findings）：
+F4 被阻塞的原因（F1 findings，A1 关闭 P0-1）：
 
 ```text
-P0-1  PreferenceBootstrap 在强制启动路径吞掉致命 JVM 错误
 P1-1  Application.attach after 回调无幂等守卫（Launcher / GenericApp）
 P1-2  install-once 仅覆盖 catalog 路径
 ```
 
+P0-1 已在 A1 关闭；`docs/audit/A13_F1_ARCHITECTURE_BASELINE.md` 已更新为
+`CLOSED_BY_A1`。
+
 进入 F4 前需要的最小修正批次：
 
 ```text
-C1  PreferenceBootstrap 致命边界 + 不变式覆盖扩展
+A1  PreferenceBootstrap 致命边界 + 不变式覆盖扩展              DONE
 C2  Application.attach 回调幂等守卫
 C3  HookTargetResolver 致命判定补全 + 致命助手收敛
 ```

@@ -562,13 +562,10 @@ API102_ISOLATION     = SAFE
 
 ### P0_FOUNDATIONAL_CORRECTNESS
 
-**P0-1  `PreferenceBootstrap` 吞掉致命 JVM 错误**
+**P0-1  `PreferenceBootstrap` 吞掉致命 JVM 错误 — CLOSED_BY_A1**
 `app/src/main/java/tv/withaibuild/customiuizer/utils/PreferenceBootstrap.java:69, 102, 129, 175, 237, 268`
-6 个 `catch (Throwable t)` 直接 `recordFailure(...)` 后返回，无 `OutOfMemoryError` / `ThreadDeath` / `VirtualMachineError` 重抛。
-该类位于 **每个被注入进程（含 `system_server`、SystemUI）的强制启动路径**（`MainModule.java:83, 101`）。
-`OutOfMemoryError` 在此被记为 `UNAVAILABLE`，模块以“preference 不可用”继续运行，宿主进程得到错误的根因。
-现有门禁 `check_installer_oom_boundary`（tools/check-invariants.py:378-406）只扫描 `/customiuizer/installers/`，未覆盖。
-最小修正：改用 `RuntimeFatality.throwIfFatal(t)` 作为每个 catch 的首行，并把不变式检查范围从 `installers/` 扩展到启动路径类。
+6 个 `catch (Throwable t)` 已前置 `RuntimeFatality.throwIfFatal(t)`；普通失败仍按原状态机处理。
+`tools/check-invariants.py` 的 `check_installer_oom_boundary` 已扩展至覆盖 `PreferenceBootstrap.java`。
 
 ### P1_PARITY_ENABLER
 
@@ -638,7 +635,7 @@ F4 暂不放行：P0-1 位于每个被注入进程的强制启动路径；P1-1 /
 建议的最小修正批次（顺序）：
 
 ```text
-C1  PreferenceBootstrap 致命边界 + 不变式覆盖扩展            (关闭 P0-1)
+C1  PreferenceBootstrap 致命边界 + 不变式覆盖扩展            (已关闭 P0-1，见 A1)
 C2  Application.attach 回调幂等守卫（Launcher / GenericApp）  (关闭 P1-1)
 C3  HookTargetResolver.findFatalCause 补全 + 致命助手收敛     (关闭 P1-4, 缓解 P2-1)
 C4  FeatureRuntime 进程键语义修正（含 ClassLoader 身份）      (关闭 P1-3)

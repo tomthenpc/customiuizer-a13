@@ -376,14 +376,17 @@ def check_no_regex_split_on_literal(path: Path, text: str) -> list[Finding]:
 
 
 def check_installer_oom_boundary(path: Path, text: str) -> list[Finding]:
-    """Installer Throwable fallbacks must never hide an OutOfMemoryError.
+    """Installer and bootstrap Throwable fallbacks must never hide an OutOfMemoryError.
 
-    Installers run at process initialization. Treating OOM as a disabled feature
-    or a compatibility miss can leave a partially initialized system process and
-    records the wrong root cause. Ordinary ROM/reflection failures may still be
-    isolated, but each Throwable catch must explicitly rethrow OOM.
+    Installers and PreferenceBootstrap run at process initialization. Treating OOM
+    as a disabled feature or a compatibility miss can leave a partially initialized
+    system process and records the wrong root cause. Ordinary ROM/reflection failures
+    may still be isolated, but each Throwable catch must explicitly rethrow OOM.
     """
-    if "/customiuizer/installers/" not in path.as_posix():
+    path_posix = path.as_posix()
+    in_installer = "/customiuizer/installers/" in path_posix
+    in_bootstrap = "/utils/PreferenceBootstrap.java" in path_posix
+    if not (in_installer or in_bootstrap):
         return []
     findings = []
     pattern = re.compile(
@@ -393,7 +396,7 @@ def check_installer_oom_boundary(path: Path, text: str) -> list[Finding]:
         body, _ = block_at(text, match.end())
         if ("OutOfMemoryError" in body or "VirtualMachineError" in body) and re.search(r"\bthrow\b", body):
             continue
-        if re.search(r"\b(?:FatalErrors|rethrowIfFatal)\s*\(", body):
+        if re.search(r"\b(?:FatalErrors|RuntimeFatality\.throwIfFatal|rethrowIfFatal)\s*\(", body):
             continue
         findings.append(
             Finding(
