@@ -2,10 +2,23 @@
 
 ## Stage E2 status
 
-- `STAGE_E2 = HOLD`
+- `STAGE_E2 = PASS` for static evidence closure
 - `PRODUCTION_AUTHORIZATION = NO`
 - `PRODUCTION_CHANGED = false`
 - Evidence type: exact public APK static analysis only (`ROM evidence != DEVICE evidence`).
+
+| Gate field | Value |
+|---|---|
+| `STATIC_ABI` | `VERIFIED` |
+| `STATIC_LIFECYCLE_CORRECTIVE` | `SUPPORTED` |
+| `PRODUCTION_CORRECTIVE_REQUIRED` | `NO` |
+| `DEVICE_VERIFIED` | `NO` |
+| `RUNTIME_RESOLUTION_CLAIM` | `NO` |
+| `ISSUE_1_STATIC_STATE` | `61C8868_CORRECTIVE_SUPPORTED_ON_EXACT_LAUNCHER` |
+| `STATIC_CLASSIFICATION` | `CORRECTIVE_ALREADY_PRESENT_AND_STATICALLY_SUPPORTED` |
+| `RUNTIME_CLASSIFICATION` | `UNVERIFIED` |
+
+No production changes are made; runtime proof requires device validation.
 
 ## Exact artifact
 
@@ -27,7 +40,10 @@ The APK was downloaded to the external evidence cache and verified. It is **not*
 
 | Item | Value |
 |---|---|
-| `REAL_FEATURE_INTRODUCTION_SHA` | `c81ea42eca80ea3faaf5e04268e40a5b96a65bfd` |
+| `FEATURE_PRESENT_AT_INITIAL_REPOSITORY_BASELINE` | `YES` |
+| `INITIAL_REPOSITORY_BASELINE_SHA` | `c696d33b071ff367e1ebb7c9b5777cd4a3b0a37c` |
+| `REAL_FEATURE_INTRODUCTION_SHA` | `UNRESOLVED_PRE_REPOSITORY_HISTORY` |
+| `c81ea42_CLASSIFICATION` | `JAVA_TO_KOTLIN_SPLIT_MIGRATION` |
 | `51a0e78_CLASSIFICATION` | `NAMESPACE_RENAME` |
 | `ISSUE_CREATED` | `2026-07-30` (user-supplied; not from git history) |
 | `61c8868` | `2026-07-31` |
@@ -35,7 +51,11 @@ The APK was downloaded to the external evidence cache and verified. It is **not*
 | `31e48bd_POSTDATES_ISSUE` | `YES` |
 | `INSTALL_GATE_CAUSAL_TO_ORIGINAL_ISSUE` | `NO / UNRESOLVED` |
 
-`c81ea42` (`2026-07-29`) is the first commit that split `mods/Launcher.java` into the Kotlin `LauncherFolderHooks.kt` and introduced the `folderwidth`, `folderspace`, and `mFakeIcon` code paths. `51a0e78` is only the A13 namespace migration (`name.monwf.customiuizer` → `tv.withaibuild.customiuizer`) and did not introduce the feature.
+`c696d33b071ff367e1ebb7c9b5777cd4a3b0a37c` (`2026-07-27`, "Initial baseline: r13.1.2") is the root commit of this repository. Its `mods/Launcher.java` already contains the `FolderColumnsHook` implementation: `mContent` cast to `GridView`, `numColumns` set, `MATCH_PARENT` width, `mBackgroundView` padding divided by 3, and the `mFakeIcon` `mContent.getTop() + mContent.getWidth()` geometry. Therefore the feature is present at the initial repository baseline; the real first introduction is outside the current git history.
+
+`c81ea42` (`2026-07-29`, "K3: split and migrate mods/Launcher.java to Kotlin framework") only split the existing `Launcher.java` into multiple Kotlin files, including `LauncherFolderHooks.kt`. It is a Java-to-Kotlin migration, not the feature introduction.
+
+`51a0e78` is the A13 namespace migration (`name.monwf.customiuizer` → `tv.withaibuild.customiuizer`) and did not introduce the feature.
 
 The launcher startup/install gates (`44b4c4c` and `31e48bd`) were committed on `2026-08-06`, both after the issue date (`2026-07-30`). They therefore cannot be the original cause of the reported regression, although they remain a robustness gap: `hasAnyLauncherApplicationFeature` does not consider `launcher_folderwidth` or `launcher_folderspace` as independent install reasons.
 
@@ -56,11 +76,11 @@ The launcher startup/install gates (`44b4c4c` and `31e48bd`) were committed on `
 
 ## Old implementation (pre-61c8868)
 
-At `c81ea42`:
+Pre-`61c8868`, the same logic was already present in the initial baseline `c696d33` (Java `Launcher.java`) and carried unchanged through `c81ea42` (Kotlin split):
 
-```kotlin
-val mContent = XposedHelpers.getObjectField(param.getThisObject(), "mContent") as? GridView ?: return
-mContent.numColumns = cols
+```java
+GridView mContent = (GridView) XposedHelpers.getObjectField(param.getThisObject(), "mContent");
+mContent.setNumColumns(cols);
 ```
 
 | Check | Result |
@@ -149,11 +169,14 @@ See `A13-Issue-4-scope.md`. Classification remains `OUT_OF_SCOPE_ROM_GENERATION`
 
 | Field | Value |
 |---|---|
-| `CLASSIFICATION` | `ALREADY_CORRECTED_BY_61C8868` |
+| `STATIC_CLASSIFICATION` | `CORRECTIVE_ALREADY_PRESENT_AND_STATICALLY_SUPPORTED` |
+| `RUNTIME_CLASSIFICATION` | `UNVERIFIED` |
 | `FIRST_STATIC_BREAKPOINT` | None identified for the exact artifact |
 | `NEXT_MINIMAL_PRODUCTION_CORRECTIVE` | None required for the exact launcher version; installer gate remains a non-causal robustness gap and is not changed in this batch |
 | `PRODUCTION_AUTHORIZATION_REQUEST` | `NO` |
 | `DEVICE_VALIDATION_REQUIRED` | `YES` before claiming runtime resolution on the user's device |
+
+`61c8868` is already present in the branch and the exact launcher ABI statically supports the corrective. This does not constitute runtime proof on the user's device.
 
 ## Verification
 

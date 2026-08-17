@@ -9,7 +9,7 @@
       "META-INF/CERT.RSA": "c9009d01ebf9f5d0302bc71b2fe9aa9a47a432bba17308a3111b75d7b2149025"
     },
     "signature_variant": "7b6d",
-    "artifact_source": "MemeOS Updates public mirror (APKMeme,com APK download link)",
+    "artifact_source": "MemeOS Updates public mirror (APKMemeOS download link)",
     "exact_version_match": true
   },
   "folder_class": {
@@ -21,6 +21,14 @@
     "mContent": "Lcom/miui/home/launcher/FolderGridView; (extends Landroid/widget/GridView;)",
     "mBackgroundView": "Landroid/view/ViewGroup;",
     "mFakeIcon": "Landroid/widget/ImageView;"
+  },
+  "feature_history": {
+    "feature_present_at_initial_repository_baseline": true,
+    "initial_repository_baseline_sha": "c696d33b071ff367e1ebb7c9b5777cd4a3b0a37c",
+    "real_feature_introduction_sha": "UNRESOLVED_PRE_REPOSITORY_HISTORY",
+    "c81ea42_classification": "JAVA_TO_KOTLIN_SPLIT_MIGRATION",
+    "51a0e78_classification": "NAMESPACE_RENAME",
+    "notes": "Initial baseline Launcher.java already contains folderwidth, MATCH_PARENT width, mBackgroundView padding reduction, mFakeIcon geometry and Folder onLayout hook. c81ea42 only split Launcher.java into Kotlin files."
   },
   "old_implementation": {
     "mContent_gridview_cast": "MATCH",
@@ -56,6 +64,17 @@
   "mFakeIcon": {
     "geometry": "EXPECTED for non-fold devices; BUG_CANDIDATE for fold-large-screen because module does not subtract mContent left/right padding when positioning mFakeIcon",
     "issue_1_relevance": "NO"
+  },
+  "stage_e2_gate": {
+    "static_abi": "VERIFIED",
+    "static_lifecycle_corrective": "SUPPORTED",
+    "production_corrective_required": false,
+    "device_verified": false,
+    "runtime_resolution_claim": false,
+    "issue_1_static_state": "61C8868_CORRECTIVE_SUPPORTED_ON_EXACT_LAUNCHER",
+    "static_classification": "CORRECTIVE_ALREADY_PRESENT_AND_STATICALLY_SUPPORTED",
+    "runtime_classification": "UNVERIFIED",
+    "installer_robustness_gap": "DEFERRED_NON_CAUSAL"
   },
   "installer": {
     "robustness_gap": "STATIC_VERIFIED",
