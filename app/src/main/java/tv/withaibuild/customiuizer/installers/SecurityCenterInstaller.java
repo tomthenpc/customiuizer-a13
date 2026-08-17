@@ -18,8 +18,10 @@ public final class SecurityCenterInstaller {
         if (MainModule.mPrefs.getBoolean("various_disableapp")) Various.AppsDisableHook(lpparam);
         if (MainModule.mPrefs.getBoolean("various_restrictapp")) Various.AppsRestrictHook(lpparam);
         if (MainModule.mPrefs.getBoolean("system_applock_scramblepin")) SystemAudioAndVisualAndMoreHooks.ScrambleAppLockPINHook(lpparam);
-        if (MainModule.mPrefs.getStringAsInt("various_appsort", 1) > 1) Various.AppsDefaultSortHook(lpparam);
-        if (MainModule.mPrefs.getStringAsInt("various_skip", 0) > 0) Various.AppsDefaultSortHook(lpparam);
+        if (MainModule.mPrefs.getStringAsInt("various_appsort", 1) > 1
+                || MainModule.mPrefs.getStringAsInt("various_skip", 0) > 0) {
+            Various.AppsDefaultSortHook(lpparam);
+        }
         if (MainModule.mPrefs.getBoolean("various_skip_interceptperm")) Various.InterceptPermHook(lpparam);
         if (MainModule.mPrefs.getBoolean("various_replace_defaultopen_with_openbydefault")) Various.OpenByDefaultHook(lpparam);
         if (MainModule.mPrefs.getBoolean("various_skip_securityscan")) Various.SkipSecurityScanHook(lpparam);

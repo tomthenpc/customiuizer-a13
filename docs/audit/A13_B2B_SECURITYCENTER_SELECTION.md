@@ -10,9 +10,9 @@
 | B1_FREEZE_SHA | `ba5c2c1f796bec3fb714fe16d83687d14c7dbd02` |
 | B2A_FREEZE_SHA | `34ec6cf7d7bea827eb2ede233dfab4aa30619a19` |
 | PINNED_A14_REFERENCE | `tomthenpc/customiuizer-a14` @ `d20d96b543a49a584970e312da7d704958a155aa` |
-| PRODUCTION_AUTHORIZATION | NO |
-| PRODUCTION_CHANGED | NO |
-| 性质 | 只读静态选型 / 文档证据 |
+| PRODUCTION_AUTHORIZATION | YES（仅 B2B-D1/D2/D3/D4） |
+| PRODUCTION_CHANGED | YES（仅 `SecurityCenterInstaller.java` + `Various.kt`） |
+| 性质 | 选型证据 + 授权 corrective 最小更新 |
 | 范围 | `SecurityCenterInstaller` 及其 16 条直接可达生产 hook；为证明路由 / install-once / fatal / catalog 交叉半边所必需的 `MainModule`、`ProcessScopes`、`FeatureCatalog` / `FeatureDispatcher`、`ModuleHelper`、`RuntimeFatality` |
 
 ```text
@@ -57,15 +57,18 @@ FeatureDispatcher.<clinit>
 - 已证明的缺口是局部 fail-open / 嵌套 hook 一次安装 / 静态 Fragment 持有，catalog 不能诚实表达 Activity 回调内的二次 `hookAllMethods`。
 - 在 `FeatureDispatcher` 具备 **按 ProcessScope 惰性注册** 之前，SecurityCenter 不应成为 catalog 宿主。该 dispatcher 改造本身也不是 B2B。
 
-本轮 **不实施** 任何 corrective。下列 CONFIRMED 项仅供后续独立授权：
+本轮 **已实施** 授权 corrective（catalog 仍为 0）：
 
-| ID | 摘要 | 动作 |
+| ID | 摘要 | 落地动作 |
 |---|---|---|
-| B2B-D1 | `AppsRestrictHook` / `InterceptPermHook` / `ShowTempInBatteryHook` 在裸 `onPackageReady` 上 throwing `findClass` | `FATAL_BOUNDARY_CORRECTIVE` |
-| B2B-D2 | `AppsDefaultSortHook` 在每次 `AppManagerMainActivity.onCreate` 再次 `hookAllMethods(onActivityCreated)`；installer 双 `if` 可对同一 hook 调用两次 | `LOCAL_CORRECTIVE_ONLY` |
-| B2B-D3 | `AppInfoHook` 在每次 `AMAppInfomationActivity.onCreate` 再次 `hookAllMethods(onPreferenceTreeClick)` | `LOCAL_CORRECTIVE_ONLY` |
+| B2B-D1 | 三条裸 `findClass` 可中止后续路径 | **COMPATIBILITY_FAIL_OPEN**（`findClassIfExists`）。`AppsRestrictHook` 缺 `AppManageUtils` 只跳过依赖块，networkassistant 子 hook 继续 |
+| B2B-D2 | 双 `if` + 每次 `onCreate` 再 hook `onActivityCreated` | installer 合并 predicate（**保留 `various_skip`**）；PACKAGE_READY 尝试解析 fragment field，否则 first-success 守卫 |
+| B2B-D3 | class-level `onPreferenceTreeClick` 捕获第一次 `Activity` | 独立 MethodHook 从当前 `param.thisObject` 取 Activity / PackageInfo。**class-level hook callback captures Activity = CONFIRMED lifecycle ownership defect**（已局部纠正） |
+| B2B-D4 | 直接类型 fatal 检查不传播 wrapped fatal | **CONFIRMED_DEFECT**；16 条路径直接可达 catch 改为 `RuntimeFatality.throwIfFatal` |
 
-`various_skip` 分支是 **MIGRATION_RESIDUE**（无 UI、hook 不读该 key），并入 B2B-D2，不是独立 feature。
+`mSupportFragment` 未改（仍为 LIKELY，非本轮授权）。`CATALOG_MIGRATION_CANDIDATES = 0`。
+
+`various_skip` 分支是 **MIGRATION_RESIDUE**（无 UI、hook 不读该 key），并入 B2B-D2 兼容 predicate，**未删除**。
 
 ---
 
@@ -471,14 +474,14 @@ SecurityCenter MAIN **当前不付** dispatcher 全量注册成本。
 
 ### CONFIRMED_DEFECT
 
-1. **B2B-D1** — 三条裸 `findClass` 在 `SecurityCenterInstaller.install` 调用栈上，可中止后续路径。
-2. **B2B-D2** — `AppsDefaultSortHook` 每次 `AppManagerMainActivity.onCreate` 再 hook `onActivityCreated`；installer 双 if 在残留 pref 下会双装 package-ready hook。
-3. **B2B-D3** — `AppInfoHook` 每次 `AMAppInfomationActivity.onCreate` 再 hook `onPreferenceTreeClick`。
+1. **B2B-D1** — 三条裸 `findClass` 可中止后续路径。**已落地为 COMPATIBILITY_FAIL_OPEN。**
+2. **B2B-D2** — `AppsDefaultSortHook` 嵌套重复安装 + installer 双 if。**已落地**（合并 predicate，保留 `various_skip`；`onActivityCreated` first-success / PACKAGE_READY 一次）。
+3. **B2B-D3** — class-level `onPreferenceTreeClick` MethodHook **捕获第一次 Activity** = **CONFIRMED lifecycle ownership defect**。**已落地**（独立 hook 从当前 fragment 取 Activity / PackageInfo；不再用 stale `mLastPackageInfo` 作为 click identity）。
+4. **B2B-D4** — 直接类型 OOM/ThreadDeath/VME 检查 **不传播 wrapped fatal** = **CONFIRMED_DEFECT**。**已落地**（`RuntimeFatality.throwIfFatal`）。
 
 ### LIKELY_DEFECT
 
-- `mSupportFragment` 强引用 Fragment 且无清除。
-- AppInfo 嵌套 hook 捕获已销毁 `Activity`。
+- `mSupportFragment` 强引用 Fragment 且无清除。**本轮未改**（`MSUPPORTFRAGMENT_CHANGED = NO`）。
 - 侧栏 `isHooked[0]` 跳过第二 `RegionSamplingHelper` 实例。
 
 ### COMPATIBILITY_GAP
@@ -496,7 +499,6 @@ SecurityCenter MAIN **当前不付** dispatcher 全量注册成本。
 
 ### ARCHITECTURE_DEBT
 
-- 若干 catch 未走 `RuntimeFatality` cause 链。
 - 侧栏未用 owned-receiver helper（且 helper 会改 Context 作用域，不能直接替换）。
 - `FeatureDispatcher` 全量 `registerAll` 阻止 SC 成为廉价 catalog 宿主。
 - `Various` 对象字段 `@SuppressLint("StaticFieldLeak")`。
@@ -518,25 +520,27 @@ SecurityCenter MAIN **当前不付** dispatcher 全量注册成本。
 
 ## 15. B2B_PRODUCTION_CANDIDATES
 
-本轮 **不实施**。仅 CONFIRMED 自动具备后续生产修正资格。
+`CATALOG_MIGRATION_CANDIDATES = 0`。
 
-### B2B-D1 — FATAL_BOUNDARY_CORRECTIVE
+D1–D4 已在授权范围内落地。`mSupportFragment` 仍不是生产候选。
 
-- 范围：`AppsRestrictHook`、`InterceptPermHook`、`ShowTempInBatteryHook` 的 throwing `findClass` 改为 `findClassIfExists` + 缺类 return/log。
-- 不得把 SecurityCenter 迁入 catalog。
-- 不得吞 OOM / ThreadDeath / VirtualMachineError。
-- 测试：缺类时 `SecurityCenterInstaller.install` 后续路径仍可执行（可用 installer 顺序断言或 hook 单元）。
+### B2B-D1 — COMPATIBILITY_FAIL_OPEN（已落地）
 
-### B2B-D2 — LOCAL_CORRECTIVE_ONLY
+- `findClassIfExists`；`AppsRestrictHook` 缺 `AppManageUtils` **不** whole-function return。
 
-- 合并/删除 `various_skip` 分支，保证 `AppsDefaultSortHook` 每个 `onPackageReady` 最多一次。
-- `onActivityCreated` 加进程局部一次安装守卫。
-- 不是 catalog。
+### B2B-D2 — LOCAL_CORRECTIVE_ONLY（已落地）
 
-### B2B-D3 — LOCAL_CORRECTIVE_ONLY
+- 合并 predicate，**保留 `various_skip`**。
+- PACKAGE_READY 解析 fragment field；否则 first-success，未找到不得永久成功。
 
-- `onPreferenceTreeClick` 一次安装（按 fragment class 或 AtomicBoolean）。
-- 可选后续：`mSupportFragment` 弱引用 + destroy 清除。弱引用本身是 LIKELY，**不要**在未证明的情况下塞进本 candidate 的最小范围。
+### B2B-D3 — LOCAL_CORRECTIVE_ONLY（已落地）
+
+- class-level click hook 一次；callback 不 capture Activity。
+- 未改 `mSupportFragment`。
+
+### B2B-D4 — FATAL_BOUNDARY_CORRECTIVE（已落地）
+
+- 仅 16 条路径直接可达 catch 改为 `RuntimeFatality.throwIfFatal`。
 
 ### 非候选
 

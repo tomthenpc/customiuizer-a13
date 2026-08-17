@@ -57,6 +57,29 @@ object FakeXposedInterface {
     }
 
     /**
+     * Invoke [HookerClassHelper.MethodHook.intercept] with a synthetic chain so
+     * tests can exercise before-callbacks, including argument rewrite and skip.
+     */
+    @JvmStatic
+    fun executeBefore(recorded: RecordedHook, thisObject: Any?, vararg args: Any?): Any? {
+        val executable = recorded.executable
+        val argList = args.toList()
+        val chain = Proxy.newProxyInstance(
+            executable.declaringClass.classLoader ?: FakeXposedInterface::class.java.classLoader!!,
+            arrayOf(XposedInterface.Chain::class.java)
+        ) { _, method, _ ->
+            when (method.name) {
+                "getExecutable" -> executable
+                "getThisObject" -> thisObject
+                "getArgs" -> argList
+                "proceed" -> null
+                else -> null
+            }
+        } as XposedInterface.Chain
+        return recorded.hook.intercept(chain)
+    }
+
+    /**
      * Manually invoke the after-callback of a recorded hook with a fake Xposed
      * [XposedInterface.Chain]. This lets unit tests exercise the `isHooked`
      * gating in SystemUiInstaller without a real runtime.
