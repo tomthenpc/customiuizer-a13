@@ -355,7 +355,52 @@ if (!sProcessedPackages.add(currentPkg)) {
 - `param.thisObject.getClass().getClassLoader()`：默认 `Application` 与自定义 `Application` 的 defining ClassLoader 不一致，不能作为 package identity。
 - `Collections.newSetFromMap(WeakHashMap<Application, Boolean>)`：比 package name 更重，且 `Application` 实例在单包单进程内唯一，没有额外收益。
 
-## 14. 结论
+## 14. 实现记录
+
+A3 corrective gate 授权后，已在以下两个 production 文件中加入 callback-side package identity filter：
+
+- `app/src/main/java/tv/withaibuild/customiuizer/installers/LauncherInstaller.java`
+- `app/src/main/java/tv/withaibuild/customiuizer/installers/GenericAppInstaller.java`
+
+实现要点：
+
+- 在每个 `Application.attach` after callback 的最前部加入：
+
+  ```java
+  if (!isTargetPackage(param.getThisObject(), lpparam)) return;
+  ```
+
+- `isTargetPackage(Object thisObject, PackageReadyParam lpparam)` 是纯辅助函数：
+
+  - 检查 `thisObject` 是 `Application` 实例。
+  - 比较 `((Application) thisObject).getPackageName()` 与 `lpparam.getPackageName()`。
+  - 不匹配时返回 `false`。
+
+- 没有增加：
+  - `Set<String>`
+  - `ConcurrentHashMap.newKeySet()`
+  - `AtomicBoolean`
+  - `Application` 实例集合
+  - `ClassLoader` 集合
+  - 新的 lifecycle registry
+- 没有使用：
+  - `param.thisObject.getClass().getClassLoader()`
+  - `Application.getClassLoader()`
+
+回归覆盖：
+
+- `LauncherInstallerPackageFilterTest`
+- `GenericAppInstallerPackageFilterTest`
+- `ApplicationAttachPackageFilterSourceTest`
+
+这三项验证：
+
+1. 匹配包名时 `isTargetPackage` 返回 `true`。
+2. 非目标包名（foreign package）时返回 `false`。
+3. 默认 `android.app.Application` 场景通过 `getPackageName()` 工作，不依赖 class defining ClassLoader。
+4. 两个 installer 的 `after` callback 源码中 gate 位于所有 hook installation 之前。
+
+## 15. 结论
 
 ```text
 A3_STATIC_RESULT = CONFIRMED_DUPLICATE_INSTALL_RISK
@@ -377,7 +422,7 @@ A3_PRODUCTION_CHANGE_REQUIRED = YES (deferred to ChatGPT A3 corrective gate)
 
 本轮仅修正文档，不实施生产改动。
 
-## 15. 验证
+## 16. 验证
 
 本次只改动 `docs/audit/A13_A3_APPLICATION_ATTACH_INSTALL_ONCE_PROOF.md`，未修改生产或测试代码。
 

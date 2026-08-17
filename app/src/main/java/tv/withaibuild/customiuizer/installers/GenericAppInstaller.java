@@ -41,6 +41,7 @@ public final class GenericAppInstaller {
             ModuleHelper.findAndHookMethod(Application.class, "attach", Context.class, new MethodHook() {
                 @Override
                 protected void after(AfterHookCallback param) throws Throwable {
+                    if (!isTargetPackage(param.getThisObject(), lpparam)) return;
                     if (isStatusBarColor) {
                         SystemStatusBarAndClockHooks.StatusBarBackgroundCompatHook(lpparam);
                         SystemStatusBarAndClockHooks.StatusBarBackgroundHook(lpparam);
@@ -50,5 +51,15 @@ public final class GenericAppInstaller {
                 }
             });
         }
+    }
+
+    /**
+     * Verifies the hooked Application instance belongs to the package this installer was
+     * registered for. This prevents a foreign package's Application.attach in the same
+     * process from re-running legacy hook installation with a stale lpparam.
+     */
+    static boolean isTargetPackage(Object thisObject, PackageReadyParam lpparam) {
+        if (!(thisObject instanceof Application)) return false;
+        return lpparam.getPackageName().equals(((Application) thisObject).getPackageName());
     }
 }
