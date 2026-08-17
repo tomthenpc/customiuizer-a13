@@ -79,6 +79,27 @@ def _check_disk_space(path: Path, needed_bytes: int) -> None:
         )
 
 
+def _cleanup_tree(path: Path, label: str = "temporary workdir") -> None:
+    if not path.exists():
+        return
+    try:
+        if path.is_dir():
+            shutil.rmtree(path)
+        else:
+            path.unlink()
+    except OSError as e:
+        size = (
+            sum(f.stat().st_size for f in path.rglob("*") if f.is_file())
+            if path.is_dir()
+            else path.stat().st_size
+        )
+        print(
+            f"WARNING: failed to clean up {label}: {path} ({e}); "
+            f"leftover size: {size} bytes",
+            file=sys.stderr,
+        )
+
+
 def extract_file_from_partition(
     partition_image: Path, internal_path: str, out_path: Path
 ) -> dict[str, Any]:
@@ -136,7 +157,7 @@ def extract_file_from_super(
         return file_result
     finally:
         if not keep_workdir:
-            shutil.rmtree(work_dir, ignore_errors=True)
+            _cleanup_tree(work_dir, label="temporary workdir")
 
 
 def main(argv: list[str] | None = None) -> int:

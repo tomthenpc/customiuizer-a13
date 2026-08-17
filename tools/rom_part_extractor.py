@@ -397,6 +397,27 @@ def _copy_from_sparse(sparse_f, out, start_byte: int, length: int) -> None:
         chunks_read += 1
 
 
+def _cleanup_tree(path: Path, label: str = "temporary workdir") -> None:
+    if not path.exists():
+        return
+    try:
+        if path.is_dir():
+            shutil.rmtree(path)
+        else:
+            path.unlink()
+    except OSError as e:
+        size = (
+            sum(f.stat().st_size for f in path.rglob("*") if f.is_file())
+            if path.is_dir()
+            else path.stat().st_size
+        )
+        print(
+            f"WARNING: failed to clean up {label}: {path} ({e}); "
+            f"leftover size: {size} bytes",
+            file=sys.stderr,
+        )
+
+
 def list_partitions(super_path: Path, liblp: Any) -> list[str]:
     metadata = read_metadata(super_path, liblp)
     return [
@@ -447,7 +468,7 @@ def main(argv: list[str] | None = None) -> int:
                 print(result)
         finally:
             if not args.keep_workdir and not args.out_dir:
-                shutil.rmtree(work_dir, ignore_errors=True)
+                _cleanup_tree(work_dir, label="temporary workdir")
         return 0
 
     if not args.partition:
@@ -472,12 +493,10 @@ def main(argv: list[str] | None = None) -> int:
         print(result)
     finally:
         if not args.keep_workdir and not args.out:
-            try:
-                out.unlink(missing_ok=True)
-                if work_dir:
-                    work_dir.rmdir()
-            except Exception:
-                pass
+            if out.exists():
+                _cleanup_tree(out, label="temporary partition")
+            if work_dir is not None and work_dir.exists():
+                _cleanup_tree(work_dir, label="temporary workdir")
     return 0
 
 
