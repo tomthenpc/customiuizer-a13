@@ -1,0 +1,80 @@
+{
+  "schemaVersion": 1,
+  "issue": "#3 Floating Notification Menu missing",
+  "targets": [
+    {
+      "romId": "MIUI14_CN_XAGA",
+      "codename": "xaga",
+      "android": "13",
+      "miuiHyperos": "MIUI 14 14.0.7.0 China",
+      "superImageSha256": "a71f7265622a68831fe1d69d354cd92048102dfda345948eb7f207a3a867fffa",
+      "systemASizeBytes": 869396480,
+      "systemASha256": "ada302aa27304f2cfdeb68a84db0d572909cb8c3f0d91b7aad180bbcff2d9799",
+      "class": "com.android.systemui.statusbar.notification.row.MiuiNotificationMenuRow",
+      "member": "createMenuViews",
+      "descriptor": "(ZZ)V",
+      "process": "com.android.systemui",
+      "resourceKeys": [
+        "system_notifrowmenu_openinfw",
+        "system_notifrowmenu_appinfo",
+        "system_notifrowmenu_forceclose"
+      ],
+      "status": "UNVERIFIED"
+    },
+    {
+      "romId": "MIUI14_IN_XAGA",
+      "codename": "xaga",
+      "android": "13",
+      "miuiHyperos": "MIUI 14 14.0.10.0 India",
+      "superImageSha256": "8ce7caa680e11c156529b5b9b7fe6d68ef03425041c8ce3f1f2bf1ce53d2c4e0",
+      "systemASizeBytes": 926306304,
+      "systemASha256": "76a782cde46f1ca22409e242b1792ffb75f0aa6e3c85ec210763f9b040d775e9",
+      "class": "com.android.systemui.statusbar.notification.row.MiuiNotificationMenuRow",
+      "member": "createMenuViews",
+      "descriptor": "(ZZ)V",
+      "process": "com.android.systemui",
+      "resourceKeys": [
+        "system_notifrowmenu_openinfw",
+        "system_notifrowmenu_appinfo",
+        "system_notifrowmenu_forceclose"
+      ],
+      "status": "UNVERIFIED"
+    },
+    {
+      "romId": "HYPEROS1_ID_VEUX",
+      "codename": "veux",
+      "android": "13",
+      "miuiHyperos": "HyperOS 1.0.10.0 Indonesia",
+      "superImageSha256": "3d3d1c427fdab3c64503bd8f2c947f46748887ba1c52df7f1b4d6cc6bcade175",
+      "systemASizeBytes": 1438543872,
+      "systemASha256": "f724b83527dc71e35fd29635ad5fafacfd8cd5566366cccedcd915bd471ae8f8",
+      "class": "com.android.systemui.statusbar.notification.row.MiuiNotificationMenuRow",
+      "member": "createMenuViews",
+      "descriptor": "(ZZ)V",
+      "process": "com.android.systemui",
+      "resourceKeys": [
+        "system_notifrowmenu_openinfw",
+        "system_notifrowmenu_appinfo",
+        "system_notifrowmenu_forceclose"
+      ],
+      "status": "UNVERIFIED"
+    }
+  ],
+  "openinfwTarget": {
+    "class": "com.android.systemui.statusbar.phone.MiuiStatusBarNotificationActivityStarter",
+    "member": "startNotificationIntent",
+    "secondaryClass": "com.android.systemui.statusbar.notification.policy.AppMiniWindowManager",
+    "secondaryMember": "launchMiniWindowActivity",
+    "requiredReflection": [
+      "android.service.notification.StatusBarNotification#isSubstituteNotification()",
+      "android.service.notification.StatusBarNotification#mPkgName"
+    ]
+  },
+  "evidenceLevel": "UNVERIFIED",
+  "notes": [
+    "super.img sparse metadata and logical partition tables are STATIC_VERIFIED.",
+    "system_a / product_a logical partitions were extracted but their filesystem (likely erofs or compressed) could not be parsed with available tooling.",
+    "Target class/member strings were not found in raw partition bytes, consistent with compressed storage.",
+    "No device-side runtime evidence (ADB/DEVICE) was collected; this batch is static only."
+  ]
+}
