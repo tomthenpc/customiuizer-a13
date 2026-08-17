@@ -11,6 +11,7 @@
 | Gate field | Value |
 |---|---|
 | `STAGE_F` | `PASS` for static evidence closure |
+| `STAGE_F1_R1` | `HOLD` — corrected polarity and selected target pending device validation |
 | `PRODUCTION_AUTHORIZATION` | `NO` |
 | `PRODUCTION_CHANGED` | `false` |
 | `DEVICE_VERIFIED` | `NO` |
@@ -18,6 +19,8 @@
 | `ISSUE_2_STATIC_STATE` | `UPSTREAM_DEFAULT_HOME_GATE_BLOCKS_FSG_WHEN_THIRD_PARTY_LAUNCHER` |
 | `STATIC_CLASSIFICATION` | `UPSTREAM_LIFECYCLE_LIMITATION` |
 | `RUNTIME_CLASSIFICATION` | `UNVERIFIED` |
+| `DESIGN_B` | `REJECTED_UNSAFE_UNLESS_PROVEN` |
+| `DESIGN_E` | `SELECTED (static)` |
 
 本批不做 production 修改；任何 runtime 结论均需实机验证。
 
@@ -356,8 +359,12 @@ public static boolean usingFsGesture() {
 
 - **本批不做 production 修改**。
 - **Issue #2 的静态分类**：`UPSTREAM_LIFECYCLE_LIMITATION`（ROM 原生 `mIsUseMiuiHomeAsDefaultHome` gate 阻止 stub 创建）。
-- **Device 验证**：在实机上验证 `controls_fsg_horiz` 在第三方默认桌面 vs 小米默认桌面下的行为差异前，不声称已修复。
-- **下阶段授权门**：若用户/PM 批准，可设计最小 production 变更（override default-home 判定或 stub 创建分支），并补充对应的默认桌面切换测试与 `com.mi.android.globallauncher` 路由测试。
+- **F1-R1 纠正**：
+  - `REAL_FORCE_FSG_NAV_BAR = false` 表示设备处于 3-button / navigation-bar 模式，是 `controls_fsg_horiz` 的目标混合状态；`REAL_FORCE_FSG_NAV_BAR = true` 表示原生全 FSG，不应覆盖。
+  - 原 F1 推荐的 Design B（覆盖 `mIsUseMiuiHomeAsDefaultHome`）被否决：它会改写 `use_gesture_version_three`，影响默认桌面相关状态，且比单纯的侧滑/水平返回恢复更宽。
+  - 选定目标为 **Design E**（Back-stub-only recovery）：在 `addFsgGestureWindow()` 和 `updateFsgWindowState()` 的 after 阶段，当混合条件满足且 `mIsUseMiuiHomeAsDefaultHome == false` 时，直接调用 `addBackStubWindow()` 恢复侧滑返回条；不修改默认桌面字段、不修改 `use_gesture_version_three`、不创建 nav stub。
+- **Device 验证**：在实机上验证 Design E 在第三方默认桌面 vs 小米默认桌面下的行为前，不声称已修复。
+- **下阶段授权门**：若用户/PM 批准，可实施 Design E，并补充默认桌面切换、重复 `updateFsgWindowState`、无重复 WindowManager view 的测试。
 
 ## 11. 证据文件清单
 
@@ -443,33 +450,46 @@ MiuiSettingsUtils.putBooleanToGlobal(
 
 `addBackStubWindow()`、`showBackStubWindow()`、`clearBackStubWindow()`、`removeNavStubView()`、`createAndAddNavStubView()` 自身不检查默认桌面，只执行窗口操作（通常提交到 `BACKGROUND_EXECUTOR` 或 `GESTURE_EXECUTOR`）。是否创建/移除由 `addFsgGestureWindow()` 和 `updateFsgWindowState()` 中的 `mIsUseMiuiHomeAsDefaultHome` 分支决定。
 
-### A.6 候选设计排序
+### A.6 候选设计排序（F1-R1 修正）
 
-| ID | 设计 | 风险 | 推荐 |
-|---|---|---|---|
-| A | Hook `Utilities.getDefaultHomePackageName` 在 `BaseRecentsImpl` 上下文返回 `com.miui.home` | 高：影响 settings UI / 兼容 / Poco / 老年模式 | 否 |
-| B | Hook `BaseRecentsImpl.addFsgGestureWindow` + `setIsUseMiuiHomeAsDefaultHome` 在 `controls_fsg_horiz` 且真实 FSG 为 true 时强制 `true` | 中：局部，不影响其他 `Utilities` 调用者，保留 `REAL_FORCE_FSG_NAV_BAR` fail-closed | **是** |
-| C | 直接 Hook `addFsgGestureWindow` / `updateFsgWindowState` 分支逻辑，跳过 `mIsUseMiuiHomeAsDefaultHome` 检查 | 中高：`use_gesture_version_three` 仍可能为 false，字段状态仍不一致 | 否 |
-| D | Hook `OverviewComponentObserver.updateOverviewTargets` 强制 `mIsHomeAndOverviewSame=true` | 高：改变 overview/home intent 构造 | 否 |
+|| ID | 设计 | 风险 | 推荐 |
+|---|---|---|---|---|
+|| A | Hook Utilities.getDefaultHomePackageName 在 BaseRecentsImpl 上下文返回 com.miui.home | 高：影响 settings UI / 兼容 / Poco / 老年模式 | 否 |
+|| B | Hook BaseRecentsImpl.addFsgGestureWindow + setIsUseMiuiHomeAsDefaultHome 强制 	rue | 高：改写 use_gesture_version_three，影响默认桌面相关状态与折叠屏 onExpand，比需求更宽 | **已否决** |
+|| C | 直接 Hook ddFsgGestureWindow / updateFsgWindowState 分支逻辑，跳过 mIsUseMiuiHomeAsDefaultHome 检查 | 中高：use_gesture_version_three 仍可能为 false，字段状态仍不一致 | 否 |
+|| D | Hook OverviewComponentObserver.updateOverviewTargets 强制 mIsHomeAndOverviewSame=true | 高：改变 overview/home intent 构造 | 否 |
+|| E | Back-stub-only recovery：在 ddFsgGestureWindow() / updateFsgWindowState() 后调用 ddBackStubWindow() | 中：不修改默认桌面状态，不修改 use_gesture_version_three，只恢复侧滑返回条 | **是** |
 
-**推荐设计 B** 的核心思路：
-1. `addFsgGestureWindow` after-hook 在原有逻辑完成后，若 `controls_fsg_horiz` 与真实 `force_fsg_nav_bar` 均为 true，则设置 `mIsUseMiuiHomeAsDefaultHome = true`，重新调用 `updateUseLauncherRecentsAndFsGesture()` 与 `updateFsgWindowState()`。
-2. `setIsUseMiuiHomeAsDefaultHome` before-hook 在参数为 `false` 且满足同样条件时，覆盖为 `true`，从而阻止 `BaseRecentsImpl$7` 或 `OverviewComponentObserver` 把字段改回 `false` 并移除 stub。
+**F1-R1 状态纠正**：
+- REAL_FORCE_FSG_NAV_BAR == false 才是混合模式目标（保留 3-button 导航栏 + 侧滑返回）。
+- REAL_FORCE_FSG_NAV_BAR == true 是原生全 FSG，不得引入第三方桌面纠正。
 
-### A.7 未来最小测试集合
+**设计 E 核心思路**：
+1. **不覆盖** mIsUseMiuiHomeAsDefaultHome，不动 Utilities.getDefaultHomePackageName、OverviewComponentObserver。
+2. **不动** use_gesture_version_three。
+3. 在 BaseRecentsImpl.addFsgGestureWindow() after 阶段与 updateFsgWindowState() after 阶段，当满足 REAL_FORCE_FSG_NAV_BAR == false、mHasNavigationBar == true、非分身、非折叠、第三方默认桌面时，调用 ddBackStubWindow()。
+4. createAndAddNavStubView() before-hook 仍会按现有逻辑在 REAL=false 时跳过 nav stub 创建；updateFsgWindowState() after-hook 仍移除 nav stub。
+5. 由于 ddBackStubWindow() 内部检查 mGestureStubLeft == null 且 showGestureStub() 只做可见性/状态更新，重复调用不会重复 WindowManager.addView。
 
-- F1-T1：小米默认桌面 + FSG 开启，stub 正常创建，`use_gesture_version_three` 为 true。
-- F1-T2：第三方默认桌面 + FSG 开启，设计 B 强制 `mIsUseMiuiHomeAsDefaultHome` 为 true，stub 创建。
-- F1-T3：小米桌面与第三方桌面来回切换，`setIsUseMiuiHomeAsDefaultHome(false)` 被覆盖为 `true`。
-- F1-T4：真实 `force_fsg_nav_bar == false`（三键导航）时不 override，stub 被移除/跳过。
-- F1-T5：`controls_fsg_horiz_apps` set 命中/未命中时 `GestureStubView.onTouchEvent` 返回值。
-- F1-T6：无默认桌面/空包时 hook 不 NPE 且按 `controls_fsg_horiz` 条件行为。
-- F1-T7：`addFsgGestureWindow` / `updateFsgWindowState` / `setIsUseMiuiHomeAsDefaultHome` 回调无反射扫描、无重复栈遍历。
-- F1-T8：override `mIsUseMiuiHomeAsDefaultHome` 为 true 时，确认 `use_gesture_version_three` 写入 true。
+**必须注意的生命周期缺口**：
+- ddFsgGestureWindow() 本身不调用 updateFsgWindowState()，因此仅靠 updateFsgWindowState() after-hook 无法在开屏时恢复 back stub；必须同时 after ddFsgGestureWindow()。
+- 默认桌面从第三方切换回小米桌面后，原生 updateFsgWindowState() 会走创建分支并调用 ddBackStubWindow()，Module 不应重复调用；候选条件使用 mIsUseMiuiHomeAsDefaultHome == false 可自然避免。
 
-### A.8 F1 结论
+### A.7 未来最小测试集合（F1-R1 修正）
 
-- `STAGE_F1` 静态分析完成；生产变更未授权，未做任何 production 修改。
-- Issue #2 在设备层面仍为 `UNVERIFIED`。
-- 唯一推荐候选为设计 B；若用户/PM 批准，需先补充测试并在实机验证，方可进入 production 实现。
-- 详细报告见 `A13_STAGE_F1_FSG_TARGET_SELECTION_REPORT.txt`。
+- F1-R1-T1：小米默认桌面 + orce_fsg_nav_bar=true + FSG 开启，nav stub 与 back stub 均创建。
+- F1-R1-T2：小米默认桌面 + orce_fsg_nav_bar=false + FSG 开启，nav stub 被抑制，back stub 创建。
+- F1-R1-T3：第三方默认桌面 + orce_fsg_nav_bar=false + FSG 开启，nav stub 不存在，back stub 被设计 E 恢复。
+- F1-R1-T4：第三方默认桌面 + orce_fsg_nav_bar=true + FSG 开启，设计 E 不介入，保持原生全 FSG 行为。
+- F1-R1-T5：小米桌面与第三方桌面来回切换，无重复 back stub，无 WindowManager 重复 addView。
+- F1-R1-T6：重复 updateFsgWindowState() 调用，back stub add/clear 在同一线程执行器有序排队，无竞态。
+- F1-R1-T7：controls_fsg_horiz_apps set 命中/未命中时 GestureStubView.onTouchEvent 返回值。
+- F1-R1-T8：设计 E 激活时，mIsUseMiuiHomeAsDefaultHome 不被覆盖，use_gesture_version_three 不被强制改为 true。
+
+### A.8 F1 / F1-R1 结论
+
+- STAGE_F1 静态分析完成；STAGE_F1_R1 完成极性与目标设计修正，但状态仍为 HOLD。
+- 生产变更未授权，未做任何 production 修改。
+- Issue #2 在设备层面仍为 UNVERIFIED。
+- Design B 因副作用过宽被否决；**Design E（Back-stub-only recovery）** 被选为静态候选目标。
+- 详细报告见 A13_STAGE_F1_FSG_TARGET_SELECTION_REPORT.txt（已修正）与 A13_STAGE_F1_R1_FSG_TARGET_CORRECTIVE_REPORT.txt。
