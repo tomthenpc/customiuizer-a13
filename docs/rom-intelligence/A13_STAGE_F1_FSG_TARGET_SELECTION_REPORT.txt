@@ -3,7 +3,8 @@ A13 Stage F1 — Issue #2 FSG / Third-Party Launcher Target Selection Report
 ==========================================================================
 
 Base SHA: cc200778ec90285a638015fb037b3a919471c0ad
-Final SHA: to be recorded at commit time
+Final SHA: 4c6d2b10d6037f8d9741927d1ab76731dc8171ba
+Merge Base: cc200778ec90285a638015fb037b3a919471c0ad
 Branch:   devin/a13-rom-intelligence-compat-r13.11.1
 
 Status: HOLD
@@ -316,6 +317,7 @@ All verification was re-run after document/report modifications.
 16. Final SHAs
 --------------
 Base SHA:  cc200778ec90285a638015fb037b3a919471c0ad
-Final SHA: to be recorded at commit time
+Final SHA: 4c6d2b10d6037f8d9741927d1ab76731dc8171ba
+Merge Base: cc200778ec90285a638015fb037b3a919471c0ad
 
 End of report.

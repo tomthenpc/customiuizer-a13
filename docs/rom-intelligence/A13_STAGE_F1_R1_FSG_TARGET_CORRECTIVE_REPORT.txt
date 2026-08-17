@@ -12,7 +12,8 @@ GIT
 
 Branch:   devin/a13-rom-intelligence-compat-r13.11.1
 Base SHA: cc200778ec90285a638015fb037b3a919471c0ad
-Final SHA: to be recorded at commit time
+Final SHA: 4c6d2b10d6037f8d9741927d1ab76731dc8171ba
+Merge Base: cc200778ec90285a638015fb037b3a919471c0ad
 
 ================================
 EVIDENCE SCOPE
@@ -381,3 +382,18 @@ HOLD reason: production code not authorized; selected target (Design E)
 still requires real-device validation before implementation.
 
 No production code has been modified in this batch.
+
+================================
+ISSUE #2 DURABLE STATE (recorded in F0)
+================================
+
+ISSUE_2_TARGET_SELECTION    = PASS
+SELECTED_STATIC_CANDIDATE   = DESIGN_E_BACK_STUB_ONLY_RECOVERY
+PRODUCTION_IMPLEMENTATION   = DEFERRED
+DEVICE_ROOT_CAUSE           = UNVERIFIED
+DEVICE_VALIDATION           = PENDING
+ACTUAL_BASE_SHA             = cc200778ec90285a638015fb037b3a919471c0ad
+ACTUAL_FINAL_SHA            = 4c6d2b10d6037f8d9741927d1ab76731dc8171ba
+ACTUAL_MERGE_BASE           = cc200778ec90285a638015fb037b3a919471c0ad
+
+No further Issue #2 stages are started.

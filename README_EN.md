@@ -41,7 +41,7 @@ Known deployed baseline: Redmi Note 11T Pro (`xaga`), MIUI `V14.0.10.0.TLOINXM`.
 - Ordinary ROM, reflection, and callback failures remain isolated, while `OutOfMemoryError`, `ThreadDeath`, and `VirtualMachineError` are not disguised as compatibility failures;
 - DeviceInfo and Launcher hot paths reduce repeated Binder calls, reflection, I/O, configuration reads, and temporary objects.
 
-See [CHANGELOG_EN.md](CHANGELOG_EN.md) for release changes and [DOCUMENTATION.md](DOCUMENTATION.md) for architecture, compatibility, and verification documents.
+See [CHANGELOG_EN.md](CHANGELOG_EN.md) for release changes and [AGENTS.md](AGENTS.md), [ARCHITECTURE.md](ARCHITECTURE.md), [COMPATIBILITY.md](COMPATIBILITY.md), and [docs/A13_PARITY.md](docs/A13_PARITY.md) for engineering rules, architecture, and compatibility.
 
 `r13.11.1` further hardens asynchronous lifecycle handling in settings and app selectors, and optimizes the status-bar clock's default-format refresh path, while retaining the process-routed installer architecture, ROM capability detection, exception boundaries, and lifecycle management introduced in previous releases.
 

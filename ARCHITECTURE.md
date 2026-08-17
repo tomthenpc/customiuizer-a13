@@ -1,74 +1,68 @@
 # A13 架构
 
-## 控制面
+当前 production 运行时，不是阶段历史。
+
+## 调用链
 
 ```text
-User goal
-  ↓
-ChatGPT task contract
-  ↓
-Devin implementation + build
-  ↓
-A13 verification gates
-  ↓
-ChatGPT final diff review
-  ↓
-same-task fixes
+LSPosed / libxposed
+  → MainModule
+  → PreferenceBootstrap
+  → ProcessRouter / ProcessScope
+  → Installer
+  → A13 Contract / Resolver
+  → Hook / Controller
+  → owned runtime state
 ```
 
-## 运行时边界
+`MainModule` 在 `onPackageReady` / `onSystemServerStarting` 中按包名和进程名分发。
+`MainModule.isSupportedAndroidVersion()` 限制为 Android 13（`Build.VERSION_CODES.TIRAMISU`）。
 
-```text
-Preference / FeatureDefinition
-        ↓
-Process Dispatcher / Installer
-        ↓
-A13 Contract / Resolver
-        ↓
-Hook / Controller
-        ↓
-MIUI 14 or HyperOS 1 / Android 13 target
-```
+`PreferenceBootstrap` 准备进程内偏好快照。快照未就绪时不安装业务 Hook。
 
-兼容判断集中在 Contract、Resolver、Installer 或边界 Adapter。业务 Hook 回调不应
-散布 ROM 分支。
+`ProcessRouter` 把包名和进程名解析成 `ProcessScope`。
 
-## 冷路径
+各 `*Installer` 只安装本进程相关 Feature：
+- `InputMethodInstaller`
+- `SettingsInstaller`
+- `SecurityCenterInstaller`
+- `PowerKeeperInstaller`
+- `WallpaperInstaller`
+- `MediaInstaller`
+- `PhoneInstaller`
+- `PackageInstallerRouter`
+- `GenericAppInstaller`
+- `AndroidPackageInstaller`
+- `SystemUiInstaller`
+- `LauncherInstaller`
+- `SystemServerInstaller`
 
-- 进程和 ROM 识别；
-- ClassLoader 目标解析；
-- 反射成员查找；
-- DexKit；
-- preference 初始化；
-- 有界缓存准备；
-- 日志诊断。
+Installer 检查对应 preference 标志后才安装；关闭功能不创建业务 Hook。
+Hook 安装后按进程缓存；同一进程不重复安装。
 
-## 热路径
+## 平台
 
-- 只读已准备状态；
-- 常数时间判断；
-- 必要参数或 View 修改；
-- 无磁盘 I/O；
-- 无同步 Binder；
-- 无重复反射；
-- 无临时集合链；
-- 无高频格式化和日志洪泛。
+- MIUI 14 / Android 13 / SDK 33：主支持
+- HyperOS 1 / Android 13：实验兼容，能力探测 + 安全跳过
+- `minSdk=33`、`targetSdk=33`
+- libxposed API 101 为最低运行基线；API 102 类型不得进入 API 101 必经生产路径
+- `module.prop`：`minApiVersion=101`、`targetApiVersion=102`
 
-## A13/A14 关系
+## 生命周期与失败
 
-A13 与 A14 共享：
+- 关闭功能不创建业务 Hook、Receiver、Observer 或任务。
+- 注册绑定进程级或实例级所有者；stale / replace / release 路径完整。
+- 不静态强持有 Activity、View 或短生命周期 controller。
+- 普通异常局部隔离；`OutOfMemoryError`、`ThreadDeath`、`VirtualMachineError` 继续抛出。
 
-- 产品意图；
-- 用户可见语义；
-- 缺陷描述；
-- 验收标准；
-- 可复用的纯逻辑测试思路。
+## 热路径与缓存
 
-A13 与 A14 不共享：
+热路径禁止磁盘 I/O、DexKit、重复反射、同步 Binder、Regex 重建、临时集合链、无界缓存和日志洪泛。
+热路径只读预计算、不可变、原子或有界状态。
+反射缓存按 ClassLoader 隔离且有界。
 
-- ROM 目标合同；
-- Android API 边界；
-- ClassLoader 假设；
-- 生产分支；
-- APK、签名和版本；
-- “已实机验证”结论。
+## A13 / A14 关系
+
+A13 与 A14 共享产品意图、用户可见语义、缺陷描述、验收标准和可复用的纯逻辑测试思路。
+
+A13 与 A14 不共享 ROM 目标合同、Android API 边界、ClassLoader 假设、生产分支、APK、签名、版本，以及“已实机验证”结论。

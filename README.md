@@ -41,7 +41,7 @@ CustoMIUIzer A13 是面向 **MIUI 14 / Android 13** 的系统界面与交互定�
 - 普通 ROM、反射和回调异常保持隔离，`OutOfMemoryError`、`ThreadDeath` 与 `VirtualMachineError` 不会被伪装成普通兼容失败；
 - DeviceInfo 与 Launcher 高频路径减少重复 Binder、反射、I/O、配置读取和临时对象。
 
-本版本变化见 [CHANGELOG.md](CHANGELOG.md)。架构、兼容与验证文档见 [DOCUMENTATION.md](DOCUMENTATION.md)。
+本版本变化见 [CHANGELOG.md](CHANGELOG.md)。工程规则、架构与兼容文档见 [AGENTS.md](AGENTS.md)、[ARCHITECTURE.md](ARCHITECTURE.md)、[COMPATIBILITY.md](COMPATIBILITY.md) 与 [docs/A13_PARITY.md](docs/A13_PARITY.md)。
 
 `r13.11.1` 进一步加固设置页与应用选择器的异步生命周期，并优化状态栏时钟默认格式的高频刷新路径；同时延续按进程安装、ROM 兼容探测、异常边界和资源生命周期治理。
 
