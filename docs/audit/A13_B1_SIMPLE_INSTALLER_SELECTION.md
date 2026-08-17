@@ -252,13 +252,13 @@ RECOMMENDATION 仅四值：`KEEP_LEGACY_SAFE` / `CATALOG_MIGRATION_VALUE` / `COR
 | CURRENT_INSTALL_ONCE | `isFirstPackage()` |
 | LIFECYCLE_OWNER | 模块不拥有 Handler；只 `removeCallbacks` + `postDelayed` ROM runnable |
 | COMPATIBILITY_MODE | ModuleHelper fail-open |
-| FATAL_BOUNDARY | **缺口**：回调内 `catch (t: Throwable) { if (t is OutOfMemoryError) throw t; false }`（`SystemAudioAndVisualAndMoreHooks.kt:666-670`）吞掉 `ThreadDeath` / `VirtualMachineError`。`getBooleanField` 缺字段抛 `NoSuchFieldError`（非 fatal），该 fail-open 意图成立，但 fatal 集合不完整 |
+| FATAL_BOUNDARY | **缺口**：回调内 `catch (t: Throwable) { if (t is OutOfMemoryError) throw t; false }` 吞掉 `ThreadDeath` / `VirtualMachineError`。`getBooleanField` 缺字段抛 `NoSuchFieldError`（非 fatal），该 fail-open 意图成立，但 fatal 集合不完整 |
 | HOT_PATH_COST | 动画启动路径，非逐帧 discovery |
 | CURRENT_RISK | fatal 缺口真实但局部。catalog **不会**改写这段 inner catch |
 | MIGRATION_BENEFIT | 无（就 B1 catalog 选型而言） |
-| RECOMMENDATION | **KEEP_LEGACY_SAFE** |
+| RECOMMENDATION | **CORRECTIVE_BEFORE_MIGRATION** |
 
-该 fatal 缺口记入 CONFIRMED_DEFECTS。修正是把 inner catch 换成 `RuntimeFatality.throwIfFatal`。这不是 B1 生产授权，也不是 catalog 理由。
+B1 最终分类：`CORRECTIVE_BEFORE_MIGRATION`。D2 局部 corrective（`RuntimeFatality.throwIfFatal`）完成后预计仍为 `KEEP_LEGACY_SAFE`，**不是** catalog migration candidate。
 
 #### system_gallery_screenshots_path
 
@@ -281,7 +281,7 @@ RECOMMENDATION 仅四值：`KEEP_LEGACY_SAFE` / `CATALOG_MIGRATION_VALUE` / `COR
 | MIGRATION_BENEFIT | catalog 的 installer try/catch 能隔离该异常，但会在 Gallery 进程加载全量 FeatureCatalog。更小的正确性修复是局部 fail-open |
 | RECOMMENDATION | **CORRECTIVE_BEFORE_MIGRATION** |
 
-Corrective（**不是 B1 实现**）：`findClassIfExists` + 缺字段 skip + `RuntimeFatality.throwIfFatal`。完成后应变为 `KEEP_LEGACY_SAFE`。完成后仍 **不是** catalog 候选（dispatcher 全量注册）。
+Corrective：`findClassIfExists` + 缺字段 / ordinary reflection `RuntimeFatality.throwIfFatal` 后 fail-open。完成后预计仍为 `KEEP_LEGACY_SAFE`，**不是** catalog migration candidate。
 
 ---
 
@@ -463,7 +463,7 @@ B1_PRODUCTION_CANDIDATES = []
 | Installer | 结果 |
 |---|---|
 | InputMethodInstaller | 3/3 `KEEP_LEGACY_SAFE` |
-| MediaInstaller | screenshot / floattime `KEEP_LEGACY_SAFE`；gallery `CORRECTIVE_BEFORE_MIGRATION`（局部 fail-open，非 catalog） |
+| MediaInstaller | screenshot `KEEP_LEGACY_SAFE`；floattime / gallery `CORRECTIVE_BEFORE_MIGRATION`（局部 fail-open / fatal boundary，非 catalog）。D1/D2 corrective 后预计仍为 `KEEP_LEGACY_SAFE`，不是 catalog candidate |
 | PhoneInstaller | 3/3 `KEEP_LEGACY_SAFE` |
 | PowerKeeperInstaller | 2/2 `KEEP_LEGACY_SAFE` |
 | WallpaperInstaller | 1/1 `KEEP_LEGACY_SAFE` |
@@ -489,7 +489,7 @@ B1_PRODUCTION_CANDIDATES = []
 
 - IME 允许列表是 6 个精确名 + 3 个前缀；F1 表格写「9 个精确 + 3 个前缀」不精确。
 - VolumeCursor 热路径 `Settings.Global.getString` 可在未来性能任务评估，不是 B1。
-- ScreenshotFloatTime / Gallery 的局部 fatal/fail-open 修正可在独立 corrective 任务做，不打开 A1/A2/A3。
+- ScreenshotFloatTime / Gallery 的局部 fatal/fail-open 已作为独立 Media corrective 处理；完成后仍 KEEP_LEGACY_SAFE，不是 catalog candidate。不打开 A1/A2/A3。
 - `wallpaperScaleLevel`（已 catalog）与 `launcher_disable_wallpaperscale`（本轮）禁止混身份。
 
 ---

@@ -56,6 +56,7 @@ import tv.withaibuild.customiuizer.mods.utils.HookerClassHelper.AfterHookCallbac
 import tv.withaibuild.customiuizer.mods.utils.HookerClassHelper.BeforeHookCallback
 import tv.withaibuild.customiuizer.mods.utils.HookerClassHelper.MethodHook
 import tv.withaibuild.customiuizer.mods.utils.ModuleHelper
+import tv.withaibuild.customiuizer.mods.utils.RuntimeFatality
 import tv.withaibuild.customiuizer.mods.utils.XposedHelpers
 import tv.withaibuild.customiuizer.utils.HookUtils
 import java.io.ByteArrayOutputStream
@@ -647,15 +648,23 @@ object SystemAudioAndVisualAndMoreHooks {
 
     @JvmStatic
     fun GalleryScreenshotPathHook(lpparam: PackageReadyParam) {
-        val MIUIStorageConstants = XposedHelpers.findClass("com.miui.gallery.storage.constants.MIUIStorageConstants", lpparam.classLoader)
-        val folder = MainModule.mPrefs.getStringAsInt("system_gallery_screenshots_path", 1)
-        val ssPath = when (folder) {
-            2 -> Environment.DIRECTORY_PICTURES + File.separator + "Screenshots"
-            3 -> Environment.DIRECTORY_DCIM + File.separator + "Screenshots"
-            else -> ""
-        }
-        if (folder > 1) {
-            XposedHelpers.setStaticObjectField(MIUIStorageConstants, "DIRECTORY_SCREENSHOT_PATH", ssPath)
+        try {
+            val MIUIStorageConstants = XposedHelpers.findClassIfExists(
+                "com.miui.gallery.storage.constants.MIUIStorageConstants",
+                lpparam.classLoader
+            ) ?: return
+            val folder = MainModule.mPrefs.getStringAsInt("system_gallery_screenshots_path", 1)
+            val ssPath = when (folder) {
+                2 -> Environment.DIRECTORY_PICTURES + File.separator + "Screenshots"
+                3 -> Environment.DIRECTORY_DCIM + File.separator + "Screenshots"
+                else -> ""
+            }
+            if (folder > 1) {
+                XposedHelpers.setStaticObjectField(MIUIStorageConstants, "DIRECTORY_SCREENSHOT_PATH", ssPath)
+            }
+        } catch (t: Throwable) {
+            RuntimeFatality.throwIfFatal(t)
+            XposedHelpers.log(t)
         }
     }
 
@@ -666,7 +675,7 @@ object SystemAudioAndVisualAndMoreHooks {
                 val mIsShowLongScreenShotGuide = try {
                     XposedHelpers.getBooleanField(param.thisObject, "mIsShowLongScreenShotGuide")
                 } catch (t: Throwable) {
-                    if (t is OutOfMemoryError) throw t
+                    RuntimeFatality.throwIfFatal(t)
                     false
                 }
                 if (mIsShowLongScreenShotGuide) return
