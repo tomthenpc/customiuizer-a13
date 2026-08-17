@@ -241,7 +241,6 @@ class ScopeProtectionTest(unittest.TestCase):
         allowed = {
             "app/src/main/java/tv/withaibuild/customiuizer/mods/LauncherGestureHooks.kt",
             "app/src/main/java/tv/withaibuild/customiuizer/mods/SystemAudioAndVolumeHooks.kt",
-            "app/src/main/java/tv/withaibuild/customiuizer/mods/SystemNotificationMoreHooks.kt",
             "app/src/main/java/tv/withaibuild/customiuizer/mods/SystemUILockScreenHooks.kt",
             "app/src/main/java/tv/withaibuild/customiuizer/mods/SystemUINotificationHooks.kt",
             "app/src/main/java/tv/withaibuild/customiuizer/installers/AndroidPackageInstaller.java",
