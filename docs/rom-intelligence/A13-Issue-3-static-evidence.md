@@ -2,6 +2,7 @@
 
 > 本批仅建立 ROM 情报与回归证据，不做 production 修复。  
 > 所有 ROM 分区/APK/JAR 均来自用户本地样本，未上传。
+> 本批结论：**HOLD** —— HyperOS `veux` 已拿到 STATIC_VERIFIED 类/成员证据，但 MIUI 14 `xaga` 仍受 EROFS 解析工具限制未解出；r13.10.1 与 r13.11.1 的 `NotificationRowMenuHook` 源代码在关键构造函数参数上存在回归性变更，可能与 HyperOS 目标构造器不匹配。
 
 ## 1. Issue 描述
 
@@ -26,6 +27,7 @@
 - **Target method**: `createMenuViews(boolean, boolean)`
 - **JVM descriptor**: `(ZZ)V`
 - **Target process**: `com.android.systemui`
+- **目标 APK 位置（HyperOS veux）**: `system_ext_a/priv-app/MiuiSystemUI/MiuiSystemUI.apk`（package `com.android.systemui`）
 
 该路径是 legacy installer 路径，`FeatureCatalog` 中无对应 Feature ID。
 
@@ -52,118 +54,152 @@ r13.10.1 的版本代码 `135` 在多个 commit 中出现，导致基线不唯�
 
 | 候选 SHA | 说明 | 置信度 |
 |---|---|---|
-| `b5f92a2` | `chore(release): prepare r13.10.1 release candidate`，首次把 version 改为 135/r13.10.1 | 低（只是 RC 准备） |
+| `b5f92a2` | `chore(release): prepare r13.10.1 release candidate`，首次把 version 改为 135/r13.10.1 | 低（只是 RC 准备，发生在 P1B-4A 重写之前） |
 | `3dc0c1b` | `docs: finalize r13.10.1 release documentation`，尚未发生 P1B-4A notification menu 重写 | 中 |
-| `1ea342d76e472da1349f8234b22fc31fd5395307` | P1B-3 QA R3 关闭 commit，tasks/completed/A13-PERF-P1B-3-QS-TILE-HOT-PATH.md 记录的工程最终 SHA 与历史签名 APK 版本点 | **高（首选候选）** |
-| `570cf21` | 版本 135/r13.10.1 的最后一个 commit，下一版本即 r13.11.0 | 中 |
+| `1ea342d76e472da1349f8234b22fc31fd5395307` | P1B-3 QA R3 关闭 commit，tasks/completed/A13-PERF-P1B-3-QS-TILE-HOT-PATH.md 记录的工程最终 SHA 与历史签名 APK 版本点 | 中（存在有效 APK 候选） |
+| `570cf21` | 版本 135/r13.10.1 的最后一个 commit，下一版本即 r13.11.0 | **高（最后一个 version 135 提交）** |
 
-由于存在多个合法 r13.10.1 时间点的 commit，且用户侧真实 APK 的具体构建 SHA 未知，本报告将 `1ea342d` 作为主要工作基线，但标记 `UNRESOLVED` 并保留候选范围。
+关键 diff（`b5f92a2` → `570cf21`，`SystemNotificationMoreHooks.kt`）:
 
-## 4. 与当前 HEAD 的回归 diff（相关范围）
+- 旧实现（`b5f92a2` 及更早）使用 `MiuiNotificationMenuItem.constructors[0]`，无参数类型检查，向构造器第 4 个参数传 `null`。
+- 新实现（`570cf21` / r13.11.1）使用 `XposedHelpers.findConstructorBestMatch(menuItemClass, menuRowClass, Context.class, int.class, Drawable.class, int.class)`，强制要求第 4 个参数类型为 `android.graphics.drawable.Drawable`。
 
-### 4.1 从 `1ea342d` → HEAD
+这意味着：
+1. 如果 HyperOS `veux` 的 `MiuiNotificationMenuItem` 构造器第 4 个参数不是 `Drawable` 而是其他类型（如 `NotificationGuts$GutsContent`），`findConstructorBestMatch` 会失败，导致 `menuItemConstructor == null`，hook 直接 `return`。
+2. 若用户实际回退的是 `b5f92a2`（RC 构建）或更早无 `findConstructorBestMatch` 版本，则旧 `constructors[0]` 逻辑可在同样 ROM 上工作。
 
-```text
-app/src/main/java/tv/withaibuild/customiuizer/mods/SystemUINotificationHooks.kt
-.../installers/SystemUiInstaller.java
-```
+## 4. HyperOS 1 veux ROM 证据
 
-主要变化集中在 `OpenNotifyInFloatingWindowHook`：
-- 新增 `rethrowNotificationFatal` / `invokeNotificationCompat` 包装。
-- `isSubstituteNotificationMethod` 从“找不到时按 `false` 处理”变为“找不到直接 `return`”。
-- 新增强制要求 `mPkgNameField` 字段，找不到也直接 `return`。
-- 原来失败时使用 `StatusBarNotification#getPackageName()`，现在改为从 `mPkgName` 反射取值。
+### 4.1 分区提取
 
-`NotificationRowMenuHook` 在该范围内**无 diff**。
+| 项目 | 值 |
+|---|---|
+| `super.img` SHA-256 | `3d3d1c427fdab3c64503bd8f2c947f46748887ba1c52df7f1b4d6cc6bcade175` |
+| `system_ext_a` 文件系统 | EXT4（`0xef53` 位于 1080+1024） |
+| `system_a` 文件系统 | EROFS（magic `0xE0F5E1E2` 位于 1024） |
+| `product_a` 文件系统 | EXT4 |
+| `MiuiSystemUI.apk` 路径 | `system_ext_a/priv-app/MiuiSystemUI/MiuiSystemUI.apk` |
+| `MiuiSystemUI.apk` SHA-256 | `dd2271dfcd6975c0d8997d4a00a7ee975b0b45f7da6737487f4bf7dfed867b94` |
+| `MiuiSystemUI.apk` package | `com.android.systemui` |
+| `MiuiSystemUI.apk` dex count | 3 |
 
-### 4.2 从 `3dc0c1b` → `1ea342d`（P1B-4A 区间）
+### 4.2 DEX 目标验证
 
-```text
-app/src/main/java/tv/withaibuild/customiuizer/mods/SystemNotificationMoreHooks.kt
-```
+通过 `tools/rom_dex_inspector.py` 解析 `veux_MiuiSystemUI.apk`：
 
-`NotificationRowMenuHook` 发生 P1B-4A 热路径重写：
-- 从简单 `findClass + findAndHookMethod` 改为 install-time 反射缓存。
-- 引入大量 `findFieldIfExists`/`findMethodBestMatch` 预解析。
-- 对 `mContext`、`mMenuItems`、`mMenuContainer`、`mSbn`、`mParent` 等字段的缺失统一 `return`。
-- 点击时重新绑定 `mSbn`/`mParent`，增加事务化 menu 注入。
+- `Lcom/android/systemui/statusbar/notification/row/MiuiNotificationMenuRow;` 存在。
+- `createMenuViews` 签名：`(Z Z)V`（即 `createMenuViews(boolean, boolean)`）。
+- 相关字段：
+  - `mContext` : `Landroid/content/Context;`
+  - `mMenuItems` : `Ljava/util/ArrayList;`
+  - `mMenuContainer` : `Landroid/view/ViewGroup;`
+  - `mSbn` : `Lcom/android/systemui/statusbar/notification/ExpandedNotification;`
+  - `mParent` : `Lcom/android/systemui/statusbar/notification/row/ExpandableNotificationRow;`
+  - `mMenuMargin` : `I`
+- 嵌套类 `Lcom/android/systemui/statusbar/notification/row/MiuiNotificationMenuRow$MiuiNotificationMenuItem;` 存在。
+- 其构造器签名：
+  ```
+  (Lcom/android/systemui/statusbar/notification/row/MiuiNotificationMenuRow;
+   Landroid/content/Context;
+   I
+   Lcom/android/systemui/statusbar/notification/row/NotificationGuts$GutsContent;
+   I)V
+  ```
+- 当前 `SystemNotificationMoreHooks.kt` 使用 `findConstructorBestMatch(..., Drawable.class, ...)`，将不会匹配到上述构造器，因为第 4 个实际参数类型是 `NotificationGuts$GutsContent`，不是 `Drawable`。
 
-## 5. ROM 语料
+### 4.3 与当前源码的匹配结论
+
+| 检查项 | 状态 | 说明 |
+|---|---|---|
+| `MiuiNotificationMenuRow` 类存在 | ✅ STATIC_VERIFIED | DEX 中可定位 |
+| `createMenuViews(ZZ)V` 方法存在 | ✅ STATIC_VERIFIED | 签名一致 |
+| `mContext/mMenuItems/mMenuContainer/mSbn/mParent/mMenuMargin` 字段存在 | ✅ STATIC_VERIFIED | 字段名与源码查找一致 |
+| `MiuiNotificationMenuItem` 嵌套类存在 | ✅ STATIC_VERIFIED | 可定位 |
+| `MiuiNotificationMenuItem` 构造器与源码假设匹配 | ❌ MISMATCH | 源码期望第 4 参数 `Drawable`，实际为 `NotificationGuts$GutsContent` |
+
+## 5. MIUI 14 xaga 证据
 
 ### 5.1 样本清单
 
-| 样本 | 代号 | Android | 版本 | super.img SHA-256 | system_a 大小 | system_a SHA-256 |
-|---|---|---|---|---|---|---|
-| MIUI 14 China xaga | xaga | 13 | V14.0.7.0.TLOCNXM | `a71f7265622a68831fe1d69d354cd92048102dfda345948eb7f207a3a867fffa` | 869,396,480 | `ada302aa27304f2cfdeb68a84db0d572909cb8c3f0d91b7aad180bbcff2d9799` |
-| MIUI 14 India xaga | xaga | 13 | V14.0.10.0.TLOINXM | `8ce7caa680e11c156529b5b9b7fe6d68ef03425041c8ce3f1f2bf1ce53d2c4e0` | 926,306,304 | `76a782cde46f1ca22409e242b1792ffb75f0aa6e3c85ec210763f9b040d775e9` |
-| HyperOS 1 Indonesia veux | veux | 13 | OS1.0.10.0.TKCIDXM | `3d3d1c427fdab3c64503bd8f2c947f46748887ba1c52df7f1b4d6cc6bcade175` | 1,438,543,872 | `f724b83527dc71e35fd29635ad5fafacfd8cd5566366cccedcd915bd471ae8f8` |
+| 样本 | 代号 | Android | 版本 | super.img SHA-256 |
+|---|---|---|---|---|
+| MIUI 14 China xaga | xaga | 13 | V14.0.7.0.TLOCNXM | `a71f7265622a68831fe1d69d354cd92048102dfda345948eb7f207a3a867fffa` |
+| MIUI 14 India xaga | xaga | 13 | V14.0.10.0.TLOINXM | `8ce7caa680e11c156529b5b9b7fe6d68ef03425041c8ce3f1f2bf1ce53d2c4e0` |
 
-完整 super 分区表见 `A13_rom_super_xaga_cn.json/csv`、`A13_rom_super_xaga_in.json/csv`、`A13_rom_super_veux_id.json/csv`。
+完整 super 分区表见 `A13_rom_super_xaga_cn.json/csv`、`A13_rom_super_xaga_in.json/csv`。
 
 ### 5.2 文件系统解析结果
 
-- `system_a` 与 `product_a` 分区均无法被 `ext4`、`f2fs`、`erofs`、`squashfs` 常见魔数识别。
-- 分区内部存在高度可压缩/已压缩数据（erofs 或类似压缩只读 FS 的强候选）。
-- 在 `system_a` 原始字节搜索 `MiuiNotificationMenuRow`、`createMenuViews`、`MiuiStatusBarNotificationActivityStarter`、`AppMiniWindowManager`、`launchMiniWindowActivity`、`isSubstituteNotification` 均未命中，符合“目标字符串位于压缩/不可直接搜索的 FS 中”的判断。
-- 因此无法直接从这三份 ROM 提取 `SystemUI.apk`/JAR/DEX 并做反编译级 class/member 证据。
+- `product_a`、`system_a` 分区均为 **EROFS**（magic `0xE0F5E1E2` 位于 1024）。
+- EROFS 数据为压缩/结构化存储，`MiuiNotificationMenuRow`、`createMenuViews`、`MiuiStatusBarNotificationActivityStarter`、`AppMiniWindowManager` 等目标字符串未出现在原始分区字节表层。
+- 当前环境缺少可用的 EROFS 解压/提取工具（`erofs-utils`、`erofsfuse`、WSL 等），无法从 MIUI 14 样本独立提取 `SystemUI.apk` 并做 DEX 级证据。
+- 因此 MIUI 14 样本目标 class/member 状态保持 **UNRESOLVED**。
 
 ### 5.3 已拒绝/不可用的方法
 
 | 方法 | 状态 | 原因 |
 |---|---|---|
 | full-ROM JADX | 未使用 | 违反本批范围，且 FS 未解析 |
-| erofs Python 库 | 不可用 | pip 无成熟 erofs 解析包 |
+| erofs Python 库 | 不可用 | pip 无成熟 erofs 解析包；srlabs/extractor 示例脚本无法正确解析 xaga CN 目录结构 |
 | WSL / Linux erofs-fuse | 不可用 | 当前环境未安装 WSL，无 root 权限 |
 | simg2img / lpunpack 二进制 | 不可用 | 未在 PATH 中找到 |
 | payload_dumper.exe | 不适用 | 该工具针对 OTA `payload.bin`，非 fastboot `super.img` |
 
 ## 6. Issue #3 目标矩阵
 
-| ROM | class | member | descriptor | resource | status |
-|---|---|---|---|---|---|
-| MIUI 14 CN xaga | `com.android.systemui.statusbar.notification.row.MiuiNotificationMenuRow` | `createMenuViews` | `(ZZ)V` | `R.string.system_notifrowmenu_openinfw` 等 | UNVERIFIED |
-| MIUI 14 IN xaga | 同上 | 同上 | 同上 | 同上 | UNVERIFIED |
-| HyperOS 1 ID veux | 同上（MIUI 14 baseline） | 同上 | 同上 | 同上 | UNVERIFIED |
+详见 `A13-Issue-3-matrix.csv` 与 `A13-Issue-3-matrix.json`。
 
-`UNVERIFIED` 指：
-- `super.img` 分区元数据已静态验证（partition table、`system_a`/`product_a` 存在）。
-- 但目标 class/member/descriptor 在 ROM 字节中尚未被直接定位，缺少可独立审计的 APK/DEX/Smali 证据。
+| ROM | class | member | member descriptor | constructor 4th param (expected) | constructor 4th param (actual) | status |
+|---|---|---|---|---|---|---|
+| MIUI 14 CN xaga | `com.android.systemui.statusbar.notification.row.MiuiNotificationMenuRow` | `createMenuViews` | `(ZZ)V` | — | — | UNRESOLVED |
+| MIUI 14 IN xaga | 同上 | 同上 | `(ZZ)V` | — | — | UNRESOLVED |
+| HyperOS 1 ID veux | 同上 | 同上 | `(ZZ)V` | `android.graphics.drawable.Drawable` | `com.android.systemui.statusbar.notification.row.NotificationGuts$GutsContent` | STATIC_VERIFIED （构造器不匹配） |
 
 ## 7. 回归假设
 
-### H1：模块回归（`OpenNotifyInFloatingWindowHook`）
+### H1：模块回归（`NotificationRowMenuHook` 构造器参数硬编码）
 
-- 从 `1ea342d` 到 HEAD，该 hook 新增强制依赖 `StatusBarNotification#isSubstituteNotification()` 和 `StatusBarNotification#mPkgName`。
-- 如果 HyperOS 1 的 `StatusBarNotification` 无此方法/字段，或字段为 `private`/`package-private` 导致 `findFieldIfExists` 不可见，hook 会提前 `return`，功能静默失效。
-- 这与“同一个 ROM 在 r13.10.1 正常、r13.11.1 失效”一致。
+- 从 `b5f92a2`（旧逻辑，使用 `constructors[0]` 无类型检查）到 `570cf21` / HEAD（使用 `findConstructorBestMatch(..., Drawable.class, ...)`），`NotificationRowMenuHook` 引入了构造器第 4 参数的类型约束。
+- 在 MIUI 14 上，若 `MiuiNotificationMenuItem` 构造器第 4 参数为 `Drawable`，则 r13.11.1 仍可工作。
+- 在 HyperOS 1 `veux` 上，构造器第 4 参数为 `NotificationGuts$GutsContent`，`findConstructorBestMatch` 返回 `null` 或被 `try/catch` 吞掉，hook 安装后 `menuItemConstructor` 为空，菜单按钮未被注入。
+- 这与“同一个 ROM 在 r13.10.1 正常、r13.11.1 失效”兼容，前提是用户回退的 r13.10.1 是 `b5f92a2`/`3dc0c1b` 等早于 P1B-4A 重写的构建。
 
-### H2：ROM 目标变体（`MiuiNotificationMenuRow`）
+### H2：ROM 目标变体（`MiuiNotificationMenuRow$MiuiNotificationMenuItem` 构造器签名不同）
 
-- 如果问题指的是“扩展通知菜单”，则 HyperOS 1 中 `MiuiNotificationMenuRow` 的 `createMenuViews` 签名或所在包可能与 MIUI 14 不同。
-- 当前 `NotificationRowMenuHook` 要求精确匹配 `com.android.systemui.statusbar.notification.row.MiuiNotificationMenuRow` 与 `MiuiNotificationMenuRow$MiuiNotificationMenuItem`。
-- 该 hook 在 `1ea342d` 与 HEAD 之间无 diff；若 HyperOS 目标变体，r13.10.1 也应失效，除非用户使用的是早于 P1B-4A 重写的 r13.10.1 构建（`3dc0c1b` 之前）。
+- HyperOS 1 `veux` 的 `MiuiNotificationMenuItem` 构造器第 4 参数为 `NotificationGuts$GutsContent`（或等价变体），而 MIUI 14 可能是 `Drawable` 或 `GutsContent` 的不同实现。
+- 这是 ROM/framework 目标变化，不是模块固有 bug。
 
 ### H3：两者皆有
 
-- 若用户同时启用了 `system_notifrowmenu` 和 `system_notify_openinfw`，则 H1 与 H2 可能同时影响体验。
+- 模块在 P1B-4A 中把构造器查找从“无类型检查”改成“必须匹配 `Drawable`”，恰好与 HyperOS 1 的构造器变体不兼容，导致问题仅在 HyperOS 1 上暴露。
 
 ## 8. 下一步最小修正建议（不实现）
 
-针对 H1（最可能且 diff 最小）：
-- 在 `SystemUINotificationHooks.OpenNotifyInFloatingWindowHook` 中恢复 `isSubstituteNotificationMethod` 与 `mPkgNameField` 的可选性。
-- 当 `isSubstituteNotification()` 不存在时，回退到旧行为：视 `isSubstitute = false`。
-- 当 `mPkgName` 字段不存在时，回退到 `StatusBarNotification#getPackageName()`（AOSP 标准 API）。
-- 保持 `rethrowNotificationFatal` 对 `OutOfMemoryError` / `VirtualMachineError` 的透传，仅将普通异常降级为失败而不是强制 `return`。
+针对 H1/H3：
 
-预期变更文件：
-- `app/src/main/java/tv/withaibuild/customiuizer/mods/SystemUINotificationHooks.kt`
+1. 在 `SystemNotificationMoreHooks.NotificationRowMenuHook` 中，将 `MiuiNotificationMenuItem` 构造器查找从固定 `Drawable.class` 改为运行时探测：
+   - 先尝试 `(Context, int, Drawable, int)`；
+   - 失败时回退到 `(Context, int, NotificationGuts$GutsContent, int)` 或直接使用 `getDeclaredConstructors()` 选择第一个 5 参数构造器。
+2. 保留旧 `b5f92a2` 时代的 `constructors[0]` 行为作为 HyperOS 兼容回退。
+3. 对 `mSbn` 类型（`StatusBarNotification` vs `ExpandedNotification`）保持现有字段查找，因为 `XposedHelpers.findFieldIfExists` 按名字而非类型匹配。
+4. 不修改 `SystemUINotificationHooks.kt`（`OpenNotifyInFloatingWindowHook`）作为 Issue #3 的修复，因为当前证据指向 `NotificationRowMenuHook` 构造器匹配失败。
 
-该改动最小、可回退，不会触碰 `SystemNotificationMoreHooks.kt` 的 P1B-4A 路径，也不引入新的 ROM target contract。
+预期变更文件（仅在后续 production 批处理，本批不做）：
+- `app/src/main/java/tv/withaibuild/customiuizer/mods/SystemNotificationMoreHooks.kt`
 
 ## 9. 证据等级
 
-- 代码回归 diff：`STATIC_VERIFIED`
-- ROM 分区结构：`STATIC_VERIFIED`
-- ROM 内目标 class/member：`UNVERIFIED`
+- HyperOS veux `MiuiNotificationMenuRow` class/member：`STATIC_VERIFIED`
+- HyperOS veux `MiuiNotificationMenuItem` 构造器：`STATIC_VERIFIED`（且与源码假设 **不匹配**）
+- MIUI 14 xaga class/member：`UNRESOLVED`（EROFS 无法解析）
+- 代码回归 diff（`b5f92a2` → `570cf21`）：`STATIC_VERIFIED`
 - 运行时行为（HyperOS 1 实机）：`UNVERIFIED`
 - 修正后效果：`UNVERIFIED`
+
+## 10. 关键结论
+
+- **LP extent 偏移已修正**：`rom_super_inspector.py` 不再把 `first_logical_sector` 加到 `target_data`，三份 ROM 元数据已用正确公式重新生成。
+- **HyperOS veux 已拿到直接 DEX 证据**：`MiuiSystemUI.apk` 从 `system_ext_a` 提取并解析，`NotificationRowMenuHook` 目标类/方法存在。
+- **MIUI 14 xaga 仍受 EROFS 工具限制**：无法获得同等 DEX 证据。
+- **Issue #3 最可能根因**：`NotificationRowMenuHook` 在 P1B-4A 重构后使用 `findConstructorBestMatch(..., Drawable.class, ...)`，与 HyperOS veux 实际 `NotificationGuts$GutsContent` 构造器参数不匹配，导致 menu item 无法构造。
+- **最终状态**：`HOLD`（不进入 production 修复）。

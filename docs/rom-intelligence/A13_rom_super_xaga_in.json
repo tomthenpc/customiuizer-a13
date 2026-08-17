@@ -2,7 +2,7 @@
   {
     "codename": "xaga",
     "android": "13",
-    "miui_hyperos": "MIUI 14 14.0.10.0 India",
+    "miui_hyperos": "MIUI 14.0.10.0 India",
     "build_fingerprint": "",
     "source_filename": "images/super.img",
     "source_sha256": "8ce7caa680e11c156529b5b9b7fe6d68ef03425041c8ce3f1f2bf1ce53d2c4e0",
@@ -22,7 +22,9 @@
             "target_type": 0,
             "target_data_sector": 2048,
             "num_sectors": 34552,
-            "start_bytes_in_raw": 2097152,
+            "target_device_name": "super",
+            "target_device_first_logical_sector": 2048,
+            "start_bytes_on_target_device": 1048576,
             "size_bytes": 17690624
           }
         ]
@@ -47,7 +49,9 @@
             "target_type": 0,
             "target_data_sector": 36864,
             "num_sectors": 680,
-            "start_bytes_in_raw": 19922944,
+            "target_device_name": "super",
+            "target_device_first_logical_sector": 2048,
+            "start_bytes_on_target_device": 18874368,
             "size_bytes": 348160
           }
         ]
@@ -72,7 +76,9 @@
             "target_type": 0,
             "target_data_sector": 38912,
             "num_sectors": 6742576,
-            "start_bytes_in_raw": 20971520,
+            "target_device_name": "super",
+            "target_device_first_logical_sector": 2048,
+            "start_bytes_on_target_device": 19922944,
             "size_bytes": 3452198912
           }
         ]
@@ -97,7 +103,9 @@
             "target_type": 0,
             "target_data_sector": 6782976,
             "num_sectors": 1809192,
-            "start_bytes_in_raw": 3473932288,
+            "target_device_name": "super",
+            "target_device_first_logical_sector": 2048,
+            "start_bytes_on_target_device": 3472883712,
             "size_bytes": 926306304
           }
         ]
@@ -114,7 +122,9 @@
             "target_type": 0,
             "target_data_sector": 8593408,
             "num_sectors": 183032,
-            "start_bytes_in_raw": 4400873472,
+            "target_device_name": "super",
+            "target_device_first_logical_sector": 2048,
+            "start_bytes_on_target_device": 4399824896,
             "size_bytes": 93712384
           }
         ]
@@ -131,7 +141,9 @@
             "target_type": 0,
             "target_data_sector": 8777728,
             "num_sectors": 922568,
-            "start_bytes_in_raw": 4495245312,
+            "target_device_name": "super",
+            "target_device_first_logical_sector": 2048,
+            "start_bytes_on_target_device": 4494196736,
             "size_bytes": 472354816
           }
         ]
@@ -156,7 +168,9 @@
             "target_type": 0,
             "target_data_sector": 9701376,
             "num_sectors": 3936008,
-            "start_bytes_in_raw": 4968153088,
+            "target_device_name": "super",
+            "target_device_first_logical_sector": 2048,
+            "start_bytes_on_target_device": 4967104512,
             "size_bytes": 2015236096
           }
         ]
@@ -181,7 +195,9 @@
             "target_type": 0,
             "target_data_sector": 13637632,
             "num_sectors": 37992,
-            "start_bytes_in_raw": 6983516160,
+            "target_device_name": "super",
+            "target_device_first_logical_sector": 2048,
+            "start_bytes_on_target_device": 6982467584,
             "size_bytes": 19451904
           }
         ]
@@ -206,7 +222,9 @@
             "target_type": 0,
             "target_data_sector": 13676544,
             "num_sectors": 56,
-            "start_bytes_in_raw": 7003439104,
+            "target_device_name": "super",
+            "target_device_first_logical_sector": 2048,
+            "start_bytes_on_target_device": 7002390528,
             "size_bytes": 28672
           }
         ]

@@ -22,7 +22,9 @@
             "target_type": 0,
             "target_data_sector": 2048,
             "num_sectors": 3248,
-            "start_bytes_in_raw": 2097152,
+            "target_device_name": "super",
+            "target_device_first_logical_sector": 2048,
+            "start_bytes_on_target_device": 1048576,
             "size_bytes": 1662976
           }
         ]
@@ -47,7 +49,9 @@
             "target_type": 0,
             "target_data_sector": 6144,
             "num_sectors": 9380016,
-            "start_bytes_in_raw": 4194304,
+            "target_device_name": "super",
+            "target_device_first_logical_sector": 2048,
+            "start_bytes_on_target_device": 3145728,
             "size_bytes": 4802568192
           }
         ]
@@ -72,7 +76,9 @@
             "target_type": 0,
             "target_data_sector": 9388032,
             "num_sectors": 2809656,
-            "start_bytes_in_raw": 4807720960,
+            "target_device_name": "super",
+            "target_device_first_logical_sector": 2048,
+            "start_bytes_on_target_device": 4806672384,
             "size_bytes": 1438543872
           }
         ]
@@ -97,7 +103,9 @@
             "target_type": 0,
             "target_data_sector": 12197888,
             "num_sectors": 1484192,
-            "start_bytes_in_raw": 6246367232,
+            "target_device_name": "super",
+            "target_device_first_logical_sector": 2048,
+            "start_bytes_on_target_device": 6245318656,
             "size_bytes": 759906304
           }
         ]
@@ -122,7 +130,9 @@
             "target_type": 0,
             "target_data_sector": 13682688,
             "num_sectors": 2713056,
-            "start_bytes_in_raw": 7006584832,
+            "target_device_name": "super",
+            "target_device_first_logical_sector": 2048,
+            "start_bytes_on_target_device": 7005536256,
             "size_bytes": 1389084672
           }
         ]
@@ -147,7 +157,9 @@
             "target_type": 0,
             "target_data_sector": 16396288,
             "num_sectors": 5168,
-            "start_bytes_in_raw": 8395948032,
+            "target_device_name": "super",
+            "target_device_first_logical_sector": 2048,
+            "start_bytes_on_target_device": 8394899456,
             "size_bytes": 2646016
           }
         ]
