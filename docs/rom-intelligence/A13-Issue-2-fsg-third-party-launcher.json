@@ -1,0 +1,140 @@
+{
+  "artifact": {
+    "package": "com.miui.home",
+    "version_name": "RELEASE-4.39.14.8060-04191512",
+    "version_code": "439148060",
+    "apk_size": 24782235,
+    "apk_sha256": "b507f1cbf2d8fbc445398a2402ff9dd3f22580265b0ef9de07b4b37889b3384b",
+    "cert_sha256": {
+      "META-INF/CERT.RSA": "c9009d01ebf9f5d0302bc71b2fe9aa9a47a432bba17308a3111b75d7b2149025"
+    },
+    "signature_variant": "7b6d",
+    "artifact_source": "MemeOS Updates public mirror (APKMemeOS download link)",
+    "exact_version_match": true
+  },
+  "preference": {
+    "ui_key": "pref_key_controls_fsg_horiz",
+    "runtime_key": "controls_fsg_horiz",
+    "apps_ui_key": "pref_key_controls_fsg_horiz_apps",
+    "apps_runtime_key": "controls_fsg_horiz_apps",
+    "default_value": false,
+    "title": "Horizontal gestures",
+    "summary": "Enable both horizontal gestures and navigation bar"
+  },
+  "install_chain": {
+    "process_scope": {
+      "com.miui.home": "LAUNCHER",
+      "com.mi.android.globallauncher": "LAUNCHER"
+    },
+    "launcher_installer_guard": "\"com.miui.home\".equals(lpparam.getPackageName())",
+    "fsg_hook_entry": "LauncherGestureHooks.FSGesturesHook(lpparam)",
+    "preference_load": "PreferenceLoadRegistry.shouldLoad returns true for com.miui.home",
+    "first_routing_breakpoint": "NONE"
+  },
+  "hook_state_machine": {
+    "real_force_fsg_nav_bar": {
+      "initial_value": null,
+      "first_publish_point": "BaseRecentsImpl.addFsgGestureWindow -> MiuiSettingsUtils.getGlobalBoolean(\"force_fsg_nav_bar\")",
+      "publish_callstack_filter": "com.miui.home.recents.BaseRecentsImpl",
+      "default_if_unpublished": false,
+      "consumers": [
+        "BaseRecentsImpl.createAndAddNavStubView (before)",
+        "BaseRecentsImpl.updateFsgWindowState (after)"
+      ]
+    },
+    "lifecycle_order": [
+      "BaseRecentsImpl.<init>",
+      "addFsgGestureWindow()",
+      "getGlobalBoolean(\"force_fsg_nav_bar\")  -> publishes REAL_FORCE_FSG_NAV_BAR, returns true",
+      "if (mIsFsgNavBar && !mIsInAnotherPro && mIsUseMiuiHomeAsDefaultHome)",
+      "  createAndAddNavStubView() / showBackStubWindow()",
+      "updateFsgWindowState() on later settings change"
+    ]
+  },
+  "launcher_abi": {
+    "com.miui.home.launcher.DeviceConfig": {
+      "usingFsGesture": "()Z",
+      "note": "returns sIsGestureEnable; module overrides with returnConstant(true)"
+    },
+    "com.miui.home.recents.BaseRecentsImpl": {
+      "addFsgGestureWindow": "()V",
+      "createAndAddNavStubView": "()V",
+      "updateFsgWindowState": "()V",
+      "getDefaultHomePackageName_source": "com.miui.home.launcher.common.Utilities.getDefaultHomePackageName(context)"
+    },
+    "com.miui.home.recents.GestureStubView": {
+      "onTouchEvent": "(Landroid/view/MotionEvent;)Z"
+    },
+    "com.miui.launcher.utils.MiuiSettingsUtils": {
+      "getGlobalBoolean": "(Landroid/content/ContentResolver; Ljava/lang/String;)Z"
+    },
+    "com.miui.home.launcher.common.Utilities": {
+      "getDefaultHomePackageName": "(Landroid/content/Context;)Ljava/lang/String;"
+    }
+  },
+  "root_cause_hypotheses": [
+    {
+      "id": "H1",
+      "name": "Default home gate",
+      "description": "Third-party default launcher makes BaseRecentsImpl.mIsUseMiuiHomeAsDefaultHome false, so addFsgGestureWindow/updateFsgWindowState do not create gesture stubs.",
+      "supporting_evidence": [
+        "addFsgGestureWindow gates createAndAddNavStubView on mIsUseMiuiHomeAsDefaultHome",
+        "updateFsgWindowState removes/clears when mIsUseMiuiHomeAsDefaultHome is false",
+        "Module does not hook Utilities.getDefaultHomePackageName or mIsUseMiuiHomeAsDefaultHome"
+      ],
+      "opposing_evidence": [],
+      "confidence": "HIGH"
+    },
+    {
+      "id": "H2",
+      "name": "REAL_FORCE_FSG_NAV_BAR not initialized",
+      "description": "Field could be read before first getGlobalBoolean hook sets it.",
+      "supporting_evidence": [
+        "No explicit initialization of REAL_FORCE_FSG_NAV_BAR"
+      ],
+      "opposing_evidence": [
+        "addFsgGestureWindow is called from BaseRecentsImpl constructor and calls getGlobalBoolean first",
+        "createAndAddNavStubView is only called after addFsgGestureWindow's condition branch",
+        "getAdditionalStaticField returns null -> as? Boolean ?: false is safe"
+      ],
+      "confidence": "LOW"
+    },
+    {
+      "id": "H3",
+      "name": "com.mi.android.globallauncher not routed",
+      "description": "ProcessScope recognizes com.mi.android.globallauncher but LauncherInstaller only enables FSG for com.miui.home.",
+      "supporting_evidence": [
+        "ProcessScopes maps com.mi.android.globallauncher to LAUNCHER",
+        "LauncherInstaller FSG guard is com.miui.home specific"
+      ],
+      "opposing_evidence": [
+        "Issue #2 concerns default desktop change, not com.mi.android.globallauncher",
+        "The feature is intended to run in com.miui.home"
+      ],
+      "confidence": "LOW"
+    }
+  ],
+  "classification": {
+    "static_class": "UPSTREAM_LIFECYCLE_LIMITATION",
+    "runtime_class": "UNVERIFIED",
+    "first_static_breakpoint": "BaseRecentsImpl.addFsgGestureWindow mIsUseMiuiHomeAsDefaultHome condition",
+    "production_corrective_required": false,
+    "device_verified": false,
+    "production_authorization": false
+  },
+  "test_coverage_gaps": [
+    "Third-party default launcher scenario",
+    "mIsUseMiuiHomeAsDefaultHome override",
+    "com.mi.android.globallauncher FSG routing",
+    "REAL_FORCE_FSG_NAV_BAR publish-before-consume ordering",
+    "GestureStubView.onTouchEvent foreground package matching",
+    "Default home switching lifecycle"
+  ],
+  "evidence_cache_files": [
+    "C:\\Home\\xiaomi\\rom\\A13\\_evidence_cache\\launcher\\com.miui.home_RELEASE-4.39.14.8060-04191512.apk",
+    "C:\\Home\\xiaomi\\rom\\A13\\_evidence_cache\\launcher\\fsg_methods\\com_miui_home_recents_BaseRecentsImpl__init_dad.java",
+    "C:\\Home\\xiaomi\\rom\\A13\\_evidence_cache\\launcher\\fsg_methods\\com_miui_home_recents_BaseRecentsImpl__addFsgGestureWindow_dad.java",
+    "C:\\Home\\xiaomi\\rom\\A13\\_evidence_cache\\launcher\\fsg_methods\\com_miui_home_recents_BaseRecentsImpl__updateFsgWindowState_dad.java",
+    "C:\\Home\\xiaomi\\rom\\A13\\_evidence_cache\\launcher\\fsg_methods\\com_miui_home_launcher_DeviceConfig__usingFsGesture_dad.java"
+  ]
+}

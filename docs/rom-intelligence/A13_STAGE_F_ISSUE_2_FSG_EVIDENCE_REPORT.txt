@@ -1,0 +1,119 @@
+A13 Stage F — Issue #2 FSG / Third-Party Launcher Evidence Report
+==================================================================
+
+Base SHA: 6a368e15f26290c464036515ca28ce291a9dc73f
+Branch:   devin/a13-rom-intelligence-compat-r13.11.1
+
+1. Task objective
+-----------------
+Complete Stage F evidence work for Issue #2 (controls_fsg_horiz misbehavior
+when a third-party launcher is the default home). No production changes without
+explicit authorization; preserve Issue #3 fix; ROM evidence != device evidence.
+
+2. Exact artifact
+-----------------
+Package:         com.miui.home
+Version name:    RELEASE-4.39.14.8060-04191512
+Version code:    439148060
+APK SHA-256:     b507f1cbf2d8fbc445398a2402ff9dd3f22580265b0ef9de07b4b37889b3384b
+Cert SHA-256:    c9009d01ebf9f5d0302bc71b2fe9aa9a47a432bba17308a3111b75d7b2149025
+Source:          MemeOS Updates public mirror (APKMemeOS download link)
+
+3. Install chain audit
+----------------------
+- controls_fsg_horiz (pref_key_controls_fsg_horiz) maps to runtime key
+  controls_fsg_horiz in LauncherGestureHooks.
+- MainModule.onPackageReady -> ProcessScope.LAUNCHER for com.miui.home.
+- PreferenceLoadRegistry.shouldLoad true for com.miui.home.
+- LauncherInstaller.handleLoadLauncher and installApplication both gate on
+  hasAnyLauncherPackageReadyFeature / hasAnyLauncherApplicationFeature, which
+  include controls_fsg_horiz.
+- FSG hook installed only when lpparam.packageName == "com.miui.home".
+- First routing breakpoint: NONE.
+
+4. Static ABI / lifecycle
+-------------------------
+Confirmed in exact APK DEX:
+  com.miui.home.launcher.DeviceConfig.usingFsGesture ()Z
+  com.miui.home.recents.BaseRecentsImpl.addFsgGestureWindow ()V
+  com.miui.home.recents.BaseRecentsImpl.createAndAddNavStubView ()V
+  com.miui.home.recents.BaseRecentsImpl.updateFsgWindowState ()V
+  com.miui.home.recents.GestureStubView.onTouchEvent (Landroid/view/MotionEvent;)Z
+  com.miui.launcher.utils.MiuiSettingsUtils.getGlobalBoolean (Landroid/content/ContentResolver; Ljava/lang/String;)Z
+  com.miui.home.launcher.common.Utilities.getDefaultHomePackageName (Landroid/content/Context;)Ljava/lang/String;
+
+Decompiled BaseRecentsImpl.addFsgGestureWindow() shows the nav/back stub is only
+created when:
+  mIsFsgNavBar && !mIsInAnotherPro && mIsUseMiuiHomeAsDefaultHome
+
+mIsUseMiuiHomeAsDefaultHome is set to 1 only when
+  getDefaultHomePackageName(context).equals("com.miui.home").
+
+5. REAL_FORCE_FSG_NAV_BAR state machine
+-----------------------------------------
+- First published by getGlobalBoolean("force_fsg_nav_bar") hook when stack frame
+  contains com.miui.home.recents.BaseRecentsImpl.
+- addFsgGestureWindow() is called from BaseRecentsImpl.<init>, so publication
+  happens before createAndAddNavStubView() can run.
+- Unpublished field is safe: getAdditionalStaticField returns null, cast to
+  Boolean with ?: false.
+- No ordering or null-dereference defect is statically demonstrable.
+
+6. Root cause classification
+----------------------------
+H1: Default-home gate (HIGH confidence)
+  Third-party default home makes mIsUseMiuiHomeAsDefaultHome false; module does
+  not override getDefaultHomePackageName or mIsUseMiuiHomeAsDefaultHome; ROM
+  therefore does not create gesture stub windows.
+
+H2: REAL_FORCE_FSG_NAV_BAR uninitialized (LOW confidence)
+  Opposed by constructor call order and safe null handling.
+
+H3: com.mi.android.globallauncher not routed (LOW confidence)
+  Routing gap exists, but not the cause of the third-party default-home issue.
+
+Static classification: UPSTREAM_LIFECYCLE_LIMITATION
+Runtime classification: UNVERIFIED
+Production corrective required: NO (this batch)
+Device verified: NO
+
+7. Test coverage
+----------------
+Existing: test_launcher_gesture_state_cache.py checks contract invariants for
+          REAL_FORCE_FSG_NAV_BAR, stack trace, BaseRecentsImpl class reuse.
+Missing:  third-party default home scenario; mIsUseMiuiHomeAsDefaultHome override;
+          com.mi.android.globallauncher FSG routing; GestureStubView foreground
+          package match; default home switching lifecycle.
+
+8. Verification
+---------------
+git status --short                     : clean (only new Stage F docs)
+git diff --check                       : OK
+python tools/verify.py fast --changed  : OK
+python tools/verify.py full            : OK
+  - compileDebugKotlin OK
+  - compileDebugJavaWithJavac OK
+  - testDebugUnitTest-all OK
+  - lintDebug OK
+python -m compileall tools             : OK
+python -m unittest discover -s tools/tests -p "test_*.py" : OK (1267 tests, skipped=2)
+
+9. Deliverables
+---------------
+- docs/rom-intelligence/A13-Issue-2-fsg-third-party-launcher.md
+- docs/rom-intelligence/A13-Issue-2-fsg-third-party-launcher.json
+- docs/rom-intelligence/A13_STAGE_F_ISSUE_2_FSG_EVIDENCE_REPORT.txt
+
+10. Recommendation
+------------------
+No production change in this batch.
+
+To enable horizontal gestures when a third-party launcher is default, a future
+production batch would need to override one of:
+  - com.miui.home.launcher.common.Utilities.getDefaultHomePackageName()
+  - BaseRecentsImpl.mIsUseMiuiHomeAsDefaultHome field
+  - BaseRecentsImpl.addFsgGestureWindow() / updateFsgWindowState() branching
+Such a change requires dedicated tests and real-device validation before it can
+be claimed to resolve Issue #2.
+
+End of report.
