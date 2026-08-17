@@ -17,12 +17,31 @@
 
 ## 证据等级
 
+每个等级只记录其定义范围内的事实，不自动升级到下一级。
+
 ```text
-STATIC_VERIFIED  : 静态规则、编译、单元测试
-BUILD_VERIFIED   : APK 实际构建
-LOG_VERIFIED     : A13 目标 ROM LSPosed 日志
-DEVICE_VERIFIED  : A13 设备实际行为
-UNVERIFIED       : 仅推断
+STATIC_VERIFIED  : 源码 / ROM / DEX / resource / ABI 静态证据；
+                    纯静态语义推理；
+                    相关纯静态 / 单元测试；
+                    不含有运行时或设备行为声明；
+                    Android 编译成功不改变 STATIC 或 RUNTIME 声明。
+
+BUILD_VERIFIED   : 相关 Gradle 编译 / lint / test / build 门禁通过；
+                    APK assembly 仅在任务要求 APK 时才计入；
+                    仍不含有设备运行时声明。
+
+LOG_VERIFIED     : 来自相关 A13 目标环境的 LSPosed / logcat 日志支持该行为。
+
+DEVICE_VERIFIED  : 在 A13 设备上直接验证该行为。
+
+UNVERIFIED       : 只有推断，证据不足。
+```
+
+静态与构建证据分别记录：
+
+```text
+STATIC_VERIFIED = YES/NO
+BUILD_VERIFIED  = YES/NO
 ```
 
 - A14 设备证据不是 A13 设备证据。

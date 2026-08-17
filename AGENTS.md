@@ -43,7 +43,7 @@ correctness
 > Git 历史
 ```
 
-`ROADMAP` 只决定优先级。`tasks/completed/` 和 `docs/rom-intelligence/**`、`docs/audit/**` 是证据，不具有当前控制权。
+`tasks/completed/`、`docs/rom-intelligence/**`、`docs/audit/**`、`docs/performance/**` 是证据，不是当前控制。只有当前用户明确授权的任务合同才具有任务级控制权。
 
 ## 4. A13 / A14 关系
 
@@ -176,21 +176,42 @@ git diff --check
 - ROM 样本、trace、mapping、profiler 数据不得入库。
 - 版本名与 `CHANGELOG` 必须同步；`versionCode` 必须单调增加。
 
-## 13. ROM 证据与实机分级
+## 13. 证据等级
 
-- 静态扫描不能替代目标 ROM 实机验证。
-- 无实机证据不得修改成熟热路径基础设施。
-- 候选缺陷必须可复现，并有内存 / 线程 / 日志 / CPU 证据。
-- “这里可以 cache” 不构成缺陷。
-
-证据等级：
+证据等级在 AGENTS.md 与 COMPATIBILITY.md 中保持一致。每个等级只记录其定义范围内的事实，不自动升级到下一级。
 
 ```text
-STATIC_VERIFIED  : 静态规则、编译、单元测试
-BUILD_VERIFIED   : APK 实际构建
-LOG_VERIFIED     : A13 目标 ROM LSPosed 日志
-DEVICE_VERIFIED  : A13 设备实际行为
-UNVERIFIED       : 仅推断
+STATIC_VERIFIED  : 源码 / ROM / DEX / resource / ABI 静态证据；
+                    纯静态语义推理；
+                    相关纯静态 / 单元测试；
+                    不含有运行时或设备行为声明；
+                    Android 编译成功不改变 STATIC 或 RUNTIME 声明。
+
+BUILD_VERIFIED   : 相关 Gradle 编译 / lint / test / build 门禁通过；
+                    APK assembly 仅在任务要求 APK 时才计入；
+                    仍不含有设备运行时声明。
+
+LOG_VERIFIED     : 来自相关 A13 目标环境的 LSPosed / logcat 日志支持该行为。
+
+DEVICE_VERIFIED  : 在 A13 设备上直接验证该行为。
+
+UNVERIFIED       : 只有推断，证据不足。
 ```
+
+静态与构建证据分别记录：
+
+```text
+STATIC_VERIFIED = YES/NO
+BUILD_VERIFIED  = YES/NO
+```
+
+A14 设备证据 != A13 设备证据；ROM 样本证据 != 通用 ROM 支持。
+
+热路径修正规则：
+
+- 不得仅因推测性微优化而修改成熟热路径。
+- 行为 / 兼容 / 架构修正可在静态 + 构建证据充分且语义已证明时推进。
+- 没有设备证据时，不得声称运行时性能收益或 `DEVICE_VERIFIED`。
+- 无法通过静态分析建立正确性的高风险变更，仍被设备 / 日志证据阻塞。
 
 A14 设备证据 != A13 设备证据；ROM 样本证据 != 通用 ROM 支持。

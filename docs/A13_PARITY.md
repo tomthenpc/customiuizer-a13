@@ -18,12 +18,33 @@ A14 reference SHA:  d20d96b543a49a584970e312da7d704958a155aa
 
 ## 产品决策
 
-灵动额头 / Dynamic Island 明确排除：
+灵动额头 / Dynamic Island 是唯一当前已授权排除的功能：
 
 ```text
 PORT   = NO
 REASON = PRODUCT_DECISION
 ```
+
+灵动岛专属基础设施不自动移植。
+
+## Parity 不变式
+
+A14 参考 SHA 中存在的每个**用户可见**功能，都必须出现在 F2 A13 功能库存中，并收到上述状态之一。
+
+不允许因为以下原因省略：
+
+- 看起来难以移植
+- A13 target 未知
+- Android 13 与 Android 14 不同
+- 当前没有设备连接
+
+若不支持，明确分类为：
+
+- `A13_VARIANT_REQUIRED`（A13 需要独立实现）
+- `BLOCKED_BY_A13_PLATFORM`（A13 平台/ROM/生命周期不支持）
+- `EXCLUDED_DYNAMIC_ISLAND`（仅灵动额头）
+
+基础设施独占于灵动岛的不单独进入库存。
 
 ## 功能状态
 
@@ -84,28 +105,22 @@ DEAD_UPSTREAM_PATH
 对已有功能：已有 A13 上游用户意图 > A14 实现形状。
 对全新 A14 功能：A14 用户可见合约为产品参考，A13 target 必须独立证明。
 
-## 示例记录：Issue #2 FSG 第三方桌面
+## Issue #2 持久状态（F0 记录）
+
+Issue #2 不提前被赋予 `A13_STATUS` 或最终 parity 分类；其实际分类在 F2/F3 中完成。
 
 ```text
-FEATURE_ID:               ISSUE_2_FSG_THIRD_PARTY_LAUNCHER
-USER_VISIBLE_NAME:        Horizontal gestures / 水平手势
-A14_STATUS:               PRESENT_EQUIVALENT
-A13_STATUS:               MISSING_PORT_REQUIRED
-A14_PREF_KEY:             controls_fsg_horiz
-A13_PREF_KEY:             controls_fsg_horiz
-PROCESS:                  com.miui.home
-UPSTREAM_SEMANTIC_SOURCE: BaseRecentsImpl FSG lifecycle
-A14_IMPLEMENTATION_SOURCE: A14 LauncherGestureHooks.FSGesturesHook
-A13_TARGET:               com.miui.home.recents.BaseRecentsImpl
-PORT_CLASS:               A13_VARIANT_REQUIRED
-STATIC_EVIDENCE:          DONE (A13 launcher 4.39.14.8060)
-BUILD_EVIDENCE:           PENDING
-DEVICE_EVIDENCE:          PENDING
-TEST_STATUS:              PENDING
-FINAL_STATE:              SELECTED_STATIC_CANDIDATE DESIGN_E_BACK_STUB_ONLY_RECOVERY
+ISSUE_2_TARGET_SELECTION    = PASS
+A13_FEATURE_EXISTS          = YES
+STATIC_MECHANISM_ON_REPRESENTATIVE_SAMPLE = DEFAULT_HOME_GATE
+SELECTED_STATIC_CANDIDATE   = DESIGN_E_BACK_STUB_ONLY_RECOVERY
+PRODUCTION_IMPLEMENTATION   = DEFERRED
+DEVICE_ROOT_CAUSE           = UNVERIFIED
+DEVICE_VALIDATION           = PENDING
 ```
 
-Issue #2 的持久状态：
+不重新打开技术分析。不实现 Design E。
+
 
 ```text
 ISSUE_2_TARGET_SELECTION    = PASS

@@ -407,6 +407,8 @@ class ScopeProtectionTest(unittest.TestCase):
         "app/src/main/java/tv/withaibuild/customiuizer/mods/diagnostics/DiagnosticRecorder.kt",
         "app/build.gradle.kts",
         "CHANGELOG.md",
+        "README.md",
+        "README_EN.md",
         "docs/release-manifest.json",
         "gradle/verification-metadata.xml",
         "docs/audit/SOURCE_HAZARD_BASELINE.json",
