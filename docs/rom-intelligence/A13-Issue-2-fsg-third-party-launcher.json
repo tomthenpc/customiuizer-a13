@@ -135,6 +135,319 @@
     "C:\\Home\\xiaomi\\rom\\A13\\_evidence_cache\\launcher\\fsg_methods\\com_miui_home_recents_BaseRecentsImpl__init_dad.java",
     "C:\\Home\\xiaomi\\rom\\A13\\_evidence_cache\\launcher\\fsg_methods\\com_miui_home_recents_BaseRecentsImpl__addFsgGestureWindow_dad.java",
     "C:\\Home\\xiaomi\\rom\\A13\\_evidence_cache\\launcher\\fsg_methods\\com_miui_home_recents_BaseRecentsImpl__updateFsgWindowState_dad.java",
-    "C:\\Home\\xiaomi\\rom\\A13\\_evidence_cache\\launcher\\fsg_methods\\com_miui_home_launcher_DeviceConfig__usingFsGesture_dad.java"
-  ]
+    "C:\\Home\\xiaomi\\rom\\A13\\_evidence_cache\\launcher\\fsg_methods\\com_miui_home_launcher_DeviceConfig__usingFsGesture_dad.java",
+    "C:\\Home\\xiaomi\\rom\\A13\\_evidence_cache\\launcher\\fsg_methods\\mIsUseMiuiHomeAsDefaultHome_usage.txt",
+    "C:\\Home\\xiaomi\\rom\\A13\\_evidence_cache\\launcher\\fsg_methods\\callers_getDefaultHomePackageName.txt",
+    "C:\\Home\\xiaomi\\rom\\A13\\_evidence_cache\\launcher\\fsg_methods\\callers_setIsUseMiuiHomeAsDefaultHome.txt",
+    "C:\\Home\\xiaomi\\rom\\A13\\_evidence_cache\\launcher\\fsg_methods\\callers_updateUseLauncherRecentsAndFsGesture.txt",
+    "C:\\Home\\xiaomi\\rom\\A13\\_evidence_cache\\launcher\\fsg_methods\\callers_updateOverviewTargets.txt",
+    "C:\\Home\\xiaomi\\rom\\A13\\_evidence_cache\\launcher\\fsg_methods\\com_miui_home_fsg_lifecycle_Lcom_miui_home_recents_BaseRecentsImpl_7__onChange_dad.java",
+    "C:\\Home\\xiaomi\\rom\\A13\\_evidence_cache\\launcher\\fsg_methods\\com_miui_home_fsg_lifecycle_Lcom_miui_home_recents_OverviewComponentObserver__updateOverviewTargets_dad.java",
+    "C:\\Home\\xiaomi\\rom\\A13\\_evidence_cache\\launcher\\fsg_methods\\com_miui_home_fsg_lifecycle_Lcom_miui_home_recents_OverviewComponentObserver___init__dad.java",
+    "C:\\Home\\xiaomi\\rom\\A13\\_evidence_cache\\launcher\\fsg_methods\\com_miui_home_fsg_lifecycle_Lcom_miui_home_recents_TouchInteractionService__initWhenUserUnlocked_dad.java",
+    "C:\\Home\\xiaomi\\rom\\A13\\_evidence_cache\\launcher\\fsg_methods\\com_miui_home_fsg_lifecycle_Lcom_miui_home_launcher_common_Utilities__getDefaultHomePackageName_dad.java",
+    "C:\\Home\\xiaomi\\rom\\A13\\_evidence_cache\\launcher\\fsg_methods\\com_miui_home_fsg_lifecycle_Lcom_miui_home_launcher_common_Utilities__getDefaultHomeResolveInfo_dad.java",
+    "C:\\Home\\xiaomi\\rom\\A13\\_evidence_cache\\launcher\\fsg_methods\\com_miui_home_fsg_lifecycle_Lcom_miui_home_launcher_common_Utilities__isUseMiuiHomeAsDefaultHome_dad.java",
+    "C:\\Home\\xiaomi\\rom\\A13\\_evidence_cache\\launcher\\fsg_methods\\com_miui_home_fsg_lifecycle_Lcom_miui_home_launcher_common_Utilities__isUsePocoHomeAsDefaultHome_dad.java",
+    "C:\\Home\\xiaomi\\rom\\A13\\_evidence_cache\\launcher\\fsg_methods\\com_miui_home_fsg_lifecycle_Lcom_miui_home_launcher_FallbackHomeCompat__getDesiredHomePackage_dad.java",
+    "C:\\Home\\xiaomi\\rom\\A13\\_evidence_cache\\launcher\\fsg_methods\\com_miui_home_fsg_lifecycle_Lcom_miui_home_recents_BaseRecentsImpl__setIsUseMiuiHomeAsDefaultHome_dad.java",
+    "C:\\Home\\xiaomi\\rom\\A13\\_evidence_cache\\launcher\\fsg_methods\\com_miui_home_fsg_lifecycle_Lcom_miui_home_recents_BaseRecentsImpl__registerSuperSavePowerObserver_dad.java",
+    "C:\\Home\\xiaomi\\rom\\A13\\_evidence_cache\\launcher\\fsg_methods\\com_miui_home_fsg_lifecycle_Lcom_miui_home_recents_BaseRecentsImpl__onConfigurationChanged_dad.java",
+    "C:\\Home\\xiaomi\\rom\\A13\\_evidence_cache\\launcher\\fsg_methods\\com_miui_home_recents_BaseRecentsImpl__addBackStubWindow_dad.java",
+    "C:\\Home\\xiaomi\\rom\\A13\\_evidence_cache\\launcher\\fsg_methods\\com_miui_home_recents_BaseRecentsImpl__showBackStubWindow_dad.java",
+    "C:\\Home\\xiaomi\\rom\\A13\\_evidence_cache\\launcher\\fsg_methods\\com_miui_home_recents_BaseRecentsImpl__clearBackStubWindow_dad.java",
+    "C:\\Home\\xiaomi\\rom\\A13\\_evidence_cache\\launcher\\fsg_methods\\com_miui_home_recents_BaseRecentsImpl__removeNavStubView_dad.java",
+    "C:\\Home\\xiaomi\\rom\\A13\\_evidence_cache\\launcher\\fsg_methods\\com_miui_home_recents_BaseRecentsImpl__createAndAddNavStubView_dad.java",
+    "C:\\Home\\xiaomi\\rom\\A13\\_evidence_cache\\launcher\\fsg_methods\\com_miui_home_fsg_lifecycle_Lcom_miui_home_recents_BaseRecentsImpl_6__onExpand_dad.java"
+  ],
+  "fsg_lifecycle": {
+    "mIsUseMiuiHomeAsDefaultHome": {
+      "field_type": "boolean (instance)",
+      "read_sites": [
+        "com.miui.home.recents.BaseRecentsImpl.access$1200()Z",
+        "com.miui.home.recents.BaseRecentsImpl.addFsgGestureWindow()V",
+        "com.miui.home.recents.BaseRecentsImpl.isUseLauncherRecentsAndFsGesture()Z",
+        "com.miui.home.recents.BaseRecentsImpl.updateFsgWindowState()V",
+        "com.miui.home.recents.BaseRecentsImpl$6.onExpand()V"
+      ],
+      "write_sites": [
+        "com.miui.home.recents.BaseRecentsImpl.addFsgGestureWindow()V (direct assignment)",
+        "com.miui.home.recents.BaseRecentsImpl.setIsUseMiuiHomeAsDefaultHome(Z)V"
+      ],
+      "synthetic_accessor": "access$1200 returns the field; called by BaseRecentsImpl$6.onExpand"
+    },
+    "setIsUseMiuiHomeAsDefaultHome(Z)V": {
+      "callers": [
+        "com.miui.home.recents.BaseRecentsImpl$7.onChange(Z)V",
+        "com.miui.home.recents.OverviewComponentObserver.updateOverviewTargets()V"
+      ],
+      "side_effects": [
+        "updates mIsUseMiuiHomeAsDefaultHome if changed",
+        "calls updateUseLauncherRecentsAndFsGesture()",
+        "calls updateFsgWindowState()"
+      ]
+    },
+    "updateUseLauncherRecentsAndFsGesture()V": {
+      "callers": [
+        "com.miui.home.recents.BaseRecentsImpl.addFsgGestureWindow()V",
+        "com.miui.home.recents.BaseRecentsImpl.setIsUseMiuiHomeAsDefaultHome(Z)V"
+      ],
+      "implementation": "DeviceConfig.setUseLauncherRecentsAndFsGesture(context, isUseLauncherRecentsAndFsGesture())",
+      "global_side_effect": "MiuiSettingsUtils.putBooleanToGlobal('use_gesture_version_three', value)"
+    },
+    "DeviceConfig.setUseLauncherRecentsAndFsGesture(Context, boolean)": {
+      "side_effect": "writes Settings.Global 'use_gesture_version_three' to the passed boolean"
+    },
+    "addFsgGestureWindow()V": {
+      "default_home_check": "Utilities.getDefaultHomePackageName(context).equals(context.getPackageName())",
+      "writes_mIsUseMiuiHomeAsDefaultHome": true,
+      "calls_updateUseLauncherRecentsAndFsGesture": true,
+      "stub_creation_condition": "mIsFsgNavBar && !mIsInAnotherPro && mIsUseMiuiHomeAsDefaultHome",
+      "actions_when_true": [
+        "createAndAddNavStubView()",
+        "showBackStubWindow()"
+      ]
+    },
+    "updateFsgWindowState()V": {
+      "removal_condition": "!v0_7 || !mIsUseMiuiHomeAsDefaultHome",
+      "removal_actions": [
+        "removeNavStubView()",
+        "clearBackStubWindow()"
+      ],
+      "creation_condition": "v0_7 && mIsUseMiuiHomeAsDefaultHome && !isInSFDeviceFoldedMode",
+      "creation_actions": [
+        "createAndAddNavStubView()",
+        "addBackStubWindow()"
+      ]
+    }
+  },
+  "getDefaultHomePackageName_callers": [
+    {
+      "class": "com.miui.home.launcher.FallbackHomeCompat",
+      "method": "getDesiredHomePackage",
+      "desc": "()Ljava/lang/String;"
+    },
+    {
+      "class": "com.miui.home.launcher.common.Utilities",
+      "method": "isUseMiuiHomeAsDefaultHome",
+      "desc": "(Landroid/content/Context;)Z"
+    },
+    {
+      "class": "com.miui.home.launcher.common.Utilities",
+      "method": "isUsePocoHomeAsDefaultHome",
+      "desc": "(Landroid/content/Context;)Z"
+    },
+    {
+      "class": "com.miui.home.launcher.oldman.ElderlyManModeChangedReceiver",
+      "method": "onReceive$___twin___",
+      "desc": "(Landroid/content/Context;Landroid/content/Intent;)V"
+    },
+    {
+      "class": "com.miui.home.recents.BaseRecentsImpl$7",
+      "method": "onChange",
+      "desc": "(Z)V"
+    },
+    {
+      "class": "com.miui.home.recents.BaseRecentsImpl",
+      "method": "addFsgGestureWindow",
+      "desc": "()V"
+    },
+    {
+      "class": "com.miui.home.recents.settings.NavBarTypeContainerPreference",
+      "method": "lambda$showDialogToSetMiuiHomeAsDefault$2$NavBarTypeContainerPreference",
+      "desc": "(Landroid/content/DialogInterface;I)V"
+    },
+    {
+      "class": "com.miui.home.settings.MiuiHomeSettings",
+      "method": "onResume",
+      "desc": "()V"
+    }
+  ],
+  "back_stub_methods": {
+    "addBackStubWindow()V": {
+      "guards": [
+        "!SpecialFDeviceGestureHelper.isInSFDeviceFoldedMode()"
+      ],
+      "executor": "TouchInteractionService.BACKGROUND_EXECUTOR",
+      "checks_mIsUseMiuiHomeAsDefaultHome": false
+    },
+    "showBackStubWindow()V": {
+      "guards": [
+        "!SpecialFDeviceGestureHelper.isInSFDeviceFoldedMode()"
+      ],
+      "executor": "TouchInteractionService.BACKGROUND_EXECUTOR",
+      "checks_mIsUseMiuiHomeAsDefaultHome": false
+    },
+    "clearBackStubWindow()V": {
+      "guards": [],
+      "executor": "TouchInteractionService.BACKGROUND_EXECUTOR",
+      "checks_mIsUseMiuiHomeAsDefaultHome": false
+    },
+    "removeNavStubView()V": {
+      "guards": [],
+      "executor": "TouchInteractionService.GESTURE_EXECUTOR.getHandler()",
+      "checks_mIsUseMiuiHomeAsDefaultHome": false
+    },
+    "createAndAddNavStubView()V": {
+      "guards": [
+        "!SpecialFDeviceGestureHelper.isInSFDeviceFoldedMode()"
+      ],
+      "executor": "TouchInteractionService.GESTURE_EXECUTOR.getHandler()",
+      "checks_mIsUseMiuiHomeAsDefaultHome": false
+    }
+  },
+  "default_home_switching_lifecycle": {
+    "observers_and_receivers": [
+      {
+        "class": "com.miui.home.recents.BaseRecentsImpl$7",
+        "type": "ContentObserver",
+        "registered_by": "BaseRecentsImpl.registerSuperSavePowerObserver",
+        "observed_uri": "Settings.System 'power_supersave_mode_open'",
+        "onChange": "calls setIsUseMiuiHomeAsDefaultHome(Utilities.getDefaultHomePackageName(context).equals(packageName)) and OverviewComponentObserver.getInstance().updateOverviewTargetsPost()"
+      },
+      {
+        "class": "com.miui.home.recents.OverviewComponentObserver",
+        "type": "BroadcastReceiver",
+        "registered_action": "android.intent.action.ACTION_PREFERRED_ACTIVITY_CHANGED",
+        "onReceive": "calls updateOverviewTargets()",
+        "init_call": "OverviewComponentObserver.<init> calls updateOverviewTargets(); TouchInteractionService.initWhenUserUnlocked() also calls updateOverviewTargets()"
+      }
+    ],
+    "setIsUseMiuiHomeAsDefaultHome_callers": [
+      "BaseRecentsImpl$7.onChange(Z)V",
+      "OverviewComponentObserver.updateOverviewTargets()V"
+    ],
+    "default_home_resolve_info": "Utilities.getDefaultHomeResolveInfo() uses PackageManager.resolveActivity(CATEGORY_HOME, 786432)"
+  },
+  "candidate_designs": [
+    {
+      "id": "A",
+      "name": "Hook Utilities.getDefaultHomePackageName to return com.miui.home",
+      "scope": "com.miui.home.launcher.common.Utilities",
+      "mechanism": "after-hook with stack-frame filter for BaseRecentsImpl context",
+      "pros": [
+        "single choke point for many callers",
+        "no field state drift"
+      ],
+      "cons": [
+        "affects FallbackHomeCompat, isUseMiuiHomeAsDefaultHome, isUsePocoHomeAsDefaultHome, settings UI (MiuiHomeSettings.onResume, NavBarTypeContainerPreference), and elderly-mode receiver",
+        "requires stack walking in a potentially warm path",
+        "risks misleading settings and default-home dialogs"
+      ],
+      "risk": "HIGH",
+      "recommended": false
+    },
+    {
+      "id": "B",
+      "name": "Hook BaseRecentsImpl.addFsgGestureWindow and setIsUseMiuiHomeAsDefaultHome",
+      "scope": "com.miui.home.recents.BaseRecentsImpl",
+      "mechanism": "addFsgGestureWindow after-hook sets mIsUseMiuiHomeAsDefaultHome=true and re-calls updateUseLauncherRecentsAndFsGesture/updateFsgWindowState; setIsUseMiuiHomeAsDefaultHome before-hook overrides p3 to true when controls_fsg_horiz and REAL_FORCE_FSG_NAV_BAR are true",
+      "pros": [
+        "localized to BaseRecentsImpl",
+        "does not affect settings UI or Utilities callers",
+        "preserves REAL_FORCE_FSG_NAV_BAR fail-closed behavior",
+        "reuses existing updateFsgWindowState() for stub creation/removal"
+      ],
+      "cons": [
+        "may cause OverviewComponentObserver and BaseRecentsImpl$7 to keep re-posting updates",
+        "affects use_gesture_version_three global setting via updateUseLauncherRecentsAndFsGesture",
+        "field state may differ from OverviewComponentObserver.mIsHomeAndOverviewSame"
+      ],
+      "risk": "MEDIUM",
+      "recommended": true,
+      "rank": 1
+    },
+    {
+      "id": "C",
+      "name": "Hook BaseRecentsImpl.addFsgGestureWindow / updateFsgWindowState branches directly",
+      "scope": "com.miui.home.recents.BaseRecentsImpl",
+      "mechanism": "force the stub-creation branch even when mIsUseMiuiHomeAsDefaultHome is false",
+      "pros": [
+        "minimal logic change",
+        "no field mutation"
+      ],
+      "cons": [
+        "use_gesture_version_three global may remain false because updateUseLauncherRecentsAndFsGesture uses the field",
+        "mIsUseMiuiHomeAsDefaultHome still false for foldable onExpand and other consumers",
+        "stale field may cause later observer-driven updateFsgWindowState to remove stubs"
+      ],
+      "risk": "MEDIUM-HIGH",
+      "recommended": false
+    },
+    {
+      "id": "D",
+      "name": "Hook OverviewComponentObserver.updateOverviewTargets to force mIsHomeAndOverviewSame=true",
+      "scope": "com.miui.home.recents.OverviewComponentObserver",
+      "mechanism": "override the default-home comparison and call setIsUseMiuiHomeAsDefaultHome(true) regardless",
+      "pros": [
+        "covers both the observer and initial update path"
+      ],
+      "cons": [
+        "also changes mOverviewIntent category/component and home intent construction",
+        "may force MIUI recents/overview when third-party launcher is default, which is not the user's intent",
+        "broad lifecycle impact"
+      ],
+      "risk": "HIGH",
+      "recommended": false
+    }
+  ],
+  "future_tests": [
+    {
+      "id": "F1-T1",
+      "name": "MiuiHome default + FSG enabled",
+      "scenario": "getDefaultHomePackageName returns 'com.miui.home' and controls_fsg_horiz=true",
+      "expectation": "mIsUseMiuiHomeAsDefaultHome true; createAndAddNavStubView and addBackStubWindow called; use_gesture_version_three true"
+    },
+    {
+      "id": "F1-T2",
+      "name": "Third-party default + FSG enabled",
+      "scenario": "getDefaultHomePackageName returns 'com.third.party.launcher' and controls_fsg_horiz=true",
+      "expectation": "recommended hook B forces mIsUseMiuiHomeAsDefaultHome true; stub creation occurs; use_gesture_version_three true"
+    },
+    {
+      "id": "F1-T3",
+      "name": "Switch default home Xiaomi <-> third-party",
+      "scenario": "BaseRecentsImpl$7.onChange / OverviewComponentObserver.updateOverviewTargets called with false",
+      "expectation": "hook B overrides to true when controls_fsg_horiz and real FSG are enabled; updateFsgWindowState preserves or creates stubs"
+    },
+    {
+      "id": "F1-T4",
+      "name": "3-button navigation fail-closed",
+      "scenario": "REAL_FORCE_FSG_NAV_BAR real value is false",
+      "expectation": "no override of mIsUseMiuiHomeAsDefaultHome; createAndAddNavStubView skipped; updateFsgWindowState removes any existing stub"
+    },
+    {
+      "id": "F1-T5",
+      "name": "controls_fsg_horiz_apps package filter",
+      "scenario": "GestureStubView.onTouchEvent with foreground package in set vs not in set",
+      "expectation": "returns false for packages in controls_fsg_horiz_apps; preserves native behavior otherwise"
+    },
+    {
+      "id": "F1-T6",
+      "name": "No default home / empty package recovery",
+      "scenario": "getDefaultHomePackageName returns null or empty",
+      "expectation": "hook B still applies based on controls_fsg_horiz, not on default-home string; no NPE"
+    },
+    {
+      "id": "F1-T7",
+      "name": "Callback-time no scanning",
+      "scenario": "addFsgGestureWindow / updateFsgWindowState / setIsUseMiuiHomeAsDefaultHome callbacks",
+      "expectation": "no reflection/DexKit/class scanning in callbacks; no repeated stack trace outside getGlobalBoolean hook"
+    },
+    {
+      "id": "F1-T8",
+      "name": "use_gesture_version_three side effect",
+      "scenario": "override mIsUseMiuiHomeAsDefaultHome to true",
+      "expectation": "updateUseLauncherRecentsAndFsGesture writes use_gesture_version_three=true"
+    }
+  ],
+  "f1_conclusion": {
+    "stage_f1_status": "STATIC_ANALYSIS_COMPLETE",
+    "production_authorization": false,
+    "production_changed": false,
+    "device_verified": false,
+    "recommended_design_id": "B",
+    "recommended_design_name": "BaseRecentsImpl.addFsgGestureWindow + setIsUseMiuiHomeAsDefaultHome localized override",
+    "next_gate": "explicit production approval and real-device validation before implementing any design"
+  }
 }

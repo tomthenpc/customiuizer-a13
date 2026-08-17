@@ -1,0 +1,268 @@
+A13 Stage F1 — Issue #2 FSG / Third-Party Launcher Target Selection Report
+==========================================================================
+
+Base SHA: 19b157225f102d382379c11ce1fec1886652196d
+Final SHA: to be recorded at commit time
+Branch:   devin/a13-rom-intelligence-compat-r13.11.1
+
+1. Task objective
+-----------------
+Continue the interrupted Stage F investigation at the point of interruption.
+Map the complete read/write surface of `BaseRecentsImpl.mIsUseMiuiHomeAsDefaultHome`,
+identify all `getDefaultHomePackageName` call sites in the exact Launcher APK,
+inspect back-stub methods for no-default-home recovery, audit the default-home
+switching lifecycle, and rank candidate corrective designs without making any
+production code change.
+
+2. Exact artifact
+-----------------
+Package:         com.miui.home
+Version name:    RELEASE-4.39.14.8060-04191512
+Version code:    439148060
+APK SHA-256:     b507f1cbf2d8fbc445398a2402ff9dd3f22580265b0ef9de07b4b37889b3384b
+Cert SHA-256:    c9009d01ebf9f5d0302bc71b2fe9aa9a47a432bba17308a3111b75d7b2149025
+Source:          MemeOS Updates public mirror (APKMemeOS download link)
+
+3. mIsUseMiuiHomeAsDefaultHome field surface
+--------------------------------------------
+Read sites (exact APK):
+  - com.miui.home.recents.BaseRecentsImpl.access$1200()Z
+  - com.miui.home.recents.BaseRecentsImpl.addFsgGestureWindow()V
+  - com.miui.home.recents.BaseRecentsImpl.isUseLauncherRecentsAndFsGesture()Z
+  - com.miui.home.recents.BaseRecentsImpl.updateFsgWindowState()V
+  - com.miui.home.recents.BaseRecentsImpl$6.onExpand()V (via access$1200)
+
+Write sites (exact APK):
+  - com.miui.home.recents.BaseRecentsImpl.addFsgGestureWindow()V (direct assignment)
+  - com.miui.home.recents.BaseRecentsImpl.setIsUseMiuiHomeAsDefaultHome(Z)V
+
+Synthetic accessor:
+  - access$1200 simply returns the field value.
+  - It is used by BaseRecentsImpl$6.onExpand for foldable/unfold stub logic.
+
+This field is not a local branch flag; it is a shared state variable that also
+drives the global "use_gesture_version_three" setting and foldable expand behavior.
+
+4. updateUseLauncherRecentsAndFsGesture side effects
+----------------------------------------------------
+Implementation (decompiled):
+
+  private void updateUseLauncherRecentsAndFsGesture() {
+      DeviceConfig.setUseLauncherRecentsAndFsGesture(
+          this.mContext,
+          this.isUseLauncherRecentsAndFsGesture());  // returns mIsUseMiuiHomeAsDefaultHome
+  }
+
+DeviceConfig.setUseLauncherRecentsAndFsGesture(Context, boolean) writes:
+
+  MiuiSettingsUtils.putBooleanToGlobal(
+      contentResolver,
+      "use_gesture_version_three",
+      value);
+
+Callers:
+  - BaseRecentsImpl.addFsgGestureWindow()V
+  - BaseRecentsImpl.setIsUseMiuiHomeAsDefaultHome(Z)V
+
+Consequence: any override of `mIsUseMiuiHomeAsDefaultHome` will also flip the
+Settings.Global key `use_gesture_version_three`. A production design must not
+leave this global false when the user expects FSG to be active.
+
+5. getDefaultHomePackageName call-site map
+------------------------------------------
+All direct callers in the exact Launcher APK:
+
+  1. FallbackHomeCompat.getDesiredHomePackage()Ljava/lang/String;
+  2. Utilities.isUseMiuiHomeAsDefaultHome(Landroid/content/Context;)Z
+  3. Utilities.isUsePocoHomeAsDefaultHome(Landroid/content/Context;)Z
+  4. ElderlyManModeChangedReceiver.onReceive$___twin___
+  5. BaseRecentsImpl$7.onChange(Z)V
+  6. BaseRecentsImpl.addFsgGestureWindow()V
+  7. NavBarTypeContainerPreference.lambda$showDialogToSetMiuiHomeAsDefault$2$
+  8. MiuiHomeSettings.onResume()V
+
+`Utilities.getDefaultHomeResolveInfo()` (used by `OverviewComponentObserver` and
+`getDefaultHomePackageName`) calls `PackageManager.resolveActivity` with
+`CATEGORY_HOME` and flag `786432`, not `getDefaultHomePackageName`.
+
+6. setIsUseMiuiHomeAsDefaultHome callers
+----------------------------------------
+Direct callers in the exact APK:
+
+  1. BaseRecentsImpl$7.onChange(Z)V
+  2. OverviewComponentObserver.updateOverviewTargets()V
+
+`BaseRecentsImpl$7` is a `ContentObserver` instantiated by
+`registerSuperSavePowerObserver()` and registered for
+`Settings.System "power_supersave_mode_open"`. On change it re-evaluates the
+default home package and then calls `OverviewComponentObserver.updateOverviewTargetsPost()`.
+
+`OverviewComponentObserver` is a singleton registered for
+`ACTION_PREFERRED_ACTIVITY_CHANGED`. Its constructor and
+`TouchInteractionService.initWhenUserUnlocked()` both call `updateOverviewTargets()`.
+
+7. Back-stub method audit
+-------------------------
+The stub add/remove methods do not themselves check `mIsUseMiuiHomeAsDefaultHome`.
+They are controlled by `updateFsgWindowState()` and the `addFsgGestureWindow()`
+condition block.
+
+  - addBackStubWindow()V
+      guards: !SpecialFDeviceGestureHelper.isInSFDeviceFoldedMode()
+      executor: TouchInteractionService.BACKGROUND_EXECUTOR
+
+  - showBackStubWindow()V
+      guards: !SpecialFDeviceGestureHelper.isInSFDeviceFoldedMode()
+      executor: TouchInteractionService.BACKGROUND_EXECUTOR
+
+  - clearBackStubWindow()V
+      guards: none
+      executor: TouchInteractionService.BACKGROUND_EXECUTOR
+
+  - removeNavStubView()V
+      guards: none
+      executor: TouchInteractionService.GESTURE_EXECUTOR.getHandler()
+
+  - createAndAddNavStubView()V
+      guards: !SpecialFDeviceGestureHelper.isInSFDeviceFoldedMode()
+      executor: TouchInteractionService.GESTURE_EXECUTOR.getHandler()
+
+All five methods are safe to call independently once the caller has already
+decided the default-home gate should be open. They do not perform default-home
+recovery themselves.
+
+8. Default-home switching lifecycle
+-----------------------------------
+Static lifecycle (exact APK):
+
+  BaseRecentsImpl.<init>
+      -> addFsgGestureWindow()
+          -> mHasNavigationBar = DeviceConfig.isHasNavigationBar()
+          -> mIsFsgNavBar = MiuiSettingsUtils.getGlobalBoolean("force_fsg_nav_bar")
+                              [module publishes REAL_FORCE_FSG_NAV_BAR, returns true]
+          -> mIsUseMiuiHomeAsDefaultHome =
+                 Utilities.getDefaultHomePackageName(context).equals(packageName)
+          -> updateUseLauncherRecentsAndFsGesture()
+          -> if (mIsFsgNavBar && !mIsInAnotherPro && mIsUseMiuiHomeAsDefaultHome)
+                 createAndAddNavStubView(); showBackStubWindow();
+
+  TouchInteractionService.initWhenUserUnlocked()
+      -> OverviewComponentObserver.getInstance()
+      -> OverviewComponentObserver.updateOverviewTargets()
+          -> resolve default home via PackageManager
+          -> setIsUseMiuiHomeAsDefaultHome(mIsHomeAndOverviewSame)
+
+  OverviewComponentObserver receives ACTION_PREFERRED_ACTIVITY_CHANGED
+      -> updateOverviewTargets()
+
+  BaseRecentsImpl$7 (power_supersave_mode_open observer) onChange
+      -> setIsUseMiuiHomeAsDefaultHome(
+             Utilities.getDefaultHomePackageName(context).equals(packageName))
+      -> OverviewComponentObserver.getInstance().updateOverviewTargetsPost()
+
+Every static path that can set `mIsUseMiuiHomeAsDefaultHome` to false when a
+third-party launcher is default is now mapped.
+
+9. Candidate corrective designs
+-------------------------------
+Design A: Hook Utilities.getDefaultHomePackageName to return "com.miui.home"
+  - Pros: single choke point.
+  - Cons: affects FallbackHomeCompat, isUseMiui/PocoHomeAsDefaultHome, settings UI,
+          nav-bar dialog and elderly-mode receiver; requires stack walk; high risk.
+  - Risk: HIGH.
+  - Rank: 4
+
+Design B: Hook BaseRecentsImpl.addFsgGestureWindow + setIsUseMiuiHomeAsDefaultHome
+  - addFsgGestureWindow after-hook: force mIsUseMiuiHomeAsDefaultHome = true and
+    re-call updateUseLauncherRecentsAndFsGesture() / updateFsgWindowState().
+  - setIsUseMiuiHomeAsDefaultHome before-hook: override p3 to true when
+    controls_fsg_horiz and REAL_FORCE_FSG_NAV_BAR are both true.
+  - Pros: localized to BaseRecentsImpl; does not touch settings UI or Utilities;
+          preserves REAL_FORCE_FSG_NAV_BAR fail-closed; reuses existing
+          updateFsgWindowState() for stub management; naturally writes
+          use_gesture_version_three true.
+  - Cons: may keep re-triggering observer updates; could decouple
+          mIsUseMiuiHomeAsDefaultHome from OverviewComponentObserver.mIsHomeAndOverviewSame.
+  - Risk: MEDIUM.
+  - Rank: 1 (RECOMMENDED)
+
+Design C: Hook only addFsgGestureWindow / updateFsgWindowState branch logic
+  - Force stub-creation branch regardless of mIsUseMiuiHomeAsDefaultHome.
+  - Pros: small logic change.
+  - Cons: use_gesture_version_three may remain false; mIsUseMiuiHomeAsDefaultHome
+          still false for other consumers and for later observer-driven removal.
+  - Risk: MEDIUM-HIGH.
+  - Rank: 3
+
+Design D: Hook OverviewComponentObserver.updateOverviewTargets
+  - Force mIsHomeAndOverviewSame = true and setIsUseMiuiHomeAsDefaultHome(true).
+  - Pros: covers the observer path.
+  - Cons: changes mOverviewIntent category/component and home intent construction;
+          may force MIUI recents when third-party launcher is default.
+  - Risk: HIGH.
+  - Rank: 4
+
+10. Minimum future behavior tests
+---------------------------------
+F1-T1: MiuiHome default + FSG enabled
+  mIsUseMiuiHomeAsDefaultHome true; stubs created; use_gesture_version_three true.
+
+F1-T2: Third-party default + FSG enabled
+  Recommended design B forces mIsUseMiuiHomeAsDefaultHome true; stubs created.
+
+F1-T3: Default home Xiaomi <-> third-party switching
+  setIsUseMiuiHomeAsDefaultHome(false) from observer is overridden to true when
+  controls_fsg_horiz and real FSG are enabled.
+
+F1-T4: 3-button navigation fail-closed
+  REAL_FORCE_FSG_NAV_BAR real value false -> no override; stubs removed/skipped.
+
+F1-T5: controls_fsg_horiz_apps package filter
+  GestureStubView.onTouchEvent returns false for packages in set.
+
+F1-T6: No default home / empty package recovery
+  Hook B applies based on controls_fsg_horiz, not on default-home string; no NPE.
+
+F1-T7: Callback-time no scanning
+  No reflection/DexKit in addFsgGestureWindow / updateFsgWindowState / setIsUse
+  callbacks; no repeated stack walking outside the getGlobalBoolean hook.
+
+F1-T8: use_gesture_version_three side effect
+  Overriding mIsUseMiuiHomeAsDefaultHome to true writes use_gesture_version_three=true.
+
+11. Conclusion
+--------------
+Stage F1 static analysis is complete. The default-home gate is the only
+statically demonstrated blocker for horizontal FSG when a third-party launcher
+is the default. The recommended design (B) is to hook `BaseRecentsImpl.
+addFsgGestureWindow()` and `BaseRecentsImpl.setIsUseMiuiHomeAsDefaultHome()`
+while preserving the `REAL_FORCE_FSG_NAV_BAR` fail-closed channel.
+
+No production change has been made in this batch.
+Issue #2 remains UNVERIFIED at device level.
+Production change requires an explicit corrective gate and real-device validation.
+
+12. Deliverables
+----------------
+- docs/rom-intelligence/A13-Issue-2-fsg-third-party-launcher.md
+- docs/rom-intelligence/A13-Issue-2-fsg-third-party-launcher.json
+- docs/rom-intelligence/A13_STAGE_F1_FSG_TARGET_SELECTION_REPORT.txt
+
+13. Verification
+----------------
+All verification was re-run after document/report modifications.
+
+| Command | Result |
+|---|---|
+| git status --short | docs/rom-intelligence/A13-Issue-2-fsg-third-party-launcher.{md,json} modified; A13_STAGE_F1_FSG_TARGET_SELECTION_REPORT.txt new |
+| git diff --check | OK |
+| python tools/verify.py fast --changed | OK |
+| python tools/verify.py full | OK (compileDebugKotlin / compileDebugJavaWithJavac / testDebugUnitTest-all / lintDebug) |
+| python -m compileall tools | OK |
+| python -m unittest discover -s tools/tests -p "test_*.py" | OK (1267 tests, skipped=2) |
+
+14. Final SHAs
+--------------
+Base SHA: 19b157225f102d382379c11ce1fec1886652196d
+
+End of report.

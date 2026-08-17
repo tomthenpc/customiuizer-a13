@@ -382,4 +382,94 @@ public static boolean usingFsGesture() {
 | `python -m compileall tools` | `OK` |
 | `python -m unittest discover -s tools/tests -p "test_*.py"` | `OK (1267 tests, skipped=2)` |
 
-完整验证结果见 `A13_STAGE_F_ISSUE_2_FSG_EVIDENCE_REPORT.txt`。
+完整验证结果见 `A13_STAGE_F_ISSUE_2_FSG_EVIDENCE_REPORT.txt` 和 `A13_STAGE_F1_FSG_TARGET_SELECTION_REPORT.txt`。
+
+---
+
+## A. Stage F1 — Target selection analysis
+
+> 本附件记录中断处继续后的额外静态分析：字段读写面、`getDefaultHomePackageName` 调用点、后 stub 方法审计、默认桌面切换生命周期、候选设计排序与未来测试。
+
+### A.1 `mIsUseMiuiHomeAsDefaultHome` 读写面
+
+- 读点：`access$1200`、`addFsgGestureWindow()`、`isUseLauncherRecentsAndFsGesture()`、`updateFsgWindowState()`、`BaseRecentsImpl$6.onExpand()`。
+- 写点：`addFsgGestureWindow()`（直接赋值）、`setIsUseMiuiHomeAsDefaultHome()`。
+- `access$1200` 为 synthetic accessor，在 `BaseRecentsImpl$6.onExpand()` 被读取；该字段因此也影响折叠屏展开时的 stub 分支。
+
+### A.2 `updateUseLauncherRecentsAndFsGesture` 副作用
+
+```java
+private void updateUseLauncherRecentsAndFsGesture() {
+    DeviceConfig.setUseLauncherRecentsAndFsGesture(
+        this.mContext,
+        this.isUseLauncherRecentsAndFsGesture());  // 直接返回 mIsUseMiuiHomeAsDefaultHome
+}
+```
+
+`DeviceConfig.setUseLauncherRecentsAndFsGesture` 会写入 Settings.Global：
+
+```java
+MiuiSettingsUtils.putBooleanToGlobal(
+    contentResolver,
+    "use_gesture_version_three",
+    value);
+```
+
+因此任何对 `mIsUseMiuiHomeAsDefaultHome` 的 override 都会同步影响全局 `use_gesture_version_three`。
+
+### A.3 `Utilities.getDefaultHomePackageName` 调用点
+
+| # | 类 | 方法 |
+|---|---|---|
+| 1 | `FallbackHomeCompat` | `getDesiredHomePackage()` |
+| 2 | `Utilities` | `isUseMiuiHomeAsDefaultHome(Context)` |
+| 3 | `Utilities` | `isUsePocoHomeAsDefaultHome(Context)` |
+| 4 | `ElderlyManModeChangedReceiver` | `onReceive$___twin___` |
+| 5 | `BaseRecentsImpl$7` | `onChange(boolean)` |
+| 6 | `BaseRecentsImpl` | `addFsgGestureWindow()` |
+| 7 | `NavBarTypeContainerPreference` | 设置默认桌面对话框 lambda |
+| 8 | `MiuiHomeSettings` | `onResume()` |
+
+唯一进入 FSG 创建路径的调用是 `BaseRecentsImpl.addFsgGestureWindow()`；`BaseRecentsImpl$7.onChange` 通过 `setIsUseMiuiHomeAsDefaultHome` 影响状态。其余调用点属于设置 UI、兼容、老年模式等，不宜被全局 override 影响。
+
+### A.4 默认桌面切换生命周期
+
+- `BaseRecentsImpl$7` 是 `ContentObserver`，在 `registerSuperSavePowerObserver()` 中创建并注册给 `Settings.System "power_supersave_mode_open"`。
+- `BaseRecentsImpl$7.onChange` 调用 `setIsUseMiuiHomeAsDefaultHome(...)` 并触发 `OverviewComponentObserver.updateOverviewTargetsPost()`。
+- `OverviewComponentObserver` 注册 `ACTION_PREFERRED_ACTIVITY_CHANGED`；其构造器和 `TouchInteractionService.initWhenUserUnlocked()` 都会主动调用 `updateOverviewTargets()`。
+- `OverviewComponentObserver.updateOverviewTargets()` 通过 `PackageManager.resolveActivity(CATEGORY_HOME, 786432)` 解析默认桌面，然后调用 `BaseRecentsImpl.setIsUseMiuiHomeAsDefaultHome(mIsHomeAndOverviewSame)`。
+
+### A.5 后 stub 方法审计
+
+`addBackStubWindow()`、`showBackStubWindow()`、`clearBackStubWindow()`、`removeNavStubView()`、`createAndAddNavStubView()` 自身不检查默认桌面，只执行窗口操作（通常提交到 `BACKGROUND_EXECUTOR` 或 `GESTURE_EXECUTOR`）。是否创建/移除由 `addFsgGestureWindow()` 和 `updateFsgWindowState()` 中的 `mIsUseMiuiHomeAsDefaultHome` 分支决定。
+
+### A.6 候选设计排序
+
+| ID | 设计 | 风险 | 推荐 |
+|---|---|---|---|
+| A | Hook `Utilities.getDefaultHomePackageName` 在 `BaseRecentsImpl` 上下文返回 `com.miui.home` | 高：影响 settings UI / 兼容 / Poco / 老年模式 | 否 |
+| B | Hook `BaseRecentsImpl.addFsgGestureWindow` + `setIsUseMiuiHomeAsDefaultHome` 在 `controls_fsg_horiz` 且真实 FSG 为 true 时强制 `true` | 中：局部，不影响其他 `Utilities` 调用者，保留 `REAL_FORCE_FSG_NAV_BAR` fail-closed | **是** |
+| C | 直接 Hook `addFsgGestureWindow` / `updateFsgWindowState` 分支逻辑，跳过 `mIsUseMiuiHomeAsDefaultHome` 检查 | 中高：`use_gesture_version_three` 仍可能为 false，字段状态仍不一致 | 否 |
+| D | Hook `OverviewComponentObserver.updateOverviewTargets` 强制 `mIsHomeAndOverviewSame=true` | 高：改变 overview/home intent 构造 | 否 |
+
+**推荐设计 B** 的核心思路：
+1. `addFsgGestureWindow` after-hook 在原有逻辑完成后，若 `controls_fsg_horiz` 与真实 `force_fsg_nav_bar` 均为 true，则设置 `mIsUseMiuiHomeAsDefaultHome = true`，重新调用 `updateUseLauncherRecentsAndFsGesture()` 与 `updateFsgWindowState()`。
+2. `setIsUseMiuiHomeAsDefaultHome` before-hook 在参数为 `false` 且满足同样条件时，覆盖为 `true`，从而阻止 `BaseRecentsImpl$7` 或 `OverviewComponentObserver` 把字段改回 `false` 并移除 stub。
+
+### A.7 未来最小测试集合
+
+- F1-T1：小米默认桌面 + FSG 开启，stub 正常创建，`use_gesture_version_three` 为 true。
+- F1-T2：第三方默认桌面 + FSG 开启，设计 B 强制 `mIsUseMiuiHomeAsDefaultHome` 为 true，stub 创建。
+- F1-T3：小米桌面与第三方桌面来回切换，`setIsUseMiuiHomeAsDefaultHome(false)` 被覆盖为 `true`。
+- F1-T4：真实 `force_fsg_nav_bar == false`（三键导航）时不 override，stub 被移除/跳过。
+- F1-T5：`controls_fsg_horiz_apps` set 命中/未命中时 `GestureStubView.onTouchEvent` 返回值。
+- F1-T6：无默认桌面/空包时 hook 不 NPE 且按 `controls_fsg_horiz` 条件行为。
+- F1-T7：`addFsgGestureWindow` / `updateFsgWindowState` / `setIsUseMiuiHomeAsDefaultHome` 回调无反射扫描、无重复栈遍历。
+- F1-T8：override `mIsUseMiuiHomeAsDefaultHome` 为 true 时，确认 `use_gesture_version_three` 写入 true。
+
+### A.8 F1 结论
+
+- `STAGE_F1` 静态分析完成；生产变更未授权，未做任何 production 修改。
+- Issue #2 在设备层面仍为 `UNVERIFIED`。
+- 唯一推荐候选为设计 B；若用户/PM 批准，需先补充测试并在实机验证，方可进入 production 实现。
+- 详细报告见 `A13_STAGE_F1_FSG_TARGET_SELECTION_REPORT.txt`。
