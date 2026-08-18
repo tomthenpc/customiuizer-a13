@@ -107,6 +107,15 @@ object AppLocaleController {
         prefs?.edit()?.putString(APPLIED_LOCALE_PREF_KEY, RECONCILE_MARKER)?.apply()
     }
 
+    /**
+     * Stages the local force-reconcile marker into an existing editor so restore
+     * writes it in the same primary transaction as the restored preference set.
+     */
+    @JvmStatic
+    fun stageReconcileMarker(editor: SharedPreferences.Editor) {
+        editor.putString(APPLIED_LOCALE_PREF_KEY, RECONCILE_MARKER)
+    }
+
     private fun hasAppliedLocale(prefs: SharedPreferences?): Boolean =
         prefs?.getString(APPLIED_LOCALE_PREF_KEY, null) != null
 

@@ -2,6 +2,7 @@ package tv.withaibuild.customiuizer
 
 import android.annotation.SuppressLint
 import android.app.Activity
+import android.content.ComponentName
 import android.content.Context
 import android.content.Intent
 import android.net.Uri
@@ -17,17 +18,15 @@ import androidx.appcompat.app.AppCompatActivity
 import androidx.fragment.app.Fragment
 import androidx.preference.PreferenceFragmentCompat
 import androidx.preference.PreferenceManager
+import java.io.InputStream
+import java.io.OutputStream
 import tv.withaibuild.customiuizer.mods.GlobalActions
 import tv.withaibuild.customiuizer.subs.WebPage
 import tv.withaibuild.customiuizer.utils.AppHelper
 import tv.withaibuild.customiuizer.utils.AppLocaleController
+import tv.withaibuild.customiuizer.utils.BackupRestore
 import tv.withaibuild.customiuizer.utils.Helpers
 import tv.withaibuild.customiuizer.utils.SettingsDiagnostics
-import java.io.ObjectInputStream
-import java.io.ObjectOutputStream
-import java.text.SimpleDateFormat
-import java.util.Date
-import java.util.Locale
 
 open class PreferenceFragmentBase : PreferenceFragmentCompat() {
 
@@ -332,7 +331,7 @@ open class PreferenceFragmentBase : PreferenceFragmentCompat() {
         intent.type = "application/octet-stream"
         intent.putExtra(
             Intent.EXTRA_TITLE,
-            "customiuizer_backup_" + SimpleDateFormat("MMddHHmmss", Locale.US).format(Date())
+            BackupRestore.generateBackupFilename()
         )
         startActivityForResult(intent, SAVE_BACKFILE)
     }
@@ -346,11 +345,12 @@ open class PreferenceFragmentBase : PreferenceFragmentCompat() {
             }
         } else if (requestCode == SAVE_BACKFILE && resultCode == Activity.RESULT_OK) {
             val uri = resultData?.data ?: return
-            var output: ObjectOutputStream? = null
+            var output: OutputStream? = null
             try {
-                output = ObjectOutputStream(getValidContext().contentResolver.openOutputStream(uri))
+                output = getValidContext().contentResolver.openOutputStream(uri)
+                    ?: throw IllegalStateException("Backup output stream unavailable")
                 val prefs = AppHelper.appPrefs ?: return
-                output.writeObject(prefs.all)
+                BackupRestore.performBackup(prefs, output)
 
                 AlertDialog.Builder(getValidContext())
                     .setTitle(R.string.do_backup)
@@ -387,28 +387,42 @@ open class PreferenceFragmentBase : PreferenceFragmentCompat() {
         startActivityForResult(intent, PICK_BACKFILE)
     }
 
-    @Suppress("UNCHECKED_CAST")
     fun doRestoreSettings(uri: Uri?) {
         val act = activity as? AppCompatActivity ?: return
         if (uri == null) return
-        var input: ObjectInputStream? = null
+        var input: InputStream? = null
         try {
-            input = ObjectInputStream(act.contentResolver.openInputStream(uri))
-            val entries = input.readObject() as? Map<String, *>
-            if (entries != null) {
-                val appPrefs = AppHelper.appPrefs ?: return
-                AppHelper.syncPrefsToAnother(entries, appPrefs, 1, null, false)
-                AppLocaleController.invalidateFastPath(appPrefs)
-            }
-            AlertDialog.Builder(act)
-                .setTitle(R.string.do_restore)
-                .setMessage(R.string.restore_ok)
-                .setCancelable(false)
-                .setPositiveButton(android.R.string.ok) { _, _ ->
-                    act.finish()
-                    act.startActivity(act.intent)
+            input = act.contentResolver.openInputStream(uri)
+                ?: throw IllegalStateException("Backup input stream unavailable")
+            val appPrefs = AppHelper.appPrefs ?: return
+            val componentName = ComponentName(act, GateWayLauncher::class.java)
+            val result = BackupRestore.performRestore(
+                input,
+                act.packageManager,
+                appPrefs,
+                componentName,
+            )
+            when (result.status) {
+                BackupRestore.Status.SUCCESS, BackupRestore.Status.PARTIAL_FAILURE -> {
+                    AppLocaleController.invalidateFastPath(appPrefs)
+                    AlertDialog.Builder(act)
+                        .setTitle(R.string.do_restore)
+                        .setMessage(R.string.restore_ok)
+                        .setCancelable(false)
+                        .setPositiveButton(android.R.string.ok) { _, _ ->
+                            act.finish()
+                            act.startActivity(act.intent)
+                        }
+                        .show()
                 }
-                .show()
+                BackupRestore.Status.FAILURE -> {
+                    AlertDialog.Builder(act)
+                        .setTitle(R.string.warning)
+                        .setMessage(R.string.storage_cannot_restore)
+                        .setPositiveButton(android.R.string.ok) { _, _ -> }
+                        .show()
+                }
+            }
         } catch (t: Throwable) {
             if (t is OutOfMemoryError || t is ThreadDeath || t is VirtualMachineError) throw t
             SettingsDiagnostics.failure("PreferenceFragmentBase.restore.read", t)
