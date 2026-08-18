@@ -1,12 +1,17 @@
 import tempfile
 import unittest
 from pathlib import Path
+import sys
+import csv
 
+from tools import parity_inventory
 from tools.parity_inventory import (
     classify_ui_node,
     derive_batch_counts,
     evidence_for_row,
     extract_pref_reads,
+    implementation_mode_for,
+    missing_semantic_aliases,
     parity_accounting_invariant,
     parse_a14_specs,
     parse_ui_nodes,
@@ -108,6 +113,91 @@ class ParityInventoryTest(unittest.TestCase):
         self.assertEqual(c["E4"], 1)
         self.assertTrue(parity_accounting_invariant(rows))
         self.assertEqual(sum(1 for r in rows if r["parity_state"] == "INTENTIONAL_EXCLUDED"), 1)
+
+    def test_implementation_mode_values(self):
+        self.assertEqual(implementation_mode_for("MISSING_IN_A13", "E3", False), "NEW_PORT")
+        self.assertEqual(implementation_mode_for("PARTIAL_PARITY", "E5", True), "UPGRADE_EXISTING_A13")
+        self.assertEqual(implementation_mode_for("MISSING_IN_A13", "HOLD_EVIDENCE", False), "EVIDENCE_HOLD")
+        self.assertEqual(implementation_mode_for("PRESENT_A13_VARIANT", "", False), "NO_IMPLEMENTATION")
+
+    def test_missing_alias_map_has_usb_regression(self):
+        aliases = missing_semantic_aliases()
+        self.assertIn("system_usb_default_function", aliases)
+        self.assertIn("system_defaultusb", aliases["system_usb_default_function"]["a13_keys"])
+        self.assertEqual(aliases["system_usb_default_function"]["parity_state"], "PARTIAL_PARITY")
+
+    def test_partial_counts_as_gap_present_does_not(self):
+        rows = [
+            {"parity_state": "PARTIAL_PARITY", "phase_e_batch": "E3"},
+            {"parity_state": "PRESENT_A13_VARIANT", "phase_e_batch": "E3"},
+            {"parity_state": "MISSING_IN_A13", "phase_e_batch": "HOLD_EVIDENCE"},
+        ]
+        c = derive_batch_counts(rows)
+        self.assertEqual(c["E3"], 1)
+
+    def test_hold_evidence_excluded_from_ready_gaps(self):
+        rows = [
+            {"parity_state": "MISSING_IN_A13", "phase_e_batch": "HOLD_EVIDENCE"},
+            {"parity_state": "PARTIAL_PARITY", "phase_e_batch": "E4"},
+        ]
+        c = derive_batch_counts(rows)
+        ready = sum(c.get(k, 0) for k in ["E1", "E2", "E3", "E4", "E5"])
+        self.assertEqual(ready, 1)
+
+    def test_usb_alias_regression_not_missing(self):
+        with tempfile.TemporaryDirectory() as td:
+            root = Path(td)
+            a13 = root / "a13"
+            a14 = root / "a14"
+            out = root / "out"
+            self._write(a14, "app/src/main/res/values/strings.xml", "<resources/>")
+            self._write(a13, "app/src/main/res/values/strings.xml", "<resources/>")
+            self._write(
+                a14,
+                "app/src/main/res/xml/prefs_system.xml",
+                """<PreferenceScreen xmlns:android="http://schemas.android.com/apk/res/android">
+                    <CheckBoxPreferenceEx android:key="pref_key_system_usb_default_function" />
+                </PreferenceScreen>""",
+            )
+            self._write(
+                a13,
+                "app/src/main/res/xml/prefs_system.xml",
+                """<PreferenceScreen xmlns:android="http://schemas.android.com/apk/res/android">
+                    <CheckBoxPreferenceEx android:key="pref_key_system_defaultusb" />
+                </PreferenceScreen>""",
+            )
+            self._write(
+                a14,
+                "app/src/main/java/demo/F.kt",
+                """
+                val f = LazyFeatureSpec(
+                    id = UsbDefaultFunctionFeatureId,
+                    name = "USB Default Function",
+                    preferenceKey = "system_usb_default_function",
+                    target = FeatureTarget.SYSTEM_SERVER
+                )
+                """,
+            )
+            self._write(
+                a13,
+                "app/src/main/java/demo/Usb.kt",
+                'class U { fun x(){ prefs.getString("system_defaultusb") } }',
+            )
+            old = sys.argv
+            try:
+                sys.argv = [
+                    "parity_inventory.py",
+                    "--a13-repo", str(a13),
+                    "--a14-repo", str(a14),
+                    "--out-dir", str(out),
+                ]
+                parity_inventory.main()
+            finally:
+                sys.argv = old
+            rows = list(csv.DictReader((out / "A13_A14_FEATURE_MATRIX.csv").open(encoding="utf-8")))
+            usb = next(r for r in rows if r["a14_pref_keys"] == "system_usb_default_function")
+            self.assertEqual(usb["parity_state"], "PARTIAL_PARITY")
+            self.assertEqual(usb["implementation_mode"], "UPGRADE_EXISTING_A13")
 
 
 if __name__ == "__main__":

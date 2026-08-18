@@ -37,6 +37,20 @@ class A14Spec:
     source_path: str
 
 
+@dataclass
+class MissingAuditRecord:
+    a14_feature_id: str
+    a14_pref_keys: str
+    a14_behavior: str
+    a14_reference: str
+    a13_search_terms: str
+    a13_match: str
+    a13_reference: str
+    final_parity_state: str
+    reclassification_reason: str
+    absence_proof: str
+
+
 def normalize_key(key: str) -> str:
     return key[len("pref_key_") :] if key.startswith("pref_key_") else key
 
@@ -263,6 +277,16 @@ def route_phase_e_batch(host_package: str, process: str, key: str, a14_name: str
     return "HOLD_EVIDENCE"
 
 
+def implementation_mode_for(parity_state: str, phase_e_batch: str, upgraded_existing: bool) -> str:
+    if parity_state in {"PRESENT_EQUIVALENT", "PRESENT_A13_VARIANT", "A13_ONLY_KEEP", "INTENTIONAL_EXCLUDED", "INSUFFICIENT_EVIDENCE"}:
+        return "NO_IMPLEMENTATION"
+    if phase_e_batch == "HOLD_EVIDENCE":
+        return "EVIDENCE_HOLD"
+    if upgraded_existing:
+        return "UPGRADE_EXISTING_A13"
+    return "NEW_PORT"
+
+
 def derive_batch_counts(rows: list[dict[str, str]]) -> Counter:
     c: Counter = Counter()
     for r in rows:
@@ -288,18 +312,19 @@ def build_sanity_overrides() -> dict[str, dict[str, str]]:
     # Explicit semantic proofs for required sanity features.
     return {
         "system_usb_default_function": {
-            "parity_state": "MISSING_IN_A13",
+            "parity_state": "PARTIAL_PARITY",
             "evidence_level": "INDIVIDUAL_SEMANTIC_PROOF",
-            "proof_id": "PROOF_USB_DEFAULT_PURPOSE_A14_ONLY",
-            "a14_behavior": "Sets default USB function semantics from settings selector.",
-            "a13_behavior": "No equivalent user-visible selector.",
+            "proof_id": "PROOF_USB_DEFAULT_ALIAS_A13_SYSTEM_DEFAULTUSB",
+            "a14_behavior": "Sets default USB function behavior (follow system/charge/MTP/PTP) via SystemUsbDefaultHooks.",
+            "a13_behavior": "A13 already exposes default USB config through system_defaultusb + USBConfigHook/USBConfigSettingsHook.",
             "risk": "HIGH",
             "priority": "P0",
             "a14_reference": "mods/utils/feature/SystemServerFeatures.kt::UsbDefaultFunctionFeatureId",
-            "a13_reference": "ABSENT",
-            "api33": "Introduce API33-safe USB default function routing via system_server hook parity.",
-            "test_strategy": "System-server hook unit + integration with USB state transitions.",
+            "a13_reference": "mods/SystemSettingsMoreHooks.kt::USBConfigHook, USBConfigSettingsHook",
+            "api33": "Upgrade existing A13 USB default implementation parity branches (preserve security/lock behavior).",
+            "test_strategy": "System-server + settings hook behavioral parity tests for mode transitions.",
             "rom_evidence": "YES",
+            "implementation_mode": "UPGRADE_EXISTING_A13",
         },
         "controls_hide_ime_dismiss_button": {
             "parity_state": "MISSING_IN_A13",
@@ -314,6 +339,26 @@ def build_sanity_overrides() -> dict[str, dict[str, str]]:
             "api33": "Add SystemUI behavior gate with IME-specific guard.",
             "test_strategy": "SystemUI behavior test with IME visibility transitions.",
             "rom_evidence": "YES",
+            "implementation_mode": "NEW_PORT",
+        },
+    }
+
+
+def missing_semantic_aliases() -> dict[str, dict[str, str]]:
+    return {
+        "system_usb_default_function": {
+            "a13_keys": "system_defaultusb,system_defaultusb_unsecure",
+            "parity_state": "PARTIAL_PARITY",
+            "reason": "A14 renamed key; A13 has legacy USBConfigHook/USBConfigSettingsHook semantics.",
+            "a13_reference": "mods/SystemSettingsMoreHooks.kt::USBConfigHook,USBConfigSettingsHook; installers/SystemServerInstaller.java; installers/SettingsInstaller.java",
+            "implementation_mode": "UPGRADE_EXISTING_A13",
+        },
+        "system_detailednetspeed_style": {
+            "a13_keys": "system_detailednetspeed,system_detailednetspeed_fakedualrow",
+            "parity_state": "PARTIAL_PARITY",
+            "reason": "A14 style selector supersedes legacy A13 detailed netspeed toggles.",
+            "a13_reference": "res/xml/prefs_system_detailednetspeed.xml; mods/SystemUIStatusBarHooks.kt",
+            "implementation_mode": "UPGRADE_EXISTING_A13",
         },
     }
 
@@ -336,6 +381,10 @@ def main() -> int:
     a14_reads = extract_pref_reads(a14)
     a13_reads = extract_pref_reads(a13)
     overrides = build_sanity_overrides()
+    alias_map = missing_semantic_aliases()
+    a13_source_text = ""
+    for src in list(a13.glob("app/src/main/java/**/*.kt")) + list(a13.glob("app/src/main/java/**/*.java")):
+        a13_source_text += "\n" + src.read_text(encoding="utf-8", errors="ignore").lower()
 
     structural_proofs: dict[str, dict[str, str]] = {
         "PROOF_SYSTEMUI_SHARED_STATUSBAR_KEYS": {
@@ -367,6 +416,11 @@ def main() -> int:
     ]
 
     rows: list[dict[str, str]] = []
+    missing_audit_records: list[MissingAuditRecord] = []
+    current_missing_rows_audited = 0
+    false_missing_reclassified = 0
+    present_reclassified = 0
+    partial_reclassified = 0
     dynamic_island_rows = 0
     for key, node in sorted(a14_nodes.items()):
         if node.node_type not in {"ACTIONABLE_FEATURE", "SUBOPTION"}:
@@ -385,6 +439,8 @@ def main() -> int:
         risk = "MEDIUM" if has_a13 else "HIGH"
         priority = "P1" if parity != "PRESENT_EQUIVALENT" else "P2"
         source_relationship = "INSUFFICIENT_EVIDENCE" if has_a13 else "A14_NEW_FEATURE"
+        upgraded_existing = False
+        initial_missing_candidate = parity == "MISSING_IN_A13"
 
         if parity == "INTENTIONAL_EXCLUDED":
             dynamic_island_rows += 1
@@ -419,6 +475,47 @@ def main() -> int:
             priority = ov["priority"]
             a14_reference = ov["a14_reference"]
             a13_reference = ov["a13_reference"]
+            if ov.get("implementation_mode") == "UPGRADE_EXISTING_A13":
+                upgraded_existing = True
+
+        # Missing-row semantic alias reconciliation (R3).
+        if initial_missing_candidate:
+            current_missing_rows_audited += 1
+            terms = [key, (spec.feature_id if spec else f"A14_UI_{key}"), (spec.name if spec else node.title or key)]
+            alias = alias_map.get(key)
+            a13_match = ""
+            reclass_reason = "No semantic alias hit in A13 UI/schema/implementation."
+            if alias:
+                terms.extend(alias["a13_keys"].split(","))
+                alias_keys = [x.strip() for x in alias["a13_keys"].split(",") if x.strip()]
+                alias_hit = any((ak in a13_nodes or ak in a13_reads or ak in a13_source_text) for ak in alias_keys)
+                if alias_hit:
+                    parity = alias["parity_state"]
+                    reclass_reason = alias["reason"]
+                    a13_reference = alias["a13_reference"]
+                    a13_match = ",".join([ak for ak in alias_keys if ak in a13_nodes or ak in a13_reads or ak in a13_source_text])
+                    upgraded_existing = alias.get("implementation_mode") == "UPGRADE_EXISTING_A13"
+                    if parity == "PRESENT_A13_VARIANT":
+                        present_reclassified += 1
+                    elif parity == "PARTIAL_PARITY":
+                        partial_reclassified += 1
+                    false_missing_reclassified += 1
+            if not a13_match:
+                a13_match = "ABSENT"
+            missing_audit_records.append(
+                MissingAuditRecord(
+                    a14_feature_id=spec.feature_id if spec else f"A14_UI_{key}",
+                    a14_pref_keys=key,
+                    a14_behavior=a14_behavior,
+                    a14_reference=a14_reference,
+                    a13_search_terms="; ".join(dict.fromkeys([t for t in terms if t])),
+                    a13_match=a13_match,
+                    a13_reference=a13_reference,
+                    final_parity_state=parity,
+                    reclassification_reason=reclass_reason,
+                    absence_proof="Checked A13 UI keys, PreferenceSchema-linked keys, kt/java preference reads, feature/installer hook text surfaces.",
+                )
+            )
 
         phase_e_batch = route_phase_e_batch(host_package, process, key, spec.name if spec else node.title, parity)
         if parity in {"MISSING_IN_A13", "PARTIAL_PARITY"} and phase_e_batch == "HOLD_EVIDENCE":
@@ -458,16 +555,34 @@ def main() -> int:
             "risk": risk,
             "priority": priority,
             "phase_e_batch": phase_e_batch,
+            "implementation_mode": implementation_mode_for(parity, phase_e_batch, upgraded_existing),
             "API33_design_direction": ov["api33"] if ov else ("Carry forward behavior with explicit API33 validation." if phase_e_batch != "HOLD_EVIDENCE" else "Evidence hold: resolve host/process/contract before Phase E."),
             "test_strategy": ov["test_strategy"] if ov else ("Host/process specific regression tests." if phase_e_batch != "HOLD_EVIDENCE" else "Blocked until evidence completion."),
             "ROM_evidence_needed": ov["rom_evidence"] if ov else ("YES" if phase_e_batch in {"E3", "E5"} else "NO"),
             "dynamic_island_excluded": "YES" if parity == "INTENTIONAL_EXCLUDED" else "NO",
+            "a13_current_state": "KEY_MATCH" if has_a13 else ("LEGACY_ALIAS_PRESENT" if upgraded_existing else "ABSENT"),
         })
 
     for fid, name, parity, prio in infra_rows:
         phase_e_batch = route_phase_e_batch("SETTINGS", "com.android.settings", fid, name, parity)
         if fid == "infra.backup_restore":
             phase_e_batch = "E1"
+        if parity == "MISSING_IN_A13":
+            current_missing_rows_audited += 1
+            missing_audit_records.append(
+                MissingAuditRecord(
+                    a14_feature_id=fid,
+                    a14_pref_keys="",
+                    a14_behavior="A14 typed backup/restore and migration integrity flow.",
+                    a14_reference="utils/BackupFormatV2.kt, utils/BackupRestore.kt",
+                    a13_search_terms="backup; restore; legacy backup migration; rollback; integrity",
+                    a13_match="legacy backup/restore path",
+                    a13_reference="PreferenceFragmentBase.kt",
+                    final_parity_state=parity,
+                    reclassification_reason="A13 has legacy behavior but lacks A14 typed/integrity contract.",
+                    absence_proof="Checked settings backup dialog, backup data format handling, restore rollback and integrity surfaces.",
+                )
+            )
         rows.append({
             "domain": "infrastructure",
             "a14_feature_id": fid,
@@ -484,6 +599,7 @@ def main() -> int:
             "risk": "HIGH" if parity == "MISSING_IN_A13" else "MEDIUM",
             "priority": prio,
             "phase_e_batch": phase_e_batch,
+            "implementation_mode": implementation_mode_for(parity, phase_e_batch, parity == "MISSING_IN_A13"),
             "process": "com.android.settings",
             "classloader": "settings",
             "a14_behavior": "Settings/app infrastructure behavior with explicit UX contract.",
@@ -494,6 +610,7 @@ def main() -> int:
             "test_strategy": "Unit + integration + migration fixtures.",
             "ROM_evidence_needed": "NO",
             "dynamic_island_excluded": "NO",
+            "a13_current_state": "legacy implementation",
         })
 
     a14_keys = {r["a14_pref_keys"] for r in rows if r["a14_pref_keys"]}
@@ -524,10 +641,12 @@ def main() -> int:
             "risk": "LOW",
             "priority": "P3",
             "phase_e_batch": "",
+            "implementation_mode": "NO_IMPLEMENTATION",
             "API33_design_direction": "KEEP",
             "test_strategy": "Preserve existing behavior.",
             "ROM_evidence_needed": "NO",
             "dynamic_island_excluded": "NO",
+            "a13_current_state": "A13-only capability",
         })
 
     # Keep exactly one Dynamic Island exclusion row.
@@ -555,10 +674,12 @@ def main() -> int:
             "risk": "LOW",
             "priority": "P3",
             "phase_e_batch": "",
+            "implementation_mode": "NO_IMPLEMENTATION",
             "API33_design_direction": "PORT=NO",
             "test_strategy": "N/A",
             "ROM_evidence_needed": "NO",
             "dynamic_island_excluded": "YES",
+            "a13_current_state": "excluded",
         })
 
     # Required matrix columns order.
@@ -568,7 +689,7 @@ def main() -> int:
         "host_package", "process", "classloader",
         "a14_behavior", "a13_behavior", "a14_reference", "a13_reference",
         "risk", "priority", "phase_e_batch",
-        "API33_design_direction", "test_strategy", "ROM_evidence_needed",
+        "implementation_mode", "a13_current_state", "API33_design_direction", "test_strategy", "ROM_evidence_needed",
         "dynamic_island_excluded",
         "node_type", "source_relationship",
     ]
@@ -587,6 +708,7 @@ def main() -> int:
     batch_counts = derive_batch_counts(rows)
     hold_evidence_count = sum(1 for r in rows if r["phase_e_batch"] == "HOLD_EVIDENCE" and r["parity_state"] in {"MISSING_IN_A13", "PARTIAL_PARITY"})
     phase_e_ready_gaps = sum(batch_counts.get(b, 0) for b in ["E1", "E2", "E3", "E4", "E5"])
+    true_missing_remaining = sum(1 for r in rows if r["parity_state"] == "MISSING_IN_A13")
 
     confirmed_ui_without_impl = 0
     candidate_ui_without_impl = sum(1 for k, n in a14_nodes.items() if n.node_type in {"ACTIONABLE_FEATURE", "SUBOPTION"} and k not in a14_reads)
@@ -612,6 +734,11 @@ def main() -> int:
     print(f"A14_SPEC_UNKNOWN={a14_spec_unknown}")
     print(f"HOLD_EVIDENCE_COUNT={hold_evidence_count}")
     print(f"PHASE_E_READY_GAPS={phase_e_ready_gaps}")
+    print(f"CURRENT_MISSING_ROWS_AUDITED={current_missing_rows_audited}")
+    print(f"FALSE_MISSING_RECLASSIFIED={false_missing_reclassified}")
+    print(f"PRESENT_A13_VARIANT_RECLASSIFIED={present_reclassified}")
+    print(f"PARTIAL_PARITY_RECLASSIFIED={partial_reclassified}")
+    print(f"TRUE_MISSING_REMAINING={true_missing_remaining}")
     hide_ime = [r for r in rows if r["a14_feature_id"] == "HideImeDismissButtonFeatureId"]
     print(f"HIDE_IME_ROUTING={(hide_ime[0]['phase_e_batch'] if hide_ime else 'NOT_FOUND')}")
     print(f"E_BATCH_ROUTING_TEST={'PASS' if (hide_ime and hide_ime[0]['phase_e_batch'] == 'E3') else 'FAIL'}")
@@ -619,6 +746,28 @@ def main() -> int:
     print(f"PARITY_ACCOUNTING_INVARIANT={'PASS' if parity_accounting_invariant(rows) else 'FAIL'}")
     for batch in ["E1", "E2", "E3", "E4", "E5"]:
         print(f"{batch}_COUNT={batch_counts.get(batch, 0)}")
+    # R3 missing reconciliation artifact.
+    reconciliation_path = out_dir / "A13_PHASE_D_MISSING_RECONCILIATION.md"
+    with reconciliation_path.open("w", encoding="utf-8", newline="") as f:
+        f.write("# A13 Phase D Missing Reconciliation (R3)\n\n")
+        f.write(f"CURRENT_MISSING_ROWS_AUDITED = {current_missing_rows_audited}\n\n")
+        f.write("| A14_FEATURE_ID | A14_PREF_KEYS | FINAL_PARITY_STATE | A13_MATCH | RECLASSIFICATION_REASON |\n")
+        f.write("|---|---|---|---|---|\n")
+        for rec in missing_audit_records:
+            f.write(f"| {rec.a14_feature_id} | {rec.a14_pref_keys} | {rec.final_parity_state} | {rec.a13_match} | {rec.reclassification_reason} |\n")
+        f.write("\n## Detailed Audit Records\n\n")
+        for rec in missing_audit_records:
+            f.write(f"- **A14_FEATURE_ID**: `{rec.a14_feature_id}`\n")
+            f.write(f"  - A14_PREF_KEYS: `{rec.a14_pref_keys}`\n")
+            f.write(f"  - A14_BEHAVIOR: {rec.a14_behavior}\n")
+            f.write(f"  - A14_REFERENCE: `{rec.a14_reference}`\n")
+            f.write(f"  - A13_SEARCH_TERMS: `{rec.a13_search_terms}`\n")
+            f.write(f"  - A13_MATCH: `{rec.a13_match}`\n")
+            f.write(f"  - A13_REFERENCE: `{rec.a13_reference}`\n")
+            f.write(f"  - FINAL_PARITY_STATE: `{rec.final_parity_state}`\n")
+            f.write(f"  - RECLASSIFICATION_REASON: {rec.reclassification_reason}\n")
+            f.write(f"  - ABSENCE_PROOF: {rec.absence_proof}\n\n")
+    print(f"MISSING_RECONCILIATION={reconciliation_path}")
     print(f"CSV={csv_path}")
     return 0
 

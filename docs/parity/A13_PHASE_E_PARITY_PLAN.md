@@ -1,4 +1,4 @@
-# A13 Phase E Parity Plan (from Phase D-R2 candidate inventory)
+# A13 Phase E Parity Plan (from Phase D-R3 final inventory)
 
 ```text
 INPUT = docs/parity/A13_A14_FEATURE_MATRIX.csv + D4 settings parity audit
@@ -37,7 +37,7 @@ PHASE_E_E2_COUNT = 2
 
 ### E3 - Launcher + SystemUI user-visible parity (P1)
 
-- Launcher and SystemUI visible behavior gaps from matrix `MISSING_IN_A13`.
+- Launcher and SystemUI visible behavior gaps from matrix `MISSING_IN_A13`/`PARTIAL_PARITY`.
 - Status bar/control center/notification/lockscreen visual and interaction parity.
 - Keep hot-path constraints and avoid callback-time ROM detection.
 
@@ -58,6 +58,7 @@ PHASE_E_E4_COUNT = 9
 
 - Boot-critical, cross-process, or crash-sensitive missing semantics.
 - Requires strongest preflight static proof + targeted regression plan + staged rollout.
+- Includes `UPGRADE_EXISTING_A13` for USB default behavior parity.
 
 ```text
 PHASE_E_E5_COUNT = 4
@@ -75,6 +76,7 @@ Counts are derived from `A13_A14_FEATURE_MATRIX.csv` rows where
 `parity_state in {MISSING_IN_A13, PARTIAL_PARITY}`.
 Rows with unresolved design evidence are routed to `HOLD_EVIDENCE`
 and excluded from E1-E5 ready counts.
+`PRESENT_A13_VARIANT` rows are excluded from Phase-E gap counts.
 
 ## Per-feature implementation template (to be used in E phase execution)
 
