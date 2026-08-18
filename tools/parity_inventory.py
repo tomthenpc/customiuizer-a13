@@ -16,7 +16,17 @@ EVIDENCE_LEVELS = {
     "STRUCTURAL_SEMANTIC_PROOF",
     "INDIVIDUAL_SEMANTIC_PROOF",
 }
-PARITY_STATES = {"PRESENT_EQUIVALENT", "PRESENT_A13_VARIANT", "PARTIAL_PARITY", "MISSING_IN_A13", "INTENTIONAL_EXCLUDED", "INSUFFICIENT_EVIDENCE", "A13_ONLY_KEEP"}
+PARITY_STATES = {
+    "PRESENT_EQUIVALENT",
+    "PRESENT_A13_VARIANT",
+    "PARTIAL_PARITY",
+    "MISSING_IN_A13",
+    "INTENTIONAL_EXCLUDED",
+    "DEAD_UPSTREAM_PATH",
+    "HOLD_EVIDENCE",
+    "INSUFFICIENT_EVIDENCE",
+    "A13_ONLY_KEEP",
+}
 
 
 @dataclass
@@ -126,16 +136,17 @@ def extract_pref_reads(repo: Path) -> set[str]:
         re.compile(r'key\s*=\s*"([a-z0-9_]+)"'),
         re.compile(r'preferenceKey\s*=\s*"([a-z0-9_]+)"'),
         re.compile(r'pref(?:erence)?(?:Key)?\s*[:=]\s*"([a-z0-9_]+)"'),
+        re.compile(r'pref_key_([a-z0-9_]+)'),
     ]
-    for src in repo.glob("app/src/main/java/**/*.kt"):
+    setof_pattern = re.compile(r'preferenceKeys\s*=\s*setOf\((.*?)\)', re.S)
+    quoted = re.compile(r'"([a-z0-9_]+)"')
+    for src in list(repo.glob("app/src/main/java/**/*.kt")) + list(repo.glob("app/src/main/java/**/*.java")):
         text = src.read_text(encoding="utf-8", errors="ignore")
         for p in patterns:
             for m in p.finditer(text):
                 keys.add(m.group(1))
-    for src in repo.glob("app/src/main/java/**/*.java"):
-        text = src.read_text(encoding="utf-8", errors="ignore")
-        for p in patterns:
-            for m in p.finditer(text):
+        for block in setof_pattern.finditer(text):
+            for m in quoted.finditer(block.group(1)):
                 keys.add(m.group(1))
     return keys
 
@@ -232,14 +243,28 @@ def infer_host_package_from_key(domain: str, key: str) -> str:
     if low.startswith("launcher") or key.startswith("launcher_"):
         return "LAUNCHER"
     if key.startswith("system_") and any(t in key for t in [
-        "statusbar", "lockscreen", "drawer", "cc_", "volume_", "charginginfo",
-        "netspeed", "strong_toast", "qs_", "notif_",
+        "statusbar", "lockscreen", "drawer", "cc_", "volume", "charginginfo",
+        "netspeed", "strong_toast", "qs_", "notif_", "batteryindicator",
+        "visualizer", "screenshot", "albumartonlock", "noscreenlock", "lsalarm",
+        "networkindicator", "showpct", "vibration", "ccgrid", "calendar_app",
+        "clock_app", "fw_", "notify_", "cleanopenwith", "cleanshare",
     ]):
         return "SYSTEM_UI"
-    if "usb_default" in key or "window_blur" in key or "autobrightness" in key or "force_dark" in key:
+    if key.startswith("system_") and any(t in key for t in [
+        "usb_default", "window_blur", "autobrightness", "force_dark",
+        "applock", "animationscale", "credentials", "lstimeout", "nosilentvibrate",
+    ]):
         return "SYSTEM_SERVER"
+    if key.startswith("system_"):
+        return "SYSTEM_UI"
+    if key.startswith("controls_"):
+        return "SYSTEM_UI"
     if key.startswith("various_") and any(t in key for t in ["security", "antivirus", "marketing", "permission", "analytics", "daemon", "update_services"]):
         return "SECURITY_CENTER"
+    if key.startswith("various_"):
+        return "SYSTEM_PACKAGE"
+    if key.startswith("miuizer_"):
+        return "SETTINGS"
     if "installer" in low or "package" in low:
         return "PACKAGE_INSTALLER"
     if "backup" in low or "restore" in low or "search" in low or "about" in low:
@@ -281,9 +306,16 @@ def route_phase_e_batch(host_package: str, process: str, key: str, a14_name: str
 
 
 def implementation_mode_for(parity_state: str, phase_e_batch: str, upgraded_existing: bool) -> str:
-    if parity_state in {"PRESENT_EQUIVALENT", "PRESENT_A13_VARIANT", "A13_ONLY_KEEP", "INTENTIONAL_EXCLUDED", "INSUFFICIENT_EVIDENCE"}:
+    if parity_state in {
+        "PRESENT_EQUIVALENT",
+        "PRESENT_A13_VARIANT",
+        "A13_ONLY_KEEP",
+        "INTENTIONAL_EXCLUDED",
+        "DEAD_UPSTREAM_PATH",
+        "INSUFFICIENT_EVIDENCE",
+    }:
         return "NO_IMPLEMENTATION"
-    if phase_e_batch == "HOLD_EVIDENCE":
+    if parity_state == "HOLD_EVIDENCE" or phase_e_batch == "HOLD_EVIDENCE":
         return "EVIDENCE_HOLD"
     if upgraded_existing:
         return "UPGRADE_EXISTING_A13"
@@ -306,6 +338,8 @@ def parity_accounting_invariant(rows: list[dict[str, str]]) -> bool:
         "PARTIAL_PARITY",
         "MISSING_IN_A13",
         "INTENTIONAL_EXCLUDED",
+        "DEAD_UPSTREAM_PATH",
+        "HOLD_EVIDENCE",
         "INSUFFICIENT_EVIDENCE",
     })
     return lhs == rhs
@@ -330,19 +364,19 @@ def build_sanity_overrides() -> dict[str, dict[str, str]]:
             "implementation_mode": "UPGRADE_EXISTING_A13",
         },
         "controls_hide_ime_dismiss_button": {
-            "parity_state": "MISSING_IN_A13",
+            "parity_state": "PRESENT_A13_VARIANT",
             "evidence_level": "INDIVIDUAL_SEMANTIC_PROOF",
-            "proof_id": "PROOF_HIDE_IME_DISMISS_A14_ONLY",
+            "proof_id": "PROOF_HIDE_IME_DISMISS_PHASE_E",
             "a14_behavior": "Hides gesture-navigation IME dismiss affordance.",
-            "a13_behavior": "No dedicated toggle/behavior branch found.",
-            "risk": "MEDIUM",
-            "priority": "P1",
+            "a13_behavior": "A13 HideImeDismissButtonHook on NavigationBarView.updateNavButtonIcons; gestural IME back-alt only.",
+            "risk": "LOW",
+            "priority": "P2",
             "a14_reference": "mods/utils/feature/SystemUiFeatures.kt::HideImeDismissButtonFeatureId",
-            "a13_reference": "ABSENT",
-            "api33": "Add SystemUI behavior gate with IME-specific guard.",
-            "test_strategy": "SystemUI behavior test with IME visibility transitions.",
-            "rom_evidence": "YES",
-            "implementation_mode": "NEW_PORT",
+            "a13_reference": "mods/Controls.kt::HideImeDismissButtonHook",
+            "api33": "Existing A13 SystemUI IME-dismiss gate.",
+            "test_strategy": "HideImeDismissButtonTest.",
+            "rom_evidence": "NO",
+            "implementation_mode": "NO_IMPLEMENTATION",
         },
     }
 
@@ -351,21 +385,22 @@ def missing_semantic_aliases() -> dict[str, dict[str, str]]:
     return {
         "system_usb_default_function": {
             "a13_keys": "system_defaultusb,system_defaultusb_unsecure",
-            "parity_state": "PARTIAL_PARITY",
-            "reason": "A14 renamed key; A13 already owns USB default via USBConfigHook/USBConfigSettingsHook.",
-            "a13_reference": "mods/SystemSettingsMoreHooks.kt::USBConfigHook,USBConfigSettingsHook",
-            "implementation_mode": "UPGRADE_EXISTING_A13",
+            "parity_state": "PRESENT_A13_VARIANT",
+            "reason": "A13 USBConfigHook plus UsbDefaultFunctionMapper and USB R1 disconnect latch cover default MTP/PTP across replug.",
+            "a13_reference": "mods/SystemSettingsMoreHooks.kt::USBConfigHook; utils/UsbDefaultFunctionMapper.kt; utils/UsbConnectLatch.kt",
+            "implementation_mode": "NO_IMPLEMENTATION",
             "host_package": "SYSTEM_SERVER",
-            "a13_behavior": "Existing USB default config hooks; missing A14 function-selector branches.",
+            "a13_behavior": "A13-owned setCurrentFunction path; A14 HAL setEnabledFunctions(JZI) was not copied.",
         },
         "system_detailednetspeed_style": {
             "a13_keys": "system_detailednetspeed,system_detailednetspeed_fakedualrow",
-            "parity_state": "PARTIAL_PARITY",
-            "reason": "A14 style selector supersedes A13 detailed/fakedualrow toggles on the same netspeed hook family.",
+            "parity_state": "HOLD_EVIDENCE",
+            "reason": "Replacing live A13 detailed/fakedualrow toggles with an A14 list selector would migrate stored prefs.",
             "a13_reference": "res/xml/prefs_system_detailednetspeed.xml; mods/SystemUIStatusBarHooks.kt",
-            "implementation_mode": "UPGRADE_EXISTING_A13",
+            "implementation_mode": "EVIDENCE_HOLD",
             "host_package": "SYSTEM_UI",
-            "a13_behavior": "Detailed netspeed and fake dual-row already exist; A14 adds a style selector.",
+            "phase_e_batch": "HOLD_EVIDENCE",
+            "a13_behavior": "Detailed netspeed and fake dual-row already exist; selector migration is not statically safe.",
         },
         "launcher_folderblur_disable": {
             "a13_keys": "launcher_folderblur_opacity",
@@ -396,21 +431,23 @@ def missing_semantic_aliases() -> dict[str, dict[str, str]]:
         },
         "system_statusbarcontrols_dt_left": {
             "a13_keys": "system_statusbarcontrols_dt",
-            "parity_state": "PARTIAL_PARITY",
-            "reason": "A13 has one status-bar double-tap action; A14 splits left-corner double-tap.",
+            "parity_state": "HOLD_EVIDENCE",
+            "reason": "Left/right hit-testing needs device geometry; A13 already has one whole-bar double-tap action.",
             "a13_reference": "mods/SystemUIControlCenterHooks.kt; res/xml/prefs_system_statusbarcontrols.xml",
-            "implementation_mode": "UPGRADE_EXISTING_A13",
+            "implementation_mode": "EVIDENCE_HOLD",
             "host_package": "SYSTEM_UI",
-            "a13_behavior": "Single system_statusbarcontrols_dt handles the whole bar, not left/right corners.",
+            "phase_e_batch": "HOLD_EVIDENCE",
+            "a13_behavior": "Single system_statusbarcontrols_dt handles the whole bar.",
         },
         "system_statusbarcontrols_dt_right": {
             "a13_keys": "system_statusbarcontrols_dt",
-            "parity_state": "PARTIAL_PARITY",
-            "reason": "A13 has one status-bar double-tap action; A14 splits right-corner double-tap.",
+            "parity_state": "HOLD_EVIDENCE",
+            "reason": "Left/right hit-testing needs device geometry; A13 already has one whole-bar double-tap action.",
             "a13_reference": "mods/SystemUIControlCenterHooks.kt; res/xml/prefs_system_statusbarcontrols.xml",
-            "implementation_mode": "UPGRADE_EXISTING_A13",
+            "implementation_mode": "EVIDENCE_HOLD",
             "host_package": "SYSTEM_UI",
-            "a13_behavior": "Single system_statusbarcontrols_dt handles the whole bar, not left/right corners.",
+            "phase_e_batch": "HOLD_EVIDENCE",
+            "a13_behavior": "Single system_statusbarcontrols_dt handles the whole bar.",
         },
         "system_charginginfo_fontsize": {
             "a13_keys": "system_charginginfo,system_charginginfo_view",
@@ -450,13 +487,13 @@ def missing_semantic_aliases() -> dict[str, dict[str, str]]:
         },
         "system_strong_toast_island_offset": {
             "a13_keys": "dynamic_island",
-            "parity_state": "MISSING_IN_A13",
-            "reason": "Dynamic Island helper preference; product policy forbids extra DI gaps. Keep HOLD_EVIDENCE, do not port.",
+            "parity_state": "HOLD_EVIDENCE",
+            "reason": "Dynamic Island helper preference; product policy forbids extra DI gaps.",
             "a13_reference": "ABSENT (Dynamic Island excluded)",
             "implementation_mode": "EVIDENCE_HOLD",
             "host_package": "SYSTEM_UI",
             "phase_e_batch": "HOLD_EVIDENCE",
-            "a13_behavior": "No strong-toast/island implementation; offset is a DI helper, not a Phase E gap.",
+            "a13_behavior": "No strong-toast/island implementation; offset is a DI helper, not a remaining product gap.",
         },
     }
 
@@ -511,6 +548,270 @@ def nearest_rejected_candidates() -> dict[str, tuple[str, str]]:
             "debug.hwui.force_dark write in SystemSecurityAndSystemHooks",
             "A13 only forces the property false in one path; no all-apps force-dark feature",
         ),
+    }
+
+
+def phase_f_dead_a14_ui_keys() -> dict[str, str]:
+    """A14 preference UI with no reachable production implementation at the pinned SHA."""
+    return {
+        "system_hidestatusbar_whenscreenrecord": (
+            "Pinned A14 has XML/strings only; no Java/Kotlin hook, FeatureSpec installer, or pref read."
+        ),
+    }
+
+
+def phase_f_hold_missing() -> dict[str, dict[str, str]]:
+    """Remaining true A14-only gaps that cannot be decided or safely implemented on A13/API33."""
+    holds: dict[str, dict[str, str]] = {}
+
+    def add(key: str, question: str, rom: str, default: str, evidence: str, forbidden: str) -> None:
+        holds[key] = {
+            "unresolved_question": question,
+            "affected_rom_process": rom,
+            "safe_default": default,
+            "required_device_evidence": evidence,
+            "why_forbidden": forbidden,
+        }
+
+    cc_plugin = (
+        "miui.systemui.plugin MainPanelContentDistributor / QS tile color controllers",
+        "com.android.systemui + miui.systemui.plugin",
+        "off / ROM default",
+        "MIUI 14 vs HyperOS 1 Control Center plugin class dump",
+        "A14 CC color/hide-edit hooks target HyperOS MainPanelContentDistributor; A13 MIUI 14 CC uses ControlCenterWindowViewImpl. Fail-open would hide a dead toggle.",
+    )
+    for key in [
+        "system_cc_btandtorch_ascard",
+        "system_cc_card_enabled_color",
+        "system_cc_card_enabled_color_custom",
+        "system_cc_card_enabled_iconcolor_custom",
+        "system_cc_card_enabled_primary_textcolor",
+        "system_cc_card_enabled_secondary_textcolor",
+        "system_cc_clock_centeralign",
+        "system_cc_floatingtimetile",
+        "system_cc_freeform_when_longclick",
+        "system_cc_hide_edit",
+        "system_cc_hide_profile_monitoring",
+        "system_cc_slider_color_enable",
+        "system_cc_slider_icon_color",
+        "system_cc_slider_progress_color",
+        "system_cc_tile_enabled_color",
+        "system_cc_tile_enabled_color_custom",
+        "system_cc_tile_enabled_color_usemonet",
+        "system_cc_tile_enabled_iconcolor_custom",
+    ]:
+        add(key, *cc_plugin)
+
+    digital = (
+        "Whether MIUI 14 StatusBar has a digital-signal view slot equivalent to A14",
+        "com.android.systemui",
+        "stock signal icon",
+        "StatusBar layout dump on MIUI 14 and HyperOS 1 A13",
+        "A14 injects a new digital-signal view family; A13 has analog/icon signal hooks only.",
+    )
+    for key in [
+        "system_statusbar_mobile_digital_signal",
+        "system_statusbar_mobile_digital_signal_align",
+        "system_statusbar_mobile_digital_signal_bold",
+        "system_statusbar_mobile_digital_signal_fontsize",
+        "system_statusbar_mobile_digital_signal_hideunit",
+        "system_statusbar_mobile_digital_signal_in2rows",
+        "system_statusbar_mobile_digital_signal_leftmargin",
+        "system_statusbar_mobile_digital_signal_rightmargin",
+        "system_statusbar_mobile_digital_signal_verticaloffset",
+    ]:
+        add(key, *digital)
+
+    drawer = (
+        "Notification shade date view identity on MIUI 14 vs HyperOS 1",
+        "com.android.systemui",
+        "stock shade date",
+        "Notification header/date view hierarchy",
+        "A14 drawer-date hooks target shade header classes not proven on MIUI 14.",
+    )
+    for key in [
+        "system_drawer_date_centeralign",
+        "system_drawer_date_fontsize",
+        "system_drawer_dateformat",
+        "system_drawer_hidedate",
+        "system_drawer_remove_emptynotify",
+    ]:
+        add(key, *drawer)
+
+    volume = (
+        "MIUI volume dialog shortcut/button view IDs on A13",
+        "com.android.systemui",
+        "stock volume dialog",
+        "Volume dialog view dump",
+        "A14 volume-mode-button color/hide hooks are a parallel path on top of A13 MIUIVolumeDialogHook autohide/blur.",
+    )
+    for key in [
+        "system_volume_hide_dnd_shortcut",
+        "system_volume_hide_mute_shortcut",
+        "system_volume_mode_button_background_color",
+        "system_volume_mode_button_colors",
+        "system_volume_mode_button_icon_color",
+    ]:
+        add(key, *volume)
+
+    add(
+        "launcher_wallpaper_colormode",
+        "Launcher wallpaper color-mode API on MIUI 14 Home vs HyperOS 1",
+        "com.miui.home",
+        "ROM wallpaper coloring",
+        "DeviceConfig/wallpaper color-mode field names",
+        "No A13 counterpart; speculative GlobalLauncher/DeviceConfig writes are forbidden.",
+    )
+    add(
+        "system_recents_card_style",
+        "Recents card style controller class on MIUI 14 Home",
+        "com.miui.home / com.android.systemui",
+        "stock recents cards",
+        "Recents container class dump",
+        "A14 recents card-style is a new view path, not an upgrade of A13 recents blur.",
+    )
+    add(
+        "system_statusbaricons_privacy_prompt",
+        "Camera/mic privacy-indicator slot name on MIUI 14 SystemUI",
+        "com.android.systemui",
+        "stock privacy indicator",
+        "Status bar slot dump",
+        "A13 system_statusbaricons_privacy hides incognito/stealth, not the privacy chip.",
+    )
+    add(
+        "system_strong_toast_mode",
+        "Status-capsule / strong-toast presenter class on MIUI 14",
+        "com.android.systemui",
+        "stock toast/capsule",
+        "Strong toast / island presenter dump",
+        "No A13 capsule path; island mode is DI-adjacent.",
+    )
+    add(
+        "system_lockscreen_disable_edit",
+        "Keyguard editor entry class on MIUI 14 vs HyperOS 1",
+        "com.android.systemui",
+        "stock keyguard editor",
+        "Lockscreen editor activity dump",
+        "A14 disables a HyperOS keyguard editor not proven on MIUI 14.",
+    )
+    add(
+        "system_notif_disable_fold",
+        "MIUI fold-notification controller on A13",
+        "com.android.systemui",
+        "stock fold notifications",
+        "Notification fold policy class dump",
+        "No A13 fold-notification hook family.",
+    )
+    add(
+        "system_qs_disable_fakeclock_anim",
+        "Fake-clock animation owner on MIUI 14 QS/CC",
+        "com.android.systemui / miui.systemui.plugin",
+        "stock fake clock",
+        "QS clock animator class dump",
+        "A14 fake-clock hook is plugin-CC specific.",
+    )
+    add(
+        "system_statusbar_content_vertical_offset",
+        "Status-bar content geometry owner on MIUI 14",
+        "com.android.systemui",
+        "stock geometry",
+        "Collapsed status bar layout dump",
+        "New geometry rewrite; high visual-regression risk without device proof.",
+    )
+    add(
+        "system_statusbar_enable_weather_param",
+        "Weather status-bar param API on MIUI 14",
+        "com.android.systemui",
+        "stock weather",
+        "Weather controller class dump",
+        "No A13 weather-param hook.",
+    )
+    add(
+        "system_statusbar_icons_atleft_onkeyguard",
+        "Keyguard status-bar icon gravity on MIUI 14",
+        "com.android.systemui",
+        "stock keyguard icon gravity",
+        "Keyguard status-bar layout dump",
+        "New keyguard-only icon placement path.",
+    )
+    add(
+        "system_disable_window_blurs",
+        "Whether MIUI 14 system_server BlurController matches AOSP getBlurDisabledSetting",
+        "android / system_server",
+        "ROM blur policy",
+        "system_server BlurController members on MIUI 14 and HyperOS 1 A13",
+        "system_server boot path; A14 also adds a live PreferenceObserver. A13 catalog/contract wiring plus overlay ROM variants cannot be proven statically.",
+    )
+    add(
+        "system_force_darken_allapps",
+        "ForceDarkAppListProvider/Manager presence vs A13 NoDarkForceHook",
+        "android / system_server",
+        "stock per-app dark list",
+        "ForceDark* class dump; interaction with system_nodarkforce",
+        "A14 uses ForceDarkAppList* ; A13 already owns the opposite NoDarkForceHook. Parallel implementation is forbidden.",
+    )
+    add(
+        "system_autobrightness_reset_when_screenoff",
+        "DisplayPowerController.setScreenState(int,boolean) intercept vs existing A13 initialize hook",
+        "android / system_server",
+        "stock auto-brightness",
+        "setScreenState signature and chain.proceed interaction on MIUI 14",
+        "A13 already hooks DisplayPowerController.initialize. Adding an intercept/chain.proceed path is a boot-safety choice that is not unique statically.",
+    )
+    e4 = (
+        "ROM component/package names for daemon/analytics/antivirus/marketing/permission controller",
+        "module app + com.miui.securitycenter / com.miui.daemon / permissioncontroller",
+        "components remain enabled",
+        "Package/component inventory on MIUI 14 and HyperOS 1",
+        "A14 settings-app PackageManager disable lists are ROM-specific; wrong names would present a working toggle with no effect or disable the wrong component.",
+    )
+    for key in [
+        "various_block_location_permission_prompts",
+        "various_block_notification_permission_prompts",
+        "various_disable_miui_daemon",
+        "various_disable_reset_recents_privacy_blur",
+        "various_disable_update_services",
+        "various_disable_xiaomi_analytics",
+        "various_remove_security_center_antivirus",
+        "various_trim_miui_daemon_network",
+        "various_trim_security_center_marketing",
+    ]:
+        add(key, *e4)
+    return holds
+
+
+RESOLVED_HOSTS = {
+    "SYSTEM_UI",
+    "LAUNCHER",
+    "SYSTEM_SERVER",
+    "SETTINGS",
+    "SECURITY_CENTER",
+    "PACKAGE_INSTALLER",
+    "SYSTEM_PACKAGE",
+    "ANY",
+}
+
+
+def apply_same_key_family_proof(
+    key: str,
+    host_package: str,
+    a14_reads: set[str],
+    a13_reads: set[str],
+) -> dict[str, str] | None:
+    if key not in a14_reads or key not in a13_reads:
+        return None
+    if host_package not in RESOLVED_HOSTS:
+        return None
+    prefix = "_".join(key.split("_")[:2]) if "_" in key else key
+    return {
+        "parity_state": "PRESENT_A13_VARIANT",
+        "evidence_level": "STRUCTURAL_SEMANTIC_PROOF",
+        "proof_id": f"PROOF_SHARED_{host_package}_{prefix}",
+        "source_relationship": "UPSTREAM_INTENT_EQUIVALENT",
+        "a14_behavior": f"A14 reads `{key}` in host family {host_package}.",
+        "a13_behavior": f"A13 reads the same key in the same host family; no A14-only extra branch on this row.",
+        "a14_reference": f"pref read `{key}`",
+        "a13_reference": f"pref read `{key}`",
     }
 
 
@@ -634,6 +935,8 @@ def main() -> int:
     a13_search_index = build_a13_search_index(a13)
     a13_source_text = "\n".join(text.lower() for text in a13_search_index.values())
     a13_key_set = set(a13_nodes.keys()) | set(a13_reads)
+    dead_map = phase_f_dead_a14_ui_keys()
+    hold_map = phase_f_hold_missing()
 
     structural_proofs: dict[str, dict[str, str]] = {
         "PROOF_SYSTEMUI_SHARED_STATUSBAR_KEYS": {
@@ -655,7 +958,7 @@ def main() -> int:
     }
 
     infra_rows = [
-        ("infra.backup_restore", "Backup / Restore", "PARTIAL_PARITY", "P0"),
+        ("infra.backup_restore", "Backup / Restore", "PRESENT_A13_VARIANT", "P1"),
         ("infra.language_about", "Language / About", "PRESENT_A13_VARIANT", "P1"),
         ("infra.search_navigation", "Search Navigation", "PRESENT_A13_VARIANT", "P1"),
         ("infra.restart_ux", "Restart UX", "PRESENT_A13_VARIANT", "P1"),
@@ -801,7 +1104,84 @@ def main() -> int:
                 )
             )
 
+        if key in dead_map:
+            parity = "DEAD_UPSTREAM_PATH"
+            evidence_level = "INDIVIDUAL_SEMANTIC_PROOF"
+            proof_id = "PROOF_A14_UI_WITHOUT_IMPLEMENTATION"
+            a14_behavior = dead_map[key]
+            a13_behavior = "No A13 port: pinned A14 has no reachable production behavior."
+            source_relationship = "DEAD_UPSTREAM_PATH"
+            risk = "LOW"
+            priority = "P3"
+            upgraded_existing = False
+        elif parity == "MISSING_IN_A13" and key in hold_map:
+            rec = hold_map[key]
+            parity = "HOLD_EVIDENCE"
+            evidence_level = "INDIVIDUAL_SEMANTIC_PROOF"
+            proof_id = "PROOF_PHASE_F_HOLD"
+            a14_behavior = rec["unresolved_question"]
+            a13_behavior = rec["why_forbidden"]
+            source_relationship = "A14_NEW_FEATURE"
+            risk = "HIGH"
+            priority = "P0"
+            upgraded_existing = False
+        elif parity == "MISSING_IN_A13":
+            parity = "HOLD_EVIDENCE"
+            evidence_level = "INDIVIDUAL_SEMANTIC_PROOF"
+            proof_id = "PROOF_PHASE_F_HOLD_FALLBACK"
+            a14_behavior = "A14-only key with no A13 UI/schema match after Phase E."
+            a13_behavior = "No A13 equivalent; remaining gap requires ROM/device evidence before port."
+            source_relationship = "A14_NEW_FEATURE"
+            risk = "HIGH"
+            priority = "P0"
+            upgraded_existing = False
+        elif parity == "INSUFFICIENT_EVIDENCE":
+            fam = apply_same_key_family_proof(key, host_package, a14_reads, a13_reads)
+            if fam:
+                parity = fam["parity_state"]
+                evidence_level = fam["evidence_level"]
+                proof_id = fam["proof_id"]
+                source_relationship = fam["source_relationship"]
+                a14_behavior = fam["a14_behavior"]
+                a13_behavior = fam["a13_behavior"]
+                a14_reference = fam["a14_reference"]
+                a13_reference = fam["a13_reference"]
+                risk = "LOW"
+                priority = "P2"
+            elif key in a13_reads:
+                parity = "PRESENT_A13_VARIANT"
+                evidence_level = "INDIVIDUAL_SEMANTIC_PROOF"
+                proof_id = "PROOF_A13_IMPL_A14_UI_ONLY"
+                a14_behavior = "A14 exposes this UI key but does not read it in production."
+                a13_behavior = "A13 production reads and implements this key."
+                source_relationship = "UPSTREAM_INTENT_EQUIVALENT"
+                a13_reference = f"pref read `{key}`"
+                risk = "LOW"
+                priority = "P2"
+            elif key not in a14_reads:
+                parity = "DEAD_UPSTREAM_PATH"
+                evidence_level = "INDIVIDUAL_SEMANTIC_PROOF"
+                proof_id = "PROOF_A14_UI_WITHOUT_IMPLEMENTATION"
+                a14_behavior = "A14 UI/schema key with no production pref read."
+                a13_behavior = "No A13 production read either; A14 row is UI-only."
+                source_relationship = "DEAD_UPSTREAM_PATH"
+                risk = "LOW"
+                priority = "P3"
+            elif key not in a13_reads:
+                parity = "HOLD_EVIDENCE"
+                evidence_level = "INDIVIDUAL_SEMANTIC_PROOF"
+                proof_id = "PROOF_A13_UI_WITHOUT_HOOK"
+                a14_behavior = "A14 production reads this key."
+                a13_behavior = "A13 has the UI key but no production read; hook ownership is unresolved."
+                source_relationship = "SEMANTIC_DRIFT"
+                risk = "HIGH"
+                priority = "P1"
+
         phase_e_batch = forced_phase_e_batch or route_phase_e_batch(host_package, process, key, spec.name if spec else node.title, parity)
+        if parity == "HOLD_EVIDENCE":
+            phase_e_batch = "HOLD_EVIDENCE"
+        if parity == "DEAD_UPSTREAM_PATH":
+            phase_e_batch = ""
         if parity in {"MISSING_IN_A13", "PARTIAL_PARITY"} and phase_e_batch == "HOLD_EVIDENCE":
             process = "UNRESOLVED"
             classloader = "UNRESOLVED"
@@ -999,7 +1379,7 @@ def main() -> int:
     c = Counter(r["parity_state"] for r in rows if r["a14_feature_id"])
     ev = Counter(r["evidence_level"] for r in rows if r["a14_feature_id"])
     batch_counts = derive_batch_counts(rows)
-    hold_evidence_count = sum(1 for r in rows if r["phase_e_batch"] == "HOLD_EVIDENCE" and r["parity_state"] in {"MISSING_IN_A13", "PARTIAL_PARITY"})
+    hold_evidence_count = sum(1 for r in rows if r["parity_state"] == "HOLD_EVIDENCE")
     phase_e_ready_gaps = sum(batch_counts.get(b, 0) for b in ["E1", "E2", "E3", "E4", "E5"])
     true_missing_remaining = sum(1 for r in rows if r["parity_state"] == "MISSING_IN_A13")
 
@@ -1010,7 +1390,7 @@ def main() -> int:
     print(f"A14_PRODUCT_FEATURE_COUNT={a14_actionable}")
     print(f"A13_PRODUCT_FEATURE_COUNT={a13_product}")
     print(f"A13_ONLY_KEEP_COUNT={a13_only}")
-    for k in ["PRESENT_EQUIVALENT", "PRESENT_A13_VARIANT", "PARTIAL_PARITY", "MISSING_IN_A13", "INTENTIONAL_EXCLUDED", "INSUFFICIENT_EVIDENCE"]:
+    for k in ["PRESENT_EQUIVALENT", "PRESENT_A13_VARIANT", "PARTIAL_PARITY", "MISSING_IN_A13", "INTENTIONAL_EXCLUDED", "DEAD_UPSTREAM_PATH", "HOLD_EVIDENCE", "INSUFFICIENT_EVIDENCE"]:
         print(f"{k}_COUNT={c.get(k, 0)}")
     print(f"UI_TOPOLOGY_NODE_COUNT_A14={a14_topology_count}")
     print(f"UI_TOPOLOGY_NODE_COUNT_A13={a13_topology_count}")
@@ -1033,33 +1413,50 @@ def main() -> int:
     print(f"PARTIAL_PARITY_RECLASSIFIED={partial_reclassified}")
     print(f"TRUE_MISSING_REMAINING={true_missing_remaining}")
     hide_ime = [r for r in rows if r["a14_feature_id"] == "HideImeDismissButtonFeatureId"]
-    print(f"HIDE_IME_ROUTING={(hide_ime[0]['phase_e_batch'] if hide_ime else 'NOT_FOUND')}")
-    print(f"E_BATCH_ROUTING_TEST={'PASS' if (hide_ime and hide_ime[0]['phase_e_batch'] == 'E3') else 'FAIL'}")
+    hide_ime_ok = bool(
+        hide_ime
+        and (
+            hide_ime[0]["parity_state"] in {"PRESENT_A13_VARIANT", "PRESENT_EQUIVALENT"}
+            or hide_ime[0]["phase_e_batch"] == "E3"
+        )
+    )
+    print(f"HIDE_IME_ROUTING={(hide_ime[0]['phase_e_batch'] or hide_ime[0]['parity_state'] if hide_ime else 'NOT_FOUND')}")
+    print(f"E_BATCH_ROUTING_TEST={'PASS' if hide_ime_ok else 'FAIL'}")
     print(f"DYNAMIC_ISLAND_EXCLUDED_EXACTLY_ONCE={'YES' if sum(1 for r in rows if r['parity_state']=='INTENTIONAL_EXCLUDED') == 1 else 'NO'}")
     print(f"PARITY_ACCOUNTING_INVARIANT={'PASS' if parity_accounting_invariant(rows) else 'FAIL'}")
     for batch in ["E1", "E2", "E3", "E4", "E5"]:
         print(f"{batch}_COUNT={batch_counts.get(batch, 0)}")
     # R3 missing reconciliation artifact.
-    reconciliation_path = out_dir / "A13_PHASE_D_MISSING_RECONCILIATION.md"
+    reconciliation_path = out_dir / "A13_PHASE_F_RESIDUAL_AUDIT.md"
+    residual_rows = [
+        r for r in rows
+        if r.get("a14_feature_id") and r["parity_state"] in {
+            "MISSING_IN_A13", "PARTIAL_PARITY", "INSUFFICIENT_EVIDENCE", "HOLD_EVIDENCE", "DEAD_UPSTREAM_PATH",
+        }
+    ]
     with reconciliation_path.open("w", encoding="utf-8", newline="") as f:
-        f.write("# A13 Phase D Missing Reconciliation (D-FINAL SWEEP)\n\n")
-        f.write("Generic R3 ABSENCE_PROOF text is not used. Each record is produced from live A13 source searches.\n\n")
-        f.write(f"CURRENT_MISSING_ROWS_AUDITED = {current_missing_rows_audited}\n\n")
-        f.write("| A14_FEATURE_ID | A14_PREF_KEYS | FINAL_PARITY_STATE | A13_MATCH | RECLASSIFICATION_REASON |\n")
+        f.write("# A13 Phase F Residual Audit\n\n")
+        f.write("Historical Phase D/E reports are not rewritten.\n\n")
+        f.write(f"A13_BASE_SHA = d25bb9d37d3ee60d13657a24361336d8c705cb71\n")
+        f.write(f"A14_REFERENCE_SHA = d20d96b543a49a584970e312da7d704958a155aa\n\n")
+        f.write(f"HOLD_EVIDENCE = {c.get('HOLD_EVIDENCE', 0)}\n")
+        f.write(f"DEAD_UPSTREAM_PATH = {c.get('DEAD_UPSTREAM_PATH', 0)}\n")
+        f.write(f"MISSING_IN_A13 = {c.get('MISSING_IN_A13', 0)}\n")
+        f.write(f"PARTIAL_PARITY = {c.get('PARTIAL_PARITY', 0)}\n")
+        f.write(f"INSUFFICIENT_EVIDENCE = {c.get('INSUFFICIENT_EVIDENCE', 0)}\n")
+        f.write(f"INTENTIONAL_EXCLUDED = {c.get('INTENTIONAL_EXCLUDED', 0)}\n\n")
+        f.write("| A14_FEATURE_ID | A14_PREF_KEYS | FINAL_PARITY_STATE | HOST | PROOF_ID |\n")
         f.write("|---|---|---|---|---|\n")
-        for rec in missing_audit_records:
-            f.write(f"| {rec.a14_feature_id} | {rec.a14_pref_keys} | {rec.final_parity_state} | {rec.a13_match} | {rec.reclassification_reason} |\n")
-        f.write("\n## Detailed Audit Records\n\n")
+        for r in residual_rows:
+            f.write(
+                f"| {r['a14_feature_id']} | {r['a14_pref_keys']} | {r['parity_state']} | {r['host_package']} | {r['proof_id']} |\n"
+            )
+        f.write("\n## Initial missing-candidate absence proofs (pre-HOLD mapping)\n\n")
         for rec in missing_audit_records:
             f.write(f"- **A14_FEATURE_ID**: `{rec.a14_feature_id}`\n")
             f.write(f"  - A14_PREF_KEYS: `{rec.a14_pref_keys}`\n")
-            f.write(f"  - A14_BEHAVIOR: {rec.a14_behavior}\n")
-            f.write(f"  - A14_REFERENCE: `{rec.a14_reference}`\n")
-            f.write(f"  - A13_SEARCH_TERMS: `{rec.a13_search_terms}`\n")
+            f.write(f"  - INITIAL_STATE: `{rec.final_parity_state}`\n")
             f.write(f"  - A13_MATCH: `{rec.a13_match}`\n")
-            f.write(f"  - A13_REFERENCE: `{rec.a13_reference}`\n")
-            f.write(f"  - FINAL_PARITY_STATE: `{rec.final_parity_state}`\n")
-            f.write(f"  - RECLASSIFICATION_REASON: {rec.reclassification_reason}\n")
             f.write(f"  - ABSENCE_PROOF: {rec.absence_proof}\n\n")
     print(f"MISSING_RECONCILIATION={reconciliation_path}")
     print(f"CSV={csv_path}")

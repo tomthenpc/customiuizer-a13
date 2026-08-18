@@ -105,7 +105,7 @@ class ParityInventoryTest(unittest.TestCase):
         rows = [
             {"a14_feature_id": "f1", "parity_state": "MISSING_IN_A13", "phase_e_batch": "E1"},
             {"a14_feature_id": "f2", "parity_state": "PARTIAL_PARITY", "phase_e_batch": "E4"},
-            {"a14_feature_id": "f3", "parity_state": "INSUFFICIENT_EVIDENCE", "phase_e_batch": ""},
+            {"a14_feature_id": "f3", "parity_state": "HOLD_EVIDENCE", "phase_e_batch": "HOLD_EVIDENCE"},
             {"a14_feature_id": "", "parity_state": "A13_ONLY_KEEP", "phase_e_batch": ""},
             {"a14_feature_id": "f4", "parity_state": "INTENTIONAL_EXCLUDED", "phase_e_batch": ""},
         ]
@@ -125,14 +125,14 @@ class ParityInventoryTest(unittest.TestCase):
         aliases = missing_semantic_aliases()
         self.assertIn("system_usb_default_function", aliases)
         self.assertIn("system_defaultusb", aliases["system_usb_default_function"]["a13_keys"])
-        self.assertEqual(aliases["system_usb_default_function"]["parity_state"], "PARTIAL_PARITY")
+        self.assertEqual(aliases["system_usb_default_function"]["parity_state"], "PRESENT_A13_VARIANT")
 
     def test_d_final_aliases_cover_known_false_missing(self):
         aliases = missing_semantic_aliases()
         self.assertEqual(aliases["launcher_folderblur_disable"]["parity_state"], "PARTIAL_PARITY")
         self.assertEqual(aliases["system_netspeed_boldfont"]["parity_state"], "PRESENT_A13_VARIANT")
-        self.assertEqual(aliases["system_statusbarcontrols_dt_left"]["parity_state"], "PARTIAL_PARITY")
-        self.assertEqual(aliases["system_statusbarcontrols_dt_right"]["parity_state"], "PARTIAL_PARITY")
+        self.assertEqual(aliases["system_statusbarcontrols_dt_left"]["parity_state"], "HOLD_EVIDENCE")
+        self.assertEqual(aliases["system_statusbarcontrols_dt_right"]["parity_state"], "HOLD_EVIDENCE")
         self.assertEqual(aliases["system_charginginfo_fontsize"]["parity_state"], "PARTIAL_PARITY")
         self.assertEqual(aliases["system_charginginfo_fontsize"]["host_package"], "SYSTEM_UI")
         self.assertEqual(aliases["system_strong_toast_island_offset"]["phase_e_batch"], "HOLD_EVIDENCE")
@@ -227,8 +227,8 @@ class ParityInventoryTest(unittest.TestCase):
                 sys.argv = old
             rows = list(csv.DictReader((out / "A13_A14_FEATURE_MATRIX.csv").open(encoding="utf-8")))
             usb = next(r for r in rows if r["a14_pref_keys"] == "system_usb_default_function")
-            self.assertEqual(usb["parity_state"], "PARTIAL_PARITY")
-            self.assertEqual(usb["implementation_mode"], "UPGRADE_EXISTING_A13")
+            self.assertEqual(usb["parity_state"], "PRESENT_A13_VARIANT")
+            self.assertEqual(usb["implementation_mode"], "NO_IMPLEMENTATION")
 
 
 if __name__ == "__main__":
