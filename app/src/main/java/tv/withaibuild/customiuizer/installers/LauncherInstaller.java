@@ -86,7 +86,8 @@ public final class LauncherInstaller {
             if (MainModule.mPrefs.getBoolean("launcher_privacyapps_gest")
                 || MainModule.mPrefs.getInt("launcher_spread_action", 1) != 1) LauncherFolderHooks.PrivacyFolderHook(lpparam);
             if (MainModule.mPrefs.getBoolean("system_hidefromrecents")) LauncherSystemHooks.HideFromRecentsHook(lpparam);
-            if (MainModule.mPrefs.getInt("launcher_folderblur_opacity", 0) > 0) LauncherFolderHooks.FolderBlurHook(lpparam);
+            if (MainModule.mPrefs.getBoolean("launcher_folderblur_disable")
+                || MainModule.mPrefs.getInt("launcher_folderblur_opacity", 0) > 0) LauncherFolderHooks.FolderBlurHook(lpparam);
             if (MainModule.mPrefs.getBoolean("launcher_nounlockanim")) FeatureDispatcher.installById("noUnlockAnimation", launcherRuntime);
             if (MainModule.mPrefs.getBoolean("launcher_nozoomanim")) LauncherAnimationHooks.NoZoomAnimationHook(lpparam);
             if (MainModule.mPrefs.getBoolean("launcher_oldlaunchanim")) LauncherAnimationHooks.UseOldLaunchAnimationHook(lpparam);
@@ -172,7 +173,7 @@ public final class LauncherInstaller {
         if (prefs.getBoolean("launcher_hideseekpoints")) return true;
         if (prefs.getBoolean("launcher_privacyapps_gest") || prefs.getInt("launcher_spread_action", 1) != 1) return true;
         if (prefs.getBoolean("system_hidefromrecents")) return true;
-        if (prefs.getInt("launcher_folderblur_opacity", 0) > 0) return true;
+        if (prefs.getBoolean("launcher_folderblur_disable") || prefs.getInt("launcher_folderblur_opacity", 0) > 0) return true;
         if (prefs.getBoolean("launcher_nounlockanim")) return true;
         if (prefs.getBoolean("launcher_nozoomanim")) return true;
         if (prefs.getBoolean("launcher_oldlaunchanim")) return true;
