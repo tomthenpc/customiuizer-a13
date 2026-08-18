@@ -1443,7 +1443,7 @@ def build_source_index(repo: Path) -> dict[str, str]:
 
 def format_proof_markdown(manifests: list[ProofManifest]) -> str:
     lines = [
-        "# A13 Phase F-R4 Semantic Proofs",
+        "# A13 Phase F-R5 Semantic Proofs",
         "",
         "Automatic PRESENT requires normalized body IDENTICAL, the same relevant preference keys,",
         "and compatible installer ownership (BODY_RELATION=IDENTICAL).",

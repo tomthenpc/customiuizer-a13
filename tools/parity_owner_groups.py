@@ -15,6 +15,7 @@ try:
         _owner_rank,
         reviewed_variant_fields_complete,
     )
+    from tools.parity_r5_reviews import r5_reviewed_owner_groups
 except ImportError:
     from parity_phase_f import (
         JUNK_SYMBOLS,
@@ -25,6 +26,7 @@ except ImportError:
         _owner_rank,
         reviewed_variant_fields_complete,
     )
+    from parity_r5_reviews import r5_reviewed_owner_groups
 
 OWNER_GROUP_SKIP_SYMBOLS = JUNK_SYMBOLS | frozenset({
     "installHook",
@@ -257,7 +259,7 @@ def _ownership_fields(keys: tuple[str, ...], evidence: dict[str, tuple[Ownership
 
 def explicit_reviewed_owner_groups() -> list[ProofManifest]:
     """Human-reviewed non-identical owner pairs. One pair closes only keys it consumes."""
-    return [
+    return r5_reviewed_owner_groups() + [
         ProofManifest(
             proof_id="PROOF_OG_NO_FINGERPRINT_WAKE",
             a14_owner_path="app/src/main/java/tv/withaibuild/customiuizer/mods/Controls.kt",

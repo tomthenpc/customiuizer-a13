@@ -1649,9 +1649,9 @@ def main() -> int:
         }
     ]
     with reconciliation_path.open("w", encoding="utf-8", newline="\n") as f:
-        f.write("# A13 Phase F-R4 Residual Audit\n\n")
+        f.write("# A13 Phase F-R5 Residual Audit\n\n")
         f.write("Historical Phase A-E reports are not rewritten.\n\n")
-        f.write("AUTHORITATIVE_BASE_SHA = 526db84d23a5d98d6d673abe705dcacdeaa78746\n")
+        f.write("AUTHORITATIVE_BASE_SHA = d5a369bbf883ee416d6529f61625d4c36f6d4e3e\n")
         f.write("A14_REFERENCE_SHA = d20d96b543a49a584970e312da7d704958a155aa\n\n")
         f.write(f"A14_PRODUCT_FEATURE_COUNT = {a14_actionable}\n")
         f.write(f"HOLD_EVIDENCE = {c.get('HOLD_EVIDENCE', 0)}\n")
@@ -1692,7 +1692,7 @@ def main() -> int:
 
     hold_path = out_dir / "A13_PHASE_F_HOLD_EVIDENCE.md"
     with hold_path.open("w", encoding="utf-8", newline="\n") as f:
-        f.write("# A13 Phase F-R4 HOLD_EVIDENCE\n\n")
+        f.write("# A13 Phase F-R5 HOLD_EVIDENCE\n\n")
         f.write(f"HOLD_EVIDENCE_COUNT = {hold_evidence_count}\n")
         f.write(f"DEAD_UPSTREAM_PATH_COUNT = {len(dead_rows)}\n")
         f.write(f"SOURCE_REVIEW_REQUIRED = {source_review_required}\n\n")
@@ -1716,8 +1716,8 @@ def main() -> int:
 
     report_path = out_dir / "A13_PHASE_F_FINAL_PARITY_REPORT.md"
     with report_path.open("w", encoding="utf-8", newline="\n") as f:
-        f.write("# A13_PHASE_F_R4_FINAL_PARITY_REPORT\n\n")
-        f.write("AUTHORITATIVE_BASE_SHA = 526db84d23a5d98d6d673abe705dcacdeaa78746\n")
+        f.write("# A13_PHASE_F_R5_FINAL_PARITY_REPORT\n\n")
+        f.write("AUTHORITATIVE_BASE_SHA = d5a369bbf883ee416d6529f61625d4c36f6d4e3e\n")
         f.write("A14_REFERENCE_SHA = d20d96b543a49a584970e312da7d704958a155aa\n")
         f.write("VERIFIED_TREE_SHA = (this commit)\n")
         f.write("REPORT_HEAD_SHA = (this commit)\n\n")
