@@ -249,47 +249,49 @@ object LauncherGestureHooks {
 
     @JvmStatic
     fun FSGesturesHook(lpparam: PackageReadyParam) {
-        val baseRecentsClass = XposedHelpers.findClass(
+        val baseRecentsClass = XposedHelpers.findClassIfExists(
             "com.miui.home.recents.BaseRecentsImpl",
             lpparam.classLoader
         )
 
         ModuleHelper.findAndHookMethod("com.miui.home.launcher.DeviceConfig", lpparam.classLoader, "usingFsGesture", HookerClassHelper.returnConstant(true))
 
-        ModuleHelper.findAndHookMethodSilently("com.miui.home.recents.BaseRecentsImpl", lpparam.classLoader, "createAndAddNavStubView", object : MethodHook() {
-            override fun before(param: BeforeHookCallback) {
-                val fsg = XposedHelpers.getAdditionalStaticField(baseRecentsClass, "REAL_FORCE_FSG_NAV_BAR") as? Boolean ?: false
-                if (!fsg) param.returnAndSkip(null)
-            }
-        })
-
-        ModuleHelper.findAndHookMethodSilently("com.miui.home.recents.BaseRecentsImpl", lpparam.classLoader, "updateFsgWindowState", object : MethodHook() {
-            override fun after(param: AfterHookCallback) {
-                val fsg = XposedHelpers.getAdditionalStaticField(baseRecentsClass, "REAL_FORCE_FSG_NAV_BAR") as? Boolean ?: false
-                if (fsg) return
-
-                val mNavStubView = XposedHelpers.getObjectField(param.getThisObject(), "mNavStubView")
-                val mWindowManager = XposedHelpers.getObjectField(param.getThisObject(), "mWindowManager")
-                if (mWindowManager != null && mNavStubView != null) {
-                    XposedHelpers.callMethod(mWindowManager, "removeView", mNavStubView)
-                    XposedHelpers.setObjectField(param.getThisObject(), "mNavStubView", null)
+        if (baseRecentsClass != null) {
+            ModuleHelper.findAndHookMethodSilently("com.miui.home.recents.BaseRecentsImpl", lpparam.classLoader, "createAndAddNavStubView", object : MethodHook() {
+                override fun before(param: BeforeHookCallback) {
+                    val fsg = XposedHelpers.getAdditionalStaticField(baseRecentsClass, "REAL_FORCE_FSG_NAV_BAR") as? Boolean ?: false
+                    if (!fsg) param.returnAndSkip(null)
                 }
-            }
-        })
+            })
 
-        ModuleHelper.findAndHookMethodSilently("com.miui.launcher.utils.MiuiSettingsUtils", lpparam.classLoader, "getGlobalBoolean", android.content.ContentResolver::class.java, String::class.java, object : MethodHook() {
-            override fun after(param: AfterHookCallback) {
-                if (param.getArg(1) != "force_fsg_nav_bar") return
+            ModuleHelper.findAndHookMethodSilently("com.miui.home.recents.BaseRecentsImpl", lpparam.classLoader, "updateFsgWindowState", object : MethodHook() {
+                override fun after(param: AfterHookCallback) {
+                    val fsg = XposedHelpers.getAdditionalStaticField(baseRecentsClass, "REAL_FORCE_FSG_NAV_BAR") as? Boolean ?: false
+                    if (fsg) return
 
-                for (el in Thread.currentThread().stackTrace) {
-                    if (el.className == "com.miui.home.recents.BaseRecentsImpl") {
-                        XposedHelpers.setAdditionalStaticField(baseRecentsClass, "REAL_FORCE_FSG_NAV_BAR", param.getResult())
-                        param.setResult(true)
-                        return
+                    val mNavStubView = XposedHelpers.getObjectField(param.getThisObject(), "mNavStubView")
+                    val mWindowManager = XposedHelpers.getObjectField(param.getThisObject(), "mWindowManager")
+                    if (mWindowManager != null && mNavStubView != null) {
+                        XposedHelpers.callMethod(mWindowManager, "removeView", mNavStubView)
+                        XposedHelpers.setObjectField(param.getThisObject(), "mNavStubView", null)
                     }
                 }
-            }
-        })
+            })
+
+            ModuleHelper.findAndHookMethodSilently("com.miui.launcher.utils.MiuiSettingsUtils", lpparam.classLoader, "getGlobalBoolean", android.content.ContentResolver::class.java, String::class.java, object : MethodHook() {
+                override fun after(param: AfterHookCallback) {
+                    if (param.getArg(1) != "force_fsg_nav_bar") return
+
+                    for (el in Thread.currentThread().stackTrace) {
+                        if (el.className == "com.miui.home.recents.BaseRecentsImpl") {
+                            XposedHelpers.setAdditionalStaticField(baseRecentsClass, "REAL_FORCE_FSG_NAV_BAR", param.getResult())
+                            param.setResult(true)
+                            return
+                        }
+                    }
+                }
+            })
+        }
 
         ModuleHelper.findAndHookMethod("com.miui.home.recents.GestureStubView", lpparam.classLoader, "onTouchEvent", MotionEvent::class.java, object : MethodHook() {
             override fun before(param: BeforeHookCallback) {

@@ -208,7 +208,12 @@ object LauncherSystemHooks {
         ModuleHelper.findAndHookMethod("com.miui.home.launcher.AnalyticalDataCollector", lpparam.classLoader, "canTrackLaunchAppEvent", HookerClassHelper.returnConstant(false))
         val oneTrackInterfaceUtils = XposedHelpers.findClassIfExists("com.miui.home.launcher.common.OneTrackInterfaceUtils", lpparam.classLoader)
         if (oneTrackInterfaceUtils != null) {
-            XposedHelpers.setStaticObjectField(oneTrackInterfaceUtils, "IS_ENABLE", false)
+            try {
+                XposedHelpers.setStaticObjectField(oneTrackInterfaceUtils, "IS_ENABLE", false)
+            } catch (t: Throwable) {
+                RuntimeFatality.throwIfFatal(t)
+                XposedHelpers.log("DisableLauncherLogHook", t.message)
+            }
         }
     }
 }

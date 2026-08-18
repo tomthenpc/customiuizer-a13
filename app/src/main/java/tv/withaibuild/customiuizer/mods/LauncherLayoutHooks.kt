@@ -148,16 +148,18 @@ object LauncherLayoutHooks {
                 XposedHelpers.callMethod(XposedHelpers.getObjectField(param.getThisObject(), "mScreenCellsConfig"), "setVisible", true)
             }
         })
-        val deviceConfigClass = XposedHelpers.findClass("com.miui.home.launcher.DeviceConfig", lpparam.classLoader)
-        ModuleHelper.findAndHookMethod(deviceConfigClass, "loadCellsCountConfig", Context::class.java, Boolean::class.javaPrimitiveType, object : MethodHook() {
-            override fun after(param: AfterHookCallback) {
-                val sCellCountY = XposedHelpers.getStaticIntField(deviceConfigClass, "sCellCountY")
-                if (sCellCountY > 6) {
-                    val cellHeight = XposedHelpers.callStaticMethod(deviceConfigClass, "getCellHeight") as? Int ?: 0
-                    XposedHelpers.setStaticObjectField(deviceConfigClass, "sFolderCellHeight", cellHeight)
+        val deviceConfigClass = XposedHelpers.findClassIfExists("com.miui.home.launcher.DeviceConfig", lpparam.classLoader)
+        if (deviceConfigClass != null) {
+            ModuleHelper.findAndHookMethod(deviceConfigClass, "loadCellsCountConfig", Context::class.java, Boolean::class.javaPrimitiveType, object : MethodHook() {
+                override fun after(param: AfterHookCallback) {
+                    val sCellCountY = XposedHelpers.getStaticIntField(deviceConfigClass, "sCellCountY")
+                    if (sCellCountY > 6) {
+                        val cellHeight = XposedHelpers.callStaticMethod(deviceConfigClass, "getCellHeight") as? Int ?: 0
+                        XposedHelpers.setStaticObjectField(deviceConfigClass, "sFolderCellHeight", cellHeight)
+                    }
                 }
-            }
-        })
+            })
+        }
         ModuleHelper.findAndHookMethod("com.miui.home.launcher.ScreenUtils", lpparam.classLoader, "getScreenCellsSizeOptions", Context::class.java, object : MethodHook() {
             override fun before(param: BeforeHookCallback) {
                 val arrayList = ArrayList<CharSequence>()

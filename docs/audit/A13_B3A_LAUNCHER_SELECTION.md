@@ -23,7 +23,7 @@ Static audit result:
 | Metric | Count |
 |---|---|
 | **B3A_CATALOG_MIGRATION_CANDIDATES** | **0** |
-| **B3A_CONFIRMED_CORRECTIVES** | **2 landed (D1, D2)**; D3/D4/D5 = **CONFIRMED / NOT_YET_IMPLEMENTED** |
+| **B3A_CONFIRMED_CORRECTIVES** | **5 landed (D1–D5)** |
 | LIKELY_DEFECT | remaining ownership / attach items (R2) |
 | COMPATIBILITY_GAP | 4 |
 | ARCHITECTURE_DEBT | 6 |
@@ -244,7 +244,7 @@ No static strong `Activity`/`Fragment` module fields found in Launcher hook modu
 | `LauncherSystemHooks`, `LauncherIconHooks`, `LauncherAnimationHooks`, `LauncherFolderHooks` reachable OOM-only catches | log / ordinary fallback | **B3A-D1 landed:** `RuntimeFatality.throwIfFatal` | wrapped fatal propagates; fallback skipped |
 | `ModuleHelper.findAndHookMethod` (majority) | fail-open at install | ModuleHelper boundary | varies |
 
-`FeatureDispatcher` was **not** modified in R1. D3/D4/D5 remain **NOT_YET_IMPLEMENTED**.
+D3/D4/D5 remain **landed in R2** (UnlockGrids / FSGestures isolation / log+wallpaper field-ABI fail-open).
 
 ---
 
@@ -284,9 +284,9 @@ Do **not** auto-remove `com.miui.home` guards without ROM ABI proof for globalla
 
 1. **B3A-D1** — Launcher reachable OOM-only callback catches swallow wrapped fatal. **CONFIRMED. Landed R1.**
 2. **B3A-D2** — `FeatureInstallRegistry.isFatal` direct-only; wrapped fatal swallowed. **CONFIRMED. Landed R1.**
-3. **B3A-D3** — **CONFIRMED / NOT_YET_IMPLEMENTED** (R2).
-4. **B3A-D4** — **CONFIRMED / NOT_YET_IMPLEMENTED** (R2).
-5. **B3A-D5** — **CONFIRMED / NOT_YET_IMPLEMENTED** (R2).
+3. **B3A-D3** — UnlockGridsHook throwing `findClass(DeviceConfig)` aborted later independent hooks. **CONFIRMED. Landed R2.**
+4. **B3A-D4** — FSGesturesHook throwing `findClass(BaseRecentsImpl)` aborted DeviceConfig/GestureStubView. **CONFIRMED. Landed R2.**
+5. **B3A-D5** — DisableLauncherLogHook missing `IS_ENABLE` + DisableLauncherWallpaperScale null `WallpaperZoomManagerKt` NPE. **CONFIRMED. Landed R2.**
 
 ### LIKELY_DEFECT
 
@@ -367,6 +367,6 @@ PACKAGE_READY_FEATURE_COUNT      = 9
 APPLICATION_FEATURE_COUNT      = 36 legacy direct + 7 catalog = 43 pref-gated paths
 CURRENT_CATALOG_FEATURE_COUNT  = 7
 B3A_CATALOG_MIGRATION_CANDIDATES = 0
-B3A_CONFIRMED_CORRECTIVES      = 2 landed (D1, D2); D3/D4/D5 CONFIRMED / NOT_YET_IMPLEMENTED
+B3A_CONFIRMED_CORRECTIVES      = 5 landed (D1–D5)
 B3A_CLOSED                     = NO
 ```
