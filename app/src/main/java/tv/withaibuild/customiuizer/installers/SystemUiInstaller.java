@@ -131,6 +131,7 @@ public final class SystemUiInstaller {
             if (MainModule.mPrefs.getBoolean("controls_nonavbar")) Controls.HideNavBarHook(lpparam);
             else if (MainModule.mPrefs.getBoolean("controls_hidenavbar_whenscreenshot")) FeatureDispatcher.installById("hideNavBarBeforeScreenshot", systemuiRuntime);
             if (MainModule.mPrefs.getBoolean("controls_imebackalticon")) Controls.ImeBackAltIconHook(lpparam);
+            if (MainModule.mPrefs.getBoolean("controls_hide_ime_dismiss_button")) Controls.HideImeDismissButtonHook(lpparam);
             if (MainModule.mPrefs.getBoolean("system_visualizer")) SystemAudioAndVisualAndMoreHooks.AudioVisualizerHook(lpparam);
             if (MainModule.mPrefs.getBoolean("system_nosilentvibrate")
                 || MainModule.mPrefs.getBoolean("system_qs_force_systemfonts")
@@ -366,6 +367,7 @@ public final class SystemUiInstaller {
         if (prefs.getBoolean("controls_nonavbar")) return true;
         if (prefs.getBoolean("controls_hidenavbar_whenscreenshot")) return true;
         if (prefs.getBoolean("controls_imebackalticon")) return true;
+        if (prefs.getBoolean("controls_hide_ime_dismiss_button")) return true;
         if (prefs.getBoolean("system_visualizer")) return true;
         if (prefs.getBoolean("system_nosilentvibrate") || prefs.getBoolean("system_qs_force_systemfonts") || prefs.getBoolean("system_volumetimer") || prefs.getBoolean("system_qsnolabels") || prefs.getBoolean("system_cc_volume_showpct") || prefs.getBoolean("system_volumebar_blur_mtk") || prefs.getBoolean("system_cc_hidedate") || prefs.getBoolean("system_cc_hide_shortcuticons") || prefs.getBoolean("system_cc_clocktweak") || prefs.getBoolean("system_cc_tile_roundedrect") || prefs.getStringAsInt("system_cc_bluetooth_tile_style", 1) > 1 || (prefs.getBoolean("system_separatevolume") && prefs.getBoolean("system_separatevolume_slider")) || (prefs.getInt("system_volumedialogdelay_collapsed", 0) > 0 || prefs.getInt("system_volumedialogdelay_expanded", 0) > 0) || (prefs.getInt("system_volumeblur_collapsed", 0) > 0 || prefs.getInt("system_volumeblur_expanded", 0) > 0)) return true;
         if (prefs.getBoolean("system_disableanynotif")) return true;

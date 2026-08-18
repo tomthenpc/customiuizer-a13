@@ -542,6 +542,7 @@
     <string name="launcher_topmargin_title">Top grid margin</string>
     <string name="launcher_dock_topmargin_title">Dock top margin</string>
     <string name="launcher_dock_bottommargin_title">Dock bottom margin</string>
+    <string name="launcher_dock_height_title">Dock height</string>
     <string name="launcher_horizwidgetmargin_title">Horizontal widget margin</string>
     <string name="launcher_indicatorheight_title">Page indicator height</string>
     <string name="launcher_indicator_topmargin_title">Page indicator top margin</string>
@@ -657,6 +658,8 @@
     <string name="controls_nonavbar_fix_inputmethod_summ">Add InputMethod apps to LSPosed scope first</string>
     <string name="controls_imebackalticon_title">Reactive Back button</string>
     <string name="controls_imebackalticon_summ">Switch back button icon to alternative one in input mode</string>
+    <string name="controls_hide_ime_dismiss_button_title">Hide keyboard dismiss button</string>
+    <string name="controls_hide_ime_dismiss_button_summ">Hide the bottom-left dismiss button while the keyboard is shown in gesture navigation</string>
     <string name="controls_navbarheight_title">Navbar height</string>
     <string name="controls_backlong_title">Back long press action</string>
     <string name="controls_homelong_title">Home long press action</string>

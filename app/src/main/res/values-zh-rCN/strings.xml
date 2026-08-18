@@ -522,6 +522,7 @@
     <string name="launcher_topmargin_title">桌面网格顶部边距</string>
     <string name="launcher_dock_topmargin_title">Dock栏顶部边距</string>
     <string name="launcher_dock_bottommargin_title">Dock栏底部边距</string>
+    <string name="launcher_dock_height_title">Dock栏高度</string>
     <string name="launcher_indicatorheight_title">页面指示器高度</string>
     <string name="launcher_indicator_topmargin_title">页面指示器顶部边距</string>
     <string name="launcher_folders">文件夹</string>
@@ -632,6 +633,8 @@
     <string name="controls_nonavbar_fix_inputmethod_summ">手势线隐藏后，键盘底部边距优化(请将输入法App加入作用域)</string>
     <string name="controls_imebackalticon_title">反应性返回键</string>
     <string name="controls_imebackalticon_summ">切换返回键图标为输入模式中的替代方案</string>
+    <string name="controls_hide_ime_dismiss_button_title">隐藏输入法收回按键</string>
+    <string name="controls_hide_ime_dismiss_button_summ">在手势导航下隐藏输入法显示时底部左侧的收回按键</string>
     <string name="controls_navbarheight_title">导航栏高度</string>
     <string name="controls_backlong_title">长按返回键动作</string>
     <string name="controls_homelong_title">长按Home键动作</string>

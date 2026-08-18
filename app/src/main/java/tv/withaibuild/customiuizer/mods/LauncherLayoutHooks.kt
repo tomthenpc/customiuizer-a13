@@ -237,6 +237,20 @@ object LauncherLayoutHooks {
     }
 
     @JvmStatic
+    internal fun shouldOverrideDockHeight(dockHeightDp: Int): Boolean = dockHeightDp > 60
+
+    @JvmStatic
+    fun DockHeightHook(lpparam: PackageReadyParam) {
+        val dockHeight = MainModule.mPrefs.getInt("launcher_dock_height", 60)
+        if (!shouldOverrideDockHeight(dockHeight)) return
+        ModuleHelper.findAndHookMethod("com.miui.home.launcher.DeviceConfig", lpparam.classLoader, "calcHotSeatsHeight", Context::class.java, Boolean::class.javaPrimitiveType, object : MethodHook() {
+            override fun before(param: BeforeHookCallback) {
+                param.returnAndSkip(Math.round(HookUtils.dp2px(dockHeight.toFloat())))
+            }
+        })
+    }
+
+    @JvmStatic
     fun WorkspaceCellPaddingTopHook(lpparam: PackageReadyParam) {
         val opt = MainModule.mPrefs.getInt("launcher_topmargin", 0) - 21
         val hook = object : MethodHook() {

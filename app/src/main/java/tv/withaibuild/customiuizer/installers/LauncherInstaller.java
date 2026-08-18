@@ -42,6 +42,7 @@ public final class LauncherInstaller {
         if (MainModule.mPrefs.getInt("launcher_topmargin", 0) > 0) LauncherLayoutHooks.WorkspaceCellPaddingTopHook(lpparam);
         if (MainModule.mPrefs.getInt("launcher_dock_topmargin", 0) > 0) LauncherLayoutHooks.DockMarginTopHook(lpparam);
         if (MainModule.mPrefs.getInt("launcher_dock_bottommargin", 0) > 0) LauncherLayoutHooks.DockMarginBottomHook(lpparam);
+        if (MainModule.mPrefs.getInt("launcher_dock_height", 60) > 60) LauncherLayoutHooks.DockHeightHook(lpparam);
     }
 
     public static void handleLoadLauncher(final PackageReadyParam lpparam) {
@@ -134,6 +135,7 @@ public final class LauncherInstaller {
         if (prefs.getInt("launcher_topmargin", 0) > 0) return true;
         if (prefs.getInt("launcher_dock_topmargin", 0) > 0) return true;
         if (prefs.getInt("launcher_dock_bottommargin", 0) > 0) return true;
+        if (prefs.getInt("launcher_dock_height", 60) > 60) return true;
         return false;
     }
 
