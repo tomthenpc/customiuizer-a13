@@ -232,6 +232,29 @@ class RomEnvironmentTest {
     }
 
     @Test
+    fun directThreadDeathIsRethrown() {
+        val reader = ThrowingPropertyReader(ThreadDeath(), setOf("ro.mi.os.version.name"))
+        try {
+            RomEnvironmentDetector.detect(33, "", "", reader)
+            assertTrue("expected ThreadDeath", false)
+        } catch (fatal: ThreadDeath) {
+            // expected
+        }
+    }
+
+    @Test
+    fun directVirtualMachineErrorIsRethrown() {
+        val fatal = InternalError("vm")
+        val reader = ThrowingPropertyReader(fatal, setOf("ro.mi.os.version.name"))
+        try {
+            RomEnvironmentDetector.detect(33, "", "", reader)
+            assertTrue("expected VME", false)
+        } catch (vm: InternalError) {
+            assertEquals("vm", vm.message)
+        }
+    }
+
+    @Test
     fun invocationTargetExceptionWrappingOomIsRethrown() {
         val cause = OutOfMemoryError()
         val reader = ThrowingPropertyReader(java.lang.reflect.InvocationTargetException(cause), setOf("ro.mi.os.version.name"))
@@ -240,6 +263,21 @@ class RomEnvironmentTest {
             assertTrue("expected OOM", false)
         } catch (oom: OutOfMemoryError) {
             // expected
+        }
+    }
+
+    @Test
+    fun invocationTargetExceptionWrappingVirtualMachineErrorIsRethrown() {
+        val cause = InternalError("wrapped-vm")
+        val reader = ThrowingPropertyReader(
+            java.lang.reflect.InvocationTargetException(cause),
+            setOf("ro.mi.os.version.name")
+        )
+        try {
+            RomEnvironmentDetector.detect(33, "", "", reader)
+            assertTrue("expected wrapped VME", false)
+        } catch (vm: InternalError) {
+            assertEquals("wrapped-vm", vm.message)
         }
     }
 

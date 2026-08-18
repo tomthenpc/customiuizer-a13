@@ -1,6 +1,7 @@
 package tv.withaibuild.customiuizer.mods.compat
 
 import android.os.Build
+import tv.withaibuild.customiuizer.mods.utils.RuntimeFatality
 import java.util.Locale
 
 /**
@@ -18,15 +19,8 @@ internal fun interface SystemPropertyReader {
  *
  * The `get` Method is resolved once per class loader. Ordinary reflection failures are
  * treated as `null` so that `RomEnvironmentDetector` can classify the device safely.
- * `OutOfMemoryError` is rethrown immediately, even when wrapped by
- * `InvocationTargetException` or `ExceptionInInitializerError`.
+ * Fatal VM errors are rethrown through `RuntimeFatality`.
  */
-private fun unwrapFatal(t: Throwable): Throwable = when (t) {
-    is java.lang.reflect.InvocationTargetException -> t.targetException ?: t
-    is ExceptionInInitializerError -> t.exception ?: t
-    else -> t
-}
-
 internal object AndroidSystemPropertyReader : SystemPropertyReader {
 
     private const val SYSTEM_PROPERTIES_CLASS = "android.os.SystemProperties"
@@ -36,8 +30,7 @@ internal object AndroidSystemPropertyReader : SystemPropertyReader {
         try {
             Class.forName(SYSTEM_PROPERTIES_CLASS).getDeclaredMethod(GET_METHOD, String::class.java)
         } catch (t: Throwable) {
-            val fatal = unwrapFatal(t)
-            if (fatal is OutOfMemoryError) throw fatal
+            RuntimeFatality.throwIfFatal(t)
             null
         }
     }
@@ -47,8 +40,7 @@ internal object AndroidSystemPropertyReader : SystemPropertyReader {
         return try {
             method.invoke(null, key) as? String
         } catch (t: Throwable) {
-            val fatal = unwrapFatal(t)
-            if (fatal is OutOfMemoryError) throw fatal
+            RuntimeFatality.throwIfFatal(t)
             null
         }
     }
@@ -191,8 +183,7 @@ internal object RomEnvironmentDetector {
         try {
             reader.get(key)
         } catch (t: Throwable) {
-            val fatal = unwrapFatal(t)
-            if (fatal is OutOfMemoryError) throw fatal
+            RuntimeFatality.throwIfFatal(t)
             null
         }
 
