@@ -29,7 +29,7 @@ Static audit result:
 | ARCHITECTURE_DEBT | 6 |
 | INSUFFICIENT_EVIDENCE | 5 |
 
-B3A is **not CLOSED**. R1 landed D1/D2 only.
+B3A is **CLOSED** for unattended freeze after independent R1/R2 audit. ChatGPT remains final Gatekeeper.
 
 **Recommendation:** keep current hybrid shape. Do **not** migrate PackageReady legacy features to catalog (first-load cost + no concrete benefit). Do **not** migrate remaining Application legacy features to catalog without a **confirmed** corrective that catalog uniquely fixes (install-once, process identity, or resolver alignment)—none qualify this round.
 
@@ -350,13 +350,13 @@ A3 package filter is present (`LauncherInstaller.java:108-122`). Findings are **
 ## 15. Validation (this task)
 
 ```text
-PRODUCTION_CHANGED = YES (R1 D1/D2 only; authorized files)
+PRODUCTION_CHANGED = YES (R1 D1/D2 + R2 D3/D4/D5; authorized files)
 TEST_CHANGED       = YES (targeted)
 FULL_GATE_RUN      = NO
-B3A_CLOSED         = NO
+B3A_CLOSED         = YES
 ```
 
-Known inventory baseline drift may fail `tools/tests/test_hook_ownership_inventory.py` if run — **do not sync** this round.
+Known inventory baseline drift may fail `tools/tests/test_hook_ownership_inventory.py` if run — **do not sync** until B3D.
 
 ---
 
@@ -368,5 +368,69 @@ APPLICATION_FEATURE_COUNT      = 36 legacy direct + 7 catalog = 43 pref-gated pa
 CURRENT_CATALOG_FEATURE_COUNT  = 7
 B3A_CATALOG_MIGRATION_CANDIDATES = 0
 B3A_CONFIRMED_CORRECTIVES      = 5 landed (D1–D5)
-B3A_CLOSED                     = NO
+B3A_CLOSED                     = YES
+```
+
+---
+
+## 17. B3A FINAL AUDIT (unattended freeze)
+
+Independent re-check after R2. Does **not** claim ChatGPT PASS.
+
+```text
+B3A_SELECTION_SHA = e837942847f10afec7ea87ce58332191b437cd76
+B3A_R1_SHA        = 3180f3362756a8e3dbc9e6c5043d637d9ba4f6e8
+B3A_R2_SHA        = 5ec24cc1f08f1fe2cc0dfbc619c315ca313b3fc9
+DIRECT_ANCESTRY   = c4dbc90 → e837942 → 3180f33 → 5ec24cc (then this docs freeze)
+```
+
+### 17.1 Catalog
+
+| ID | Verdict |
+|---|---|
+| folderColumns | KEEP_CURRENT_CATALOG — installer `installById` after attach; contract still `com.miui.home.launcher.*` |
+| titleTopMargin | KEEP_CURRENT_CATALOG |
+| noClockHide | KEEP_CURRENT_CATALOG |
+| hideLauncherTitles | KEEP_CURRENT_CATALOG |
+| fixAppInfoLaunch | KEEP_CURRENT_CATALOG |
+| noWidgetOnly | KEEP_CURRENT_CATALOG |
+| noUnlockAnimation | KEEP_CURRENT_CATALOG — still miui.home-gated at installer |
+
+```text
+B3A_CATALOG_MIGRATION_CANDIDATES = 0
+```
+
+No new evidence that catalog uniquely fixes install-once, process identity, ClassLoader ownership, resolver alignment, parallel routing, or lifecycle. PackageReady family still must not pay first catalog load.
+
+### 17.2 Landed CONFIRMED correctives
+
+| ID | Still present |
+|---|---|
+| D1 | `FeatureInstallRegistry` uses `RuntimeFatality.throwIfFatal`; no local `isFatal`. Launcher OOM-only catches replaced in Icon/Folder/Animation/System hooks |
+| D2 | wrapped fatal on condition/compat/installer; `states.remove` then throw; ordinary remains `FAILED_TRANSIENT` |
+| D3 | `UnlockGridsHook` `findClassIfExists(DeviceConfig)`; `ScreenUtils` still attempted |
+| D4 | `FSGesturesHook` `findClassIfExists(BaseRecentsImpl)`; `usingFsGesture` + `GestureStubView` still attempted. `DisableLauncherLogHook` field write fail-open |
+| D5 | `DisableLauncherWallpaperScale` null-class + field write fail-open; `DimLayer` still attempted |
+
+FixAppInfoLaunchHook / FixAnimHook fallback chains **unchanged**. Hook before/after timing **unchanged**. `LauncherInstaller` / `FeatureCatalog` / `FeatureDispatcher` / A3 package filter **unchanged**.
+
+### 17.3 Remaining (not production-authorized)
+
+| Class | Item |
+|---|---|
+| LIKELY_DEFECT | sticky recents receiver no unregister; same-package repeat `Application.attach` reinstalls legacy hooks |
+| COMPATIBILITY_GAP | globallauncher FSG / `noUnlockAnimation` routing (Issue #2 out of scope) |
+| ARCHITECTURE_DEBT | `createRuntime(packageName)` process-identity key; catalog `installPhase=PACKAGE_READY` vs attach call site; HYBRID dual routing |
+| INSUFFICIENT_EVIDENCE | Launcher secondary-process reachability; DEVICE_VERIFIED wrapped-fatal path |
+
+### 17.4 Lifecycle / ownership / process
+
+- Catalog paths remain registry install-once.
+- Legacy Application hooks remain install-on-every-attach (LIKELY, not newly CONFIRMED).
+- `ProcessScopes` maps `com.miui.home` and `com.mi.android.globallauncher` to `LAUNCHER` with no main/secondary split.
+- A3 `isTargetPackage` remains cross-package only. `A3_REOPEN_REQUIRED = NO`.
+
+```text
+B3A_UNATTENDED_FREEZE = YES
+CHATGPT_PASS          = NOT_CLAIMED
 ```
