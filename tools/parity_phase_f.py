@@ -687,9 +687,12 @@ def compact_diff_summary(a14_body: str, a13_body: str) -> str:
 
 def result_polarity_conflict(a14_body: str, a13_body: str) -> bool:
     def flags(body: str) -> tuple[bool, bool]:
-        true_hit = bool(re.search(r'setResult\(\s*true\s*\)|result\s*=\s*true', body))
+        true_hit = bool(re.search(
+            r'setResult\(\s*true\s*\)|result\s*=\s*true|returnAndSkip\(\s*true\s*\)|SKIP\(\s*true\s*\)|throwOrReturn\([^)]*\btrue\b',
+            body,
+        ))
         false_hit = bool(re.search(
-            r'setResult\(\s*false\s*\)|result\s*=\s*false|returnAndSkip\(\s*false\s*\)|SKIP\(\s*false\s*\)',
+            r'setResult\(\s*false\s*\)|result\s*=\s*false|returnAndSkip\(\s*false\s*\)|SKIP\(\s*false\s*\)|throwOrReturn\([^)]*\bfalse\b',
             body,
         ))
         return true_hit, false_hit
@@ -882,86 +885,9 @@ def source_review_variant_for_pair(
     right: list[SourceOwner],
     covered: tuple[str, ...],
 ) -> ProofManifest | None:
-    """Non-identical bodies: PRESENT only with filled reviewed-difference fields."""
-    if not a14.normalized_body or not a13.normalized_body:
-        return None
-    if a14.normalized_body == a13.normalized_body:
-        return None
-    if key not in a14.keys or key not in a13.keys:
-        return None
-    if not installer_ownership_compatible(a14, a13, left, right):
-        return None
-    if a14.hook_targets or a13.hook_targets:
-        if not hook_targets_compatible(a14, a13):
-            return None
-    if result_polarity_conflict(a14.normalized_body, a13.normalized_body):
-        return None
-    a14_core = strip_hook_scaffolding(a14.normalized_body)
-    a13_core = strip_hook_scaffolding(a13.normalized_body)
-    ratio = SequenceMatcher(a=a14_core, b=a13_core).ratio() if a14_core and a13_core else 0.0
-    settings_only = not a14.hook_targets and not a13.hook_targets
-    if ratio < 0.62 and not settings_only:
-        return None
-    if settings_only and _basename(a14.path) != _basename(a13.path) and ratio < 0.55:
-        return None
-    a14_defaults = extract_pref_defaults(a14.normalized_body)
-    a13_defaults = extract_pref_defaults(a13.normalized_body)
-    a14_extra = sorted(set(a14.keys) - set(a13.keys))
-    a14_extra_hooks = sorted(set(a14.hook_targets) - set(a13.hook_targets))
-    a14_methods = {t.split("#", 1)[-1] for t in a14.hook_targets}
-    a13_methods = {t.split("#", 1)[-1] for t in a13.hook_targets}
-    shared_methods = sorted(a14_methods & a13_methods)
-    diff = compact_diff_summary(a14.normalized_body, a13.normalized_body)
-    why = (
-        f"Both owners read `{key}`"
-        + (f" and rewrite host members {shared_methods}" if shared_methods else " in module/settings code with no ROM member dump required")
-        + f". Scaffolding-stripped body ratio={ratio:.3f}. "
-        f"Callback delta is A14 `{','.join(a14.callback_phases)}` vs A13 `{','.join(a13.callback_phases)}`. "
-        "No opposite setResult/returnAndSkip polarity on this pair."
-    )
-    a14_installers = [o for o in left if o.kind == "installer"]
-    a13_installers = [o for o in right if o.kind == "installer"]
-    man = ProofManifest(
-        proof_id=f"PROOF_REVIEWED_{_basename(a13.path).replace('.', '_')}_{a13.symbol}",
-        a14_owner_path=a14.path,
-        a14_symbol=a14.symbol,
-        a14_installer=a14_installers[0].path if a14_installers else a14.path,
-        a14_hook_targets=",".join(a14.hook_targets) or "(no host hook members)",
-        a14_callback_phase=",".join(a14.callback_phases),
-        a13_owner_path=a13.path,
-        a13_symbol=a13.symbol,
-        a13_installer=a13_installers[0].path if a13_installers else a13.path,
-        a13_hook_targets=",".join(a13.hook_targets) or "(no host hook members)",
-        a13_callback_phase=",".join(a13.callback_phases),
-        preference_keys=(key,),
-        value_domain="owner-local preference domain",
-        default_semantics=f"A14 default `{a14_defaults.get(key, 'n/a')}`; A13 default `{a13_defaults.get(key, 'n/a')}`",
-        result_argument_behavior=extract_result_ops(a14.normalized_body) + " | " + extract_result_ops(a13.normalized_body),
-        api33_variant_reason=why,
-        proof_conclusion="PRESENT_A13_VARIANT",
-        evidence_level="INDIVIDUAL_SEMANTIC_PROOF",
-        body_relation="REVIEWED_VARIANT",
-        diff_summary=diff,
-        value_default_comparison=f"A14 `{key}` default={a14_defaults.get(key, 'n/a')}; A13 default={a13_defaults.get(key, 'n/a')}",
-        hook_target_comparison=(
-            f"A14={','.join(a14.hook_targets) or 'none'}; A13={','.join(a13.hook_targets) or 'none'}; "
-            f"shared_methods={shared_methods or 'n/a'}"
-        ),
-        callback_semantics_comparison=(
-            f"A14 phases={','.join(a14.callback_phases)}; A13 phases={','.join(a13.callback_phases)}; "
-            f"intercept/proceed vs before/after is an API33 libxposed translation when polarity matches"
-        ),
-        arg_result_comparison=(
-            f"A14 {extract_result_ops(a14.normalized_body)}; A13 {extract_result_ops(a13.normalized_body)}"
-        ),
-        a14_only_branches=(
-            f"extra_keys={a14_extra or 'none'}; extra_hook_targets={a14_extra_hooks or 'none'}"
-        ),
-        why_user_behavior_is_equivalent=why,
-    )
-    if not reviewed_variant_fields_complete(man):
-        return None
-    return man
+    """Ratio/similarity must never authorize PRESENT. Owner-group review lives in parity_owner_groups."""
+    del key, a14, a13, left, right, covered
+    return None
 
 
 def source_review_proof_for_key(
@@ -1488,12 +1414,13 @@ def build_source_index(repo: Path) -> dict[str, str]:
 
 def format_proof_markdown(manifests: list[ProofManifest]) -> str:
     lines = [
-        "# A13 Phase F-R2 Semantic Proofs",
+        "# A13 Phase F-R3 Semantic Proofs",
         "",
         "Automatic PRESENT requires normalized body IDENTICAL, the same relevant preference keys,",
         "and compatible installer ownership (BODY_RELATION=IDENTICAL).",
-        "Non-identical owners require an explicit reviewed manifest (BODY_RELATION=REVIEWED_VARIANT)",
-        "with filled difference fields. Same-key reads alone are IMPLEMENTATION_PRESENCE.",
+        "Non-identical owners require an owner-group reviewed manifest (BODY_RELATION=REVIEWED_VARIANT)",
+        "with filled difference fields. SequenceMatcher ratio never authorizes PRESENT.",
+        "Same-key reads alone are IMPLEMENTATION_PRESENCE.",
         "",
     ]
     for man in manifests:

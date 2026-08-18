@@ -32,9 +32,9 @@ try:
         proof_is_acceptable,
         prove_dead_a14_key,
         scan_repo,
-        source_review_proof_for_key,
         xml_attr,
     )
+    from tools.parity_owner_groups import review_owner_groups
 except ImportError:
     from parity_phase_f import (
         DI_HELPER_KEYS,
@@ -58,9 +58,9 @@ except ImportError:
         proof_is_acceptable,
         prove_dead_a14_key,
         scan_repo,
-        source_review_proof_for_key,
         xml_attr,
     )
+    from parity_owner_groups import review_owner_groups
 
 ANDROID_NS = "{http://schemas.android.com/apk/res/android}"
 EVIDENCE_LEVELS = {
@@ -356,10 +356,13 @@ def implementation_mode_for(parity_state: str, phase_e_batch: str, upgraded_exis
         "INTENTIONAL_EXCLUDED",
         "DEAD_UPSTREAM_PATH",
         "INSUFFICIENT_EVIDENCE",
+        "SOURCE_REVIEW_REQUIRED",
     }:
         return "NO_IMPLEMENTATION"
     if parity_state == "HOLD_EVIDENCE" or phase_e_batch == "HOLD_EVIDENCE":
         return "EVIDENCE_HOLD"
+    if parity_state == "PARTIAL_PARITY":
+        return "UPGRADE_EXISTING_A13"
     if upgraded_existing:
         return "UPGRADE_EXISTING_A13"
     return "NEW_PORT"
@@ -766,6 +769,22 @@ def phase_f_hold_missing() -> dict[str, dict[str, str]]:
         "various_trim_security_center_marketing",
     ]:
         add(key, *e4)
+    add(
+        "various_clear_update_state",
+        "Whether MIUI 14 Settings.Global miui_new_version/miui_update_ready plus com.android.updater clearApplicationUserData match the HyperOS updater-state cache",
+        "android / com.android.updater",
+        "no one-shot action; ROM updater reminder unchanged",
+        "MIUI 14 updater package dump, Settings.Global key names, and ActivityManager.clearApplicationUserData 4-arg result on API33",
+        "A14 one-shot lives in the HyperOS updater-services bridge (same system_server owner as various_disable_update_services, already HOLD). Product copy and Global keys are HyperOS-branded. Privileged system_server data wipe cannot be decided from A13 source.",
+    )
+    add(
+        "various_disable_defraud_apps_detect",
+        "Whether MIUI 14 com.miui.guardprovider contains AntiDefraudAppManager / getUnSystemAppList strings used by A14 DexKit",
+        "com.miui.guardprovider",
+        "feature off / ROM fraud-app scan unchanged",
+        "GuardProvider DEX dump on MIUI 14 and HyperOS 1 A13 showing the DexKit string pair",
+        "A14 DisableDefraudAppsCheck is DexKit-only against GuardProvider. No A13 owner, installer, or fixed class/member. Fail-open would hide a dead toggle.",
+    )
     return holds
 
 
@@ -956,6 +975,23 @@ def main() -> int:
     a13_owners = a13_scan.owners
     explicit_manifests = phase_e_source_proofs()
     explicit_by_key = proof_index(explicit_manifests)
+    review_keys = [
+        k for k, n in a14_nodes.items()
+        if is_product_node(n.node_type)
+        and k in a13_nodes
+        and is_product_node(a13_nodes[k].node_type)
+        and k not in explicit_by_key
+    ]
+    og_index = review_owner_groups(
+        a14_scan,
+        a13_scan,
+        review_keys,
+        a14_xml={k: n.xml_file for k, n in a14_nodes.items()},
+        a13_xml={k: n.xml_file for k, n in a13_nodes.items()},
+        a14_tags={k: n.tag.rsplit(".", 1)[-1] for k, n in a14_nodes.items()},
+        a13_tags={k: n.tag.rsplit(".", 1)[-1] for k, n in a13_nodes.items()},
+    )
+    hold_map.update(og_index.holds)
     fp_by_key: dict[str, ProofManifest] = {}
     used_manifests: list[ProofManifest] = []
     used_ids: set[str] = set()
@@ -1027,13 +1063,12 @@ def main() -> int:
                     fp_by_key[covered] = man
             remember(man)
             return man
-        man = source_review_proof_for_key(
-            key, a14_owners, a13_owners, a14_scan=a14_scan, a13_scan=a13_scan
-        )
-        if man and proof_is_acceptable(man):
-            fp_by_key[key] = man
-            remember(man)
-            return man
+        if key in og_index.by_key:
+            man = og_index.by_key[key]
+            if proof_is_acceptable(man) or man.proof_conclusion == "HOLD_EVIDENCE":
+                fp_by_key[key] = man
+                remember(man)
+                return man
         return None
 
     def hook_match_for(key: str) -> bool | None:
@@ -1144,6 +1179,22 @@ def main() -> int:
             source_relationship = "UPSTREAM_INTENT_EQUIVALENT" if parity in {"PRESENT_EQUIVALENT", "PRESENT_A13_VARIANT"} else source_relationship
             risk = "LOW"
             priority = "P2"
+            if man.proof_conclusion == "HOLD_EVIDENCE":
+                risk = "HIGH"
+                priority = "P0"
+                source_relationship = "SEMANTIC_DRIFT"
+                forced_phase_e_batch = "HOLD_EVIDENCE"
+
+        if parity == "HOLD_EVIDENCE" and key in hold_map and not man:
+            rec = hold_map[key]
+            a14_behavior = rec["unresolved_question"]
+            a13_behavior = rec["why_forbidden"]
+            proof_id = "PROOF_ROM_DEVICE_HOLD"
+            evidence_level = "INDIVIDUAL_SEMANTIC_PROOF"
+            source_relationship = "A14_NEW_FEATURE"
+            risk = "HIGH"
+            priority = "P0"
+            forced_phase_e_batch = "HOLD_EVIDENCE"
 
         if parity in {"UNPROVEN", "SOURCE_REVIEW_REQUIRED"}:
             alias = alias_map.get(key) if initial_missing_candidate else None
@@ -1260,20 +1311,18 @@ def main() -> int:
                 risk = "LOW"
                 priority = "P2"
             elif has_a13:
-                parity = "PARTIAL_PARITY"
+                parity = "SOURCE_REVIEW_REQUIRED"
                 evidence_level = "IMPLEMENTATION_PRESENCE"
-                proof_id = proof_id or f"PROOF_SOURCE_REVIEW_{key.upper()}"
+                proof_id = proof_id or ""
                 a14_behavior = (
-                    f"Same key `{key}` exists on both trees; owner bodies differ enough that automatic fingerprint "
-                    "and reviewed-variant gates did not prove equivalent rewrite semantics."
+                    f"Same key `{key}` exists on both trees; owner-group review did not assign a pair."
                 )
                 a13_behavior = (
-                    "Source review completed: not PRESENT without a stronger owner proof; not a ROM dump."
+                    "Analyzer miss during owner-group assignment is SOURCE_REVIEW_REQUIRED, not PARTIAL_PARITY."
                 )
                 source_relationship = "SEMANTIC_DRIFT"
                 risk = "MEDIUM"
                 priority = "P1"
-                partial_reclassified += 1
             elif not has_a13:
                 current_missing_rows_audited += 1
                 rec = hold_map.get(key)
@@ -1520,6 +1569,20 @@ def main() -> int:
     hold_rows = [r for r in rows if r["parity_state"] == "HOLD_EVIDENCE" and r["a14_feature_id"]]
     dead_rows = [r for r in rows if r["parity_state"] == "DEAD_UPSTREAM_PATH" and r["a14_feature_id"]]
 
+    clear_rows = [r for r in rows if r["a14_pref_keys"] == "various_clear_update_state"]
+    defraud_rows = [r for r in rows if r["a14_pref_keys"] == "various_disable_defraud_apps_detect"]
+    clear_state = clear_rows[0]["parity_state"] if clear_rows else "NOT_FOUND"
+    defraud_state = defraud_rows[0]["parity_state"] if defraud_rows else "NOT_FOUND"
+    partial_with_new_port = sum(
+        1 for r in rows
+        if r.get("a14_feature_id") and r["parity_state"] == "PARTIAL_PARITY" and r["implementation_mode"] == "NEW_PORT"
+    )
+    og_present_keys = sum(
+        1 for r in rows
+        if r.get("a14_feature_id") and (r.get("proof_id") or "").startswith("PROOF_OG_")
+        and r["parity_state"] == "PRESENT_A13_VARIANT"
+    )
+
     print(f"A14_PRODUCT_FEATURE_COUNT={a14_actionable}")
     print(f"A13_PRODUCT_FEATURE_COUNT={a13_product}")
     print(f"A13_ONLY_KEEP_COUNT={a13_only}")
@@ -1559,6 +1622,17 @@ def main() -> int:
     print(f"PRESENT_A13_VARIANT_RECLASSIFIED={present_reclassified}")
     print(f"PARTIAL_PARITY_RECLASSIFIED={partial_reclassified}")
     print(f"TRUE_MISSING_REMAINING={true_missing_remaining}")
+    print(f"OWNER_GROUPS_REVIEWED={og_index.stats.groups_reviewed}")
+    print(f"OWNER_GROUP_PRESENT_EQUIVALENT={og_index.stats.present_equivalent}")
+    print(f"OWNER_GROUP_PRESENT_VARIANT={og_index.stats.present_variant}")
+    print(f"OWNER_GROUP_TRUE_PARTIAL={og_index.stats.true_partial}")
+    print(f"OWNER_GROUP_ROM_HOLD={og_index.stats.rom_hold}")
+    print(f"FALSE_PARTIALS_RECLASSIFIED={og_present_keys}")
+    print("FEATURES_NEWLY_PORTED=0")
+    print("EXISTING_A13_FEATURES_UPGRADED=0")
+    print(f"PARTIAL_WITH_NEW_PORT_COUNT={partial_with_new_port}")
+    print(f"CLEAR_UPDATE_STATE_FINAL_STATE={clear_state}")
+    print(f"DEFRAUD_APPS_FINAL_STATE={defraud_state}")
     hide_ime = [r for r in rows if r["a14_pref_keys"] == "controls_hide_ime_dismiss_button" or r["a14_feature_id"] == "HideImeDismissButtonFeatureId"]
     hide_ime_ok = bool(hide_ime and hide_ime[0]["parity_state"] in {"PRESENT_A13_VARIANT", "PRESENT_EQUIVALENT"})
     print(f"HIDE_IME_ROUTING={(hide_ime[0]['phase_e_batch'] or hide_ime[0]['parity_state'] if hide_ime else 'NOT_FOUND')}")
@@ -1580,9 +1654,9 @@ def main() -> int:
         }
     ]
     with reconciliation_path.open("w", encoding="utf-8", newline="\n") as f:
-        f.write("# A13 Phase F-R2 Residual Audit\n\n")
+        f.write("# A13 Phase F-R3 Residual Audit\n\n")
         f.write("Historical Phase A-E reports are not rewritten.\n\n")
-        f.write("AUTHORITATIVE_BASE_SHA = e2e09e8d019d332a2939d7aa1e0c767e6d8d8ad2\n")
+        f.write("AUTHORITATIVE_BASE_SHA = 58545733ded848a91a746140b5aa986da872b481\n")
         f.write("A14_REFERENCE_SHA = d20d96b543a49a584970e312da7d704958a155aa\n\n")
         f.write(f"A14_PRODUCT_FEATURE_COUNT = {a14_actionable}\n")
         f.write(f"HOLD_EVIDENCE = {c.get('HOLD_EVIDENCE', 0)}\n")
@@ -1617,7 +1691,7 @@ def main() -> int:
 
     hold_path = out_dir / "A13_PHASE_F_HOLD_EVIDENCE.md"
     with hold_path.open("w", encoding="utf-8", newline="\n") as f:
-        f.write("# A13 Phase F-R2 HOLD_EVIDENCE\n\n")
+        f.write("# A13 Phase F-R3 HOLD_EVIDENCE\n\n")
         f.write(f"HOLD_EVIDENCE_COUNT = {hold_evidence_count}\n")
         f.write(f"DEAD_UPSTREAM_PATH_COUNT = {len(dead_rows)}\n")
         f.write(f"SOURCE_REVIEW_REQUIRED = {source_review_required}\n\n")
@@ -1640,8 +1714,8 @@ def main() -> int:
 
     report_path = out_dir / "A13_PHASE_F_FINAL_PARITY_REPORT.md"
     with report_path.open("w", encoding="utf-8", newline="\n") as f:
-        f.write("# A13_PHASE_F_R2_FINAL_PARITY_REPORT\n\n")
-        f.write("AUTHORITATIVE_BASE_SHA = e2e09e8d019d332a2939d7aa1e0c767e6d8d8ad2\n")
+        f.write("# A13_PHASE_F_R3_FINAL_PARITY_REPORT\n\n")
+        f.write("AUTHORITATIVE_BASE_SHA = 58545733ded848a91a746140b5aa986da872b481\n")
         f.write("A14_REFERENCE_SHA = d20d96b543a49a584970e312da7d704958a155aa\n")
         f.write("VERIFIED_TREE_SHA = (this commit)\n")
         f.write("REPORT_HEAD_SHA = (this commit)\n\n")
@@ -1660,20 +1734,38 @@ def main() -> int:
         f.write(f"INDIVIDUAL_PROOF_ROWS = {proof_kind['INDIVIDUAL']}\n")
         f.write(f"DEAD_PATH_SOURCE_PROVEN_COUNT = {len(dead_rows)}\n")
         f.write(f"ROM_DEVICE_HOLD_COUNT = {hold_evidence_count}\n")
+        f.write(f"OWNER_GROUPS_REVIEWED = {og_index.stats.groups_reviewed}\n")
+        f.write(f"OWNER_GROUP_PRESENT_EQUIVALENT = {og_index.stats.present_equivalent}\n")
+        f.write(f"OWNER_GROUP_PRESENT_VARIANT = {og_index.stats.present_variant}\n")
+        f.write(f"OWNER_GROUP_TRUE_PARTIAL = {og_index.stats.true_partial}\n")
+        f.write(f"OWNER_GROUP_ROM_HOLD = {og_index.stats.rom_hold}\n")
+        f.write(f"FALSE_PARTIALS_RECLASSIFIED = {og_present_keys}\n")
+        f.write("FEATURES_NEWLY_PORTED = 0\n")
+        f.write("EXISTING_A13_FEATURES_UPGRADED = 0\n")
+        f.write(f"PARTIAL_WITH_NEW_PORT_COUNT = {partial_with_new_port}\n")
+        f.write(f"CLEAR_UPDATE_STATE_FINAL_STATE = {clear_state}\n")
+        f.write(f"DEFRAUD_APPS_FINAL_STATE = {defraud_state}\n")
         f.write(f"FSGESTURES_FINAL_STATE = {fsg_state}\n")
         f.write(f"MIUIZER_LOCALE_FINAL_STATE = {locale_state}\n\n")
         f.write("PRODUCTION_CHANGED = NO\n")
-        f.write("Classifier/generator rewrite only. Automatic PRESENT requires identical normalized bodies.\n")
-        f.write("Visible PreferenceEx `*_apps` rows are PRODUCT_SUBOPTION unless XML proves they are not actionable.\n")
-        f.write("`miuizer_locale` is module-owned AppLocaleController; not a ROM dump.\n")
-        f.write("FSGesturesHook is a reviewed API33 caller-scope variant versus A14 ThreadLocal wrappers.\n")
+        f.write("Classifier/generator rewrite plus two ROM-evidence HOLDs for the former MISSING rows.\n")
+        f.write("Automatic PRESENT requires identical normalized bodies. SequenceMatcher never authorizes PRESENT.\n")
+        f.write("Non-identical owners are classified by owner-group review, not per-row dumps.\n")
+        f.write("PARTIAL_PARITY is never NEW_PORT.\n")
 
     print(f"MISSING_RECONCILIATION={reconciliation_path}")
     print(f"HOLD_EVIDENCE_MD={hold_path}")
     print(f"SEMANTIC_PROOFS={proofs_path}")
     print(f"FINAL_REPORT={report_path}")
     print(f"CSV={csv_path}")
-    return 0
+    leftover_gap = (
+        source_review_required
+        or c.get("PARTIAL_PARITY", 0)
+        or c.get("MISSING_IN_A13", 0)
+        or c.get("INSUFFICIENT_EVIDENCE", 0)
+        or partial_with_new_port
+    )
+    return 1 if leftover_gap else 0
 
 
 if __name__ == "__main__":

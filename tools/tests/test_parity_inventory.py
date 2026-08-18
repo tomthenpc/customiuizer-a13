@@ -21,12 +21,14 @@ from tools.parity_phase_f import (
     DeadPathProof,
     PhaseFTransitionInput,
     ProofManifest,
+    RepoScan,
     SourceOwner,
     classify_phase_f_transition,
     classify_unproven_bucket,
     fingerprint_proof_for_key,
     source_review_variant_for_pair,
 )
+from tools.parity_owner_groups import review_owner_groups
 
 
 class ParityInventoryTest(unittest.TestCase):
@@ -245,6 +247,8 @@ class ParityInventoryTest(unittest.TestCase):
     def test_implementation_mode_values(self):
         self.assertEqual(implementation_mode_for("MISSING_IN_A13", "E3", False), "NEW_PORT")
         self.assertEqual(implementation_mode_for("PARTIAL_PARITY", "E5", True), "UPGRADE_EXISTING_A13")
+        self.assertEqual(implementation_mode_for("PARTIAL_PARITY", "E3", False), "UPGRADE_EXISTING_A13")
+        self.assertEqual(implementation_mode_for("PRESENT_A13_VARIANT", "", True), "NO_IMPLEMENTATION")
         self.assertEqual(implementation_mode_for("MISSING_IN_A13", "HOLD_EVIDENCE", False), "EVIDENCE_HOLD")
         self.assertEqual(implementation_mode_for("PRESENT_A13_VARIANT", "", False), "NO_IMPLEMENTATION")
 
@@ -555,6 +559,24 @@ class PhaseFR2ClassifierTest(unittest.TestCase):
         ))
         self.assertNotEqual(decision.parity_state, "HOLD_EVIDENCE")
         self.assertNotEqual(decision.proof_id, "PROOF_ROM_DEVICE_HOLD")
+
+    def test_ratio_never_authorizes_present(self):
+        a14 = self._owner(normalized_body='{ getBoolean("system_demo", false); setResult(true); extraA14() }')
+        a13 = self._owner(normalized_body='{ getBoolean("system_demo", false); setResult(true) }')
+        reviewed = source_review_variant_for_pair(
+            "system_demo", a14, a13, [a14], [a13], ("system_demo",),
+        )
+        self.assertIsNone(reviewed)
+
+    def test_owner_group_review_presents_non_identical_compatible_pair(self):
+        a14 = self._owner(normalized_body='{ getBoolean("system_demo", false); setResult(true); extraA14() }')
+        a13 = self._owner(normalized_body='{ getBoolean("system_demo", false); setResult(true) }')
+        scan14 = RepoScan(owners={"system_demo": [a14]}, symbols={"DemoHook": [a14]}, callees={})
+        scan13 = RepoScan(owners={"system_demo": [a13]}, symbols={"DemoHook": [a13]}, callees={})
+        idx = review_owner_groups(scan14, scan13, ["system_demo"])
+        self.assertIn("system_demo", idx.by_key)
+        self.assertEqual(idx.by_key["system_demo"].proof_conclusion, "PRESENT_A13_VARIANT")
+        self.assertEqual(idx.by_key["system_demo"].body_relation, "REVIEWED_VARIANT")
 
 
 if __name__ == "__main__":
