@@ -16,6 +16,7 @@ import tv.withaibuild.customiuizer.mods.utils.HookerClassHelper.AfterHookCallbac
 import tv.withaibuild.customiuizer.mods.utils.HookerClassHelper.BeforeHookCallback
 import tv.withaibuild.customiuizer.mods.utils.HookerClassHelper.MethodHook
 import tv.withaibuild.customiuizer.mods.utils.ModuleHelper
+import tv.withaibuild.customiuizer.mods.utils.RuntimeFatality
 import tv.withaibuild.customiuizer.mods.utils.XposedHelpers
 
 @Suppress("UNUSED_PARAMETER")
@@ -117,7 +118,7 @@ object LauncherFolderHooks {
                                     XposedHelpers.callMethod(act, "startSecurityHide")
                                 }
                             } catch (t: Throwable) {
-                                if (t is OutOfMemoryError) throw t
+                                RuntimeFatality.throwIfFatal(t)
                                 XposedHelpers.log(t)
                             }
                         }

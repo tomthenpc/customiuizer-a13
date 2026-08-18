@@ -23,11 +23,13 @@ Static audit result:
 | Metric | Count |
 |---|---|
 | **B3A_CATALOG_MIGRATION_CANDIDATES** | **0** |
-| **B3A_CONFIRMED_CORRECTIVES** | **0** |
-| LIKELY_DEFECT | 3 |
+| **B3A_CONFIRMED_CORRECTIVES** | **2 landed (D1, D2)**; D3/D4/D5 = **CONFIRMED / NOT_YET_IMPLEMENTED** |
+| LIKELY_DEFECT | remaining ownership / attach items (R2) |
 | COMPATIBILITY_GAP | 4 |
 | ARCHITECTURE_DEBT | 6 |
 | INSUFFICIENT_EVIDENCE | 5 |
+
+B3A is **not CLOSED**. R1 landed D1/D2 only.
 
 **Recommendation:** keep current hybrid shape. Do **not** migrate PackageReady legacy features to catalog (first-load cost + no concrete benefit). Do **not** migrate remaining Application legacy features to catalog without a **confirmed** corrective that catalog uniquely fixes (install-once, process identity, or resolver alignment)—none qualify this round.
 
@@ -238,11 +240,11 @@ No static strong `Activity`/`Fragment` module fields found in Launcher hook modu
 
 | Path | Ordinary failure | Fatal handling | Wrapped fatal |
 |---|---|---|---|
-| `FeatureDispatcher` / `FeatureInstallRegistry` | fail-open per feature | direct OOM/TD/VME rethrow | `isFatal(t)` direct type only — **wrapped OOM not proven propagated** | ARCHITECTURE_DEBT |
-| `LauncherSystemHooks`, `LauncherIconHooks`, `LauncherAnimationHooks`, `LauncherFolderHooks` | log + return | **`if (t is OutOfMemoryError) throw t` only** | **LIKELY_DEFECT** (same class as B2B-D4, not device-verified) |
+| `FeatureDispatcher` / `FeatureInstallRegistry` | fail-open per feature | **B3A-D2 landed:** `RuntimeFatality.throwIfFatal`; fatal removes `INSTALLING` | wrapped fatal propagates original |
+| `LauncherSystemHooks`, `LauncherIconHooks`, `LauncherAnimationHooks`, `LauncherFolderHooks` reachable OOM-only catches | log / ordinary fallback | **B3A-D1 landed:** `RuntimeFatality.throwIfFatal` | wrapped fatal propagates; fallback skipped |
 | `ModuleHelper.findAndHookMethod` (majority) | fail-open at install | ModuleHelper boundary | varies |
 
-No production changes this round. Prefer `RuntimeFatality.throwIfFatal` in any future Launcher corrective.
+`FeatureDispatcher` was **not** modified in R1. D3/D4/D5 remain **NOT_YET_IMPLEMENTED**.
 
 ---
 
@@ -278,15 +280,18 @@ Do **not** auto-remove `com.miui.home` guards without ROM ABI proof for globalla
 
 ## 12. Finding classification summary
 
-### CONFIRMED_DEFECT — 0
+### CONFIRMED_DEFECT
 
-No Launcher-only production defect with STATIC_VERIFIED + reproducible counterexample in repo this round.
+1. **B3A-D1** — Launcher reachable OOM-only callback catches swallow wrapped fatal. **CONFIRMED. Landed R1.**
+2. **B3A-D2** — `FeatureInstallRegistry.isFatal` direct-only; wrapped fatal swallowed. **CONFIRMED. Landed R1.**
+3. **B3A-D3** — **CONFIRMED / NOT_YET_IMPLEMENTED** (R2).
+4. **B3A-D4** — **CONFIRMED / NOT_YET_IMPLEMENTED** (R2).
+5. **B3A-D5** — **CONFIRMED / NOT_YET_IMPLEMENTED** (R2).
 
-### LIKELY_DEFECT — 3
+### LIKELY_DEFECT
 
 1. **Legacy direct hooks re-install on abnormal same-package repeat `Application.attach`** (registry does not cover).
-2. **Launcher hook catches OOM-only** — wrapped fatal may be swallowed (`LauncherSystemHooks`, `LauncherIconHooks`, `LauncherAnimationHooks`, `LauncherFolderHooks`).
-3. **`StickyFloatingWindowsLauncherHook` receiver** — register on `onAttachedToWindow` without paired unregister in audited snippet.
+2. **`StickyFloatingWindowsLauncherHook` receiver** — register on `onAttachedToWindow` without paired unregister in snippet. Ownership redesign is **not** R1.
 
 ### COMPATIBILITY_GAP — 4
 
@@ -309,7 +314,7 @@ No Launcher-only production defect with STATIC_VERIFIED + reproducible counterex
 1. Launcher secondary process production reachability.
 2. Hooks running in secondary process causing user-visible bug.
 3. globallauncher DEX parity for `com.miui.home.launcher.*` contracts.
-4. Wrapped fatal swallow on Launcher device path.
+4. Wrapped fatal swallow on Launcher **device** path (unit-tested in R1; not DEVICE_VERIFIED).
 5. Receiver leak on recents lifecycle.
 
 ---
@@ -323,7 +328,7 @@ No **CATALOG_MIGRATION_VALUE** for any legacy PackageReady or Application featur
 **CORRECTIVE_BEFORE_MIGRATION** (future, not B3A implementation):
 
 - Attach-callback legacy install-once guard (same-package duplicate) — **before** any legacy→catalog bulk move.
-- `RuntimeFatality` on Launcher OOM-only catches — independent of catalog.
+- `RuntimeFatality` on Launcher OOM-only catches — **landed B3A-D1**.
 - globallauncher routing policy — product/compat decision, not catalog shape.
 
 ### Catalog features — all **KEEP_CURRENT_CATALOG**
@@ -345,10 +350,10 @@ A3 package filter is present (`LauncherInstaller.java:108-122`). Findings are **
 ## 15. Validation (this task)
 
 ```text
-PRODUCTION_CHANGED = NO
-TEST_CHANGED       = NO
+PRODUCTION_CHANGED = YES (R1 D1/D2 only; authorized files)
+TEST_CHANGED       = YES (targeted)
 FULL_GATE_RUN      = NO
-git diff --check   = required before commit
+B3A_CLOSED         = NO
 ```
 
 Known inventory baseline drift may fail `tools/tests/test_hook_ownership_inventory.py` if run — **do not sync** this round.
@@ -362,5 +367,6 @@ PACKAGE_READY_FEATURE_COUNT      = 9
 APPLICATION_FEATURE_COUNT      = 36 legacy direct + 7 catalog = 43 pref-gated paths
 CURRENT_CATALOG_FEATURE_COUNT  = 7
 B3A_CATALOG_MIGRATION_CANDIDATES = 0
-B3A_CONFIRMED_CORRECTIVES      = 0
+B3A_CONFIRMED_CORRECTIVES      = 2 landed (D1, D2); D3/D4/D5 CONFIRMED / NOT_YET_IMPLEMENTED
+B3A_CLOSED                     = NO
 ```

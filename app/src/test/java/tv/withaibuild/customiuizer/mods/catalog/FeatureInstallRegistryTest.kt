@@ -4,8 +4,10 @@ import org.junit.After
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse
 import org.junit.Assert.assertNotNull
+import org.junit.Assert.assertSame
 import org.junit.Assert.assertThrows
 import org.junit.Assert.assertTrue
+import org.junit.Assert.fail
 import org.junit.Before
 import org.junit.Test
 import java.util.concurrent.Callable
@@ -856,5 +858,101 @@ class FeatureInstallRegistryTest {
         }
 
         assertEquals(FeatureInstallResult.Installed(), FeatureInstallRegistry.installById("idempotentReg", ProcessScope.SYSTEM_UI, InstallPhase.PACKAGE_READY, runtime()))
+    }
+
+    @Test
+    fun conditionWrappedOomPropagatesOriginalAndReleasesState() {
+        val failure = OutOfMemoryError("condition wrapped oom")
+        var shouldThrow = true
+        val s = spec(
+            id = "wrappedConditionOom",
+            condition = {
+                if (shouldThrow) throw RuntimeException(failure)
+                true
+            },
+            installer = { _, _ -> FeatureInstallResult.Installed() }
+        )
+        FeatureInstallRegistry.register(s)
+        val rt = runtime("wrapped-condition-oom")
+
+        assertSame(failure, thrownFatal {
+            FeatureInstallRegistry.installById("wrappedConditionOom", ProcessScope.SYSTEM_UI, InstallPhase.PACKAGE_READY, rt)
+        })
+
+        shouldThrow = false
+        assertEquals(
+            FeatureInstallResult.Installed(),
+            FeatureInstallRegistry.installById("wrappedConditionOom", ProcessScope.SYSTEM_UI, InstallPhase.PACKAGE_READY, rt)
+        )
+    }
+
+    @Test
+    fun compatibilityWrappedVmErrorPropagatesOriginalAndReleasesState() {
+        val failure = InternalError("compat wrapped vm")
+        var shouldThrow = true
+        val s = spec(
+            id = "wrappedCompatVm",
+            compatibilityCheck = {
+                if (shouldThrow) throw RuntimeException(failure)
+                CompatibilityResult(
+                    CompatibilityState.COMPATIBLE,
+                    ReasonCode.PRIMARY_TARGET_FOUND,
+                    null,
+                    HookInstallResult.DISPATCHED
+                )
+            },
+            installer = { _, _ -> FeatureInstallResult.Installed() }
+        )
+        FeatureInstallRegistry.register(s)
+        val rt = runtime("wrapped-compat-vm")
+
+        assertSame(failure, thrownFatal {
+            FeatureInstallRegistry.installById("wrappedCompatVm", ProcessScope.SYSTEM_UI, InstallPhase.PACKAGE_READY, rt)
+        })
+
+        shouldThrow = false
+        assertEquals(
+            FeatureInstallResult.Installed(),
+            FeatureInstallRegistry.installById("wrappedCompatVm", ProcessScope.SYSTEM_UI, InstallPhase.PACKAGE_READY, rt)
+        )
+    }
+
+    @Test
+    fun installerWrappedOomPropagatesOriginalAndReleasesState() {
+        val failure = OutOfMemoryError("installer wrapped oom")
+        var shouldThrow = true
+        val s = spec(
+            id = "wrappedInstallerOom",
+            installer = { _, _ ->
+                if (shouldThrow) throw RuntimeException(failure)
+                FeatureInstallResult.Installed()
+            }
+        )
+        FeatureInstallRegistry.register(s)
+        val rt = runtime("wrapped-installer-oom")
+
+        assertSame(failure, thrownFatal {
+            FeatureInstallRegistry.installById("wrappedInstallerOom", ProcessScope.SYSTEM_UI, InstallPhase.PACKAGE_READY, rt)
+        })
+
+        shouldThrow = false
+        assertEquals(
+            FeatureInstallResult.Installed(),
+            FeatureInstallRegistry.installById("wrappedInstallerOom", ProcessScope.SYSTEM_UI, InstallPhase.PACKAGE_READY, rt)
+        )
+    }
+
+    private inline fun thrownFatal(block: () -> Unit): Throwable {
+        try {
+            block()
+            fail("expected fatal throwable")
+            throw AssertionError("unreachable")
+        } catch (oom: OutOfMemoryError) {
+            return oom
+        } catch (td: ThreadDeath) {
+            return td
+        } catch (vm: VirtualMachineError) {
+            return vm
+        }
     }
 }

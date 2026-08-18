@@ -18,6 +18,7 @@ import tv.withaibuild.customiuizer.mods.utils.HookerClassHelper.AfterHookCallbac
 import tv.withaibuild.customiuizer.mods.utils.HookerClassHelper.BeforeHookCallback
 import tv.withaibuild.customiuizer.mods.utils.HookerClassHelper.MethodHook
 import tv.withaibuild.customiuizer.mods.utils.ModuleHelper
+import tv.withaibuild.customiuizer.mods.utils.RuntimeFatality
 import tv.withaibuild.customiuizer.mods.utils.XposedHelpers
 import tv.withaibuild.customiuizer.utils.HookUtils
 
@@ -44,15 +45,15 @@ object LauncherSystemHooks {
                     val component: ComponentName? = try {
                         XposedHelpers.callMethod(itemInfo, "getComponentName") as? ComponentName
                     } catch (t: Throwable) {
-                        if (t is OutOfMemoryError) throw t
+                        RuntimeFatality.throwIfFatal(t)
                         try {
                             XposedHelpers.callMethod(XposedHelpers.getObjectField(itemInfo, "intent"), "getComponent") as? ComponentName
                         } catch (t: Throwable) {
-                            if (t is OutOfMemoryError) throw t
+                            RuntimeFatality.throwIfFatal(t)
                             try {
                                 XposedHelpers.getObjectField(itemInfo, "providerName") as? ComponentName
                             } catch (t: Throwable) {
-                                if (t is OutOfMemoryError) throw t
+                                RuntimeFatality.throwIfFatal(t)
                                 XposedHelpers.getObjectField(XposedHelpers.getObjectField(itemInfo, "providerInfo"), "provider") as? ComponentName
                             }
                         }
@@ -129,7 +130,7 @@ object LauncherSystemHooks {
                                 XposedHelpers.callMethod(recents, "dismissRecentsToLaunchTargetTaskOrHome", pkgName, true)
                             }
                         } catch (t: Throwable) {
-                            if (t is OutOfMemoryError) throw t
+                            RuntimeFatality.throwIfFatal(t)
                             XposedHelpers.log(t)
                         }
                     }

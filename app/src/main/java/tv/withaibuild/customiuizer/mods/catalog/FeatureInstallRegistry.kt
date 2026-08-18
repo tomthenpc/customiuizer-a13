@@ -10,6 +10,7 @@ import tv.withaibuild.customiuizer.mods.utils.FeatureInstallResult
 import tv.withaibuild.customiuizer.mods.utils.FeatureState
 import tv.withaibuild.customiuizer.mods.utils.InstallPhase
 import tv.withaibuild.customiuizer.mods.utils.ProcessScope
+import tv.withaibuild.customiuizer.mods.utils.RuntimeFatality
 import java.util.concurrent.ConcurrentHashMap
 
 /**
@@ -25,9 +26,10 @@ import java.util.concurrent.ConcurrentHashMap
  * forms, or aliases are rejected explicitly.
  *
  * Fatal JVM errors ([OutOfMemoryError], [ThreadDeath], [VirtualMachineError])
- * are always rethrown. All other failures are isolated to the single feature
- * and conservatively treated as transient unless the installer explicitly
- * returns [FeatureInstallResult.FailedPermanent].
+ * and wrapped fatal causes are always rethrown via [RuntimeFatality.throwIfFatal].
+ * All other failures are isolated to the single feature and conservatively
+ * treated as transient unless the installer explicitly returns
+ * [FeatureInstallResult.FailedPermanent].
  */
 object FeatureInstallRegistry {
 
@@ -273,7 +275,7 @@ object FeatureInstallRegistry {
             FeatureInstallResult.Disabled
         }
     } catch (t: Throwable) {
-        if (isFatal(t)) throw t
+        RuntimeFatality.throwIfFatal(t)
         val detail = "${t.javaClass.simpleName}: ${t.message}"
         record(
             spec,
@@ -299,10 +301,8 @@ object FeatureInstallRegistry {
         val compatibility = try {
             spec.compatibilityCheck(runtime)
         } catch (t: Throwable) {
-            if (isFatal(t)) {
-                states.remove(stateKey)
-                throw t
-            }
+            states.remove(stateKey)
+            RuntimeFatality.throwIfFatal(t)
             states[stateKey] = FeatureState.FAILED_TRANSIENT
             record(spec, compatibility = CompatibilityState.INCOMPATIBLE, reasonCode = ReasonCode.TARGET_NOT_FOUND, detail = t.message)
             return FeatureInstallResult.Incompatible(t.message ?: "compatibility check threw")
@@ -319,10 +319,8 @@ object FeatureInstallRegistry {
         return try {
             spec.installer(runtime, compatibility.hookResult)
         } catch (t: Throwable) {
-            if (isFatal(t)) {
-                states.remove(stateKey)
-                throw t
-            }
+            states.remove(stateKey)
+            RuntimeFatality.throwIfFatal(t)
             states[stateKey] = FeatureState.FAILED_TRANSIENT
             classifyThrownException(t)
         }
@@ -398,9 +396,6 @@ object FeatureInstallRegistry {
                 FeatureInstallResult.FailedTransient("${t.javaClass.simpleName}: ${t.message}")
             else -> FeatureInstallResult.FailedTransient("${t.javaClass.simpleName}: ${t.message}")
         }
-
-    private fun isFatal(t: Throwable): Boolean =
-        t is OutOfMemoryError || t is ThreadDeath || t is VirtualMachineError
 
     /** Test-only reset of per-process install state. Production code must not call this. */
     @VisibleForTesting
