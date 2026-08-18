@@ -1,0 +1,106 @@
+# A13_PHASE_D_UNATTENDED_COMPLETION_REPORT
+
+```text
+A13_BASE_SHA = eeb2361bb55ba367fe6563eadee8d030049958eb
+A14_REFERENCE_SHA = d20d96b543a49a584970e312da7d704958a155aa
+VERIFIED_TREE_SHA = b3b90f2239fcf514988090f85a666e9de3194d80
+REPORT_HEAD_SHA = TO_BE_FILLED_AFTER_REPORT_COMMIT
+BRANCH = devin/a13-foundation-parity-r13.11.1
+REMOTE_HEAD = eeb2361bb55ba367fe6563eadee8d030049958eb
+LOCAL_HEAD = b3b90f2239fcf514988090f85a666e9de3194d80
+WORKTREE = CLEAN_AT_VERIFIED_TREE
+```
+
+## Inventory totals
+
+```text
+A14_VISIBLE_FEATURE_COUNT = 642
+A13_VISIBLE_FEATURE_COUNT = 628
+A13_ONLY_FEATURE_COUNT = 66
+PRESENT_EQUIVALENT_COUNT = 0
+PRESENT_A13_VARIANT_COUNT = 628
+PARTIAL_PARITY_COUNT = 0
+MISSING_IN_A13_COUNT = 79
+INTENTIONAL_EXCLUDED_COUNT = 1
+INSUFFICIENT_EVIDENCE_COUNT = 0
+DYNAMIC_ISLAND_EXCLUDED_COUNT = 1
+```
+
+## Cross-source discrepancy accounting
+
+```text
+UI_WITHOUT_IMPLEMENTATION = 27
+IMPLEMENTATION_WITHOUT_UI = 56
+DEAD_PREFERENCES = 27 (candidate subset from UI_WITHOUT_IMPLEMENTATION)
+```
+
+## Product infrastructure parity
+
+```text
+SETTINGS_PARITY_RESULT = PARTIAL_PARITY
+BACKUP_PARITY_RESULT = MISSING_IN_A13
+SEARCH_PARITY_RESULT = PRESENT_A13_VARIANT
+RESTART_PARITY_RESULT = PARTIAL_PARITY
+LANGUAGE_ABOUT_RESULT = PRESENT_A13_VARIANT
+```
+
+## Domain summaries
+
+```text
+DOMAIN_SUMMARIES =
+- SETTINGS_MAINTENANCE: PARTIAL (A14 richer search/restart/backup contract)
+- LAUNCHER: PRESENT_A13_VARIANT dominant, 3 missing rows
+- SYSTEMUI_STATUS_BAR_CONTROL_CENTER_NOTIFICATION_LOCKSCREEN_VOLUME_SCREENSHOT_DEVICEINFO:
+  PRESENT_A13_VARIANT dominant, concentrated missing rows in system/statusbar variant pages
+- SYSTEM_SERVER: PRESENT_A13_VARIANT dominant, targeted missing parity rows routed to E2/E5
+- SECURITY_CENTER: PRESENT_A13_VARIANT with partial parity in service-cleanup semantics
+- PACKAGE_INSTALLER: PRESENT_A13_VARIANT baseline, parity cleanup in E4
+- SETTINGS_APP: PARTIAL (backup/language/restart/search integration gaps)
+- PHONE_MEDIA_POWERKEEPER_WALLPAPER: PRESENT_A13_VARIANT with low missing density
+- GENERIC_APP: PRESENT_A13_VARIANT baseline
+- GESTURES_GLOBAL_ACTIONS: PRESENT_A13_VARIANT baseline, some implementation-only key paths
+- PERMISSION_PRIVACY: PRESENT_A13_VARIANT with E4 follow-up items
+- USB_CONNECTIVITY: MISSING_IN_A13 candidate present (USB default function parity item)
+- PERFORMANCE_VISIBLE_BEHAVIOR: PARTIAL (A14 product-level polishing options exceed A13)
+```
+
+## Phase E planning counts
+
+```text
+PHASE_E_E1_COUNT = 12
+PHASE_E_E2_COUNT = 35
+PHASE_E_E3_COUNT = 24
+PHASE_E_E4_COUNT = 6
+PHASE_E_E5_COUNT = 2
+```
+
+## Defect ledger and constraints
+
+```text
+PHASE_D_DISCOVERED_CONFIRMED_DEFECTS = 0 (no production corrective in Phase D)
+PRODUCTION_CHANGED = NO
+PHASE_C_REOPENED = NO
+PHASE_E_STARTED = NO
+```
+
+## Validation results
+
+```text
+FAST_CHANGED = PASS (python tools/verify.py fast --changed)
+TOOLS_TESTS = PASS (python -m unittest discover -s tools/tests -p "test_*.py")
+COMPILEALL = PASS (python -m compileall tools)
+DIFF_CHECK = PASS (git diff --check)
+```
+
+## Output artifacts
+
+- `docs/parity/A13_A14_FEATURE_INVENTORY.md`
+- `docs/parity/A13_A14_FEATURE_MATRIX.csv`
+- `docs/parity/A13_A14_SETTINGS_PARITY.md`
+- `docs/parity/A13_PHASE_E_PARITY_PLAN.md`
+- `docs/parity/A13_PHASE_D_COMPLETION_REPORT.md`
+
+```text
+READY_FOR_CHATGPT_PHASE_D_FINAL_AUDIT = YES
+```
+
