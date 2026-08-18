@@ -48,6 +48,7 @@
     <string name="system_statusbaricons_secondspace_title">手机分身</string>
     <string name="system_statusbaricons_privacy_title">隐身模式</string>
     <string name="system_statusbaricons_headset_title">耳机</string>
+    <string name="system_statusbaricons_wireless_headset_title">无线耳机</string>
     <string name="system_statusbaricons_mute_title">通话：麦克风静音</string>
     <string name="system_statusbaricons_speaker_title">通话：免提</string>
     <string name="system_statusbaricons_record_title">通话：录音</string>
@@ -150,6 +151,7 @@
     <string name="system_detailednetspeed_lowlevel_summ">网速值低于该水平时将被认为慢，并会显示不同的指示器图标</string>
     <string name="system_detailednetspeed_secunit_title">网速隐藏 B/s 单位</string>
     <string name="system_netspeed_fontsize_title">网速字体大小</string>
+    <string name="system_netspeed_use_clock_style_title">文字样式与状态栏时钟保持一致</string>
     <string name="system_netspeed_rowspacing_title">双排网速行间距</string>
     <string name="system_netspeed_rowspacing_summ">调整上传与下载两行之间的距离，修改后需重启系统界面</string>
     <string name="system_statusbarcontrols_title">手势控制</string>
@@ -412,6 +414,8 @@
     <string name="system_charginginfo_title">显示充电数据</string>
     <string name="system_charginginfo_summ">在锁屏底部显示额外的充电信息</string>
     <string name="system_charginginfo_view_title">显示方式</string>
+    <string name="system_charginginfo_fontsize_title">锁屏充电信息字号</string>
+    <string name="system_charginginfo_fontsize_summary">调整锁屏底部充电提示字号；默认保持系统字号，重启系统界面后生效</string>
     <string name="system_charginginfo_current_title">充电电流</string>
     <string name="system_charginginfo_voltage_title">电池电压</string>
     <string name="system_charginginfo_wattage_title">功率</string>
@@ -530,6 +534,8 @@
     <string name="launcher_fixlaunch_title">修复应用信息</string>
     <string name="launcher_fixlaunch_summ">长按菜单始终打开MIUI样式应用信息</string>
     <string name="launcher_folderblur">背景模糊</string>
+    <string name="launcher_folderblur_disable">关闭文件夹背景模糊</string>
+    <string name="launcher_folderblur_disable_summ">使用清晰背景，不在系统默认模糊上继续叠加</string>
     <string name="launcher_closefolder_title">自动关闭文件夹</string>
     <string name="launcher_closefolder_summ">启动后关闭应用的文件夹</string>
     <string name="launcher_titles">应用标题</string>
@@ -1099,6 +1105,7 @@
     <string name="system_statusbar_mobiletype_single_bold_title">加粗</string>
     <string name="system_statusbar_dualrows_firstrow_horizmargin_title">第一排水平边距</string>
     <string name="system_statusbar_clock_spread2rows_title">时钟跨双排显示</string>
+    <string name="system_statusbar_dualrows_left_ratio_title">全面屏设备下左侧宽度占比</string>
     <string name="system_statusbar_horizmargin_title">状态栏水平边距</string>
     <string name="system_statusbar_topmargin_title">状态栏上边距</string>
     <string name="system_statusbar_topmargin_val_title">上边距大小</string>

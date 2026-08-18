@@ -344,6 +344,18 @@
 			miuizer:indentLevel="1"
 			android:title="@string/system_statusbar_clock_spread2rows_title" />
 
+		<tv.withaibuild.customiuizer.prefs.SeekBarPreference
+			android:key="pref_key_system_statusbar_dualrows_left_ratio"
+			android:dependency="pref_key_system_statusbar_dualrows"
+			miuizer:indentLevel="1"
+			android:defaultValue="4"
+			miuizer:minValue="3"
+			miuizer:maxValue="7"
+			miuizer:stepValue="1"
+			miuizer:format="%s"
+			miuizer:displayDividerValue="10"
+			android:title="@string/system_statusbar_dualrows_left_ratio_title" />
+
 		<tv.withaibuild.customiuizer.prefs.CheckBoxPreferenceEx
 			android:key="pref_key_system_statusbar_dualrows_firstrow_horizmargin"
 			android:dependency="pref_key_system_statusbar_dualrows"

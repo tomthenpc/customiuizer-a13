@@ -215,6 +215,7 @@ public final class SystemUiInstaller {
                 || MainModule.mPrefs.getBoolean("system_detailednetspeed")
                 || MainModule.mPrefs.getBoolean("system_detailednetspeed_fakedualrow")
                 || MainModule.mPrefs.getBoolean("system_netspeed_bold")
+                || MainModule.mPrefs.getBoolean("system_netspeed_use_clock_style")
                 || MainModule.mPrefs.getInt("system_netspeed_leftmargin", 0) > 0
                 || MainModule.mPrefs.getInt("system_netspeed_fixedcontent_width", 10) > 10
                 || MainModule.mPrefs.getInt("system_netspeed_rightmargin", 0) > 0
@@ -275,6 +276,7 @@ public final class SystemUiInstaller {
                 MainModule.mPrefs.getBoolean("system_statusbaricons_dnd") ||
                 MainModule.mPrefs.getBoolean("system_statusbaricons_secondspace") ||
                 MainModule.mPrefs.getBoolean("system_statusbaricons_headset") ||
+                MainModule.mPrefs.getBoolean("system_statusbaricons_wireless_headset") ||
                 MainModule.mPrefs.getBoolean("system_statusbaricons_nfc") ||
                 MainModule.mPrefs.getBoolean("system_statusbaricons_vpn") ||
                 MainModule.mPrefs.getBoolean("system_statusbaricons_airplane") ||
@@ -389,7 +391,7 @@ public final class SystemUiInstaller {
         if (prefs.getBoolean("system_nonetspeedseparator")) return true;
         if (prefs.getBoolean("system_statusbaricons_clock")) return true;
         if (prefs.getBoolean("system_detailednetspeed_fakedualrow") || (!prefs.getBoolean("system_detailednetspeed") && (prefs.getBoolean("system_detailednetspeed_secunit") || prefs.getBoolean("system_detailednetspeed_low") ) )) return true;
-        if (prefs.getInt("system_netspeed_fontsize", 13) > 13 || prefs.getInt("system_netspeed_verticaloffset", 8) != 8 || prefs.getBoolean("system_detailednetspeed") || prefs.getBoolean("system_detailednetspeed_fakedualrow") || prefs.getBoolean("system_netspeed_bold") || prefs.getInt("system_netspeed_leftmargin", 0) > 0 || prefs.getInt("system_netspeed_fixedcontent_width", 10) > 10 || prefs.getInt("system_netspeed_rightmargin", 0) > 0 || prefs.getStringAsInt("system_detailednetspeed_align", 1) > 1) return true;
+        if (prefs.getInt("system_netspeed_fontsize", 13) > 13 || prefs.getInt("system_netspeed_verticaloffset", 8) != 8 || prefs.getBoolean("system_detailednetspeed") || prefs.getBoolean("system_detailednetspeed_fakedualrow") || prefs.getBoolean("system_netspeed_bold") || prefs.getBoolean("system_netspeed_use_clock_style") || prefs.getInt("system_netspeed_leftmargin", 0) > 0 || prefs.getInt("system_netspeed_fixedcontent_width", 10) > 10 || prefs.getInt("system_netspeed_rightmargin", 0) > 0 || prefs.getStringAsInt("system_detailednetspeed_align", 1) > 1) return true;
         if (prefs.getBoolean("system_taptounlock")) return true;
         if (prefs.getBoolean("system_nosos")) return true;
         if (prefs.getBoolean("system_morenotif")) return true;
@@ -415,7 +417,7 @@ public final class SystemUiInstaller {
         if (prefs.getStringAsInt("system_mobiletypeicon", 1) > 1 || prefs.getBoolean("system_networkindicator_mobile") || prefs.getBoolean("system_statusbar_mobiletype_show_wificonnected")) return true;
         if (prefs.getStringAsInt("system_statusbaricons_bluetooth", 1) > 1) return true;
         if (prefs.getBoolean("system_epm")) return true;
-        if ((prefs.getBoolean("system_statusbaricons_wifi") || prefs.getBoolean("system_statusbaricons_dualwifi") || prefs.getBoolean("system_statusbaricons_alarm") || prefs.getBoolean("system_statusbaricons_profile") || prefs.getBoolean("system_statusbaricons_sound") || prefs.getBoolean("system_statusbaricons_dnd") || prefs.getBoolean("system_statusbaricons_secondspace") || prefs.getBoolean("system_statusbaricons_headset") || prefs.getBoolean("system_statusbaricons_nfc") || prefs.getBoolean("system_statusbaricons_vpn") || prefs.getBoolean("system_statusbaricons_airplane") || prefs.getBoolean("system_statusbaricons_hotspot") || prefs.getBoolean("system_statusbaricons_nosims") || prefs.getBoolean("system_statusbaricons_gps") || prefs.getBoolean("system_statusbaricons_btbattery") || prefs.getBoolean("system_statusbaricons_ble_unlock") || prefs.getBoolean("system_statusbaricons_volte"))) return true;
+        if ((prefs.getBoolean("system_statusbaricons_wifi") || prefs.getBoolean("system_statusbaricons_dualwifi") || prefs.getBoolean("system_statusbaricons_alarm") || prefs.getBoolean("system_statusbaricons_profile") || prefs.getBoolean("system_statusbaricons_sound") || prefs.getBoolean("system_statusbaricons_dnd") || prefs.getBoolean("system_statusbaricons_secondspace") || prefs.getBoolean("system_statusbaricons_headset") || prefs.getBoolean("system_statusbaricons_wireless_headset") || prefs.getBoolean("system_statusbaricons_nfc") || prefs.getBoolean("system_statusbaricons_vpn") || prefs.getBoolean("system_statusbaricons_airplane") || prefs.getBoolean("system_statusbaricons_hotspot") || prefs.getBoolean("system_statusbaricons_nosims") || prefs.getBoolean("system_statusbaricons_gps") || prefs.getBoolean("system_statusbaricons_btbattery") || prefs.getBoolean("system_statusbaricons_ble_unlock") || prefs.getBoolean("system_statusbaricons_volte"))) return true;
         if (prefs.getBoolean("system_statusbaricons_privacy") || prefs.getBoolean("system_statusbaricons_mute") || prefs.getBoolean("system_statusbaricons_speaker") || prefs.getBoolean("system_statusbaricons_record")) return true;
         if (prefs.getInt("system_messagingstylelines", 0) > 0) return true;
         if (prefs.getBoolean("system_betterpopups_allowfloat")) return true;

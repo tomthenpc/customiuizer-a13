@@ -670,8 +670,11 @@ object SystemUIStatusBarHooks {
                 val rightLayout = XposedHelpers.getAdditionalInstanceField(param.getThisObject(), "rightLayout") as? LinearLayout ?: return
 
                 if (mCurrentStatusBarType == 0) {
-                    leftLayout.layoutParams = LinearLayout.LayoutParams(0, -1, 4f)
-                    rightLayout.layoutParams = LinearLayout.LayoutParams(0, -1, 6f)
+                    val (leftWeight, rightWeight) = resolveDualRowsCutoutWeights(
+                        MainModule.mPrefs.getInt("system_statusbar_dualrows_left_ratio", 4)
+                    )
+                    leftLayout.layoutParams = LinearLayout.LayoutParams(0, -1, leftWeight)
+                    rightLayout.layoutParams = LinearLayout.LayoutParams(0, -1, rightWeight)
                 } else {
                     leftLayout.layoutParams = LinearLayout.LayoutParams(0, -1, 1f)
                     rightLayout.layoutParams = LinearLayout.LayoutParams(0, -1, 1f)
@@ -1307,6 +1310,10 @@ object SystemUIStatusBarHooks {
             val iconTextView = holder.numberView
             val dualRow = MainModule.mPrefs.getBoolean("system_detailednetspeed") || MainModule.mPrefs.getBoolean("system_detailednetspeed_fakedualrow")
             var fontSize = MainModule.mPrefs.getInt("system_netspeed_fontsize", 13)
+            if (MainModule.mPrefs.getBoolean("system_netspeed_use_clock_style")) {
+                applyStatusBarClockTextAppearance(iconTextView)
+                holder.unitView?.let { applyStatusBarClockTextAppearance(it) }
+            }
             if (dualRow) {
                 if (newStyle) {
                     holder.unitView?.visibility = View.GONE
@@ -1365,6 +1372,23 @@ object SystemUIStatusBarHooks {
         val baseSpacing = if (fontSize > 17) 0.85f else 0.90f
         val adjustment = adjustmentPercent.coerceIn(70, 130)
         return baseSpacing * adjustment / 100f
+    }
+
+    internal const val STATUS_BAR_CLOCK_TEXT_APPEARANCE = "TextAppearance.StatusBar.Clock"
+
+    private fun applyStatusBarClockTextAppearance(textView: TextView) {
+        val styleId = textView.resources.getIdentifier(
+            STATUS_BAR_CLOCK_TEXT_APPEARANCE,
+            "style",
+            "com.android.systemui"
+        )
+        if (styleId != 0) textView.setTextAppearance(styleId)
+    }
+
+    @JvmStatic
+    internal fun resolveDualRowsCutoutWeights(leftRatio: Int): Pair<Float, Float> {
+        val left = leftRatio.coerceIn(3, 7)
+        return left.toFloat() to (10 - left).toFloat()
     }
 
     @JvmStatic
@@ -1564,6 +1588,7 @@ object SystemUIStatusBarHooks {
     private fun checkSlot(slotName: String?): Boolean {
         return try {
             ("headset" == slotName && MainModule.mPrefs.getBoolean("system_statusbaricons_headset")) ||
+            ("wireless_headset" == slotName && MainModule.mPrefs.getBoolean("system_statusbaricons_wireless_headset")) ||
             ("volume" == slotName && MainModule.mPrefs.getBoolean("system_statusbaricons_sound")) ||
             ("zen" == slotName && MainModule.mPrefs.getBoolean("system_statusbaricons_dnd")) ||
             ("alarm_clock" == slotName && MainModule.mPrefs.getBoolean("system_statusbaricons_alarm")) ||

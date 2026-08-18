@@ -57,6 +57,7 @@
     <string name="system_statusbaricons_secondspace_title">Second space</string>
     <string name="system_statusbaricons_privacy_title">Incognito mode</string>
     <string name="system_statusbaricons_headset_title">Headset</string>
+    <string name="system_statusbaricons_wireless_headset_title">Wireless headset</string>
     <string name="system_statusbaricons_mute_title">Call: muted mic</string>
     <string name="system_statusbaricons_speaker_title">Call: speakerphone</string>
     <string name="system_statusbaricons_record_title">Call: recording</string>
@@ -152,6 +153,7 @@
     <string name="system_detailednetspeed_lowlevel_summ">Speed values below this level will be considered low and will have a different indication icon</string>
     <string name="system_detailednetspeed_secunit_title">Hide Byte per second suffix(B/s)</string>
     <string name="system_netspeed_fontsize_title">Network speed\'s font size</string>
+    <string name="system_netspeed_use_clock_style_title">Match status bar clock text style</string>
     <string name="system_netspeed_rowspacing_title">Network speed row spacing</string>
     <string name="system_netspeed_rowspacing_summ">Adjusts spacing between upload and download rows; restart SystemUI after changing</string>
     <string name="system_statusbarcontrols_title">Gesture controls</string>
@@ -425,6 +427,8 @@
     <string name="system_charginginfo_title">Display charging data</string>
     <string name="system_charginginfo_summ">Show additional charging information at the bottom of lock screen</string>
     <string name="system_charginginfo_view_title">How to display</string>
+    <string name="system_charginginfo_fontsize_title">Lock screen charging text size</string>
+    <string name="system_charginginfo_fontsize_summary">Adjusts the bottom charging indication. Default keeps the system text size. Restart System UI to apply.</string>
     <string name="system_charginginfo_current_title">Charging current</string>
     <string name="system_charginginfo_voltage_title">Battery voltage</string>
     <string name="system_charginginfo_wattage_title">Power consumption</string>
@@ -551,6 +555,8 @@
     <string name="launcher_fixlaunch_title">Fix app info</string>
     <string name="launcher_fixlaunch_summ">Always open MIUI-styled app info from long press menu</string>
     <string name="launcher_folderblur">Background blur</string>
+    <string name="launcher_folderblur_disable">Disable folder background blur</string>
+    <string name="launcher_folderblur_disable_summ">Use a clear background instead of adding blur on top of the default folder background</string>
     <string name="launcher_closefolder_title">Auto close folders</string>
     <string name="launcher_closefolder_summ">Close app\'s folder after launch</string>
     <string name="launcher_titles">App titles</string>
@@ -1133,6 +1139,7 @@
     <string name="system_statusbar_horizmargin_title">Statusbar horizontal padding</string>
     <string name="system_statusbar_dualrows_firstrow_horizmargin_title">First row horizontal padding</string>
     <string name="system_statusbar_clock_spread2rows_title">Make clock span two rows</string>
+    <string name="system_statusbar_dualrows_left_ratio_title">Set left width for device without notches</string>
     <string name="system_statusbar_topmargin_title">Statusbar top padding</string>
     <string name="system_statusbar_topmargin_val_title">Top padding</string>
     <string name="system_statusbar_topmargin_unset_lockscreen_title">Unset statusbar in Keyguard</string>

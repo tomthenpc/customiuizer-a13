@@ -185,6 +185,11 @@
 		android:defaultValue="false" />
 
 	<tv.withaibuild.customiuizer.prefs.CheckBoxPreferenceEx
+		android:key="pref_key_system_statusbaricons_wireless_headset"
+		android:title="@string/system_statusbaricons_wireless_headset_title"
+		android:defaultValue="false" />
+
+	<tv.withaibuild.customiuizer.prefs.CheckBoxPreferenceEx
 		android:key="pref_key_system_statusbaricons_mute"
 		android:title="@string/system_statusbaricons_mute_title"
 		android:defaultValue="false" />
