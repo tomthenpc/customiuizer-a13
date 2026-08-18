@@ -214,3 +214,24 @@ C3  HookTargetResolver 致命判定补全 + 致命助手收敛
 `C4`（FeatureRuntime 进程键语义）与 `C5`（删除 migration residue）可与 F2 并行。
 
 F2 是功能库存，不是功能实现。
+
+## Phase F-R3 remaining A14-only holds
+
+These two A14 product keys have no A13 counterpart. They are **not** ports;
+they are ROM/device evidence holds recorded in `docs/parity/A13_PHASE_F_HOLD_EVIDENCE.md`.
+
+```text
+various_clear_update_state            = HOLD_EVIDENCE
+  PORT_CLASS                          = BLOCKED_BY_A13_PLATFORM
+  WHY                                 = HyperOS updater-services bridge + Settings.Global keys
+  STATIC_VERIFIED                     = YES (A14 owner + A13 absence)
+  BUILD_VERIFIED                      = NO (no production)
+  DEVICE_EVIDENCE                     = UNVERIFIED
+
+various_disable_defraud_apps_detect   = HOLD_EVIDENCE
+  PORT_CLASS                          = BLOCKED_BY_A13_PLATFORM
+  WHY                                 = GuardProvider DexKit AntiDefraudAppManager unproven on MIUI 14
+  STATIC_VERIFIED                     = YES (A14 owner + A13 absence)
+  BUILD_VERIFIED                      = NO (no production)
+  DEVICE_EVIDENCE                     = UNVERIFIED
+```

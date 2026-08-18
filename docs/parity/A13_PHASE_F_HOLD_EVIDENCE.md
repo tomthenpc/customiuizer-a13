@@ -1,6 +1,6 @@
-# A13 Phase F-R2 HOLD_EVIDENCE
+# A13 Phase F-R3 HOLD_EVIDENCE
 
-HOLD_EVIDENCE_COUNT = 60
+HOLD_EVIDENCE_COUNT = 62
 DEAD_UPSTREAM_PATH_COUNT = 0
 SOURCE_REVIEW_REQUIRED = 0
 
@@ -430,6 +430,22 @@ device behavior, or boot/system_server risk. Module-owned app logic is not parke
 - safe_default: components remain enabled
 - required_device_evidence: Package/component inventory on MIUI 14 and HyperOS 1
 - why_static_source_cannot_decide: A14 settings-app PackageManager disable lists are ROM-specific; wrong names would present a working toggle with no effect or disable the wrong component.
+
+## various_clear_update_state
+
+- unresolved_question: Whether MIUI 14 Settings.Global miui_new_version/miui_update_ready plus com.android.updater clearApplicationUserData match the HyperOS updater-state cache
+- affected_rom_process: android / com.android.updater
+- safe_default: no one-shot action; ROM updater reminder unchanged
+- required_device_evidence: MIUI 14 updater package dump, Settings.Global key names, and ActivityManager.clearApplicationUserData 4-arg result on API33
+- why_static_source_cannot_decide: A14 one-shot lives in the HyperOS updater-services bridge (same system_server owner as various_disable_update_services, already HOLD). Product copy and Global keys are HyperOS-branded. Privileged system_server data wipe cannot be decided from A13 source.
+
+## various_disable_defraud_apps_detect
+
+- unresolved_question: Whether MIUI 14 com.miui.guardprovider contains AntiDefraudAppManager / getUnSystemAppList strings used by A14 DexKit
+- affected_rom_process: com.miui.guardprovider
+- safe_default: feature off / ROM fraud-app scan unchanged
+- required_device_evidence: GuardProvider DEX dump on MIUI 14 and HyperOS 1 A13 showing the DexKit string pair
+- why_static_source_cannot_decide: A14 DisableDefraudAppsCheck is DexKit-only against GuardProvider. No A13 owner, installer, or fixed class/member. Fail-open would hide a dead toggle.
 
 ## various_disable_miui_daemon
 
