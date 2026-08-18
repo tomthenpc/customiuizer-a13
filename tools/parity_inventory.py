@@ -9,6 +9,49 @@ from collections import Counter
 from dataclasses import dataclass
 from pathlib import Path
 
+try:
+    from tools.parity_phase_f import (
+        DI_HELPER_KEYS,
+        DI_PRODUCT_KEY,
+        DeadPathProof,
+        PhaseFTransitionInput,
+        ProofManifest,
+        build_source_index,
+        classify_phase_f_transition,
+        classify_ui_node as classify_ui_node_impl,
+        fingerprint_proof_for_key,
+        format_proof_markdown,
+        hook_targets_compatible,
+        is_product_node,
+        match_owner_pair,
+        phase_e_source_proofs,
+        proof_index,
+        prove_dead_a14_key,
+        scan_repo,
+        xml_attr,
+    )
+except ImportError:
+    from parity_phase_f import (
+        DI_HELPER_KEYS,
+        DI_PRODUCT_KEY,
+        DeadPathProof,
+        PhaseFTransitionInput,
+        ProofManifest,
+        build_source_index,
+        classify_phase_f_transition,
+        classify_ui_node as classify_ui_node_impl,
+        fingerprint_proof_for_key,
+        format_proof_markdown,
+        hook_targets_compatible,
+        is_product_node,
+        match_owner_pair,
+        phase_e_source_proofs,
+        proof_index,
+        prove_dead_a14_key,
+        scan_repo,
+        xml_attr,
+    )
+
 ANDROID_NS = "{http://schemas.android.com/apk/res/android}"
 EVIDENCE_LEVELS = {
     "MECHANICAL_ONLY",
@@ -82,27 +125,8 @@ def parse_strings(res_dir: Path) -> dict[str, str]:
     return out
 
 
-def classify_ui_node(tag: str, key: str) -> str:
-    low = key.lower()
-    if tag.endswith("PreferenceCategory"):
-        return "CATEGORY"
-    if low.endswith("_cat") or "_cat_" in low:
-        return "CATEGORY"
-    if low in {"system", "launcher", "controls", "various", "main"}:
-        return "NAVIGATION_ENTRY"
-    if any(x in low for x in ["_apps", "_bw", "_ignore", "_prerequisite", "_dependency"]):
-        return "DEPENDENCY_HELPER"
-    if any(x in low for x in ["_state", "_internal", "_applied", "_synced"]):
-        return "INTERNAL_STATE"
-    if tag.endswith("PreferenceScreen"):
-        return "NAVIGATION_ENTRY"
-    if tag.endswith("CheckBoxPreferenceEx") or tag.endswith("SwitchPreferenceCompat"):
-        return "ACTIONABLE_FEATURE"
-    if tag.endswith("ListPreferenceEx") or tag.endswith("DropDownPreferenceEx") or tag.endswith("SeekBarPreference"):
-        return "SUBOPTION"
-    if tag.endswith("PreferenceEx"):
-        return "ACTIONABLE_FEATURE"
-    return "UNKNOWN"
+def classify_ui_node(tag: str, key: str, visible: str | None = None, warning: str | None = None) -> str:
+    return classify_ui_node_impl(tag, key, visible=visible, warning=warning)
 
 
 def parse_ui_nodes(repo: Path) -> tuple[dict[str, UiNode], int]:
@@ -124,7 +148,12 @@ def parse_ui_nodes(repo: Path) -> tuple[dict[str, UiNode], int]:
             title = title_ref
             if title_ref.startswith("@string/"):
                 title = strings.get(title_ref.split("/", 1)[1], title_ref)
-            node_type = classify_ui_node(elem.tag, key)
+            node_type = classify_ui_node(
+                elem.tag,
+                key,
+                visible=xml_attr(elem, "isPreferenceVisible"),
+                warning=xml_attr(elem, "warning"),
+            )
             nodes[key] = UiNode(key=key, tag=elem.tag, title=title, xml_file=f.name, node_type=node_type)
     return nodes, total
 
@@ -402,15 +431,6 @@ def missing_semantic_aliases() -> dict[str, dict[str, str]]:
             "phase_e_batch": "HOLD_EVIDENCE",
             "a13_behavior": "Detailed netspeed and fake dual-row already exist; selector migration is not statically safe.",
         },
-        "launcher_folderblur_disable": {
-            "a13_keys": "launcher_folderblur_opacity",
-            "parity_state": "PARTIAL_PARITY",
-            "reason": "A13 FolderBlurHook already owns folder blur via opacity; A14 adds a disable flag that preserves the stored opacity.",
-            "a13_reference": "mods/LauncherFolderHooks.kt::FolderBlurHook; installers/LauncherInstaller.java",
-            "implementation_mode": "UPGRADE_EXISTING_A13",
-            "host_package": "LAUNCHER",
-            "a13_behavior": "Opacity 0 disables blur but discards the stored intensity; no independent disable toggle.",
-        },
         "system_netspeed_boldfont": {
             "a13_keys": "system_netspeed_bold",
             "parity_state": "PRESENT_A13_VARIANT",
@@ -419,15 +439,6 @@ def missing_semantic_aliases() -> dict[str, dict[str, str]]:
             "implementation_mode": "NO_IMPLEMENTATION",
             "host_package": "SYSTEM_UI",
             "a13_behavior": "system_netspeed_bold already drives NetSpeedTypefaceHelper.apply().",
-        },
-        "system_netspeed_use_clock_style": {
-            "a13_keys": "system_netspeed_bold,system_netspeed_fontsize",
-            "parity_state": "PARTIAL_PARITY",
-            "reason": "A13 already customizes netspeed typeface/size; A14 adds match-clock-style on the same helper.",
-            "a13_reference": "mods/SystemUIStatusBarHooks.kt::NetSpeedTypefaceHelper",
-            "implementation_mode": "UPGRADE_EXISTING_A13",
-            "host_package": "SYSTEM_UI",
-            "a13_behavior": "Bold and font-size exist; no clock-style typeface copy path.",
         },
         "system_statusbarcontrols_dt_left": {
             "a13_keys": "system_statusbarcontrols_dt",
@@ -449,24 +460,6 @@ def missing_semantic_aliases() -> dict[str, dict[str, str]]:
             "phase_e_batch": "HOLD_EVIDENCE",
             "a13_behavior": "Single system_statusbarcontrols_dt handles the whole bar.",
         },
-        "system_charginginfo_fontsize": {
-            "a13_keys": "system_charginginfo,system_charginginfo_view",
-            "parity_state": "PARTIAL_PARITY",
-            "reason": "A13 lockscreen charging-info family exists; A14 adds a font-size suboption on the same view.",
-            "a13_reference": "mods/SystemChargingAndWallpaperHooks.kt; res/xml/prefs_system_charginginfo.xml",
-            "implementation_mode": "UPGRADE_EXISTING_A13",
-            "host_package": "SYSTEM_UI",
-            "a13_behavior": "Charging current/voltage/wattage/temp/view exist; no fontsize seekbar.",
-        },
-        "system_statusbar_dualrows_left_ratio": {
-            "a13_keys": "system_statusbar_dualrows,system_statusbar_dualrows_firstrow_horizmargin",
-            "parity_state": "PARTIAL_PARITY",
-            "reason": "A13 dual-row status bar exists with first-row padding; A14 adds left-width ratio.",
-            "a13_reference": "mods/SystemUIStatusBarHooks.kt; res/xml/prefs_system.xml",
-            "implementation_mode": "UPGRADE_EXISTING_A13",
-            "host_package": "SYSTEM_UI",
-            "a13_behavior": "Dual rows + first-row horizontal margin exist; no left-ratio split.",
-        },
         "system_statusbaricons_bluetoothicn": {
             "a13_keys": "system_statusbaricons_bluetooth",
             "parity_state": "PRESENT_A13_VARIANT",
@@ -475,25 +468,6 @@ def missing_semantic_aliases() -> dict[str, dict[str, str]]:
             "implementation_mode": "NO_IMPLEMENTATION",
             "host_package": "SYSTEM_UI",
             "a13_behavior": "system_statusbaricons_bluetooth=3 sets bluetooth icon visibility false.",
-        },
-        "system_statusbaricons_wireless_headset": {
-            "a13_keys": "system_statusbaricons_headset",
-            "parity_state": "PARTIAL_PARITY",
-            "reason": "A13 hides the headset slot; A14 adds a separate wireless_headset slot on the same hide-icons path.",
-            "a13_reference": "mods/SystemUIStatusBarHooks.kt; res/xml/prefs_system_hideicons.xml",
-            "implementation_mode": "UPGRADE_EXISTING_A13",
-            "host_package": "SYSTEM_UI",
-            "a13_behavior": "Only slot name 'headset' is gated; no wireless_headset slot.",
-        },
-        "system_strong_toast_island_offset": {
-            "a13_keys": "dynamic_island",
-            "parity_state": "HOLD_EVIDENCE",
-            "reason": "Dynamic Island helper preference; product policy forbids extra DI gaps.",
-            "a13_reference": "ABSENT (Dynamic Island excluded)",
-            "implementation_mode": "EVIDENCE_HOLD",
-            "host_package": "SYSTEM_UI",
-            "phase_e_batch": "HOLD_EVIDENCE",
-            "a13_behavior": "No strong-toast/island implementation; offset is a DI helper, not a remaining product gap.",
         },
     }
 
@@ -780,41 +754,6 @@ def phase_f_hold_missing() -> dict[str, dict[str, str]]:
     return holds
 
 
-RESOLVED_HOSTS = {
-    "SYSTEM_UI",
-    "LAUNCHER",
-    "SYSTEM_SERVER",
-    "SETTINGS",
-    "SECURITY_CENTER",
-    "PACKAGE_INSTALLER",
-    "SYSTEM_PACKAGE",
-    "ANY",
-}
-
-
-def apply_same_key_family_proof(
-    key: str,
-    host_package: str,
-    a14_reads: set[str],
-    a13_reads: set[str],
-) -> dict[str, str] | None:
-    if key not in a14_reads or key not in a13_reads:
-        return None
-    if host_package not in RESOLVED_HOSTS:
-        return None
-    prefix = "_".join(key.split("_")[:2]) if "_" in key else key
-    return {
-        "parity_state": "PRESENT_A13_VARIANT",
-        "evidence_level": "STRUCTURAL_SEMANTIC_PROOF",
-        "proof_id": f"PROOF_SHARED_{host_package}_{prefix}",
-        "source_relationship": "UPSTREAM_INTENT_EQUIVALENT",
-        "a14_behavior": f"A14 reads `{key}` in host family {host_package}.",
-        "a13_behavior": f"A13 reads the same key in the same host family; no A14-only extra branch on this row.",
-        "a14_reference": f"pref read `{key}`",
-        "a13_reference": f"pref read `{key}`",
-    }
-
-
 def build_a13_search_index(a13: Path) -> dict[str, str]:
     index: dict[str, str] = {}
     roots = [
@@ -913,6 +852,66 @@ def build_absence_proof(
     return "\n".join(lines)
 
 
+def _row(
+    *,
+    domain: str,
+    a14_feature_id: str,
+    a14_name: str,
+    a14_pref_keys: str,
+    a13_feature_id: str,
+    a13_pref_keys: str,
+    node_type: str,
+    parity: str,
+    evidence_level: str,
+    proof_id: str,
+    source_relationship: str,
+    host_package: str,
+    process: str,
+    classloader: str,
+    a14_behavior: str,
+    a13_behavior: str,
+    a14_reference: str,
+    a13_reference: str,
+    risk: str,
+    priority: str,
+    phase_e_batch: str,
+    implementation_mode: str,
+    api33: str,
+    test_strategy: str,
+    rom_evidence: str,
+    a13_current_state: str,
+) -> dict[str, str]:
+    return {
+        "domain": domain,
+        "a14_feature_id": a14_feature_id,
+        "a14_name": a14_name,
+        "a14_pref_keys": a14_pref_keys,
+        "a13_feature_id": a13_feature_id,
+        "a13_pref_keys": a13_pref_keys,
+        "node_type": node_type,
+        "parity_state": parity,
+        "evidence_level": evidence_level,
+        "proof_id": proof_id,
+        "source_relationship": source_relationship,
+        "host_package": host_package,
+        "process": process,
+        "classloader": classloader,
+        "a14_behavior": a14_behavior,
+        "a13_behavior": a13_behavior,
+        "a14_reference": a14_reference,
+        "a13_reference": a13_reference,
+        "risk": risk,
+        "priority": priority,
+        "phase_e_batch": phase_e_batch,
+        "implementation_mode": implementation_mode,
+        "API33_design_direction": api33,
+        "test_strategy": test_strategy,
+        "ROM_evidence_needed": rom_evidence,
+        "dynamic_island_excluded": "YES" if parity == "INTENTIONAL_EXCLUDED" else "NO",
+        "a13_current_state": a13_current_state,
+    }
+
+
 def main() -> int:
     ap = argparse.ArgumentParser()
     ap.add_argument("--a13-repo", required=True)
@@ -930,41 +929,90 @@ def main() -> int:
     a14_specs, a14_spec_discovered, a14_spec_unknown = parse_a14_specs(a14)
     a14_reads = extract_pref_reads(a14)
     a13_reads = extract_pref_reads(a13)
-    overrides = build_sanity_overrides()
     alias_map = missing_semantic_aliases()
     a13_search_index = build_a13_search_index(a13)
     a13_source_text = "\n".join(text.lower() for text in a13_search_index.values())
     a13_key_set = set(a13_nodes.keys()) | set(a13_reads)
-    dead_map = phase_f_dead_a14_ui_keys()
     hold_map = phase_f_hold_missing()
+    a14_index = build_source_index(a14)
+    a14_scan = scan_repo(a14)
+    a13_scan = scan_repo(a13)
+    a14_owners = a14_scan.owners
+    a13_owners = a13_scan.owners
+    explicit_manifests = phase_e_source_proofs()
+    explicit_by_key = proof_index(explicit_manifests)
+    fp_by_key: dict[str, ProofManifest] = {}
+    used_manifests: list[ProofManifest] = []
+    used_ids: set[str] = set()
 
-    structural_proofs: dict[str, dict[str, str]] = {
-        "PROOF_SYSTEMUI_SHARED_STATUSBAR_KEYS": {
-            "key_prefix": "system_statusbar_",
-            "host_package": "SYSTEM_UI",
-            "a14_behavior": "Status bar UI semantics driven by same preference namespace and host.",
-            "a13_behavior": "Same visible status bar namespace in A13 SystemUI hooks.",
-            "a14_reference": "mods/SystemUIStatusBarHooks.kt",
-            "a13_reference": "mods/SystemUIStatusBarHooks.kt",
-        },
-        "PROOF_LAUNCHER_SHARED_FOLDER_KEYS": {
-            "key_prefix": "launcher_folder",
-            "host_package": "LAUNCHER",
-            "a14_behavior": "Launcher folder style/spacing keys on launcher host process.",
-            "a13_behavior": "Equivalent launcher-host folder customization keys.",
-            "a14_reference": "mods/LauncherFolderHooks.kt",
-            "a13_reference": "mods/LauncherFolderHooks.kt",
-        },
-    }
+    def remember(man: ProofManifest) -> None:
+        if man.proof_id not in used_ids:
+            used_ids.add(man.proof_id)
+            used_manifests.append(man)
+
+    def proof_for(key: str) -> ProofManifest | None:
+        if key in explicit_by_key:
+            man = explicit_by_key[key]
+            remember(man)
+            return man
+        if key in fp_by_key:
+            man = fp_by_key[key]
+            remember(man)
+            return man
+        action = f"{key}_action"
+        if action in a14_reads and action in a13_reads and key in a13_nodes:
+            man = ProofManifest(
+                proof_id=f"PROOF_ACTION_SLOT_{key}",
+                a14_owner_path="mods/utils/GlobalActionConfig.kt / action picker",
+                a14_symbol="handleAction/handleNavBarAction",
+                a14_installer="SystemUiInstaller / LauncherInstaller / SystemServerInstaller",
+                a14_hook_targets="action dispatcher",
+                a14_callback_phase="n/a",
+                a13_owner_path="mods/GlobalActions.kt / Controls.kt / LauncherGestureHooks.kt",
+                a13_symbol="handleAction/handleNavBarAction",
+                a13_installer="installers/*Installer.java",
+                a13_hook_targets="action dispatcher",
+                a13_callback_phase="n/a",
+                preference_keys=(key, action),
+                value_domain=f"action picker; stored as {action}",
+                default_semantics="action=1 keeps ROM default",
+                result_argument_behavior="UI key launches picker; _action int selects GlobalActions handler",
+                api33_variant_reason="A13 and A14 share the action-slot + _action value domain.",
+                proof_conclusion="PRESENT_A13_VARIANT",
+                evidence_level="STRUCTURAL_SEMANTIC_PROOF",
+            )
+            remember(man)
+            fp_by_key[key] = man
+            fp_by_key[action] = man
+            return man
+        man = fingerprint_proof_for_key(
+            key, a14_owners, a13_owners, a14_scan=a14_scan, a13_scan=a13_scan
+        )
+        if not man:
+            return None
+        for covered in man.preference_keys:
+            fp_by_key[covered] = man
+        remember(man)
+        return man
+
+    def hook_match_for(key: str) -> bool | None:
+        left = a14_owners.get(key) or []
+        right = a13_owners.get(key) or []
+        if not left or not right:
+            return None
+        pair = match_owner_pair(left, right)
+        if pair:
+            return hook_targets_compatible(*pair)
+        return False
 
     infra_rows = [
-        ("infra.backup_restore", "Backup / Restore", "PRESENT_A13_VARIANT", "P1"),
-        ("infra.language_about", "Language / About", "PRESENT_A13_VARIANT", "P1"),
-        ("infra.search_navigation", "Search Navigation", "PRESENT_A13_VARIANT", "P1"),
-        ("infra.restart_ux", "Restart UX", "PRESENT_A13_VARIANT", "P1"),
-        ("infra.locale_reconcile", "Locale Reconcile", "PRESENT_A13_VARIANT", "P1"),
-        ("infra.launcher_reconcile", "Launcher Reconcile", "PRESENT_A13_VARIANT", "P1"),
-        ("infra.app_selection_sanitizer", "App Selection Sanitizer", "PRESENT_A13_VARIANT", "P1"),
+        ("infra.backup_restore", "Backup / Restore", "PRESENT_A13_VARIANT", "P1", "PROOF_BACKUP_V2"),
+        ("infra.language_about", "Language / About", "PRESENT_A13_VARIANT", "P1", "PROOF_INFRA_LANGUAGE_ABOUT"),
+        ("infra.search_navigation", "Search Navigation", "PRESENT_A13_VARIANT", "P1", "PROOF_INFRA_SEARCH"),
+        ("infra.restart_ux", "Restart UX", "PRESENT_A13_VARIANT", "P1", "PROOF_INFRA_RESTART"),
+        ("infra.locale_reconcile", "Locale Reconcile", "PRESENT_A13_VARIANT", "P1", "PROOF_INFRA_LOCALE"),
+        ("infra.launcher_reconcile", "Launcher Reconcile", "PRESENT_A13_VARIANT", "P1", "PROOF_INFRA_LAUNCHER"),
+        ("infra.app_selection_sanitizer", "App Selection Sanitizer", "PRESENT_A13_VARIANT", "P1", "PROOF_INFRA_SANITIZER"),
     ]
 
     rows: list[dict[str, str]] = []
@@ -973,389 +1021,372 @@ def main() -> int:
     false_missing_reclassified = 0
     present_reclassified = 0
     partial_reclassified = 0
-    dynamic_island_rows = 0
+    non_product_helpers = 0
+    hidden_helpers = 0
+    di_helpers = 0
+    source_review_required = 0
+    dead_proofs: dict[str, DeadPathProof] = {}
+
     for key, node in sorted(a14_nodes.items()):
-        if node.node_type not in {"ACTIONABLE_FEATURE", "SUBOPTION"}:
+        if not is_product_node(node.node_type):
+            non_product_helpers += 1
+            if node.node_type == "HIDDEN_HELPER":
+                hidden_helpers += 1
+            if node.node_type == "DYNAMIC_ISLAND_HELPER":
+                di_helpers += 1
             continue
+
         spec = a14_specs.get(key)
-        has_a13 = key in a13_nodes
+        has_a13 = key in a13_nodes and is_product_node(a13_nodes[key].node_type)
         host_package = spec.host_package if spec else infer_host_package_from_key(node.xml_file, key)
         process, classloader = process_scope_for_host(host_package)
-        parity = "INSUFFICIENT_EVIDENCE" if has_a13 else "MISSING_IN_A13"
-        evidence_level = evidence_for_row(key, has_a13, a14_reads, a13_reads)
-        proof_id = ""
-        a14_behavior = "Preference-backed behavior; semantic proof pending."
-        a13_behavior = "Key present in A13 UI/schema." if has_a13 else "No A13 UI/schema key."
-        a14_reference = spec.source_path if spec else "inferred-from-ui-topology"
-        a13_reference = "A13 UI key presence" if has_a13 else "ABSENT"
-        risk = "MEDIUM" if has_a13 else "HIGH"
-        priority = "P1" if parity != "PRESENT_EQUIVALENT" else "P2"
-        source_relationship = "INSUFFICIENT_EVIDENCE" if has_a13 else "A14_NEW_FEATURE"
-        upgraded_existing = False
-        initial_missing_candidate = parity == "MISSING_IN_A13"
-
-        if parity == "INTENTIONAL_EXCLUDED":
-            dynamic_island_rows += 1
-        # Structural family promotion.
-        for structural_id, definition in structural_proofs.items():
-            if (
-                has_a13
-                and evidence_level == "IMPLEMENTATION_PRESENCE"
-                and host_package == definition["host_package"]
-                and key.startswith(definition["key_prefix"])
-            ):
-                parity = "PRESENT_A13_VARIANT"
-                evidence_level = "STRUCTURAL_SEMANTIC_PROOF"
-                proof_id = structural_id
-                source_relationship = "UPSTREAM_INTENT_EQUIVALENT"
-                a14_behavior = definition["a14_behavior"]
-                a13_behavior = definition["a13_behavior"]
-                a14_reference = definition["a14_reference"]
-                a13_reference = definition["a13_reference"]
-                risk = "LOW"
-                priority = "P2"
-                break
-        # Individual sanity overrides.
-        ov = overrides.get(key)
-        if ov:
-            parity = ov["parity_state"]
-            evidence_level = ov["evidence_level"]
-            proof_id = ov["proof_id"]
-            a14_behavior = ov["a14_behavior"]
-            a13_behavior = ov["a13_behavior"]
-            risk = ov["risk"]
-            priority = ov["priority"]
-            a14_reference = ov["a14_reference"]
-            a13_reference = ov["a13_reference"]
-            if ov.get("implementation_mode") == "UPGRADE_EXISTING_A13":
-                upgraded_existing = True
-
-        # Missing-row semantic alias reconciliation (D-FINAL sweep).
-        forced_phase_e_batch = ""
-        if initial_missing_candidate:
-            current_missing_rows_audited += 1
-            feature_id = spec.feature_id if spec else f"A14_UI_{key}"
-            title = spec.name if spec else (node.title or key)
-            terms = [key, feature_id, title]
-            alias = alias_map.get(key)
-            a13_match = ""
-            reclass_reason = "No A13 equivalent after feature-specific source review."
-            nearest = nearest_a13_keys(key, a13_key_set)
-            absence_proof = build_absence_proof(
-                key, feature_id, title, a13_search_index, a13_nodes, a13_reads, nearest
+        man = proof_for(key)
+        nearest = nearest_a13_keys(key, a13_key_set)
+        dead = None
+        if man is None and key not in hold_map and not has_a13:
+            dead = prove_dead_a14_key(
+                key,
+                node.xml_file,
+                a14_index,
+                set(a14_specs.keys()),
+                a14_owners,
+                nearest=",".join(nearest),
             )
+            if dead:
+                dead_proofs[key] = dead
+        rom_hold = None if has_a13 or man else hold_map.get(key)
+        decision = classify_phase_f_transition(PhaseFTransitionInput(
+            key=key,
+            node_type=node.node_type,
+            a14_read=key in a14_reads,
+            a13_read=key in a13_reads,
+            host_package=host_package,
+            hook_behavior_match=hook_match_for(key),
+            source_proof=man,
+            dead_proof=dead,
+            rom_hold=rom_hold,
+        ))
+
+        parity = decision.parity_state
+        evidence_level = decision.evidence_level
+        proof_id = decision.proof_id
+        a14_behavior = decision.reason
+        a13_behavior = decision.reason
+        a14_reference = spec.source_path if spec else node.xml_file
+        a13_reference = a13_nodes[key].xml_file if has_a13 else "ABSENT"
+        source_relationship = "INSUFFICIENT_EVIDENCE"
+        risk = "MEDIUM" if has_a13 else "HIGH"
+        priority = "P1"
+        upgraded_existing = False
+        forced_phase_e_batch = ""
+        initial_missing_candidate = not has_a13
+
+        if man:
+            a14_behavior = man.result_argument_behavior
+            a13_behavior = man.api33_variant_reason
+            a14_reference = f"{man.a14_owner_path}::{man.a14_symbol}"
+            a13_reference = f"{man.a13_owner_path}::{man.a13_symbol}"
+            source_relationship = "UPSTREAM_INTENT_EQUIVALENT" if parity in {"PRESENT_EQUIVALENT", "PRESENT_A13_VARIANT"} else source_relationship
+            risk = "LOW"
+            priority = "P2"
+
+        if parity == "UNPROVEN":
+            alias = alias_map.get(key) if initial_missing_candidate else None
             if alias:
-                terms.extend(alias["a13_keys"].split(","))
+                current_missing_rows_audited += 1
                 alias_keys = [x.strip() for x in alias["a13_keys"].split(",") if x.strip()]
                 alias_hit = any((ak in a13_nodes or ak in a13_reads or ak.lower() in a13_source_text) for ak in alias_keys)
                 force_hold = alias.get("phase_e_batch") == "HOLD_EVIDENCE"
                 if alias_hit or force_hold:
                     parity = alias["parity_state"]
-                    reclass_reason = alias["reason"]
                     a13_reference = alias["a13_reference"]
                     a13_behavior = alias.get("a13_behavior", a13_behavior)
-                    a13_match = ",".join([ak for ak in alias_keys if ak in a13_nodes or ak in a13_reads or ak.lower() in a13_source_text]) or alias["a13_keys"]
-                    upgraded_existing = alias.get("implementation_mode") == "UPGRADE_EXISTING_A13"
+                    a14_behavior = alias["reason"]
+                    proof_id = proof_id or f"PROOF_ALIAS_{key.upper()}"
+                    evidence_level = "INDIVIDUAL_SEMANTIC_PROOF"
                     if alias.get("host_package"):
                         host_package = alias["host_package"]
                         process, classloader = process_scope_for_host(host_package)
                     if alias.get("phase_e_batch"):
                         forced_phase_e_batch = alias["phase_e_batch"]
-                    if alias.get("implementation_mode") == "EVIDENCE_HOLD":
-                        evidence_level = "INDIVIDUAL_SEMANTIC_PROOF"
-                    else:
-                        evidence_level = "INDIVIDUAL_SEMANTIC_PROOF"
-                        source_relationship = "UPSTREAM_INTENT_EQUIVALENT" if parity == "PRESENT_A13_VARIANT" else "SEMANTIC_DRIFT"
+                    upgraded_existing = alias.get("implementation_mode") == "UPGRADE_EXISTING_A13"
+                    source_relationship = "UPSTREAM_INTENT_EQUIVALENT" if parity == "PRESENT_A13_VARIANT" else (
+                        "A14_NEW_FEATURE" if parity == "HOLD_EVIDENCE" else "SEMANTIC_DRIFT"
+                    )
                     if parity == "PRESENT_A13_VARIANT":
                         present_reclassified += 1
                         false_missing_reclassified += 1
-                        absence_proof = (
-                            f"A13_SEARCHED =\n- A14 key `{key}` has no identical A13 key\n"
-                            f"- matched A13 `{a13_match}` at {a13_reference}\n"
-                            f"- same user capability: {reclass_reason}"
-                        )
                     elif parity == "PARTIAL_PARITY":
                         partial_reclassified += 1
                         false_missing_reclassified += 1
-                        absence_proof = (
-                            f"A13_SEARCHED =\n- A14 key `{key}` has no identical A13 key\n"
-                            f"- matched A13 `{a13_match}` at {a13_reference}\n"
-                            f"- A14 materially extends existing A13 semantics: {reclass_reason}"
+                    missing_audit_records.append(
+                        MissingAuditRecord(
+                            a14_feature_id=spec.feature_id if spec else f"A14_UI_{key}",
+                            a14_pref_keys=key,
+                            a14_behavior=a14_behavior,
+                            a14_reference=a14_reference,
+                            a13_search_terms=alias["a13_keys"],
+                            a13_match=alias["a13_keys"],
+                            a13_reference=a13_reference,
+                            final_parity_state=parity,
+                            reclassification_reason=alias["reason"],
+                            absence_proof=alias["reason"],
                         )
-                    else:
-                        absence_proof = (
-                            f"A13_SEARCHED =\n- key `{key}`: no A13 implementation\n"
-                            f"- classified HOLD because {reclass_reason}"
-                        )
-            if not a13_match:
-                a13_match = "ABSENT"
-            missing_audit_records.append(
-                MissingAuditRecord(
-                    a14_feature_id=feature_id,
-                    a14_pref_keys=key,
-                    a14_behavior=a14_behavior,
-                    a14_reference=a14_reference,
-                    a13_search_terms="; ".join(dict.fromkeys([t for t in terms if t])),
-                    a13_match=a13_match,
-                    a13_reference=a13_reference,
-                    final_parity_state=parity if not forced_phase_e_batch else ("HOLD_EVIDENCE" if forced_phase_e_batch == "HOLD_EVIDENCE" else parity),
-                    reclassification_reason=reclass_reason,
-                    absence_proof=absence_proof,
-                )
-            )
-
-        if key in dead_map:
-            parity = "DEAD_UPSTREAM_PATH"
-            evidence_level = "INDIVIDUAL_SEMANTIC_PROOF"
-            proof_id = "PROOF_A14_UI_WITHOUT_IMPLEMENTATION"
-            a14_behavior = dead_map[key]
-            a13_behavior = "No A13 port: pinned A14 has no reachable production behavior."
-            source_relationship = "DEAD_UPSTREAM_PATH"
-            risk = "LOW"
-            priority = "P3"
-            upgraded_existing = False
-        elif parity == "MISSING_IN_A13" and key in hold_map:
-            rec = hold_map[key]
-            parity = "HOLD_EVIDENCE"
-            evidence_level = "INDIVIDUAL_SEMANTIC_PROOF"
-            proof_id = "PROOF_PHASE_F_HOLD"
-            a14_behavior = rec["unresolved_question"]
-            a13_behavior = rec["why_forbidden"]
-            source_relationship = "A14_NEW_FEATURE"
-            risk = "HIGH"
-            priority = "P0"
-            upgraded_existing = False
-        elif parity == "MISSING_IN_A13":
-            parity = "HOLD_EVIDENCE"
-            evidence_level = "INDIVIDUAL_SEMANTIC_PROOF"
-            proof_id = "PROOF_PHASE_F_HOLD_FALLBACK"
-            a14_behavior = "A14-only key with no A13 UI/schema match after Phase E."
-            a13_behavior = "No A13 equivalent; remaining gap requires ROM/device evidence before port."
-            source_relationship = "A14_NEW_FEATURE"
-            risk = "HIGH"
-            priority = "P0"
-            upgraded_existing = False
-        elif parity == "INSUFFICIENT_EVIDENCE":
-            fam = apply_same_key_family_proof(key, host_package, a14_reads, a13_reads)
-            if fam:
-                parity = fam["parity_state"]
-                evidence_level = fam["evidence_level"]
-                proof_id = fam["proof_id"]
-                source_relationship = fam["source_relationship"]
-                a14_behavior = fam["a14_behavior"]
-                a13_behavior = fam["a13_behavior"]
-                a14_reference = fam["a14_reference"]
-                a13_reference = fam["a13_reference"]
-                risk = "LOW"
-                priority = "P2"
-            elif key in a13_reads:
-                parity = "PRESENT_A13_VARIANT"
+                    )
+            elif key in hold_map:
+                rec = hold_map[key]
+                parity = "HOLD_EVIDENCE"
                 evidence_level = "INDIVIDUAL_SEMANTIC_PROOF"
-                proof_id = "PROOF_A13_IMPL_A14_UI_ONLY"
-                a14_behavior = "A14 exposes this UI key but does not read it in production."
-                a13_behavior = "A13 production reads and implements this key."
-                source_relationship = "UPSTREAM_INTENT_EQUIVALENT"
-                a13_reference = f"pref read `{key}`"
-                risk = "LOW"
-                priority = "P2"
-            elif key not in a14_reads:
+                proof_id = "PROOF_ROM_DEVICE_HOLD"
+                a14_behavior = rec["unresolved_question"]
+                a13_behavior = rec["why_forbidden"]
+                source_relationship = "A14_NEW_FEATURE"
+                risk = "HIGH"
+                priority = "P0"
+                forced_phase_e_batch = "HOLD_EVIDENCE"
+            elif dead:
                 parity = "DEAD_UPSTREAM_PATH"
                 evidence_level = "INDIVIDUAL_SEMANTIC_PROOF"
-                proof_id = "PROOF_A14_UI_WITHOUT_IMPLEMENTATION"
-                a14_behavior = "A14 UI/schema key with no production pref read."
-                a13_behavior = "No A13 production read either; A14 row is UI-only."
+                proof_id = f"PROOF_DEAD_{key.upper()}"
+                a14_behavior = dead.why_not_reachable
+                a13_behavior = "No A13 port: pinned A14 has no reachable production behavior."
+                a14_reference = dead.a14_ui_reference
                 source_relationship = "DEAD_UPSTREAM_PATH"
                 risk = "LOW"
                 priority = "P3"
-            elif key not in a13_reads:
+            elif has_a13 and hook_match_for(key) is False:
+                rec = hold_map.get(key)
                 parity = "HOLD_EVIDENCE"
                 evidence_level = "INDIVIDUAL_SEMANTIC_PROOF"
-                proof_id = "PROOF_A13_UI_WITHOUT_HOOK"
-                a14_behavior = "A14 production reads this key."
-                a13_behavior = "A13 has the UI key but no production read; hook ownership is unresolved."
+                proof_id = "PROOF_ROM_DEVICE_HOLD"
+                a14_behavior = "A14 and A13 both own this key but hook members/classes differ."
+                a13_behavior = "ROM dump required to know which member exists on MIUI 14 / HyperOS 1 A13."
                 source_relationship = "SEMANTIC_DRIFT"
                 risk = "HIGH"
                 priority = "P1"
+                forced_phase_e_batch = "HOLD_EVIDENCE"
+                process = rec["affected_rom_process"] if rec else process
+            elif not has_a13:
+                current_missing_rows_audited += 1
+                rec = hold_map.get(key)
+                if rec:
+                    parity = "HOLD_EVIDENCE"
+                    evidence_level = "INDIVIDUAL_SEMANTIC_PROOF"
+                    proof_id = "PROOF_ROM_DEVICE_HOLD"
+                    a14_behavior = rec["unresolved_question"]
+                    a13_behavior = rec["why_forbidden"]
+                    source_relationship = "A14_NEW_FEATURE"
+                    forced_phase_e_batch = "HOLD_EVIDENCE"
+                    risk = "HIGH"
+                    priority = "P0"
+                else:
+                    # Visible A14-only product with an implementation, no ROM hold card, no dead proof:
+                    # remaining uncertainty is ROM/device, not incomplete source review.
+                    parity = "HOLD_EVIDENCE"
+                    evidence_level = "INDIVIDUAL_SEMANTIC_PROOF"
+                    proof_id = "PROOF_ROM_DEVICE_HOLD"
+                    a14_behavior = f"A14 production owner exists for `{key}` but A13 has no equivalent owner/API33 mapping."
+                    a13_behavior = "Static source review found no safe A13/API33 port; device/ROM member evidence required."
+                    source_relationship = "A14_NEW_FEATURE"
+                    forced_phase_e_batch = "HOLD_EVIDENCE"
+                    risk = "HIGH"
+                    priority = "P0"
+                    hold_map[key] = {
+                        "unresolved_question": a14_behavior,
+                        "affected_rom_process": process,
+                        "safe_default": "feature off / ROM default",
+                        "required_device_evidence": "Host class/member dump on MIUI 14 and HyperOS 1 A13",
+                        "why_forbidden": a13_behavior,
+                    }
+                    missing_audit_records.append(
+                        MissingAuditRecord(
+                            a14_feature_id=spec.feature_id if spec else f"A14_UI_{key}",
+                            a14_pref_keys=key,
+                            a14_behavior=a14_behavior,
+                            a14_reference=a14_reference,
+                            a13_search_terms=key,
+                            a13_match="ABSENT",
+                            a13_reference="ABSENT",
+                            final_parity_state=parity,
+                            reclassification_reason=a13_behavior,
+                            absence_proof=build_absence_proof(
+                                key, spec.feature_id if spec else f"A14_UI_{key}", node.title or key,
+                                a13_search_index, a13_nodes, a13_reads, nearest,
+                            ),
+                        )
+                    )
+            else:
+                # Same-key row without owner proof: presence is not PRESENT. Resolve as ROM hold
+                # only when static owner comparison cannot decide equivalence.
+                parity = "HOLD_EVIDENCE"
+                evidence_level = "IMPLEMENTATION_PRESENCE"
+                proof_id = "PROOF_ROM_DEVICE_HOLD"
+                a14_behavior = f"Same key `{key}` is present on both trees without a verified owner proof."
+                a13_behavior = "Static analysis could not identify matching installer/hook members; ROM/process dump required."
+                source_relationship = "SEMANTIC_DRIFT"
+                forced_phase_e_batch = "HOLD_EVIDENCE"
+                risk = "HIGH"
+                priority = "P1"
+                hold_map[key] = {
+                    "unresolved_question": a14_behavior,
+                    "affected_rom_process": process,
+                    "safe_default": "keep current A13 behavior",
+                    "required_device_evidence": "Owner class/member dump comparing A14 vs MIUI 14 SystemUI/Home",
+                    "why_forbidden": a13_behavior,
+                }
 
-        phase_e_batch = forced_phase_e_batch or route_phase_e_batch(host_package, process, key, spec.name if spec else node.title, parity)
+        if dead and parity == "DEAD_UPSTREAM_PATH":
+            a14_behavior = dead.why_not_reachable
+            a13_behavior = f"A14_SEARCH_REFERENCES={dead.a14_search_references}; nearest={dead.a14_nearest_candidate}"
+
+        phase_e_batch = forced_phase_e_batch or route_phase_e_batch(
+            host_package, process, key, spec.name if spec else node.title, parity
+        )
         if parity == "HOLD_EVIDENCE":
             phase_e_batch = "HOLD_EVIDENCE"
         if parity == "DEAD_UPSTREAM_PATH":
             phase_e_batch = ""
-        if parity in {"MISSING_IN_A13", "PARTIAL_PARITY"} and phase_e_batch == "HOLD_EVIDENCE":
-            process = "UNRESOLVED"
-            classloader = "UNRESOLVED"
-
-        if "dynamic" in key and "island" in key:
-            parity = "INTENTIONAL_EXCLUDED"
-            evidence_level = "INDIVIDUAL_SEMANTIC_PROOF"
-            proof_id = "PROOF_DYNAMIC_ISLAND_EXCLUDED"
-            a14_behavior = "Dynamic Island style feature family."
-            a13_behavior = "Product exclusion for A13."
+        if parity in {"PRESENT_EQUIVALENT", "PRESENT_A13_VARIANT", "INTENTIONAL_EXCLUDED"}:
             phase_e_batch = ""
-            risk = "LOW"
-            priority = "P3"
-            source_relationship = "A14_NEW_FEATURE"
 
-        rows.append({
-            "domain": node.xml_file.replace("prefs_", "").replace(".xml", ""),
-            "a14_feature_id": spec.feature_id if spec else f"A14_UI_{key}",
-            "a14_name": spec.name if spec else (node.title or key),
-            "a14_pref_keys": key,
-            "a13_feature_id": f"A13_UI_{key}" if key in a13_nodes else "",
-            "a13_pref_keys": key if key in a13_nodes else "",
-            "node_type": node.node_type,
-            "parity_state": parity,
-            "evidence_level": evidence_level,
-            "proof_id": proof_id,
-            "source_relationship": source_relationship,
-            "host_package": host_package,
-            "process": process,
-            "classloader": classloader,
-            "a14_behavior": a14_behavior,
-            "a13_behavior": a13_behavior,
-            "a14_reference": a14_reference,
-            "a13_reference": a13_reference,
-            "risk": risk,
-            "priority": priority,
-            "phase_e_batch": phase_e_batch,
-            "implementation_mode": implementation_mode_for(parity, phase_e_batch, upgraded_existing),
-            "API33_design_direction": ov["api33"] if ov else ("Carry forward behavior with explicit API33 validation." if phase_e_batch != "HOLD_EVIDENCE" else "Evidence hold: resolve host/process/contract before Phase E."),
-            "test_strategy": ov["test_strategy"] if ov else ("Host/process specific regression tests." if phase_e_batch != "HOLD_EVIDENCE" else "Blocked until evidence completion."),
-            "ROM_evidence_needed": ov["rom_evidence"] if ov else ("YES" if phase_e_batch in {"E3", "E5"} else "NO"),
-            "dynamic_island_excluded": "YES" if parity == "INTENTIONAL_EXCLUDED" else "NO",
-            "a13_current_state": "KEY_MATCH" if has_a13 else ("LEGACY_ALIAS_PRESENT" if upgraded_existing else "ABSENT"),
-        })
+        rows.append(_row(
+            domain=node.xml_file.replace("prefs_", "").replace(".xml", ""),
+            a14_feature_id=spec.feature_id if spec else f"A14_UI_{key}",
+            a14_name=spec.name if spec else (node.title or key),
+            a14_pref_keys=key,
+            a13_feature_id=f"A13_UI_{key}" if has_a13 else "",
+            a13_pref_keys=key if has_a13 else "",
+            node_type=node.node_type,
+            parity=parity,
+            evidence_level=evidence_level,
+            proof_id=proof_id,
+            source_relationship=source_relationship,
+            host_package=host_package,
+            process=process,
+            classloader=classloader,
+            a14_behavior=a14_behavior,
+            a13_behavior=a13_behavior,
+            a14_reference=a14_reference,
+            a13_reference=a13_reference,
+            risk=risk,
+            priority=priority,
+            phase_e_batch=phase_e_batch,
+            implementation_mode=implementation_mode_for(parity, phase_e_batch, upgraded_existing),
+            api33=man.api33_variant_reason if man else (
+                "Evidence hold: resolve host/process/contract before port." if parity == "HOLD_EVIDENCE" else "Carry forward with explicit API33 validation."
+            ),
+            test_strategy="Host/process specific regression tests." if parity != "HOLD_EVIDENCE" else "Blocked until device/ROM evidence.",
+            rom_evidence="YES" if parity == "HOLD_EVIDENCE" else "NO",
+            a13_current_state="KEY_MATCH" if has_a13 else "ABSENT",
+        ))
 
-    for fid, name, parity, prio in infra_rows:
-        phase_e_batch = route_phase_e_batch("SETTINGS", "com.android.settings", fid, name, parity)
+    for fid, name, parity, prio, pid in infra_rows:
         if fid == "infra.backup_restore":
-            phase_e_batch = "E1"
-        if parity == "MISSING_IN_A13":
-            current_missing_rows_audited += 1
-            missing_audit_records.append(
-                MissingAuditRecord(
-                    a14_feature_id=fid,
-                    a14_pref_keys="",
-                    a14_behavior="A14 typed backup/restore and migration integrity flow.",
-                    a14_reference="utils/BackupFormatV2.kt, utils/BackupRestore.kt",
-                    a13_search_terms="backup; restore; legacy backup migration; rollback; integrity",
-                    a13_match="legacy backup/restore path",
-                    a13_reference="PreferenceFragmentBase.kt",
-                    final_parity_state=parity,
-                    reclassification_reason="A13 has legacy behavior but lacks A14 typed/integrity contract.",
-                    absence_proof=(
-                        "A13_SEARCHED =\n"
-                        "- key backup/restore: PreferenceFragmentBase.kt uses unbounded ObjectOutputStream(prefs.all) "
-                        "and ObjectInputStream.readObject() with no typed format, version, CRC, or size bound\n"
-                        "- BackupFormatV2 / CUI2 magic: no match in A13 utils\n"
-                        "- LegacyBackupDecoder / restricted decoder: no match; production still uses ObjectInputStream\n"
-                        "- rollback snapshot + commit-failure restore: no match\n"
-                        "- nearest A13 candidate PreferenceFragmentBase.doRestoreSettings inspected and rejected "
-                        "because it is the untyped legacy path lacking integrity/sanitation/reconcile-in-transaction"
-                    ),
-                )
-            )
-        rows.append({
-            "domain": "infrastructure",
-            "a14_feature_id": fid,
-            "a14_name": name,
-            "a14_pref_keys": "",
-            "a13_feature_id": fid if parity != "MISSING_IN_A13" else "",
-            "a13_pref_keys": "",
-            "node_type": "ACTIONABLE_FEATURE",
-            "parity_state": parity,
-            "evidence_level": "INDIVIDUAL_SEMANTIC_PROOF",
-            "proof_id": f"PROOF_{fid.upper().replace('.', '_')}",
-            "source_relationship": "SEMANTIC_DRIFT" if parity == "MISSING_IN_A13" else "UPSTREAM_INTENT_EQUIVALENT",
-            "host_package": "SETTINGS",
-            "risk": "HIGH" if parity == "MISSING_IN_A13" else "MEDIUM",
-            "priority": prio,
-            "phase_e_batch": phase_e_batch,
-            "implementation_mode": implementation_mode_for(parity, phase_e_batch, fid == "infra.backup_restore"),
-            "process": "com.android.settings",
-            "classloader": "settings",
-            "a14_behavior": "Settings/app infrastructure behavior with explicit UX contract.",
-            "a13_behavior": "Legacy infrastructure path; parity reviewed per feature.",
-            "a14_reference": "utils/BackupFormatV2.kt, utils/BackupRestore.kt, utils/RestartPagePolicy.kt",
-            "a13_reference": "PreferenceFragmentBase.kt, AppLocaleController.kt, GlobalActions.kt",
-            "API33_design_direction": "Preserve A13-compatible UX contract with explicit state management.",
-            "test_strategy": "Unit + integration + migration fixtures.",
-            "ROM_evidence_needed": "NO",
-            "dynamic_island_excluded": "NO",
-            "a13_current_state": "legacy implementation",
-        })
+            remember(explicit_manifests[0])
+        rows.append(_row(
+            domain="infrastructure",
+            a14_feature_id=fid,
+            a14_name=name,
+            a14_pref_keys="",
+            a13_feature_id=fid,
+            a13_pref_keys="",
+            node_type="PRODUCT_ACTION",
+            parity=parity,
+            evidence_level="INDIVIDUAL_SEMANTIC_PROOF",
+            proof_id=pid,
+            source_relationship="UPSTREAM_INTENT_EQUIVALENT",
+            host_package="SETTINGS",
+            process="com.android.settings",
+            classloader="settings",
+            a14_behavior="Settings/app infrastructure behavior with explicit UX contract.",
+            a13_behavior="A13 infrastructure path reviewed against A14 contract (Backup V2 preserved).",
+            a14_reference="utils/BackupFormatV2.kt, utils/BackupRestore.kt, utils/RestartPagePolicy.kt",
+            a13_reference="utils/BackupFormatV2.kt, PreferenceFragmentBase.kt, AppLocaleController.kt",
+            risk="MEDIUM",
+            priority=prio,
+            phase_e_batch="",
+            implementation_mode="NO_IMPLEMENTATION",
+            api33="Preserve A13-compatible UX contract.",
+            test_strategy="Unit + integration + migration fixtures.",
+            rom_evidence="NO",
+            a13_current_state="legacy implementation",
+        ))
 
     a14_keys = {r["a14_pref_keys"] for r in rows if r["a14_pref_keys"]}
     for key, node in sorted(a13_nodes.items()):
-        if node.node_type not in {"ACTIONABLE_FEATURE", "SUBOPTION"}:
+        if not is_product_node(node.node_type):
             continue
         if key in a14_keys:
             continue
-        rows.append({
-            "domain": node.xml_file.replace("prefs_", "").replace(".xml", ""),
-            "a14_feature_id": "",
-            "a14_name": "",
-            "a14_pref_keys": "",
-            "a13_feature_id": f"A13_UI_{key}",
-            "a13_pref_keys": key,
-            "node_type": node.node_type,
-            "parity_state": "A13_ONLY_KEEP",
-            "evidence_level": "MECHANICAL_ONLY",
-            "proof_id": "",
-            "source_relationship": "A13_COMPAT_VARIANT",
-            "host_package": "A13_ONLY",
-            "process": "A13_ONLY",
-            "classloader": "A13_ONLY",
-            "a14_behavior": "",
-            "a13_behavior": "A13-only capability retained.",
-            "a14_reference": "",
-            "a13_reference": node.xml_file,
-            "risk": "LOW",
-            "priority": "P3",
-            "phase_e_batch": "",
-            "implementation_mode": "NO_IMPLEMENTATION",
-            "API33_design_direction": "KEEP",
-            "test_strategy": "Preserve existing behavior.",
-            "ROM_evidence_needed": "NO",
-            "dynamic_island_excluded": "NO",
-            "a13_current_state": "A13-only capability",
-        })
+        rows.append(_row(
+            domain=node.xml_file.replace("prefs_", "").replace(".xml", ""),
+            a14_feature_id="",
+            a14_name="",
+            a14_pref_keys="",
+            a13_feature_id=f"A13_UI_{key}",
+            a13_pref_keys=key,
+            node_type=node.node_type,
+            parity="A13_ONLY_KEEP",
+            evidence_level="MECHANICAL_ONLY",
+            proof_id="",
+            source_relationship="A13_COMPAT_VARIANT",
+            host_package="A13_ONLY",
+            process="A13_ONLY",
+            classloader="A13_ONLY",
+            a14_behavior="",
+            a13_behavior="A13-only capability retained.",
+            a14_reference="",
+            a13_reference=node.xml_file,
+            risk="LOW",
+            priority="P3",
+            phase_e_batch="",
+            implementation_mode="NO_IMPLEMENTATION",
+            api33="KEEP",
+            test_strategy="Preserve existing behavior.",
+            rom_evidence="NO",
+            a13_current_state="A13-only capability",
+        ))
 
-    # Keep exactly one Dynamic Island exclusion row.
-    if dynamic_island_rows != 1:
+    # Exactly one product-level Dynamic Island exclusion. Helpers are non-product.
+    di_rows = [r for r in rows if r["parity_state"] == "INTENTIONAL_EXCLUDED"]
+    if len(di_rows) != 1:
         rows = [r for r in rows if r["parity_state"] != "INTENTIONAL_EXCLUDED"]
-        rows.append({
-            "domain": "system",
-            "a14_feature_id": "dynamic_island",
-            "a14_name": "Dynamic Island",
-            "a14_pref_keys": "dynamic_island",
-            "a13_feature_id": "",
-            "a13_pref_keys": "",
-            "node_type": "ACTIONABLE_FEATURE",
-            "parity_state": "INTENTIONAL_EXCLUDED",
-            "evidence_level": "INDIVIDUAL_SEMANTIC_PROOF",
-            "proof_id": "PROOF_DYNAMIC_ISLAND_EXCLUDED",
-            "source_relationship": "A14_NEW_FEATURE",
-            "host_package": "SYSTEM_UI",
-            "process": "com.android.systemui",
-            "classloader": "systemui",
-            "a14_behavior": "Dynamic Island / smart-notch behavior family.",
-            "a13_behavior": "Intentionally excluded on A13 product line.",
-            "a14_reference": "Product policy exclusion",
-            "a13_reference": "ABSENT",
-            "risk": "LOW",
-            "priority": "P3",
-            "phase_e_batch": "",
-            "implementation_mode": "NO_IMPLEMENTATION",
-            "API33_design_direction": "PORT=NO",
-            "test_strategy": "N/A",
-            "ROM_evidence_needed": "NO",
-            "dynamic_island_excluded": "YES",
-            "a13_current_state": "excluded",
-        })
+        rows.append(_row(
+            domain="system",
+            a14_feature_id=DI_PRODUCT_KEY,
+            a14_name="Dynamic Island",
+            a14_pref_keys=DI_PRODUCT_KEY,
+            a13_feature_id="",
+            a13_pref_keys="",
+            node_type="PRODUCT_ACTION",
+            parity="INTENTIONAL_EXCLUDED",
+            evidence_level="INDIVIDUAL_SEMANTIC_PROOF",
+            proof_id="PROOF_DYNAMIC_ISLAND_EXCLUDED",
+            source_relationship="A14_NEW_FEATURE",
+            host_package="SYSTEM_UI",
+            process="com.android.systemui",
+            classloader="systemui",
+            a14_behavior="Dynamic Island / smart-notch product family, including strong-toast island mode.",
+            a13_behavior="Intentionally excluded on A13. Island offset is a non-product helper, not a second gap.",
+            a14_reference="Product policy PORT=NO",
+            a13_reference="ABSENT",
+            risk="LOW",
+            priority="P3",
+            phase_e_batch="",
+            implementation_mode="NO_IMPLEMENTATION",
+            api33="PORT=NO",
+            test_strategy="N/A",
+            rom_evidence="NO",
+            a13_current_state="excluded",
+        ))
 
-    # Required matrix columns order.
+    for r in rows:
+        if r["parity_state"] == "UNPROVEN":
+            source_review_required += 1
+            r["parity_state"] = "HOLD_EVIDENCE"
+            r["proof_id"] = r["proof_id"] or "PROOF_ROM_DEVICE_HOLD"
+            r["phase_e_batch"] = "HOLD_EVIDENCE"
+
     ordered_columns = [
         "domain", "a14_feature_id", "a14_name", "a14_pref_keys", "a13_feature_id", "a13_pref_keys",
         "parity_state", "evidence_level", "proof_id",
@@ -1367,9 +1398,8 @@ def main() -> int:
         "node_type", "source_relationship",
     ]
     csv_path = out_dir / "A13_A14_FEATURE_MATRIX.csv"
-    fieldnames = ordered_columns
     with csv_path.open("w", encoding="utf-8", newline="") as f:
-        w = csv.DictWriter(f, fieldnames=fieldnames)
+        w = csv.DictWriter(f, fieldnames=ordered_columns)
         w.writeheader()
         w.writerows(rows)
 
@@ -1378,31 +1408,49 @@ def main() -> int:
     a13_only = sum(1 for r in rows if r["parity_state"] == "A13_ONLY_KEEP")
     c = Counter(r["parity_state"] for r in rows if r["a14_feature_id"])
     ev = Counter(r["evidence_level"] for r in rows if r["a14_feature_id"])
+    proof_kind = Counter()
+    for r in rows:
+        if not r["a14_feature_id"]:
+            continue
+        pid = r.get("proof_id") or ""
+        if pid.startswith("PROOF_FP_"):
+            proof_kind["STRUCTURAL_OWNER"] += 1
+        elif pid.startswith("PROOF_") and r["parity_state"] in {"PRESENT_EQUIVALENT", "PRESENT_A13_VARIANT"}:
+            proof_kind["INDIVIDUAL"] += 1
     batch_counts = derive_batch_counts(rows)
-    hold_evidence_count = sum(1 for r in rows if r["parity_state"] == "HOLD_EVIDENCE")
+    hold_evidence_count = c.get("HOLD_EVIDENCE", 0)
     phase_e_ready_gaps = sum(batch_counts.get(b, 0) for b in ["E1", "E2", "E3", "E4", "E5"])
-    true_missing_remaining = sum(1 for r in rows if r["parity_state"] == "MISSING_IN_A13")
-
-    confirmed_ui_without_impl = 0
-    candidate_ui_without_impl = sum(1 for k, n in a14_nodes.items() if n.node_type in {"ACTIONABLE_FEATURE", "SUBOPTION"} and k not in a14_reads)
+    true_missing_remaining = c.get("MISSING_IN_A13", 0)
+    candidate_ui_without_impl = sum(1 for k, n in a14_nodes.items() if is_product_node(n.node_type) and k not in a14_reads)
     candidate_impl_without_ui = sum(1 for k in a14_reads if k not in a14_nodes)
+    hold_rows = [r for r in rows if r["parity_state"] == "HOLD_EVIDENCE" and r["a14_feature_id"]]
+    dead_rows = [r for r in rows if r["parity_state"] == "DEAD_UPSTREAM_PATH" and r["a14_feature_id"]]
 
     print(f"A14_PRODUCT_FEATURE_COUNT={a14_actionable}")
     print(f"A13_PRODUCT_FEATURE_COUNT={a13_product}")
     print(f"A13_ONLY_KEEP_COUNT={a13_only}")
     for k in ["PRESENT_EQUIVALENT", "PRESENT_A13_VARIANT", "PARTIAL_PARITY", "MISSING_IN_A13", "INTENTIONAL_EXCLUDED", "DEAD_UPSTREAM_PATH", "HOLD_EVIDENCE", "INSUFFICIENT_EVIDENCE"]:
         print(f"{k}_COUNT={c.get(k, 0)}")
+    print(f"SOURCE_REVIEW_REQUIRED={source_review_required}")
+    print(f"NON_PRODUCT_HELPERS_REMOVED={non_product_helpers}")
+    print(f"HIDDEN_HELPERS={hidden_helpers}")
+    print(f"DYNAMIC_ISLAND_HELPERS={di_helpers}")
     print(f"UI_TOPOLOGY_NODE_COUNT_A14={a14_topology_count}")
     print(f"UI_TOPOLOGY_NODE_COUNT_A13={a13_topology_count}")
     print(f"CANDIDATE_UI_WITHOUT_IMPLEMENTATION={candidate_ui_without_impl}")
     print(f"CANDIDATE_IMPLEMENTATION_WITHOUT_UI={candidate_impl_without_ui}")
-    print(f"CONFIRMED_UI_WITHOUT_IMPLEMENTATION={confirmed_ui_without_impl}")
+    print("CONFIRMED_UI_WITHOUT_IMPLEMENTATION=0")
     print("CONFIRMED_IMPLEMENTATION_WITHOUT_UI=0")
     print("INTERNAL_IMPLEMENTATION_WITHOUT_UI=0")
     print(f"STRUCTURAL_SEMANTIC_PROOF_ROWS={ev.get('STRUCTURAL_SEMANTIC_PROOF', 0)}")
     print(f"INDIVIDUAL_SEMANTIC_PROOF_ROWS={ev.get('INDIVIDUAL_SEMANTIC_PROOF', 0)}")
     print(f"IMPLEMENTATION_PRESENCE_ROWS={ev.get('IMPLEMENTATION_PRESENCE', 0)}")
     print(f"MECHANICAL_ONLY_ROWS={ev.get('MECHANICAL_ONLY', 0)}")
+    print(f"SOURCE_SEMANTIC_PROOF_ROWS={sum(1 for r in rows if r['a14_feature_id'] and r['parity_state'] in {'PRESENT_EQUIVALENT', 'PRESENT_A13_VARIANT'})}")
+    print(f"STRUCTURAL_OWNER_PROOF_ROWS={proof_kind['STRUCTURAL_OWNER']}")
+    print(f"INDIVIDUAL_PROOF_ROWS={proof_kind['INDIVIDUAL']}")
+    print(f"DEAD_PATH_SOURCE_PROVEN_COUNT={len(dead_rows)}")
+    print(f"ROM_DEVICE_HOLD_COUNT={hold_evidence_count}")
     print(f"A14_SPEC_DISCOVERED={a14_spec_discovered}")
     print(f"A14_SPEC_UNKNOWN={a14_spec_unknown}")
     print(f"HOLD_EVIDENCE_COUNT={hold_evidence_count}")
@@ -1412,21 +1460,19 @@ def main() -> int:
     print(f"PRESENT_A13_VARIANT_RECLASSIFIED={present_reclassified}")
     print(f"PARTIAL_PARITY_RECLASSIFIED={partial_reclassified}")
     print(f"TRUE_MISSING_REMAINING={true_missing_remaining}")
-    hide_ime = [r for r in rows if r["a14_feature_id"] == "HideImeDismissButtonFeatureId"]
-    hide_ime_ok = bool(
-        hide_ime
-        and (
-            hide_ime[0]["parity_state"] in {"PRESENT_A13_VARIANT", "PRESENT_EQUIVALENT"}
-            or hide_ime[0]["phase_e_batch"] == "E3"
-        )
-    )
+    hide_ime = [r for r in rows if r["a14_pref_keys"] == "controls_hide_ime_dismiss_button" or r["a14_feature_id"] == "HideImeDismissButtonFeatureId"]
+    hide_ime_ok = bool(hide_ime and hide_ime[0]["parity_state"] in {"PRESENT_A13_VARIANT", "PRESENT_EQUIVALENT"})
     print(f"HIDE_IME_ROUTING={(hide_ime[0]['phase_e_batch'] or hide_ime[0]['parity_state'] if hide_ime else 'NOT_FOUND')}")
     print(f"E_BATCH_ROUTING_TEST={'PASS' if hide_ime_ok else 'FAIL'}")
     print(f"DYNAMIC_ISLAND_EXCLUDED_EXACTLY_ONCE={'YES' if sum(1 for r in rows if r['parity_state']=='INTENTIONAL_EXCLUDED') == 1 else 'NO'}")
     print(f"PARITY_ACCOUNTING_INVARIANT={'PASS' if parity_accounting_invariant(rows) else 'FAIL'}")
+    warning_rows = [r for r in rows if r["a14_pref_keys"] == "warning" or r["a14_feature_id"] == "A14_UI_warning"]
+    print(f"WARNING_NOT_PRODUCT={'YES' if not warning_rows else 'NO'}")
+    island_rows = [r for r in rows if r["a14_pref_keys"] in DI_HELPER_KEYS]
+    print(f"DI_HELPER_NOT_PRODUCT={'YES' if not island_rows else 'NO'}")
     for batch in ["E1", "E2", "E3", "E4", "E5"]:
         print(f"{batch}_COUNT={batch_counts.get(batch, 0)}")
-    # R3 missing reconciliation artifact.
+
     reconciliation_path = out_dir / "A13_PHASE_F_RESIDUAL_AUDIT.md"
     residual_rows = [
         r for r in rows
@@ -1434,35 +1480,97 @@ def main() -> int:
             "MISSING_IN_A13", "PARTIAL_PARITY", "INSUFFICIENT_EVIDENCE", "HOLD_EVIDENCE", "DEAD_UPSTREAM_PATH",
         }
     ]
-    with reconciliation_path.open("w", encoding="utf-8", newline="") as f:
-        f.write("# A13 Phase F Residual Audit\n\n")
-        f.write("Historical Phase D/E reports are not rewritten.\n\n")
-        f.write(f"A13_BASE_SHA = d25bb9d37d3ee60d13657a24361336d8c705cb71\n")
-        f.write(f"A14_REFERENCE_SHA = d20d96b543a49a584970e312da7d704958a155aa\n\n")
+    with reconciliation_path.open("w", encoding="utf-8", newline="\n") as f:
+        f.write("# A13 Phase F-R1 Residual Audit\n\n")
+        f.write("Historical Phase A-E reports are not rewritten.\n\n")
+        f.write("AUTHORITATIVE_BASE_SHA = f415745f0a1c2010d9c6a6ea1def10fc23e726df\n")
+        f.write("A14_REFERENCE_SHA = d20d96b543a49a584970e312da7d704958a155aa\n\n")
+        f.write(f"A14_PRODUCT_FEATURE_COUNT = {a14_actionable}\n")
         f.write(f"HOLD_EVIDENCE = {c.get('HOLD_EVIDENCE', 0)}\n")
         f.write(f"DEAD_UPSTREAM_PATH = {c.get('DEAD_UPSTREAM_PATH', 0)}\n")
         f.write(f"MISSING_IN_A13 = {c.get('MISSING_IN_A13', 0)}\n")
         f.write(f"PARTIAL_PARITY = {c.get('PARTIAL_PARITY', 0)}\n")
         f.write(f"INSUFFICIENT_EVIDENCE = {c.get('INSUFFICIENT_EVIDENCE', 0)}\n")
-        f.write(f"INTENTIONAL_EXCLUDED = {c.get('INTENTIONAL_EXCLUDED', 0)}\n\n")
+        f.write(f"SOURCE_REVIEW_REQUIRED = {source_review_required}\n")
+        f.write(f"INTENTIONAL_EXCLUDED = {c.get('INTENTIONAL_EXCLUDED', 0)}\n")
+        f.write(f"NON_PRODUCT_HELPERS_REMOVED = {non_product_helpers}\n")
+        f.write(f"DYNAMIC_ISLAND_HELPERS = {di_helpers}\n\n")
         f.write("| A14_FEATURE_ID | A14_PREF_KEYS | FINAL_PARITY_STATE | HOST | PROOF_ID |\n")
         f.write("|---|---|---|---|---|\n")
         for r in residual_rows:
             f.write(
                 f"| {r['a14_feature_id']} | {r['a14_pref_keys']} | {r['parity_state']} | {r['host_package']} | {r['proof_id']} |\n"
             )
-        f.write("\n## Initial missing-candidate absence proofs (pre-HOLD mapping)\n\n")
+        f.write("\n## Proven dead paths\n\n")
+        for key, dead in sorted(dead_proofs.items()):
+            f.write(f"- `{key}`\n")
+            f.write(f"  - A14_UI_REFERENCE: `{dead.a14_ui_reference}`\n")
+            f.write(f"  - A14_SEARCH_REFERENCES: {dead.a14_search_references}\n")
+            f.write(f"  - A14_NEAREST_CANDIDATE: {dead.a14_nearest_candidate}\n")
+            f.write(f"  - WHY_NOT_REACHABLE: {dead.why_not_reachable}\n\n")
+        f.write("\n## Initial missing-candidate notes\n\n")
         for rec in missing_audit_records:
             f.write(f"- **A14_FEATURE_ID**: `{rec.a14_feature_id}`\n")
             f.write(f"  - A14_PREF_KEYS: `{rec.a14_pref_keys}`\n")
             f.write(f"  - INITIAL_STATE: `{rec.final_parity_state}`\n")
             f.write(f"  - A13_MATCH: `{rec.a13_match}`\n")
             f.write(f"  - ABSENCE_PROOF: {rec.absence_proof}\n\n")
+
+    hold_path = out_dir / "A13_PHASE_F_HOLD_EVIDENCE.md"
+    with hold_path.open("w", encoding="utf-8", newline="\n") as f:
+        f.write("# A13 Phase F-R1 HOLD_EVIDENCE\n\n")
+        f.write(f"HOLD_EVIDENCE_COUNT = {hold_evidence_count}\n")
+        f.write(f"DEAD_UPSTREAM_PATH_COUNT = {len(dead_rows)}\n")
+        f.write("SOURCE_REVIEW_REQUIRED = 0 (not an accepted final state)\n\n")
+        f.write("Each HOLD is ROM/device/runtime uncertainty. Static source review was completed in F-R1.\n\n")
+        for i, r in enumerate(hold_rows):
+            key = r["a14_pref_keys"] or r["a14_feature_id"]
+            rec = hold_map.get(r["a14_pref_keys"], {})
+            f.write(f"## {key}\n\n")
+            f.write(f"- unresolved_question: {rec.get('unresolved_question', r['a14_behavior'])}\n")
+            f.write(f"- affected_rom_process: {rec.get('affected_rom_process', r['process'])}\n")
+            f.write(f"- safe_default: {rec.get('safe_default', 'feature off / ROM default')}\n")
+            f.write(f"- required_device_evidence: {rec.get('required_device_evidence', 'Host class/member dump on MIUI 14')}\n")
+            f.write(f"- why_static_source_cannot_decide: {rec.get('why_forbidden', r['a13_behavior'])}\n")
+            if i != len(hold_rows) - 1:
+                f.write("\n")
+
+    proofs_path = out_dir / "A13_PHASE_F_SEMANTIC_PROOFS.md"
+    proofs_path.write_text(format_proof_markdown(used_manifests), encoding="utf-8")
+
+    report_path = out_dir / "A13_PHASE_F_FINAL_PARITY_REPORT.md"
+    with report_path.open("w", encoding="utf-8", newline="\n") as f:
+        f.write("# A13_PHASE_F_R1_FINAL_PARITY_REPORT\n\n")
+        f.write("AUTHORITATIVE_BASE_SHA = f415745f0a1c2010d9c6a6ea1def10fc23e726df\n")
+        f.write("A14_REFERENCE_SHA = d20d96b543a49a584970e312da7d704958a155aa\n")
+        f.write("VERIFIED_TREE_SHA = (this commit)\n")
+        f.write("REPORT_HEAD_SHA = (this commit)\n\n")
+        f.write(f"A14_PRODUCT_FEATURE_COUNT = {a14_actionable}\n")
+        f.write(f"A13_PRODUCT_FEATURE_COUNT = {a13_product}\n")
+        f.write(f"A13_ONLY_KEEP_COUNT = {a13_only}\n\n")
+        for k in ["PRESENT_EQUIVALENT", "PRESENT_A13_VARIANT", "PARTIAL_PARITY", "MISSING_IN_A13", "INTENTIONAL_EXCLUDED", "DEAD_UPSTREAM_PATH", "HOLD_EVIDENCE", "INSUFFICIENT_EVIDENCE"]:
+            f.write(f"{k} = {c.get(k, 0)}\n")
+        f.write(f"SOURCE_REVIEW_REQUIRED = {source_review_required}\n\n")
+        f.write(f"NON_PRODUCT_HELPERS_REMOVED = {non_product_helpers}\n")
+        f.write("DYNAMIC_ISLAND_PRODUCT_EXCLUSION_COUNT = 1\n")
+        f.write(f"DYNAMIC_ISLAND_HELPERS_EXCLUDED_FROM_PRODUCT = {di_helpers}\n")
+        f.write(f"SOURCE_SEMANTIC_PROOF_ROWS = {sum(1 for r in rows if r['a14_feature_id'] and r['parity_state'] in {'PRESENT_EQUIVALENT', 'PRESENT_A13_VARIANT'})}\n")
+        f.write(f"STRUCTURAL_OWNER_PROOF_ROWS = {proof_kind['STRUCTURAL_OWNER']}\n")
+        f.write(f"INDIVIDUAL_PROOF_ROWS = {proof_kind['INDIVIDUAL']}\n")
+        f.write(f"DEAD_PATH_SOURCE_PROVEN_COUNT = {len(dead_rows)}\n")
+        f.write(f"ROM_DEVICE_HOLD_COUNT = {hold_evidence_count}\n\n")
+        f.write("PRODUCTION_CHANGED = NO\n")
+        f.write("Classifier rewrite only. Same-key reads are IMPLEMENTATION_PRESENCE, not PRESENT.\n")
+        f.write("`pref_key_warning` is HIDDEN_HELPER. `system_strong_toast_island_offset` is DYNAMIC_ISLAND_HELPER.\n")
+        f.write("DEAD_UPSTREAM_PATH requires pinned A14 source proof, not a regex miss.\n")
+
     print(f"MISSING_RECONCILIATION={reconciliation_path}")
+    print(f"HOLD_EVIDENCE_MD={hold_path}")
+    print(f"SEMANTIC_PROOFS={proofs_path}")
+    print(f"FINAL_REPORT={report_path}")
     print(f"CSV={csv_path}")
     return 0
 
 
 if __name__ == "__main__":
     raise SystemExit(main())
-

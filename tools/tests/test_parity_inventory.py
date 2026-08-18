@@ -17,6 +17,12 @@ from tools.parity_inventory import (
     parse_ui_nodes,
     route_phase_e_batch,
 )
+from tools.parity_phase_f import (
+    DeadPathProof,
+    PhaseFTransitionInput,
+    ProofManifest,
+    classify_phase_f_transition,
+)
 
 
 class ParityInventoryTest(unittest.TestCase):
@@ -27,7 +33,114 @@ class ParityInventoryTest(unittest.TestCase):
 
     def test_category_and_navigation_not_product_feature(self):
         self.assertEqual(classify_ui_node("PreferenceCategory", "system_cat"), "CATEGORY")
-        self.assertEqual(classify_ui_node("PreferenceScreen", "system"), "NAVIGATION_ENTRY")
+        self.assertEqual(classify_ui_node("PreferenceScreen", "system"), "NAVIGATION")
+
+    def test_hidden_warning_is_not_product_feature(self):
+        self.assertEqual(
+            classify_ui_node("PreferenceEx", "warning", visible="false", warning="true"),
+            "HIDDEN_HELPER",
+        )
+        decision = classify_phase_f_transition(PhaseFTransitionInput(
+            key="warning",
+            node_type="HIDDEN_HELPER",
+            a14_read=False,
+            a13_read=False,
+        ))
+        self.assertFalse(decision.product_feature)
+        self.assertEqual(decision.parity_state, "NOT_PRODUCT_FEATURE")
+
+    def test_dynamic_island_helper_is_not_product_feature(self):
+        self.assertEqual(
+            classify_ui_node("SeekBarPreference", "system_strong_toast_island_offset"),
+            "DYNAMIC_ISLAND_HELPER",
+        )
+        decision = classify_phase_f_transition(PhaseFTransitionInput(
+            key="system_strong_toast_island_offset",
+            node_type="DYNAMIC_ISLAND_HELPER",
+        ))
+        self.assertFalse(decision.product_feature)
+        self.assertNotEqual(decision.parity_state, "HOLD_EVIDENCE")
+
+    def test_same_key_without_source_proof_is_not_present(self):
+        decision = classify_phase_f_transition(PhaseFTransitionInput(
+            key="system_demo",
+            node_type="PRODUCT_ACTION",
+            a14_read=True,
+            a13_read=True,
+            host_package="SYSTEM_UI",
+            hook_behavior_match=True,
+            source_proof=None,
+        ))
+        self.assertNotIn(decision.parity_state, {"PRESENT_EQUIVALENT", "PRESENT_A13_VARIANT"})
+        self.assertEqual(decision.evidence_level, "IMPLEMENTATION_PRESENCE")
+
+    def test_same_key_different_hook_behavior_is_not_present(self):
+        decision = classify_phase_f_transition(PhaseFTransitionInput(
+            key="system_demo",
+            node_type="PRODUCT_ACTION",
+            a14_read=True,
+            a13_read=True,
+            host_package="SYSTEM_UI",
+            hook_behavior_match=False,
+        ))
+        self.assertNotIn(decision.parity_state, {"PRESENT_EQUIVALENT", "PRESENT_A13_VARIANT"})
+
+    def test_verified_source_family_proof_is_present_variant(self):
+        proof = ProofManifest(
+            proof_id="PROOF_TEST_FAMILY",
+            a14_owner_path="mods/A.kt",
+            a14_symbol="FooHook",
+            a14_installer="A14Installer",
+            a14_hook_targets="Bar#baz",
+            a14_callback_phase="after",
+            a13_owner_path="mods/A.kt",
+            a13_symbol="FooHook",
+            a13_installer="A13Installer",
+            a13_hook_targets="Bar#baz",
+            a13_callback_phase="after",
+            preference_keys=("system_demo",),
+            value_domain="boolean",
+            default_semantics="false",
+            result_argument_behavior="skip",
+            api33_variant_reason="same member",
+            proof_conclusion="PRESENT_A13_VARIANT",
+        )
+        decision = classify_phase_f_transition(PhaseFTransitionInput(
+            key="system_demo",
+            node_type="PRODUCT_ACTION",
+            a14_read=True,
+            a13_read=True,
+            host_package="SYSTEM_UI",
+            source_proof=proof,
+        ))
+        self.assertEqual(decision.parity_state, "PRESENT_A13_VARIANT")
+        self.assertEqual(decision.proof_id, "PROOF_TEST_FAMILY")
+
+    def test_regex_read_miss_is_not_dead_upstream(self):
+        decision = classify_phase_f_transition(PhaseFTransitionInput(
+            key="system_orphan",
+            node_type="PRODUCT_ACTION",
+            a14_read=False,
+            a13_read=False,
+            dead_proof=None,
+        ))
+        self.assertNotEqual(decision.parity_state, "DEAD_UPSTREAM_PATH")
+
+    def test_explicit_dead_proof_is_dead_upstream(self):
+        dead = DeadPathProof(
+            key="system_orphan",
+            a14_ui_reference="prefs_system.xml",
+            a14_search_references="xml/strings only",
+            a14_nearest_candidate="system_related",
+            why_not_reachable="UI exists; no FeatureSpec/installer/hook/alias",
+        )
+        decision = classify_phase_f_transition(PhaseFTransitionInput(
+            key="system_orphan",
+            node_type="PRODUCT_ACTION",
+            a14_read=False,
+            dead_proof=dead,
+        ))
+        self.assertEqual(decision.parity_state, "DEAD_UPSTREAM_PATH")
 
     def test_same_key_stays_insufficient_without_semantic_proof(self):
         level = evidence_for_row("k", True, {"k"}, {"k"})
@@ -56,17 +169,23 @@ class ParityInventoryTest(unittest.TestCase):
             self._write(
                 root,
                 "app/src/main/res/xml/prefs_demo.xml",
-                """<PreferenceScreen xmlns:android="http://schemas.android.com/apk/res/android">
+                """<PreferenceScreen xmlns:android="http://schemas.android.com/apk/res/android"
+                    xmlns:app="http://schemas.android.com/apk/res-auto"
+                    xmlns:miuizer="http://schemas.android.com/apk/res-auto">
                     <PreferenceCategory android:key="pref_key_demo_cat" />
                     <PreferenceScreen android:key="pref_key_system" />
                     <CheckBoxPreferenceEx android:key="pref_key_demo_toggle" />
+                    <PreferenceEx android:key="pref_key_warning" app:isPreferenceVisible="false" miuizer:warning="true" />
+                    <SeekBarPreference android:key="pref_key_system_strong_toast_island_offset" />
                 </PreferenceScreen>""",
             )
             self._write(root, "app/src/main/res/values/strings.xml", "<resources/>")
             nodes, _ = parse_ui_nodes(root)
             self.assertEqual(nodes["demo_cat"].node_type, "CATEGORY")
-            self.assertEqual(nodes["system"].node_type, "NAVIGATION_ENTRY")
-            self.assertEqual(nodes["demo_toggle"].node_type, "ACTIONABLE_FEATURE")
+            self.assertEqual(nodes["system"].node_type, "NAVIGATION")
+            self.assertEqual(nodes["demo_toggle"].node_type, "PRODUCT_ACTION")
+            self.assertEqual(nodes["warning"].node_type, "HIDDEN_HELPER")
+            self.assertEqual(nodes["system_strong_toast_island_offset"].node_type, "DYNAMIC_ISLAND_HELPER")
 
     def test_multi_key_feature_spec_supported(self):
         with tempfile.TemporaryDirectory() as td:
@@ -129,13 +248,11 @@ class ParityInventoryTest(unittest.TestCase):
 
     def test_d_final_aliases_cover_known_false_missing(self):
         aliases = missing_semantic_aliases()
-        self.assertEqual(aliases["launcher_folderblur_disable"]["parity_state"], "PARTIAL_PARITY")
         self.assertEqual(aliases["system_netspeed_boldfont"]["parity_state"], "PRESENT_A13_VARIANT")
         self.assertEqual(aliases["system_statusbarcontrols_dt_left"]["parity_state"], "HOLD_EVIDENCE")
         self.assertEqual(aliases["system_statusbarcontrols_dt_right"]["parity_state"], "HOLD_EVIDENCE")
-        self.assertEqual(aliases["system_charginginfo_fontsize"]["parity_state"], "PARTIAL_PARITY")
-        self.assertEqual(aliases["system_charginginfo_fontsize"]["host_package"], "SYSTEM_UI")
-        self.assertEqual(aliases["system_strong_toast_island_offset"]["phase_e_batch"], "HOLD_EVIDENCE")
+        self.assertNotIn("system_strong_toast_island_offset", aliases)
+        self.assertNotIn("launcher_folderblur_disable", aliases)
 
     def test_absence_proof_is_feature_specific(self):
         index = {
