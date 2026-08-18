@@ -1893,11 +1893,11 @@ def _mut_f_startup_composite(inventory: dict[str, Any]) -> None:
     cond = _find_condition(inventory, "STARTUP_GATE_CONDITIONS", "hasAnySystemUiStartupFeature_if_37")
     if cond is not None:
         cond["normalized_expression"] = (
-            'prefs.getBoolean("system_lockscreenshortcuts") && '
+            'prefs.getBoolean("system_disableanynotif") && '
             'prefs.getBoolean("system_nosilentvibrate")'
         )
         cond["raw_expression"] = cond["normalized_expression"]
-        cond["preference_keys"] = ["system_lockscreenshortcuts", "system_nosilentvibrate"]
+        cond["preference_keys"] = ["system_disableanynotif", "system_nosilentvibrate"]
         cond["accessors"] = ["getBoolean", "getBoolean"]
         cond["comparators"] = []
         cond["boolean_operators"] = ["AND"]
