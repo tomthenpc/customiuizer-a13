@@ -100,5 +100,35 @@ Not modified: `SystemUiInstaller`, `FeatureCatalog`, `FeatureDispatcher`, restar
 PRODUCTION_CHANGED = YES (D1–D4 authorized files)
 TEST_CHANGED       = YES (targeted + fixtures)
 FULL_GATE_RUN      = NO
-B3B_CLOSED         = NO until corrective + independent audit
+B3B_CLOSED         = YES (unattended freeze; ChatGPT PASS not claimed)
+```
+
+---
+
+## 7. B3B FINAL AUDIT (unattended freeze)
+
+Independent re-check after D1–D4. Does **not** claim ChatGPT PASS.
+
+```text
+B3B_SELECTION_SHA = de3b2e1
+B3B_CORRECTIVE_SHA = 1c89214
+B3A_CLOSED_SHA     = 27356df
+DIRECT_ANCESTRY    = 5ec24cc → 27356df → de3b2e1 → 1c89214
+B3B_CATALOG_MIGRATION_CANDIDATES = 0
+```
+
+| ID | Still present |
+|---|---|
+| D1 | `AddCustomTileHook` `findClassIfExists(ResourceIcon)`; NfcTile / createTileInternal still install; icon assignment skipped if class missing |
+| D2 | `MonitorDeviceInfoHook` `findClassIfExists` for DarkIconDispatcher / Dependency / StatusBarIconHolder / NetworkSpeedView; `DeviceInfoMonitor.hook` always reached |
+| D3 | `DisableAnyNotificationHook` SettingsManager + `USE_WHITE_LISTS` fail-open; CloudData and FilterHelper still attempted |
+| D4 | `ChargeAnimationHook` `RuntimeFatality.throwIfFatal`; wireless → wired fallback then return |
+
+Unchanged: `SystemUiInstaller`, restart guard, catalog, `FeatureDispatcher`, callback-time findClass, local notification `rethrowFatal`.
+
+Remaining: restart-guard skip-without-retry (DEBT); mass OOM-only rewrite (DEBT); callback findClass (LIKELY).
+
+```text
+B3B_UNATTENDED_FREEZE = YES
+CHATGPT_PASS          = NOT_CLAIMED
 ```
