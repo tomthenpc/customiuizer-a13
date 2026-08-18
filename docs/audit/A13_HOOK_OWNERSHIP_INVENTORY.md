@@ -25,9 +25,9 @@
 |---|---|---|---|
 | `REGISTRY_FEATURE` | 3 | 10 | 1.6 % |
 | `INSTALLER_INFRASTRUCTURE` | 0 | 0 | 0.0 % |
-| `LEGACY_EXCEPTION` | 37 | 620 | 98.4 % |
+| `LEGACY_EXCEPTION` | 37 | 618 | 98.4 % |
 | `UNKNOWN` | 0 | 0 | 0.0 % |
-| **Total** | **40** | **630** | **100 %** |
+| **Total** | **40** | **628** | **100 %** |
 
 ---
 
@@ -71,7 +71,7 @@
 | `mods/SystemUINotificationHooks.kt` | 13 | com.android.systemui | `LEGACY_EXCEPTION` | mixed: typed=1, legacy=6 |
 | `mods/SystemUIScreenshotHooks.kt` | 3 | com.android.systemui | `REGISTRY_FEATURE` | all hook calls owned by typed catalog |
 | `mods/SystemUIStatusBarHooks.kt` | 54 | com.android.systemui | `LEGACY_EXCEPTION` | mixed: typed=2, legacy=17 |
-| `mods/Various.kt` | 48 | mixed | `LEGACY_EXCEPTION` | no typed catalog owner |
+| `mods/Various.kt` | 46 | mixed | `LEGACY_EXCEPTION` | no typed catalog owner |
 | `mods/utils/DeviceInfoMonitor.kt` | 1 | mixed | `LEGACY_EXCEPTION` | no typed catalog owner |
 | `mods/utils/HookInstaller.kt` | 2 | mixed | `LEGACY_EXCEPTION` | no typed catalog owner |
 | `mods/utils/ResourceHooks.java` | 1 | mixed | `LEGACY_EXCEPTION` | no typed catalog owner |
