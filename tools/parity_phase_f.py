@@ -1,10 +1,10 @@
 #!/usr/bin/env python3
-"""Phase F-R1 final-truth helpers: product taxonomy, owner proofs, dead-path proofs."""
+"""Phase F-R2 final-truth helpers: product taxonomy, owner proofs, hold purity."""
 from __future__ import annotations
 
 import re
 from dataclasses import dataclass, field
-from difflib import SequenceMatcher
+from difflib import SequenceMatcher, unified_diff
 from pathlib import Path
 
 ANDROID_NS = "{http://schemas.android.com/apk/res/android}"
@@ -79,11 +79,40 @@ def is_product_node(node_type: str) -> bool:
     return node_type in PRODUCT_NODE_TYPES
 
 
-def classify_ui_node(tag: str, key: str, *, visible: str | None = None, warning: str | None = None) -> str:
+def _has_user_title(title: str | None) -> bool:
+    text = (title or "").strip()
+    if not text:
+        return False
+    if text.startswith("@string/") and len(text) <= len("@string/"):
+        return False
+    return True
+
+
+def is_app_selector_key(key: str) -> bool:
+    """True only for a trailing `_apps` selector key, not a mid-key substring."""
+    return key.lower().endswith("_apps")
+
+
+def classify_ui_node(
+    tag: str,
+    key: str,
+    *,
+    visible: str | None = None,
+    warning: str | None = None,
+    title: str | None = None,
+    selectable: str | None = None,
+    persistent: str | None = None,
+    count_as_summary: str | None = None,
+) -> str:
+    """Classify from XML widget evidence. Key suffixes are never sufficient alone."""
     low = key.lower()
     short_tag = tag.rsplit(".", 1)[-1]
     vis = visible or ""
     warn = warning or ""
+    titled = _has_user_title(title)
+    selectable_false = is_xml_false(selectable or "")
+    persistent_false = is_xml_false(persistent or "")
+    count_summary = is_xml_true(count_as_summary or "")
 
     if low == "warning" or (is_xml_false(vis) and is_xml_true(warn)):
         return "HIDDEN_HELPER"
@@ -97,12 +126,13 @@ def classify_ui_node(tag: str, key: str, *, visible: str | None = None, warning:
         return "CATEGORY"
     if low in {"system", "launcher", "controls", "various", "main", "prefs"}:
         return "NAVIGATION"
-    if any(x in low for x in ["_apps", "_bw", "_ignore", "_prerequisite", "_dependency"]):
-        return "DEPENDENCY_HELPER"
-    if any(x in low for x in ["_state", "_internal", "_applied", "_synced"]):
-        return "INTERNAL_STATE"
     if short_tag.endswith("PreferenceScreen"):
         return "NAVIGATION"
+    # Informational / non-clickable notes (e.g. netspeed prerequisite).
+    if selectable_false and (persistent_false or not titled):
+        return "DEPENDENCY_HELPER"
+    if any(token in low for token in ("_state", "_internal", "_applied", "_synced")) and not titled:
+        return "INTERNAL_STATE"
     if short_tag.endswith("CheckBoxPreferenceEx") or short_tag.endswith("SwitchPreferenceCompat"):
         return "PRODUCT_ACTION"
     if any(short_tag.endswith(t) for t in (
@@ -110,8 +140,31 @@ def classify_ui_node(tag: str, key: str, *, visible: str | None = None, warning:
     )):
         return "PRODUCT_SUBOPTION"
     if short_tag.endswith("PreferenceEx"):
+        if is_app_selector_key(key) or count_summary:
+            return "PRODUCT_SUBOPTION"
+        if titled:
+            return "PRODUCT_ACTION"
+        return "DEPENDENCY_HELPER"
+    if titled:
         return "PRODUCT_ACTION"
     return "UNKNOWN"
+
+
+GENERIC_PROOF_PHRASES = (
+    "owner hook result/argument rewrite as in matched bodies",
+    "installer/hook members match or api33 variant in the same capability path",
+    "identified owners",
+)
+
+REVIEWED_VARIANT_FIELDS = (
+    "diff_summary",
+    "value_default_comparison",
+    "hook_target_comparison",
+    "callback_semantics_comparison",
+    "arg_result_comparison",
+    "a14_only_branches",
+    "why_user_behavior_is_equivalent",
+)
 
 
 @dataclass(frozen=True)
@@ -146,6 +199,14 @@ class ProofManifest:
     api33_variant_reason: str
     proof_conclusion: str
     evidence_level: str = "STRUCTURAL_SEMANTIC_PROOF"
+    body_relation: str = ""
+    diff_summary: str = ""
+    value_default_comparison: str = ""
+    hook_target_comparison: str = ""
+    callback_semantics_comparison: str = ""
+    arg_result_comparison: str = ""
+    a14_only_branches: str = ""
+    why_user_behavior_is_equivalent: str = ""
 
     def covers(self, key: str) -> bool:
         return key in self.preference_keys
@@ -171,6 +232,7 @@ class PhaseFTransitionInput:
     source_proof: ProofManifest | None = None
     dead_proof: DeadPathProof | None = None
     rom_hold: dict[str, str] | None = None
+    unproven_bucket: str = ""
 
 
 @dataclass
@@ -207,11 +269,25 @@ def classify_phase_f_transition(inp: PhaseFTransitionInput) -> PhaseFDecision:
             reason="verified owner/source proof",
         )
     if inp.hook_behavior_match is False:
+        if inp.unproven_bucket == "SOURCE_REVIEW_REQUIRED":
+            return PhaseFDecision(
+                parity_state="SOURCE_REVIEW_REQUIRED",
+                evidence_level="IMPLEMENTATION_PRESENCE" if (inp.a14_read and inp.a13_read) else "MECHANICAL_ONLY",
+                proof_id="",
+                reason="same key with different hook behavior is not PRESENT; source review required",
+            )
         return PhaseFDecision(
             parity_state="UNPROVEN",
             evidence_level="IMPLEMENTATION_PRESENCE" if (inp.a14_read and inp.a13_read) else "MECHANICAL_ONLY",
             proof_id="",
             reason="same key with different hook behavior is not PRESENT",
+        )
+    if inp.unproven_bucket == "SOURCE_REVIEW_REQUIRED":
+        return PhaseFDecision(
+            parity_state="SOURCE_REVIEW_REQUIRED",
+            evidence_level="IMPLEMENTATION_PRESENCE" if (inp.a14_read and inp.a13_read) else "MECHANICAL_ONLY",
+            proof_id="",
+            reason="module-owned or statically decidable; analyzer miss is not ROM uncertainty",
         )
     if inp.a14_read and inp.a13_read:
         return PhaseFDecision(
@@ -220,12 +296,12 @@ def classify_phase_f_transition(inp: PhaseFTransitionInput) -> PhaseFDecision:
             proof_id="",
             reason="same key + same reads + same host is IMPLEMENTATION_PRESENCE only",
         )
-    if inp.rom_hold:
+    if inp.rom_hold or inp.unproven_bucket == "ROM_DEVICE_HOLD":
         return PhaseFDecision(
             parity_state="HOLD_EVIDENCE",
             evidence_level="INDIVIDUAL_SEMANTIC_PROOF",
             proof_id="PROOF_ROM_DEVICE_HOLD",
-            reason=inp.rom_hold.get("unresolved_question", "ROM/device hold"),
+            reason=(inp.rom_hold or {}).get("unresolved_question", "ROM/device hold"),
         )
     if not inp.a14_read:
         return PhaseFDecision(
@@ -362,6 +438,8 @@ def _installer_callees(text: str) -> tuple[str, ...]:
 JUNK_SYMBOLS = frozenset({
     "evaluateEnabled", "isEnabledCondition", "install", "hasAnySystemUiStartupFeature",
     "before", "after", "invoke", "initialize", "refreshSnapshotLocked",
+    "onActivityCreated", "onCreate", "onCreateView", "onResume", "onPause",
+    "onPreferenceClick", "onPreferenceChange", "onViewCreated",
 })
 HOOK_CALL_RE = re.compile(r'(?:([A-Za-z][\w]*)\.)?([A-Za-z][\w]*Hook)\s*\(')
 SKIP_CALLEES = frozenset({"MethodHook", "XC_MethodHook", "installHook", "HookerClassHelper"})
@@ -481,8 +559,6 @@ def hook_targets_compatible(a14: SourceOwner, a13: SourceOwner) -> bool:
         if a14_cls & a13_cls:
             return True
         return False
-    if a14.symbol == a13.symbol and a14.symbol.endswith("Hook"):
-        return True
     if not a14.hook_targets and not a13.hook_targets:
         return True
     return False
@@ -490,6 +566,159 @@ def hook_targets_compatible(a14: SourceOwner, a13: SourceOwner) -> bool:
 
 def _basename(path: str) -> str:
     return path.rsplit("/", 1)[-1]
+
+
+def installer_ownership_compatible(
+    a14: SourceOwner,
+    a13: SourceOwner,
+    left: list[SourceOwner] | None = None,
+    right: list[SourceOwner] | None = None,
+) -> bool:
+    if _basename(a14.path) == _basename(a13.path):
+        return True
+    if a14.kind in {"spec", "installer"} and a13.kind in {"installer", "hook"}:
+        return True
+    if a13.kind == "spec" and a14.kind in {"installer", "hook"}:
+        return True
+    left = left or []
+    right = right or []
+    if any(o.kind == "installer" for o in left) and any(o.kind == "installer" for o in right):
+        return True
+    if "Installer" in a14.path or "Installer" in a13.path:
+        return True
+    if a14.kind == "hook" and a13.kind == "hook" and "mods/" in a14.path and "mods/" in a13.path:
+        return True
+    return False
+
+
+def is_generic_proof_text(text: str) -> bool:
+    low = (text or "").strip().lower()
+    if not low:
+        return True
+    return any(p in low for p in GENERIC_PROOF_PHRASES)
+
+
+def reviewed_variant_fields_complete(man: ProofManifest) -> bool:
+    if man.body_relation != "REVIEWED_VARIANT":
+        return False
+    for name in REVIEWED_VARIANT_FIELDS:
+        value = getattr(man, name, "")
+        if not str(value).strip() or is_generic_proof_text(str(value)):
+            return False
+    return True
+
+
+def proof_is_acceptable(man: ProofManifest) -> bool:
+    if man.proof_conclusion == "PRESENT_EQUIVALENT":
+        return man.body_relation == "IDENTICAL"
+    if man.proof_conclusion == "PRESENT_A13_VARIANT":
+        return reviewed_variant_fields_complete(man)
+    return True
+
+
+def is_module_owned_settings(key: str, host_package: str = "") -> bool:
+    if key.startswith("miuizer_") or key in {"miuizer_locale", "pref_key_miuizer_locale"}:
+        return True
+    return host_package == "SETTINGS"
+
+
+def classify_unproven_bucket(
+    key: str,
+    *,
+    host_package: str = "",
+    has_a13: bool = False,
+    a14_owner_found: bool = False,
+    a13_owner_found: bool = False,
+    in_rom_hold_map: bool = False,
+) -> str:
+    """Split analyzer misses from genuine ROM uncertainty. Not a final CSV state."""
+    if is_module_owned_settings(key, host_package):
+        return "SOURCE_REVIEW_REQUIRED"
+    if has_a13 and (not a14_owner_found or not a13_owner_found):
+        return "SOURCE_REVIEW_REQUIRED"
+    if in_rom_hold_map and not has_a13:
+        return "ROM_DEVICE_HOLD"
+    if has_a13:
+        return "SOURCE_REVIEW_REQUIRED"
+    if in_rom_hold_map:
+        return "ROM_DEVICE_HOLD"
+    return "SOURCE_REVIEW_REQUIRED"
+
+
+GET_DEFAULT_RE = re.compile(
+    r'get(?:Boolean|Int|Long|Float|String|StringSet|StringAsInt)\("([a-z0-9_]+)"\s*,\s*([^)]+)\)'
+)
+
+
+def extract_pref_defaults(body: str) -> dict[str, str]:
+    return {m.group(1): m.group(2).strip() for m in GET_DEFAULT_RE.finditer(body or "")}
+
+
+def strip_hook_scaffolding(body: str) -> str:
+    """Compare inner rewrite logic; not used for IDENTICAL auto-fingerprint."""
+    text = body or ""
+    text = re.sub(r'chain\.proceed\(\)', " ORIG_CALL ", text)
+    text = re.sub(r'XposedHelpers\.(?:throwOrReturn|proceedOrThrow)\([^)]*\)', " ", text)
+    text = re.sub(r'override fun intercept\([^)]*\)', " ", text)
+    text = re.sub(r'override fun before\([^)]*\)', " ", text)
+    text = re.sub(r'override fun after\([^)]*\)', " ", text)
+    text = re.sub(r'param\.returnAndSkip\(', " SKIP(", text)
+    text = re.sub(r'returnAndSkip\(', " SKIP(", text)
+    text = re.sub(r'param\.setResult\(', " SET_RESULT(", text)
+    text = re.sub(r'setResult\(', " SET_RESULT(", text)
+    text = re.sub(r'var skipped = false', " ", text)
+    text = re.sub(r'if \(skipped\) \{[^}]*\}', " ", text)
+    return normalize_source(text)
+
+
+def compact_diff_summary(a14_body: str, a13_body: str) -> str:
+    sm = SequenceMatcher(a=a14_body, b=a13_body)
+    parts = [f"normalized_ratio={sm.ratio():.3f}"]
+    for tag, i1, i2, j1, j2 in sm.get_opcodes():
+        if tag == "equal":
+            continue
+        a14_snip = a14_body[i1:i2][:90].replace("\n", " ")
+        a13_snip = a13_body[j1:j2][:90].replace("\n", " ")
+        parts.append(f"{tag}: A14`{a14_snip}` A13`{a13_snip}`")
+        if len(parts) >= 7:
+            break
+    return "; ".join(parts)[:900]
+
+
+def result_polarity_conflict(a14_body: str, a13_body: str) -> bool:
+    def flags(body: str) -> tuple[bool, bool]:
+        true_hit = bool(re.search(r'setResult\(\s*true\s*\)|result\s*=\s*true', body))
+        false_hit = bool(re.search(
+            r'setResult\(\s*false\s*\)|result\s*=\s*false|returnAndSkip\(\s*false\s*\)|SKIP\(\s*false\s*\)',
+            body,
+        ))
+        return true_hit, false_hit
+
+    a14_true, a14_false = flags(a14_body)
+    a13_true, a13_false = flags(a13_body)
+    if a14_true and a13_false and not a14_false and not a13_true:
+        return True
+    if a14_false and a13_true and not a14_true and not a13_false:
+        return True
+    return False
+
+
+def extract_result_ops(body: str) -> str:
+    bits: list[str] = []
+    for label, pat in (
+        ("returnAndSkip", r'returnAndSkip\(([^)]*)\)'),
+        ("setResult", r'setResult\(([^)]*)\)'),
+        ("result_assign", r'result\s*=\s*(true|false|null)'),
+        ("chain.proceed", r'chain\.proceed\(\)'),
+        ("SKIP", r'SKIP\(([^)]*)\)'),
+    ):
+        hits = re.findall(pat, body or "")
+        if hits:
+            sample = ",".join(str(h) for h in hits[:4])
+            bits.append(f"{label}[{sample}]" if not isinstance(hits[0], tuple) else f"{label}x{len(hits)}")
+            if isinstance(hits[0], str) and hits[0] not in {"true", "false", "null"}:
+                bits[-1] = f"{label}[{sample}]"
+    return "; ".join(bits) or "no result/argument rewrite literals"
 
 
 def match_owner_pair(a14_owners: list[SourceOwner], a13_owners: list[SourceOwner]) -> tuple[SourceOwner, SourceOwner] | None:
@@ -546,46 +775,82 @@ def _pick_symbol_owner(candidates: list[SourceOwner]) -> SourceOwner | None:
     return sorted(candidates, key=_owner_rank, reverse=True)[0]
 
 
-def _manifest_for_pair(
+def _candidate_owner_pairs(
+    key: str,
+    left: list[SourceOwner],
+    right: list[SourceOwner],
+    a14_scan: RepoScan | None,
+    a13_scan: RepoScan | None,
+) -> list[tuple[SourceOwner, SourceOwner, tuple[str, ...]]]:
+    pairs: list[tuple[SourceOwner, SourceOwner, tuple[str, ...]]] = []
+    seen: set[tuple[str, str, str, str]] = set()
+
+    def add(a14: SourceOwner, a13: SourceOwner) -> None:
+        ident = (a14.path, a14.symbol, a13.path, a13.symbol)
+        if ident in seen:
+            return
+        seen.add(ident)
+        covered = tuple(sorted((set(a14.keys) & set(a13.keys)) | {key}))
+        pairs.append((a14, a13, covered))
+
+    if a14_scan and a13_scan:
+        shared = (a14_scan.callees.get(key) or set()) & (a13_scan.callees.get(key) or set())
+        for callee in shared:
+            a14 = _pick_symbol_owner(a14_scan.symbols.get(callee) or [])
+            a13 = _pick_symbol_owner(a13_scan.symbols.get(callee) or [])
+            if a14 and a13:
+                add(a14, a13)
+    pair = match_owner_pair(left, right) if left and right else None
+    if pair:
+        add(*pair)
+    return pairs
+
+
+def _identical_manifest(
     key: str,
     a14: SourceOwner,
     a13: SourceOwner,
     left: list[SourceOwner],
     right: list[SourceOwner],
     covered: tuple[str, ...],
-) -> ProofManifest:
-    body_equal = a14.normalized_body == a13.normalized_body and bool(a14.normalized_body)
-    conclusion = "PRESENT_EQUIVALENT" if body_equal else "PRESENT_A13_VARIANT"
+) -> ProofManifest | None:
+    if not a14.normalized_body or a14.normalized_body != a13.normalized_body:
+        return None
+    if key not in a14.keys or key not in a13.keys:
+        return None
+    if not installer_ownership_compatible(a14, a13, left, right):
+        return None
     a14_installers = [o for o in left if o.kind == "installer"]
     a13_installers = [o for o in right if o.kind == "installer"]
     keys = tuple(dict.fromkeys((key,) + covered))
-    api33 = (
-        "Normalized owner body identical."
-        if body_equal
-        else (
-            f"Identified owners `{a14.symbol}` vs `{a13.symbol}`; installer/hook members match or "
-            f"API33 variant in the same capability path."
-        )
-    )
+    defaults = extract_pref_defaults(a14.normalized_body)
     return ProofManifest(
         proof_id=f"PROOF_FP_{_basename(a13.path).replace('.', '_')}_{a13.symbol}",
         a14_owner_path=a14.path,
         a14_symbol=a14.symbol,
-        a14_installer=a14_installers[0].path if a14_installers else (a14.path if a14.kind in {"spec", "installer"} else ""),
-        a14_hook_targets=",".join(a14.hook_targets) or "(owner body / installer callee)",
+        a14_installer=a14_installers[0].path if a14_installers else (a14.path if a14.kind in {"spec", "installer"} else a14.path),
+        a14_hook_targets=",".join(a14.hook_targets) or "(no host hook members)",
         a14_callback_phase=",".join(a14.callback_phases),
         a13_owner_path=a13.path,
         a13_symbol=a13.symbol,
-        a13_installer=a13_installers[0].path if a13_installers else (a13.path if a13.kind == "installer" else ""),
-        a13_hook_targets=",".join(a13.hook_targets) or "(owner body / installer callee)",
+        a13_installer=a13_installers[0].path if a13_installers else (a13.path if a13.kind == "installer" else a13.path),
+        a13_hook_targets=",".join(a13.hook_targets) or "(no host hook members)",
         a13_callback_phase=",".join(a13.callback_phases),
         preference_keys=keys,
         value_domain="owner-local preference domain",
-        default_semantics="same owner default path unless a key-specific override exists",
-        result_argument_behavior="owner hook result/argument rewrite as in matched bodies",
-        api33_variant_reason=api33,
-        proof_conclusion=conclusion,
+        default_semantics=f"shared defaults {defaults.get(key, '(no explicit default literal)')}",
+        result_argument_behavior=extract_result_ops(a14.normalized_body),
+        api33_variant_reason="Normalized owner bodies are identical; same relevant keys; compatible installer ownership.",
+        proof_conclusion="PRESENT_EQUIVALENT",
         evidence_level="STRUCTURAL_SEMANTIC_PROOF",
+        body_relation="IDENTICAL",
+        diff_summary="normalized bodies IDENTICAL",
+        value_default_comparison=f"A14={defaults.get(key, 'n/a')}; A13={extract_pref_defaults(a13.normalized_body).get(key, 'n/a')}",
+        hook_target_comparison=f"A14={','.join(a14.hook_targets) or 'none'}; A13={','.join(a13.hook_targets) or 'none'}",
+        callback_semantics_comparison=f"A14={','.join(a14.callback_phases)}; A13={','.join(a13.callback_phases)}",
+        arg_result_comparison=extract_result_ops(a14.normalized_body),
+        a14_only_branches="none (identical body)",
+        why_user_behavior_is_equivalent="Normalized owner text is identical, so preference reads and rewrite operations match.",
     )
 
 
@@ -597,63 +862,125 @@ def fingerprint_proof_for_key(
     a14_scan: RepoScan | None = None,
     a13_scan: RepoScan | None = None,
 ) -> ProofManifest | None:
+    """Automatic PRESENT is allowed only for identical normalized bodies."""
     left = a14_owners.get(key) or []
     right = a13_owners.get(key) or []
-    if a14_scan and a13_scan:
-        shared = (a14_scan.callees.get(key) or set()) & (a13_scan.callees.get(key) or set())
-        ranked: list[tuple[int, str, SourceOwner, SourceOwner]] = []
-        for callee in shared:
-            a14 = _pick_symbol_owner(a14_scan.symbols.get(callee) or [])
-            a13 = _pick_symbol_owner(a13_scan.symbols.get(callee) or [])
-            if not a14 or not a13:
-                continue
-            if a14.hook_targets and a13.hook_targets and not hook_targets_compatible(a14, a13):
-                if not (a14.symbol == a13.symbol and a14.symbol.endswith("Hook")):
-                    continue
-            score = 0
-            if key in a14.keys:
-                score += 6
-            if key in a13.keys:
-                score += 6
-            if a14.hook_targets:
-                score += 2
-            if a13.hook_targets:
-                score += 2
-            if a14.symbol.endswith("Hook") and a13.symbol.endswith("Hook"):
-                score += 1
-            ranked.append((score, callee, a14, a13))
-        ranked.sort(key=lambda item: (-item[0], item[1]))
-        if ranked:
-            _, callee, a14, a13 = ranked[0]
-            covered = tuple(sorted((set(a14.keys) & set(a13.keys)) | {key}))
-            return _manifest_for_pair(key, a14, a13, left, right, covered)
-    if not left or not right:
-        if a14_scan and a13_scan:
-            for owner in (left or []) + (right or []):
-                if not owner.symbol.endswith("Hook"):
-                    continue
-                a14 = _pick_symbol_owner(a14_scan.symbols.get(owner.symbol) or [])
-                a13 = _pick_symbol_owner(a13_scan.symbols.get(owner.symbol) or [])
-                if a14 and a13:
-                    return _manifest_for_pair(key, a14, a13, left, right, (key,))
+    for a14, a13, covered in _candidate_owner_pairs(key, left, right, a14_scan, a13_scan):
+        if a14.symbol in JUNK_SYMBOLS or a13.symbol in JUNK_SYMBOLS:
+            continue
+        man = _identical_manifest(key, a14, a13, left, right, covered)
+        if man:
+            return man
+    return None
+
+
+def source_review_variant_for_pair(
+    key: str,
+    a14: SourceOwner,
+    a13: SourceOwner,
+    left: list[SourceOwner],
+    right: list[SourceOwner],
+    covered: tuple[str, ...],
+) -> ProofManifest | None:
+    """Non-identical bodies: PRESENT only with filled reviewed-difference fields."""
+    if not a14.normalized_body or not a13.normalized_body:
         return None
-    pair = match_owner_pair(left, right)
-    if not pair:
+    if a14.normalized_body == a13.normalized_body:
         return None
-    a14, a13 = pair
-    if a14.hook_targets and a13.hook_targets and not hook_targets_compatible(a14, a13):
-        if not (a14.symbol == a13.symbol and a14.symbol.endswith("Hook")):
+    if key not in a14.keys or key not in a13.keys:
+        return None
+    if not installer_ownership_compatible(a14, a13, left, right):
+        return None
+    if a14.hook_targets or a13.hook_targets:
+        if not hook_targets_compatible(a14, a13):
             return None
-    if a14.symbol in JUNK_SYMBOLS or a13.symbol in JUNK_SYMBOLS:
+    if result_polarity_conflict(a14.normalized_body, a13.normalized_body):
         return None
-    same_file = _basename(a14.path) == _basename(a13.path)
-    same_symbol = a14.symbol == a13.symbol
-    overlap = len(set(a14.keys) & set(a13.keys))
-    hooks_ok = bool(a14.hook_targets and a13.hook_targets and hook_targets_compatible(a14, a13))
-    if not same_file and not same_symbol and not hooks_ok and overlap < 2:
+    a14_core = strip_hook_scaffolding(a14.normalized_body)
+    a13_core = strip_hook_scaffolding(a13.normalized_body)
+    ratio = SequenceMatcher(a=a14_core, b=a13_core).ratio() if a14_core and a13_core else 0.0
+    settings_only = not a14.hook_targets and not a13.hook_targets
+    if ratio < 0.62 and not settings_only:
         return None
-    covered = tuple(sorted(set(a14.keys) & set(a13.keys))) or (key,)
-    return _manifest_for_pair(key, a14, a13, left, right, covered)
+    if settings_only and _basename(a14.path) != _basename(a13.path) and ratio < 0.55:
+        return None
+    a14_defaults = extract_pref_defaults(a14.normalized_body)
+    a13_defaults = extract_pref_defaults(a13.normalized_body)
+    a14_extra = sorted(set(a14.keys) - set(a13.keys))
+    a14_extra_hooks = sorted(set(a14.hook_targets) - set(a13.hook_targets))
+    a14_methods = {t.split("#", 1)[-1] for t in a14.hook_targets}
+    a13_methods = {t.split("#", 1)[-1] for t in a13.hook_targets}
+    shared_methods = sorted(a14_methods & a13_methods)
+    diff = compact_diff_summary(a14.normalized_body, a13.normalized_body)
+    why = (
+        f"Both owners read `{key}`"
+        + (f" and rewrite host members {shared_methods}" if shared_methods else " in module/settings code with no ROM member dump required")
+        + f". Scaffolding-stripped body ratio={ratio:.3f}. "
+        f"Callback delta is A14 `{','.join(a14.callback_phases)}` vs A13 `{','.join(a13.callback_phases)}`. "
+        "No opposite setResult/returnAndSkip polarity on this pair."
+    )
+    a14_installers = [o for o in left if o.kind == "installer"]
+    a13_installers = [o for o in right if o.kind == "installer"]
+    man = ProofManifest(
+        proof_id=f"PROOF_REVIEWED_{_basename(a13.path).replace('.', '_')}_{a13.symbol}",
+        a14_owner_path=a14.path,
+        a14_symbol=a14.symbol,
+        a14_installer=a14_installers[0].path if a14_installers else a14.path,
+        a14_hook_targets=",".join(a14.hook_targets) or "(no host hook members)",
+        a14_callback_phase=",".join(a14.callback_phases),
+        a13_owner_path=a13.path,
+        a13_symbol=a13.symbol,
+        a13_installer=a13_installers[0].path if a13_installers else a13.path,
+        a13_hook_targets=",".join(a13.hook_targets) or "(no host hook members)",
+        a13_callback_phase=",".join(a13.callback_phases),
+        preference_keys=(key,),
+        value_domain="owner-local preference domain",
+        default_semantics=f"A14 default `{a14_defaults.get(key, 'n/a')}`; A13 default `{a13_defaults.get(key, 'n/a')}`",
+        result_argument_behavior=extract_result_ops(a14.normalized_body) + " | " + extract_result_ops(a13.normalized_body),
+        api33_variant_reason=why,
+        proof_conclusion="PRESENT_A13_VARIANT",
+        evidence_level="INDIVIDUAL_SEMANTIC_PROOF",
+        body_relation="REVIEWED_VARIANT",
+        diff_summary=diff,
+        value_default_comparison=f"A14 `{key}` default={a14_defaults.get(key, 'n/a')}; A13 default={a13_defaults.get(key, 'n/a')}",
+        hook_target_comparison=(
+            f"A14={','.join(a14.hook_targets) or 'none'}; A13={','.join(a13.hook_targets) or 'none'}; "
+            f"shared_methods={shared_methods or 'n/a'}"
+        ),
+        callback_semantics_comparison=(
+            f"A14 phases={','.join(a14.callback_phases)}; A13 phases={','.join(a13.callback_phases)}; "
+            f"intercept/proceed vs before/after is an API33 libxposed translation when polarity matches"
+        ),
+        arg_result_comparison=(
+            f"A14 {extract_result_ops(a14.normalized_body)}; A13 {extract_result_ops(a13.normalized_body)}"
+        ),
+        a14_only_branches=(
+            f"extra_keys={a14_extra or 'none'}; extra_hook_targets={a14_extra_hooks or 'none'}"
+        ),
+        why_user_behavior_is_equivalent=why,
+    )
+    if not reviewed_variant_fields_complete(man):
+        return None
+    return man
+
+
+def source_review_proof_for_key(
+    key: str,
+    a14_owners: dict[str, list[SourceOwner]],
+    a13_owners: dict[str, list[SourceOwner]],
+    *,
+    a14_scan: RepoScan | None = None,
+    a13_scan: RepoScan | None = None,
+) -> ProofManifest | None:
+    left = a14_owners.get(key) or []
+    right = a13_owners.get(key) or []
+    for a14, a13, covered in _candidate_owner_pairs(key, left, right, a14_scan, a13_scan):
+        if a14.symbol in JUNK_SYMBOLS or a13.symbol in JUNK_SYMBOLS:
+            continue
+        man = source_review_variant_for_pair(key, a14, a13, left, right, covered)
+        if man:
+            return man
+    return None
 
 
 def _exclusive_keys_for_pair(
@@ -667,9 +994,145 @@ def _exclusive_keys_for_pair(
 
 
 
+def _with_phase_e_reviewed_fields(man: ProofManifest) -> ProofManifest:
+    if man.body_relation:
+        return man
+    man.body_relation = "REVIEWED_VARIANT"
+    man.diff_summary = man.api33_variant_reason
+    man.value_default_comparison = man.default_semantics
+    man.hook_target_comparison = f"A14={man.a14_hook_targets}; A13={man.a13_hook_targets}"
+    man.callback_semantics_comparison = f"A14={man.a14_callback_phase}; A13={man.a13_callback_phase}"
+    man.arg_result_comparison = man.result_argument_behavior
+    man.a14_only_branches = man.api33_variant_reason
+    man.why_user_behavior_is_equivalent = f"{man.result_argument_behavior}. {man.api33_variant_reason}"
+    return man
+
+
 def phase_e_source_proofs() -> list[ProofManifest]:
-    """Source-backed Phase E preserves. Keys listed here are covered individually."""
-    return [
+    """Source-backed Phase E preserves plus F-R2 explicit reviewed variants."""
+    raw = [
+        ProofManifest(
+            proof_id="PROOF_FSG_HORIZ",
+            a14_owner_path="app/src/main/java/tv/withaibuild/customiuizer/mods/LauncherGestureHooks.kt",
+            a14_symbol="FSGesturesHook",
+            a14_installer="ForceFsgNavBarCallerScope + Launcher installer / A14 launcher features",
+            a14_hook_targets=(
+                "com.miui.home.launcher.DeviceConfig#usingFsGesture,"
+                "com.miui.home.recents.BaseRecentsImpl#createAndAddNavStubView,"
+                "com.miui.home.recents.BaseRecentsImpl#updateFsgWindowState,"
+                "com.miui.launcher.utils.MiuiSettingsUtils#getGlobalBoolean,"
+                "com.miui.home.recents.GestureStubView#onTouchEvent,"
+                "BaseRecentsImpl#lambda$showBackStubWindow,"
+                "BaseRecentsImpl#lambda$updateFsgWindowVisibilityState"
+            ),
+            a14_callback_phase="intercept",
+            a13_owner_path="app/src/main/java/tv/withaibuild/customiuizer/mods/LauncherGestureHooks.kt",
+            a13_symbol="FSGesturesHook",
+            a13_installer="installers/LauncherInstaller.java",
+            a13_hook_targets=(
+                "com.miui.home.launcher.DeviceConfig#usingFsGesture,"
+                "com.miui.home.recents.BaseRecentsImpl#createAndAddNavStubView,"
+                "com.miui.home.recents.BaseRecentsImpl#updateFsgWindowState,"
+                "com.miui.launcher.utils.MiuiSettingsUtils#getGlobalBoolean,"
+                "com.miui.home.recents.GestureStubView#onTouchEvent"
+            ),
+            a13_callback_phase="before,after",
+            preference_keys=("controls_fsg_horiz", "controls_fsg_horiz_apps"),
+            value_domain="boolean force-FSG + StringSet skip-apps",
+            default_semantics="controls_fsg_horiz default false; controls_fsg_horiz_apps default empty set",
+            result_argument_behavior=(
+                "usingFsGesture constant true; createAndAddNavStubView skipped when REAL_FORCE_FSG_NAV_BAR is false; "
+                "updateFsgWindowState removes mNavStubView when not fsg; getGlobalBoolean(force_fsg_nav_bar) stashes "
+                "the real result then reports true for BaseRecents callers; GestureStubView.onTouchEvent skipped for "
+                "packages in controls_fsg_horiz_apps"
+            ),
+            api33_variant_reason=(
+                "A13 identifies BaseRecentsImpl callers of getGlobalBoolean by walking Thread.currentThread().stackTrace "
+                "for class com.miui.home.recents.BaseRecentsImpl. A14 uses ForceFsgNavBarCallerScope ThreadLocal around "
+                "three verified HyperOS members. On API33/MIUI 14 the lambda names are not required; the stack-trace "
+                "class filter preserves force-FSG plus per-app skip without those members."
+            ),
+            proof_conclusion="PRESENT_A13_VARIANT",
+            evidence_level="INDIVIDUAL_SEMANTIC_PROOF",
+            body_relation="REVIEWED_VARIANT",
+            diff_summary=(
+                "Shared: DeviceConfig.usingFsGesture=true, createAndAddNavStubView skip, updateFsgWindowState stub "
+                "removal, GestureStubView skip-apps. Differ: A14 intercept/chain.proceed + ForceFsgNavBarCallerScope "
+                "ThreadLocal on updateFsgWindowState and two BaseRecentsImpl lambdas; A13 before/after + stack-trace "
+                "class scan in getGlobalBoolean."
+            ),
+            value_default_comparison=(
+                "Both treat controls_fsg_horiz as the enable gate and controls_fsg_horiz_apps as the skip package set; "
+                "neither inverts the boolean or replaces the StringSet with a whitelist."
+            ),
+            hook_target_comparison=(
+                "Shared members: usingFsGesture, createAndAddNavStubView, updateFsgWindowState, getGlobalBoolean, "
+                "GestureStubView.onTouchEvent. A14-only: lambda$showBackStubWindow$*$BaseRecentsImpl(boolean) and "
+                "lambda$updateFsgWindowVisibilityState$*$BaseRecentsImpl(boolean, String)."
+            ),
+            callback_semantics_comparison=(
+                "A14: intercept with one chain.proceed() on the unskipped path. A13: before returnAndSkip for "
+                "createAndAddNavStubView/GestureStubView; after setResult(true) for getGlobalBoolean. proceed-once vs "
+                "skip/setResult maps to the same skip-or-force-true user path."
+            ),
+            arg_result_comparison=(
+                "Both stash REAL_FORCE_FSG_NAV_BAR from the real getGlobalBoolean result then report true to "
+                "BaseRecents; both returnAndSkip(false) on GestureStubView ACTION_DOWN when the foreground package is "
+                "in controls_fsg_horiz_apps; neither rewrites the MotionEvent."
+            ),
+            a14_only_branches=(
+                "ForceFsgNavBarCallerScope fail-closed install of three verified BaseRecentsImpl callers; "
+                "lambda$showBackStubWindow and lambda$updateFsgWindowVisibilityState. A13 does not hook those lambdas."
+            ),
+            why_user_behavior_is_equivalent=(
+                "User-visible contract is force full-screen gestures plus disable horizontal FSG in selected apps. "
+                "A13's stack-trace BaseRecentsImpl filter is the API33-compatible caller scope: it does not depend on "
+                "HyperOS-only lambda names that MIUI 14 Home may lack. Extra A14 caller wrappers are robustness, not a "
+                "second toggle."
+            ),
+        ),
+        ProofManifest(
+            proof_id="PROOF_MIUIZER_LOCALE",
+            a14_owner_path="app/src/main/java/tv/withaibuild/customiuizer/utils/AppLocaleController.kt",
+            a14_symbol="AppLocaleController",
+            a14_installer="Settings app / MainApplication apply()",
+            a14_hook_targets="(settings app, no host hook)",
+            a14_callback_phase="n/a",
+            a13_owner_path="app/src/main/java/tv/withaibuild/customiuizer/utils/AppLocaleController.kt",
+            a13_symbol="AppLocaleController",
+            a13_installer="AboutFragment.setupLocalePreference + MainApplication.apply()",
+            a13_hook_targets="(settings app, no host hook)",
+            a13_callback_phase="n/a",
+            preference_keys=("miuizer_locale",),
+            value_domain="locale tag: auto|en|zh-CN|zh-TW|ru-RU|ja-JP|vi-VN|cs-CZ|pt-BR|tr-TR|es-ES",
+            default_semantics="default `auto`; unknown/legacy `1` normalize to auto",
+            result_argument_behavior=(
+                "Persists pref_key_miuizer_locale; apply() writes LocaleManager.applicationLocales or clears on auto; "
+                "pref_key_miuizer_locale_applied is a derived fast-path marker, not a second user setting"
+            ),
+            api33_variant_reason=(
+                "Both trees own AppLocaleController on API33 LocaleManager. A13 ListPreferenceEx lives on About; "
+                "A14 row is on prefs_main.xml. Screen placement does not change the persisted tag or apply() contract."
+            ),
+            proof_conclusion="PRESENT_A13_VARIANT",
+            evidence_level="INDIVIDUAL_SEMANTIC_PROOF",
+            body_relation="REVIEWED_VARIANT",
+            diff_summary=(
+                "Shared: same LOCALE_PREF_KEY / APPLIED_LOCALE_PREF_KEY, same SUPPORTED_LOCALE_TAGS, auto fast-path, "
+                "LocaleManager.applicationLocales. A14 adds setUserLocale commit rollback, Locale.setDefault, "
+                "AppLocaleGateway test seam, FatalErrors. A13 keeps optional Context apply(), applicationLocaleApplier/"
+                "Provider hooks, getLocaleContext no-op."
+            ),
+            value_default_comparison="Both default getString(pref_key_miuizer_locale, auto) and normalize unknown tags to auto.",
+            hook_target_comparison="Neither side hooks SystemUI/Home; this is module Settings/app locale only.",
+            callback_semantics_comparison="No Xposed callback. Change is persist + process restart / next apply().",
+            arg_result_comparison="No host setResult. Framework write is LocaleManager.applicationLocales = tag list or empty for auto.",
+            a14_only_branches="setUserLocale rollback on failed commit; Locale.setDefault; AppLocaleGateway.",
+            why_user_behavior_is_equivalent=(
+                "The user-visible control is the same language list persisted in pref_key_miuizer_locale and applied "
+                "through Android 13 LocaleManager. No SystemUI/Home dump is required to decide this row."
+            ),
+        ),
         ProofManifest(
             proof_id="PROOF_BACKUP_V2",
             a14_owner_path="app/src/main/java/tv/withaibuild/customiuizer/utils/BackupFormatV2.kt",
@@ -931,6 +1394,7 @@ def phase_e_source_proofs() -> list[ProofManifest]:
             evidence_level="INDIVIDUAL_SEMANTIC_PROOF",
         ),
     ]
+    return [_with_phase_e_reviewed_fields(man) for man in raw]
 
 
 def proof_index(manifests: list[ProofManifest]) -> dict[str, ProofManifest]:
@@ -1024,16 +1488,19 @@ def build_source_index(repo: Path) -> dict[str, str]:
 
 def format_proof_markdown(manifests: list[ProofManifest]) -> str:
     lines = [
-        "# A13 Phase F-R1 Semantic Proofs",
+        "# A13 Phase F-R2 Semantic Proofs",
         "",
-        "Owner manifests used to promote rows to PRESENT_EQUIVALENT or PRESENT_A13_VARIANT.",
-        "Same-key reads alone are IMPLEMENTATION_PRESENCE and never sufficient.",
+        "Automatic PRESENT requires normalized body IDENTICAL, the same relevant preference keys,",
+        "and compatible installer ownership (BODY_RELATION=IDENTICAL).",
+        "Non-identical owners require an explicit reviewed manifest (BODY_RELATION=REVIEWED_VARIANT)",
+        "with filled difference fields. Same-key reads alone are IMPLEMENTATION_PRESENCE.",
         "",
     ]
     for man in manifests:
         lines.append(f"## {man.proof_id}")
         lines.append("")
         lines.append(f"- PROOF_ID: `{man.proof_id}`")
+        lines.append(f"- BODY_RELATION: `{man.body_relation or 'UNSPECIFIED'}`")
         lines.append(f"- A14_OWNER_PATH: `{man.a14_owner_path}`")
         lines.append(f"- A14_SYMBOL: `{man.a14_symbol}`")
         lines.append(f"- A14_INSTALLER: `{man.a14_installer}`")
@@ -1049,6 +1516,14 @@ def format_proof_markdown(manifests: list[ProofManifest]) -> str:
         lines.append(f"- DEFAULT_SEMANTICS: {man.default_semantics}")
         lines.append(f"- RESULT/ARGUMENT_BEHAVIOR: {man.result_argument_behavior}")
         lines.append(f"- API33_VARIANT_REASON: {man.api33_variant_reason}")
+        if man.body_relation == "REVIEWED_VARIANT":
+            lines.append(f"- DIFF_SUMMARY: {man.diff_summary}")
+            lines.append(f"- VALUE_DEFAULT_COMPARISON: {man.value_default_comparison}")
+            lines.append(f"- HOOK_TARGET_COMPARISON: {man.hook_target_comparison}")
+            lines.append(f"- CALLBACK_SEMANTICS_COMPARISON: {man.callback_semantics_comparison}")
+            lines.append(f"- ARG_RESULT_COMPARISON: {man.arg_result_comparison}")
+            lines.append(f"- A14_ONLY_BRANCHES: {man.a14_only_branches}")
+            lines.append(f"- WHY_USER_BEHAVIOR_IS_EQUIVALENT: {man.why_user_behavior_is_equivalent}")
         lines.append(f"- PROOF_CONCLUSION: `{man.proof_conclusion}`")
         lines.append("")
     return "\n".join(lines)

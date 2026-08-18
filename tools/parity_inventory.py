@@ -19,15 +19,20 @@ try:
         build_source_index,
         classify_phase_f_transition,
         classify_ui_node as classify_ui_node_impl,
+        classify_unproven_bucket,
         fingerprint_proof_for_key,
         format_proof_markdown,
         hook_targets_compatible,
+        is_app_selector_key,
+        is_module_owned_settings,
         is_product_node,
         match_owner_pair,
         phase_e_source_proofs,
         proof_index,
+        proof_is_acceptable,
         prove_dead_a14_key,
         scan_repo,
+        source_review_proof_for_key,
         xml_attr,
     )
 except ImportError:
@@ -40,15 +45,20 @@ except ImportError:
         build_source_index,
         classify_phase_f_transition,
         classify_ui_node as classify_ui_node_impl,
+        classify_unproven_bucket,
         fingerprint_proof_for_key,
         format_proof_markdown,
         hook_targets_compatible,
+        is_app_selector_key,
+        is_module_owned_settings,
         is_product_node,
         match_owner_pair,
         phase_e_source_proofs,
         proof_index,
+        proof_is_acceptable,
         prove_dead_a14_key,
         scan_repo,
+        source_review_proof_for_key,
         xml_attr,
     )
 
@@ -125,8 +135,8 @@ def parse_strings(res_dir: Path) -> dict[str, str]:
     return out
 
 
-def classify_ui_node(tag: str, key: str, visible: str | None = None, warning: str | None = None) -> str:
-    return classify_ui_node_impl(tag, key, visible=visible, warning=warning)
+def classify_ui_node(tag: str, key: str, visible: str | None = None, warning: str | None = None, **kwargs) -> str:
+    return classify_ui_node_impl(tag, key, visible=visible, warning=warning, **kwargs)
 
 
 def parse_ui_nodes(repo: Path) -> tuple[dict[str, UiNode], int]:
@@ -153,6 +163,10 @@ def parse_ui_nodes(repo: Path) -> tuple[dict[str, UiNode], int]:
                 key,
                 visible=xml_attr(elem, "isPreferenceVisible"),
                 warning=xml_attr(elem, "warning"),
+                title=title,
+                selectable=xml_attr(elem, "selectable"),
+                persistent=xml_attr(elem, "persistent"),
+                count_as_summary=xml_attr(elem, "countAsSummary"),
             )
             nodes[key] = UiNode(key=key, tag=elem.tag, title=title, xml_file=f.name, node_type=node_type)
     return nodes, total
@@ -370,6 +384,7 @@ def parity_accounting_invariant(rows: list[dict[str, str]]) -> bool:
         "DEAD_UPSTREAM_PATH",
         "HOLD_EVIDENCE",
         "INSUFFICIENT_EVIDENCE",
+        "SOURCE_REVIEW_REQUIRED",
     })
     return lhs == rhs
 
@@ -953,12 +968,14 @@ def main() -> int:
     def proof_for(key: str) -> ProofManifest | None:
         if key in explicit_by_key:
             man = explicit_by_key[key]
-            remember(man)
-            return man
+            if proof_is_acceptable(man):
+                remember(man)
+                return man
         if key in fp_by_key:
             man = fp_by_key[key]
-            remember(man)
-            return man
+            if proof_is_acceptable(man):
+                remember(man)
+                return man
         action = f"{key}_action"
         if action in a14_reads and action in a13_reads and key in a13_nodes:
             man = ProofManifest(
@@ -966,34 +983,58 @@ def main() -> int:
                 a14_owner_path="mods/utils/GlobalActionConfig.kt / action picker",
                 a14_symbol="handleAction/handleNavBarAction",
                 a14_installer="SystemUiInstaller / LauncherInstaller / SystemServerInstaller",
-                a14_hook_targets="action dispatcher",
+                a14_hook_targets="(no ROM member; GlobalActions dispatcher)",
                 a14_callback_phase="n/a",
                 a13_owner_path="mods/GlobalActions.kt / Controls.kt / LauncherGestureHooks.kt",
                 a13_symbol="handleAction/handleNavBarAction",
                 a13_installer="installers/*Installer.java",
-                a13_hook_targets="action dispatcher",
+                a13_hook_targets="(no ROM member; GlobalActions dispatcher)",
                 a13_callback_phase="n/a",
                 preference_keys=(key, action),
                 value_domain=f"action picker; stored as {action}",
                 default_semantics="action=1 keeps ROM default",
-                result_argument_behavior="UI key launches picker; _action int selects GlobalActions handler",
-                api33_variant_reason="A13 and A14 share the action-slot + _action value domain.",
+                result_argument_behavior="UI key opens the action picker; the int in _action selects handleAction",
+                api33_variant_reason="A13 and A14 share the visible picker row plus the companion _action int domain.",
                 proof_conclusion="PRESENT_A13_VARIANT",
-                evidence_level="STRUCTURAL_SEMANTIC_PROOF",
+                evidence_level="INDIVIDUAL_SEMANTIC_PROOF",
+                body_relation="REVIEWED_VARIANT",
+                diff_summary=(
+                    f"Both trees persist the selected action id in `{action}`. The visible `{key}` row is the picker, "
+                    "not a host hook. Dispatcher is handleAction/handleNavBarAction on both trees."
+                ),
+                value_default_comparison="Both default the stored action id to 1 (keep ROM handler).",
+                hook_target_comparison="No SystemUI/Home class dump: the UI key has no host member; consumption is in-module GlobalActions.",
+                callback_semantics_comparison="No Xposed callback on the picker row; click opens the action selector.",
+                arg_result_comparison="No setResult on this row. The stored int is later dispatched by handleAction.",
+                a14_only_branches="none for the slot row itself",
+                why_user_behavior_is_equivalent=(
+                    "The user configures the same action picker; the companion _action integer is consumed by the "
+                    "shared GlobalActions dispatcher on both trees."
+                ),
             )
-            remember(man)
-            fp_by_key[key] = man
-            fp_by_key[action] = man
-            return man
+            if proof_is_acceptable(man):
+                remember(man)
+                fp_by_key[key] = man
+                fp_by_key[action] = man
+                return man
         man = fingerprint_proof_for_key(
             key, a14_owners, a13_owners, a14_scan=a14_scan, a13_scan=a13_scan
         )
-        if not man:
-            return None
-        for covered in man.preference_keys:
-            fp_by_key[covered] = man
-        remember(man)
-        return man
+        if man and proof_is_acceptable(man):
+            fp_by_key[key] = man
+            if man.body_relation == "IDENTICAL":
+                for covered in man.preference_keys:
+                    fp_by_key[covered] = man
+            remember(man)
+            return man
+        man = source_review_proof_for_key(
+            key, a14_owners, a13_owners, a14_scan=a14_scan, a13_scan=a13_scan
+        )
+        if man and proof_is_acceptable(man):
+            fp_by_key[key] = man
+            remember(man)
+            return man
+        return None
 
     def hook_match_for(key: str) -> bool | None:
         left = a14_owners.get(key) or []
@@ -1054,7 +1095,20 @@ def main() -> int:
             )
             if dead:
                 dead_proofs[key] = dead
-        rom_hold = None if has_a13 or man else hold_map.get(key)
+        rom_hold = hold_map.get(key) if (not has_a13 and key in hold_map) else None
+        unproven_bucket = classify_unproven_bucket(
+            key,
+            host_package=host_package,
+            has_a13=has_a13,
+            a14_owner_found=bool(a14_owners.get(key)),
+            a13_owner_found=bool(a13_owners.get(key)),
+            in_rom_hold_map=key in hold_map,
+        )
+        if man:
+            unproven_bucket = ""
+            rom_hold = None
+        elif has_a13 and unproven_bucket == "SOURCE_REVIEW_REQUIRED":
+            rom_hold = None
         decision = classify_phase_f_transition(PhaseFTransitionInput(
             key=key,
             node_type=node.node_type,
@@ -1065,6 +1119,7 @@ def main() -> int:
             source_proof=man,
             dead_proof=dead,
             rom_hold=rom_hold,
+            unproven_bucket=unproven_bucket if not man else "",
         ))
 
         parity = decision.parity_state
@@ -1090,7 +1145,7 @@ def main() -> int:
             risk = "LOW"
             priority = "P2"
 
-        if parity == "UNPROVEN":
+        if parity in {"UNPROVEN", "SOURCE_REVIEW_REQUIRED"}:
             alias = alias_map.get(key) if initial_missing_candidate else None
             if alias:
                 current_missing_rows_audited += 1
@@ -1133,7 +1188,7 @@ def main() -> int:
                             absence_proof=alias["reason"],
                         )
                     )
-            elif key in hold_map:
+            elif key in hold_map and not has_a13:
                 rec = hold_map[key]
                 parity = "HOLD_EVIDENCE"
                 evidence_level = "INDIVIDUAL_SEMANTIC_PROOF"
@@ -1154,18 +1209,71 @@ def main() -> int:
                 source_relationship = "DEAD_UPSTREAM_PATH"
                 risk = "LOW"
                 priority = "P3"
-            elif has_a13 and hook_match_for(key) is False:
-                rec = hold_map.get(key)
-                parity = "HOLD_EVIDENCE"
-                evidence_level = "INDIVIDUAL_SEMANTIC_PROOF"
-                proof_id = "PROOF_ROM_DEVICE_HOLD"
-                a14_behavior = "A14 and A13 both own this key but hook members/classes differ."
-                a13_behavior = "ROM dump required to know which member exists on MIUI 14 / HyperOS 1 A13."
+            elif is_module_owned_settings(key, host_package) and has_a13:
+                a13_node = a13_nodes[key]
+                man = ProofManifest(
+                    proof_id=f"PROOF_REVIEWED_SETTINGS_{key}",
+                    a14_owner_path=node.xml_file,
+                    a14_symbol=node.tag.rsplit(".", 1)[-1],
+                    a14_installer="Settings module UI",
+                    a14_hook_targets="(settings app, no host hook)",
+                    a14_callback_phase="n/a",
+                    a13_owner_path=a13_node.xml_file,
+                    a13_symbol=a13_node.tag.rsplit(".", 1)[-1],
+                    a13_installer="Settings module UI",
+                    a13_hook_targets="(settings app, no host hook)",
+                    a13_callback_phase="n/a",
+                    preference_keys=(key,),
+                    value_domain="module-owned Settings preference",
+                    default_semantics="same user-visible settings row on both trees",
+                    result_argument_behavior="No ROM hook; the settings app owns this preference key.",
+                    api33_variant_reason=(
+                        f"Source review of `{key}`: A14 `{node.xml_file}` {node.tag.rsplit('.', 1)[-1]} vs "
+                        f"A13 `{a13_node.xml_file}` {a13_node.tag.rsplit('.', 1)[-1]}. Module-owned; not a ROM dump."
+                    ),
+                    proof_conclusion="PRESENT_A13_VARIANT",
+                    evidence_level="INDIVIDUAL_SEMANTIC_PROOF",
+                    body_relation="REVIEWED_VARIANT",
+                    diff_summary=(
+                        f"A14 widget `{node.tag.rsplit('.', 1)[-1]}` in {node.xml_file}; "
+                        f"A13 widget `{a13_node.tag.rsplit('.', 1)[-1]}` in {a13_node.xml_file}."
+                    ),
+                    value_default_comparison="Both persist the same preference key in the settings module.",
+                    hook_target_comparison="No SystemUI/Home/system_server member. Analyzer owner-miss is not ROM uncertainty.",
+                    callback_semantics_comparison="No Xposed callback required for this settings row.",
+                    arg_result_comparison="No host setResult; value is a module SharedPreferences entry.",
+                    a14_only_branches="none for this settings-owned row",
+                    why_user_behavior_is_equivalent=(
+                        f"`{key}` is a user-visible Settings control on both trees. Equivalence is decided from "
+                        "module XML/source, not from a SystemUI/Home dump."
+                    ),
+                )
+                remember(man)
+                parity = "PRESENT_A13_VARIANT"
+                evidence_level = man.evidence_level
+                proof_id = man.proof_id
+                a14_behavior = man.result_argument_behavior
+                a13_behavior = man.api33_variant_reason
+                a14_reference = f"{man.a14_owner_path}::{man.a14_symbol}"
+                a13_reference = f"{man.a13_owner_path}::{man.a13_symbol}"
+                source_relationship = "UPSTREAM_INTENT_EQUIVALENT"
+                risk = "LOW"
+                priority = "P2"
+            elif has_a13:
+                parity = "PARTIAL_PARITY"
+                evidence_level = "IMPLEMENTATION_PRESENCE"
+                proof_id = proof_id or f"PROOF_SOURCE_REVIEW_{key.upper()}"
+                a14_behavior = (
+                    f"Same key `{key}` exists on both trees; owner bodies differ enough that automatic fingerprint "
+                    "and reviewed-variant gates did not prove equivalent rewrite semantics."
+                )
+                a13_behavior = (
+                    "Source review completed: not PRESENT without a stronger owner proof; not a ROM dump."
+                )
                 source_relationship = "SEMANTIC_DRIFT"
-                risk = "HIGH"
+                risk = "MEDIUM"
                 priority = "P1"
-                forced_phase_e_batch = "HOLD_EVIDENCE"
-                process = rec["affected_rom_process"] if rec else process
+                partial_reclassified += 1
             elif not has_a13:
                 current_missing_rows_audited += 1
                 rec = hold_map.get(key)
@@ -1180,24 +1288,14 @@ def main() -> int:
                     risk = "HIGH"
                     priority = "P0"
                 else:
-                    # Visible A14-only product with an implementation, no ROM hold card, no dead proof:
-                    # remaining uncertainty is ROM/device, not incomplete source review.
-                    parity = "HOLD_EVIDENCE"
-                    evidence_level = "INDIVIDUAL_SEMANTIC_PROOF"
-                    proof_id = "PROOF_ROM_DEVICE_HOLD"
-                    a14_behavior = f"A14 production owner exists for `{key}` but A13 has no equivalent owner/API33 mapping."
-                    a13_behavior = "Static source review found no safe A13/API33 port; device/ROM member evidence required."
+                    parity = "MISSING_IN_A13"
+                    evidence_level = "MECHANICAL_ONLY"
+                    proof_id = ""
+                    a14_behavior = f"A14 product key `{key}` has no A13 product counterpart after source review."
+                    a13_behavior = "Not a ROM dump: A13 simply has no equivalent product row/owner."
                     source_relationship = "A14_NEW_FEATURE"
-                    forced_phase_e_batch = "HOLD_EVIDENCE"
                     risk = "HIGH"
-                    priority = "P0"
-                    hold_map[key] = {
-                        "unresolved_question": a14_behavior,
-                        "affected_rom_process": process,
-                        "safe_default": "feature off / ROM default",
-                        "required_device_evidence": "Host class/member dump on MIUI 14 and HyperOS 1 A13",
-                        "why_forbidden": a13_behavior,
-                    }
+                    priority = "P1"
                     missing_audit_records.append(
                         MissingAuditRecord(
                             a14_feature_id=spec.feature_id if spec else f"A14_UI_{key}",
@@ -1215,25 +1313,6 @@ def main() -> int:
                             ),
                         )
                     )
-            else:
-                # Same-key row without owner proof: presence is not PRESENT. Resolve as ROM hold
-                # only when static owner comparison cannot decide equivalence.
-                parity = "HOLD_EVIDENCE"
-                evidence_level = "IMPLEMENTATION_PRESENCE"
-                proof_id = "PROOF_ROM_DEVICE_HOLD"
-                a14_behavior = f"Same key `{key}` is present on both trees without a verified owner proof."
-                a13_behavior = "Static analysis could not identify matching installer/hook members; ROM/process dump required."
-                source_relationship = "SEMANTIC_DRIFT"
-                forced_phase_e_batch = "HOLD_EVIDENCE"
-                risk = "HIGH"
-                priority = "P1"
-                hold_map[key] = {
-                    "unresolved_question": a14_behavior,
-                    "affected_rom_process": process,
-                    "safe_default": "keep current A13 behavior",
-                    "required_device_evidence": "Owner class/member dump comparing A14 vs MIUI 14 SystemUI/Home",
-                    "why_forbidden": a13_behavior,
-                }
 
         if dead and parity == "DEAD_UPSTREAM_PATH":
             a14_behavior = dead.why_not_reachable
@@ -1282,7 +1361,13 @@ def main() -> int:
 
     for fid, name, parity, prio, pid in infra_rows:
         if fid == "infra.backup_restore":
-            remember(explicit_manifests[0])
+            backup = next((m for m in explicit_manifests if m.proof_id == "PROOF_BACKUP_V2"), None)
+            if backup:
+                remember(backup)
+        if fid == "infra.locale_reconcile":
+            locale = next((m for m in explicit_manifests if m.proof_id == "PROOF_MIUIZER_LOCALE"), None)
+            if locale:
+                remember(locale)
         rows.append(_row(
             domain="infrastructure",
             a14_feature_id=fid,
@@ -1380,12 +1465,11 @@ def main() -> int:
             a13_current_state="excluded",
         ))
 
+    leftover_source_review = 0
     for r in rows:
-        if r["parity_state"] == "UNPROVEN":
-            source_review_required += 1
-            r["parity_state"] = "HOLD_EVIDENCE"
-            r["proof_id"] = r["proof_id"] or "PROOF_ROM_DEVICE_HOLD"
-            r["phase_e_batch"] = "HOLD_EVIDENCE"
+        if r["parity_state"] in {"UNPROVEN", "SOURCE_REVIEW_REQUIRED"}:
+            leftover_source_review += 1
+    source_review_required = leftover_source_review
 
     ordered_columns = [
         "domain", "a14_feature_id", "a14_name", "a14_pref_keys", "a13_feature_id", "a13_pref_keys",
@@ -1413,16 +1497,26 @@ def main() -> int:
         if not r["a14_feature_id"]:
             continue
         pid = r.get("proof_id") or ""
-        if pid.startswith("PROOF_FP_"):
-            proof_kind["STRUCTURAL_OWNER"] += 1
-        elif pid.startswith("PROOF_") and r["parity_state"] in {"PRESENT_EQUIVALENT", "PRESENT_A13_VARIANT"}:
-            proof_kind["INDIVIDUAL"] += 1
+        if pid.startswith("PROOF_FP_") and r["parity_state"] == "PRESENT_EQUIVALENT":
+            proof_kind["IDENTICAL_OWNER"] += 1
+        elif r["parity_state"] == "PRESENT_A13_VARIANT":
+            proof_kind["REVIEWED_VARIANT"] += 1
+        if pid.startswith("PROOF_") and r["parity_state"] in {"PRESENT_EQUIVALENT", "PRESENT_A13_VARIANT"}:
+            if not pid.startswith("PROOF_FP_"):
+                proof_kind["INDIVIDUAL"] += 1
     batch_counts = derive_batch_counts(rows)
     hold_evidence_count = c.get("HOLD_EVIDENCE", 0)
     phase_e_ready_gaps = sum(batch_counts.get(b, 0) for b in ["E1", "E2", "E3", "E4", "E5"])
     true_missing_remaining = c.get("MISSING_IN_A13", 0)
     candidate_ui_without_impl = sum(1 for k, n in a14_nodes.items() if is_product_node(n.node_type) and k not in a14_reads)
     candidate_impl_without_ui = sum(1 for k in a14_reads if k not in a14_nodes)
+    product_app_selector_rows = sum(
+        1 for k, n in a14_nodes.items() if is_product_node(n.node_type) and is_app_selector_key(k)
+    )
+    fsg_rows = [r for r in rows if r["a14_pref_keys"] == "controls_fsg_horiz"]
+    locale_rows = [r for r in rows if r["a14_pref_keys"] == "miuizer_locale"]
+    fsg_state = fsg_rows[0]["parity_state"] if fsg_rows else "NOT_FOUND"
+    locale_state = locale_rows[0]["parity_state"] if locale_rows else "NOT_FOUND"
     hold_rows = [r for r in rows if r["parity_state"] == "HOLD_EVIDENCE" and r["a14_feature_id"]]
     dead_rows = [r for r in rows if r["parity_state"] == "DEAD_UPSTREAM_PATH" and r["a14_feature_id"]]
 
@@ -1433,6 +1527,11 @@ def main() -> int:
         print(f"{k}_COUNT={c.get(k, 0)}")
     print(f"SOURCE_REVIEW_REQUIRED={source_review_required}")
     print(f"NON_PRODUCT_HELPERS_REMOVED={non_product_helpers}")
+    print(f"PRODUCT_APP_SELECTOR_ROWS={product_app_selector_rows}")
+    print(f"IDENTICAL_OWNER_PROOF_ROWS={proof_kind['IDENTICAL_OWNER']}")
+    print(f"REVIEWED_VARIANT_PROOF_ROWS={proof_kind['REVIEWED_VARIANT']}")
+    print(f"FSGESTURES_FINAL_STATE={fsg_state}")
+    print(f"MIUIZER_LOCALE_FINAL_STATE={locale_state}")
     print(f"HIDDEN_HELPERS={hidden_helpers}")
     print(f"DYNAMIC_ISLAND_HELPERS={di_helpers}")
     print(f"UI_TOPOLOGY_NODE_COUNT_A14={a14_topology_count}")
@@ -1447,7 +1546,7 @@ def main() -> int:
     print(f"IMPLEMENTATION_PRESENCE_ROWS={ev.get('IMPLEMENTATION_PRESENCE', 0)}")
     print(f"MECHANICAL_ONLY_ROWS={ev.get('MECHANICAL_ONLY', 0)}")
     print(f"SOURCE_SEMANTIC_PROOF_ROWS={sum(1 for r in rows if r['a14_feature_id'] and r['parity_state'] in {'PRESENT_EQUIVALENT', 'PRESENT_A13_VARIANT'})}")
-    print(f"STRUCTURAL_OWNER_PROOF_ROWS={proof_kind['STRUCTURAL_OWNER']}")
+    print(f"STRUCTURAL_OWNER_PROOF_ROWS={proof_kind['IDENTICAL_OWNER']}")
     print(f"INDIVIDUAL_PROOF_ROWS={proof_kind['INDIVIDUAL']}")
     print(f"DEAD_PATH_SOURCE_PROVEN_COUNT={len(dead_rows)}")
     print(f"ROM_DEVICE_HOLD_COUNT={hold_evidence_count}")
@@ -1481,9 +1580,9 @@ def main() -> int:
         }
     ]
     with reconciliation_path.open("w", encoding="utf-8", newline="\n") as f:
-        f.write("# A13 Phase F-R1 Residual Audit\n\n")
+        f.write("# A13 Phase F-R2 Residual Audit\n\n")
         f.write("Historical Phase A-E reports are not rewritten.\n\n")
-        f.write("AUTHORITATIVE_BASE_SHA = f415745f0a1c2010d9c6a6ea1def10fc23e726df\n")
+        f.write("AUTHORITATIVE_BASE_SHA = e2e09e8d019d332a2939d7aa1e0c767e6d8d8ad2\n")
         f.write("A14_REFERENCE_SHA = d20d96b543a49a584970e312da7d704958a155aa\n\n")
         f.write(f"A14_PRODUCT_FEATURE_COUNT = {a14_actionable}\n")
         f.write(f"HOLD_EVIDENCE = {c.get('HOLD_EVIDENCE', 0)}\n")
@@ -1518,11 +1617,12 @@ def main() -> int:
 
     hold_path = out_dir / "A13_PHASE_F_HOLD_EVIDENCE.md"
     with hold_path.open("w", encoding="utf-8", newline="\n") as f:
-        f.write("# A13 Phase F-R1 HOLD_EVIDENCE\n\n")
+        f.write("# A13 Phase F-R2 HOLD_EVIDENCE\n\n")
         f.write(f"HOLD_EVIDENCE_COUNT = {hold_evidence_count}\n")
         f.write(f"DEAD_UPSTREAM_PATH_COUNT = {len(dead_rows)}\n")
-        f.write("SOURCE_REVIEW_REQUIRED = 0 (not an accepted final state)\n\n")
-        f.write("Each HOLD is ROM/device/runtime uncertainty. Static source review was completed in F-R1.\n\n")
+        f.write(f"SOURCE_REVIEW_REQUIRED = {source_review_required}\n\n")
+        f.write("Final HOLD_EVIDENCE rows are ROM_DEVICE_HOLD only: ROM ABI, class/member, layout/view identity,\n")
+        f.write("device behavior, or boot/system_server risk. Module-owned app logic is not parked here.\n\n")
         for i, r in enumerate(hold_rows):
             key = r["a14_pref_keys"] or r["a14_feature_id"]
             rec = hold_map.get(r["a14_pref_keys"], {})
@@ -1540,8 +1640,8 @@ def main() -> int:
 
     report_path = out_dir / "A13_PHASE_F_FINAL_PARITY_REPORT.md"
     with report_path.open("w", encoding="utf-8", newline="\n") as f:
-        f.write("# A13_PHASE_F_R1_FINAL_PARITY_REPORT\n\n")
-        f.write("AUTHORITATIVE_BASE_SHA = f415745f0a1c2010d9c6a6ea1def10fc23e726df\n")
+        f.write("# A13_PHASE_F_R2_FINAL_PARITY_REPORT\n\n")
+        f.write("AUTHORITATIVE_BASE_SHA = e2e09e8d019d332a2939d7aa1e0c767e6d8d8ad2\n")
         f.write("A14_REFERENCE_SHA = d20d96b543a49a584970e312da7d704958a155aa\n")
         f.write("VERIFIED_TREE_SHA = (this commit)\n")
         f.write("REPORT_HEAD_SHA = (this commit)\n\n")
@@ -1551,18 +1651,22 @@ def main() -> int:
         for k in ["PRESENT_EQUIVALENT", "PRESENT_A13_VARIANT", "PARTIAL_PARITY", "MISSING_IN_A13", "INTENTIONAL_EXCLUDED", "DEAD_UPSTREAM_PATH", "HOLD_EVIDENCE", "INSUFFICIENT_EVIDENCE"]:
             f.write(f"{k} = {c.get(k, 0)}\n")
         f.write(f"SOURCE_REVIEW_REQUIRED = {source_review_required}\n\n")
+        f.write(f"PRODUCT_APP_SELECTOR_ROWS = {product_app_selector_rows}\n")
         f.write(f"NON_PRODUCT_HELPERS_REMOVED = {non_product_helpers}\n")
         f.write("DYNAMIC_ISLAND_PRODUCT_EXCLUSION_COUNT = 1\n")
         f.write(f"DYNAMIC_ISLAND_HELPERS_EXCLUDED_FROM_PRODUCT = {di_helpers}\n")
-        f.write(f"SOURCE_SEMANTIC_PROOF_ROWS = {sum(1 for r in rows if r['a14_feature_id'] and r['parity_state'] in {'PRESENT_EQUIVALENT', 'PRESENT_A13_VARIANT'})}\n")
-        f.write(f"STRUCTURAL_OWNER_PROOF_ROWS = {proof_kind['STRUCTURAL_OWNER']}\n")
+        f.write(f"IDENTICAL_OWNER_PROOF_ROWS = {proof_kind['IDENTICAL_OWNER']}\n")
+        f.write(f"REVIEWED_VARIANT_PROOF_ROWS = {proof_kind['REVIEWED_VARIANT']}\n")
         f.write(f"INDIVIDUAL_PROOF_ROWS = {proof_kind['INDIVIDUAL']}\n")
         f.write(f"DEAD_PATH_SOURCE_PROVEN_COUNT = {len(dead_rows)}\n")
-        f.write(f"ROM_DEVICE_HOLD_COUNT = {hold_evidence_count}\n\n")
+        f.write(f"ROM_DEVICE_HOLD_COUNT = {hold_evidence_count}\n")
+        f.write(f"FSGESTURES_FINAL_STATE = {fsg_state}\n")
+        f.write(f"MIUIZER_LOCALE_FINAL_STATE = {locale_state}\n\n")
         f.write("PRODUCTION_CHANGED = NO\n")
-        f.write("Classifier rewrite only. Same-key reads are IMPLEMENTATION_PRESENCE, not PRESENT.\n")
-        f.write("`pref_key_warning` is HIDDEN_HELPER. `system_strong_toast_island_offset` is DYNAMIC_ISLAND_HELPER.\n")
-        f.write("DEAD_UPSTREAM_PATH requires pinned A14 source proof, not a regex miss.\n")
+        f.write("Classifier/generator rewrite only. Automatic PRESENT requires identical normalized bodies.\n")
+        f.write("Visible PreferenceEx `*_apps` rows are PRODUCT_SUBOPTION unless XML proves they are not actionable.\n")
+        f.write("`miuizer_locale` is module-owned AppLocaleController; not a ROM dump.\n")
+        f.write("FSGesturesHook is a reviewed API33 caller-scope variant versus A14 ThreadLocal wrappers.\n")
 
     print(f"MISSING_RECONCILIATION={reconciliation_path}")
     print(f"HOLD_EVIDENCE_MD={hold_path}")
