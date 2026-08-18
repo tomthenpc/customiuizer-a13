@@ -290,9 +290,18 @@ object SystemUIStatusBarHooks {
         // installed and where the icon lives. Changing them requires a SystemUI restart.
         val showBatteryDetail = MainModule.mPrefs.getBoolean("system_statusbar_batterytempandcurrent")
         val showDeviceTemp = MainModule.mPrefs.getBoolean("system_statusbar_showdevicetemperature")
-        val DarkIconDispatcherClass = XposedHelpers.findClass("com.android.systemui.plugins.DarkIconDispatcher", lpparam.classLoader)
-        val Dependency = XposedHelpers.findClass("com.android.systemui.Dependency", lpparam.classLoader)
-        val StatusBarIconHolder = XposedHelpers.findClass("com.android.systemui.statusbar.phone.StatusBarIconHolder", lpparam.classLoader)
+        val DarkIconDispatcherClass = XposedHelpers.findClassIfExists(
+            "com.android.systemui.plugins.DarkIconDispatcher",
+            lpparam.classLoader
+        )
+        val Dependency = XposedHelpers.findClassIfExists(
+            "com.android.systemui.Dependency",
+            lpparam.classLoader
+        )
+        val StatusBarIconHolder = XposedHelpers.findClassIfExists(
+            "com.android.systemui.statusbar.phone.StatusBarIconHolder",
+            lpparam.classLoader
+        )
         val batteryAtRight = MainModule.mPrefs.getBoolean("system_statusbar_batterytempandcurrent_atright")
         val tempAtRight = MainModule.mPrefs.getBoolean("system_statusbar_showdevicetemperature_atright")
         val textIcons = ArrayList<TextIcon>()
@@ -303,6 +312,8 @@ object SystemUIStatusBarHooks {
         val hasLeftIcon = textIcons.any { !it.atRight }
 
         if (hasRightIcon && !MainModule.mPrefs.getBoolean("system_statusbar_dualrows")) {
+            val iconHolderClass = StatusBarIconHolder
+            if (iconHolderClass != null) {
             ModuleHelper.hookAllConstructors("com.android.systemui.statusbar.policy.NetworkSpeedController", lpparam.classLoader, object : MethodHook() {
                 override fun after(param: AfterHookCallback) {
                     val iconController = XposedHelpers.getObjectField(param.getThisObject(), "mStatusBarIconController")
@@ -311,7 +322,7 @@ object SystemUIStatusBarHooks {
                             val slotIndex = XposedHelpers.callMethod(iconController, "getSlotIndex", getSlotNameByType(ti.iconType)) as Int
                             var iconHolder = XposedHelpers.callMethod(iconController, "getIcon", slotIndex, 0)
                             if (iconHolder == null) {
-                                iconHolder = XposedHelpers.newInstance(StatusBarIconHolder)
+                                iconHolder = XposedHelpers.newInstance(iconHolderClass)
                                 XposedHelpers.setObjectField(iconHolder, "mType", ti.iconType)
                                 XposedHelpers.callMethod(iconController, "setIcon", slotIndex, iconHolder)
                             }
@@ -344,13 +355,17 @@ object SystemUIStatusBarHooks {
                     }
                 }
             })
+            }
         }
 
         if (hasLeftIcon) {
+            val darkIconDispatcherClass = DarkIconDispatcherClass
+            val dependencyClass = Dependency
+            if (darkIconDispatcherClass != null && dependencyClass != null) {
             ModuleHelper.findAndHookMethod("com.android.systemui.statusbar.phone.MiuiCollapsedStatusBarFragment", lpparam.classLoader, "initMiuiViewsOnViewCreated", View::class.java, object : MethodHook() {
                 override fun after(param: AfterHookCallback) {
                     val mContext = XposedHelpers.callMethod(param.getThisObject(), "getContext") as? Context ?: return
-                    val DarkIconDispatcher = XposedHelpers.callStaticMethod(Dependency, "get", DarkIconDispatcherClass)
+                    val DarkIconDispatcher = XposedHelpers.callStaticMethod(dependencyClass, "get", darkIconDispatcherClass)
                     val baseAnchor = if (newStyle) {
                         XposedHelpers.getObjectField(param.getThisObject(), "mClockView") as? View
                     } else {
@@ -388,19 +403,25 @@ object SystemUIStatusBarHooks {
                     }
                 }
             })
+            }
         }
 
-        val NetworkSpeedViewClass = XposedHelpers.findClass("com.android.systemui.statusbar.views.NetworkSpeedView", lpparam.classLoader)
-        ModuleHelper.findAndHookMethod(NetworkSpeedViewClass, "getSlot", object : MethodHook() {
-            override fun before(param: BeforeHookCallback) {
-                val nsView = param.getThisObject() as? View ?: return
-                val tagData = nsView.getTag(textIconTagId)
-                if (tagData != null) {
-                    val ti = tagData as? TextIcon
-                    param.returnAndSkip(getSlotNameByType(ti?.iconType ?: 0))
+        val NetworkSpeedViewClass = XposedHelpers.findClassIfExists(
+            "com.android.systemui.statusbar.views.NetworkSpeedView",
+            lpparam.classLoader
+        )
+        if (NetworkSpeedViewClass != null) {
+            ModuleHelper.findAndHookMethod(NetworkSpeedViewClass, "getSlot", object : MethodHook() {
+                override fun before(param: BeforeHookCallback) {
+                    val nsView = param.getThisObject() as? View ?: return
+                    val tagData = nsView.getTag(textIconTagId)
+                    if (tagData != null) {
+                        val ti = tagData as? TextIcon
+                        param.returnAndSkip(getSlotNameByType(ti?.iconType ?: 0))
+                    }
                 }
-            }
-        })
+            })
+        }
 
         DeviceInfoMonitor.hook(lpparam, showBatteryDetail, showDeviceTemp)
     }

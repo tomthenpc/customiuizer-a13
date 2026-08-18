@@ -17,6 +17,7 @@ import tv.withaibuild.customiuizer.mods.utils.HookerClassHelper.AfterHookCallbac
 import tv.withaibuild.customiuizer.mods.utils.HookerClassHelper.BeforeHookCallback
 import tv.withaibuild.customiuizer.mods.utils.HookerClassHelper.MethodHook
 import tv.withaibuild.customiuizer.mods.utils.ModuleHelper
+import tv.withaibuild.customiuizer.mods.utils.RuntimeFatality
 import tv.withaibuild.customiuizer.mods.utils.XposedHelpers
 
 object SystemDisplayAndWindowHooks {
@@ -200,11 +201,11 @@ object SystemDisplayAndWindowHooks {
         val ccCls = try {
             XposedHelpers.findClass("com.android.keyguard.charge.MiuiWirelessChargeController", lpparam.classLoader)
         } catch (t1: Throwable) {
-            if (t1 is OutOfMemoryError || t1 is ThreadDeath || t1 is VirtualMachineError) throw t1
+            RuntimeFatality.throwIfFatal(t1)
             try {
                 XposedHelpers.findClass("com.android.keyguard.charge.MiuiChargeController", lpparam.classLoader)
             } catch (t2: Throwable) {
-                if (t2 is OutOfMemoryError || t2 is ThreadDeath || t2 is VirtualMachineError) throw t2
+                RuntimeFatality.throwIfFatal(t2)
                 XposedHelpers.log(t1)
                 XposedHelpers.log(t2)
                 return

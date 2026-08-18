@@ -27,6 +27,7 @@ import tv.withaibuild.customiuizer.mods.utils.HookerClassHelper.AfterHookCallbac
 import tv.withaibuild.customiuizer.mods.utils.HookerClassHelper.BeforeHookCallback
 import tv.withaibuild.customiuizer.mods.utils.HookerClassHelper.MethodHook
 import tv.withaibuild.customiuizer.mods.utils.ModuleHelper
+import tv.withaibuild.customiuizer.mods.utils.RuntimeFatality
 import tv.withaibuild.customiuizer.mods.utils.XposedHelpers
 import java.lang.reflect.Constructor
 import java.lang.reflect.InvocationHandler
@@ -518,8 +519,17 @@ object SystemNotificationMoreHooks {
     @JvmStatic
     fun DisableAnyNotificationHook(lpparam: PackageReadyParam) {
         if (lpparam.packageName.contains("systemui")) {
-            val NotifyManagerCls = XposedHelpers.findClass("com.android.systemui.statusbar.notification.NotificationSettingsManager", lpparam.classLoader)
-            XposedHelpers.setStaticBooleanField(NotifyManagerCls, "USE_WHITE_LISTS", false)
+            val NotifyManagerCls = XposedHelpers.findClassIfExists(
+                "com.android.systemui.statusbar.notification.NotificationSettingsManager",
+                lpparam.classLoader
+            )
+            if (NotifyManagerCls != null) {
+                try {
+                    XposedHelpers.setStaticBooleanField(NotifyManagerCls, "USE_WHITE_LISTS", false)
+                } catch (t: Throwable) {
+                    RuntimeFatality.throwIfFatal(t)
+                }
+            }
             ModuleHelper.findAndHookMethod("com.miui.systemui.NotificationCloudData\$Companion", lpparam.classLoader, "getFloatBlacklist", Context::class.java, object : MethodHook() {
                 override fun before(param: BeforeHookCallback) {
                     param.returnAndSkip(ArrayList<String>())
