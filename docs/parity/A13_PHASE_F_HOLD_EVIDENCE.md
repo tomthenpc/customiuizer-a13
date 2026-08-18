@@ -1,9 +1,10 @@
-# A13 Phase F HOLD_EVIDENCE
+# A13 Phase F-R1 HOLD_EVIDENCE
 
-HOLD_EVIDENCE_COUNT = 67
-DEAD_UPSTREAM_PATH_COUNT = 24
+HOLD_EVIDENCE_COUNT = 90
+DEAD_UPSTREAM_PATH_COUNT = 0
+SOURCE_REVIEW_REQUIRED = 0 (not an accepted final state)
 
-Each HOLD records the unresolved question, ROM/process, safe default, required device evidence, and why production is forbidden.
+Each HOLD is ROM/device/runtime uncertainty. Static source review was completed in F-R1.
 
 ## launcher_wallpaper_colormode
 
@@ -11,7 +12,15 @@ Each HOLD records the unresolved question, ROM/process, safe default, required d
 - affected_rom_process: com.miui.home
 - safe_default: ROM wallpaper coloring
 - required_device_evidence: DeviceConfig/wallpaper color-mode field names
-- why_forbidden: No A13 counterpart; speculative GlobalLauncher/DeviceConfig writes are forbidden.
+- why_static_source_cannot_decide: No A13 counterpart; speculative GlobalLauncher/DeviceConfig writes are forbidden.
+
+## miuizer_locale
+
+- unresolved_question: Same key `miuizer_locale` is present on both trees without a verified owner proof.
+- affected_rom_process: com.android.settings
+- safe_default: keep current A13 behavior
+- required_device_evidence: Owner class/member dump comparing A14 vs MIUI 14 SystemUI/Home
+- why_static_source_cannot_decide: Static analysis could not identify matching installer/hook members; ROM/process dump required.
 
 ## system_autobrightness_reset_when_screenoff
 
@@ -19,7 +28,7 @@ Each HOLD records the unresolved question, ROM/process, safe default, required d
 - affected_rom_process: android / system_server
 - safe_default: stock auto-brightness
 - required_device_evidence: setScreenState signature and chain.proceed interaction on MIUI 14
-- why_forbidden: A13 already hooks DisplayPowerController.initialize. Adding an intercept/chain.proceed path is a boot-safety choice that is not unique statically.
+- why_static_source_cannot_decide: A13 already hooks DisplayPowerController.initialize. Adding an intercept/chain.proceed path is a boot-safety choice that is not unique statically.
 
 ## system_cc_btandtorch_ascard
 
@@ -27,7 +36,7 @@ Each HOLD records the unresolved question, ROM/process, safe default, required d
 - affected_rom_process: com.android.systemui + miui.systemui.plugin
 - safe_default: off / ROM default
 - required_device_evidence: MIUI 14 vs HyperOS 1 Control Center plugin class dump
-- why_forbidden: A14 CC color/hide-edit hooks target HyperOS MainPanelContentDistributor; A13 MIUI 14 CC uses ControlCenterWindowViewImpl. Fail-open would hide a dead toggle.
+- why_static_source_cannot_decide: A14 CC color/hide-edit hooks target HyperOS MainPanelContentDistributor; A13 MIUI 14 CC uses ControlCenterWindowViewImpl. Fail-open would hide a dead toggle.
 
 ## system_cc_card_enabled_color
 
@@ -35,7 +44,7 @@ Each HOLD records the unresolved question, ROM/process, safe default, required d
 - affected_rom_process: com.android.systemui + miui.systemui.plugin
 - safe_default: off / ROM default
 - required_device_evidence: MIUI 14 vs HyperOS 1 Control Center plugin class dump
-- why_forbidden: A14 CC color/hide-edit hooks target HyperOS MainPanelContentDistributor; A13 MIUI 14 CC uses ControlCenterWindowViewImpl. Fail-open would hide a dead toggle.
+- why_static_source_cannot_decide: A14 CC color/hide-edit hooks target HyperOS MainPanelContentDistributor; A13 MIUI 14 CC uses ControlCenterWindowViewImpl. Fail-open would hide a dead toggle.
 
 ## system_cc_card_enabled_color_custom
 
@@ -43,7 +52,7 @@ Each HOLD records the unresolved question, ROM/process, safe default, required d
 - affected_rom_process: com.android.systemui + miui.systemui.plugin
 - safe_default: off / ROM default
 - required_device_evidence: MIUI 14 vs HyperOS 1 Control Center plugin class dump
-- why_forbidden: A14 CC color/hide-edit hooks target HyperOS MainPanelContentDistributor; A13 MIUI 14 CC uses ControlCenterWindowViewImpl. Fail-open would hide a dead toggle.
+- why_static_source_cannot_decide: A14 CC color/hide-edit hooks target HyperOS MainPanelContentDistributor; A13 MIUI 14 CC uses ControlCenterWindowViewImpl. Fail-open would hide a dead toggle.
 
 ## system_cc_card_enabled_iconcolor_custom
 
@@ -51,7 +60,7 @@ Each HOLD records the unresolved question, ROM/process, safe default, required d
 - affected_rom_process: com.android.systemui + miui.systemui.plugin
 - safe_default: off / ROM default
 - required_device_evidence: MIUI 14 vs HyperOS 1 Control Center plugin class dump
-- why_forbidden: A14 CC color/hide-edit hooks target HyperOS MainPanelContentDistributor; A13 MIUI 14 CC uses ControlCenterWindowViewImpl. Fail-open would hide a dead toggle.
+- why_static_source_cannot_decide: A14 CC color/hide-edit hooks target HyperOS MainPanelContentDistributor; A13 MIUI 14 CC uses ControlCenterWindowViewImpl. Fail-open would hide a dead toggle.
 
 ## system_cc_card_enabled_primary_textcolor
 
@@ -59,7 +68,7 @@ Each HOLD records the unresolved question, ROM/process, safe default, required d
 - affected_rom_process: com.android.systemui + miui.systemui.plugin
 - safe_default: off / ROM default
 - required_device_evidence: MIUI 14 vs HyperOS 1 Control Center plugin class dump
-- why_forbidden: A14 CC color/hide-edit hooks target HyperOS MainPanelContentDistributor; A13 MIUI 14 CC uses ControlCenterWindowViewImpl. Fail-open would hide a dead toggle.
+- why_static_source_cannot_decide: A14 CC color/hide-edit hooks target HyperOS MainPanelContentDistributor; A13 MIUI 14 CC uses ControlCenterWindowViewImpl. Fail-open would hide a dead toggle.
 
 ## system_cc_card_enabled_secondary_textcolor
 
@@ -67,7 +76,7 @@ Each HOLD records the unresolved question, ROM/process, safe default, required d
 - affected_rom_process: com.android.systemui + miui.systemui.plugin
 - safe_default: off / ROM default
 - required_device_evidence: MIUI 14 vs HyperOS 1 Control Center plugin class dump
-- why_forbidden: A14 CC color/hide-edit hooks target HyperOS MainPanelContentDistributor; A13 MIUI 14 CC uses ControlCenterWindowViewImpl. Fail-open would hide a dead toggle.
+- why_static_source_cannot_decide: A14 CC color/hide-edit hooks target HyperOS MainPanelContentDistributor; A13 MIUI 14 CC uses ControlCenterWindowViewImpl. Fail-open would hide a dead toggle.
 
 ## system_cc_clock_centeralign
 
@@ -75,15 +84,7 @@ Each HOLD records the unresolved question, ROM/process, safe default, required d
 - affected_rom_process: com.android.systemui + miui.systemui.plugin
 - safe_default: off / ROM default
 - required_device_evidence: MIUI 14 vs HyperOS 1 Control Center plugin class dump
-- why_forbidden: A14 CC color/hide-edit hooks target HyperOS MainPanelContentDistributor; A13 MIUI 14 CC uses ControlCenterWindowViewImpl. Fail-open would hide a dead toggle.
-
-## system_cc_floatingtimetile
-
-- unresolved_question: miui.systemui.plugin MainPanelContentDistributor / QS tile color controllers
-- affected_rom_process: com.android.systemui + miui.systemui.plugin
-- safe_default: off / ROM default
-- required_device_evidence: MIUI 14 vs HyperOS 1 Control Center plugin class dump
-- why_forbidden: A14 CC color/hide-edit hooks target HyperOS MainPanelContentDistributor; A13 MIUI 14 CC uses ControlCenterWindowViewImpl. Fail-open would hide a dead toggle.
+- why_static_source_cannot_decide: A14 CC color/hide-edit hooks target HyperOS MainPanelContentDistributor; A13 MIUI 14 CC uses ControlCenterWindowViewImpl. Fail-open would hide a dead toggle.
 
 ## system_cc_freeform_when_longclick
 
@@ -91,7 +92,7 @@ Each HOLD records the unresolved question, ROM/process, safe default, required d
 - affected_rom_process: com.android.systemui + miui.systemui.plugin
 - safe_default: off / ROM default
 - required_device_evidence: MIUI 14 vs HyperOS 1 Control Center plugin class dump
-- why_forbidden: A14 CC color/hide-edit hooks target HyperOS MainPanelContentDistributor; A13 MIUI 14 CC uses ControlCenterWindowViewImpl. Fail-open would hide a dead toggle.
+- why_static_source_cannot_decide: A14 CC color/hide-edit hooks target HyperOS MainPanelContentDistributor; A13 MIUI 14 CC uses ControlCenterWindowViewImpl. Fail-open would hide a dead toggle.
 
 ## system_cc_hide_edit
 
@@ -99,7 +100,7 @@ Each HOLD records the unresolved question, ROM/process, safe default, required d
 - affected_rom_process: com.android.systemui + miui.systemui.plugin
 - safe_default: off / ROM default
 - required_device_evidence: MIUI 14 vs HyperOS 1 Control Center plugin class dump
-- why_forbidden: A14 CC color/hide-edit hooks target HyperOS MainPanelContentDistributor; A13 MIUI 14 CC uses ControlCenterWindowViewImpl. Fail-open would hide a dead toggle.
+- why_static_source_cannot_decide: A14 CC color/hide-edit hooks target HyperOS MainPanelContentDistributor; A13 MIUI 14 CC uses ControlCenterWindowViewImpl. Fail-open would hide a dead toggle.
 
 ## system_cc_hide_profile_monitoring
 
@@ -107,7 +108,15 @@ Each HOLD records the unresolved question, ROM/process, safe default, required d
 - affected_rom_process: com.android.systemui + miui.systemui.plugin
 - safe_default: off / ROM default
 - required_device_evidence: MIUI 14 vs HyperOS 1 Control Center plugin class dump
-- why_forbidden: A14 CC color/hide-edit hooks target HyperOS MainPanelContentDistributor; A13 MIUI 14 CC uses ControlCenterWindowViewImpl. Fail-open would hide a dead toggle.
+- why_static_source_cannot_decide: A14 CC color/hide-edit hooks target HyperOS MainPanelContentDistributor; A13 MIUI 14 CC uses ControlCenterWindowViewImpl. Fail-open would hide a dead toggle.
+
+## system_cc_hideoperator_delimiter
+
+- unresolved_question: A14 and A13 both own this key but hook members/classes differ.
+- affected_rom_process: com.android.systemui
+- safe_default: feature off / ROM default
+- required_device_evidence: Host class/member dump on MIUI 14
+- why_static_source_cannot_decide: ROM dump required to know which member exists on MIUI 14 / HyperOS 1 A13.
 
 ## system_cc_slider_color_enable
 
@@ -115,7 +124,7 @@ Each HOLD records the unresolved question, ROM/process, safe default, required d
 - affected_rom_process: com.android.systemui + miui.systemui.plugin
 - safe_default: off / ROM default
 - required_device_evidence: MIUI 14 vs HyperOS 1 Control Center plugin class dump
-- why_forbidden: A14 CC color/hide-edit hooks target HyperOS MainPanelContentDistributor; A13 MIUI 14 CC uses ControlCenterWindowViewImpl. Fail-open would hide a dead toggle.
+- why_static_source_cannot_decide: A14 CC color/hide-edit hooks target HyperOS MainPanelContentDistributor; A13 MIUI 14 CC uses ControlCenterWindowViewImpl. Fail-open would hide a dead toggle.
 
 ## system_cc_slider_icon_color
 
@@ -123,7 +132,7 @@ Each HOLD records the unresolved question, ROM/process, safe default, required d
 - affected_rom_process: com.android.systemui + miui.systemui.plugin
 - safe_default: off / ROM default
 - required_device_evidence: MIUI 14 vs HyperOS 1 Control Center plugin class dump
-- why_forbidden: A14 CC color/hide-edit hooks target HyperOS MainPanelContentDistributor; A13 MIUI 14 CC uses ControlCenterWindowViewImpl. Fail-open would hide a dead toggle.
+- why_static_source_cannot_decide: A14 CC color/hide-edit hooks target HyperOS MainPanelContentDistributor; A13 MIUI 14 CC uses ControlCenterWindowViewImpl. Fail-open would hide a dead toggle.
 
 ## system_cc_slider_progress_color
 
@@ -131,7 +140,7 @@ Each HOLD records the unresolved question, ROM/process, safe default, required d
 - affected_rom_process: com.android.systemui + miui.systemui.plugin
 - safe_default: off / ROM default
 - required_device_evidence: MIUI 14 vs HyperOS 1 Control Center plugin class dump
-- why_forbidden: A14 CC color/hide-edit hooks target HyperOS MainPanelContentDistributor; A13 MIUI 14 CC uses ControlCenterWindowViewImpl. Fail-open would hide a dead toggle.
+- why_static_source_cannot_decide: A14 CC color/hide-edit hooks target HyperOS MainPanelContentDistributor; A13 MIUI 14 CC uses ControlCenterWindowViewImpl. Fail-open would hide a dead toggle.
 
 ## system_cc_tile_enabled_color
 
@@ -139,7 +148,7 @@ Each HOLD records the unresolved question, ROM/process, safe default, required d
 - affected_rom_process: com.android.systemui + miui.systemui.plugin
 - safe_default: off / ROM default
 - required_device_evidence: MIUI 14 vs HyperOS 1 Control Center plugin class dump
-- why_forbidden: A14 CC color/hide-edit hooks target HyperOS MainPanelContentDistributor; A13 MIUI 14 CC uses ControlCenterWindowViewImpl. Fail-open would hide a dead toggle.
+- why_static_source_cannot_decide: A14 CC color/hide-edit hooks target HyperOS MainPanelContentDistributor; A13 MIUI 14 CC uses ControlCenterWindowViewImpl. Fail-open would hide a dead toggle.
 
 ## system_cc_tile_enabled_color_custom
 
@@ -147,15 +156,7 @@ Each HOLD records the unresolved question, ROM/process, safe default, required d
 - affected_rom_process: com.android.systemui + miui.systemui.plugin
 - safe_default: off / ROM default
 - required_device_evidence: MIUI 14 vs HyperOS 1 Control Center plugin class dump
-- why_forbidden: A14 CC color/hide-edit hooks target HyperOS MainPanelContentDistributor; A13 MIUI 14 CC uses ControlCenterWindowViewImpl. Fail-open would hide a dead toggle.
-
-## system_cc_tile_enabled_color_usemonet
-
-- unresolved_question: miui.systemui.plugin MainPanelContentDistributor / QS tile color controllers
-- affected_rom_process: com.android.systemui + miui.systemui.plugin
-- safe_default: off / ROM default
-- required_device_evidence: MIUI 14 vs HyperOS 1 Control Center plugin class dump
-- why_forbidden: A14 CC color/hide-edit hooks target HyperOS MainPanelContentDistributor; A13 MIUI 14 CC uses ControlCenterWindowViewImpl. Fail-open would hide a dead toggle.
+- why_static_source_cannot_decide: A14 CC color/hide-edit hooks target HyperOS MainPanelContentDistributor; A13 MIUI 14 CC uses ControlCenterWindowViewImpl. Fail-open would hide a dead toggle.
 
 ## system_cc_tile_enabled_iconcolor_custom
 
@@ -163,15 +164,23 @@ Each HOLD records the unresolved question, ROM/process, safe default, required d
 - affected_rom_process: com.android.systemui + miui.systemui.plugin
 - safe_default: off / ROM default
 - required_device_evidence: MIUI 14 vs HyperOS 1 Control Center plugin class dump
-- why_forbidden: A14 CC color/hide-edit hooks target HyperOS MainPanelContentDistributor; A13 MIUI 14 CC uses ControlCenterWindowViewImpl. Fail-open would hide a dead toggle.
+- why_static_source_cannot_decide: A14 CC color/hide-edit hooks target HyperOS MainPanelContentDistributor; A13 MIUI 14 CC uses ControlCenterWindowViewImpl. Fail-open would hide a dead toggle.
+
+## system_ccgridcolumns
+
+- unresolved_question: A14 and A13 both own this key but hook members/classes differ.
+- affected_rom_process: com.android.systemui
+- safe_default: feature off / ROM default
+- required_device_evidence: Host class/member dump on MIUI 14
+- why_static_source_cannot_decide: ROM dump required to know which member exists on MIUI 14 / HyperOS 1 A13.
 
 ## system_detailednetspeed_style
 
-- unresolved_question: Preference-backed behavior; semantic proof pending.
-- affected_rom_process: SYSTEM_UI
-- safe_default: feature remains off / ROM default
-- required_device_evidence: A13 MIUI 14 and HyperOS 1 class/layout dump
-- why_forbidden: Detailed netspeed and fake dual-row already exist; selector migration is not statically safe.
+- unresolved_question: Replacing live A13 detailed/fakedualrow toggles with an A14 list selector would migrate stored prefs.
+- affected_rom_process: com.android.systemui
+- safe_default: feature off / ROM default
+- required_device_evidence: Host class/member dump on MIUI 14
+- why_static_source_cannot_decide: Detailed netspeed and fake dual-row already exist; selector migration is not statically safe.
 
 ## system_disable_window_blurs
 
@@ -179,7 +188,7 @@ Each HOLD records the unresolved question, ROM/process, safe default, required d
 - affected_rom_process: android / system_server
 - safe_default: ROM blur policy
 - required_device_evidence: system_server BlurController members on MIUI 14 and HyperOS 1 A13
-- why_forbidden: system_server boot path; A14 also adds a live PreferenceObserver. A13 catalog/contract wiring plus overlay ROM variants cannot be proven statically.
+- why_static_source_cannot_decide: system_server boot path; A14 also adds a live PreferenceObserver. A13 catalog/contract wiring plus overlay ROM variants cannot be proven statically.
 
 ## system_drawer_date_centeralign
 
@@ -187,7 +196,7 @@ Each HOLD records the unresolved question, ROM/process, safe default, required d
 - affected_rom_process: com.android.systemui
 - safe_default: stock shade date
 - required_device_evidence: Notification header/date view hierarchy
-- why_forbidden: A14 drawer-date hooks target shade header classes not proven on MIUI 14.
+- why_static_source_cannot_decide: A14 drawer-date hooks target shade header classes not proven on MIUI 14.
 
 ## system_drawer_date_fontsize
 
@@ -195,7 +204,7 @@ Each HOLD records the unresolved question, ROM/process, safe default, required d
 - affected_rom_process: com.android.systemui
 - safe_default: stock shade date
 - required_device_evidence: Notification header/date view hierarchy
-- why_forbidden: A14 drawer-date hooks target shade header classes not proven on MIUI 14.
+- why_static_source_cannot_decide: A14 drawer-date hooks target shade header classes not proven on MIUI 14.
 
 ## system_drawer_dateformat
 
@@ -203,15 +212,7 @@ Each HOLD records the unresolved question, ROM/process, safe default, required d
 - affected_rom_process: com.android.systemui
 - safe_default: stock shade date
 - required_device_evidence: Notification header/date view hierarchy
-- why_forbidden: A14 drawer-date hooks target shade header classes not proven on MIUI 14.
-
-## system_drawer_hidedate
-
-- unresolved_question: Notification shade date view identity on MIUI 14 vs HyperOS 1
-- affected_rom_process: com.android.systemui
-- safe_default: stock shade date
-- required_device_evidence: Notification header/date view hierarchy
-- why_forbidden: A14 drawer-date hooks target shade header classes not proven on MIUI 14.
+- why_static_source_cannot_decide: A14 drawer-date hooks target shade header classes not proven on MIUI 14.
 
 ## system_drawer_remove_emptynotify
 
@@ -219,7 +220,7 @@ Each HOLD records the unresolved question, ROM/process, safe default, required d
 - affected_rom_process: com.android.systemui
 - safe_default: stock shade date
 - required_device_evidence: Notification header/date view hierarchy
-- why_forbidden: A14 drawer-date hooks target shade header classes not proven on MIUI 14.
+- why_static_source_cannot_decide: A14 drawer-date hooks target shade header classes not proven on MIUI 14.
 
 ## system_force_darken_allapps
 
@@ -227,7 +228,7 @@ Each HOLD records the unresolved question, ROM/process, safe default, required d
 - affected_rom_process: android / system_server
 - safe_default: stock per-app dark list
 - required_device_evidence: ForceDark* class dump; interaction with system_nodarkforce
-- why_forbidden: A14 uses ForceDarkAppList* ; A13 already owns the opposite NoDarkForceHook. Parallel implementation is forbidden.
+- why_static_source_cannot_decide: A14 uses ForceDarkAppList* ; A13 already owns the opposite NoDarkForceHook. Parallel implementation is forbidden.
 
 ## system_lockscreen_disable_edit
 
@@ -235,7 +236,15 @@ Each HOLD records the unresolved question, ROM/process, safe default, required d
 - affected_rom_process: com.android.systemui
 - safe_default: stock keyguard editor
 - required_device_evidence: Lockscreen editor activity dump
-- why_forbidden: A14 disables a HyperOS keyguard editor not proven on MIUI 14.
+- why_static_source_cannot_decide: A14 disables a HyperOS keyguard editor not proven on MIUI 14.
+
+## system_lstimeout
+
+- unresolved_question: A14 and A13 both own this key but hook members/classes differ.
+- affected_rom_process: android
+- safe_default: feature off / ROM default
+- required_device_evidence: Host class/member dump on MIUI 14
+- why_static_source_cannot_decide: ROM dump required to know which member exists on MIUI 14 / HyperOS 1 A13.
 
 ## system_notif_disable_fold
 
@@ -243,7 +252,7 @@ Each HOLD records the unresolved question, ROM/process, safe default, required d
 - affected_rom_process: com.android.systemui
 - safe_default: stock fold notifications
 - required_device_evidence: Notification fold policy class dump
-- why_forbidden: No A13 fold-notification hook family.
+- why_static_source_cannot_decide: No A13 fold-notification hook family.
 
 ## system_qs_disable_fakeclock_anim
 
@@ -251,7 +260,23 @@ Each HOLD records the unresolved question, ROM/process, safe default, required d
 - affected_rom_process: com.android.systemui / miui.systemui.plugin
 - safe_default: stock fake clock
 - required_device_evidence: QS clock animator class dump
-- why_forbidden: A14 fake-clock hook is plugin-CC specific.
+- why_static_source_cannot_decide: A14 fake-clock hook is plugin-CC specific.
+
+## system_qs_force_systemfonts
+
+- unresolved_question: A14 and A13 both own this key but hook members/classes differ.
+- affected_rom_process: com.android.systemui
+- safe_default: feature off / ROM default
+- required_device_evidence: Host class/member dump on MIUI 14
+- why_static_source_cannot_decide: ROM dump required to know which member exists on MIUI 14 / HyperOS 1 A13.
+
+## system_qs_hideoperator
+
+- unresolved_question: A14 and A13 both own this key but hook members/classes differ.
+- affected_rom_process: com.android.systemui
+- safe_default: feature off / ROM default
+- required_device_evidence: Host class/member dump on MIUI 14
+- why_static_source_cannot_decide: ROM dump required to know which member exists on MIUI 14 / HyperOS 1 A13.
 
 ## system_recents_card_style
 
@@ -259,31 +284,95 @@ Each HOLD records the unresolved question, ROM/process, safe default, required d
 - affected_rom_process: com.miui.home / com.android.systemui
 - safe_default: stock recents cards
 - required_device_evidence: Recents container class dump
-- why_forbidden: A14 recents card-style is a new view path, not an upgrade of A13 recents blur.
+- why_static_source_cannot_decide: A14 recents card-style is a new view path, not an upgrade of A13 recents blur.
+
+## system_statusbar_batterytempandcurrent_align
+
+- unresolved_question: Same key `system_statusbar_batterytempandcurrent_align` is present on both trees without a verified owner proof.
+- affected_rom_process: com.android.systemui
+- safe_default: keep current A13 behavior
+- required_device_evidence: Owner class/member dump comparing A14 vs MIUI 14 SystemUI/Home
+- why_static_source_cannot_decide: Static analysis could not identify matching installer/hook members; ROM/process dump required.
+
+## system_statusbar_batterytempandcurrent_atright
+
+- unresolved_question: A14 and A13 both own this key but hook members/classes differ.
+- affected_rom_process: com.android.systemui
+- safe_default: feature off / ROM default
+- required_device_evidence: Host class/member dump on MIUI 14
+- why_static_source_cannot_decide: ROM dump required to know which member exists on MIUI 14 / HyperOS 1 A13.
+
+## system_statusbar_batterytempandcurrent_bold
+
+- unresolved_question: Same key `system_statusbar_batterytempandcurrent_bold` is present on both trees without a verified owner proof.
+- affected_rom_process: com.android.systemui
+- safe_default: keep current A13 behavior
+- required_device_evidence: Owner class/member dump comparing A14 vs MIUI 14 SystemUI/Home
+- why_static_source_cannot_decide: Static analysis could not identify matching installer/hook members; ROM/process dump required.
+
+## system_statusbar_batterytempandcurrent_fixedcontent_width
+
+- unresolved_question: Same key `system_statusbar_batterytempandcurrent_fixedcontent_width` is present on both trees without a verified owner proof.
+- affected_rom_process: com.android.systemui
+- safe_default: keep current A13 behavior
+- required_device_evidence: Owner class/member dump comparing A14 vs MIUI 14 SystemUI/Home
+- why_static_source_cannot_decide: Static analysis could not identify matching installer/hook members; ROM/process dump required.
+
+## system_statusbar_batterytempandcurrent_fontsize
+
+- unresolved_question: Same key `system_statusbar_batterytempandcurrent_fontsize` is present on both trees without a verified owner proof.
+- affected_rom_process: com.android.systemui
+- safe_default: keep current A13 behavior
+- required_device_evidence: Owner class/member dump comparing A14 vs MIUI 14 SystemUI/Home
+- why_static_source_cannot_decide: Static analysis could not identify matching installer/hook members; ROM/process dump required.
+
+## system_statusbar_batterytempandcurrent_leftmargin
+
+- unresolved_question: Same key `system_statusbar_batterytempandcurrent_leftmargin` is present on both trees without a verified owner proof.
+- affected_rom_process: com.android.systemui
+- safe_default: keep current A13 behavior
+- required_device_evidence: Owner class/member dump comparing A14 vs MIUI 14 SystemUI/Home
+- why_static_source_cannot_decide: Static analysis could not identify matching installer/hook members; ROM/process dump required.
+
+## system_statusbar_batterytempandcurrent_rightmargin
+
+- unresolved_question: Same key `system_statusbar_batterytempandcurrent_rightmargin` is present on both trees without a verified owner proof.
+- affected_rom_process: com.android.systemui
+- safe_default: keep current A13 behavior
+- required_device_evidence: Owner class/member dump comparing A14 vs MIUI 14 SystemUI/Home
+- why_static_source_cannot_decide: Static analysis could not identify matching installer/hook members; ROM/process dump required.
+
+## system_statusbar_batterytempandcurrent_verticaloffset
+
+- unresolved_question: Same key `system_statusbar_batterytempandcurrent_verticaloffset` is present on both trees without a verified owner proof.
+- affected_rom_process: com.android.systemui
+- safe_default: keep current A13 behavior
+- required_device_evidence: Owner class/member dump comparing A14 vs MIUI 14 SystemUI/Home
+- why_static_source_cannot_decide: Static analysis could not identify matching installer/hook members; ROM/process dump required.
 
 ## system_statusbar_clock_align
 
-- unresolved_question: A14 production reads this key.
-- affected_rom_process: SYSTEM_UI
-- safe_default: feature remains off / ROM default
-- required_device_evidence: A13 MIUI 14 and HyperOS 1 class/layout dump
-- why_forbidden: A13 has the UI key but no production read; hook ownership is unresolved.
+- unresolved_question: Same key `system_statusbar_clock_align` is present on both trees without a verified owner proof.
+- affected_rom_process: com.android.systemui
+- safe_default: keep current A13 behavior
+- required_device_evidence: Owner class/member dump comparing A14 vs MIUI 14 SystemUI/Home
+- why_static_source_cannot_decide: Static analysis could not identify matching installer/hook members; ROM/process dump required.
 
 ## system_statusbar_clock_bold
 
-- unresolved_question: A14 production reads this key.
-- affected_rom_process: SYSTEM_UI
-- safe_default: feature remains off / ROM default
-- required_device_evidence: A13 MIUI 14 and HyperOS 1 class/layout dump
-- why_forbidden: A13 has the UI key but no production read; hook ownership is unresolved.
+- unresolved_question: Same key `system_statusbar_clock_bold` is present on both trees without a verified owner proof.
+- affected_rom_process: com.android.systemui
+- safe_default: keep current A13 behavior
+- required_device_evidence: Owner class/member dump comparing A14 vs MIUI 14 SystemUI/Home
+- why_static_source_cannot_decide: Static analysis could not identify matching installer/hook members; ROM/process dump required.
 
 ## system_statusbar_clock_fixedcontent_width
 
-- unresolved_question: A14 production reads this key.
-- affected_rom_process: SYSTEM_UI
-- safe_default: feature remains off / ROM default
-- required_device_evidence: A13 MIUI 14 and HyperOS 1 class/layout dump
-- why_forbidden: A13 has the UI key but no production read; hook ownership is unresolved.
+- unresolved_question: Same key `system_statusbar_clock_fixedcontent_width` is present on both trees without a verified owner proof.
+- affected_rom_process: com.android.systemui
+- safe_default: keep current A13 behavior
+- required_device_evidence: Owner class/member dump comparing A14 vs MIUI 14 SystemUI/Home
+- why_static_source_cannot_decide: Static analysis could not identify matching installer/hook members; ROM/process dump required.
 
 ## system_statusbar_content_vertical_offset
 
@@ -291,23 +380,7 @@ Each HOLD records the unresolved question, ROM/process, safe default, required d
 - affected_rom_process: com.android.systemui
 - safe_default: stock geometry
 - required_device_evidence: Collapsed status bar layout dump
-- why_forbidden: New geometry rewrite; high visual-regression risk without device proof.
-
-## system_statusbar_enable_weather_param
-
-- unresolved_question: Weather status-bar param API on MIUI 14
-- affected_rom_process: com.android.systemui
-- safe_default: stock weather
-- required_device_evidence: Weather controller class dump
-- why_forbidden: No A13 weather-param hook.
-
-## system_statusbar_icons_atleft_onkeyguard
-
-- unresolved_question: Keyguard status-bar icon gravity on MIUI 14
-- affected_rom_process: com.android.systemui
-- safe_default: stock keyguard icon gravity
-- required_device_evidence: Keyguard status-bar layout dump
-- why_forbidden: New keyguard-only icon placement path.
+- why_static_source_cannot_decide: New geometry rewrite; high visual-regression risk without device proof.
 
 ## system_statusbar_mobile_digital_signal
 
@@ -315,7 +388,7 @@ Each HOLD records the unresolved question, ROM/process, safe default, required d
 - affected_rom_process: com.android.systemui
 - safe_default: stock signal icon
 - required_device_evidence: StatusBar layout dump on MIUI 14 and HyperOS 1 A13
-- why_forbidden: A14 injects a new digital-signal view family; A13 has analog/icon signal hooks only.
+- why_static_source_cannot_decide: A14 injects a new digital-signal view family; A13 has analog/icon signal hooks only.
 
 ## system_statusbar_mobile_digital_signal_align
 
@@ -323,7 +396,7 @@ Each HOLD records the unresolved question, ROM/process, safe default, required d
 - affected_rom_process: com.android.systemui
 - safe_default: stock signal icon
 - required_device_evidence: StatusBar layout dump on MIUI 14 and HyperOS 1 A13
-- why_forbidden: A14 injects a new digital-signal view family; A13 has analog/icon signal hooks only.
+- why_static_source_cannot_decide: A14 injects a new digital-signal view family; A13 has analog/icon signal hooks only.
 
 ## system_statusbar_mobile_digital_signal_bold
 
@@ -331,7 +404,7 @@ Each HOLD records the unresolved question, ROM/process, safe default, required d
 - affected_rom_process: com.android.systemui
 - safe_default: stock signal icon
 - required_device_evidence: StatusBar layout dump on MIUI 14 and HyperOS 1 A13
-- why_forbidden: A14 injects a new digital-signal view family; A13 has analog/icon signal hooks only.
+- why_static_source_cannot_decide: A14 injects a new digital-signal view family; A13 has analog/icon signal hooks only.
 
 ## system_statusbar_mobile_digital_signal_fontsize
 
@@ -339,7 +412,7 @@ Each HOLD records the unresolved question, ROM/process, safe default, required d
 - affected_rom_process: com.android.systemui
 - safe_default: stock signal icon
 - required_device_evidence: StatusBar layout dump on MIUI 14 and HyperOS 1 A13
-- why_forbidden: A14 injects a new digital-signal view family; A13 has analog/icon signal hooks only.
+- why_static_source_cannot_decide: A14 injects a new digital-signal view family; A13 has analog/icon signal hooks only.
 
 ## system_statusbar_mobile_digital_signal_hideunit
 
@@ -347,7 +420,7 @@ Each HOLD records the unresolved question, ROM/process, safe default, required d
 - affected_rom_process: com.android.systemui
 - safe_default: stock signal icon
 - required_device_evidence: StatusBar layout dump on MIUI 14 and HyperOS 1 A13
-- why_forbidden: A14 injects a new digital-signal view family; A13 has analog/icon signal hooks only.
+- why_static_source_cannot_decide: A14 injects a new digital-signal view family; A13 has analog/icon signal hooks only.
 
 ## system_statusbar_mobile_digital_signal_in2rows
 
@@ -355,7 +428,7 @@ Each HOLD records the unresolved question, ROM/process, safe default, required d
 - affected_rom_process: com.android.systemui
 - safe_default: stock signal icon
 - required_device_evidence: StatusBar layout dump on MIUI 14 and HyperOS 1 A13
-- why_forbidden: A14 injects a new digital-signal view family; A13 has analog/icon signal hooks only.
+- why_static_source_cannot_decide: A14 injects a new digital-signal view family; A13 has analog/icon signal hooks only.
 
 ## system_statusbar_mobile_digital_signal_leftmargin
 
@@ -363,7 +436,7 @@ Each HOLD records the unresolved question, ROM/process, safe default, required d
 - affected_rom_process: com.android.systemui
 - safe_default: stock signal icon
 - required_device_evidence: StatusBar layout dump on MIUI 14 and HyperOS 1 A13
-- why_forbidden: A14 injects a new digital-signal view family; A13 has analog/icon signal hooks only.
+- why_static_source_cannot_decide: A14 injects a new digital-signal view family; A13 has analog/icon signal hooks only.
 
 ## system_statusbar_mobile_digital_signal_rightmargin
 
@@ -371,7 +444,7 @@ Each HOLD records the unresolved question, ROM/process, safe default, required d
 - affected_rom_process: com.android.systemui
 - safe_default: stock signal icon
 - required_device_evidence: StatusBar layout dump on MIUI 14 and HyperOS 1 A13
-- why_forbidden: A14 injects a new digital-signal view family; A13 has analog/icon signal hooks only.
+- why_static_source_cannot_decide: A14 injects a new digital-signal view family; A13 has analog/icon signal hooks only.
 
 ## system_statusbar_mobile_digital_signal_verticaloffset
 
@@ -379,23 +452,95 @@ Each HOLD records the unresolved question, ROM/process, safe default, required d
 - affected_rom_process: com.android.systemui
 - safe_default: stock signal icon
 - required_device_evidence: StatusBar layout dump on MIUI 14 and HyperOS 1 A13
-- why_forbidden: A14 injects a new digital-signal view family; A13 has analog/icon signal hooks only.
+- why_static_source_cannot_decide: A14 injects a new digital-signal view family; A13 has analog/icon signal hooks only.
+
+## system_statusbar_showdevicetemperature_align
+
+- unresolved_question: Same key `system_statusbar_showdevicetemperature_align` is present on both trees without a verified owner proof.
+- affected_rom_process: com.android.systemui
+- safe_default: keep current A13 behavior
+- required_device_evidence: Owner class/member dump comparing A14 vs MIUI 14 SystemUI/Home
+- why_static_source_cannot_decide: Static analysis could not identify matching installer/hook members; ROM/process dump required.
+
+## system_statusbar_showdevicetemperature_bold
+
+- unresolved_question: Same key `system_statusbar_showdevicetemperature_bold` is present on both trees without a verified owner proof.
+- affected_rom_process: com.android.systemui
+- safe_default: keep current A13 behavior
+- required_device_evidence: Owner class/member dump comparing A14 vs MIUI 14 SystemUI/Home
+- why_static_source_cannot_decide: Static analysis could not identify matching installer/hook members; ROM/process dump required.
+
+## system_statusbar_showdevicetemperature_fixedcontent_width
+
+- unresolved_question: Same key `system_statusbar_showdevicetemperature_fixedcontent_width` is present on both trees without a verified owner proof.
+- affected_rom_process: com.android.systemui
+- safe_default: keep current A13 behavior
+- required_device_evidence: Owner class/member dump comparing A14 vs MIUI 14 SystemUI/Home
+- why_static_source_cannot_decide: Static analysis could not identify matching installer/hook members; ROM/process dump required.
+
+## system_statusbar_showdevicetemperature_fontsize
+
+- unresolved_question: Same key `system_statusbar_showdevicetemperature_fontsize` is present on both trees without a verified owner proof.
+- affected_rom_process: com.android.systemui
+- safe_default: keep current A13 behavior
+- required_device_evidence: Owner class/member dump comparing A14 vs MIUI 14 SystemUI/Home
+- why_static_source_cannot_decide: Static analysis could not identify matching installer/hook members; ROM/process dump required.
+
+## system_statusbar_showdevicetemperature_leftmargin
+
+- unresolved_question: Same key `system_statusbar_showdevicetemperature_leftmargin` is present on both trees without a verified owner proof.
+- affected_rom_process: com.android.systemui
+- safe_default: keep current A13 behavior
+- required_device_evidence: Owner class/member dump comparing A14 vs MIUI 14 SystemUI/Home
+- why_static_source_cannot_decide: Static analysis could not identify matching installer/hook members; ROM/process dump required.
+
+## system_statusbar_showdevicetemperature_rightmargin
+
+- unresolved_question: Same key `system_statusbar_showdevicetemperature_rightmargin` is present on both trees without a verified owner proof.
+- affected_rom_process: com.android.systemui
+- safe_default: keep current A13 behavior
+- required_device_evidence: Owner class/member dump comparing A14 vs MIUI 14 SystemUI/Home
+- why_static_source_cannot_decide: Static analysis could not identify matching installer/hook members; ROM/process dump required.
+
+## system_statusbar_showdevicetemperature_verticaloffset
+
+- unresolved_question: Same key `system_statusbar_showdevicetemperature_verticaloffset` is present on both trees without a verified owner proof.
+- affected_rom_process: com.android.systemui
+- safe_default: keep current A13 behavior
+- required_device_evidence: Owner class/member dump comparing A14 vs MIUI 14 SystemUI/Home
+- why_static_source_cannot_decide: Static analysis could not identify matching installer/hook members; ROM/process dump required.
 
 ## system_statusbarcontrols_dt_left
 
-- unresolved_question: Preference-backed behavior; semantic proof pending.
-- affected_rom_process: SYSTEM_UI
-- safe_default: feature remains off / ROM default
-- required_device_evidence: A13 MIUI 14 and HyperOS 1 class/layout dump
-- why_forbidden: Single system_statusbarcontrols_dt handles the whole bar.
+- unresolved_question: Left/right hit-testing needs device geometry; A13 already has one whole-bar double-tap action.
+- affected_rom_process: com.android.systemui
+- safe_default: feature off / ROM default
+- required_device_evidence: Host class/member dump on MIUI 14
+- why_static_source_cannot_decide: Single system_statusbarcontrols_dt handles the whole bar.
 
 ## system_statusbarcontrols_dt_right
 
-- unresolved_question: Preference-backed behavior; semantic proof pending.
-- affected_rom_process: SYSTEM_UI
-- safe_default: feature remains off / ROM default
-- required_device_evidence: A13 MIUI 14 and HyperOS 1 class/layout dump
-- why_forbidden: Single system_statusbarcontrols_dt handles the whole bar.
+- unresolved_question: Left/right hit-testing needs device geometry; A13 already has one whole-bar double-tap action.
+- affected_rom_process: com.android.systemui
+- safe_default: feature off / ROM default
+- required_device_evidence: Host class/member dump on MIUI 14
+- why_static_source_cannot_decide: Single system_statusbarcontrols_dt handles the whole bar.
+
+## system_statusbarheight
+
+- unresolved_question: A14 and A13 both own this key but hook members/classes differ.
+- affected_rom_process: android
+- safe_default: feature off / ROM default
+- required_device_evidence: Host class/member dump on MIUI 14
+- why_static_source_cannot_decide: ROM dump required to know which member exists on MIUI 14 / HyperOS 1 A13.
+
+## system_statusbaricons_clock
+
+- unresolved_question: Same key `system_statusbaricons_clock` is present on both trees without a verified owner proof.
+- affected_rom_process: com.android.systemui
+- safe_default: keep current A13 behavior
+- required_device_evidence: Owner class/member dump comparing A14 vs MIUI 14 SystemUI/Home
+- why_static_source_cannot_decide: Static analysis could not identify matching installer/hook members; ROM/process dump required.
 
 ## system_statusbaricons_privacy_prompt
 
@@ -403,15 +548,7 @@ Each HOLD records the unresolved question, ROM/process, safe default, required d
 - affected_rom_process: com.android.systemui
 - safe_default: stock privacy indicator
 - required_device_evidence: Status bar slot dump
-- why_forbidden: A13 system_statusbaricons_privacy hides incognito/stealth, not the privacy chip.
-
-## system_strong_toast_island_offset
-
-- unresolved_question: Preference-backed behavior; semantic proof pending.
-- affected_rom_process: SYSTEM_UI
-- safe_default: feature remains off / ROM default
-- required_device_evidence: A13 MIUI 14 and HyperOS 1 class/layout dump
-- why_forbidden: No strong-toast/island implementation; offset is a DI helper, not a remaining product gap.
+- why_static_source_cannot_decide: A13 system_statusbaricons_privacy hides incognito/stealth, not the privacy chip.
 
 ## system_strong_toast_mode
 
@@ -419,7 +556,31 @@ Each HOLD records the unresolved question, ROM/process, safe default, required d
 - affected_rom_process: com.android.systemui
 - safe_default: stock toast/capsule
 - required_device_evidence: Strong toast / island presenter dump
-- why_forbidden: No A13 capsule path; island mode is DI-adjacent.
+- why_static_source_cannot_decide: No A13 capsule path; island mode is DI-adjacent.
+
+## system_vibration_amp_period_end
+
+- unresolved_question: Same key `system_vibration_amp_period_end` is present on both trees without a verified owner proof.
+- affected_rom_process: com.android.systemui
+- safe_default: keep current A13 behavior
+- required_device_evidence: Owner class/member dump comparing A14 vs MIUI 14 SystemUI/Home
+- why_static_source_cannot_decide: Static analysis could not identify matching installer/hook members; ROM/process dump required.
+
+## system_vibration_amp_period_start
+
+- unresolved_question: Same key `system_vibration_amp_period_start` is present on both trees without a verified owner proof.
+- affected_rom_process: com.android.systemui
+- safe_default: keep current A13 behavior
+- required_device_evidence: Owner class/member dump comparing A14 vs MIUI 14 SystemUI/Home
+- why_static_source_cannot_decide: Static analysis could not identify matching installer/hook members; ROM/process dump required.
+
+## system_visualizer_custom
+
+- unresolved_question: Same key `system_visualizer_custom` is present on both trees without a verified owner proof.
+- affected_rom_process: com.android.systemui
+- safe_default: keep current A13 behavior
+- required_device_evidence: Owner class/member dump comparing A14 vs MIUI 14 SystemUI/Home
+- why_static_source_cannot_decide: Static analysis could not identify matching installer/hook members; ROM/process dump required.
 
 ## system_volume_hide_dnd_shortcut
 
@@ -427,7 +588,7 @@ Each HOLD records the unresolved question, ROM/process, safe default, required d
 - affected_rom_process: com.android.systemui
 - safe_default: stock volume dialog
 - required_device_evidence: Volume dialog view dump
-- why_forbidden: A14 volume-mode-button color/hide hooks are a parallel path on top of A13 MIUIVolumeDialogHook autohide/blur.
+- why_static_source_cannot_decide: A14 volume-mode-button color/hide hooks are a parallel path on top of A13 MIUIVolumeDialogHook autohide/blur.
 
 ## system_volume_hide_mute_shortcut
 
@@ -435,7 +596,7 @@ Each HOLD records the unresolved question, ROM/process, safe default, required d
 - affected_rom_process: com.android.systemui
 - safe_default: stock volume dialog
 - required_device_evidence: Volume dialog view dump
-- why_forbidden: A14 volume-mode-button color/hide hooks are a parallel path on top of A13 MIUIVolumeDialogHook autohide/blur.
+- why_static_source_cannot_decide: A14 volume-mode-button color/hide hooks are a parallel path on top of A13 MIUIVolumeDialogHook autohide/blur.
 
 ## system_volume_mode_button_background_color
 
@@ -443,7 +604,7 @@ Each HOLD records the unresolved question, ROM/process, safe default, required d
 - affected_rom_process: com.android.systemui
 - safe_default: stock volume dialog
 - required_device_evidence: Volume dialog view dump
-- why_forbidden: A14 volume-mode-button color/hide hooks are a parallel path on top of A13 MIUIVolumeDialogHook autohide/blur.
+- why_static_source_cannot_decide: A14 volume-mode-button color/hide hooks are a parallel path on top of A13 MIUIVolumeDialogHook autohide/blur.
 
 ## system_volume_mode_button_colors
 
@@ -451,7 +612,7 @@ Each HOLD records the unresolved question, ROM/process, safe default, required d
 - affected_rom_process: com.android.systemui
 - safe_default: stock volume dialog
 - required_device_evidence: Volume dialog view dump
-- why_forbidden: A14 volume-mode-button color/hide hooks are a parallel path on top of A13 MIUIVolumeDialogHook autohide/blur.
+- why_static_source_cannot_decide: A14 volume-mode-button color/hide hooks are a parallel path on top of A13 MIUIVolumeDialogHook autohide/blur.
 
 ## system_volume_mode_button_icon_color
 
@@ -459,7 +620,15 @@ Each HOLD records the unresolved question, ROM/process, safe default, required d
 - affected_rom_process: com.android.systemui
 - safe_default: stock volume dialog
 - required_device_evidence: Volume dialog view dump
-- why_forbidden: A14 volume-mode-button color/hide hooks are a parallel path on top of A13 MIUIVolumeDialogHook autohide/blur.
+- why_static_source_cannot_decide: A14 volume-mode-button color/hide hooks are a parallel path on top of A13 MIUIVolumeDialogHook autohide/blur.
+
+## various_allow_untrusted_touch
+
+- unresolved_question: A14 and A13 both own this key but hook members/classes differ.
+- affected_rom_process: android
+- safe_default: feature off / ROM default
+- required_device_evidence: Host class/member dump on MIUI 14
+- why_static_source_cannot_decide: ROM dump required to know which member exists on MIUI 14 / HyperOS 1 A13.
 
 ## various_block_location_permission_prompts
 
@@ -467,7 +636,7 @@ Each HOLD records the unresolved question, ROM/process, safe default, required d
 - affected_rom_process: module app + com.miui.securitycenter / com.miui.daemon / permissioncontroller
 - safe_default: components remain enabled
 - required_device_evidence: Package/component inventory on MIUI 14 and HyperOS 1
-- why_forbidden: A14 settings-app PackageManager disable lists are ROM-specific; wrong names would present a working toggle with no effect or disable the wrong component.
+- why_static_source_cannot_decide: A14 settings-app PackageManager disable lists are ROM-specific; wrong names would present a working toggle with no effect or disable the wrong component.
 
 ## various_block_notification_permission_prompts
 
@@ -475,7 +644,31 @@ Each HOLD records the unresolved question, ROM/process, safe default, required d
 - affected_rom_process: module app + com.miui.securitycenter / com.miui.daemon / permissioncontroller
 - safe_default: components remain enabled
 - required_device_evidence: Package/component inventory on MIUI 14 and HyperOS 1
-- why_forbidden: A14 settings-app PackageManager disable lists are ROM-specific; wrong names would present a working toggle with no effect or disable the wrong component.
+- why_static_source_cannot_decide: A14 settings-app PackageManager disable lists are ROM-specific; wrong names would present a working toggle with no effect or disable the wrong component.
+
+## various_calluibright_night_end
+
+- unresolved_question: Same key `various_calluibright_night_end` is present on both trees without a verified owner proof.
+- affected_rom_process: android.system.package
+- safe_default: keep current A13 behavior
+- required_device_evidence: Owner class/member dump comparing A14 vs MIUI 14 SystemUI/Home
+- why_static_source_cannot_decide: Static analysis could not identify matching installer/hook members; ROM/process dump required.
+
+## various_calluibright_night_start
+
+- unresolved_question: Same key `various_calluibright_night_start` is present on both trees without a verified owner proof.
+- affected_rom_process: android.system.package
+- safe_default: keep current A13 behavior
+- required_device_evidence: Owner class/member dump comparing A14 vs MIUI 14 SystemUI/Home
+- why_static_source_cannot_decide: Static analysis could not identify matching installer/hook members; ROM/process dump required.
+
+## various_disable_access_devicelogs
+
+- unresolved_question: Same key `various_disable_access_devicelogs` is present on both trees without a verified owner proof.
+- affected_rom_process: android
+- safe_default: keep current A13 behavior
+- required_device_evidence: Owner class/member dump comparing A14 vs MIUI 14 SystemUI/Home
+- why_static_source_cannot_decide: Static analysis could not identify matching installer/hook members; ROM/process dump required.
 
 ## various_disable_miui_daemon
 
@@ -483,7 +676,7 @@ Each HOLD records the unresolved question, ROM/process, safe default, required d
 - affected_rom_process: module app + com.miui.securitycenter / com.miui.daemon / permissioncontroller
 - safe_default: components remain enabled
 - required_device_evidence: Package/component inventory on MIUI 14 and HyperOS 1
-- why_forbidden: A14 settings-app PackageManager disable lists are ROM-specific; wrong names would present a working toggle with no effect or disable the wrong component.
+- why_static_source_cannot_decide: A14 settings-app PackageManager disable lists are ROM-specific; wrong names would present a working toggle with no effect or disable the wrong component.
 
 ## various_disable_reset_recents_privacy_blur
 
@@ -491,7 +684,7 @@ Each HOLD records the unresolved question, ROM/process, safe default, required d
 - affected_rom_process: module app + com.miui.securitycenter / com.miui.daemon / permissioncontroller
 - safe_default: components remain enabled
 - required_device_evidence: Package/component inventory on MIUI 14 and HyperOS 1
-- why_forbidden: A14 settings-app PackageManager disable lists are ROM-specific; wrong names would present a working toggle with no effect or disable the wrong component.
+- why_static_source_cannot_decide: A14 settings-app PackageManager disable lists are ROM-specific; wrong names would present a working toggle with no effect or disable the wrong component.
 
 ## various_disable_update_services
 
@@ -499,7 +692,7 @@ Each HOLD records the unresolved question, ROM/process, safe default, required d
 - affected_rom_process: module app + com.miui.securitycenter / com.miui.daemon / permissioncontroller
 - safe_default: components remain enabled
 - required_device_evidence: Package/component inventory on MIUI 14 and HyperOS 1
-- why_forbidden: A14 settings-app PackageManager disable lists are ROM-specific; wrong names would present a working toggle with no effect or disable the wrong component.
+- why_static_source_cannot_decide: A14 settings-app PackageManager disable lists are ROM-specific; wrong names would present a working toggle with no effect or disable the wrong component.
 
 ## various_disable_xiaomi_analytics
 
@@ -507,7 +700,7 @@ Each HOLD records the unresolved question, ROM/process, safe default, required d
 - affected_rom_process: module app + com.miui.securitycenter / com.miui.daemon / permissioncontroller
 - safe_default: components remain enabled
 - required_device_evidence: Package/component inventory on MIUI 14 and HyperOS 1
-- why_forbidden: A14 settings-app PackageManager disable lists are ROM-specific; wrong names would present a working toggle with no effect or disable the wrong component.
+- why_static_source_cannot_decide: A14 settings-app PackageManager disable lists are ROM-specific; wrong names would present a working toggle with no effect or disable the wrong component.
 
 ## various_remove_security_center_antivirus
 
@@ -515,7 +708,7 @@ Each HOLD records the unresolved question, ROM/process, safe default, required d
 - affected_rom_process: module app + com.miui.securitycenter / com.miui.daemon / permissioncontroller
 - safe_default: components remain enabled
 - required_device_evidence: Package/component inventory on MIUI 14 and HyperOS 1
-- why_forbidden: A14 settings-app PackageManager disable lists are ROM-specific; wrong names would present a working toggle with no effect or disable the wrong component.
+- why_static_source_cannot_decide: A14 settings-app PackageManager disable lists are ROM-specific; wrong names would present a working toggle with no effect or disable the wrong component.
 
 ## various_trim_miui_daemon_network
 
@@ -523,7 +716,7 @@ Each HOLD records the unresolved question, ROM/process, safe default, required d
 - affected_rom_process: module app + com.miui.securitycenter / com.miui.daemon / permissioncontroller
 - safe_default: components remain enabled
 - required_device_evidence: Package/component inventory on MIUI 14 and HyperOS 1
-- why_forbidden: A14 settings-app PackageManager disable lists are ROM-specific; wrong names would present a working toggle with no effect or disable the wrong component.
+- why_static_source_cannot_decide: A14 settings-app PackageManager disable lists are ROM-specific; wrong names would present a working toggle with no effect or disable the wrong component.
 
 ## various_trim_security_center_marketing
 
@@ -531,39 +724,4 @@ Each HOLD records the unresolved question, ROM/process, safe default, required d
 - affected_rom_process: module app + com.miui.securitycenter / com.miui.daemon / permissioncontroller
 - safe_default: components remain enabled
 - required_device_evidence: Package/component inventory on MIUI 14 and HyperOS 1
-- why_forbidden: A14 settings-app PackageManager disable lists are ROM-specific; wrong names would present a working toggle with no effect or disable the wrong component.
-
-## warning
-
-- unresolved_question: A14 production reads this key.
-- affected_rom_process: UNKNOWN_DISCOVERY
-- safe_default: feature remains off / ROM default
-- required_device_evidence: A13 MIUI 14 and HyperOS 1 class/layout dump
-- why_forbidden: A13 has the UI key but no production read; hook ownership is unresolved.
-
-## Dead A14 UI paths
-
-- system_hidestatusbar_whenscreenrecord
-- system_statusbar_batterytempandcurrent_align
-- system_statusbar_batterytempandcurrent_bold
-- system_statusbar_batterytempandcurrent_fixedcontent_width
-- system_statusbar_batterytempandcurrent_fontsize
-- system_statusbar_batterytempandcurrent_leftmargin
-- system_statusbar_batterytempandcurrent_rightmargin
-- system_statusbar_batterytempandcurrent_verticaloffset
-- system_statusbar_showdevicetemperature_align
-- system_statusbar_showdevicetemperature_bold
-- system_statusbar_showdevicetemperature_fixedcontent_width
-- system_statusbar_showdevicetemperature_fontsize
-- system_statusbar_showdevicetemperature_leftmargin
-- system_statusbar_showdevicetemperature_rightmargin
-- system_statusbar_showdevicetemperature_verticaloffset
-- system_statusbarcontrols_dual
-- system_statusbarcontrols_single
-- system_vibration_amp_period_end
-- system_vibration_amp_period_start
-- various_aospnotiflog
-- various_appusagestats
-- various_calluibright_night_end
-- various_calluibright_night_start
-- various_memorystats
+- why_static_source_cannot_decide: A14 settings-app PackageManager disable lists are ROM-specific; wrong names would present a working toggle with no effect or disable the wrong component.
