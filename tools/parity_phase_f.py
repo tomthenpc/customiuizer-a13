@@ -154,6 +154,13 @@ GENERIC_PROOF_PHRASES = (
     "owner hook result/argument rewrite as in matched bodies",
     "installer/hook members match or api33 variant in the same capability path",
     "identified owners",
+    "api33 intercept/before-after translation",
+    "miui 14 member names versus hyperos",
+    "miui 14 members versus hyperos",
+    "differences are api33 translation",
+    "miui14 vs hyperos",
+    "miui 14 vs hyperos",
+    "differences are api33 intercept/before-after translation",
 )
 
 REVIEWED_VARIANT_FIELDS = (
@@ -207,6 +214,9 @@ class ProofManifest:
     arg_result_comparison: str = ""
     a14_only_branches: str = ""
     why_user_behavior_is_equivalent: str = ""
+    key_ownership_evidence: str = ""
+    a14_key_owner_reference: str = ""
+    a13_key_owner_reference: str = ""
 
     def covers(self, key: str) -> bool:
         return key in self.preference_keys
@@ -482,26 +492,33 @@ def _owner_rank(owner: SourceOwner) -> int:
     return score
 
 
+INSTALLER_BIND_CHARS = 400
+
+
 def _key_callees_in_text(text: str) -> dict[str, set[str]]:
+    """Bind a key only to the next *Hook( after that key, within INSTALLER_BIND_CHARS.
+
+    A large lookback window is not installer evidence: it attaches sibling
+    getBoolean keys to the wrong hook.
+    """
     out: dict[str, set[str]] = {}
-    for m in HOOK_CALL_RE.finditer(text):
-        callee = m.group(2)
-        if callee in SKIP_CALLEES:
+    hook_positions = [
+        (m.start(), m.group(2))
+        for m in HOOK_CALL_RE.finditer(text)
+        if m.group(2) not in SKIP_CALLEES
+    ]
+    key_hits = [(m.end(), m.group(1)) for m in GET_KEY_RE.finditer(text)]
+    key_hits += [(m.end(), m.group(1)) for m in re.finditer(r'preferenceKey\s*=\s*"([a-z0-9_]+)"', text)]
+    for end, key in key_hits:
+        if not key or key.startswith("pref_key_"):
             continue
-        window = text[max(0, m.start() - 2500): m.start()]
-        keys = GET_KEY_RE.findall(window)
-        keys += re.findall(r'preferenceKey\s*=\s*"([a-z0-9_]+)"', window)
-        keys += re.findall(r'preferenceKeys\s*=\s*(?:listOf|setOf)\((.*?)\)', window, re.S)
-        expanded: list[str] = []
-        for item in keys:
-            if "," in item or "\n" in item:
-                expanded.extend(re.findall(r'"([a-z0-9_]+)"', item))
-            else:
-                expanded.append(item)
-        for key in expanded:
-            if key.startswith("pref_key_"):
+        for pos, callee in hook_positions:
+            if pos < end:
                 continue
+            if pos - end > INSTALLER_BIND_CHARS:
+                break
             out.setdefault(key, set()).add(callee)
+            break
     return out
 
 
@@ -612,7 +629,15 @@ def proof_is_acceptable(man: ProofManifest) -> bool:
     if man.proof_conclusion == "PRESENT_EQUIVALENT":
         return man.body_relation == "IDENTICAL"
     if man.proof_conclusion == "PRESENT_A13_VARIANT":
-        return reviewed_variant_fields_complete(man)
+        if not reviewed_variant_fields_complete(man):
+            return False
+        if man.proof_id.startswith("PROOF_OG_"):
+            return bool(
+                man.key_ownership_evidence
+                and man.a14_key_owner_reference
+                and man.a13_key_owner_reference
+            )
+        return True
     return True
 
 
@@ -825,7 +850,8 @@ def _identical_manifest(
         return None
     a14_installers = [o for o in left if o.kind == "installer"]
     a13_installers = [o for o in right if o.kind == "installer"]
-    keys = tuple(dict.fromkeys((key,) + covered))
+    del covered
+    keys = (key,)
     defaults = extract_pref_defaults(a14.normalized_body)
     return ProofManifest(
         proof_id=f"PROOF_FP_{_basename(a13.path).replace('.', '_')}_{a13.symbol}",
@@ -854,6 +880,9 @@ def _identical_manifest(
         arg_result_comparison=extract_result_ops(a14.normalized_body),
         a14_only_branches="none (identical body)",
         why_user_behavior_is_equivalent="Normalized owner text is identical, so preference reads and rewrite operations match.",
+        key_ownership_evidence=f"{key}: LITERAL_READ in both owner bodies",
+        a14_key_owner_reference=f"{a14.path}::{a14.symbol} LITERAL_READ {key}",
+        a13_key_owner_reference=f"{a13.path}::{a13.symbol} LITERAL_READ {key}",
     )
 
 
@@ -1414,13 +1443,15 @@ def build_source_index(repo: Path) -> dict[str, str]:
 
 def format_proof_markdown(manifests: list[ProofManifest]) -> str:
     lines = [
-        "# A13 Phase F-R3 Semantic Proofs",
+        "# A13 Phase F-R4 Semantic Proofs",
         "",
         "Automatic PRESENT requires normalized body IDENTICAL, the same relevant preference keys,",
         "and compatible installer ownership (BODY_RELATION=IDENTICAL).",
-        "Non-identical owners require an owner-group reviewed manifest (BODY_RELATION=REVIEWED_VARIANT)",
-        "with filled difference fields. SequenceMatcher ratio never authorizes PRESENT.",
-        "Same-key reads alone are IMPLEMENTATION_PRESENCE.",
+        "Non-identical owners require an explicit reviewed manifest (BODY_RELATION=REVIEWED_VARIANT)",
+        "with filled difference fields and KEY_OWNERSHIP_EVIDENCE.",
+        "Prefix, ranked-first, same-XML, and same-basename-alone never assign semantic ownership.",
+        "SequenceMatcher ratio never authorizes PRESENT.",
+        "Same-key reads or a visible row in both XML files alone are IMPLEMENTATION_PRESENCE.",
         "",
     ]
     for man in manifests:
@@ -1451,6 +1482,12 @@ def format_proof_markdown(manifests: list[ProofManifest]) -> str:
             lines.append(f"- ARG_RESULT_COMPARISON: {man.arg_result_comparison}")
             lines.append(f"- A14_ONLY_BRANCHES: {man.a14_only_branches}")
             lines.append(f"- WHY_USER_BEHAVIOR_IS_EQUIVALENT: {man.why_user_behavior_is_equivalent}")
+        if man.key_ownership_evidence:
+            lines.append(f"- KEY_OWNERSHIP_EVIDENCE: {man.key_ownership_evidence}")
+        if man.a14_key_owner_reference:
+            lines.append(f"- A14_KEY_OWNER_REFERENCE: {man.a14_key_owner_reference}")
+        if man.a13_key_owner_reference:
+            lines.append(f"- A13_KEY_OWNER_REFERENCE: {man.a13_key_owner_reference}")
         lines.append(f"- PROOF_CONCLUSION: `{man.proof_conclusion}`")
         lines.append("")
     return "\n".join(lines)

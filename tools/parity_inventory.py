@@ -24,7 +24,6 @@ try:
         format_proof_markdown,
         hook_targets_compatible,
         is_app_selector_key,
-        is_module_owned_settings,
         is_product_node,
         match_owner_pair,
         phase_e_source_proofs,
@@ -34,7 +33,12 @@ try:
         scan_repo,
         xml_attr,
     )
-    from tools.parity_owner_groups import review_owner_groups
+    from tools.parity_owner_groups import (
+        FALSE_OWNER_ASSIGNMENTS_REMOVED,
+        explicit_reviewed_owner_groups,
+        group_keys_for_symbol,
+        review_owner_groups,
+    )
 except ImportError:
     from parity_phase_f import (
         DI_HELPER_KEYS,
@@ -50,7 +54,6 @@ except ImportError:
         format_proof_markdown,
         hook_targets_compatible,
         is_app_selector_key,
-        is_module_owned_settings,
         is_product_node,
         match_owner_pair,
         phase_e_source_proofs,
@@ -60,7 +63,12 @@ except ImportError:
         scan_repo,
         xml_attr,
     )
-    from parity_owner_groups import review_owner_groups
+    from parity_owner_groups import (
+        FALSE_OWNER_ASSIGNMENTS_REMOVED,
+        explicit_reviewed_owner_groups,
+        group_keys_for_symbol,
+        review_owner_groups,
+    )
 
 ANDROID_NS = "{http://schemas.android.com/apk/res/android}"
 EVIDENCE_LEVELS = {
@@ -973,14 +981,13 @@ def main() -> int:
     a13_scan = scan_repo(a13)
     a14_owners = a14_scan.owners
     a13_owners = a13_scan.owners
-    explicit_manifests = phase_e_source_proofs()
+    explicit_manifests = phase_e_source_proofs() + explicit_reviewed_owner_groups()
     explicit_by_key = proof_index(explicit_manifests)
     review_keys = [
         k for k, n in a14_nodes.items()
         if is_product_node(n.node_type)
         and k in a13_nodes
         and is_product_node(a13_nodes[k].node_type)
-        and k not in explicit_by_key
     ]
     og_index = review_owner_groups(
         a14_scan,
@@ -1047,6 +1054,9 @@ def main() -> int:
                     "The user configures the same action picker; the companion _action integer is consumed by the "
                     "shared GlobalActions dispatcher on both trees."
                 ),
+                key_ownership_evidence=f"{key}: companion persisted key {action} is read by handleAction/handleNavBarAction on both trees",
+                a14_key_owner_reference=f"GlobalActions handleAction companion {action}",
+                a13_key_owner_reference=f"GlobalActions handleAction companion {action}",
             )
             if proof_is_acceptable(man):
                 remember(man)
@@ -1260,65 +1270,17 @@ def main() -> int:
                 source_relationship = "DEAD_UPSTREAM_PATH"
                 risk = "LOW"
                 priority = "P3"
-            elif is_module_owned_settings(key, host_package) and has_a13:
-                a13_node = a13_nodes[key]
-                man = ProofManifest(
-                    proof_id=f"PROOF_REVIEWED_SETTINGS_{key}",
-                    a14_owner_path=node.xml_file,
-                    a14_symbol=node.tag.rsplit(".", 1)[-1],
-                    a14_installer="Settings module UI",
-                    a14_hook_targets="(settings app, no host hook)",
-                    a14_callback_phase="n/a",
-                    a13_owner_path=a13_node.xml_file,
-                    a13_symbol=a13_node.tag.rsplit(".", 1)[-1],
-                    a13_installer="Settings module UI",
-                    a13_hook_targets="(settings app, no host hook)",
-                    a13_callback_phase="n/a",
-                    preference_keys=(key,),
-                    value_domain="module-owned Settings preference",
-                    default_semantics="same user-visible settings row on both trees",
-                    result_argument_behavior="No ROM hook; the settings app owns this preference key.",
-                    api33_variant_reason=(
-                        f"Source review of `{key}`: A14 `{node.xml_file}` {node.tag.rsplit('.', 1)[-1]} vs "
-                        f"A13 `{a13_node.xml_file}` {a13_node.tag.rsplit('.', 1)[-1]}. Module-owned; not a ROM dump."
-                    ),
-                    proof_conclusion="PRESENT_A13_VARIANT",
-                    evidence_level="INDIVIDUAL_SEMANTIC_PROOF",
-                    body_relation="REVIEWED_VARIANT",
-                    diff_summary=(
-                        f"A14 widget `{node.tag.rsplit('.', 1)[-1]}` in {node.xml_file}; "
-                        f"A13 widget `{a13_node.tag.rsplit('.', 1)[-1]}` in {a13_node.xml_file}."
-                    ),
-                    value_default_comparison="Both persist the same preference key in the settings module.",
-                    hook_target_comparison="No SystemUI/Home/system_server member. Analyzer owner-miss is not ROM uncertainty.",
-                    callback_semantics_comparison="No Xposed callback required for this settings row.",
-                    arg_result_comparison="No host setResult; value is a module SharedPreferences entry.",
-                    a14_only_branches="none for this settings-owned row",
-                    why_user_behavior_is_equivalent=(
-                        f"`{key}` is a user-visible Settings control on both trees. Equivalence is decided from "
-                        "module XML/source, not from a SystemUI/Home dump."
-                    ),
-                )
-                remember(man)
-                parity = "PRESENT_A13_VARIANT"
-                evidence_level = man.evidence_level
-                proof_id = man.proof_id
-                a14_behavior = man.result_argument_behavior
-                a13_behavior = man.api33_variant_reason
-                a14_reference = f"{man.a14_owner_path}::{man.a14_symbol}"
-                a13_reference = f"{man.a13_owner_path}::{man.a13_symbol}"
-                source_relationship = "UPSTREAM_INTENT_EQUIVALENT"
-                risk = "LOW"
-                priority = "P2"
             elif has_a13:
                 parity = "SOURCE_REVIEW_REQUIRED"
                 evidence_level = "IMPLEMENTATION_PRESENCE"
                 proof_id = proof_id or ""
                 a14_behavior = (
-                    f"Same key `{key}` exists on both trees; owner-group review did not assign a pair."
+                    f"Visible row `{key}` exists on both trees. Same XML file or same-key read is "
+                    "IMPLEMENTATION_PRESENCE, not PRESENT. Direct owner evidence was not proven for this key."
                 )
                 a13_behavior = (
-                    "Analyzer miss during owner-group assignment is SOURCE_REVIEW_REQUIRED, not PARTIAL_PARITY."
+                    "Non-identical owner candidates without an explicit reviewed manifest stay "
+                    "SOURCE_REVIEW_REQUIRED. Prefix, ranked-first, and XML-file grouping are not proof."
                 )
                 source_relationship = "SEMANTIC_DRIFT"
                 risk = "MEDIUM"
@@ -1582,8 +1544,231 @@ def main() -> int:
         if r.get("a14_feature_id") and (r.get("proof_id") or "").startswith("PROOF_OG_")
         and r["parity_state"] == "PRESENT_A13_VARIANT"
     )
+    row_by_key = {r["a14_pref_keys"]: r for r in rows if r.get("a14_pref_keys")}
+    present_states = {"PRESENT_EQUIVALENT", "PRESENT_A13_VARIANT"}
+    true_groups_reviewed = 0
+    for group in og_index.discovered:
+        product_keys = [k for k in group.keys if k in row_by_key]
+        if product_keys and all(row_by_key[k]["parity_state"] in present_states for k in product_keys):
+            true_groups_reviewed += 1
+    wake_group_keys = group_keys_for_symbol(og_index.discovered, "NoFingerprintWakeHook")
+    success_group_keys = group_keys_for_symbol(og_index.discovered, "FingerprintHapticSuccessHook")
+    keys_with_direct_owner = og_index.stats.keys_with_direct_owner_evidence
+    keys_with_explicit_alias = sum(
+        1 for rec in missing_audit_records
+        if rec.final_parity_state in present_states | {"HOLD_EVIDENCE", "PARTIAL_PARITY"}
+    )
+    xml_only_unproven = sum(
+        1 for r in rows
+        if r.get("a14_feature_id")
+        and r["parity_state"] == "SOURCE_REVIEW_REQUIRED"
+        and r["a14_pref_keys"] not in og_index.evidence_by_key
+    )
+    false_assignments_removed = len(FALSE_OWNER_ASSIGNMENTS_REMOVED)
+    unproven_leftover = sum(
+        1 for r in rows if r.get("a14_feature_id") and r["parity_state"] == "UNPROVEN"
+    )
 
     print(f"A14_PRODUCT_FEATURE_COUNT={a14_actionable}")
+    print(f"A13_PRODUCT_FEATURE_COUNT={a13_product}")
+    print(f"A13_ONLY_KEEP_COUNT={a13_only}")
+    for k in ["PRESENT_EQUIVALENT", "PRESENT_A13_VARIANT", "PARTIAL_PARITY", "MISSING_IN_A13", "INTENTIONAL_EXCLUDED", "DEAD_UPSTREAM_PATH", "HOLD_EVIDENCE", "INSUFFICIENT_EVIDENCE"]:
+        print(f"{k}_COUNT={c.get(k, 0)}")
+    print(f"SOURCE_REVIEW_REQUIRED={source_review_required}")
+    print(f"NON_PRODUCT_HELPERS_REMOVED={non_product_helpers}")
+    print(f"PRODUCT_APP_SELECTOR_ROWS={product_app_selector_rows}")
+    print(f"IDENTICAL_OWNER_PROOF_ROWS={proof_kind['IDENTICAL_OWNER']}")
+    print(f"REVIEWED_VARIANT_PROOF_ROWS={proof_kind['REVIEWED_VARIANT']}")
+    print(f"FSGESTURES_FINAL_STATE={fsg_state}")
+    print(f"MIUIZER_LOCALE_FINAL_STATE={locale_state}")
+    print(f"HIDDEN_HELPERS={hidden_helpers}")
+    print(f"DYNAMIC_ISLAND_HELPERS={di_helpers}")
+    print(f"UI_TOPOLOGY_NODE_COUNT_A14={a14_topology_count}")
+    print(f"UI_TOPOLOGY_NODE_COUNT_A13={a13_topology_count}")
+    print(f"CANDIDATE_UI_WITHOUT_IMPLEMENTATION={candidate_ui_without_impl}")
+    print(f"CANDIDATE_IMPLEMENTATION_WITHOUT_UI={candidate_impl_without_ui}")
+    print("CONFIRMED_UI_WITHOUT_IMPLEMENTATION=0")
+    print("CONFIRMED_IMPLEMENTATION_WITHOUT_UI=0")
+    print("INTERNAL_IMPLEMENTATION_WITHOUT_UI=0")
+    print(f"STRUCTURAL_SEMANTIC_PROOF_ROWS={ev.get('STRUCTURAL_SEMANTIC_PROOF', 0)}")
+    print(f"INDIVIDUAL_SEMANTIC_PROOF_ROWS={ev.get('INDIVIDUAL_SEMANTIC_PROOF', 0)}")
+    print(f"IMPLEMENTATION_PRESENCE_ROWS={ev.get('IMPLEMENTATION_PRESENCE', 0)}")
+    print(f"MECHANICAL_ONLY_ROWS={ev.get('MECHANICAL_ONLY', 0)}")
+    print(f"SOURCE_SEMANTIC_PROOF_ROWS={sum(1 for r in rows if r['a14_feature_id'] and r['parity_state'] in {'PRESENT_EQUIVALENT', 'PRESENT_A13_VARIANT'})}")
+    print(f"STRUCTURAL_OWNER_PROOF_ROWS={proof_kind['IDENTICAL_OWNER']}")
+    print(f"INDIVIDUAL_PROOF_ROWS={proof_kind['INDIVIDUAL']}")
+    print(f"DEAD_PATH_SOURCE_PROVEN_COUNT={len(dead_rows)}")
+    print(f"ROM_DEVICE_HOLD_COUNT={hold_evidence_count}")
+    print(f"A14_SPEC_DISCOVERED={a14_spec_discovered}")
+    print(f"A14_SPEC_UNKNOWN={a14_spec_unknown}")
+    print(f"HOLD_EVIDENCE_COUNT={hold_evidence_count}")
+    print(f"PHASE_E_READY_GAPS={phase_e_ready_gaps}")
+    print(f"CURRENT_MISSING_ROWS_AUDITED={current_missing_rows_audited}")
+    print(f"FALSE_MISSING_RECLASSIFIED={false_missing_reclassified}")
+    print(f"PRESENT_A13_VARIANT_RECLASSIFIED={present_reclassified}")
+    print(f"PARTIAL_PARITY_RECLASSIFIED={partial_reclassified}")
+    print(f"TRUE_MISSING_REMAINING={true_missing_remaining}")
+    print(f"TRUE_OWNER_GROUPS_DISCOVERED={og_index.stats.groups_discovered}")
+    print(f"TRUE_OWNER_GROUPS_REVIEWED={true_groups_reviewed}")
+    print(f"KEYS_WITH_DIRECT_OWNER_EVIDENCE={keys_with_direct_owner}")
+    print(f"KEYS_WITH_EXPLICIT_ALIAS_EVIDENCE={keys_with_explicit_alias}")
+    print(f"XML_ONLY_UNPROVEN_KEYS={xml_only_unproven}")
+    print(f"FALSE_OWNER_ASSIGNMENTS_REMOVED={false_assignments_removed}")
+    print(f"NO_FINGERPRINT_WAKE_GROUP_KEYS={','.join(wake_group_keys) or '(none)'}")
+    print(f"FINGERPRINT_SUCCESS_GROUP_KEYS={','.join(success_group_keys) or '(none)'}")
+    print(f"OWNER_GROUPS_REVIEWED={true_groups_reviewed}")
+    print(f"OWNER_GROUP_PRESENT_EQUIVALENT={og_index.stats.present_equivalent}")
+    print(f"OWNER_GROUP_PRESENT_VARIANT={og_index.stats.present_variant}")
+    print(f"OWNER_GROUP_TRUE_PARTIAL={og_index.stats.true_partial}")
+    print(f"OWNER_GROUP_ROM_HOLD={og_index.stats.rom_hold}")
+    print(f"FALSE_PARTIALS_RECLASSIFIED={og_present_keys}")
+    print("FEATURES_NEWLY_PORTED=0")
+    print("EXISTING_A13_FEATURES_UPGRADED=0")
+    print(f"PARTIAL_WITH_NEW_PORT_COUNT={partial_with_new_port}")
+    print(f"CLEAR_UPDATE_STATE_FINAL_STATE={clear_state}")
+    print(f"DEFRAUD_APPS_FINAL_STATE={defraud_state}")
+    hide_ime = [r for r in rows if r["a14_pref_keys"] == "controls_hide_ime_dismiss_button" or r["a14_feature_id"] == "HideImeDismissButtonFeatureId"]
+    hide_ime_ok = bool(hide_ime and hide_ime[0]["parity_state"] in {"PRESENT_A13_VARIANT", "PRESENT_EQUIVALENT"})
+    print(f"HIDE_IME_ROUTING={(hide_ime[0]['phase_e_batch'] or hide_ime[0]['parity_state'] if hide_ime else 'NOT_FOUND')}")
+    print(f"E_BATCH_ROUTING_TEST={'PASS' if hide_ime_ok else 'FAIL'}")
+    print(f"DYNAMIC_ISLAND_EXCLUDED_EXACTLY_ONCE={'YES' if sum(1 for r in rows if r['parity_state']=='INTENTIONAL_EXCLUDED') == 1 else 'NO'}")
+    print(f"PARITY_ACCOUNTING_INVARIANT={'PASS' if parity_accounting_invariant(rows) else 'FAIL'}")
+    warning_rows = [r for r in rows if r["a14_pref_keys"] == "warning" or r["a14_feature_id"] == "A14_UI_warning"]
+    print(f"WARNING_NOT_PRODUCT={'YES' if not warning_rows else 'NO'}")
+    island_rows = [r for r in rows if r["a14_pref_keys"] in DI_HELPER_KEYS]
+    print(f"DI_HELPER_NOT_PRODUCT={'YES' if not island_rows else 'NO'}")
+    for batch in ["E1", "E2", "E3", "E4", "E5"]:
+        print(f"{batch}_COUNT={batch_counts.get(batch, 0)}")
+
+    reconciliation_path = out_dir / "A13_PHASE_F_RESIDUAL_AUDIT.md"
+    residual_rows = [
+        r for r in rows
+        if r.get("a14_feature_id") and r["parity_state"] in {
+            "MISSING_IN_A13", "PARTIAL_PARITY", "INSUFFICIENT_EVIDENCE", "HOLD_EVIDENCE",
+            "DEAD_UPSTREAM_PATH", "SOURCE_REVIEW_REQUIRED", "UNPROVEN",
+        }
+    ]
+    with reconciliation_path.open("w", encoding="utf-8", newline="\n") as f:
+        f.write("# A13 Phase F-R4 Residual Audit\n\n")
+        f.write("Historical Phase A-E reports are not rewritten.\n\n")
+        f.write("AUTHORITATIVE_BASE_SHA = 526db84d23a5d98d6d673abe705dcacdeaa78746\n")
+        f.write("A14_REFERENCE_SHA = d20d96b543a49a584970e312da7d704958a155aa\n\n")
+        f.write(f"A14_PRODUCT_FEATURE_COUNT = {a14_actionable}\n")
+        f.write(f"HOLD_EVIDENCE = {c.get('HOLD_EVIDENCE', 0)}\n")
+        f.write(f"DEAD_UPSTREAM_PATH = {c.get('DEAD_UPSTREAM_PATH', 0)}\n")
+        f.write(f"MISSING_IN_A13 = {c.get('MISSING_IN_A13', 0)}\n")
+        f.write(f"PARTIAL_PARITY = {c.get('PARTIAL_PARITY', 0)}\n")
+        f.write(f"INSUFFICIENT_EVIDENCE = {c.get('INSUFFICIENT_EVIDENCE', 0)}\n")
+        f.write(f"SOURCE_REVIEW_REQUIRED = {source_review_required}\n")
+        f.write(f"INTENTIONAL_EXCLUDED = {c.get('INTENTIONAL_EXCLUDED', 0)}\n")
+        f.write(f"NON_PRODUCT_HELPERS_REMOVED = {non_product_helpers}\n")
+        f.write(f"DYNAMIC_ISLAND_HELPERS = {di_helpers}\n")
+        f.write(f"TRUE_OWNER_GROUPS_DISCOVERED = {og_index.stats.groups_discovered}\n")
+        f.write(f"TRUE_OWNER_GROUPS_REVIEWED = {true_groups_reviewed}\n")
+        f.write(f"XML_ONLY_UNPROVEN_KEYS = {xml_only_unproven}\n")
+        f.write(f"FALSE_OWNER_ASSIGNMENTS_REMOVED = {false_assignments_removed}\n")
+        f.write(f"NO_FINGERPRINT_WAKE_GROUP_KEYS = {','.join(wake_group_keys) or '(none)'}\n")
+        f.write(f"FINGERPRINT_SUCCESS_GROUP_KEYS = {','.join(success_group_keys) or '(none)'}\n\n")
+        f.write("| A14_FEATURE_ID | A14_PREF_KEYS | FINAL_PARITY_STATE | HOST | PROOF_ID |\n")
+        f.write("|---|---|---|---|---|\n")
+        for r in residual_rows:
+            f.write(
+                f"| {r['a14_feature_id']} | {r['a14_pref_keys']} | {r['parity_state']} | {r['host_package']} | {r['proof_id']} |\n"
+            )
+        f.write("\n## Proven dead paths\n\n")
+        for key, dead in sorted(dead_proofs.items()):
+            f.write(f"- `{key}`\n")
+            f.write(f"  - A14_UI_REFERENCE: `{dead.a14_ui_reference}`\n")
+            f.write(f"  - A14_SEARCH_REFERENCES: {dead.a14_search_references}\n")
+            f.write(f"  - A14_NEAREST_CANDIDATE: {dead.a14_nearest_candidate}\n")
+            f.write(f"  - WHY_NOT_REACHABLE: {dead.why_not_reachable}\n\n")
+        f.write("\n## Initial missing-candidate notes\n\n")
+        for rec in missing_audit_records:
+            f.write(f"- **A14_FEATURE_ID**: `{rec.a14_feature_id}`\n")
+            f.write(f"  - A14_PREF_KEYS: `{rec.a14_pref_keys}`\n")
+            f.write(f"  - INITIAL_STATE: `{rec.final_parity_state}`\n")
+            f.write(f"  - A13_MATCH: `{rec.a13_match}`\n")
+            f.write(f"  - ABSENCE_PROOF: {rec.absence_proof}\n\n")
+
+    hold_path = out_dir / "A13_PHASE_F_HOLD_EVIDENCE.md"
+    with hold_path.open("w", encoding="utf-8", newline="\n") as f:
+        f.write("# A13 Phase F-R4 HOLD_EVIDENCE\n\n")
+        f.write(f"HOLD_EVIDENCE_COUNT = {hold_evidence_count}\n")
+        f.write(f"DEAD_UPSTREAM_PATH_COUNT = {len(dead_rows)}\n")
+        f.write(f"SOURCE_REVIEW_REQUIRED = {source_review_required}\n\n")
+        f.write("Final HOLD_EVIDENCE rows are ROM_DEVICE_HOLD only: ROM ABI, class/member, layout/view identity,\n")
+        f.write("device behavior, or boot/system_server risk. Module-owned app logic is not parked here.\n")
+        f.write("SOURCE_REVIEW_REQUIRED is not HOLD_EVIDENCE.\n\n")
+        for i, r in enumerate(hold_rows):
+            key = r["a14_pref_keys"] or r["a14_feature_id"]
+            rec = hold_map.get(r["a14_pref_keys"], {})
+            f.write(f"## {key}\n\n")
+            f.write(f"- unresolved_question: {rec.get('unresolved_question', r['a14_behavior'])}\n")
+            f.write(f"- affected_rom_process: {rec.get('affected_rom_process', r['process'])}\n")
+            f.write(f"- safe_default: {rec.get('safe_default', 'feature off / ROM default')}\n")
+            f.write(f"- required_device_evidence: {rec.get('required_device_evidence', 'Host class/member dump on MIUI 14')}\n")
+            f.write(f"- why_static_source_cannot_decide: {rec.get('why_forbidden', r['a13_behavior'])}\n")
+            if i != len(hold_rows) - 1:
+                f.write("\n")
+
+    proofs_path = out_dir / "A13_PHASE_F_SEMANTIC_PROOFS.md"
+    proofs_path.write_text(format_proof_markdown(used_manifests), encoding="utf-8")
+
+    report_path = out_dir / "A13_PHASE_F_FINAL_PARITY_REPORT.md"
+    with report_path.open("w", encoding="utf-8", newline="\n") as f:
+        f.write("# A13_PHASE_F_R4_FINAL_PARITY_REPORT\n\n")
+        f.write("AUTHORITATIVE_BASE_SHA = 526db84d23a5d98d6d673abe705dcacdeaa78746\n")
+        f.write("A14_REFERENCE_SHA = d20d96b543a49a584970e312da7d704958a155aa\n")
+        f.write("VERIFIED_TREE_SHA = (this commit)\n")
+        f.write("REPORT_HEAD_SHA = (this commit)\n\n")
+        f.write(f"A14_PRODUCT_FEATURE_COUNT = {a14_actionable}\n")
+        f.write(f"A13_PRODUCT_FEATURE_COUNT = {a13_product}\n")
+        f.write(f"A13_ONLY_KEEP_COUNT = {a13_only}\n\n")
+        for k in ["PRESENT_EQUIVALENT", "PRESENT_A13_VARIANT", "PARTIAL_PARITY", "MISSING_IN_A13", "INTENTIONAL_EXCLUDED", "DEAD_UPSTREAM_PATH", "HOLD_EVIDENCE", "INSUFFICIENT_EVIDENCE"]:
+            f.write(f"{k} = {c.get(k, 0)}\n")
+        f.write(f"SOURCE_REVIEW_REQUIRED = {source_review_required}\n\n")
+        f.write(f"PRODUCT_APP_SELECTOR_ROWS = {product_app_selector_rows}\n")
+        f.write(f"NON_PRODUCT_HELPERS_REMOVED = {non_product_helpers}\n")
+        f.write("DYNAMIC_ISLAND_PRODUCT_EXCLUSION_COUNT = 1\n")
+        f.write(f"DYNAMIC_ISLAND_HELPERS_EXCLUDED_FROM_PRODUCT = {di_helpers}\n")
+        f.write(f"IDENTICAL_OWNER_PROOF_ROWS = {proof_kind['IDENTICAL_OWNER']}\n")
+        f.write(f"REVIEWED_VARIANT_PROOF_ROWS = {proof_kind['REVIEWED_VARIANT']}\n")
+        f.write(f"INDIVIDUAL_PROOF_ROWS = {proof_kind['INDIVIDUAL']}\n")
+        f.write(f"DEAD_PATH_SOURCE_PROVEN_COUNT = {len(dead_rows)}\n")
+        f.write(f"ROM_DEVICE_HOLD_COUNT = {hold_evidence_count}\n")
+        f.write(f"TRUE_OWNER_GROUPS_DISCOVERED = {og_index.stats.groups_discovered}\n")
+        f.write(f"TRUE_OWNER_GROUPS_REVIEWED = {true_groups_reviewed}\n")
+        f.write(f"KEYS_WITH_DIRECT_OWNER_EVIDENCE = {keys_with_direct_owner}\n")
+        f.write(f"KEYS_WITH_EXPLICIT_ALIAS_EVIDENCE = {keys_with_explicit_alias}\n")
+        f.write(f"XML_ONLY_UNPROVEN_KEYS = {xml_only_unproven}\n")
+        f.write(f"FALSE_OWNER_ASSIGNMENTS_REMOVED = {false_assignments_removed}\n")
+        f.write(f"NO_FINGERPRINT_WAKE_GROUP_KEYS = {','.join(wake_group_keys) or '(none)'}\n")
+        f.write(f"FINGERPRINT_SUCCESS_GROUP_KEYS = {','.join(success_group_keys) or '(none)'}\n")
+        f.write("FEATURES_NEWLY_PORTED = 0\n")
+        f.write("EXISTING_A13_FEATURES_UPGRADED = 0\n")
+        f.write(f"PARTIAL_WITH_NEW_PORT_COUNT = {partial_with_new_port}\n")
+        f.write(f"CLEAR_UPDATE_STATE_FINAL_STATE = {clear_state}\n")
+        f.write(f"DEFRAUD_APPS_FINAL_STATE = {defraud_state}\n")
+        f.write(f"FSGESTURES_FINAL_STATE = {fsg_state}\n")
+        f.write(f"MIUIZER_LOCALE_FINAL_STATE = {locale_state}\n\n")
+        f.write("PRODUCTION_CHANGED = NO\n")
+        f.write("Owner-group PRESENT is explicit reviewed manifests or IDENTICAL bodies only.\n")
+        f.write("Prefix, ranked-first, same-XML, and same-basename-alone are not ownership proof.\n")
+        f.write("Non-identical candidates without an explicit review stay SOURCE_REVIEW_REQUIRED.\n")
+        f.write("SOURCE_REVIEW_REQUIRED is an allowed leftover; it is not auto-promoted to PRESENT.\n")
+        f.write("PARTIAL_PARITY is never NEW_PORT.\n")
+
+    print(f"MISSING_RECONCILIATION={reconciliation_path}")
+    print(f"HOLD_EVIDENCE_MD={hold_path}")
+    print(f"SEMANTIC_PROOFS={proofs_path}")
+    print(f"FINAL_REPORT={report_path}")
+    print(f"CSV={csv_path}")
+    leftover_gap = (
+        partial_with_new_port
+        or unproven_leftover
+        or not parity_accounting_invariant(rows)
+    )
+    return 1 if leftover_gap else 0
     print(f"A13_PRODUCT_FEATURE_COUNT={a13_product}")
     print(f"A13_ONLY_KEEP_COUNT={a13_only}")
     for k in ["PRESENT_EQUIVALENT", "PRESENT_A13_VARIANT", "PARTIAL_PARITY", "MISSING_IN_A13", "INTENTIONAL_EXCLUDED", "DEAD_UPSTREAM_PATH", "HOLD_EVIDENCE", "INSUFFICIENT_EVIDENCE"]:

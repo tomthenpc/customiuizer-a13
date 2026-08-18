@@ -568,15 +568,296 @@ class PhaseFR2ClassifierTest(unittest.TestCase):
         )
         self.assertIsNone(reviewed)
 
-    def test_owner_group_review_presents_non_identical_compatible_pair(self):
+    def test_non_identical_owner_candidate_without_explicit_review_is_source_review(self):
         a14 = self._owner(normalized_body='{ getBoolean("system_demo", false); setResult(true); extraA14() }')
         a13 = self._owner(normalized_body='{ getBoolean("system_demo", false); setResult(true) }')
         scan14 = RepoScan(owners={"system_demo": [a14]}, symbols={"DemoHook": [a14]}, callees={})
         scan13 = RepoScan(owners={"system_demo": [a13]}, symbols={"DemoHook": [a13]}, callees={})
-        idx = review_owner_groups(scan14, scan13, ["system_demo"])
-        self.assertIn("system_demo", idx.by_key)
+        idx = review_owner_groups(scan14, scan13, ["system_demo"], explicit=[])
+        self.assertNotIn("system_demo", idx.by_key)
+        self.assertEqual(len(idx.discovered), 1)
+        decision = classify_phase_f_transition(PhaseFTransitionInput(
+            key="system_demo",
+            node_type="PRODUCT_ACTION",
+            a14_read=True,
+            a13_read=True,
+            host_package="SYSTEM_UI",
+            source_proof=None,
+            unproven_bucket="SOURCE_REVIEW_REQUIRED",
+        ))
+        self.assertEqual(decision.parity_state, "SOURCE_REVIEW_REQUIRED")
+        self.assertNotIn(decision.parity_state, {"PRESENT_EQUIVALENT", "PRESENT_A13_VARIANT"})
+
+
+class PhaseFR4OwnerIntegrityTest(unittest.TestCase):
+    def _owner(self, **kwargs) -> SourceOwner:
+        base = dict(
+            path="app/src/main/java/tv/withaibuild/customiuizer/mods/Controls.kt",
+            symbol="DemoHook",
+            kind="hook",
+            hook_targets=("com.android.server.policy.Foo#bar",),
+            callback_phases=("after",),
+            keys=("system_demo",),
+            normalized_body='{ getBoolean("system_demo", false); setResult(true) }',
+        )
+        base.update(kwargs)
+        return SourceOwner(**base)
+
+    def _reviewed(self, **kwargs) -> ProofManifest:
+        base = dict(
+            proof_id="PROOF_OG_TEST_DEMO",
+            a14_owner_path="mods/Controls.kt",
+            a14_symbol="DemoHook",
+            a14_installer="A14 installer if system_demo",
+            a14_hook_targets="Foo#bar",
+            a14_callback_phase="intercept",
+            a13_owner_path="mods/Controls.kt",
+            a13_symbol="DemoHook",
+            a13_installer="A13 installer if system_demo",
+            a13_hook_targets="Foo#bar",
+            a13_callback_phase="before",
+            preference_keys=("system_demo",),
+            value_domain="boolean; default false",
+            default_semantics="off keeps ROM",
+            result_argument_behavior="Skip Foo#bar when the toggle is on so the host method does not run.",
+            api33_variant_reason="A14 intercept skip with null and no proceed; A13 before returnAndSkip(null).",
+            proof_conclusion="PRESENT_A13_VARIANT",
+            evidence_level="INDIVIDUAL_SEMANTIC_PROOF",
+            body_relation="REVIEWED_VARIANT",
+            diff_summary="Shared Foo#bar skip when toggle on. Differ: A14 intercept vs A13 before returnAndSkip.",
+            value_default_comparison="boolean default false on both trees",
+            hook_target_comparison="A14=Foo#bar; A13=Foo#bar",
+            callback_semantics_comparison="A14 intercept skip vs A13 before skip; original not invoked",
+            arg_result_comparison="skipped result null; no argument rewrite",
+            a14_only_branches="none for this key",
+            why_user_behavior_is_equivalent="Same host member skipped for the same toggle.",
+            key_ownership_evidence="system_demo: LITERAL_READ in DemoHook on both trees",
+            a14_key_owner_reference="Controls.kt::DemoHook LITERAL_READ system_demo",
+            a13_key_owner_reference="Controls.kt::DemoHook LITERAL_READ system_demo",
+        )
+        base.update(kwargs)
+        return ProofManifest(**base)
+
+    def test_nofingerprintwake_group_does_not_absorb_sibling_keys(self):
+        from tools.parity_owner_groups import discover_true_owner_groups, group_keys_for_symbol
+
+        wake = self._owner(
+            symbol="NoFingerprintWakeHook",
+            keys=(),
+            normalized_body="{ if (!isScreenOn) skip }",
+        )
+        fail = self._owner(symbol="FingerprintHapticFailureHook", keys=())
+        power = self._owner(symbol="PowerKeyHook", keys=("controls_powerflash",))
+        torch = self._owner(symbol="VolumeDownTorchHook", keys=("controls_volumedowndt_torch",))
+        scan14 = RepoScan(
+            owners={
+                "controls_powerflash": [power],
+                "controls_volumedowndt_torch": [torch],
+            },
+            symbols={
+                "NoFingerprintWakeHook": [wake],
+                "FingerprintHapticFailureHook": [fail],
+                "PowerKeyHook": [power],
+                "VolumeDownTorchHook": [torch],
+            },
+            callees={
+                "controls_fingerprintwake": {"NoFingerprintWakeHook"},
+                "controls_fingerprintfailure": {"FingerprintHapticFailureHook"},
+                "controls_powerflash": {"PowerKeyHook"},
+                "controls_volumedowndt_torch": {"VolumeDownTorchHook"},
+            },
+        )
+        scan13 = scan14
+        keys = [
+            "controls_fingerprintwake",
+            "controls_fingerprintfailure",
+            "controls_powerflash",
+            "controls_volumedowndt_torch",
+        ]
+        groups, _, _ = discover_true_owner_groups(keys, scan14, scan13)
+        wake_keys = group_keys_for_symbol(groups, "NoFingerprintWakeHook")
+        self.assertEqual(wake_keys, ("controls_fingerprintwake",))
+        self.assertNotIn("controls_fingerprintfailure", wake_keys)
+        self.assertNotIn("controls_powerflash", wake_keys)
+        self.assertNotIn("controls_volumedowndt_torch", wake_keys)
+        idx = review_owner_groups(scan14, scan13, keys, explicit=[])
+        self.assertNotIn("controls_fingerprintwake", idx.by_key)
+        reviewed = review_owner_groups(scan14, scan13, keys)
+        wake_man = reviewed.by_key["controls_fingerprintwake"]
+        self.assertEqual(wake_man.a13_symbol, "NoFingerprintWakeHook")
+        self.assertEqual(wake_man.preference_keys, ("controls_fingerprintwake",))
+        self.assertNotIn("controls_fingerprintfailure", wake_man.preference_keys)
+        self.assertNotIn("controls_powerflash", wake_man.preference_keys)
+        self.assertNotIn("controls_volumedowndt_torch", wake_man.preference_keys)
+        self.assertEqual(reviewed.by_key["controls_fingerprintfailure"].a13_symbol, "FingerprintHapticFailureHook")
+        self.assertEqual(reviewed.by_key["controls_powerflash"].a13_symbol, "PowerKeyHook")
+
+    def test_fingerprint_success_group_does_not_absorb_system_helpers(self):
+        from tools.parity_owner_groups import discover_true_owner_groups, group_keys_for_symbol
+
+        success = self._owner(
+            symbol="FingerprintHapticSuccessHook",
+            keys=("controls_fingerprintsuccess", "controls_fingerprintsuccess_ignore"),
+        )
+        toast = self._owner(
+            path="app/src/main/java/tv/withaibuild/customiuizer/mods/System.kt",
+            symbol="BlockToastsHook",
+            keys=("system_blocktoasts",),
+        )
+        light = self._owner(
+            path="app/src/main/java/tv/withaibuild/customiuizer/mods/System.kt",
+            symbol="NoLightUponChargeHook",
+            keys=("system_nolightuponcharges",),
+        )
+        vib = self._owner(
+            path="app/src/main/java/tv/withaibuild/customiuizer/mods/System.kt",
+            symbol="VibrationHook",
+            keys=("system_vibration",),
+        )
+        scan = RepoScan(
+            owners={
+                "controls_fingerprintsuccess": [success],
+                "system_blocktoasts": [toast],
+                "system_nolightuponcharges": [light],
+                "system_vibration": [vib],
+            },
+            symbols={
+                "FingerprintHapticSuccessHook": [success],
+                "BlockToastsHook": [toast],
+                "NoLightUponChargeHook": [light],
+                "VibrationHook": [vib],
+            },
+            callees={
+                "controls_fingerprintsuccess": {"FingerprintHapticSuccessHook"},
+            },
+        )
+        keys = [
+            "controls_fingerprintsuccess",
+            "system_blocktoasts",
+            "system_nolightuponcharges",
+            "system_vibration",
+        ]
+        groups, _, _ = discover_true_owner_groups(keys, scan, scan)
+        success_keys = group_keys_for_symbol(groups, "FingerprintHapticSuccessHook")
+        self.assertEqual(success_keys, ("controls_fingerprintsuccess",))
+        self.assertNotIn("system_blocktoasts", success_keys)
+        self.assertNotIn("system_nolightuponcharges", success_keys)
+        self.assertNotIn("system_vibration", success_keys)
+
+    def test_prefix_fallback_cannot_assign_owner(self):
+        from tools.parity_owner_groups import forbidden_prefix_fallback_owners, pair_true_owners
+
+        parent = self._owner(symbol="ControlsFamilyHook", keys=("controls_fingerprintwake",))
+        scan = RepoScan(
+            owners={"controls": [parent], "controls_fingerprintwake": [parent]},
+            symbols={"ControlsFamilyHook": [parent]},
+            callees={},
+        )
+        prefix_hits = forbidden_prefix_fallback_owners("controls_fingerprintfailure", scan)
+        self.assertTrue(prefix_hits)
+        self.assertIsNone(pair_true_owners("controls_fingerprintfailure", scan, scan))
+
+    def test_ranked_first_fallback_cannot_prove_owner(self):
+        from tools.parity_owner_groups import pair_true_owners, ranked_first_owner
+
+        mega = self._owner(
+            symbol="MegaHook",
+            keys=("system_blocktoasts",),
+            hook_targets=("com.android.Foo#bar",),
+            kind="hook",
+        )
+        demo = self._owner(
+            symbol="DemoHook",
+            keys=("system_demo",),
+            hook_targets=(),
+            kind="spec",
+        )
+        owners = [mega, demo]
+        ranked = ranked_first_owner(owners)
+        self.assertEqual(ranked.symbol, "MegaHook")
+        scan = RepoScan(
+            owners={"system_demo": owners},
+            symbols={"MegaHook": [mega], "DemoHook": [demo]},
+            callees={},
+        )
+        pair = pair_true_owners("system_demo", scan, scan)
+        self.assertIsNotNone(pair)
+        self.assertEqual(pair[0].owner.symbol, "DemoHook")
+        self.assertNotEqual(pair[0].owner.symbol, ranked.symbol)
+
+    def test_same_xml_file_alone_cannot_prove_present(self):
+        idx = review_owner_groups(
+            RepoScan(owners={}, symbols={}, callees={}),
+            RepoScan(owners={}, symbols={}, callees={}),
+            ["system_demo"],
+            a14_xml={"system_demo": "prefs_system.xml"},
+            a13_xml={"system_demo": "prefs_system.xml"},
+            a14_tags={"system_demo": "CheckBoxPreferenceEx"},
+            a13_tags={"system_demo": "CheckBoxPreferenceEx"},
+            explicit=[],
+        )
+        self.assertNotIn("system_demo", idx.by_key)
+        decision = classify_phase_f_transition(PhaseFTransitionInput(
+            key="system_demo",
+            node_type="PRODUCT_ACTION",
+            a14_read=True,
+            a13_read=True,
+            host_package="SETTINGS",
+            source_proof=None,
+            unproven_bucket="SOURCE_REVIEW_REQUIRED",
+        ))
+        self.assertEqual(decision.parity_state, "SOURCE_REVIEW_REQUIRED")
+        self.assertEqual(decision.evidence_level, "IMPLEMENTATION_PRESENCE")
+        self.assertNotIn(decision.parity_state, {"PRESENT_EQUIVALENT", "PRESENT_A13_VARIANT"})
+
+    def test_explicit_reviewed_owner_group_is_present_a13_variant(self):
+        a14 = self._owner(normalized_body='{ getBoolean("system_demo", false); extraA14() }')
+        a13 = self._owner(normalized_body='{ getBoolean("system_demo", false) }')
+        scan14 = RepoScan(owners={"system_demo": [a14]}, symbols={"DemoHook": [a14]}, callees={})
+        scan13 = RepoScan(owners={"system_demo": [a13]}, symbols={"DemoHook": [a13]}, callees={})
+        man = self._reviewed()
+        idx = review_owner_groups(scan14, scan13, ["system_demo"], explicit=[man])
         self.assertEqual(idx.by_key["system_demo"].proof_conclusion, "PRESENT_A13_VARIANT")
-        self.assertEqual(idx.by_key["system_demo"].body_relation, "REVIEWED_VARIANT")
+        decision = classify_phase_f_transition(PhaseFTransitionInput(
+            key="system_demo",
+            node_type="PRODUCT_ACTION",
+            a14_read=True,
+            a13_read=True,
+            host_package="SYSTEM_UI",
+            source_proof=man,
+        ))
+        self.assertEqual(decision.parity_state, "PRESENT_A13_VARIANT")
+
+    def test_installer_callee_window_does_not_bind_sibling_keys(self):
+        from tools.parity_phase_f import _key_callees_in_text
+
+        text = """
+        if (getBoolean("controls_fingerprintwake")) Controls.NoFingerprintWakeHook(lpparam);
+        if (getBoolean("controls_fingerprintfailure")) Controls.FingerprintHapticFailureHook(lpparam);
+        if (getBoolean("controls_powerflash")) Controls.PowerKeyHook(lpparam);
+        if (getBoolean("controls_volumedowndt_torch")) Controls.VolumeDownTorchHook(lpparam);
+        """
+        callees = _key_callees_in_text(text)
+        self.assertEqual(callees["controls_fingerprintwake"], {"NoFingerprintWakeHook"})
+        self.assertEqual(callees["controls_fingerprintfailure"], {"FingerprintHapticFailureHook"})
+        self.assertEqual(callees["controls_powerflash"], {"PowerKeyHook"})
+        self.assertNotIn("NoFingerprintWakeHook", callees.get("controls_fingerprintfailure", set()))
+        self.assertNotIn("NoFingerprintWakeHook", callees.get("controls_powerflash", set()))
+        self.assertNotIn("NoFingerprintWakeHook", callees.get("controls_volumedowndt_torch", set()))
+        body = '{ getBoolean("system_demo", false); setResult(true) }'
+        a14 = self._owner(normalized_body=body)
+        a13 = self._owner(
+            path="app/src/main/java/tv/withaibuild/customiuizer/mods/Demo.kt",
+            normalized_body=body,
+        )
+        man = fingerprint_proof_for_key(
+            "system_demo",
+            {"system_demo": [a14]},
+            {"system_demo": [a13]},
+        )
+        self.assertIsNotNone(man)
+        self.assertEqual(man.body_relation, "IDENTICAL")
+        self.assertEqual(man.proof_conclusion, "PRESENT_EQUIVALENT")
 
 
 if __name__ == "__main__":
