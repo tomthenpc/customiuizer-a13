@@ -243,3 +243,22 @@ various_disable_defraud_apps_detect   = HOLD_EVIDENCE
   BUILD_VERIFIED                      = NO (no production)
   DEVICE_EVIDENCE                     = UNVERIFIED
 ```
+
+## Phase F-R5 source semantic review
+
+F-R4 owner-proof rules stay frozen. F-R5 did not redesign pairing, prefix
+ownership, leftover_gap, or XML auto-PRESENT. Remaining `SOURCE_REVIEW_REQUIRED`
+rows were closed by explicit reviewed manifests after reading A13/A14 owners,
+plus two statically safe existing-A13 upgrades:
+
+- `system_dimtime` now writes AOSP `mMaximumScreenDimDurationConfig` /
+  `mMaximumScreenDimRatioConfig` from the 0-99% slider (same as A14).
+- `BatteryIndicator.updateParameters` now reads `system_batteryindicator_colorval1-4`.
+
+New ROM holds from this review (plugin/HyperOS weather ABI, not auto-PRESENT):
+
+```text
+system_epm                            = HOLD_EVIDENCE
+system_statusbar_enable_weather_param = HOLD_EVIDENCE
+system_drawer_hidedate                = HOLD_EVIDENCE
+```

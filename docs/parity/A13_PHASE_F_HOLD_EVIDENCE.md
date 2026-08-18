@@ -1,8 +1,8 @@
-# A13 Phase F-R4 HOLD_EVIDENCE
+# A13 Phase F-R5 HOLD_EVIDENCE
 
-HOLD_EVIDENCE_COUNT = 62
+HOLD_EVIDENCE_COUNT = 63
 DEAD_UPSTREAM_PATH_COUNT = 0
-SOURCE_REVIEW_REQUIRED = 469
+SOURCE_REVIEW_REQUIRED = 0
 
 Final HOLD_EVIDENCE rows are ROM_DEVICE_HOLD only: ROM ABI, class/member, layout/view identity,
 device behavior, or boot/system_server risk. Module-owned app logic is not parked here.
@@ -215,6 +215,14 @@ SOURCE_REVIEW_REQUIRED is not HOLD_EVIDENCE.
 - safe_default: stock shade date
 - required_device_evidence: Notification header/date view hierarchy
 - why_static_source_cannot_decide: A14 drawer-date hooks target shade header classes not proven on MIUI 14.
+
+## system_epm
+
+- unresolved_question: Both PluginEnablerImpl returnAndSkip(false) for GlobalActions components. A13 issueExternCommand returnAndSkip(null) after custom reboot. A14 onPress returnAndSkip(null) after showing confirm dialog.
+- affected_rom_process: com.android.systemui
+- safe_default: feature off / ROM default
+- required_device_evidence: Host class/member dump on MIUI 14
+- why_static_source_cannot_decide: Not a portable API33 rename: MIUI14 MAML power menu vs HyperOS GlobalActionsDialogLite. PluginEnablerImpl is an unportable plugin gate.
 
 ## system_force_darken_allapps
 
