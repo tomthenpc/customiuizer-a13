@@ -215,7 +215,15 @@ C3  HookTargetResolver 致命判定补全 + 致命助手收敛
 
 F2 是功能库存，不是功能实现。
 
-## Phase F-R3 remaining A14-only holds
+## Phase F-R4 owner-proof integrity
+
+F-R3 owner-group auto-PRESENT is not authoritative. A key joins an owner group only
+through concrete source ownership (literal read, FeatureSpec bind, snapshot field,
+installer callee, or a reviewed alias). Parent-key prefix, ranked-first owner,
+same XML file, and same basename alone are not proof.
+
+Non-identical owner candidates stay `SOURCE_REVIEW_REQUIRED` until an explicit
+reviewed manifest exists. Same XML row on both trees is `IMPLEMENTATION_PRESENCE`.
 
 These two A14 product keys have no A13 counterpart. They are **not** ports;
 they are ROM/device evidence holds recorded in `docs/parity/A13_PHASE_F_HOLD_EVIDENCE.md`.

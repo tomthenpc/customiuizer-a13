@@ -1,11 +1,12 @@
-# A13 Phase F-R3 HOLD_EVIDENCE
+# A13 Phase F-R4 HOLD_EVIDENCE
 
 HOLD_EVIDENCE_COUNT = 62
 DEAD_UPSTREAM_PATH_COUNT = 0
-SOURCE_REVIEW_REQUIRED = 0
+SOURCE_REVIEW_REQUIRED = 469
 
 Final HOLD_EVIDENCE rows are ROM_DEVICE_HOLD only: ROM ABI, class/member, layout/view identity,
 device behavior, or boot/system_server risk. Module-owned app logic is not parked here.
+SOURCE_REVIEW_REQUIRED is not HOLD_EVIDENCE.
 
 ## launcher_wallpaper_colormode
 
