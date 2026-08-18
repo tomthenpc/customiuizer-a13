@@ -1,4 +1,4 @@
-# A13 Phase E Parity Plan (from Phase D inventory)
+# A13 Phase E Parity Plan (from Phase D-R1 corrected inventory)
 
 ```text
 INPUT = docs/parity/A13_A14_FEATURE_MATRIX.csv + D4 settings parity audit
@@ -12,7 +12,7 @@ PHASE_D_POLICY = planning only, no production ports here
 - Keep Dynamic Island as `INTENTIONAL_EXCLUDED` (`PORT=NO`).
 - Treat `UI_WITHOUT_IMPLEMENTATION` and `IMPLEMENTATION_WITHOUT_UI` as first-class parity debt.
 
-## Batch plan
+## Batch plan (row-traceable from matrix)
 
 ### E1 - Settings/Maintenance foundation (P0/P1)
 
@@ -22,7 +22,7 @@ PHASE_D_POLICY = planning only, no production ports here
 - Language/about flow consolidation and locale-restore reconciliation.
 
 ```text
-PHASE_E_E1_COUNT = 12
+PHASE_E_E1_COUNT = 1
 ```
 
 ### E2 - Low-risk independent features (P1/P2)
@@ -32,7 +32,7 @@ PHASE_E_E1_COUNT = 12
 - Includes mismatch cleanup where implementation risk is low and testability high.
 
 ```text
-PHASE_E_E2_COUNT = 35
+PHASE_E_E2_COUNT = 0
 ```
 
 ### E3 - Launcher + SystemUI user-visible parity (P1)
@@ -42,7 +42,7 @@ PHASE_E_E2_COUNT = 35
 - Keep hot-path constraints and avoid callback-time ROM detection.
 
 ```text
-PHASE_E_E3_COUNT = 24
+PHASE_E_E3_COUNT = 16
 ```
 
 ### E4 - SecurityCenter/permission/installer/app-process parity (P1/P2)
@@ -51,7 +51,7 @@ PHASE_E_E3_COUNT = 24
 - Permission/privacy and service cleanup options requiring process-aware routing.
 
 ```text
-PHASE_E_E4_COUNT = 6
+PHASE_E_E4_COUNT = 59
 ```
 
 ### E5 - system_server high-risk parity (P0/P1)
@@ -60,18 +60,21 @@ PHASE_E_E4_COUNT = 6
 - Requires strongest preflight static proof + targeted regression plan + staged rollout.
 
 ```text
-PHASE_E_E5_COUNT = 2
+PHASE_E_E5_COUNT = 1
 ```
 
 Total planned gaps:
 
 ```text
-TOTAL_PHASE_E_PARITY_GAPS = 79
+TOTAL_PHASE_E_PARITY_GAPS = 77
 ```
+
+Counts are derived directly from `A13_A14_FEATURE_MATRIX.csv` rows where
+`parity_state in {MISSING_IN_A13, PARTIAL_PARITY}`.
 
 ## Per-feature implementation template (to be used in E phase execution)
 
-For each selected feature, Phase E tickets must include:
+For each selected feature row, Phase E tickets must include:
 
 - `A14_REFERENCE`
 - `A13_CURRENT_STATE`

@@ -1,9 +1,15 @@
-# A13/A14 Settings & Product Experience Parity (Phase D4)
+# A13/A14 Settings & Product Experience Parity (Phase D-R1)
 
 ```text
-SCOPE = settings UX / search / restart UX / language-about / backup-restore
+SCOPE = settings UX / search / restart UX / language-about / backup-restore / topology typing
 PRODUCTION_CHANGED = NO
 ```
+
+## Topology typing correction
+
+- `PreferenceCategory` and category/navigation keys are no longer counted as product features.
+- Helper/state-only keys are retained in topology but excluded from product-feature totals.
+- Product rows are constrained to actionable/suboption semantics plus explicit infrastructure rows.
 
 ## Settings structure and navigation
 
@@ -56,13 +62,13 @@ Classification:
 BACKUP_PARITY_RESULT = MISSING_IN_A13
 ```
 
-## D4 discrepancy accounting
+## Discrepancy confidence accounting (R1)
 
 ```text
-UI_WITHOUT_IMPLEMENTATION = 27
-IMPLEMENTATION_WITHOUT_UI = 56
-SEARCH_WITHOUT_DESTINATION = included in UI_WITHOUT_IMPLEMENTATION candidates
-DUPLICATE_SEMANTIC_ENTRY = needs Phase E cleanup pass
+CONFIRMED_UI_WITHOUT_IMPLEMENTATION = 0
+CANDIDATE_UI_WITHOUT_IMPLEMENTATION = 105
+CONFIRMED_IMPLEMENTATION_WITHOUT_UI = 0
+INTERNAL_IMPLEMENTATION_WITHOUT_UI = 59
 ```
 
 Phase D policy applied: documented only, no production corrective.
