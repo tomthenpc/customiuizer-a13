@@ -7,6 +7,7 @@ import tv.withaibuild.customiuizer.mods.SystemAudioAndVolumeHooks;
 import tv.withaibuild.customiuizer.mods.SystemNotificationMoreHooks;
 import tv.withaibuild.customiuizer.mods.SystemSettingsAndConnectivityHooks;
 import tv.withaibuild.customiuizer.mods.SystemSettingsMoreHooks;
+import tv.withaibuild.customiuizer.utils.UsbDefaultFunctionMapper;
 
 /**
  * Installer for the Settings package.
@@ -27,7 +28,7 @@ public final class SettingsInstaller {
             SystemNotificationMoreHooks.DisableAnyNotificationHook(lpparam);
             SystemNotificationMoreHooks.DisableAnyNotificationBlockHook(lpparam);
         }
-        if (!"none".equals(MainModule.mPrefs.getString("system_defaultusb", "none"))) {
+        if (UsbDefaultFunctionMapper.toA13Function(MainModule.mPrefs.getString("system_defaultusb", "none")) != null) {
             SystemSettingsMoreHooks.USBConfigSettingsHook(lpparam);
         }
         if (MainModule.mPrefs.getBoolean("system_notifimportance")) {

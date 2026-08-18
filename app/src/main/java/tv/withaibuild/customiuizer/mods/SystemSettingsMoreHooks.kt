@@ -18,6 +18,7 @@ import tv.withaibuild.customiuizer.mods.utils.HookerClassHelper.BeforeHookCallba
 import tv.withaibuild.customiuizer.mods.utils.HookerClassHelper.MethodHook
 import tv.withaibuild.customiuizer.mods.utils.ModuleHelper
 import tv.withaibuild.customiuizer.mods.utils.XposedHelpers
+import tv.withaibuild.customiuizer.utils.UsbDefaultFunctionMapper
 
 object SystemSettingsMoreHooks {
 
@@ -37,8 +38,9 @@ object SystemSettingsMoreHooks {
                                 try {
                                     val mPlugType = XposedHelpers.getIntField(service, "mPlugType")
                                     if (mPlugType != BatteryManager.BATTERY_PLUGGED_USB) return
-                                    val func = MainModule.mPrefs.getString("system_defaultusb", "none")
-                                    if (func == "none" || func == "1") return
+                                    val func = UsbDefaultFunctionMapper.toA13Function(
+                                        MainModule.mPrefs.getString("system_defaultusb", "none")
+                                    ) ?: return
                                     val usbMgr = mContext.getSystemService(Context.USB_SERVICE) as? UsbManager ?: return
                                     if (XposedHelpers.callMethod(usbMgr, "isFunctionEnabled", func) as? Boolean == true) return
                                     XposedHelpers.callMethod(usbMgr, "setCurrentFunction", func, MainModule.mPrefs.getBoolean("system_defaultusb_unsecure"))
@@ -90,8 +92,10 @@ object SystemSettingsMoreHooks {
     fun USBConfigSettingsHook(lpparam: PackageReadyParam) {
         ModuleHelper.findAndHookMethodSilently("com.android.settings.connecteddevice.usb.UsbModeChooserReceiver", lpparam.classLoader, "onReceive", Context::class.java, Intent::class.java, object : MethodHook() {
             override fun before(param: BeforeHookCallback) {
-                val func = MainModule.mPrefs.getString("system_defaultusb", "none")
-                if (func != "none" && func != "1") param.returnAndSkip(null)
+                val func = UsbDefaultFunctionMapper.toA13Function(
+                    MainModule.mPrefs.getString("system_defaultusb", "none")
+                )
+                if (func != null) param.returnAndSkip(null)
             }
         })
     }
