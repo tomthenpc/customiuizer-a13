@@ -1271,4 +1271,101 @@ object Various {
             }
         })
     }
+
+    @JvmStatic
+    internal fun shouldHideReportMenuItem(itemId: Int): Boolean = itemId == 4
+
+    @JvmStatic
+    fun HideReportButtonHook(lpparam: PackageReadyParam) {
+        ModuleHelper.findAndHookMethod(
+            "com.miui.appmanager.ApplicationsDetailsActivity",
+            lpparam.classLoader,
+            "onCreateOptionsMenu",
+            Menu::class.java,
+            object : MethodHook() {
+                override fun after(param: AfterHookCallback) {
+                    val menu = param.args[0] as? Menu ?: return
+                    val reportMenu = menu.findItem(4)
+                    if (reportMenu != null && shouldHideReportMenuItem(reportMenu.itemId)) {
+                        reportMenu.isVisible = false
+                    }
+                }
+            }
+        )
+    }
+
+    @JvmStatic
+    internal fun purifiedInstallerBoolean(prefKey: String): Boolean? = when (prefKey) {
+        "ads_enable", "app_store_recommend", "secure_verify_enable" -> false
+        "secure_verify_cloud_once" -> true
+        else -> null
+    }
+
+    @JvmStatic
+    internal fun purifiedInstallerSystemInt(prefKey: String): Int? =
+        if (prefKey == "virus_scan_install") 0 else null
+
+    @JvmStatic
+    internal fun purifiedInstallerSecureInt(prefKey: String): Int? =
+        if (prefKey == "miui_safe_mode") 0 else null
+
+    @JvmStatic
+    fun PurePackageInstallerHook(lpparam: PackageReadyParam) {
+        ModuleHelper.findAndHookMethod(
+            "android.app.SharedPreferencesImpl",
+            lpparam.classLoader,
+            "getBoolean",
+            String::class.java,
+            Boolean::class.javaPrimitiveType,
+            object : MethodHook() {
+                override fun before(param: BeforeHookCallback) {
+                    val override = purifiedInstallerBoolean(param.getArg(0) as? String ?: return)
+                    if (override != null) param.returnAndSkip(override)
+                }
+            }
+        )
+        ModuleHelper.findAndHookMethod(
+            Settings.System::class.java,
+            "getInt",
+            ContentResolver::class.java,
+            String::class.java,
+            Int::class.javaPrimitiveType,
+            object : MethodHook() {
+                override fun before(param: BeforeHookCallback) {
+                    val override = purifiedInstallerSystemInt(param.getArg(1) as? String ?: return)
+                    if (override != null) param.returnAndSkip(override)
+                }
+            }
+        )
+        ModuleHelper.findAndHookMethod(
+            Settings.Secure::class.java,
+            "getInt",
+            ContentResolver::class.java,
+            String::class.java,
+            Int::class.javaPrimitiveType,
+            object : MethodHook() {
+                override fun before(param: BeforeHookCallback) {
+                    val override = purifiedInstallerSecureInt(param.getArg(1) as? String ?: return)
+                    if (override != null) param.returnAndSkip(override)
+                }
+            }
+        )
+        ModuleHelper.findAndHookMethodSilently(
+            "com.miui.packageInstaller.ui.listcomponets.SafeModeTipViewObject\$ViewHolder",
+            lpparam.classLoader,
+            "updateSuggestionMsgState",
+            Context::class.java,
+            Boolean::class.javaPrimitiveType,
+            object : MethodHook() {
+                override fun after(param: AfterHookCallback) {
+                    val itemView = XposedHelpers.getObjectField(param.getThisObject(), "itemView") as? View ?: return
+                    itemView.visibility = View.GONE
+                    itemView.layoutParams?.let { lp ->
+                        lp.height = 0
+                        itemView.layoutParams = lp
+                    }
+                }
+            }
+        )
+    }
 }

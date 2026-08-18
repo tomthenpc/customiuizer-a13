@@ -670,6 +670,7 @@
     <string name="various_installappinfo_vercode">版本代码</string>
     <string name="various_installappinfo_sdk">支持SDK</string>
     <string name="various_installappinfo_current">当前</string>
+    <string name="various_installer_purify_title">净化安装过程</string>
     <string name="various_alarmcompat_title">闹钟兼容性</string>
     <string name="various_alarmcompat_summ">令所选应用正确显示MIUI时钟应用设置的下一次闹钟时间</string>
     <string name="various_gboardpadding_port_title">竖屏时底部填充</string>
@@ -688,6 +689,7 @@
     <string name="various_disableapp_summ">允许从应用信息页面禁用任何应用</string>
     <string name="various_securitycenter_unlock_title">解锁手机管家特性</string>
     <string name="various_apps_title">显示附加应用详情</string>
+    <string name="various_hide_report_ondetails_title">隐藏应用信息页面的举报按钮</string>
     <string name="various_apps_summ">添加新字段到应用信息页面:\n- 版本代码\n- apk完整路径\n- 数据路径\n- 用户标识符\n- 目标SDK版本\n- 连结到Play商店页面\n- 启动应用</string>
     <string name="various_appsort_title">已安装应用的初始排列顺序</string>
     <string name="various_privacyapps_column_nums4_title">隐藏应用视图调整为4列</string>

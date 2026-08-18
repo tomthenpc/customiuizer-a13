@@ -21,6 +21,11 @@
 		android:defaultValue="false" />
 
 	<tv.withaibuild.customiuizer.prefs.CheckBoxPreferenceEx
+		android:key="pref_key_various_installer_purify"
+		android:title="@string/various_installer_purify_title"
+		android:defaultValue="false" />
+
+	<tv.withaibuild.customiuizer.prefs.CheckBoxPreferenceEx
 		android:key="pref_key_various_disable_access_devicelogs"
 		android:title="@string/various_disable_access_devicelogs_title"
 		android:defaultValue="false" />
@@ -146,6 +151,11 @@
 		android:key="pref_key_various_appdetails"
 		android:summary="@string/various_apps_summ"
 		android:title="@string/various_apps_title"
+		android:defaultValue="false" />
+
+	<tv.withaibuild.customiuizer.prefs.CheckBoxPreferenceEx
+		android:key="pref_key_various_hide_report_ondetails"
+		android:title="@string/various_hide_report_ondetails_title"
 		android:defaultValue="false" />
 
 	<tv.withaibuild.customiuizer.prefs.ListPreferenceEx

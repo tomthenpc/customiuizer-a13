@@ -38,5 +38,8 @@ public final class SecurityCenterInstaller {
         if (MainModule.mPrefs.getBoolean("various_privacyapps_column_nums4")) {
             Various.PrivacyAppsLayoutHook(lpparam);
         }
+        if (MainModule.mPrefs.getBoolean("various_hide_report_ondetails")) {
+            Various.HideReportButtonHook(lpparam);
+        }
     }
 }
