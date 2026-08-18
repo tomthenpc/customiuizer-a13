@@ -70,4 +70,31 @@ Not modified: catalog specs, `createRuntime("android")`, USB/Controls callback O
 PRODUCTION_CHANGED = YES (D1/D2)
 TEST_CHANGED       = YES
 FULL_GATE_RUN      = NO
+B3C_CLOSED         = YES (unattended freeze; ChatGPT PASS not claimed)
+```
+
+---
+
+## 6. B3C FINAL AUDIT (unattended freeze)
+
+Independent re-check after D1/D2. Does **not** claim ChatGPT PASS.
+
+```text
+B3C_SELECTION_SHA  = 32db3f0
+B3C_CORRECTIVE_SHA = d777ef7
+B3C_CATALOG_MIGRATION_CANDIDATES = 0
+```
+
+| ID | Still present |
+|---|---|
+| D1 | `needGlobalActions` uses `RuntimeFatality.throwIfFatal`; local `rethrowIfFatal` deleted |
+| D2 | `PackagePermissions.hook` uses `RuntimeFatality.throwIfFatal`; ordinary miss still logs |
+
+Unchanged: catalog specs, `createRuntime("android")`, USB/Controls callback OOM-only catches.
+
+Remaining: callback OOM-only in Controls/USBConfigHook (DEBT).
+
+```text
+B3C_UNATTENDED_FREEZE = YES
+CHATGPT_PASS          = NOT_CLAIMED
 ```
