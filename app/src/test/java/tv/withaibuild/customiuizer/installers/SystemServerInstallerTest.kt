@@ -2,6 +2,7 @@ package tv.withaibuild.customiuizer.installers
 
 import org.junit.After
 import org.junit.Assert.assertFalse
+import org.junit.Assert.assertSame
 import org.junit.Assert.assertTrue
 import org.junit.Assert.fail
 import org.junit.Before
@@ -84,6 +85,18 @@ class SystemServerInstallerTest {
             fail("expected ThreadDeath to be rethrown")
         } catch (e: ThreadDeath) {
             // expected
+        }
+    }
+
+    @Test
+    fun needGlobalActions_rethrowsWrappedOutOfMemoryError() {
+        val oom = OutOfMemoryError("wrapped")
+        setThrowingEntrySet(RuntimeException(oom))
+        try {
+            SystemServerInstaller.needGlobalActions()
+            fail("expected wrapped OutOfMemoryError to be rethrown")
+        } catch (e: OutOfMemoryError) {
+            assertSame(oom, e)
         }
     }
 

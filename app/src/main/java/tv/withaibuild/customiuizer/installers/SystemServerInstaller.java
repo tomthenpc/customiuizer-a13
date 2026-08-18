@@ -19,6 +19,7 @@ import tv.withaibuild.customiuizer.mods.SystemSettingsMoreHooks;
 import tv.withaibuild.customiuizer.mods.Various;
 import tv.withaibuild.customiuizer.mods.catalog.FeatureDispatcher;
 import tv.withaibuild.customiuizer.mods.catalog.FeatureRuntime;
+import tv.withaibuild.customiuizer.mods.utils.RuntimeFatality;
 
 public final class SystemServerInstaller {
 
@@ -109,7 +110,7 @@ public final class SystemServerInstaller {
                 }
             }
         } catch (Throwable t) {
-            rethrowIfFatal(t);
+            RuntimeFatality.throwIfFatal(t);
             XposedHelpers.log(t);
         }
         try {
@@ -117,18 +118,9 @@ public final class SystemServerInstaller {
                 return !MainModule.mPrefs.getStringSet("controls_mediaplayer_apps").isEmpty();
             }
         } catch (Throwable t) {
-            rethrowIfFatal(t);
+            RuntimeFatality.throwIfFatal(t);
             XposedHelpers.log(t);
         }
         return false;
-    }
-
-    private static void rethrowIfFatal(Throwable t) {
-        if (t instanceof VirtualMachineError) {
-            throw (VirtualMachineError) t;
-        }
-        if (t instanceof ThreadDeath) {
-            throw (ThreadDeath) t;
-        }
     }
 }
