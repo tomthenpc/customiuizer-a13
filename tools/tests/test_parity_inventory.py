@@ -95,6 +95,7 @@ class ParityInventoryTest(unittest.TestCase):
         self.assertEqual(route_phase_e_batch("LAUNCHER", "com.miui.home", "k", "n", "MISSING_IN_A13"), "E3")
         self.assertEqual(route_phase_e_batch("SECURITY_CENTER", "com.miui.securitycenter", "k", "n", "MISSING_IN_A13"), "E4")
         self.assertEqual(route_phase_e_batch("PACKAGE_INSTALLER", "com.google.android.packageinstaller", "k", "n", "MISSING_IN_A13"), "E4")
+        self.assertEqual(route_phase_e_batch("SYSTEM_PACKAGE", "android.system.package", "various_installer_purify", "Package Installer Purify", "MISSING_IN_A13"), "E4")
         self.assertEqual(route_phase_e_batch("SYSTEM_SERVER", "android", "k", "n", "MISSING_IN_A13"), "E5")
         self.assertEqual(route_phase_e_batch("SETTINGS", "com.android.settings", "infra.backup_restore", "Backup / Restore", "MISSING_IN_A13"), "E1")
         self.assertEqual(route_phase_e_batch("SETTINGS", "com.android.settings", "generic_low_risk", "Generic", "MISSING_IN_A13"), "E2")
@@ -125,6 +126,36 @@ class ParityInventoryTest(unittest.TestCase):
         self.assertIn("system_usb_default_function", aliases)
         self.assertIn("system_defaultusb", aliases["system_usb_default_function"]["a13_keys"])
         self.assertEqual(aliases["system_usb_default_function"]["parity_state"], "PARTIAL_PARITY")
+
+    def test_d_final_aliases_cover_known_false_missing(self):
+        aliases = missing_semantic_aliases()
+        self.assertEqual(aliases["launcher_folderblur_disable"]["parity_state"], "PARTIAL_PARITY")
+        self.assertEqual(aliases["system_netspeed_boldfont"]["parity_state"], "PRESENT_A13_VARIANT")
+        self.assertEqual(aliases["system_statusbarcontrols_dt_left"]["parity_state"], "PARTIAL_PARITY")
+        self.assertEqual(aliases["system_statusbarcontrols_dt_right"]["parity_state"], "PARTIAL_PARITY")
+        self.assertEqual(aliases["system_charginginfo_fontsize"]["parity_state"], "PARTIAL_PARITY")
+        self.assertEqual(aliases["system_charginginfo_fontsize"]["host_package"], "SYSTEM_UI")
+        self.assertEqual(aliases["system_strong_toast_island_offset"]["phase_e_batch"], "HOLD_EVIDENCE")
+
+    def test_absence_proof_is_feature_specific(self):
+        index = {
+            "app/src/main/java/tv/withaibuild/customiuizer/mods/LauncherLayoutHooks.kt":
+                'val opt = MainModule.mPrefs.getInt("launcher_dock_topmargin", 0)',
+            "app/src/main/res/xml/prefs_launcher.xml":
+                'android:key="pref_key_launcher_dock_topmargin"',
+        }
+        proof = parity_inventory.build_absence_proof(
+            "launcher_dock_height",
+            "LauncherDockHeightFeatureId",
+            "Launcher Dock Height",
+            index,
+            {"launcher_dock_topmargin": None},
+            {"launcher_dock_topmargin"},
+            ["launcher_dock_topmargin"],
+        )
+        self.assertIn("launcher_dock_height", proof)
+        self.assertIn("hotseat/dock height", proof)
+        self.assertNotIn("Checked A13 UI keys, PreferenceSchema-linked keys", proof)
 
     def test_partial_counts_as_gap_present_does_not(self):
         rows = [
