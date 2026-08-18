@@ -146,7 +146,7 @@ object PreferenceSchema {
             key = "system_dimtime",
             type = PreferenceType.INT,
             defaultValue = 0,
-            constraint = PreferenceConstraint.IntRange(min = 0, max = 300000),
+            constraint = PreferenceConstraint.IntRange(min = 0, max = 99),
             ownerFeature = "screenDimTime",
             restartTarget = RestartTarget.REBOOT,
             hotReloadable = false,

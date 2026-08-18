@@ -145,13 +145,9 @@ object SystemAudioAndVisualAndMoreHooks {
     fun ScreenDimTimeHook(lpparam: SystemServerStartingParam) {
         ModuleHelper.findAndHookMethod("com.android.server.power.PowerManagerService", lpparam.classLoader, "readConfigurationLocked", object : MethodHook() {
             override fun after(param: AfterHookCallback) {
-                XposedHelpers.setIntField(param.thisObject, "mScreenOffTimeoutSetting", MainModule.mPrefs.getInt("system_screendimtime", 15000))
-            }
-        })
-
-        ModuleHelper.findAndHookMethod("com.android.server.power.PowerManagerService", lpparam.classLoader, "setStayOnSettingInternal", Int::class.javaPrimitiveType, object : MethodHook() {
-            override fun before(param: BeforeHookCallback) {
-                if (MainModule.mPrefs.getInt("system_screendimtime", 15000) == 0) param.returnAndSkip(null)
+                val ratio = MainModule.mPrefs.getInt("system_dimtime", 0) / 100f
+                XposedHelpers.setIntField(param.thisObject, "mMaximumScreenDimDurationConfig", 600000)
+                XposedHelpers.setFloatField(param.thisObject, "mMaximumScreenDimRatioConfig", ratio)
             }
         })
     }

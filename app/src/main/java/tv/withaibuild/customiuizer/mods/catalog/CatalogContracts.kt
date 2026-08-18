@@ -37,15 +37,6 @@ object CatalogContracts {
                     memberName = "readConfigurationLocked",
                     parameterTypes = emptyList()
                 )
-            ),
-            SingleTargetRequirement(
-                target = HookTargetSpec(
-                    id = "PowerManagerService.setStayOnSettingInternal",
-                    operation = HookOperation.EXACT_METHOD,
-                    className = "com.android.server.power.PowerManagerService",
-                    memberName = "setStayOnSettingInternal",
-                    parameterTypes = listOf(INT)
-                )
             )
         )
     )

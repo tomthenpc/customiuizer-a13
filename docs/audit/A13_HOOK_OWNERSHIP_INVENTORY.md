@@ -25,9 +25,9 @@
 |---|---|---|---|
 | `REGISTRY_FEATURE` | 3 | 10 | 1.6 % |
 | `INSTALLER_INFRASTRUCTURE` | 0 | 0 | 0.0 % |
-| `LEGACY_EXCEPTION` | 37 | 625 | 98.4 % |
+| `LEGACY_EXCEPTION` | 37 | 624 | 98.4 % |
 | `UNKNOWN` | 0 | 0 | 0.0 % |
-| **Total** | **40** | **635** | **100 %** |
+| **Total** | **40** | **634** | **100 %** |
 
 ---
 
@@ -47,7 +47,7 @@
 | `mods/LauncherLayoutHooks.kt` | 28 | com.miui.home / com.mi.android.globallauncher | `LEGACY_EXCEPTION` | mixed: typed=1, legacy=12 |
 | `mods/LauncherSystemHooks.kt` | 15 | com.android.systemui | `LEGACY_EXCEPTION` | mixed: typed=2, legacy=5 |
 | `mods/PackagePermissions.kt` | 5 | mixed | `LEGACY_EXCEPTION` | no typed catalog owner |
-| `mods/SystemAudioAndVisualAndMoreHooks.kt` | 47 | com.android.systemui | `LEGACY_EXCEPTION` | mixed: typed=8, legacy=13 |
+| `mods/SystemAudioAndVisualAndMoreHooks.kt` | 46 | com.android.systemui | `LEGACY_EXCEPTION` | mixed: typed=8, legacy=13 |
 | `mods/SystemAudioAndVolumeHooks.kt` | 5 | com.android.systemui | `LEGACY_EXCEPTION` | mixed: typed=2, legacy=1 |
 | `mods/SystemChargingAndWallpaperHooks.kt` | 3 | com.android.systemui | `REGISTRY_FEATURE` | all hook calls owned by typed catalog |
 | `mods/SystemDisplayAndWindowHooks.kt` | 22 | com.android.systemui | `LEGACY_EXCEPTION` | mixed: typed=5, legacy=3 |

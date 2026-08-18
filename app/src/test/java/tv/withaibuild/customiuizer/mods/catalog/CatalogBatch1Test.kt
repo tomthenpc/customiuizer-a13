@@ -73,7 +73,7 @@ class CatalogBatch1Test {
     @Test
     fun screenDimTime_installed() {
         val prefs = PrefMap<String, Any>()
-        prefs["pref_key_system_dimtime"] = 15000
+        prefs["pref_key_system_dimtime"] = 40
         val server = serverRuntime(prefs)
 
         assertTrue(FeatureDispatcher.installById("screenDimTime", server))
@@ -173,7 +173,7 @@ class CatalogBatch1Test {
     @Test
     fun screenDimTime_incompatibleWithSystemClassLoader() {
         val prefs = PrefMap<String, Any>()
-        prefs["pref_key_system_dimtime"] = 15000
+        prefs["pref_key_system_dimtime"] = 40
 
         @Suppress("UNCHECKED_CAST")
         MainModule.mPrefs = prefs as PrefMap<String, Any>
