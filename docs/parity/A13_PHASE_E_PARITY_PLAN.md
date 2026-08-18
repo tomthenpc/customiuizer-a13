@@ -1,4 +1,4 @@
-# A13 Phase E Parity Plan (from Phase D-R1 corrected inventory)
+# A13 Phase E Parity Plan (from Phase D-R2 candidate inventory)
 
 ```text
 INPUT = docs/parity/A13_A14_FEATURE_MATRIX.csv + D4 settings parity audit
@@ -32,7 +32,7 @@ PHASE_E_E1_COUNT = 1
 - Includes mismatch cleanup where implementation risk is low and testability high.
 
 ```text
-PHASE_E_E2_COUNT = 0
+PHASE_E_E2_COUNT = 2
 ```
 
 ### E3 - Launcher + SystemUI user-visible parity (P1)
@@ -42,7 +42,7 @@ PHASE_E_E2_COUNT = 0
 - Keep hot-path constraints and avoid callback-time ROM detection.
 
 ```text
-PHASE_E_E3_COUNT = 16
+PHASE_E_E3_COUNT = 57
 ```
 
 ### E4 - SecurityCenter/permission/installer/app-process parity (P1/P2)
@@ -51,7 +51,7 @@ PHASE_E_E3_COUNT = 16
 - Permission/privacy and service cleanup options requiring process-aware routing.
 
 ```text
-PHASE_E_E4_COUNT = 59
+PHASE_E_E4_COUNT = 9
 ```
 
 ### E5 - system_server high-risk parity (P0/P1)
@@ -60,17 +60,21 @@ PHASE_E_E4_COUNT = 59
 - Requires strongest preflight static proof + targeted regression plan + staged rollout.
 
 ```text
-PHASE_E_E5_COUNT = 1
+PHASE_E_E5_COUNT = 4
 ```
 
 Total planned gaps:
 
 ```text
 TOTAL_PHASE_E_PARITY_GAPS = 77
+HOLD_EVIDENCE_COUNT = 4
+PHASE_E_READY_GAPS = 73
 ```
 
-Counts are derived directly from `A13_A14_FEATURE_MATRIX.csv` rows where
+Counts are derived from `A13_A14_FEATURE_MATRIX.csv` rows where
 `parity_state in {MISSING_IN_A13, PARTIAL_PARITY}`.
+Rows with unresolved design evidence are routed to `HOLD_EVIDENCE`
+and excluded from E1-E5 ready counts.
 
 ## Per-feature implementation template (to be used in E phase execution)
 

@@ -1,4 +1,4 @@
-# A13/A14 Settings & Product Experience Parity (Phase D-R1)
+# A13/A14 Settings & Product Experience Parity (Phase D-R2)
 
 ```text
 SCOPE = settings UX / search / restart UX / language-about / backup-restore / topology typing
@@ -62,14 +62,22 @@ Classification:
 BACKUP_PARITY_RESULT = MISSING_IN_A13
 ```
 
-## Discrepancy confidence accounting (R1)
+## Discrepancy confidence accounting (R2)
 
 ```text
 CONFIRMED_UI_WITHOUT_IMPLEMENTATION = 0
 CANDIDATE_UI_WITHOUT_IMPLEMENTATION = 105
 CONFIRMED_IMPLEMENTATION_WITHOUT_UI = 0
-INTERNAL_IMPLEMENTATION_WITHOUT_UI = 59
+CANDIDATE_IMPLEMENTATION_WITHOUT_UI = 59
 ```
 
 Phase D policy applied: documented only, no production corrective.
+
+## Routing rule status
+
+- `SYSTEM_UI` and `LAUNCHER` missing/partial rows route to `E3`.
+- `SECURITY_CENTER` and `PACKAGE_INSTALLER` missing/partial rows route to `E4`.
+- `SYSTEM_SERVER` missing/partial rows route to `E5`.
+- infrastructure maintenance rows route to `E1`.
+- unresolved host/process rows are isolated as `HOLD_EVIDENCE` and excluded from E1-E5 ready-gap counts.
 

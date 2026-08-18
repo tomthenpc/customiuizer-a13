@@ -1,52 +1,113 @@
+import tempfile
 import unittest
+from pathlib import Path
+
 from tools.parity_inventory import (
     classify_ui_node,
-    default_parity_for_key_match,
     derive_batch_counts,
+    evidence_for_row,
+    extract_pref_reads,
     parity_accounting_invariant,
+    parse_a14_specs,
+    parse_ui_nodes,
+    route_phase_e_batch,
 )
 
 
 class ParityInventoryTest(unittest.TestCase):
-    def test_category_node_not_product_feature(self):
-        self.assertEqual(classify_ui_node("PreferenceCategory", "system_cat"), "CATEGORY")
+    def _write(self, root: Path, rel: str, content: str) -> None:
+        p = root / rel
+        p.parent.mkdir(parents=True, exist_ok=True)
+        p.write_text(content, encoding="utf-8")
 
-    def test_navigation_node_not_product_feature(self):
+    def test_category_and_navigation_not_product_feature(self):
+        self.assertEqual(classify_ui_node("PreferenceCategory", "system_cat"), "CATEGORY")
         self.assertEqual(classify_ui_node("PreferenceScreen", "system"), "NAVIGATION_ENTRY")
 
-    def test_same_key_defaults_to_insufficient_evidence(self):
-        self.assertEqual(default_parity_for_key_match(True), "INSUFFICIENT_EVIDENCE")
+    def test_same_key_stays_insufficient_without_semantic_proof(self):
+        level = evidence_for_row("k", True, {"k"}, {"k"})
+        self.assertEqual(level, "IMPLEMENTATION_PRESENCE")
 
-    def test_a13_only_keep_state(self):
-        row = {"parity_state": "A13_ONLY_KEEP", "a14_feature_id": "", "phase_e_batch": ""}
-        self.assertEqual(row["parity_state"], "A13_ONLY_KEEP")
+    def test_kotlin_and_java_preference_discovery(self):
+        with tempfile.TemporaryDirectory() as td:
+            root = Path(td)
+            self._write(
+                root,
+                "app/src/main/java/demo/A.kt",
+                'fun x(p: Any){ prefs.getBoolean("kt_key"); val s = "ignore" }',
+            )
+            self._write(
+                root,
+                "app/src/main/java/demo/B.java",
+                'class B { void x(){ prefs.getString("java_key"); } }',
+            )
+            keys = extract_pref_reads(root)
+            self.assertIn("kt_key", keys)
+            self.assertIn("java_key", keys)
 
-    def test_e_batch_counts_derived_from_rows(self):
+    def test_parse_ui_nodes_with_fixture_typing(self):
+        with tempfile.TemporaryDirectory() as td:
+            root = Path(td)
+            self._write(
+                root,
+                "app/src/main/res/xml/prefs_demo.xml",
+                """<PreferenceScreen xmlns:android="http://schemas.android.com/apk/res/android">
+                    <PreferenceCategory android:key="pref_key_demo_cat" />
+                    <PreferenceScreen android:key="pref_key_system" />
+                    <CheckBoxPreferenceEx android:key="pref_key_demo_toggle" />
+                </PreferenceScreen>""",
+            )
+            self._write(root, "app/src/main/res/values/strings.xml", "<resources/>")
+            nodes, _ = parse_ui_nodes(root)
+            self.assertEqual(nodes["demo_cat"].node_type, "CATEGORY")
+            self.assertEqual(nodes["system"].node_type, "NAVIGATION_ENTRY")
+            self.assertEqual(nodes["demo_toggle"].node_type, "ACTIONABLE_FEATURE")
+
+    def test_multi_key_feature_spec_supported(self):
+        with tempfile.TemporaryDirectory() as td:
+            root = Path(td)
+            self._write(
+                root,
+                "app/src/main/java/demo/F.kt",
+                """
+                val x = LazyFeatureSpec(
+                    id = DemoFeatureId,
+                    name = "Demo",
+                    preferenceKey = "demo_main",
+                    preferenceKeys = listOf("demo_main", "demo_extra"),
+                    target = FeatureTarget.SYSTEM_UI
+                ),
+                """,
+            )
+            specs, discovered, unknown = parse_a14_specs(root)
+            self.assertIn("demo_main", specs)
+            self.assertIn("demo_extra", specs)
+            self.assertEqual(discovered, 1)
+            self.assertEqual(unknown, 0)
+
+    def test_phase_e_routing_by_host_process(self):
+        self.assertEqual(route_phase_e_batch("SYSTEM_UI", "com.android.systemui", "k", "n", "MISSING_IN_A13"), "E3")
+        self.assertEqual(route_phase_e_batch("LAUNCHER", "com.miui.home", "k", "n", "MISSING_IN_A13"), "E3")
+        self.assertEqual(route_phase_e_batch("SECURITY_CENTER", "com.miui.securitycenter", "k", "n", "MISSING_IN_A13"), "E4")
+        self.assertEqual(route_phase_e_batch("PACKAGE_INSTALLER", "com.google.android.packageinstaller", "k", "n", "MISSING_IN_A13"), "E4")
+        self.assertEqual(route_phase_e_batch("SYSTEM_SERVER", "android", "k", "n", "MISSING_IN_A13"), "E5")
+        self.assertEqual(route_phase_e_batch("SETTINGS", "com.android.settings", "infra.backup_restore", "Backup / Restore", "MISSING_IN_A13"), "E1")
+        self.assertEqual(route_phase_e_batch("SETTINGS", "com.android.settings", "generic_low_risk", "Generic", "MISSING_IN_A13"), "E2")
+        self.assertEqual(route_phase_e_batch("SYSTEM_UI", "com.android.systemui", "controls_hide_ime_dismiss_button", "Hide IME", "MISSING_IN_A13"), "E3")
+
+    def test_batch_count_and_invariant_and_dynamic_once(self):
         rows = [
-            {"parity_state": "MISSING_IN_A13", "phase_e_batch": "E1"},
-            {"parity_state": "PARTIAL_PARITY", "phase_e_batch": "E3"},
-            {"parity_state": "INSUFFICIENT_EVIDENCE", "phase_e_batch": "E2"},
+            {"a14_feature_id": "f1", "parity_state": "MISSING_IN_A13", "phase_e_batch": "E1"},
+            {"a14_feature_id": "f2", "parity_state": "PARTIAL_PARITY", "phase_e_batch": "E4"},
+            {"a14_feature_id": "f3", "parity_state": "INSUFFICIENT_EVIDENCE", "phase_e_batch": ""},
+            {"a14_feature_id": "", "parity_state": "A13_ONLY_KEEP", "phase_e_batch": ""},
+            {"a14_feature_id": "f4", "parity_state": "INTENTIONAL_EXCLUDED", "phase_e_batch": ""},
         ]
         c = derive_batch_counts(rows)
         self.assertEqual(c["E1"], 1)
-        self.assertEqual(c["E3"], 1)
-        self.assertNotIn("E2", c)
-
-    def test_parity_accounting_invariant(self):
-        rows = [
-            {"a14_feature_id": "f1", "parity_state": "PRESENT_A13_VARIANT"},
-            {"a14_feature_id": "f2", "parity_state": "MISSING_IN_A13"},
-            {"a14_feature_id": "", "parity_state": "A13_ONLY_KEEP"},
-        ]
+        self.assertEqual(c["E4"], 1)
         self.assertTrue(parity_accounting_invariant(rows))
-
-    def test_dynamic_island_excluded_exactly_once_check(self):
-        rows = [
-            {"parity_state": "INTENTIONAL_EXCLUDED"},
-            {"parity_state": "PRESENT_A13_VARIANT"},
-        ]
-        excluded = sum(1 for r in rows if r["parity_state"] == "INTENTIONAL_EXCLUDED")
-        self.assertEqual(excluded, 1)
+        self.assertEqual(sum(1 for r in rows if r["parity_state"] == "INTENTIONAL_EXCLUDED"), 1)
 
 
 if __name__ == "__main__":
