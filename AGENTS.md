@@ -43,7 +43,7 @@ correctness
 > Git 历史
 ```
 
-`tasks/completed/`、`docs/rom-intelligence/**`、`docs/audit/**`、`docs/performance/**` 是证据，不是当前控制。只有当前用户明确授权的任务合同才具有任务级控制权。
+`docs/rom-intelligence/**`、`docs/audit/**` 是证据，不是当前控制。只有当前用户明确授权的任务合同才具有任务级控制权。
 
 ## 4. A13 / A14 关系
 

@@ -4,39 +4,7 @@
 
 ## r13.12.2 — 2026-08-19
 
-`versionCode 140`, finalizes the Activity-selection relay hotfix path left incomplete in r13.12.1.
-
-### Fixes
-
-- Fixed the two-hop return path `MultiAction -> AppSelector -> ActivitySelector -> AppSelector -> MultiAction`, where AppSelector (as back-stack relay target) incorrectly applied source `isAdded` gating and dropped Activity results.
-- Preserved source-side stale-result protection: ActivitySelector still requires a live source and existing target; back-stack relay only requires target existence before forwarding to MultiAction.
-
-### Verification
-
-- Preserves r13.12.0 action normalization, spinner OOB protection, action/toggle contracts, and Launcher restart-scope checks.
-- Static gates, unit tests, Release compile, Lint, R8, and signed-artifact inspection run before publication.
-- DEVICE_VERIFIED = NO
-- LOG_VERIFIED = NO
-
-## r13.12.1 — 2026-08-19
-
-`versionCode 139`, hotfix-only release for the MultiAction selector-result regression introduced in r13.12.0.
-
-### Fixes
-
-- Fixed MultiAction incorrectly gating child-selector results with `isAdded`, which dropped app/shortcut/activity selections on return.
-- Result delivery now uses source-selector lifecycle validation while allowing back-stack targets to consume plain result data, matching the existing `openSubFragment(replace + back stack)` navigation contract.
-
-### Verification
-
-- Preserves r13.12.0 MultiAction normalization, spinner OOB protection, action/handler contract checks, and Launcher restart-scope checks.
-- Static gates, unit tests, Release compile, Lint, R8, and signed-artifact inspection run before publication.
-- DEVICE_VERIFIED = NO
-- LOG_VERIFIED = NO
-
-## r13.12.0 — 2026-08-19
-
-`versionCode 138`, targeting MIUI 14 / Android 13 with capability-detected HyperOS 1 / Android 13 compatibility.
+`versionCode 140`, the final stable release in the r13.12 series. Supersedes `r13.12.0` / `r13.12.1`.
 
 ### New features
 
@@ -53,6 +21,7 @@
 - Custom/gesture actions no longer snap back to "No action": invalid or unknown values normalize to legal default 1, and save no longer uses an out-of-range spinner index.
 - The Launcher gesture page now exposes Restart Launcher, matching hook ownership in the Launcher process.
 - USB default mode reapplies after unplug/replug.
+- Fixed the two-hop return path `MultiAction -> AppSelector -> ActivitySelector -> AppSelector -> MultiAction`, where AppSelector (as back-stack relay target) incorrectly applied source `isAdded` gating and dropped Activity results; result delivery now uses source-selector lifecycle validation while allowing back-stack targets to consume plain result data, matching the existing `openSubFragment(replace + back stack)` navigation contract.
 
 ### Stability and compatibility
 
@@ -77,10 +46,9 @@
 
 ### Artifact
 
-- File: `CustoMIUIzer-A13-r13.12.0.apk`
-- versionName: `r13.12.0`
-- versionCode: `138`
-- SHA-256: `643e93834c7028a4355f9915efbfe3aa49393ff18577331a76a485c6d9382e29`
+- File: `CustoMIUIzer-A13-r13.12.2.apk`
+- versionName: `r13.12.2`
+- versionCode: `140`
 
 ## r13.11.1 — 2026-08-08
 

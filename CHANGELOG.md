@@ -4,39 +4,7 @@
 
 ## r13.12.2 — 2026-08-19
 
-`versionCode 140`，完成 r13.12.1 未完全覆盖的 Activity 选择结果中继热修复。
-
-### 修复
-
-- 修复 `MultiAction -> AppSelector -> ActivitySelector -> AppSelector -> MultiAction` 两跳返回路径中，AppSelector 作为回栈中继目标时误按 source `isAdded` 校验导致结果丢失的问题。
-- 保持 source 侧 stale 结果保护：ActivitySelector 仍需 source 有效且 target 存在；回栈中继只校验 target 存在并继续转发给 MultiAction。
-
-### 验证状态
-
-- 保留 r13.12.0 动作值规范化、Spinner 越界保护、动作/Toggle 合同与 Launcher 重启范围校验。
-- 静态门禁、单元测试、Release 编译、Lint、R8 与签名产物检查在发布前执行。
-- DEVICE_VERIFIED = NO
-- LOG_VERIFIED = NO
-
-## r13.12.1 — 2026-08-19
-
-`versionCode 139`，仅包含 r13.12.0 引入的 MultiAction 选择器结果回传回归热修复。
-
-### 修复
-
-- 修复 MultiAction 在子选择器页面返回时误用 `isAdded` 拦截结果，导致应用/快捷方式/Activity 选择结果丢失的问题。
-- 结果回传改为“源选择器生命周期校验 + 回栈目标允许接收”，保持 `openSubFragment(replace + back stack)` 的既有导航契约。
-
-### 验证状态
-
-- 保留 r13.12.0 的 MultiAction 持久化规范化、Spinner 越界保护、动作/处理器契约与 Launcher 重启范围校验。
-- 静态门禁、单元测试、Release 编译、Lint、R8 与签名产物检查在发布前执行。
-- DEVICE_VERIFIED = NO
-- LOG_VERIFIED = NO
-
-## r13.12.0 — 2026-08-19
-
-`versionCode 138`，面向 MIUI 14 / Android 13，并为 HyperOS 1 / Android 13 提供能力探测兼容。
+`versionCode 140`，r13.12 系列最终稳定版本，已包含并取代 `r13.12.0` / `r13.12.1`。
 
 ### 新增功能
 
@@ -53,6 +21,7 @@
 - 自定义动作/桌面手势保存后可能回到“无动作”：无效或未知动作值会规范为合法默认值 1，保存时不再因 Spinner 越界丢失选择。
 - 桌面手势设置页补齐“重启桌面”菜单，与 Launcher 进程中的手势 Hook 安装范围一致。
 - USB 默认用途在拔线后重新插上会再次应用。
+- 修复 `MultiAction -> AppSelector -> ActivitySelector -> AppSelector -> MultiAction` 两跳返回路径中，AppSelector 作为回栈中继目标时误按 source `isAdded` 校验导致结果丢失的问题；结果回传改为“源选择器生命周期校验 + 回栈目标允许接收”，保持 `openSubFragment(replace + back stack)` 的既有导航契约。
 
 ### 稳定性与兼容性
 
@@ -77,10 +46,9 @@
 
 ### 产物信息
 
-- 文件：`CustoMIUIzer-A13-r13.12.0.apk`
-- versionName：`r13.12.0`
-- versionCode：`138`
-- SHA-256：`643e93834c7028a4355f9915efbfe3aa49393ff18577331a76a485c6d9382e29`
+- 文件：`CustoMIUIzer-A13-r13.12.2.apk`
+- versionName：`r13.12.2`
+- versionCode：`140`
 
 ## r13.11.1 — 2026-08-08
 
