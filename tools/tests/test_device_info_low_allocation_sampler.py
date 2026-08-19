@@ -392,19 +392,19 @@ class DeviceInfoMonitorContractTest(unittest.TestCase):
 
 class ScopeProtectionTest(unittest.TestCase):
     EXCLUDED_FILES = {
-        "LauncherAnimationHooks.kt",
-        "LauncherGestureHooks.kt",
-        "LauncherLayoutHooks.kt",
-        "HookUtils.kt",
-        "LockScreenAlbumArtController.kt",
-        "BatteryIndicator.kt",
-        "SystemAudioAndVisualAndMoreHooks.kt",
-        "FeatureDispatcher.kt",
-        "HookInstaller.kt",
-        "HookTargetResolver.kt",
-        "ModuleHelper.java",
-        "RuntimeFatality.kt",
-        "DiagnosticRecorder.kt",
+        "app/src/main/java/tv/withaibuild/customiuizer/mods/LauncherAnimationHooks.kt",
+        "app/src/main/java/tv/withaibuild/customiuizer/mods/LauncherGestureHooks.kt",
+        "app/src/main/java/tv/withaibuild/customiuizer/mods/LauncherLayoutHooks.kt",
+        "app/src/main/java/tv/withaibuild/customiuizer/utils/HookUtils.kt",
+        "app/src/main/java/tv/withaibuild/customiuizer/mods/utils/LockScreenAlbumArtController.kt",
+        "app/src/main/java/tv/withaibuild/customiuizer/utils/BatteryIndicator.kt",
+        "app/src/main/java/tv/withaibuild/customiuizer/mods/SystemAudioAndVisualAndMoreHooks.kt",
+        "app/src/main/java/tv/withaibuild/customiuizer/mods/catalog/FeatureDispatcher.kt",
+        "app/src/main/java/tv/withaibuild/customiuizer/mods/utils/HookInstaller.kt",
+        "app/src/main/java/tv/withaibuild/customiuizer/mods/utils/HookTargetResolver.kt",
+        "app/src/main/java/tv/withaibuild/customiuizer/mods/utils/ModuleHelper.java",
+        "app/src/main/java/tv/withaibuild/customiuizer/mods/utils/RuntimeFatality.kt",
+        "app/src/main/java/tv/withaibuild/customiuizer/mods/diagnostics/DiagnosticRecorder.kt",
         "app/build.gradle.kts",
         "CHANGELOG.md",
         "README.md",
@@ -417,7 +417,7 @@ class ScopeProtectionTest(unittest.TestCase):
     def test_excluded_source_files_not_modified(self):
         for path in changed_files():
             self.assertNotIn(
-                Path(path).name,
+                Path(path).as_posix(),
                 self.EXCLUDED_FILES,
                 f"excluded file {path} was modified",
             )

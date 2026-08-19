@@ -1190,7 +1190,8 @@ object FeatureCatalog {
                 "system_charginginfo_voltage",
                 "system_charginginfo_wattage",
                 "system_charginginfo_temp",
-                "system_charginginfo_view"
+                "system_charginginfo_view",
+                "system_charginginfo_fontsize"
             ),
             condition = { prefs ->
                 prefs.getBoolean("system_charginginfo", false)

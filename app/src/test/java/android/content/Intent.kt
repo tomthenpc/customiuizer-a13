@@ -1,5 +1,6 @@
 package android.content
 
+import android.net.Uri
 import android.os.Bundle
 import android.os.Parcelable
 
@@ -17,6 +18,7 @@ open class Intent {
     private var mComponent: ComponentName? = null
     private var mClassName: String? = null
     private var mFlags: Int = 0
+    private var mData: Uri? = null
     private val mExtras: MutableMap<String, Any> = mutableMapOf()
 
     open var action: String? = null
@@ -25,6 +27,11 @@ open class Intent {
 
     constructor(action: String?) {
         this.action = action
+    }
+
+    constructor(action: String?, data: Uri?) {
+        this.action = action
+        mData = data
     }
 
     open fun getPackage(): String? = mPackage
@@ -66,6 +73,13 @@ open class Intent {
         mFlags = mFlags or flags
         return this
     }
+
+    open fun setData(data: Uri?): Intent {
+        mData = data
+        return this
+    }
+
+    open fun getData(): Uri? = mData
 
     open fun putExtra(name: String, value: String?): Intent {
         if (value != null) mExtras[name] = value else mExtras.remove(name)
@@ -154,6 +168,7 @@ open class Intent {
         const val ACTION_SCREEN_ON = "android.intent.action.SCREEN_ON"
         const val ACTION_SCREEN_OFF = "android.intent.action.SCREEN_OFF"
         const val ACTION_BATTERY_CHANGED = "android.intent.action.BATTERY_CHANGED"
+        const val ACTION_VIEW = "android.intent.action.VIEW"
 
         const val FLAG_ACTIVITY_NEW_TASK = 0x10000000
         const val FLAG_ACTIVITY_RESET_TASK_IF_NEEDED = 0x00200000

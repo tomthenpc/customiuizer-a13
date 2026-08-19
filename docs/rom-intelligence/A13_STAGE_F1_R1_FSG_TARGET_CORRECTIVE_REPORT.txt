@@ -1,0 +1,399 @@
+A13 Stage F1-R1 — Issue #2 FSG Target Corrective Report
+========================================================
+
+STATUS: HOLD
+STAGE_F1_R1 = HOLD
+PRODUCTION_AUTHORIZATION = NO
+PRODUCTION_CHANGED = false
+
+================================
+GIT
+================================
+
+Branch:   devin/a13-rom-intelligence-compat-r13.11.1
+Base SHA: cc200778ec90285a638015fb037b3a919471c0ad
+Final SHA: 4c6d2b10d6037f8d9741927d1ab76731dc8171ba
+Merge Base: cc200778ec90285a638015fb037b3a919471c0ad
+
+================================
+EVIDENCE SCOPE
+================================
+
+DEVICE:           Redmi K50
+THIRD_PARTY_HOME: 极简桌面
+DEVICE_ROM:       UNKNOWN
+DEVICE_MIUIHOME:  UNKNOWN
+SAMPLE_VERSION:   RELEASE-4.39.14.8060-04191512
+APK_SHA256:       b507f1cbf2d8fbc445398a2402ff9dd3f22580265b0ef9de07b4b37889b3384b
+CERT_SHA256:      c9009d01ebf9f5d0302bc71b2fe9aa9a47a432bba17308a3111b75d7b2149025
+
+EVIDENCE_ROLE:    REPRESENTATIVE_A13_LAUNCHER_STATIC_SAMPLE
+ISSUE_2_EXACT_DEVICE_MATCH: UNKNOWN
+ARTIFACT_EXACT_VERSION: YES
+
+================================
+STATE MATRIX
+================================
+
+REAL_FALSE_MEANS:
+  The real Settings.Global "force_fsg_nav_bar" is false / 0.
+  The device is using the classic 3-button navigation bar.
+
+REAL_TRUE_MEANS:
+  The real Settings.Global "force_fsg_nav_bar" is true / 1.
+  The device is using full Xiaomi FSG (no navigation bar, only gestures).
+
+HYBRID_TARGET_REAL_VALUE: FALSE
+  controls_fsg_horiz is meant to keep the navigation bar (real=false)
+  while enabling the horizontal/back gesture stubs on the screen edges.
+
+FEATURE_DISABLED_BEHAVIOR:
+  FSGesturesHook is not installed; no hook; native launcher behavior.
+
+REAL_TRUE_BEHAVIOR (feature=true):
+  Module hook sets MiuiSettingsUtils.getGlobalBoolean("force_fsg_nav_bar")
+  to true for BaseRecentsImpl callers.
+  mIsFsgNavBar becomes true inside BaseRecentsImpl.
+  createAndAddNavStubView is allowed (REAL=true) and nav stub is created.
+  Back stub is also created.
+  Native full-FSG behavior is preserved.
+
+REAL_FALSE_MIUIHOME_BEHAVIOR (feature=true):
+  Module hook returns true to BaseRecentsImpl, so mIsFsgNavBar=true.
+  createAndAddNavStubView before-hook is skipped because REAL=false.
+  updateFsgWindowState after-hook removes any mNavStubView and sets it null.
+  addBackStubWindow() is still called and creates back stub.
+  Navigation bar stays (real force_fsg_nav_bar=false).
+  Hybrid mode is active.
+
+REAL_FALSE_THIRD_PARTY_BEHAVIOR (feature=true):
+  Module hook returns true to BaseRecentsImpl, so mIsFsgNavBar=true.
+  mIsUseMiuiHomeAsDefaultHome is computed as false because
+  getDefaultHomePackageName() != "com.miui.home".
+  addFsgGestureWindow() branch mIsFsgNavBar && !mIsInAnotherPro && mIsUseMiuiHomeAsDefaultHome
+  is false; it does NOT call createAndAddNavStubView() or showBackStubWindow().
+  updateFsgWindowState() branch v0_7 == null || !mIsUseMiuiHomeAsDefaultHome
+  evaluates to true (because !mIsUseMiuiHomeAsDefaultHome is true);
+  it calls removeNavStubView() and clearBackStubWindow().
+  Then the existing updateFsgWindowState after-hook removes mNavStubView.
+  Back stub is cleared and never restored.
+  This is the static gap for Issue #2.
+
+================================
+UPSTREAM
+================================
+
+FORK_REGRESSION: NO
+  Current FSGesturesHook (monwF/A13) does not override
+  Utilities.getDefaultHomePackageName or mIsUseMiuiHomeAsDefaultHome.
+  The same fundamental hybrid strategy is used:
+  - force Xiaomi caller to see force_fsg_nav_bar=true
+  - preserve real value separately
+  - suppress nav stub in real=false mode
+  No new upstream regression was introduced.
+
+UPSTREAM_COMPATIBILITY_GAP: YES
+  Xiaomi BaseRecentsImpl gates stub creation on
+  mIsUseMiuiHomeAsDefaultHome, which is false when a third-party
+  launcher is the default. That is an upstream lifecycle limitation
+  that the module currently does not compensate for.
+
+================================
+GLOBAL SIDE EFFECT
+================================
+
+USE_GESTURE_VERSION_THREE_WRITERS:
+  - DeviceConfig.setUseLauncherRecentsAndFsGesture(Context, boolean)
+    writes Settings.Global "use_gesture_version_three".
+  - Called only by BaseRecentsImpl.updateUseLauncherRecentsAndFsGesture().
+  - That method is called by addFsgGestureWindow() and by
+    setIsUseMiuiHomeAsDefaultHome() on every change of mIsUseMiuiHomeAsDefaultHome.
+
+USE_GESTURE_VERSION_THREE_READERS (exact APK):
+  - MiuixUIUtils.isSupportGestureLine(Context) returns
+    Settings.Global.getInt("use_gesture_version_three", 0) != 0.
+  - No other class in the exact APK reads this setting.
+  - MiuixUIUtils.isSupportGestureLine has no in-APK callers in this sample;
+    it is a library utility for external UI decisions.
+
+RECENTS_OWNERSHIP_EFFECT:
+  isUseLauncherRecentsAndFsGesture() simply returns mIsUseMiuiHomeAsDefaultHome.
+  It has no in-APK callers. It does not control OverviewComponentObserver
+  or the overview/home intent construction. OverviewComponentObserver uses
+  PackageManager.resolveActivity and mMyHomeComponent equality, not
+  use_gesture_version_three.
+
+BACK_STUB_REQUIRES_SETTING_TRUE:
+  NO (static).
+  Back stub creation is done by BaseRecentsImpl.addBackStubWindow() /
+  showBackStubWindow(). Neither path reads "use_gesture_version_three".
+  GestureStubView construction and onTouchEvent do not reference that setting.
+  Therefore a back-stub-only recovery design does not require flipping
+  use_gesture_version_three to true.
+
+DESIGN_B (mIsUseMiuiHomeAsDefaultHome field override):
+  REJECTED_UNSAFE_UNLESS_PROVEN
+  Reason:
+  - It changes default-home-derived state.
+  - It causes updateUseLauncherRecentsAndFsGesture() to write
+    "use_gesture_version_three" = true.
+  - It may influence OverviewComponentObserver indirectly and
+    foldable mIsUseMiuiHomeAsDefaultHome consumers (BaseRecentsImpl$6.onExpand).
+  - It is broader than the stated back-stub recovery requirement.
+
+================================
+BACK STUB SAFETY
+================================
+
+SHOW_BACK_STUB_WINDOW_IDEMPOTENT:
+  YES, with module caveat.
+  - Wrapper checks !isInSFDeviceFoldedMode() and posts to BACKGROUND_EXECUTOR.
+  - Lambda checks mHasNavigationBar argument; if false, does nothing.
+  - If true, it reads force_fsg_nav_bar again. Module returns true for
+    BaseRecentsImpl stack, so it continues.
+  - If mGestureStubLeft == null, it calls initGestureStub(), which creates
+    and adds two GestureStubView instances to WindowManager in the constructor.
+  - Then it calls showGestureStub() on both.
+  - On repeated calls, mGestureStubLeft is non-null, so it skips
+    initGestureStub() and only calls showGestureStub() again.
+  - GestureStubView.showGestureStub() removes delayed hide messages and
+    sets keepHidden=0. Repeated calls are safe and do not duplicate
+    WindowManager views.
+
+ADD_BACK_STUB_WINDOW_IDEMPOTENT:
+  YES.
+  - Wrapper checks !isInSFDeviceFoldedMode() and posts to BACKGROUND_EXECUTOR.
+  - Lambda: if mGestureStubLeft == null, calls initGestureStub() (creates
+    and adds both GestureStubView to WindowManager), then
+    mGestureStubLeft.showGestureStub() / mGestureStubRight.showGestureStub().
+  - On repeated calls mGestureStubLeft is non-null, so it only re-shows.
+  - It does NOT re-read force_fsg_nav_bar, making it more deterministic
+    than showBackStubWindow() for recovery.
+
+BACK_STUB_EXECUTOR_ORDERING:
+  SAFE for add/clear pairing.
+  - addBackStubWindow() and clearBackStubWindow() both run on
+    TouchInteractionService.BACKGROUND_EXECUTOR, so calls from the same
+    thread are queued and executed in order.
+  - createAndAddNavStubView() and removeNavStubView() run on
+    TouchInteractionService.GESTURE_EXECUTOR, independent of back stub work.
+  - A native updateFsgWindowState() that clears back stub then a module
+    after-hook that calls addBackStubWindow() will produce the sequence
+    clear -> add on the same executor, which is safe.
+
+CLEAR_BACK_STUB_WINDOW_BEHAVIOR:
+  - Lambda: if mGestureStubLeft == null, only mGestureStubRight is cleared
+    if present; otherwise mGestureStubLeft is cleared and set to null.
+  - In normal ROM flow, both left and right are created together by
+    initGestureStub(). The clear path only nulls one pointer, which is an
+    existing ROM quirk, but the next addBackStubWindow() will re-run
+    initGestureStub() and replace the still-referenced right pointer.
+
+EXISTING_UPDATE_CALLBACK_SUFFICIENT:
+  NO for initial boot; YES for runtime lifecycle.
+  - updateFsgWindowState() is called by setIsUseMiuiHomeAsDefaultHome()
+    on default-home changes and by observers when force_fsg_nav_bar changes.
+  - However addFsgGestureWindow() (constructor) does NOT call
+    updateFsgWindowState(). With third-party default at boot, the native
+    if-block in addFsgGestureWindow() is skipped, so the stub is never
+    created. The first setIsUseMiuiHomeAsDefaultHome(false) from
+    OverviewComponentObserver sees no change and also does not call
+    updateFsgWindowState().
+  - Therefore a single updateFsgWindowState() after-hook alone does not
+    recover the back stub at boot. An addFsgGestureWindow() after-hook is
+    also required to cover the constructor path.
+  - Once the system is running, updateFsgWindowState() after-hook is
+    sufficient to recover when the user switches from MiuiHome to
+    third-party default, because the setter will call updateFsgWindowState().
+
+NATIVE_ELIGIBILITY_CONDITIONS (shouldRecoverBackStub):
+  - mHasNavigationBar == true
+  - !mIsInAnotherPro
+  - !SpecialFDeviceGestureHelper.isInSFDeviceFoldedMode()
+  - REAL_FORCE_FSG_NAV_BAR == false
+  - controls_fsg_horiz == true (implicit: FSGesturesHook is installed)
+  - mIsUseMiuiHomeAsDefaultHome == false (the third-party default condition)
+
+Policy:
+
+  shouldRecoverBackStub(
+      featureEnabled,
+      realForceFsgNavBar,
+      hasNavigationBar,
+      isInAnotherProfile,
+      isFoldedMode,
+      isMiuiHomeDefault):
+
+      if !featureEnabled -> false
+      if realForceFsgNavBar -> false
+      if !hasNavigationBar -> false
+      if isInAnotherProfile -> false
+      if isFoldedMode -> false
+      if isMiuiHomeDefault -> false
+      return true
+
+This matches the hybrid target: navigation bar present, real FSG off,
+MiuiHome is NOT the default, and the feature is enabled.
+
+================================
+TARGET SELECTION
+================================
+
+DESIGN_A (global Utilities.getDefaultHomePackageName spoof):
+  REJECTED.
+  - Changes settings UI, FallbackHomeCompat, Poco, elderly mode, etc.
+
+DESIGN_B (mIsUseMiuiHomeAsDefaultHome field override):
+  REJECTED_UNSAFE_UNLESS_PROVEN.
+  - Changes use_gesture_version_three and default-home state;
+  - risks affecting overview/recents ownership and foldable behavior.
+
+DESIGN_C (branch override in addFsgGestureWindow / updateFsgWindowState):
+  REQUIRES_PROOF.
+  - Could force the stub-creation branch regardless of mIsUseMiuiHomeAsDefaultHome.
+  - Still has to avoid creating the nav stub and avoid calling
+    updateUseLauncherRecentsAndFsGesture with true.
+  - More intrusive than Design E and re-implements native branch logic.
+
+DESIGN_E (back-stub-only recovery):
+  PREFERRED CANDIDATE.
+  - Leaves mIsUseMiuiHomeAsDefaultHome untouched.
+  - Leaves Utilities.getDefaultHomePackageName untouched.
+  - Leaves OverviewComponentObserver and use_gesture_version_three untouched.
+  - Preserves the existing REAL_FORCE_FSG_NAV_BAR fail-closed channel.
+  - Extends the existing updateFsgWindowState after-hook with a
+    guarded addBackStubWindow() call when hybrid conditions hold.
+  - Adds an addFsgGestureWindow() after-hook to cover the boot-time path.
+  - Reuses native BaseRecentsImpl.addBackStubWindow() and
+    GestureStubView.showGestureStub(), which are idempotent on repeated calls.
+  - Does not create nav stub; existing createAndAddNavStubView before-hook
+    already skips nav stub when REAL=false.
+
+SELECTED_TARGET: E (conditionally)
+SELECTION_REASON:
+  Design E is the narrowest change that satisfies the stated hybrid goal
+  (navigation bar + horizontal/side back gestures) without mutating
+  default-home identity, recents ownership, or the global
+  use_gesture_version_three setting. Static evidence shows the back stub
+  path can operate independently of that setting and is idempotent.
+
+DESIGN_E_STATUS: SAFE (static), PENDING_DEVICE_PROOF
+  If device validation shows addBackStubWindow() recovery is not enough
+  or causes duplicate/ghost views, the recommendation is to return NONE
+  rather than fall back to Design B automatically.
+
+EXPECTED_PRODUCTION_FILES:
+  - app/src/main/java/tv/withaibuild/customiuizer/mods/LauncherGestureHooks.kt
+    (extend FSGesturesHook only)
+
+EXPECTED_TEST_FILES:
+  - tools/tests/test_launcher_gesture_state_cache.py or a new
+    test_launcher_gesture_back_stub_recovery.py for policy/state contracts.
+  - Tests should verify behavior/policy, not exact source strings.
+
+PRODUCTION_AUTHORIZATION_REQUEST: NO
+  This batch remains documentation and static analysis only.
+
+================================
+DESIGN E LIFECYCLE
+================================
+
+1. addFsgGestureWindow() after (covers boot):
+   Conditions:
+     - REAL_FORCE_FSG_NAV_BAR == false
+     - mHasNavigationBar == true
+     - !mIsInAnotherPro
+     - !isInSFDeviceFoldedMode()
+     - mIsUseMiuiHomeAsDefaultHome == false
+   Action:
+     - call addBackStubWindow()
+   No nav stub creation; no updateUseLauncherRecentsAndFsGesture change.
+
+2. updateFsgWindowState() after (covers default-home / FSG setting changes):
+   Existing hook already removes mNavStubView when REAL=false.
+   Extend it to:
+   Conditions:
+     - REAL_FORCE_FSG_NAV_BAR == false
+     - mHasNavigationBar == true
+     - !mIsInAnotherPro
+     - !isInSFDeviceFoldedMode()
+     - mIsUseMiuiHomeAsDefaultHome == false
+   Action:
+     - call addBackStubWindow()
+   The native updateFsgWindowState() branch will have already called
+   removeNavStubView() and clearBackStubWindow() because
+   !mIsUseMiuiHomeAsDefaultHome is true. The addBackStubWindow() call,
+   posted to the same BACKGROUND_EXECUTOR, will run after the clear and
+   create/recreate the back stub.
+
+3. MiuiHome default path is unchanged because isMiuiHomeDefault == true,
+   so shouldRecoverBackStub returns false and the hooks do nothing extra.
+
+4. REAL=true path is unchanged: shouldRecoverBackStub returns false.
+
+5. controls_fsg_horiz disabled: FSGesturesHook is not installed; no change.
+
+================================
+EVIDENCE LEVEL
+================================
+
+DEFAULT_HOME_GATE_ON_SAMPLE:           STATIC_VERIFIED
+ISSUE_2_DEVICE_ROOT_CAUSE:             UNVERIFIED
+DEVICE_VALIDATION_REQUIRED:            YES
+F1_R1_CORRECTIVE_DESIGN_READY:         YES (static)
+F1_R1_PRODUCTION_READY:                NO
+
+================================
+BEHAVIOR TEST DESIGN
+================================
+
+F1-R1-T1: feature=false -> no FSGesturesHook; no back stub recovery.
+F1-R1-T2: feature=true, REAL=true, MiuiHome default -> nav stub created, back stub created.
+F1-R1-T3: feature=true, REAL=false, MiuiHome default -> nav stub suppressed, back stub created.
+F1-R1-T4: feature=true, REAL=false, third-party default -> nav stub absent, back stub restored.
+F1-R1-T5: default HOME switches MiuiHome -> third-party -> back stub restored, no duplicate.
+F1-R1-T6: default HOME switches third-party -> MiuiHome -> back stub removed by native
+           updateFsgWindowState, no extra add.
+F1-R1-T7: repeated updateFsgWindowState events -> no duplicate add, no race.
+F1-R1-T8: missing/unsupported target -> hook silently skipped (fail-open).
+F1-R1-T9: fatal Throwable -> must continue to propagate; no broad catch.
+
+================================
+VALIDATION
+================================
+
+To be run after documentation/report changes:
+
+python tools/verify.py fast --changed
+python tools/verify.py full
+python -m compileall tools
+python -m unittest discover -s tools/tests -p "test_*.py"
+git diff --check
+
+PRODUCTION_CHANGED: false
+
+================================
+GATE
+================================
+
+STAGE_F1_R1 = HOLD
+
+HOLD reason: production code not authorized; selected target (Design E)
+still requires real-device validation before implementation.
+
+No production code has been modified in this batch.
+
+================================
+ISSUE #2 DURABLE STATE (recorded in F0)
+================================
+
+ISSUE_2_TARGET_SELECTION    = PASS
+SELECTED_STATIC_CANDIDATE   = DESIGN_E_BACK_STUB_ONLY_RECOVERY
+PRODUCTION_IMPLEMENTATION   = DEFERRED
+DEVICE_ROOT_CAUSE           = UNVERIFIED
+DEVICE_VALIDATION           = PENDING
+ACTUAL_BASE_SHA             = cc200778ec90285a638015fb037b3a919471c0ad
+ACTUAL_FINAL_SHA            = 4c6d2b10d6037f8d9741927d1ab76731dc8171ba
+ACTUAL_MERGE_BASE           = cc200778ec90285a638015fb037b3a919471c0ad
+
+No further Issue #2 stages are started.

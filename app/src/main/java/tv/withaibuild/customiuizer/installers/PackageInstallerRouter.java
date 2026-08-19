@@ -16,6 +16,7 @@ public final class PackageInstallerRouter {
         if ("com.miui.packageinstaller".equals(pkg)) {
             if (MainModule.mPrefs.getBoolean("various_miuiinstaller")) Various.MiuiPackageInstallerHook(lpparam);
             if (MainModule.mPrefs.getBoolean("various_installappinfo")) Various.AppInfoDuringMiuiInstallHook(lpparam);
+            if (MainModule.mPrefs.getBoolean("various_installer_purify")) Various.PurePackageInstallerHook(lpparam);
         }
     }
 }

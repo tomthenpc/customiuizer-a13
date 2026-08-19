@@ -44,10 +44,10 @@ class BatteryIndicator @JvmOverloads constructor(
     protected var mPowerLevel = 0
     protected var mTestPowerLevel = 0
 
-    private val mFullColor = Color.GREEN
-    private val mLowColor = Color.RED
-    private val mPowerSaveColor = Color.rgb(245, 166, 35)
-    private val mChargingColor = Color.YELLOW
+    private var mFullColor = Color.GREEN
+    private var mLowColor = Color.RED
+    private var mPowerSaveColor = Color.rgb(245, 166, 35)
+    private var mChargingColor = Color.YELLOW
     private var mLowLevel = mLowLevelSystem
     private var mHeight = 5
     private var mGlow = 0
@@ -342,6 +342,10 @@ class BatteryIndicator @JvmOverloads constructor(
 
     protected fun updateParameters() {
         mColorMode = ColorMode.values()[MainModule.mPrefs.getStringAsInt("system_batteryindicator_color", 1)]
+        mFullColor = MainModule.mPrefs.getInt("system_batteryindicator_colorval1", Color.GREEN)
+        mLowColor = MainModule.mPrefs.getInt("system_batteryindicator_colorval2", Color.RED)
+        mPowerSaveColor = MainModule.mPrefs.getInt("system_batteryindicator_colorval3", Color.rgb(245, 166, 35))
+        mChargingColor = MainModule.mPrefs.getInt("system_batteryindicator_colorval4", Color.YELLOW)
         mLowLevel = MainModule.mPrefs.getInt("system_batteryindicator_lowlevel", mLowLevelSystem)
         mHeight = MainModule.mPrefs.getInt("system_batteryindicator_height", 5)
         mGlow = MainModule.mPrefs.getInt("system_batteryindicator_glow", 0)

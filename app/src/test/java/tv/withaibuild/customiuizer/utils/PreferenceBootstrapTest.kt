@@ -6,6 +6,7 @@ import org.junit.Assert.assertFalse
 import org.junit.Assert.assertNotNull
 import org.junit.Assert.assertNull
 import org.junit.Assert.assertTrue
+import org.junit.Assert.fail
 import org.junit.Before
 import org.junit.Test
 import java.util.concurrent.CountDownLatch
@@ -286,5 +287,69 @@ class PreferenceBootstrapTest {
         fake.change("pref_key_foo", true)
 
         assertTrue(snapshot.getBoolean("foo", false))
+    }
+
+    // 22. OutOfMemoryError from provider must escape (canonical fatal contract).
+    @Test
+    fun providerOutOfMemoryErrorEscapes() {
+        val bootstrap = PreferenceBootstrap({ throw OutOfMemoryError("provider oom") }, "test", snapshot)
+        try {
+            bootstrap.start()
+            fail("OutOfMemoryError should have been rethrown")
+        } catch (e: OutOfMemoryError) {
+            assertEquals("provider oom", e.message)
+        }
+        assertEquals(PreferenceBootstrap.State.UNINITIALIZED, bootstrap.state)
+    }
+
+    // 23. ThreadDeath from first getAll must escape.
+    @Test
+    fun firstGetAllThreadDeathEscapes() {
+        fake.setGetAllException(ThreadDeath())
+        val bootstrap = bootstrap()
+        try {
+            bootstrap.start()
+            fail("ThreadDeath should have been rethrown")
+        } catch (e: ThreadDeath) {
+            // expected
+        }
+    }
+
+    // 24. VirtualMachineError subtype from listener registration must escape.
+    @Test
+    fun listenerRegistrationVirtualMachineErrorEscapes() {
+        fake.set(mapOf("pref_key_foo" to true))
+        fake.setRegisterException(InternalError("registration vm error"))
+        val bootstrap = bootstrap()
+        try {
+            bootstrap.start()
+            fail("VirtualMachineError should have been rethrown")
+        } catch (e: InternalError) {
+            assertEquals("registration vm error", e.message)
+        }
+    }
+
+    // 25. Wrapped fatal cause must still escape through bounded cause-chain traversal.
+    @Test
+    fun wrappedFatalCauseEscapes() {
+        val root = OutOfMemoryError("root oom")
+        val wrapped = RuntimeException("wrapper", root)
+        val bootstrap = PreferenceBootstrap({ throw wrapped }, "test", snapshot)
+        try {
+            bootstrap.start()
+            fail("wrapped OutOfMemoryError cause should have been rethrown")
+        } catch (e: OutOfMemoryError) {
+            assertEquals("root oom", e.message)
+        }
+    }
+
+    // 26. Ordinary RuntimeException still fails open with existing state and failure record.
+    @Test
+    fun ordinaryRuntimeExceptionStillFailOpen() {
+        val error = RuntimeException("ordinary provider failure")
+        val bootstrap = PreferenceBootstrap({ throw error }, "test", snapshot)
+        assertEquals(PreferenceBootstrap.State.UNAVAILABLE, bootstrap.start())
+        assertEquals("resolve_remote", bootstrap.lastFailureStage)
+        assertEquals(error, bootstrap.lastError)
     }
 }

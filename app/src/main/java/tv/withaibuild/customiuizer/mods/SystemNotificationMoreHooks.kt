@@ -5,7 +5,7 @@ import android.app.Notification
 import android.app.NotificationChannel
 import android.app.PendingIntent
 import android.content.Context
-import android.graphics.drawable.Drawable
+
 import android.content.Intent
 import android.content.res.Resources
 import android.media.AudioManager
@@ -27,6 +27,7 @@ import tv.withaibuild.customiuizer.mods.utils.HookerClassHelper.AfterHookCallbac
 import tv.withaibuild.customiuizer.mods.utils.HookerClassHelper.BeforeHookCallback
 import tv.withaibuild.customiuizer.mods.utils.HookerClassHelper.MethodHook
 import tv.withaibuild.customiuizer.mods.utils.ModuleHelper
+import tv.withaibuild.customiuizer.mods.utils.RuntimeFatality
 import tv.withaibuild.customiuizer.mods.utils.XposedHelpers
 import java.lang.reflect.Constructor
 import java.lang.reflect.InvocationHandler
@@ -92,12 +93,7 @@ object SystemNotificationMoreHooks {
 
         if (mContextField == null || mMenuItemsField == null || mMenuContainerField == null) return
 
-        val menuItemConstructor = try {
-            XposedHelpers.findConstructorBestMatch(menuItemClass, menuRowClass, Context::class.java, Int::class.javaPrimitiveType, Drawable::class.java, Int::class.javaPrimitiveType)
-        } catch (t: Throwable) {
-            rethrowFatal(t)
-            null
-        }
+        val menuItemConstructor = resolveNotificationMenuItemConstructor(menuItemClass, menuRowClass, classLoader)
         val getMenuViewMethod = try {
             XposedHelpers.findMethodBestMatch(menuItemClass, "getMenuView")
         } catch (t: Throwable) {
@@ -327,6 +323,55 @@ object SystemNotificationMoreHooks {
         }
     }
 
+    private fun resolveNotificationMenuItemConstructor(
+        menuItemClass: Class<*>,
+        menuRowClass: Class<*>,
+        classLoader: ClassLoader
+    ): Constructor<*>? {
+        // Step 1: prefer the exact HyperOS ABI signature when the inner class type is available.
+        val gutsContentClass = try {
+            XposedHelpers.findClass(
+                "com.android.systemui.statusbar.notification.row.NotificationGuts\$GutsContent",
+                classLoader
+            )
+        } catch (t: Throwable) {
+            rethrowFatal(t)
+            null
+        }
+        if (gutsContentClass != null) {
+            try {
+                return XposedHelpers.findConstructorBestMatch(
+                    menuItemClass,
+                    menuRowClass,
+                    Context::class.java,
+                    Int::class.javaPrimitiveType,
+                    gutsContentClass,
+                    Int::class.javaPrimitiveType
+                )
+            } catch (t: Throwable) {
+                rethrowFatal(t)
+            }
+        }
+
+        // Step 2: bounded structural fallback. Only accept the shape
+        //   (outer, Context, int, reference, int)
+        // and reject ambiguity. This keeps MIUI14 (Drawable-like 4th arg) and
+        // HyperOS (GutsContent-like 4th arg) compatible without ROM branching.
+        val matches = menuItemClass.declaredConstructors.filter { ctor ->
+            val types = ctor.parameterTypes
+            types.size == 5 &&
+                types[0] == menuRowClass &&
+                types[1] == Context::class.java &&
+                types[2] == Int::class.javaPrimitiveType &&
+                !types[3].isPrimitive &&
+                types[4] == Int::class.javaPrimitiveType
+        }
+        return when (matches.size) {
+            1 -> matches[0].apply { isAccessible = true }
+            else -> null
+        }
+    }
+
     private fun getMenuViewSafe(menuItem: Any?, method: Method?): View? {
         if (menuItem == null || method == null) return null
         return try {
@@ -474,8 +519,17 @@ object SystemNotificationMoreHooks {
     @JvmStatic
     fun DisableAnyNotificationHook(lpparam: PackageReadyParam) {
         if (lpparam.packageName.contains("systemui")) {
-            val NotifyManagerCls = XposedHelpers.findClass("com.android.systemui.statusbar.notification.NotificationSettingsManager", lpparam.classLoader)
-            XposedHelpers.setStaticBooleanField(NotifyManagerCls, "USE_WHITE_LISTS", false)
+            val NotifyManagerCls = XposedHelpers.findClassIfExists(
+                "com.android.systemui.statusbar.notification.NotificationSettingsManager",
+                lpparam.classLoader
+            )
+            if (NotifyManagerCls != null) {
+                try {
+                    XposedHelpers.setStaticBooleanField(NotifyManagerCls, "USE_WHITE_LISTS", false)
+                } catch (t: Throwable) {
+                    RuntimeFatality.throwIfFatal(t)
+                }
+            }
             ModuleHelper.findAndHookMethod("com.miui.systemui.NotificationCloudData\$Companion", lpparam.classLoader, "getFloatBlacklist", Context::class.java, object : MethodHook() {
                 override fun before(param: BeforeHookCallback) {
                     param.returnAndSkip(ArrayList<String>())

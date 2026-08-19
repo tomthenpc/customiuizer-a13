@@ -194,7 +194,7 @@ class LauncherGestureStateCacheTest(unittest.TestCase):
 
     def test_base_recents_class_parsed_once(self):
         matches = re.findall(
-            r'XposedHelpers\.findClass\(\s*"com\.miui\.home\.recents\.BaseRecentsImpl"',
+            r'XposedHelpers\.findClass(?:IfExists)?\(\s*"com\.miui\.home\.recents\.BaseRecentsImpl"',
             self.source,
         )
         self.assertEqual(1, len(matches), "BaseRecentsImpl class must be resolved once")

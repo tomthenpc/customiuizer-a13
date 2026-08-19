@@ -8,6 +8,7 @@ import java.util.Set;
 import java.util.function.Function;
 
 import tv.withaibuild.customiuizer.mods.utils.ModuleHelper;
+import tv.withaibuild.customiuizer.mods.utils.RuntimeFatality;
 import tv.withaibuild.customiuizer.mods.utils.XposedHelpers;
 
 /**
@@ -67,6 +68,7 @@ public class PreferenceBootstrap {
             try {
                 prefs = provider.apply(name);
             } catch (Throwable t) {
+                RuntimeFatality.throwIfFatal(t);
                 recordFailure("resolve_remote", t);
                 return null;
             }
@@ -100,6 +102,7 @@ public class PreferenceBootstrap {
             try {
                 first = prefs.getAll();
             } catch (Throwable t) {
+                RuntimeFatality.throwIfFatal(t);
                 recordFailure("first_getAll", t);
                 state = State.UNAVAILABLE;
                 return state;
@@ -127,6 +130,7 @@ public class PreferenceBootstrap {
             try {
                 second = prefs.getAll();
             } catch (Throwable t) {
+                RuntimeFatality.throwIfFatal(t);
                 recordFailure("second_getAll", t);
                 state = State.UNAVAILABLE;
                 return state;
@@ -173,6 +177,7 @@ public class PreferenceBootstrap {
             try {
                 current = remote.getAll();
             } catch (Throwable t) {
+                RuntimeFatality.throwIfFatal(t);
                 recordFailure("ensureWatcher_getAll", t);
                 return state;
             }
@@ -235,6 +240,7 @@ public class PreferenceBootstrap {
             this.watcherRegistered = true;
             return true;
         } catch (Throwable t) {
+            RuntimeFatality.throwIfFatal(t);
             recordFailure("register_listener", t);
             // Do not pretend the listener is registered.
             return false;
@@ -266,6 +272,7 @@ public class PreferenceBootstrap {
                 Map<String, ?> all = sharedPreferences.getAll();
                 val = all != null ? all.get(key) : null;
             } catch (Throwable t) {
+                RuntimeFatality.throwIfFatal(t);
                 recordFailure("listener_getAll", t);
                 return;
             }

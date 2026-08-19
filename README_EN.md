@@ -4,7 +4,7 @@
 
 CustoMIUIzer A13 customizes the system UI and interactions on **MIUI 14 / Android 13**, with capability-based compatibility paths for **HyperOS 1 / Android 13**. It uses an independent package, release line, and modern libxposed API.
 
-- Current version: `r13.11.1` (versionCode `137`)
+- Current version: `r13.12.0` (versionCode `138`)
 - Application ID: `tv.withaibuild.customiuizer.r13`
 - Source repository: <https://github.com/tomthenpc/customiuizer-a13>
 - User downloads: <https://github.com/Xposed-Modules-Repo/tv.withaibuild.customiuizer.r13/releases>
@@ -41,8 +41,29 @@ Known deployed baseline: Redmi Note 11T Pro (`xaga`), MIUI `V14.0.10.0.TLOINXM`.
 - Ordinary ROM, reflection, and callback failures remain isolated, while `OutOfMemoryError`, `ThreadDeath`, and `VirtualMachineError` are not disguised as compatibility failures;
 - DeviceInfo and Launcher hot paths reduce repeated Binder calls, reflection, I/O, configuration reads, and temporary objects.
 
-See [CHANGELOG_EN.md](CHANGELOG_EN.md) for release changes and [DOCUMENTATION.md](DOCUMENTATION.md) for architecture, compatibility, and verification documents.
+See [CHANGELOG_EN.md](CHANGELOG_EN.md) for release changes and [AGENTS.md](AGENTS.md), [ARCHITECTURE.md](ARCHITECTURE.md), [COMPATIBILITY.md](COMPATIBILITY.md), and [docs/A13_PARITY.md](docs/A13_PARITY.md) for engineering rules, architecture, and compatibility.
 
-`r13.11.1` further hardens asynchronous lifecycle handling in settings and app selectors, and optimizes the status-bar clock's default-format refresh path, while retaining the process-routed installer architecture, ROM capability detection, exception boundaries, and lifecycle management introduced in previous releases.
+`r13.12.0` fixes gesture/custom-action values snapping back to "No action" and adds the Launcher restart control on gesture pages. It also includes USB default-mode mapping, installer purify, folder blur, backup format, and several status-bar/desktop visual capabilities. See [CHANGELOG_EN.md](CHANGELOG_EN.md).
+
+## Build and verification
+
+```bash
+python tools/verify.py full
+```
+
+## Support and contact
+
+If this project helps you, you can support continued development via [PayPal](https://paypal.me/Jinjitv).
+
+- Source repository: <https://github.com/tomthenpc/customiuizer-a13>
+- User downloads: <https://github.com/Xposed-Modules-Repo/tv.withaibuild.customiuizer.r13/releases>
+
+## Development notes
+
+- Stability and behavior preservation come first; compatibility logic stays at ROM / ClassLoader boundaries;
+- Hot-path hooks avoid temporary arrays, collections, regex, formatting, repeated reflection, and remote preference reads;
+- Java-to-Kotlin migrations are behavior-equivalent and gated by tests;
+- `MainModule.java`, `XposedHelpers.java`, and `MemberUtilsX.java` remain the JVM / framework boundary;
+- Fine-grained history lives in Git commits and tags; release changes are in [CHANGELOG_EN.md](CHANGELOG_EN.md).
 
 Distributed under GPL-3.0. Derived from Mikanoshi/CustoMIUIzer and informed by MonwF/customiuizer's Android 13 work.

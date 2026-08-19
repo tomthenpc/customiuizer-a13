@@ -260,6 +260,12 @@
 			android:defaultValue="false"
 			android:dependency="pref_key_controls_nonavbar"/>
 
+		<tv.withaibuild.customiuizer.prefs.CheckBoxPreferenceEx
+			android:key="pref_key_controls_hide_ime_dismiss_button"
+			android:title="@string/controls_hide_ime_dismiss_button_title"
+			android:summary="@string/controls_hide_ime_dismiss_button_summ"
+			android:defaultValue="false" />
+
 		<tv.withaibuild.customiuizer.prefs.SeekBarPreference
 			android:key="pref_key_controls_navbarheight"
 			android:title="@string/controls_navbarheight_title"

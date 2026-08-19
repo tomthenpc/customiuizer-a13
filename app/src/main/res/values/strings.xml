@@ -57,6 +57,7 @@
     <string name="system_statusbaricons_secondspace_title">Second space</string>
     <string name="system_statusbaricons_privacy_title">Incognito mode</string>
     <string name="system_statusbaricons_headset_title">Headset</string>
+    <string name="system_statusbaricons_wireless_headset_title">Wireless headset</string>
     <string name="system_statusbaricons_mute_title">Call: muted mic</string>
     <string name="system_statusbaricons_speaker_title">Call: speakerphone</string>
     <string name="system_statusbaricons_record_title">Call: recording</string>
@@ -152,6 +153,7 @@
     <string name="system_detailednetspeed_lowlevel_summ">Speed values below this level will be considered low and will have a different indication icon</string>
     <string name="system_detailednetspeed_secunit_title">Hide Byte per second suffix(B/s)</string>
     <string name="system_netspeed_fontsize_title">Network speed\'s font size</string>
+    <string name="system_netspeed_use_clock_style_title">Match status bar clock text style</string>
     <string name="system_netspeed_rowspacing_title">Network speed row spacing</string>
     <string name="system_netspeed_rowspacing_summ">Adjusts spacing between upload and download rows; restart SystemUI after changing</string>
     <string name="system_statusbarcontrols_title">Gesture controls</string>
@@ -425,6 +427,8 @@
     <string name="system_charginginfo_title">Display charging data</string>
     <string name="system_charginginfo_summ">Show additional charging information at the bottom of lock screen</string>
     <string name="system_charginginfo_view_title">How to display</string>
+    <string name="system_charginginfo_fontsize_title">Lock screen charging text size</string>
+    <string name="system_charginginfo_fontsize_summary">Adjusts the bottom charging indication. Default keeps the system text size. Restart System UI to apply.</string>
     <string name="system_charginginfo_current_title">Charging current</string>
     <string name="system_charginginfo_voltage_title">Battery voltage</string>
     <string name="system_charginginfo_wattage_title">Power consumption</string>
@@ -538,6 +542,7 @@
     <string name="launcher_topmargin_title">Top grid margin</string>
     <string name="launcher_dock_topmargin_title">Dock top margin</string>
     <string name="launcher_dock_bottommargin_title">Dock bottom margin</string>
+    <string name="launcher_dock_height_title">Dock height</string>
     <string name="launcher_horizwidgetmargin_title">Horizontal widget margin</string>
     <string name="launcher_indicatorheight_title">Page indicator height</string>
     <string name="launcher_indicator_topmargin_title">Page indicator top margin</string>
@@ -551,6 +556,8 @@
     <string name="launcher_fixlaunch_title">Fix app info</string>
     <string name="launcher_fixlaunch_summ">Always open MIUI-styled app info from long press menu</string>
     <string name="launcher_folderblur">Background blur</string>
+    <string name="launcher_folderblur_disable">Disable folder background blur</string>
+    <string name="launcher_folderblur_disable_summ">Use a clear background instead of adding blur on top of the default folder background</string>
     <string name="launcher_closefolder_title">Auto close folders</string>
     <string name="launcher_closefolder_summ">Close app\'s folder after launch</string>
     <string name="launcher_titles">App titles</string>
@@ -651,6 +658,8 @@
     <string name="controls_nonavbar_fix_inputmethod_summ">Add InputMethod apps to LSPosed scope first</string>
     <string name="controls_imebackalticon_title">Reactive Back button</string>
     <string name="controls_imebackalticon_summ">Switch back button icon to alternative one in input mode</string>
+    <string name="controls_hide_ime_dismiss_button_title">Hide keyboard dismiss button</string>
+    <string name="controls_hide_ime_dismiss_button_summ">Hide the bottom-left dismiss button while the keyboard is shown in gesture navigation</string>
     <string name="controls_navbarheight_title">Navbar height</string>
     <string name="controls_backlong_title">Back long press action</string>
     <string name="controls_homelong_title">Home long press action</string>
@@ -697,6 +706,7 @@
     <string name="various_installappinfo_vercode">Version code</string>
     <string name="various_installappinfo_sdk">Supported SDK</string>
     <string name="various_installappinfo_current">current</string>
+    <string name="various_installer_purify_title">Purify the package installer</string>
     <string name="various_alarmcompat_title">Alarm clock compatibility</string>
     <string name="various_alarmcompat_summ">Make selected apps display correct next alarm time set by stock MIUI Clock app</string>
     <string name="various_gboardpadding_port_title">Bottom padding in portrait</string>
@@ -717,6 +727,7 @@
     <string name="various_disableapp_summ">Allows to disable almost any app from its info page</string>
     <string name="various_securitycenter_unlock_title">Unlock security center features</string>
     <string name="various_apps_title">Show additional app details</string>
+    <string name="various_hide_report_ondetails_title">Hide report button on app details</string>
     <string name="various_apps_summ">Add new fields to app info page:\n- version code\n- full path to apk\n- data path\n- user ID\n- target SDK version\n- link to Play Store page\n- launch an app</string>
     <string name="various_appsort_title">Installed apps initial sort order</string>
     <string name="various_privacyapps_column_nums4_title">Set column nums to 4 on privacy apps view</string>
@@ -1133,6 +1144,7 @@
     <string name="system_statusbar_horizmargin_title">Statusbar horizontal padding</string>
     <string name="system_statusbar_dualrows_firstrow_horizmargin_title">First row horizontal padding</string>
     <string name="system_statusbar_clock_spread2rows_title">Make clock span two rows</string>
+    <string name="system_statusbar_dualrows_left_ratio_title">Set left width for device without notches</string>
     <string name="system_statusbar_topmargin_title">Statusbar top padding</string>
     <string name="system_statusbar_topmargin_val_title">Top padding</string>
     <string name="system_statusbar_topmargin_unset_lockscreen_title">Unset statusbar in Keyguard</string>

@@ -48,7 +48,10 @@ object SystemUIMonitorAndTileHooks {
         })
 
         val QSFactoryCls = "com.android.systemui.qs.tileimpl.MiuiQSFactory"
-        val ResourceIconClass = XposedHelpers.findClass("com.android.systemui.qs.tileimpl.QSTileImpl\$ResourceIcon", lpparam.classLoader)
+        val ResourceIconClass = XposedHelpers.findClassIfExists(
+            "com.android.systemui.qs.tileimpl.QSTileImpl\$ResourceIcon",
+            lpparam.classLoader
+        )
         ModuleHelper.findAndHookMethod(QSFactoryCls, lpparam.classLoader, "createTileInternal", String::class.java, object : MethodHook() {
             override fun before(param: BeforeHookCallback) {
                 val tileName = param.getArg(0) as? String ?: return
@@ -198,8 +201,14 @@ object SystemUIMonitorAndTileHooks {
                     XposedHelpers.setObjectField(booleanState, "label", tileLabel)
                     XposedHelpers.setObjectField(booleanState, "contentDescription", tileLabel)
                     XposedHelpers.setObjectField(booleanState, "expandedAccessibilityClassName", Switch::class.java.name)
-                    val mIcon = XposedHelpers.callStaticMethod(ResourceIconClass, "get", if (isEnable) tileOnResMap[tileName] else tileOffResMap[tileName])
-                    XposedHelpers.setObjectField(booleanState, "icon", mIcon)
+                    if (ResourceIconClass != null) {
+                        val mIcon = XposedHelpers.callStaticMethod(
+                            ResourceIconClass,
+                            "get",
+                            if (isEnable) tileOnResMap[tileName] else tileOffResMap[tileName]
+                        )
+                        XposedHelpers.setObjectField(booleanState, "icon", mIcon)
+                    }
                 }
                 param.returnAndSkip(null)
             }

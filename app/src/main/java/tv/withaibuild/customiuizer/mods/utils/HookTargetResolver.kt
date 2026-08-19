@@ -48,7 +48,7 @@ open class HookTargetResolver(private val classLoader: ClassLoader) {
             if (clazz == null) cacheNull(k) else cacheResult(k, clazz)
             clazz
         } catch (t: Throwable) {
-            rethrowIfFatal(t)
+            RuntimeFatality.throwIfFatal(t)
             cacheNull(k)
             null
         }
@@ -80,7 +80,7 @@ open class HookTargetResolver(private val classLoader: ClassLoader) {
             cacheResult(k, method)
             method
         } catch (t: Throwable) {
-            rethrowIfFatal(t)
+            RuntimeFatality.throwIfFatal(t)
             cacheNull(k)
             null
         }
@@ -103,7 +103,7 @@ open class HookTargetResolver(private val classLoader: ClassLoader) {
             }
             matches
         } catch (t: Throwable) {
-            rethrowIfFatal(t)
+            RuntimeFatality.throwIfFatal(t)
             null
         }
     }
@@ -133,7 +133,7 @@ open class HookTargetResolver(private val classLoader: ClassLoader) {
             cacheResult(k, ctor)
             ctor
         } catch (t: Throwable) {
-            rethrowIfFatal(t)
+            RuntimeFatality.throwIfFatal(t)
             cacheNull(k)
             null
         }
@@ -154,7 +154,7 @@ open class HookTargetResolver(private val classLoader: ClassLoader) {
                 for (c in ctors) add(c)
             }
         } catch (t: Throwable) {
-            rethrowIfFatal(t)
+            RuntimeFatality.throwIfFatal(t)
             null
         }
     }
@@ -184,7 +184,7 @@ open class HookTargetResolver(private val classLoader: ClassLoader) {
             cacheResult(k, field)
             field
         } catch (t: Throwable) {
-            rethrowIfFatal(t)
+            RuntimeFatality.throwIfFatal(t)
             cacheNull(k)
             null
         }
@@ -458,26 +458,6 @@ open class HookTargetResolver(private val classLoader: ClassLoader) {
         }
     }
 
-    private fun rethrowIfFatal(t: Throwable) {
-        val fatal = findFatalCause(t)
-        if (fatal != null) throw fatal
-    }
-
-    private fun findFatalCause(t: Throwable): OutOfMemoryError? {
-        if (t is OutOfMemoryError) return t
-        val cause = t.cause
-        if (cause is OutOfMemoryError) return cause
-        if (t is java.lang.reflect.InvocationTargetException) {
-            val target = t.targetException
-            if (target is OutOfMemoryError) return target
-            if (target?.cause is OutOfMemoryError) return target.cause as OutOfMemoryError
-        }
-        if (t is java.lang.ExceptionInInitializerError) {
-            val initEx = t.exception
-            if (initEx is OutOfMemoryError) return initEx
-        }
-        return null
-    }
 }
 
 /**

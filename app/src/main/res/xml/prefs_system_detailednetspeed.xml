@@ -26,6 +26,11 @@
 		miuizer:format="%s dip" />
 
 	<tv.withaibuild.customiuizer.prefs.CheckBoxPreferenceEx
+		android:key="pref_key_system_netspeed_use_clock_style"
+		android:title="@string/system_netspeed_use_clock_style_title"
+		android:defaultValue="false" />
+
+	<tv.withaibuild.customiuizer.prefs.CheckBoxPreferenceEx
 		android:key="pref_key_system_netspeed_bold"
 		android:title="@string/system_statusbar_mobiletype_single_bold_title"
 		android:defaultValue="false" />

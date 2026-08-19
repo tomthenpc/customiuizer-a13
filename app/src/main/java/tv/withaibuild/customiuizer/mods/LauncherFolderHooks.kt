@@ -16,6 +16,7 @@ import tv.withaibuild.customiuizer.mods.utils.HookerClassHelper.AfterHookCallbac
 import tv.withaibuild.customiuizer.mods.utils.HookerClassHelper.BeforeHookCallback
 import tv.withaibuild.customiuizer.mods.utils.HookerClassHelper.MethodHook
 import tv.withaibuild.customiuizer.mods.utils.ModuleHelper
+import tv.withaibuild.customiuizer.mods.utils.RuntimeFatality
 import tv.withaibuild.customiuizer.mods.utils.XposedHelpers
 
 @Suppress("UNUSED_PARAMETER")
@@ -117,7 +118,7 @@ object LauncherFolderHooks {
                                     XposedHelpers.callMethod(act, "startSecurityHide")
                                 }
                             } catch (t: Throwable) {
-                                if (t is OutOfMemoryError) throw t
+                                RuntimeFatality.throwIfFatal(t)
                                 XposedHelpers.log(t)
                             }
                         }
@@ -149,6 +150,10 @@ object LauncherFolderHooks {
     }
 
     @JvmStatic
+    internal fun resolveFolderBlurRatio(disabled: Boolean, opacityPercent: Int): Float =
+        if (disabled) 0f else opacityPercent.coerceIn(0, 100) / 100f
+
+    @JvmStatic
     fun FolderBlurHook(lpparam: PackageReadyParam) {
         val blurUtils = XposedHelpers.findClassIfExists("com.miui.home.launcher.common.BlurUtils", lpparam.classLoader)
         if (blurUtils != null) {
@@ -156,8 +161,10 @@ object LauncherFolderHooks {
                 override fun before(param: BeforeHookCallback) {
                     val isFolderShowing = XposedHelpers.callMethod(param.getArg(0), "isFolderShowing") as? Boolean ?: false
                     if (isFolderShowing) {
-                        val blurPct = MainModule.mPrefs.getInt("launcher_folderblur_opacity", 0)
-                        val blurRatio = blurPct / 100f
+                        val blurRatio = resolveFolderBlurRatio(
+                            MainModule.mPrefs.getBoolean("launcher_folderblur_disable"),
+                            MainModule.mPrefs.getInt("launcher_folderblur_opacity", 0),
+                        )
                         param.returnAndSkip(blurRatio)
                     }
                 }
@@ -167,8 +174,10 @@ object LauncherFolderHooks {
                 override fun after(param: AfterHookCallback) {
                     val launcher = XposedHelpers.getObjectField(param.getThisObject(), "mLauncher") as? Activity ?: return
 
-                    val blurPct = MainModule.mPrefs.getInt("launcher_folderblur_opacity", 0)
-                    val blurRatio = blurPct / 100f
+                    val blurRatio = resolveFolderBlurRatio(
+                        MainModule.mPrefs.getBoolean("launcher_folderblur_disable"),
+                        MainModule.mPrefs.getInt("launcher_folderblur_opacity", 0),
+                    )
                     XposedHelpers.callStaticMethod(blurUtils, "fastBlur", blurRatio, launcher.window, true)
                 }
             })
@@ -184,8 +193,10 @@ object LauncherFolderHooks {
                 override fun after(param: AfterHookCallback) {
                     val isFolderShowing = XposedHelpers.callMethod(param.getThisObject(), "isFolderShowing") as? Boolean ?: false
                     if (isFolderShowing) {
-                        val blurPct = MainModule.mPrefs.getInt("launcher_folderblur_opacity", 0)
-                        val blurRatio = blurPct / 100f
+                        val blurRatio = resolveFolderBlurRatio(
+                            MainModule.mPrefs.getBoolean("launcher_folderblur_disable"),
+                            MainModule.mPrefs.getInt("launcher_folderblur_opacity", 0),
+                        )
                         val launcher = param.getThisObject() as? Activity ?: return
                         XposedHelpers.callStaticMethod(blurUtils, "fastBlur", blurRatio, launcher.window, true)
                     }

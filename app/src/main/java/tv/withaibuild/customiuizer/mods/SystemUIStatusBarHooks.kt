@@ -290,9 +290,18 @@ object SystemUIStatusBarHooks {
         // installed and where the icon lives. Changing them requires a SystemUI restart.
         val showBatteryDetail = MainModule.mPrefs.getBoolean("system_statusbar_batterytempandcurrent")
         val showDeviceTemp = MainModule.mPrefs.getBoolean("system_statusbar_showdevicetemperature")
-        val DarkIconDispatcherClass = XposedHelpers.findClass("com.android.systemui.plugins.DarkIconDispatcher", lpparam.classLoader)
-        val Dependency = XposedHelpers.findClass("com.android.systemui.Dependency", lpparam.classLoader)
-        val StatusBarIconHolder = XposedHelpers.findClass("com.android.systemui.statusbar.phone.StatusBarIconHolder", lpparam.classLoader)
+        val DarkIconDispatcherClass = XposedHelpers.findClassIfExists(
+            "com.android.systemui.plugins.DarkIconDispatcher",
+            lpparam.classLoader
+        )
+        val Dependency = XposedHelpers.findClassIfExists(
+            "com.android.systemui.Dependency",
+            lpparam.classLoader
+        )
+        val StatusBarIconHolder = XposedHelpers.findClassIfExists(
+            "com.android.systemui.statusbar.phone.StatusBarIconHolder",
+            lpparam.classLoader
+        )
         val batteryAtRight = MainModule.mPrefs.getBoolean("system_statusbar_batterytempandcurrent_atright")
         val tempAtRight = MainModule.mPrefs.getBoolean("system_statusbar_showdevicetemperature_atright")
         val textIcons = ArrayList<TextIcon>()
@@ -303,6 +312,8 @@ object SystemUIStatusBarHooks {
         val hasLeftIcon = textIcons.any { !it.atRight }
 
         if (hasRightIcon && !MainModule.mPrefs.getBoolean("system_statusbar_dualrows")) {
+            val iconHolderClass = StatusBarIconHolder
+            if (iconHolderClass != null) {
             ModuleHelper.hookAllConstructors("com.android.systemui.statusbar.policy.NetworkSpeedController", lpparam.classLoader, object : MethodHook() {
                 override fun after(param: AfterHookCallback) {
                     val iconController = XposedHelpers.getObjectField(param.getThisObject(), "mStatusBarIconController")
@@ -311,7 +322,7 @@ object SystemUIStatusBarHooks {
                             val slotIndex = XposedHelpers.callMethod(iconController, "getSlotIndex", getSlotNameByType(ti.iconType)) as Int
                             var iconHolder = XposedHelpers.callMethod(iconController, "getIcon", slotIndex, 0)
                             if (iconHolder == null) {
-                                iconHolder = XposedHelpers.newInstance(StatusBarIconHolder)
+                                iconHolder = XposedHelpers.newInstance(iconHolderClass)
                                 XposedHelpers.setObjectField(iconHolder, "mType", ti.iconType)
                                 XposedHelpers.callMethod(iconController, "setIcon", slotIndex, iconHolder)
                             }
@@ -344,13 +355,17 @@ object SystemUIStatusBarHooks {
                     }
                 }
             })
+            }
         }
 
         if (hasLeftIcon) {
+            val darkIconDispatcherClass = DarkIconDispatcherClass
+            val dependencyClass = Dependency
+            if (darkIconDispatcherClass != null && dependencyClass != null) {
             ModuleHelper.findAndHookMethod("com.android.systemui.statusbar.phone.MiuiCollapsedStatusBarFragment", lpparam.classLoader, "initMiuiViewsOnViewCreated", View::class.java, object : MethodHook() {
                 override fun after(param: AfterHookCallback) {
                     val mContext = XposedHelpers.callMethod(param.getThisObject(), "getContext") as? Context ?: return
-                    val DarkIconDispatcher = XposedHelpers.callStaticMethod(Dependency, "get", DarkIconDispatcherClass)
+                    val DarkIconDispatcher = XposedHelpers.callStaticMethod(dependencyClass, "get", darkIconDispatcherClass)
                     val baseAnchor = if (newStyle) {
                         XposedHelpers.getObjectField(param.getThisObject(), "mClockView") as? View
                     } else {
@@ -388,19 +403,25 @@ object SystemUIStatusBarHooks {
                     }
                 }
             })
+            }
         }
 
-        val NetworkSpeedViewClass = XposedHelpers.findClass("com.android.systemui.statusbar.views.NetworkSpeedView", lpparam.classLoader)
-        ModuleHelper.findAndHookMethod(NetworkSpeedViewClass, "getSlot", object : MethodHook() {
-            override fun before(param: BeforeHookCallback) {
-                val nsView = param.getThisObject() as? View ?: return
-                val tagData = nsView.getTag(textIconTagId)
-                if (tagData != null) {
-                    val ti = tagData as? TextIcon
-                    param.returnAndSkip(getSlotNameByType(ti?.iconType ?: 0))
+        val NetworkSpeedViewClass = XposedHelpers.findClassIfExists(
+            "com.android.systemui.statusbar.views.NetworkSpeedView",
+            lpparam.classLoader
+        )
+        if (NetworkSpeedViewClass != null) {
+            ModuleHelper.findAndHookMethod(NetworkSpeedViewClass, "getSlot", object : MethodHook() {
+                override fun before(param: BeforeHookCallback) {
+                    val nsView = param.getThisObject() as? View ?: return
+                    val tagData = nsView.getTag(textIconTagId)
+                    if (tagData != null) {
+                        val ti = tagData as? TextIcon
+                        param.returnAndSkip(getSlotNameByType(ti?.iconType ?: 0))
+                    }
                 }
-            }
-        })
+            })
+        }
 
         DeviceInfoMonitor.hook(lpparam, showBatteryDetail, showDeviceTemp)
     }
@@ -649,8 +670,11 @@ object SystemUIStatusBarHooks {
                 val rightLayout = XposedHelpers.getAdditionalInstanceField(param.getThisObject(), "rightLayout") as? LinearLayout ?: return
 
                 if (mCurrentStatusBarType == 0) {
-                    leftLayout.layoutParams = LinearLayout.LayoutParams(0, -1, 4f)
-                    rightLayout.layoutParams = LinearLayout.LayoutParams(0, -1, 6f)
+                    val (leftWeight, rightWeight) = resolveDualRowsCutoutWeights(
+                        MainModule.mPrefs.getInt("system_statusbar_dualrows_left_ratio", 4)
+                    )
+                    leftLayout.layoutParams = LinearLayout.LayoutParams(0, -1, leftWeight)
+                    rightLayout.layoutParams = LinearLayout.LayoutParams(0, -1, rightWeight)
                 } else {
                     leftLayout.layoutParams = LinearLayout.LayoutParams(0, -1, 1f)
                     rightLayout.layoutParams = LinearLayout.LayoutParams(0, -1, 1f)
@@ -1286,6 +1310,10 @@ object SystemUIStatusBarHooks {
             val iconTextView = holder.numberView
             val dualRow = MainModule.mPrefs.getBoolean("system_detailednetspeed") || MainModule.mPrefs.getBoolean("system_detailednetspeed_fakedualrow")
             var fontSize = MainModule.mPrefs.getInt("system_netspeed_fontsize", 13)
+            if (MainModule.mPrefs.getBoolean("system_netspeed_use_clock_style")) {
+                applyStatusBarClockTextAppearance(iconTextView)
+                holder.unitView?.let { applyStatusBarClockTextAppearance(it) }
+            }
             if (dualRow) {
                 if (newStyle) {
                     holder.unitView?.visibility = View.GONE
@@ -1344,6 +1372,23 @@ object SystemUIStatusBarHooks {
         val baseSpacing = if (fontSize > 17) 0.85f else 0.90f
         val adjustment = adjustmentPercent.coerceIn(70, 130)
         return baseSpacing * adjustment / 100f
+    }
+
+    internal const val STATUS_BAR_CLOCK_TEXT_APPEARANCE = "TextAppearance.StatusBar.Clock"
+
+    private fun applyStatusBarClockTextAppearance(textView: TextView) {
+        val styleId = textView.resources.getIdentifier(
+            STATUS_BAR_CLOCK_TEXT_APPEARANCE,
+            "style",
+            "com.android.systemui"
+        )
+        if (styleId != 0) textView.setTextAppearance(styleId)
+    }
+
+    @JvmStatic
+    internal fun resolveDualRowsCutoutWeights(leftRatio: Int): Pair<Float, Float> {
+        val left = leftRatio.coerceIn(3, 7)
+        return left.toFloat() to (10 - left).toFloat()
     }
 
     @JvmStatic
@@ -1543,6 +1588,7 @@ object SystemUIStatusBarHooks {
     private fun checkSlot(slotName: String?): Boolean {
         return try {
             ("headset" == slotName && MainModule.mPrefs.getBoolean("system_statusbaricons_headset")) ||
+            ("wireless_headset" == slotName && MainModule.mPrefs.getBoolean("system_statusbaricons_wireless_headset")) ||
             ("volume" == slotName && MainModule.mPrefs.getBoolean("system_statusbaricons_sound")) ||
             ("zen" == slotName && MainModule.mPrefs.getBoolean("system_statusbaricons_dnd")) ||
             ("alarm_clock" == slotName && MainModule.mPrefs.getBoolean("system_statusbaricons_alarm")) ||

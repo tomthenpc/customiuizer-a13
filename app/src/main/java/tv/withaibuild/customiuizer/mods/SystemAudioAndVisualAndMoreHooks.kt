@@ -56,6 +56,7 @@ import tv.withaibuild.customiuizer.mods.utils.HookerClassHelper.AfterHookCallbac
 import tv.withaibuild.customiuizer.mods.utils.HookerClassHelper.BeforeHookCallback
 import tv.withaibuild.customiuizer.mods.utils.HookerClassHelper.MethodHook
 import tv.withaibuild.customiuizer.mods.utils.ModuleHelper
+import tv.withaibuild.customiuizer.mods.utils.RuntimeFatality
 import tv.withaibuild.customiuizer.mods.utils.XposedHelpers
 import tv.withaibuild.customiuizer.utils.HookUtils
 import java.io.ByteArrayOutputStream
@@ -144,13 +145,9 @@ object SystemAudioAndVisualAndMoreHooks {
     fun ScreenDimTimeHook(lpparam: SystemServerStartingParam) {
         ModuleHelper.findAndHookMethod("com.android.server.power.PowerManagerService", lpparam.classLoader, "readConfigurationLocked", object : MethodHook() {
             override fun after(param: AfterHookCallback) {
-                XposedHelpers.setIntField(param.thisObject, "mScreenOffTimeoutSetting", MainModule.mPrefs.getInt("system_screendimtime", 15000))
-            }
-        })
-
-        ModuleHelper.findAndHookMethod("com.android.server.power.PowerManagerService", lpparam.classLoader, "setStayOnSettingInternal", Int::class.javaPrimitiveType, object : MethodHook() {
-            override fun before(param: BeforeHookCallback) {
-                if (MainModule.mPrefs.getInt("system_screendimtime", 15000) == 0) param.returnAndSkip(null)
+                val ratio = MainModule.mPrefs.getInt("system_dimtime", 0) / 100f
+                XposedHelpers.setIntField(param.thisObject, "mMaximumScreenDimDurationConfig", 600000)
+                XposedHelpers.setFloatField(param.thisObject, "mMaximumScreenDimRatioConfig", ratio)
             }
         })
     }
@@ -170,11 +167,11 @@ object SystemAudioAndVisualAndMoreHooks {
                     try {
                         XposedHelpers.callMethod(param.thisObject, "setSpringBackEnable", false)
                     } catch (t: Throwable) {
-                        if (t is OutOfMemoryError) throw t
+                        RuntimeFatality.throwIfFatal(t)
                         try {
                             XposedHelpers.setBooleanField(param.thisObject, "mSpringBackEnable", false)
                         } catch (fallback: Throwable) {
-                            if (fallback is OutOfMemoryError) throw fallback
+                            RuntimeFatality.throwIfFatal(fallback)
                         }
                     }
                 }
@@ -190,11 +187,11 @@ object SystemAudioAndVisualAndMoreHooks {
                     try {
                         XposedHelpers.callMethod(param.thisObject, "setSpringEnabled", false)
                     } catch (t: Throwable) {
-                        if (t is OutOfMemoryError) throw t
+                        RuntimeFatality.throwIfFatal(t)
                         try {
                             XposedHelpers.setBooleanField(param.thisObject, "mSpringEnabled", false)
                         } catch (fallback: Throwable) {
-                            if (fallback is OutOfMemoryError) throw fallback
+                            RuntimeFatality.throwIfFatal(fallback)
                         }
                     }
                 }
@@ -647,15 +644,23 @@ object SystemAudioAndVisualAndMoreHooks {
 
     @JvmStatic
     fun GalleryScreenshotPathHook(lpparam: PackageReadyParam) {
-        val MIUIStorageConstants = XposedHelpers.findClass("com.miui.gallery.storage.constants.MIUIStorageConstants", lpparam.classLoader)
-        val folder = MainModule.mPrefs.getStringAsInt("system_gallery_screenshots_path", 1)
-        val ssPath = when (folder) {
-            2 -> Environment.DIRECTORY_PICTURES + File.separator + "Screenshots"
-            3 -> Environment.DIRECTORY_DCIM + File.separator + "Screenshots"
-            else -> ""
-        }
-        if (folder > 1) {
-            XposedHelpers.setStaticObjectField(MIUIStorageConstants, "DIRECTORY_SCREENSHOT_PATH", ssPath)
+        try {
+            val MIUIStorageConstants = XposedHelpers.findClassIfExists(
+                "com.miui.gallery.storage.constants.MIUIStorageConstants",
+                lpparam.classLoader
+            ) ?: return
+            val folder = MainModule.mPrefs.getStringAsInt("system_gallery_screenshots_path", 1)
+            val ssPath = when (folder) {
+                2 -> Environment.DIRECTORY_PICTURES + File.separator + "Screenshots"
+                3 -> Environment.DIRECTORY_DCIM + File.separator + "Screenshots"
+                else -> ""
+            }
+            if (folder > 1) {
+                XposedHelpers.setStaticObjectField(MIUIStorageConstants, "DIRECTORY_SCREENSHOT_PATH", ssPath)
+            }
+        } catch (t: Throwable) {
+            RuntimeFatality.throwIfFatal(t)
+            XposedHelpers.log(t)
         }
     }
 
@@ -666,7 +671,7 @@ object SystemAudioAndVisualAndMoreHooks {
                 val mIsShowLongScreenShotGuide = try {
                     XposedHelpers.getBooleanField(param.thisObject, "mIsShowLongScreenShotGuide")
                 } catch (t: Throwable) {
-                    if (t is OutOfMemoryError) throw t
+                    RuntimeFatality.throwIfFatal(t)
                     false
                 }
                 if (mIsShowLongScreenShotGuide) return

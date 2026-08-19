@@ -25,9 +25,9 @@
 |---|---|---|---|
 | `REGISTRY_FEATURE` | 3 | 10 | 1.6 % |
 | `INSTALLER_INFRASTRUCTURE` | 0 | 0 | 0.0 % |
-| `LEGACY_EXCEPTION` | 37 | 620 | 98.4 % |
+| `LEGACY_EXCEPTION` | 37 | 624 | 98.4 % |
 | `UNKNOWN` | 0 | 0 | 0.0 % |
-| **Total** | **40** | **630** | **100 %** |
+| **Total** | **40** | **634** | **100 %** |
 
 ---
 
@@ -38,16 +38,16 @@
 | `installers/GenericAppInstaller.java` | 1 | per-app / mixed | `LEGACY_EXCEPTION` | no typed catalog owner |
 | `installers/LauncherInstaller.java` | 1 | com.miui.home / com.mi.android.globallauncher | `LEGACY_EXCEPTION` | no typed catalog owner |
 | `installers/SystemUiInstaller.java` | 1 | com.android.systemui | `LEGACY_EXCEPTION` | no typed catalog owner |
-| `mods/Controls.kt` | 29 | mixed | `LEGACY_EXCEPTION` | no typed catalog owner |
+| `mods/Controls.kt` | 30 | mixed | `LEGACY_EXCEPTION` | no typed catalog owner |
 | `mods/GlobalActions.kt` | 8 | mixed | `LEGACY_EXCEPTION` | no typed catalog owner |
 | `mods/LauncherAnimationHooks.kt` | 14 | com.miui.home / com.mi.android.globallauncher | `LEGACY_EXCEPTION` | mixed: typed=1, legacy=7 |
 | `mods/LauncherFolderHooks.kt` | 11 | com.miui.home / com.mi.android.globallauncher | `LEGACY_EXCEPTION` | mixed: typed=1, legacy=4 |
 | `mods/LauncherGestureHooks.kt` | 32 | com.miui.home / com.mi.android.globallauncher | `LEGACY_EXCEPTION` | no typed catalog owner |
 | `mods/LauncherIconHooks.kt` | 19 | com.miui.home / com.mi.android.globallauncher | `LEGACY_EXCEPTION` | mixed: typed=2, legacy=4 |
-| `mods/LauncherLayoutHooks.kt` | 27 | com.miui.home / com.mi.android.globallauncher | `LEGACY_EXCEPTION` | mixed: typed=1, legacy=11 |
+| `mods/LauncherLayoutHooks.kt` | 28 | com.miui.home / com.mi.android.globallauncher | `LEGACY_EXCEPTION` | mixed: typed=1, legacy=12 |
 | `mods/LauncherSystemHooks.kt` | 15 | com.android.systemui | `LEGACY_EXCEPTION` | mixed: typed=2, legacy=5 |
 | `mods/PackagePermissions.kt` | 5 | mixed | `LEGACY_EXCEPTION` | no typed catalog owner |
-| `mods/SystemAudioAndVisualAndMoreHooks.kt` | 47 | com.android.systemui | `LEGACY_EXCEPTION` | mixed: typed=8, legacy=13 |
+| `mods/SystemAudioAndVisualAndMoreHooks.kt` | 46 | com.android.systemui | `LEGACY_EXCEPTION` | mixed: typed=8, legacy=13 |
 | `mods/SystemAudioAndVolumeHooks.kt` | 5 | com.android.systemui | `LEGACY_EXCEPTION` | mixed: typed=2, legacy=1 |
 | `mods/SystemChargingAndWallpaperHooks.kt` | 3 | com.android.systemui | `REGISTRY_FEATURE` | all hook calls owned by typed catalog |
 | `mods/SystemDisplayAndWindowHooks.kt` | 22 | com.android.systemui | `LEGACY_EXCEPTION` | mixed: typed=5, legacy=3 |
@@ -71,7 +71,7 @@
 | `mods/SystemUINotificationHooks.kt` | 13 | com.android.systemui | `LEGACY_EXCEPTION` | mixed: typed=1, legacy=6 |
 | `mods/SystemUIScreenshotHooks.kt` | 3 | com.android.systemui | `REGISTRY_FEATURE` | all hook calls owned by typed catalog |
 | `mods/SystemUIStatusBarHooks.kt` | 54 | com.android.systemui | `LEGACY_EXCEPTION` | mixed: typed=2, legacy=17 |
-| `mods/Various.kt` | 48 | mixed | `LEGACY_EXCEPTION` | no typed catalog owner |
+| `mods/Various.kt` | 51 | mixed | `LEGACY_EXCEPTION` | no typed catalog owner |
 | `mods/utils/DeviceInfoMonitor.kt` | 1 | mixed | `LEGACY_EXCEPTION` | no typed catalog owner |
 | `mods/utils/HookInstaller.kt` | 2 | mixed | `LEGACY_EXCEPTION` | no typed catalog owner |
 | `mods/utils/ResourceHooks.java` | 1 | mixed | `LEGACY_EXCEPTION` | no typed catalog owner |

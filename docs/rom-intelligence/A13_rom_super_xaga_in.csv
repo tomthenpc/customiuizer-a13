@@ -1,0 +1,17 @@
+codename,android,miui_hyperos,build_fingerprint,source_filename,source_sha256,is_sparse,size_bytes,logical_partition_count,partition_name,partition_size_bytes,partition_num_extents
+xaga,13,MIUI 14.0.10.0 India,,images/super.img,8ce7caa680e11c156529b5b9b7fe6d68ef03425041c8ce3f1f2bf1ce53d2c4e0,True,6939969680,16,odm_a,17690624,1
+xaga,13,MIUI 14.0.10.0 India,,images/super.img,8ce7caa680e11c156529b5b9b7fe6d68ef03425041c8ce3f1f2bf1ce53d2c4e0,True,6939969680,16,odm_b,0,0
+xaga,13,MIUI 14.0.10.0 India,,images/super.img,8ce7caa680e11c156529b5b9b7fe6d68ef03425041c8ce3f1f2bf1ce53d2c4e0,True,6939969680,16,odm_dlkm_a,348160,1
+xaga,13,MIUI 14.0.10.0 India,,images/super.img,8ce7caa680e11c156529b5b9b7fe6d68ef03425041c8ce3f1f2bf1ce53d2c4e0,True,6939969680,16,odm_dlkm_b,0,0
+xaga,13,MIUI 14.0.10.0 India,,images/super.img,8ce7caa680e11c156529b5b9b7fe6d68ef03425041c8ce3f1f2bf1ce53d2c4e0,True,6939969680,16,product_a,3452198912,1
+xaga,13,MIUI 14.0.10.0 India,,images/super.img,8ce7caa680e11c156529b5b9b7fe6d68ef03425041c8ce3f1f2bf1ce53d2c4e0,True,6939969680,16,product_b,0,0
+xaga,13,MIUI 14.0.10.0 India,,images/super.img,8ce7caa680e11c156529b5b9b7fe6d68ef03425041c8ce3f1f2bf1ce53d2c4e0,True,6939969680,16,system_a,926306304,1
+xaga,13,MIUI 14.0.10.0 India,,images/super.img,8ce7caa680e11c156529b5b9b7fe6d68ef03425041c8ce3f1f2bf1ce53d2c4e0,True,6939969680,16,system_b,93712384,1
+xaga,13,MIUI 14.0.10.0 India,,images/super.img,8ce7caa680e11c156529b5b9b7fe6d68ef03425041c8ce3f1f2bf1ce53d2c4e0,True,6939969680,16,system_ext_a,472354816,1
+xaga,13,MIUI 14.0.10.0 India,,images/super.img,8ce7caa680e11c156529b5b9b7fe6d68ef03425041c8ce3f1f2bf1ce53d2c4e0,True,6939969680,16,system_ext_b,0,0
+xaga,13,MIUI 14.0.10.0 India,,images/super.img,8ce7caa680e11c156529b5b9b7fe6d68ef03425041c8ce3f1f2bf1ce53d2c4e0,True,6939969680,16,vendor_a,2015236096,1
+xaga,13,MIUI 14.0.10.0 India,,images/super.img,8ce7caa680e11c156529b5b9b7fe6d68ef03425041c8ce3f1f2bf1ce53d2c4e0,True,6939969680,16,vendor_b,0,0
+xaga,13,MIUI 14.0.10.0 India,,images/super.img,8ce7caa680e11c156529b5b9b7fe6d68ef03425041c8ce3f1f2bf1ce53d2c4e0,True,6939969680,16,vendor_dlkm_a,19451904,1
+xaga,13,MIUI 14.0.10.0 India,,images/super.img,8ce7caa680e11c156529b5b9b7fe6d68ef03425041c8ce3f1f2bf1ce53d2c4e0,True,6939969680,16,vendor_dlkm_b,0,0
+xaga,13,MIUI 14.0.10.0 India,,images/super.img,8ce7caa680e11c156529b5b9b7fe6d68ef03425041c8ce3f1f2bf1ce53d2c4e0,True,6939969680,16,mi_ext_a,28672,1
+xaga,13,MIUI 14.0.10.0 India,,images/super.img,8ce7caa680e11c156529b5b9b7fe6d68ef03425041c8ce3f1f2bf1ce53d2c4e0,True,6939969680,16,mi_ext_b,0,0

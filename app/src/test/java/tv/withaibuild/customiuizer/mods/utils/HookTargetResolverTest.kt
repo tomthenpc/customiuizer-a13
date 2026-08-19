@@ -3,10 +3,12 @@ package tv.withaibuild.customiuizer.mods.utils
 
 import java.util.concurrent.atomic.AtomicInteger
 import org.junit.Assert.assertEquals
+import org.junit.Assert.assertFalse
 import org.junit.Assert.assertNotNull
 import org.junit.Assert.assertNull
 import org.junit.Assert.assertSame
 import org.junit.Assert.assertTrue
+import org.junit.Assert.fail
 import org.junit.Before
 import org.junit.Test
 import tv.withaibuild.customiuizer.mods.catalog.CompatibilityState
@@ -189,12 +191,87 @@ class HookTargetResolverTest {
         assertTrue(logs.first().contains("missing.Class"))
     }
 
+    @Test
+    fun resolveClass_outOfMemoryError_escapes() {
+        val loader = FatalThrowingClassLoader(OutOfMemoryError("resolver oom"))
+        val resolver = HookTargetResolver(loader)
+
+        try {
+            resolver.resolveClass("tv.withaibuild.customiuizer.FatalClass")
+            fail("OutOfMemoryError should have been rethrown")
+        } catch (e: OutOfMemoryError) {
+            assertEquals("resolver oom", e.message)
+        }
+    }
+
+    @Test
+    fun resolveClass_threadDeath_escapes() {
+        val loader = FatalThrowingClassLoader(ThreadDeath())
+        val resolver = HookTargetResolver(loader)
+
+        try {
+            resolver.resolveClass("tv.withaibuild.customiuizer.FatalClass")
+            fail("ThreadDeath should have been rethrown")
+        } catch (e: ThreadDeath) {
+            // expected
+        }
+    }
+
+    @Test
+    fun resolveClass_virtualMachineErrorSubtype_escapes() {
+        val loader = FatalThrowingClassLoader(InternalError("resolver vm error"))
+        val resolver = HookTargetResolver(loader)
+
+        try {
+            resolver.resolveClass("tv.withaibuild.customiuizer.FatalClass")
+            fail("VirtualMachineError should have been rethrown")
+        } catch (e: InternalError) {
+            assertEquals("resolver vm error", e.message)
+        }
+    }
+
+    @Test
+    fun resolveClass_wrappedFatalCause_escapes() {
+        val root = OutOfMemoryError("root oom")
+        val wrapper = RuntimeException("wrapper", root)
+        val loader = FatalThrowingClassLoader(wrapper)
+        val resolver = HookTargetResolver(loader)
+
+        try {
+            resolver.resolveClass("tv.withaibuild.customiuizer.FatalClass")
+            fail("wrapped OutOfMemoryError cause should have been rethrown")
+        } catch (e: OutOfMemoryError) {
+            assertEquals("root oom", e.message)
+        }
+    }
+
+    @Test
+    fun resolveClass_ordinaryRuntimeException_failsOpenAndCachesNegative() {
+        val loader = FatalThrowingClassLoader(RuntimeException("no such class"))
+        val resolver = HookTargetResolver(loader)
+
+        assertNull(resolver.resolveClass("tv.withaibuild.customiuizer.FatalClass"))
+        assertTrue(cacheContains(resolver, "class#tv.withaibuild.customiuizer.FatalClass"))
+
+        // Second call must not rethrow either and must hit cache.
+        assertNull(resolver.resolveClass("tv.withaibuild.customiuizer.FatalClass"))
+    }
+
     private fun cacheContains(resolver: HookTargetResolver, key: String): Boolean {
         val field = resolver.javaClass.getDeclaredField("cache")
         field.isAccessible = true
         @Suppress("UNCHECKED_CAST")
         val cache = field.get(resolver) as MutableMap<String, Any?>
         return cache.containsKey(key)
+    }
+
+    private class FatalThrowingClassLoader(val throwable: Throwable) : ClassLoader(ClassLoader.getSystemClassLoader()) {
+        override fun loadClass(name: String?, resolve: Boolean): Class<*> {
+            if (name == "tv.withaibuild.customiuizer.FatalClass") {
+                throw throwable
+            }
+            return super.loadClass(name, resolve)
+        }
     }
 
     private class CountingClassLoader : ClassLoader(ClassLoader.getSystemClassLoader()) {

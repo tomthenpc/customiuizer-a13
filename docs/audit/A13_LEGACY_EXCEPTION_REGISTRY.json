@@ -1,8 +1,8 @@
 {
   "schemaVersion": 4,
-  "inputDigest": "385b68d7e2456f690690c0ca0997c460fbeaf48358b72b3cfa139b4cbeb3dfc3",
-  "totalLegacyCallSites": 515,
-  "totalLegacyGroups": 206,
+  "inputDigest": "b4a458425268dc4979596d1b01e0a102dd5b0b087c9e16c0cf24166b03a771a8",
+  "totalLegacyCallSites": 522,
+  "totalLegacyGroups": 212,
   "firstBatchSize": 4,
   "registeredRecordCount": 8,
   "batchCounts": {
@@ -25,7 +25,7 @@
       "reasonCode": "CROSS_PROCESS",
       "reason": "The Settings app side of USB default configuration is installed from the Settings installer and lacks a typed per-app Feature owner. It shares the system_defaultusb preference with the system_server hook.",
       "coveredCallSites": [
-        "tv/withaibuild/customiuizer/mods/SystemSettingsMoreHooks.kt:91:USBConfigSettingsHook"
+        "tv/withaibuild/customiuizer/mods/SystemSettingsMoreHooks.kt:96:USBConfigSettingsHook"
       ],
       "hookTargets": [
         "com.android.settings.connecteddevice.usb.UsbModeChooserReceiver#onReceive"
@@ -162,8 +162,8 @@
       ],
       "reason": "AlarmCompatServiceHook is installed at SYSTEM_SERVER_STARTING when various_alarmcompat is true. It hooks AlarmManagerService#onBootPhase (phase 500) to register a ContentObserver for next_alarm_clock_formatted and AlarmManagerService#getNextAlarmClockImpl to return a synthetic alarm for selected apps. The various_alarmcompat_apps key is a runtime allowlist configuration used inside the hooked functions, not the installer activation gate. The feature is tied to the ROM-specific AlarmManagerService lifecycle and cannot be expressed as a typed Feature today.",
       "coveredCallSites": [
-        "tv/withaibuild/customiuizer/mods/Various.kt:844:AlarmCompatServiceHook",
-        "tv/withaibuild/customiuizer/mods/Various.kt:866:AlarmCompatServiceHook"
+        "tv/withaibuild/customiuizer/mods/Various.kt:948:AlarmCompatServiceHook",
+        "tv/withaibuild/customiuizer/mods/Various.kt:970:AlarmCompatServiceHook"
       ],
       "hookTargets": [
         "com.android.server.alarm.AlarmManagerService#getNextAlarmClockImpl",
@@ -278,10 +278,10 @@
       "reasonCode": "CROSS_PROCESS",
       "reason": "USB default configuration must run in system_server (PowerManager / UsbDeviceManager) and has no typed Feature owner. The feature spans both system_server and the Settings app, so the split cannot be expressed as a single catalog entry today.",
       "coveredCallSites": [
-        "tv/withaibuild/customiuizer/mods/SystemSettingsMoreHooks.kt:28:USBConfigHook",
-        "tv/withaibuild/customiuizer/mods/SystemSettingsMoreHooks.kt:68:USBConfigHook",
-        "tv/withaibuild/customiuizer/mods/SystemSettingsMoreHooks.kt:69:USBConfigHook",
-        "tv/withaibuild/customiuizer/mods/SystemSettingsMoreHooks.kt:71:USBConfigHook"
+        "tv/withaibuild/customiuizer/mods/SystemSettingsMoreHooks.kt:30:USBConfigHook",
+        "tv/withaibuild/customiuizer/mods/SystemSettingsMoreHooks.kt:73:USBConfigHook",
+        "tv/withaibuild/customiuizer/mods/SystemSettingsMoreHooks.kt:74:USBConfigHook",
+        "tv/withaibuild/customiuizer/mods/SystemSettingsMoreHooks.kt:76:USBConfigHook"
       ],
       "hookTargets": [
         "com.android.server.power.PowerManagerService#systemReady",
@@ -294,8 +294,8 @@
       "exitCondition": "Create a typed system_server FeatureSpec for USB default mode and expose a cross-process contract for the Settings variant (P3.3C)."
     }
   ],
-  "sourceCommit": "10b8ecfd4c4d6376c07079c2057f8635fff9bee7",
-  "sourceTree": "abf95d42ef4dad0e447939d09b2b6404931775ea",
+  "sourceCommit": "d5a369bbf883ee416d6529f61625d4c36f6d4e3e",
+  "sourceTree": "e23a0c19fefe6d56a47f8389a51de03da31e8b42",
   "generatorVersion": "7b7847444be4cdcd",
-  "generatedAt": "2026-08-08T05:49:56+00:00"
+  "generatedAt": "2026-08-18T23:20:20+00:00"
 }

@@ -13,22 +13,22 @@ It does not judge INSTALLER_ONLY, GATE_ONLY, DEFAULT_MISMATCH, etc.
 | FEATURE_CATALOG_GATES | 13 |
 | FEATURE_DISPATCH_CALLS | 5 |
 | GLOBAL_ACTION_DOMAIN_RULES | 2 |
-| INSTALL_CONDITIONS | 108 |
+| INSTALL_CONDITIONS | 109 |
 | PARTIAL | 0 |
 | RESOURCE_PHASE_CONDITIONS | 2 |
 | RESTART_GUARD | 1 |
-| STARTUP_GATE_CONDITIONS | 119 |
+| STARTUP_GATE_CONDITIONS | 120 |
 | UNPARSED | 0 |
 
 ## Parse status counts
 
 | parse_status | count |
 |--------------|-------|
-| PARSED | 250 |
+| PARSED | 252 |
 | PARTIAL | 0 |
 | UNPARSED | 0 |
 
-## INSTALL_CONDITIONS (108)
+## INSTALL_CONDITIONS (109)
 
 ### install_if_1
 - source_file: `app/src/main/java/tv/withaibuild/customiuizer/installers/SystemUiInstaller.java`
@@ -532,16 +532,29 @@ It does not judge INSTALLER_ONLY, GATE_ONLY, DEFAULT_MISMATCH, etc.
 - phase: `POST_RESTART_GUARD_RUNTIME`
 - parse_status: `PARSED`
 - branch_kind: `IF`
+- preference_keys: ['controls_hide_ime_dismiss_button']
+- accessors: ['getBoolean']
+- default_values: [False]
+- default_kinds: ['IMPLICIT_PREFMAP_DEFAULT']
+- raw_expression: `MainModule.mPrefs.getBoolean("controls_hide_ime_dismiss_button")`
+
+### install_if_38
+- source_file: `app/src/main/java/tv/withaibuild/customiuizer/installers/SystemUiInstaller.java`
+- source_method: `install`
+- lines: 135-135
+- phase: `POST_RESTART_GUARD_RUNTIME`
+- parse_status: `PARSED`
+- branch_kind: `IF`
 - preference_keys: ['system_visualizer']
 - accessors: ['getBoolean']
 - default_values: [False]
 - default_kinds: ['IMPLICIT_PREFMAP_DEFAULT']
 - raw_expression: `MainModule.mPrefs.getBoolean("system_visualizer")`
 
-### install_if_38
+### install_if_39
 - source_file: `app/src/main/java/tv/withaibuild/customiuizer/installers/SystemUiInstaller.java`
 - source_method: `install`
-- lines: 135-149
+- lines: 136-150
 - phase: `POST_RESTART_GUARD_RUNTIME`
 - parse_status: `PARSED`
 - branch_kind: `IF`
@@ -567,10 +580,10 @@ It does not judge INSTALLER_ONLY, GATE_ONLY, DEFAULT_MISMATCH, etc.
                 || (MainModule.mPrefs.getInt("system_volumeblur_collapsed", 0) > 0 || MainModule.mPrefs.getInt("system_volumeblur_expanded", 0) > 0)`
 - normalized_expression: `MainModule.mPrefs.getBoolean("system_nosilentvibrate") || MainModule.mPrefs.getBoolean("system_qs_force_systemfonts") || MainModule.mPrefs.getBoolean("system_volumetimer") || MainModule.mPrefs.getBoolean("system_qsnolabels") || MainModule.mPrefs.getBoolean("system_cc_volume_showpct") || MainModule.mPrefs.getBoolean("system_volumebar_blur_mtk") || MainModule.mPrefs.getBoolean("system_cc_hidedate") || MainModule.mPrefs.getBoolean("system_cc_hide_shortcuticons") || MainModule.mPrefs.getBoolean("system_cc_clocktweak") || MainModule.mPrefs.getBoolean("system_cc_tile_roundedrect") || MainModule.mPrefs.getStringAsInt("system_cc_bluetooth_tile_style", 1) > 1 || (MainModule.mPrefs.getBoolean("system_separatevolume") && MainModule.mPrefs.getBoolean("system_separatevolume_slider")) || (MainModule.mPrefs.getInt("system_volumedialogdelay_collapsed", 0) > 0 || MainModule.mPrefs.getInt("system_volumedialogdelay_expanded", 0) > 0) || (MainModule.mPrefs.getInt("system_volumeblur_collapsed", 0) > 0 || MainModule.mPrefs.getInt("system_volumeblur_expanded", 0) > 0)`
 
-### install_if_39
+### install_if_40
 - source_file: `app/src/main/java/tv/withaibuild/customiuizer/installers/SystemUiInstaller.java`
 - source_method: `install`
-- lines: 153-153
+- lines: 154-154
 - phase: `POST_RESTART_GUARD_RUNTIME`
 - parse_status: `PARSED`
 - branch_kind: `IF`
@@ -580,10 +593,10 @@ It does not judge INSTALLER_ONLY, GATE_ONLY, DEFAULT_MISMATCH, etc.
 - default_kinds: ['IMPLICIT_PREFMAP_DEFAULT']
 - raw_expression: `MainModule.mPrefs.getBoolean("system_disableanynotif")`
 
-### install_if_40
+### install_if_41
 - source_file: `app/src/main/java/tv/withaibuild/customiuizer/installers/SystemUiInstaller.java`
 - source_method: `install`
-- lines: 154-154
+- lines: 155-155
 - phase: `POST_RESTART_GUARD_RUNTIME`
 - parse_status: `PARSED`
 - branch_kind: `IF`
@@ -593,10 +606,10 @@ It does not judge INSTALLER_ONLY, GATE_ONLY, DEFAULT_MISMATCH, etc.
 - default_kinds: ['IMPLICIT_PREFMAP_DEFAULT']
 - raw_expression: `MainModule.mPrefs.getBoolean("system_lockscreenshortcuts")`
 
-### install_if_41
+### install_if_42
 - source_file: `app/src/main/java/tv/withaibuild/customiuizer/installers/SystemUiInstaller.java`
 - source_method: `install`
-- lines: 155-158
+- lines: 156-159
 - phase: `POST_RESTART_GUARD_RUNTIME`
 - parse_status: `PARSED`
 - branch_kind: `IF`
@@ -611,10 +624,10 @@ It does not judge INSTALLER_ONLY, GATE_ONLY, DEFAULT_MISMATCH, etc.
                     !MainModule.mPrefs.getString("system_statusbar_mobile_showname", "").equals(""))`
 - normalized_expression: `MainModule.mPrefs.getBoolean("system_4gtolte") || (MainModule.mPrefs.getBoolean("system_statusbar_mobiletype_single") && !MainModule.mPrefs.getString("system_statusbar_mobile_showname", "").equals(""))`
 
-### install_if_42
+### install_if_43
 - source_file: `app/src/main/java/tv/withaibuild/customiuizer/installers/SystemUiInstaller.java`
 - source_method: `install`
-- lines: 171-176
+- lines: 172-177
 - phase: `POST_RESTART_GUARD_RUNTIME`
 - parse_status: `PARSED`
 - branch_kind: `IF`
@@ -630,10 +643,10 @@ It does not judge INSTALLER_ONLY, GATE_ONLY, DEFAULT_MISMATCH, etc.
                 || MainModule.mPrefs.getBoolean("system_statusbaricons_swap_wifi_mobile")`
 - normalized_expression: `moveRight || moveLeft || MainModule.mPrefs.getBoolean("system_statusbar_netspeed_atleft") || (MainModule.mPrefs.getBoolean("system_statusbar_dualrows") && MainModule.mPrefs.getBoolean("system_statusbar_netspeed_atsecondrow")) || MainModule.mPrefs.getBoolean("system_statusbaricons_wifi_mobile_atleft") || MainModule.mPrefs.getBoolean("system_statusbaricons_swap_wifi_mobile")`
 
-### install_if_43
+### install_if_44
 - source_file: `app/src/main/java/tv/withaibuild/customiuizer/installers/SystemUiInstaller.java`
 - source_method: `install`
-- lines: 179-179
+- lines: 180-180
 - phase: `POST_RESTART_GUARD_RUNTIME`
 - parse_status: `PARSED`
 - branch_kind: `IF`
@@ -645,10 +658,10 @@ It does not judge INSTALLER_ONLY, GATE_ONLY, DEFAULT_MISMATCH, etc.
 - boolean_operators: ['AND', 'NOT']
 - raw_expression: `MainModule.mPrefs.getStringAsInt("system_statusbar_clock_position", 1) > 1 && !MainModule.mPrefs.getBoolean("system_statusbar_dualrows")`
 
-### install_if_44
+### install_if_45
 - source_file: `app/src/main/java/tv/withaibuild/customiuizer/installers/SystemUiInstaller.java`
 - source_method: `install`
-- lines: 182-182
+- lines: 183-183
 - phase: `POST_RESTART_GUARD_RUNTIME`
 - parse_status: `PARSED`
 - branch_kind: `IF`
@@ -658,10 +671,10 @@ It does not judge INSTALLER_ONLY, GATE_ONLY, DEFAULT_MISMATCH, etc.
 - default_kinds: ['IMPLICIT_PREFMAP_DEFAULT']
 - raw_expression: `MainModule.mPrefs.getBoolean("system_statusbar_batterystyle")`
 
-### install_if_45
+### install_if_46
 - source_file: `app/src/main/java/tv/withaibuild/customiuizer/installers/SystemUiInstaller.java`
 - source_method: `install`
-- lines: 185-187
+- lines: 186-188
 - phase: `POST_RESTART_GUARD_RUNTIME`
 - parse_status: `PARSED`
 - branch_kind: `IF`
@@ -674,10 +687,10 @@ It does not judge INSTALLER_ONLY, GATE_ONLY, DEFAULT_MISMATCH, etc.
                 || MainModule.mPrefs.getBoolean("system_statusbar_showdevicetemperature")`
 - normalized_expression: `MainModule.mPrefs.getBoolean("system_statusbar_batterytempandcurrent") || MainModule.mPrefs.getBoolean("system_statusbar_showdevicetemperature")`
 
-### install_if_46
+### install_if_47
 - source_file: `app/src/main/java/tv/withaibuild/customiuizer/installers/SystemUiInstaller.java`
 - source_method: `install`
-- lines: 188-188
+- lines: 189-189
 - phase: `POST_RESTART_GUARD_RUNTIME`
 - parse_status: `PARSED`
 - branch_kind: `IF`
@@ -688,10 +701,10 @@ It does not judge INSTALLER_ONLY, GATE_ONLY, DEFAULT_MISMATCH, etc.
 - boolean_operators: ['AND']
 - raw_expression: `MainModule.mPrefs.getBoolean("system_statusbar_topmargin") && MainModule.mPrefs.getBoolean("system_statusbar_topmargin_unset_lockscreen")`
 
-### install_if_47
+### install_if_48
 - source_file: `app/src/main/java/tv/withaibuild/customiuizer/installers/SystemUiInstaller.java`
 - source_method: `install`
-- lines: 189-189
+- lines: 190-190
 - phase: `POST_RESTART_GUARD_RUNTIME`
 - parse_status: `PARSED`
 - branch_kind: `IF`
@@ -701,10 +714,10 @@ It does not judge INSTALLER_ONLY, GATE_ONLY, DEFAULT_MISMATCH, etc.
 - default_kinds: ['IMPLICIT_PREFMAP_DEFAULT']
 - raw_expression: `MainModule.mPrefs.getBoolean("system_statusbar_horizmargin")`
 
-### install_if_48
+### install_if_49
 - source_file: `app/src/main/java/tv/withaibuild/customiuizer/installers/SystemUiInstaller.java`
 - source_method: `install`
-- lines: 190-190
+- lines: 191-191
 - phase: `POST_RESTART_GUARD_RUNTIME`
 - parse_status: `PARSED`
 - branch_kind: `IF`
@@ -714,10 +727,10 @@ It does not judge INSTALLER_ONLY, GATE_ONLY, DEFAULT_MISMATCH, etc.
 - default_kinds: ['IMPLICIT_PREFMAP_DEFAULT']
 - raw_expression: `MainModule.mPrefs.getBoolean("system_showpct")`
 
-### install_if_49
+### install_if_50
 - source_file: `app/src/main/java/tv/withaibuild/customiuizer/installers/SystemUiInstaller.java`
 - source_method: `install`
-- lines: 191-191
+- lines: 192-192
 - phase: `POST_RESTART_GUARD_RUNTIME`
 - parse_status: `PARSED`
 - branch_kind: `IF`
@@ -727,10 +740,10 @@ It does not judge INSTALLER_ONLY, GATE_ONLY, DEFAULT_MISMATCH, etc.
 - default_kinds: ['IMPLICIT_PREFMAP_DEFAULT']
 - raw_expression: `MainModule.mPrefs.getBoolean("system_hidelsstatusbar")`
 
-### install_if_50
+### install_if_51
 - source_file: `app/src/main/java/tv/withaibuild/customiuizer/installers/SystemUiInstaller.java`
 - source_method: `install`
-- lines: 192-192
+- lines: 193-193
 - phase: `POST_RESTART_GUARD_RUNTIME`
 - parse_status: `PARSED`
 - branch_kind: `IF`
@@ -740,10 +753,10 @@ It does not judge INSTALLER_ONLY, GATE_ONLY, DEFAULT_MISMATCH, etc.
 - default_kinds: ['IMPLICIT_PREFMAP_DEFAULT']
 - raw_expression: `MainModule.mPrefs.getBoolean("system_hidelsclock")`
 
-### install_if_51
+### install_if_52
 - source_file: `app/src/main/java/tv/withaibuild/customiuizer/installers/SystemUiInstaller.java`
 - source_method: `install`
-- lines: 193-193
+- lines: 194-194
 - phase: `POST_RESTART_GUARD_RUNTIME`
 - parse_status: `PARSED`
 - branch_kind: `IF`
@@ -753,10 +766,10 @@ It does not judge INSTALLER_ONLY, GATE_ONLY, DEFAULT_MISMATCH, etc.
 - default_kinds: ['IMPLICIT_PREFMAP_DEFAULT']
 - raw_expression: `MainModule.mPrefs.getBoolean("system_ls_force_systemfonts")`
 
-### install_if_52
+### install_if_53
 - source_file: `app/src/main/java/tv/withaibuild/customiuizer/installers/SystemUiInstaller.java`
 - source_method: `install`
-- lines: 194-194
+- lines: 195-195
 - phase: `POST_RESTART_GUARD_RUNTIME`
 - parse_status: `PARSED`
 - branch_kind: `IF`
@@ -767,10 +780,10 @@ It does not judge INSTALLER_ONLY, GATE_ONLY, DEFAULT_MISMATCH, etc.
 - default_kinds: ['IMPLICIT_PREFMAP_DEFAULT']
 - raw_expression: `MainModule.mPrefs.getBoolean("system_hidelshint")`
 
-### install_if_53
+### install_if_54
 - source_file: `app/src/main/java/tv/withaibuild/customiuizer/installers/SystemUiInstaller.java`
 - source_method: `install`
-- lines: 195-195
+- lines: 196-196
 - phase: `POST_RESTART_GUARD_RUNTIME`
 - parse_status: `PARSED`
 - branch_kind: `IF`
@@ -780,10 +793,10 @@ It does not judge INSTALLER_ONLY, GATE_ONLY, DEFAULT_MISMATCH, etc.
 - default_kinds: ['IMPLICIT_PREFMAP_DEFAULT']
 - raw_expression: `MainModule.mPrefs.getBoolean("system_allowdirectreply")`
 
-### install_if_54
+### install_if_55
 - source_file: `app/src/main/java/tv/withaibuild/customiuizer/installers/SystemUiInstaller.java`
 - source_method: `install`
-- lines: 196-196
+- lines: 197-197
 - phase: `POST_RESTART_GUARD_RUNTIME`
 - parse_status: `PARSED`
 - branch_kind: `IF`
@@ -793,10 +806,10 @@ It does not judge INSTALLER_ONLY, GATE_ONLY, DEFAULT_MISMATCH, etc.
 - default_kinds: ['IMPLICIT_PREFMAP_DEFAULT']
 - raw_expression: `MainModule.mPrefs.getBoolean("system_allownotifonkeyguard")`
 
-### install_if_55
+### install_if_56
 - source_file: `app/src/main/java/tv/withaibuild/customiuizer/installers/SystemUiInstaller.java`
 - source_method: `install`
-- lines: 197-197
+- lines: 198-198
 - phase: `POST_RESTART_GUARD_RUNTIME`
 - parse_status: `PARSED`
 - branch_kind: `IF`
@@ -806,10 +819,10 @@ It does not judge INSTALLER_ONLY, GATE_ONLY, DEFAULT_MISMATCH, etc.
 - default_kinds: ['IMPLICIT_PREFMAP_DEFAULT']
 - raw_expression: `MainModule.mPrefs.getBoolean("system_allownotiffloat")`
 
-### install_if_56
+### install_if_57
 - source_file: `app/src/main/java/tv/withaibuild/customiuizer/installers/SystemUiInstaller.java`
 - source_method: `install`
-- lines: 198-198
+- lines: 199-199
 - phase: `POST_RESTART_GUARD_RUNTIME`
 - parse_status: `PARSED`
 - branch_kind: `IF`
@@ -819,10 +832,10 @@ It does not judge INSTALLER_ONLY, GATE_ONLY, DEFAULT_MISMATCH, etc.
 - default_kinds: ['IMPLICIT_PREFMAP_DEFAULT']
 - raw_expression: `MainModule.mPrefs.getBoolean("system_hideqs")`
 
-### install_if_57
+### install_if_58
 - source_file: `app/src/main/java/tv/withaibuild/customiuizer/installers/SystemUiInstaller.java`
 - source_method: `install`
-- lines: 199-199
+- lines: 200-200
 - phase: `POST_RESTART_GUARD_RUNTIME`
 - parse_status: `PARSED`
 - branch_kind: `IF`
@@ -832,10 +845,10 @@ It does not judge INSTALLER_ONLY, GATE_ONLY, DEFAULT_MISMATCH, etc.
 - default_kinds: ['IMPLICIT_PREFMAP_DEFAULT']
 - raw_expression: `MainModule.mPrefs.getBoolean("system_lsalarm")`
 
-### install_if_58
+### install_if_59
 - source_file: `app/src/main/java/tv/withaibuild/customiuizer/installers/SystemUiInstaller.java`
 - source_method: `install`
-- lines: 200-200
+- lines: 201-201
 - phase: `POST_RESTART_GUARD_RUNTIME`
 - parse_status: `PARSED`
 - branch_kind: `IF`
@@ -845,10 +858,10 @@ It does not judge INSTALLER_ONLY, GATE_ONLY, DEFAULT_MISMATCH, etc.
 - default_kinds: ['IMPLICIT_PREFMAP_DEFAULT']
 - raw_expression: `MainModule.mPrefs.getBoolean("system_statusbarcontrols")`
 
-### install_if_59
+### install_if_60
 - source_file: `app/src/main/java/tv/withaibuild/customiuizer/installers/SystemUiInstaller.java`
 - source_method: `install`
-- lines: 201-201
+- lines: 202-202
 - phase: `POST_RESTART_GUARD_RUNTIME`
 - parse_status: `PARSED`
 - branch_kind: `IF`
@@ -859,10 +872,10 @@ It does not judge INSTALLER_ONLY, GATE_ONLY, DEFAULT_MISMATCH, etc.
 - default_kinds: ['IMPLICIT_PREFMAP_DEFAULT']
 - raw_expression: `MainModule.mPrefs.getBoolean("system_nonetspeedseparator")`
 
-### install_if_60
+### install_if_61
 - source_file: `app/src/main/java/tv/withaibuild/customiuizer/installers/SystemUiInstaller.java`
 - source_method: `install`
-- lines: 202-202
+- lines: 203-203
 - phase: `POST_RESTART_GUARD_RUNTIME`
 - parse_status: `PARSED`
 - branch_kind: `IF`
@@ -873,10 +886,10 @@ It does not judge INSTALLER_ONLY, GATE_ONLY, DEFAULT_MISMATCH, etc.
 - default_kinds: ['IMPLICIT_PREFMAP_DEFAULT']
 - raw_expression: `MainModule.mPrefs.getBoolean("system_statusbaricons_clock")`
 
-### install_if_61
+### install_if_62
 - source_file: `app/src/main/java/tv/withaibuild/customiuizer/installers/SystemUiInstaller.java`
 - source_method: `install`
-- lines: 203-209
+- lines: 204-210
 - phase: `POST_RESTART_GUARD_RUNTIME`
 - parse_status: `PARSED`
 - branch_kind: `IF`
@@ -893,34 +906,35 @@ It does not judge INSTALLER_ONLY, GATE_ONLY, DEFAULT_MISMATCH, etc.
                     )`
 - normalized_expression: `MainModule.mPrefs.getBoolean("system_detailednetspeed_fakedualrow") || (!MainModule.mPrefs.getBoolean("system_detailednetspeed") && (MainModule.mPrefs.getBoolean("system_detailednetspeed_secunit") || MainModule.mPrefs.getBoolean("system_detailednetspeed_low") ) )`
 
-### install_if_62
+### install_if_63
 - source_file: `app/src/main/java/tv/withaibuild/customiuizer/installers/SystemUiInstaller.java`
 - source_method: `install`
-- lines: 212-222
+- lines: 213-224
 - phase: `POST_RESTART_GUARD_RUNTIME`
 - parse_status: `PARSED`
 - branch_kind: `IF`
-- preference_keys: ['system_netspeed_fontsize', 'system_netspeed_verticaloffset', 'system_detailednetspeed', 'system_detailednetspeed_fakedualrow', 'system_netspeed_bold', 'system_netspeed_leftmargin', 'system_netspeed_fixedcontent_width', 'system_netspeed_rightmargin', 'system_detailednetspeed_align']
-- accessors: ['getInt', 'getInt', 'getBoolean', 'getBoolean', 'getBoolean', 'getInt', 'getInt', 'getInt', 'getStringAsInt']
-- default_values: [13, 8, False, False, False, 0, 10, 0, 1]
-- default_kinds: ['EXPLICIT', 'EXPLICIT', 'IMPLICIT_PREFMAP_DEFAULT', 'IMPLICIT_PREFMAP_DEFAULT', 'IMPLICIT_PREFMAP_DEFAULT', 'EXPLICIT', 'EXPLICIT', 'EXPLICIT', 'EXPLICIT']
+- preference_keys: ['system_netspeed_fontsize', 'system_netspeed_verticaloffset', 'system_detailednetspeed', 'system_detailednetspeed_fakedualrow', 'system_netspeed_bold', 'system_netspeed_use_clock_style', 'system_netspeed_leftmargin', 'system_netspeed_fixedcontent_width', 'system_netspeed_rightmargin', 'system_detailednetspeed_align']
+- accessors: ['getInt', 'getInt', 'getBoolean', 'getBoolean', 'getBoolean', 'getBoolean', 'getInt', 'getInt', 'getInt', 'getStringAsInt']
+- default_values: [13, 8, False, False, False, False, 0, 10, 0, 1]
+- default_kinds: ['EXPLICIT', 'EXPLICIT', 'IMPLICIT_PREFMAP_DEFAULT', 'IMPLICIT_PREFMAP_DEFAULT', 'IMPLICIT_PREFMAP_DEFAULT', 'IMPLICIT_PREFMAP_DEFAULT', 'EXPLICIT', 'EXPLICIT', 'EXPLICIT', 'EXPLICIT']
 - comparators: ['>', '!=', '>', '>', '>', '>']
-- boolean_operators: ['OR', 'OR', 'OR', 'OR', 'OR', 'OR', 'OR', 'OR']
+- boolean_operators: ['OR', 'OR', 'OR', 'OR', 'OR', 'OR', 'OR', 'OR', 'OR']
 - raw_expression: `MainModule.mPrefs.getInt("system_netspeed_fontsize", 13) > 13
                 || MainModule.mPrefs.getInt("system_netspeed_verticaloffset", 8) != 8
                 || MainModule.mPrefs.getBoolean("system_detailednetspeed")
                 || MainModule.mPrefs.getBoolean("system_detailednetspeed_fakedualrow")
                 || MainModule.mPrefs.getBoolean("system_netspeed_bold")
+                || MainModule.mPrefs.getBoolean("system_netspeed_use_clock_style")
                 || MainModule.mPrefs.getInt("system_netspeed_leftmargin", 0) > 0
                 || MainModule.mPrefs.getInt("system_netspeed_fixedcontent_width", 10) > 10
                 || MainModule.mPrefs.getInt("system_netspeed_rightmargin", 0) > 0
                 || MainModule.mPrefs.getStringAsInt("system_detailednetspeed_align", 1) > 1`
-- normalized_expression: `MainModule.mPrefs.getInt("system_netspeed_fontsize", 13) > 13 || MainModule.mPrefs.getInt("system_netspeed_verticaloffset", 8) != 8 || MainModule.mPrefs.getBoolean("system_detailednetspeed") || MainModule.mPrefs.getBoolean("system_detailednetspeed_fakedualrow") || MainModule.mPrefs.getBoolean("system_netspeed_bold") || MainModule.mPrefs.getInt("system_netspeed_leftmargin", 0) > 0 || MainModule.mPrefs.getInt("system_netspeed_fixedcontent_width", 10) > 10 || MainModule.mPrefs.getInt("system_netspeed_rightmargin", 0) > 0 || MainModule.mPrefs.getStringAsInt("system_detailednetspeed_align", 1) > 1`
+- normalized_expression: `MainModule.mPrefs.getInt("system_netspeed_fontsize", 13) > 13 || MainModule.mPrefs.getInt("system_netspeed_verticaloffset", 8) != 8 || MainModule.mPrefs.getBoolean("system_detailednetspeed") || MainModule.mPrefs.getBoolean("system_detailednetspeed_fakedualrow") || MainModule.mPrefs.getBoolean("system_netspeed_bold") || MainModule.mPrefs.getBoolean("system_netspeed_use_clock_style") || MainModule.mPrefs.getInt("system_netspeed_leftmargin", 0) > 0 || MainModule.mPrefs.getInt("system_netspeed_fixedcontent_width", 10) > 10 || MainModule.mPrefs.getInt("system_netspeed_rightmargin", 0) > 0 || MainModule.mPrefs.getStringAsInt("system_detailednetspeed_align", 1) > 1`
 
-### install_if_63
+### install_if_64
 - source_file: `app/src/main/java/tv/withaibuild/customiuizer/installers/SystemUiInstaller.java`
 - source_method: `install`
-- lines: 225-225
+- lines: 227-227
 - phase: `POST_RESTART_GUARD_RUNTIME`
 - parse_status: `PARSED`
 - branch_kind: `IF`
@@ -930,10 +944,10 @@ It does not judge INSTALLER_ONLY, GATE_ONLY, DEFAULT_MISMATCH, etc.
 - default_kinds: ['IMPLICIT_PREFMAP_DEFAULT']
 - raw_expression: `MainModule.mPrefs.getBoolean("system_taptounlock")`
 
-### install_if_64
+### install_if_65
 - source_file: `app/src/main/java/tv/withaibuild/customiuizer/installers/SystemUiInstaller.java`
 - source_method: `install`
-- lines: 226-226
+- lines: 228-228
 - phase: `POST_RESTART_GUARD_RUNTIME`
 - parse_status: `PARSED`
 - branch_kind: `IF`
@@ -943,10 +957,10 @@ It does not judge INSTALLER_ONLY, GATE_ONLY, DEFAULT_MISMATCH, etc.
 - default_kinds: ['IMPLICIT_PREFMAP_DEFAULT']
 - raw_expression: `MainModule.mPrefs.getBoolean("system_nosos")`
 
-### install_if_65
+### install_if_66
 - source_file: `app/src/main/java/tv/withaibuild/customiuizer/installers/SystemUiInstaller.java`
 - source_method: `install`
-- lines: 227-227
+- lines: 229-229
 - phase: `POST_RESTART_GUARD_RUNTIME`
 - parse_status: `PARSED`
 - branch_kind: `IF`
@@ -956,10 +970,10 @@ It does not judge INSTALLER_ONLY, GATE_ONLY, DEFAULT_MISMATCH, etc.
 - default_kinds: ['IMPLICIT_PREFMAP_DEFAULT']
 - raw_expression: `MainModule.mPrefs.getBoolean("system_morenotif")`
 
-### install_if_66
+### install_if_67
 - source_file: `app/src/main/java/tv/withaibuild/customiuizer/installers/SystemUiInstaller.java`
 - source_method: `install`
-- lines: 228-228
+- lines: 230-230
 - phase: `POST_RESTART_GUARD_RUNTIME`
 - parse_status: `PARSED`
 - branch_kind: `IF`
@@ -970,10 +984,10 @@ It does not judge INSTALLER_ONLY, GATE_ONLY, DEFAULT_MISMATCH, etc.
 - default_kinds: ['IMPLICIT_PREFMAP_DEFAULT']
 - raw_expression: `MainModule.mPrefs.getBoolean("system_charginginfo")`
 
-### install_if_67
+### install_if_68
 - source_file: `app/src/main/java/tv/withaibuild/customiuizer/installers/SystemUiInstaller.java`
 - source_method: `install`
-- lines: 229-229
+- lines: 231-231
 - phase: `POST_RESTART_GUARD_RUNTIME`
 - parse_status: `PARSED`
 - branch_kind: `IF`
@@ -983,10 +997,10 @@ It does not judge INSTALLER_ONLY, GATE_ONLY, DEFAULT_MISMATCH, etc.
 - default_kinds: ['IMPLICIT_PREFMAP_DEFAULT']
 - raw_expression: `MainModule.mPrefs.getBoolean("system_secureqs")`
 
-### install_if_68
+### install_if_69
 - source_file: `app/src/main/java/tv/withaibuild/customiuizer/installers/SystemUiInstaller.java`
 - source_method: `install`
-- lines: 230-230
+- lines: 232-232
 - phase: `POST_RESTART_GUARD_RUNTIME`
 - parse_status: `PARSED`
 - branch_kind: `IF`
@@ -997,10 +1011,10 @@ It does not judge INSTALLER_ONLY, GATE_ONLY, DEFAULT_MISMATCH, etc.
 - default_kinds: ['IMPLICIT_PREFMAP_DEFAULT']
 - raw_expression: `MainModule.mPrefs.getBoolean("system_mutevisiblenotif")`
 
-### install_if_69
+### install_if_70
 - source_file: `app/src/main/java/tv/withaibuild/customiuizer/installers/SystemUiInstaller.java`
 - source_method: `install`
-- lines: 231-231
+- lines: 233-233
 - phase: `POST_RESTART_GUARD_RUNTIME`
 - parse_status: `PARSED`
 - branch_kind: `IF`
@@ -1010,10 +1024,10 @@ It does not judge INSTALLER_ONLY, GATE_ONLY, DEFAULT_MISMATCH, etc.
 - default_kinds: ['IMPLICIT_PREFMAP_DEFAULT']
 - raw_expression: `MainModule.mPrefs.getBoolean("system_statusbaricons_battery1")`
 
-### install_if_70
+### install_if_71
 - source_file: `app/src/main/java/tv/withaibuild/customiuizer/installers/SystemUiInstaller.java`
 - source_method: `install`
-- lines: 232-235
+- lines: 234-237
 - phase: `POST_RESTART_GUARD_RUNTIME`
 - parse_status: `PARSED`
 - branch_kind: `IF`
@@ -1027,10 +1041,10 @@ It does not judge INSTALLER_ONLY, GATE_ONLY, DEFAULT_MISMATCH, etc.
                 || MainModule.mPrefs.getBoolean("system_statusbaricons_battery2")`
 - normalized_expression: `MainModule.mPrefs.getBoolean("system_statusbaricons_battery3") || MainModule.mPrefs.getBoolean("system_statusbaricons_battery4") || MainModule.mPrefs.getBoolean("system_statusbaricons_battery2")`
 
-### install_if_71
+### install_if_72
 - source_file: `app/src/main/java/tv/withaibuild/customiuizer/installers/SystemUiInstaller.java`
 - source_method: `install`
-- lines: 236-236
+- lines: 238-238
 - phase: `POST_RESTART_GUARD_RUNTIME`
 - parse_status: `PARSED`
 - branch_kind: `IF`
@@ -1041,10 +1055,10 @@ It does not judge INSTALLER_ONLY, GATE_ONLY, DEFAULT_MISMATCH, etc.
 - comparators: ['>']
 - raw_expression: `MainModule.mPrefs.getStringAsInt("system_statusbaricons_wifistandard", 1) > 1`
 
-### install_if_72
+### install_if_73
 - source_file: `app/src/main/java/tv/withaibuild/customiuizer/installers/SystemUiInstaller.java`
 - source_method: `install`
-- lines: 237-243
+- lines: 239-245
 - phase: `POST_RESTART_GUARD_RUNTIME`
 - parse_status: `PARSED`
 - branch_kind: `IF`
@@ -1061,10 +1075,10 @@ It does not judge INSTALLER_ONLY, GATE_ONLY, DEFAULT_MISMATCH, etc.
                 || MainModule.mPrefs.getBoolean("system_statusbaricons_volte")`
 - normalized_expression: `MainModule.mPrefs.getBoolean("system_statusbaricons_signal") || MainModule.mPrefs.getBoolean("system_statusbaricons_sim1") || MainModule.mPrefs.getBoolean("system_statusbaricons_sim2") || MainModule.mPrefs.getBoolean("system_statusbaricons_sim_nodata") || MainModule.mPrefs.getBoolean("system_statusbaricons_roaming") || MainModule.mPrefs.getBoolean("system_statusbaricons_volte")`
 
-### install_if_73
+### install_if_74
 - source_file: `app/src/main/java/tv/withaibuild/customiuizer/installers/SystemUiInstaller.java`
 - source_method: `install`
-- lines: 244-244
+- lines: 246-246
 - phase: `POST_RESTART_GUARD_RUNTIME`
 - parse_status: `PARSED`
 - branch_kind: `IF`
@@ -1074,10 +1088,10 @@ It does not judge INSTALLER_ONLY, GATE_ONLY, DEFAULT_MISMATCH, etc.
 - default_kinds: ['IMPLICIT_PREFMAP_DEFAULT']
 - raw_expression: `MainModule.mPrefs.getBoolean("system_statusbaricons_vowifi")`
 
-### install_if_74
+### install_if_75
 - source_file: `app/src/main/java/tv/withaibuild/customiuizer/installers/SystemUiInstaller.java`
 - source_method: `install`
-- lines: 245-245
+- lines: 247-247
 - phase: `POST_RESTART_GUARD_RUNTIME`
 - parse_status: `PARSED`
 - branch_kind: `IF`
@@ -1089,10 +1103,10 @@ It does not judge INSTALLER_ONLY, GATE_ONLY, DEFAULT_MISMATCH, etc.
 - boolean_operators: ['AND', 'NOT']
 - raw_expression: `!MainModule.mPrefs.getBoolean("system_statusbaricons_alarm") && MainModule.mPrefs.getInt("system_statusbaricons_alarmn", 0) > 0`
 
-### install_if_75
+### install_if_76
 - source_file: `app/src/main/java/tv/withaibuild/customiuizer/installers/SystemUiInstaller.java`
 - source_method: `install`
-- lines: 246-248
+- lines: 248-250
 - phase: `POST_RESTART_GUARD_RUNTIME`
 - parse_status: `PARSED`
 - branch_kind: `IF`
@@ -1107,10 +1121,10 @@ It does not judge INSTALLER_ONLY, GATE_ONLY, DEFAULT_MISMATCH, etc.
                 || !MainModule.mPrefs.getString("system_clock_app", "").equals("")`
 - normalized_expression: `!MainModule.mPrefs.getString("system_shortcut_app", "").equals("") || !MainModule.mPrefs.getString("system_calendar_app", "").equals("") || !MainModule.mPrefs.getString("system_clock_app", "").equals("")`
 
-### install_if_76
+### install_if_77
 - source_file: `app/src/main/java/tv/withaibuild/customiuizer/installers/SystemUiInstaller.java`
 - source_method: `install`
-- lines: 249-249
+- lines: 251-251
 - phase: `POST_RESTART_GUARD_RUNTIME`
 - parse_status: `PARSED`
 - branch_kind: `IF`
@@ -1121,10 +1135,10 @@ It does not judge INSTALLER_ONLY, GATE_ONLY, DEFAULT_MISMATCH, etc.
 - comparators: ['>']
 - raw_expression: `MainModule.mPrefs.getStringAsInt("system_qshaptics", 1) > 1`
 
-### install_if_77
+### install_if_78
 - source_file: `app/src/main/java/tv/withaibuild/customiuizer/installers/SystemUiInstaller.java`
 - source_method: `install`
-- lines: 250-250
+- lines: 252-252
 - phase: `POST_RESTART_GUARD_RUNTIME`
 - parse_status: `PARSED`
 - branch_kind: `IF`
@@ -1134,10 +1148,10 @@ It does not judge INSTALLER_ONLY, GATE_ONLY, DEFAULT_MISMATCH, etc.
 - default_kinds: ['IMPLICIT_PREFMAP_DEFAULT']
 - raw_expression: `MainModule.mPrefs.getBoolean("system_qs_hideoperator")`
 
-### install_if_78
+### install_if_79
 - source_file: `app/src/main/java/tv/withaibuild/customiuizer/installers/SystemUiInstaller.java`
 - source_method: `install`
-- lines: 251-251
+- lines: 253-253
 - phase: `POST_RESTART_GUARD_RUNTIME`
 - parse_status: `PARSED`
 - branch_kind: `IF`
@@ -1147,10 +1161,10 @@ It does not judge INSTALLER_ONLY, GATE_ONLY, DEFAULT_MISMATCH, etc.
 - default_kinds: ['IMPLICIT_PREFMAP_DEFAULT']
 - raw_expression: `MainModule.mPrefs.getBoolean("system_cc_hideoperator_delimiter")`
 
-### install_if_79
+### install_if_80
 - source_file: `app/src/main/java/tv/withaibuild/customiuizer/installers/SystemUiInstaller.java`
 - source_method: `install`
-- lines: 252-254
+- lines: 254-256
 - phase: `POST_RESTART_GUARD_RUNTIME`
 - parse_status: `PARSED`
 - branch_kind: `IF`
@@ -1163,10 +1177,10 @@ It does not judge INSTALLER_ONLY, GATE_ONLY, DEFAULT_MISMATCH, etc.
                 || MainModule.mPrefs.getBoolean("system_drawer_show_stepcount")`
 - normalized_expression: `MainModule.mPrefs.getBoolean("system_cc_show_stepcount") || MainModule.mPrefs.getBoolean("system_drawer_show_stepcount")`
 
-### install_if_80
+### install_if_81
 - source_file: `app/src/main/java/tv/withaibuild/customiuizer/installers/SystemUiInstaller.java`
 - source_method: `install`
-- lines: 255-255
+- lines: 257-257
 - phase: `POST_RESTART_GUARD_RUNTIME`
 - parse_status: `PARSED`
 - branch_kind: `IF`
@@ -1176,10 +1190,10 @@ It does not judge INSTALLER_ONLY, GATE_ONLY, DEFAULT_MISMATCH, etc.
 - default_kinds: ['IMPLICIT_PREFMAP_DEFAULT']
 - raw_expression: `MainModule.mPrefs.getBoolean("system_cc_disable_bluetooth_restrict")`
 
-### install_if_81
+### install_if_82
 - source_file: `app/src/main/java/tv/withaibuild/customiuizer/installers/SystemUiInstaller.java`
 - source_method: `install`
-- lines: 256-256
+- lines: 258-258
 - phase: `POST_RESTART_GUARD_RUNTIME`
 - parse_status: `PARSED`
 - branch_kind: `IF`
@@ -1189,10 +1203,10 @@ It does not judge INSTALLER_ONLY, GATE_ONLY, DEFAULT_MISMATCH, etc.
 - default_kinds: ['IMPLICIT_PREFMAP_DEFAULT']
 - raw_expression: `MainModule.mPrefs.getBoolean("system_cc_collapse_after_clicked")`
 
-### install_if_82
+### install_if_83
 - source_file: `app/src/main/java/tv/withaibuild/customiuizer/installers/SystemUiInstaller.java`
 - source_method: `install`
-- lines: 257-257
+- lines: 259-259
 - phase: `POST_RESTART_GUARD_RUNTIME`
 - parse_status: `PARSED`
 - branch_kind: `IF`
@@ -1202,10 +1216,10 @@ It does not judge INSTALLER_ONLY, GATE_ONLY, DEFAULT_MISMATCH, etc.
 - default_kinds: ['IMPLICIT_PREFMAP_DEFAULT']
 - raw_expression: `MainModule.mPrefs.getBoolean("system_cc_switch_qsandnotification")`
 
-### install_if_83
+### install_if_84
 - source_file: `app/src/main/java/tv/withaibuild/customiuizer/installers/SystemUiInstaller.java`
 - source_method: `install`
-- lines: 258-258
+- lines: 260-260
 - phase: `POST_RESTART_GUARD_RUNTIME`
 - parse_status: `PARSED`
 - branch_kind: `IF`
@@ -1216,10 +1230,10 @@ It does not judge INSTALLER_ONLY, GATE_ONLY, DEFAULT_MISMATCH, etc.
 - comparators: ['>']
 - raw_expression: `MainModule.mPrefs.getStringAsInt("system_expandnotifs", 1) > 1`
 
-### install_if_84
+### install_if_85
 - source_file: `app/src/main/java/tv/withaibuild/customiuizer/installers/SystemUiInstaller.java`
 - source_method: `install`
-- lines: 259-259
+- lines: 261-261
 - phase: `POST_RESTART_GUARD_RUNTIME`
 - parse_status: `PARSED`
 - branch_kind: `IF`
@@ -1230,10 +1244,10 @@ It does not judge INSTALLER_ONLY, GATE_ONLY, DEFAULT_MISMATCH, etc.
 - comparators: ['>']
 - raw_expression: `MainModule.mPrefs.getStringAsInt("system_inactivebrightness", 1) > 1`
 
-### install_if_85
+### install_if_86
 - source_file: `app/src/main/java/tv/withaibuild/customiuizer/installers/SystemUiInstaller.java`
 - source_method: `install`
-- lines: 260-263
+- lines: 262-265
 - phase: `POST_RESTART_GUARD_RUNTIME`
 - parse_status: `PARSED`
 - branch_kind: `IF`
@@ -1248,10 +1262,10 @@ It does not judge INSTALLER_ONLY, GATE_ONLY, DEFAULT_MISMATCH, etc.
                 || MainModule.mPrefs.getBoolean("system_statusbar_mobiletype_show_wificonnected")`
 - normalized_expression: `MainModule.mPrefs.getStringAsInt("system_mobiletypeicon", 1) > 1 || MainModule.mPrefs.getBoolean("system_networkindicator_mobile") || MainModule.mPrefs.getBoolean("system_statusbar_mobiletype_show_wificonnected")`
 
-### install_if_86
+### install_if_87
 - source_file: `app/src/main/java/tv/withaibuild/customiuizer/installers/SystemUiInstaller.java`
 - source_method: `install`
-- lines: 266-266
+- lines: 268-268
 - phase: `POST_RESTART_GUARD_RUNTIME`
 - parse_status: `PARSED`
 - branch_kind: `IF`
@@ -1262,10 +1276,10 @@ It does not judge INSTALLER_ONLY, GATE_ONLY, DEFAULT_MISMATCH, etc.
 - comparators: ['>']
 - raw_expression: `MainModule.mPrefs.getStringAsInt("system_statusbaricons_bluetooth", 1) > 1`
 
-### install_if_87
+### install_if_88
 - source_file: `app/src/main/java/tv/withaibuild/customiuizer/installers/SystemUiInstaller.java`
 - source_method: `install`
-- lines: 267-267
+- lines: 269-269
 - phase: `POST_RESTART_GUARD_RUNTIME`
 - parse_status: `PARSED`
 - branch_kind: `IF`
@@ -1275,19 +1289,19 @@ It does not judge INSTALLER_ONLY, GATE_ONLY, DEFAULT_MISMATCH, etc.
 - default_kinds: ['IMPLICIT_PREFMAP_DEFAULT']
 - raw_expression: `MainModule.mPrefs.getBoolean("system_epm")`
 
-### install_if_88
+### install_if_89
 - source_file: `app/src/main/java/tv/withaibuild/customiuizer/installers/SystemUiInstaller.java`
 - source_method: `install`
-- lines: 287-287
+- lines: 290-290
 - phase: `POST_RESTART_GUARD_RUNTIME`
 - parse_status: `PARSED`
 - branch_kind: `IF`
 - raw_expression: `hideIconsActive`
 
-### install_if_89
+### install_if_90
 - source_file: `app/src/main/java/tv/withaibuild/customiuizer/installers/SystemUiInstaller.java`
 - source_method: `install`
-- lines: 289-294
+- lines: 292-297
 - phase: `POST_RESTART_GUARD_RUNTIME`
 - parse_status: `PARSED`
 - branch_kind: `IF`
@@ -1302,10 +1316,10 @@ It does not judge INSTALLER_ONLY, GATE_ONLY, DEFAULT_MISMATCH, etc.
                 || MainModule.mPrefs.getBoolean("system_statusbaricons_record")`
 - normalized_expression: `MainModule.mPrefs.getBoolean("system_statusbaricons_privacy") || MainModule.mPrefs.getBoolean("system_statusbaricons_mute") || MainModule.mPrefs.getBoolean("system_statusbaricons_speaker") || MainModule.mPrefs.getBoolean("system_statusbaricons_record")`
 
-### install_if_90
+### install_if_91
 - source_file: `app/src/main/java/tv/withaibuild/customiuizer/installers/SystemUiInstaller.java`
 - source_method: `install`
-- lines: 295-295
+- lines: 298-298
 - phase: `POST_RESTART_GUARD_RUNTIME`
 - parse_status: `PARSED`
 - branch_kind: `IF`
@@ -1316,10 +1330,10 @@ It does not judge INSTALLER_ONLY, GATE_ONLY, DEFAULT_MISMATCH, etc.
 - comparators: ['>']
 - raw_expression: `MainModule.mPrefs.getInt("system_messagingstylelines", 0) > 0`
 
-### install_if_91
+### install_if_92
 - source_file: `app/src/main/java/tv/withaibuild/customiuizer/installers/SystemUiInstaller.java`
 - source_method: `install`
-- lines: 296-296
+- lines: 299-299
 - phase: `POST_RESTART_GUARD_RUNTIME`
 - parse_status: `PARSED`
 - branch_kind: `IF`
@@ -1329,10 +1343,10 @@ It does not judge INSTALLER_ONLY, GATE_ONLY, DEFAULT_MISMATCH, etc.
 - default_kinds: ['IMPLICIT_PREFMAP_DEFAULT']
 - raw_expression: `MainModule.mPrefs.getBoolean("system_betterpopups_allowfloat")`
 
-### install_if_92
+### install_if_93
 - source_file: `app/src/main/java/tv/withaibuild/customiuizer/installers/SystemUiInstaller.java`
 - source_method: `install`
-- lines: 297-297
+- lines: 300-300
 - phase: `POST_RESTART_GUARD_RUNTIME`
 - parse_status: `PARSED`
 - branch_kind: `IF`
@@ -1342,10 +1356,10 @@ It does not judge INSTALLER_ONLY, GATE_ONLY, DEFAULT_MISMATCH, etc.
 - default_kinds: ['IMPLICIT_PREFMAP_DEFAULT']
 - raw_expression: `MainModule.mPrefs.getBoolean("system_betterpopups_autoclose_expanded")`
 
-### install_if_93
+### install_if_94
 - source_file: `app/src/main/java/tv/withaibuild/customiuizer/installers/SystemUiInstaller.java`
 - source_method: `install`
-- lines: 298-298
+- lines: 301-301
 - phase: `POST_RESTART_GUARD_RUNTIME`
 - parse_status: `PARSED`
 - branch_kind: `IF`
@@ -1355,10 +1369,10 @@ It does not judge INSTALLER_ONLY, GATE_ONLY, DEFAULT_MISMATCH, etc.
 - default_kinds: ['IMPLICIT_PREFMAP_DEFAULT']
 - raw_expression: `MainModule.mPrefs.getBoolean("system_betterpopups_disablewhenmute")`
 
-### install_if_94
+### install_if_95
 - source_file: `app/src/main/java/tv/withaibuild/customiuizer/installers/SystemUiInstaller.java`
 - source_method: `install`
-- lines: 299-299
+- lines: 302-302
 - phase: `POST_RESTART_GUARD_RUNTIME`
 - parse_status: `PARSED`
 - branch_kind: `IF`
@@ -1368,10 +1382,10 @@ It does not judge INSTALLER_ONLY, GATE_ONLY, DEFAULT_MISMATCH, etc.
 - default_kinds: ['IMPLICIT_PREFMAP_DEFAULT']
 - raw_expression: `MainModule.mPrefs.getBoolean("system_securecontrolcenter")`
 
-### install_if_95
+### install_if_96
 - source_file: `app/src/main/java/tv/withaibuild/customiuizer/installers/SystemUiInstaller.java`
 - source_method: `install`
-- lines: 300-300
+- lines: 303-303
 - phase: `POST_RESTART_GUARD_RUNTIME`
 - parse_status: `PARSED`
 - branch_kind: `IF`
@@ -1381,10 +1395,10 @@ It does not judge INSTALLER_ONLY, GATE_ONLY, DEFAULT_MISMATCH, etc.
 - default_kinds: ['IMPLICIT_PREFMAP_DEFAULT']
 - raw_expression: `MainModule.mPrefs.getBoolean("system_minimalnotifview")`
 
-### install_if_96
+### install_if_97
 - source_file: `app/src/main/java/tv/withaibuild/customiuizer/installers/SystemUiInstaller.java`
 - source_method: `install`
-- lines: 301-301
+- lines: 304-304
 - phase: `POST_RESTART_GUARD_RUNTIME`
 - parse_status: `PARSED`
 - branch_kind: `IF`
@@ -1394,10 +1408,10 @@ It does not judge INSTALLER_ONLY, GATE_ONLY, DEFAULT_MISMATCH, etc.
 - default_kinds: ['IMPLICIT_PREFMAP_DEFAULT']
 - raw_expression: `MainModule.mPrefs.getBoolean("system_notifchannelsettings")`
 
-### install_if_97
+### install_if_98
 - source_file: `app/src/main/java/tv/withaibuild/customiuizer/installers/SystemUiInstaller.java`
 - source_method: `install`
-- lines: 302-302
+- lines: 305-305
 - phase: `POST_RESTART_GUARD_RUNTIME`
 - parse_status: `PARSED`
 - branch_kind: `IF`
@@ -1408,10 +1422,10 @@ It does not judge INSTALLER_ONLY, GATE_ONLY, DEFAULT_MISMATCH, etc.
 - comparators: ['!=']
 - raw_expression: `MainModule.mPrefs.getStringAsInt("system_maxsbicons", 0) != 0`
 
-### install_if_98
+### install_if_99
 - source_file: `app/src/main/java/tv/withaibuild/customiuizer/installers/SystemUiInstaller.java`
 - source_method: `install`
-- lines: 303-303
+- lines: 306-306
 - phase: `POST_RESTART_GUARD_RUNTIME`
 - parse_status: `PARSED`
 - branch_kind: `IF`
@@ -1421,10 +1435,10 @@ It does not judge INSTALLER_ONLY, GATE_ONLY, DEFAULT_MISMATCH, etc.
 - default_kinds: ['IMPLICIT_PREFMAP_DEFAULT']
 - raw_expression: `MainModule.mPrefs.getBoolean("system_statusbar_mobiletype_single")`
 
-### install_if_99
+### install_if_100
 - source_file: `app/src/main/java/tv/withaibuild/customiuizer/installers/SystemUiInstaller.java`
 - source_method: `install`
-- lines: 306-306
+- lines: 309-309
 - phase: `POST_RESTART_GUARD_RUNTIME`
 - parse_status: `PARSED`
 - branch_kind: `IF`
@@ -1434,10 +1448,10 @@ It does not judge INSTALLER_ONLY, GATE_ONLY, DEFAULT_MISMATCH, etc.
 - default_kinds: ['IMPLICIT_PREFMAP_DEFAULT']
 - raw_expression: `MainModule.mPrefs.getBoolean("system_statusbar_dualsimin2rows")`
 
-### install_if_100
+### install_if_101
 - source_file: `app/src/main/java/tv/withaibuild/customiuizer/installers/SystemUiInstaller.java`
 - source_method: `install`
-- lines: 309-309
+- lines: 312-312
 - phase: `POST_RESTART_GUARD_RUNTIME`
 - parse_status: `PARSED`
 - branch_kind: `IF`
@@ -1447,10 +1461,10 @@ It does not judge INSTALLER_ONLY, GATE_ONLY, DEFAULT_MISMATCH, etc.
 - default_kinds: ['IMPLICIT_PREFMAP_DEFAULT']
 - raw_expression: `MainModule.mPrefs.getBoolean("system_statusbar_dualrows")`
 
-### install_if_101
+### install_if_102
 - source_file: `app/src/main/java/tv/withaibuild/customiuizer/installers/SystemUiInstaller.java`
 - source_method: `install`
-- lines: 312-312
+- lines: 315-315
 - phase: `POST_RESTART_GUARD_RUNTIME`
 - parse_status: `PARSED`
 - branch_kind: `IF`
@@ -1462,10 +1476,10 @@ It does not judge INSTALLER_ONLY, GATE_ONLY, DEFAULT_MISMATCH, etc.
 - boolean_operators: ['OR']
 - raw_expression: `MainModule.mPrefs.getInt("system_ccgridcolumns", 4) > 4 || MainModule.mPrefs.getInt("system_ccgridrows", 4) != 4`
 
-### install_if_102
+### install_if_103
 - source_file: `app/src/main/java/tv/withaibuild/customiuizer/installers/SystemUiInstaller.java`
 - source_method: `install`
-- lines: 313-313
+- lines: 316-316
 - phase: `POST_RESTART_GUARD_RUNTIME`
 - parse_status: `PARSED`
 - branch_kind: `IF`
@@ -1476,10 +1490,10 @@ It does not judge INSTALLER_ONLY, GATE_ONLY, DEFAULT_MISMATCH, etc.
 - comparators: ['>']
 - raw_expression: `MainModule.mPrefs.getStringAsInt("system_colorizenotifs", 1) > 1`
 
-### install_if_103
+### install_if_104
 - source_file: `app/src/main/java/tv/withaibuild/customiuizer/installers/SystemUiInstaller.java`
 - source_method: `install`
-- lines: 314-314
+- lines: 317-317
 - phase: `POST_RESTART_GUARD_RUNTIME`
 - parse_status: `PARSED`
 - branch_kind: `IF`
@@ -1489,10 +1503,10 @@ It does not judge INSTALLER_ONLY, GATE_ONLY, DEFAULT_MISMATCH, etc.
 - default_kinds: ['IMPLICIT_PREFMAP_DEFAULT']
 - raw_expression: `MainModule.mPrefs.getBoolean("system_notify_openinfw")`
 
-### install_if_104
+### install_if_105
 - source_file: `app/src/main/java/tv/withaibuild/customiuizer/installers/SystemUiInstaller.java`
 - source_method: `install`
-- lines: 315-315
+- lines: 318-318
 - phase: `POST_RESTART_GUARD_RUNTIME`
 - parse_status: `PARSED`
 - branch_kind: `IF`
@@ -1502,10 +1516,10 @@ It does not judge INSTALLER_ONLY, GATE_ONLY, DEFAULT_MISMATCH, etc.
 - default_kinds: ['IMPLICIT_PREFMAP_DEFAULT']
 - raw_expression: `MainModule.mPrefs.getBoolean("system_fw_noblacklist")`
 
-### install_if_105
+### install_if_106
 - source_file: `app/src/main/java/tv/withaibuild/customiuizer/installers/SystemUiInstaller.java`
 - source_method: `install`
-- lines: 317-320
+- lines: 320-323
 - phase: `POST_RESTART_GUARD_RUNTIME`
 - parse_status: `PARSED`
 - branch_kind: `IF`
@@ -1519,10 +1533,10 @@ It does not judge INSTALLER_ONLY, GATE_ONLY, DEFAULT_MISMATCH, etc.
                 || MainModule.mPrefs.getBoolean("system_betterpopups_allowfloat")`
 - normalized_expression: `MainModule.mPrefs.getBoolean("system_notify_openinfw") || MainModule.mPrefs.getBoolean("system_notifrowmenu") || MainModule.mPrefs.getBoolean("system_betterpopups_allowfloat")`
 
-### install_if_106
+### install_if_107
 - source_file: `app/src/main/java/tv/withaibuild/customiuizer/installers/SystemUiInstaller.java`
 - source_method: `install`
-- lines: 323-323
+- lines: 326-326
 - phase: `POST_RESTART_GUARD_RUNTIME`
 - parse_status: `PARSED`
 - branch_kind: `IF`
@@ -1532,10 +1546,10 @@ It does not judge INSTALLER_ONLY, GATE_ONLY, DEFAULT_MISMATCH, etc.
 - default_kinds: ['IMPLICIT_PREFMAP_DEFAULT']
 - raw_expression: `MainModule.mPrefs.getBoolean("system_nosafevolume")`
 
-### install_if_107
+### install_if_108
 - source_file: `app/src/main/java/tv/withaibuild/customiuizer/installers/SystemUiInstaller.java`
 - source_method: `install`
-- lines: 326-326
+- lines: 329-329
 - phase: `POST_RESTART_GUARD_RUNTIME`
 - parse_status: `PARSED`
 - branch_kind: `IF`
@@ -1545,10 +1559,10 @@ It does not judge INSTALLER_ONLY, GATE_ONLY, DEFAULT_MISMATCH, etc.
 - default_kinds: ['IMPLICIT_PREFMAP_DEFAULT']
 - raw_expression: `MainModule.mPrefs.getBoolean("system_lockscreen_hidezenmode")`
 
-### install_if_108
+### install_if_109
 - source_file: `app/src/main/java/tv/withaibuild/customiuizer/installers/SystemUiInstaller.java`
 - source_method: `install`
-- lines: 329-329
+- lines: 332-332
 - phase: `POST_RESTART_GUARD_RUNTIME`
 - parse_status: `PARSED`
 - branch_kind: `IF`
@@ -1558,12 +1572,12 @@ It does not judge INSTALLER_ONLY, GATE_ONLY, DEFAULT_MISMATCH, etc.
 - default_kinds: ['IMPLICIT_PREFMAP_DEFAULT']
 - raw_expression: `MainModule.mPrefs.getBoolean("system_nopassword")`
 
-## STARTUP_GATE_CONDITIONS (119)
+## STARTUP_GATE_CONDITIONS (120)
 
 ### hasAnySystemUiStartupFeature_if_1
 - source_file: `app/src/main/java/tv/withaibuild/customiuizer/installers/SystemUiInstaller.java`
 - source_method: `hasAnySystemUiStartupFeature`
-- lines: 334-334
+- lines: 337-337
 - phase: `STARTUP_GATE`
 - parse_status: `PARSED`
 - branch_kind: `IF`
@@ -1572,7 +1586,7 @@ It does not judge INSTALLER_ONLY, GATE_ONLY, DEFAULT_MISMATCH, etc.
 ### hasAnySystemUiStartupFeature_if_2
 - source_file: `app/src/main/java/tv/withaibuild/customiuizer/installers/SystemUiInstaller.java`
 - source_method: `hasAnySystemUiStartupFeature`
-- lines: 335-335
+- lines: 338-338
 - phase: `STARTUP_GATE`
 - parse_status: `PARSED`
 - branch_kind: `IF`
@@ -1586,7 +1600,7 @@ It does not judge INSTALLER_ONLY, GATE_ONLY, DEFAULT_MISMATCH, etc.
 ### hasAnySystemUiStartupFeature_if_3
 - source_file: `app/src/main/java/tv/withaibuild/customiuizer/installers/SystemUiInstaller.java`
 - source_method: `hasAnySystemUiStartupFeature`
-- lines: 336-336
+- lines: 339-339
 - phase: `STARTUP_GATE`
 - parse_status: `PARSED`
 - branch_kind: `IF`
@@ -1600,7 +1614,7 @@ It does not judge INSTALLER_ONLY, GATE_ONLY, DEFAULT_MISMATCH, etc.
 ### hasAnySystemUiStartupFeature_if_4
 - source_file: `app/src/main/java/tv/withaibuild/customiuizer/installers/SystemUiInstaller.java`
 - source_method: `hasAnySystemUiStartupFeature`
-- lines: 337-337
+- lines: 340-340
 - phase: `STARTUP_GATE`
 - parse_status: `PARSED`
 - branch_kind: `IF`
@@ -1615,7 +1629,7 @@ It does not judge INSTALLER_ONLY, GATE_ONLY, DEFAULT_MISMATCH, etc.
 ### hasAnySystemUiStartupFeature_if_5
 - source_file: `app/src/main/java/tv/withaibuild/customiuizer/installers/SystemUiInstaller.java`
 - source_method: `hasAnySystemUiStartupFeature`
-- lines: 338-338
+- lines: 341-341
 - phase: `STARTUP_GATE`
 - parse_status: `PARSED`
 - branch_kind: `IF`
@@ -1629,7 +1643,7 @@ It does not judge INSTALLER_ONLY, GATE_ONLY, DEFAULT_MISMATCH, etc.
 ### hasAnySystemUiStartupFeature_if_6
 - source_file: `app/src/main/java/tv/withaibuild/customiuizer/installers/SystemUiInstaller.java`
 - source_method: `hasAnySystemUiStartupFeature`
-- lines: 339-339
+- lines: 342-342
 - phase: `STARTUP_GATE`
 - parse_status: `PARSED`
 - branch_kind: `IF`
@@ -1644,7 +1658,7 @@ It does not judge INSTALLER_ONLY, GATE_ONLY, DEFAULT_MISMATCH, etc.
 ### hasAnySystemUiStartupFeature_if_7
 - source_file: `app/src/main/java/tv/withaibuild/customiuizer/installers/SystemUiInstaller.java`
 - source_method: `hasAnySystemUiStartupFeature`
-- lines: 340-340
+- lines: 343-343
 - phase: `STARTUP_GATE`
 - parse_status: `PARSED`
 - branch_kind: `IF`
@@ -1658,7 +1672,7 @@ It does not judge INSTALLER_ONLY, GATE_ONLY, DEFAULT_MISMATCH, etc.
 ### hasAnySystemUiStartupFeature_if_8
 - source_file: `app/src/main/java/tv/withaibuild/customiuizer/installers/SystemUiInstaller.java`
 - source_method: `hasAnySystemUiStartupFeature`
-- lines: 341-341
+- lines: 344-344
 - phase: `STARTUP_GATE`
 - parse_status: `PARSED`
 - branch_kind: `IF`
@@ -1671,7 +1685,7 @@ It does not judge INSTALLER_ONLY, GATE_ONLY, DEFAULT_MISMATCH, etc.
 ### hasAnySystemUiStartupFeature_if_9
 - source_file: `app/src/main/java/tv/withaibuild/customiuizer/installers/SystemUiInstaller.java`
 - source_method: `hasAnySystemUiStartupFeature`
-- lines: 342-342
+- lines: 345-345
 - phase: `STARTUP_GATE`
 - parse_status: `PARSED`
 - branch_kind: `IF`
@@ -1685,7 +1699,7 @@ It does not judge INSTALLER_ONLY, GATE_ONLY, DEFAULT_MISMATCH, etc.
 ### hasAnySystemUiStartupFeature_if_10
 - source_file: `app/src/main/java/tv/withaibuild/customiuizer/installers/SystemUiInstaller.java`
 - source_method: `hasAnySystemUiStartupFeature`
-- lines: 343-343
+- lines: 346-346
 - phase: `STARTUP_GATE`
 - parse_status: `PARSED`
 - branch_kind: `IF`
@@ -1699,7 +1713,7 @@ It does not judge INSTALLER_ONLY, GATE_ONLY, DEFAULT_MISMATCH, etc.
 ### hasAnySystemUiStartupFeature_if_11
 - source_file: `app/src/main/java/tv/withaibuild/customiuizer/installers/SystemUiInstaller.java`
 - source_method: `hasAnySystemUiStartupFeature`
-- lines: 344-344
+- lines: 347-347
 - phase: `STARTUP_GATE`
 - parse_status: `PARSED`
 - branch_kind: `IF`
@@ -1714,7 +1728,7 @@ It does not judge INSTALLER_ONLY, GATE_ONLY, DEFAULT_MISMATCH, etc.
 ### hasAnySystemUiStartupFeature_if_12
 - source_file: `app/src/main/java/tv/withaibuild/customiuizer/installers/SystemUiInstaller.java`
 - source_method: `hasAnySystemUiStartupFeature`
-- lines: 345-345
+- lines: 348-348
 - phase: `STARTUP_GATE`
 - parse_status: `PARSED`
 - branch_kind: `IF`
@@ -1728,7 +1742,7 @@ It does not judge INSTALLER_ONLY, GATE_ONLY, DEFAULT_MISMATCH, etc.
 ### hasAnySystemUiStartupFeature_if_13
 - source_file: `app/src/main/java/tv/withaibuild/customiuizer/installers/SystemUiInstaller.java`
 - source_method: `hasAnySystemUiStartupFeature`
-- lines: 346-346
+- lines: 349-349
 - phase: `STARTUP_GATE`
 - parse_status: `PARSED`
 - branch_kind: `IF`
@@ -1743,7 +1757,7 @@ It does not judge INSTALLER_ONLY, GATE_ONLY, DEFAULT_MISMATCH, etc.
 ### hasAnySystemUiStartupFeature_if_14
 - source_file: `app/src/main/java/tv/withaibuild/customiuizer/installers/SystemUiInstaller.java`
 - source_method: `hasAnySystemUiStartupFeature`
-- lines: 347-347
+- lines: 350-350
 - phase: `STARTUP_GATE`
 - parse_status: `PARSED`
 - branch_kind: `IF`
@@ -1757,7 +1771,7 @@ It does not judge INSTALLER_ONLY, GATE_ONLY, DEFAULT_MISMATCH, etc.
 ### hasAnySystemUiStartupFeature_if_15
 - source_file: `app/src/main/java/tv/withaibuild/customiuizer/installers/SystemUiInstaller.java`
 - source_method: `hasAnySystemUiStartupFeature`
-- lines: 348-348
+- lines: 351-351
 - phase: `STARTUP_GATE`
 - parse_status: `PARSED`
 - branch_kind: `IF`
@@ -1772,7 +1786,7 @@ It does not judge INSTALLER_ONLY, GATE_ONLY, DEFAULT_MISMATCH, etc.
 ### hasAnySystemUiStartupFeature_if_16
 - source_file: `app/src/main/java/tv/withaibuild/customiuizer/installers/SystemUiInstaller.java`
 - source_method: `hasAnySystemUiStartupFeature`
-- lines: 349-349
+- lines: 352-352
 - phase: `STARTUP_GATE`
 - parse_status: `PARSED`
 - branch_kind: `IF`
@@ -1787,7 +1801,7 @@ It does not judge INSTALLER_ONLY, GATE_ONLY, DEFAULT_MISMATCH, etc.
 ### hasAnySystemUiStartupFeature_if_17
 - source_file: `app/src/main/java/tv/withaibuild/customiuizer/installers/SystemUiInstaller.java`
 - source_method: `hasAnySystemUiStartupFeature`
-- lines: 350-350
+- lines: 353-353
 - phase: `STARTUP_GATE`
 - parse_status: `PARSED`
 - branch_kind: `IF`
@@ -1800,7 +1814,7 @@ It does not judge INSTALLER_ONLY, GATE_ONLY, DEFAULT_MISMATCH, etc.
 ### hasAnySystemUiStartupFeature_if_18
 - source_file: `app/src/main/java/tv/withaibuild/customiuizer/installers/SystemUiInstaller.java`
 - source_method: `hasAnySystemUiStartupFeature`
-- lines: 351-351
+- lines: 354-354
 - phase: `STARTUP_GATE`
 - parse_status: `PARSED`
 - branch_kind: `IF`
@@ -1813,7 +1827,7 @@ It does not judge INSTALLER_ONLY, GATE_ONLY, DEFAULT_MISMATCH, etc.
 ### hasAnySystemUiStartupFeature_if_19
 - source_file: `app/src/main/java/tv/withaibuild/customiuizer/installers/SystemUiInstaller.java`
 - source_method: `hasAnySystemUiStartupFeature`
-- lines: 352-352
+- lines: 355-355
 - phase: `STARTUP_GATE`
 - parse_status: `PARSED`
 - branch_kind: `IF`
@@ -1826,7 +1840,7 @@ It does not judge INSTALLER_ONLY, GATE_ONLY, DEFAULT_MISMATCH, etc.
 ### hasAnySystemUiStartupFeature_if_20
 - source_file: `app/src/main/java/tv/withaibuild/customiuizer/installers/SystemUiInstaller.java`
 - source_method: `hasAnySystemUiStartupFeature`
-- lines: 353-353
+- lines: 356-356
 - phase: `STARTUP_GATE`
 - parse_status: `PARSED`
 - branch_kind: `IF`
@@ -1840,7 +1854,7 @@ It does not judge INSTALLER_ONLY, GATE_ONLY, DEFAULT_MISMATCH, etc.
 ### hasAnySystemUiStartupFeature_if_21
 - source_file: `app/src/main/java/tv/withaibuild/customiuizer/installers/SystemUiInstaller.java`
 - source_method: `hasAnySystemUiStartupFeature`
-- lines: 354-354
+- lines: 357-357
 - phase: `STARTUP_GATE`
 - parse_status: `PARSED`
 - branch_kind: `IF`
@@ -1853,7 +1867,7 @@ It does not judge INSTALLER_ONLY, GATE_ONLY, DEFAULT_MISMATCH, etc.
 ### hasAnySystemUiStartupFeature_if_22
 - source_file: `app/src/main/java/tv/withaibuild/customiuizer/installers/SystemUiInstaller.java`
 - source_method: `hasAnySystemUiStartupFeature`
-- lines: 355-355
+- lines: 358-358
 - phase: `STARTUP_GATE`
 - parse_status: `PARSED`
 - branch_kind: `IF`
@@ -1867,7 +1881,7 @@ It does not judge INSTALLER_ONLY, GATE_ONLY, DEFAULT_MISMATCH, etc.
 ### hasAnySystemUiStartupFeature_if_23
 - source_file: `app/src/main/java/tv/withaibuild/customiuizer/installers/SystemUiInstaller.java`
 - source_method: `hasAnySystemUiStartupFeature`
-- lines: 356-356
+- lines: 359-359
 - phase: `STARTUP_GATE`
 - parse_status: `PARSED`
 - branch_kind: `IF`
@@ -1880,7 +1894,7 @@ It does not judge INSTALLER_ONLY, GATE_ONLY, DEFAULT_MISMATCH, etc.
 ### hasAnySystemUiStartupFeature_if_24
 - source_file: `app/src/main/java/tv/withaibuild/customiuizer/installers/SystemUiInstaller.java`
 - source_method: `hasAnySystemUiStartupFeature`
-- lines: 357-357
+- lines: 360-360
 - phase: `STARTUP_GATE`
 - parse_status: `PARSED`
 - branch_kind: `IF`
@@ -1893,7 +1907,7 @@ It does not judge INSTALLER_ONLY, GATE_ONLY, DEFAULT_MISMATCH, etc.
 ### hasAnySystemUiStartupFeature_if_25
 - source_file: `app/src/main/java/tv/withaibuild/customiuizer/installers/SystemUiInstaller.java`
 - source_method: `hasAnySystemUiStartupFeature`
-- lines: 358-358
+- lines: 361-361
 - phase: `STARTUP_GATE`
 - parse_status: `PARSED`
 - branch_kind: `IF`
@@ -1906,7 +1920,7 @@ It does not judge INSTALLER_ONLY, GATE_ONLY, DEFAULT_MISMATCH, etc.
 ### hasAnySystemUiStartupFeature_if_26
 - source_file: `app/src/main/java/tv/withaibuild/customiuizer/installers/SystemUiInstaller.java`
 - source_method: `hasAnySystemUiStartupFeature`
-- lines: 359-359
+- lines: 362-362
 - phase: `STARTUP_GATE`
 - parse_status: `PARSED`
 - branch_kind: `IF`
@@ -1919,7 +1933,7 @@ It does not judge INSTALLER_ONLY, GATE_ONLY, DEFAULT_MISMATCH, etc.
 ### hasAnySystemUiStartupFeature_if_27
 - source_file: `app/src/main/java/tv/withaibuild/customiuizer/installers/SystemUiInstaller.java`
 - source_method: `hasAnySystemUiStartupFeature`
-- lines: 360-360
+- lines: 363-363
 - phase: `STARTUP_GATE`
 - parse_status: `PARSED`
 - branch_kind: `IF`
@@ -1932,7 +1946,7 @@ It does not judge INSTALLER_ONLY, GATE_ONLY, DEFAULT_MISMATCH, etc.
 ### hasAnySystemUiStartupFeature_if_28
 - source_file: `app/src/main/java/tv/withaibuild/customiuizer/installers/SystemUiInstaller.java`
 - source_method: `hasAnySystemUiStartupFeature`
-- lines: 361-361
+- lines: 364-364
 - phase: `STARTUP_GATE`
 - parse_status: `PARSED`
 - branch_kind: `IF`
@@ -1945,7 +1959,7 @@ It does not judge INSTALLER_ONLY, GATE_ONLY, DEFAULT_MISMATCH, etc.
 ### hasAnySystemUiStartupFeature_if_29
 - source_file: `app/src/main/java/tv/withaibuild/customiuizer/installers/SystemUiInstaller.java`
 - source_method: `hasAnySystemUiStartupFeature`
-- lines: 362-362
+- lines: 365-365
 - phase: `STARTUP_GATE`
 - parse_status: `PARSED`
 - branch_kind: `IF`
@@ -1958,7 +1972,7 @@ It does not judge INSTALLER_ONLY, GATE_ONLY, DEFAULT_MISMATCH, etc.
 ### hasAnySystemUiStartupFeature_if_30
 - source_file: `app/src/main/java/tv/withaibuild/customiuizer/installers/SystemUiInstaller.java`
 - source_method: `hasAnySystemUiStartupFeature`
-- lines: 363-363
+- lines: 366-366
 - phase: `STARTUP_GATE`
 - parse_status: `PARSED`
 - branch_kind: `IF`
@@ -1971,7 +1985,7 @@ It does not judge INSTALLER_ONLY, GATE_ONLY, DEFAULT_MISMATCH, etc.
 ### hasAnySystemUiStartupFeature_if_31
 - source_file: `app/src/main/java/tv/withaibuild/customiuizer/installers/SystemUiInstaller.java`
 - source_method: `hasAnySystemUiStartupFeature`
-- lines: 364-364
+- lines: 367-367
 - phase: `STARTUP_GATE`
 - parse_status: `PARSED`
 - branch_kind: `IF`
@@ -1984,7 +1998,7 @@ It does not judge INSTALLER_ONLY, GATE_ONLY, DEFAULT_MISMATCH, etc.
 ### hasAnySystemUiStartupFeature_if_32
 - source_file: `app/src/main/java/tv/withaibuild/customiuizer/installers/SystemUiInstaller.java`
 - source_method: `hasAnySystemUiStartupFeature`
-- lines: 365-365
+- lines: 368-368
 - phase: `STARTUP_GATE`
 - parse_status: `PARSED`
 - branch_kind: `IF`
@@ -1997,7 +2011,7 @@ It does not judge INSTALLER_ONLY, GATE_ONLY, DEFAULT_MISMATCH, etc.
 ### hasAnySystemUiStartupFeature_if_33
 - source_file: `app/src/main/java/tv/withaibuild/customiuizer/installers/SystemUiInstaller.java`
 - source_method: `hasAnySystemUiStartupFeature`
-- lines: 366-366
+- lines: 369-369
 - phase: `STARTUP_GATE`
 - parse_status: `PARSED`
 - branch_kind: `IF`
@@ -2010,7 +2024,20 @@ It does not judge INSTALLER_ONLY, GATE_ONLY, DEFAULT_MISMATCH, etc.
 ### hasAnySystemUiStartupFeature_if_34
 - source_file: `app/src/main/java/tv/withaibuild/customiuizer/installers/SystemUiInstaller.java`
 - source_method: `hasAnySystemUiStartupFeature`
-- lines: 367-367
+- lines: 370-370
+- phase: `STARTUP_GATE`
+- parse_status: `PARSED`
+- branch_kind: `IF`
+- preference_keys: ['controls_hide_ime_dismiss_button']
+- accessors: ['getBoolean']
+- default_values: [False]
+- default_kinds: ['IMPLICIT_PREFMAP_DEFAULT']
+- raw_expression: `prefs.getBoolean("controls_hide_ime_dismiss_button")`
+
+### hasAnySystemUiStartupFeature_if_35
+- source_file: `app/src/main/java/tv/withaibuild/customiuizer/installers/SystemUiInstaller.java`
+- source_method: `hasAnySystemUiStartupFeature`
+- lines: 371-371
 - phase: `STARTUP_GATE`
 - parse_status: `PARSED`
 - branch_kind: `IF`
@@ -2020,10 +2047,10 @@ It does not judge INSTALLER_ONLY, GATE_ONLY, DEFAULT_MISMATCH, etc.
 - default_kinds: ['IMPLICIT_PREFMAP_DEFAULT']
 - raw_expression: `prefs.getBoolean("system_visualizer")`
 
-### hasAnySystemUiStartupFeature_if_35
+### hasAnySystemUiStartupFeature_if_36
 - source_file: `app/src/main/java/tv/withaibuild/customiuizer/installers/SystemUiInstaller.java`
 - source_method: `hasAnySystemUiStartupFeature`
-- lines: 368-368
+- lines: 372-372
 - phase: `STARTUP_GATE`
 - parse_status: `PARSED`
 - branch_kind: `IF`
@@ -2035,10 +2062,10 @@ It does not judge INSTALLER_ONLY, GATE_ONLY, DEFAULT_MISMATCH, etc.
 - boolean_operators: ['OR', 'OR', 'OR', 'OR', 'OR', 'OR', 'OR', 'OR', 'OR', 'OR', 'OR', 'OR', 'OR']
 - raw_expression: `prefs.getBoolean("system_nosilentvibrate") || prefs.getBoolean("system_qs_force_systemfonts") || prefs.getBoolean("system_volumetimer") || prefs.getBoolean("system_qsnolabels") || prefs.getBoolean("system_cc_volume_showpct") || prefs.getBoolean("system_volumebar_blur_mtk") || prefs.getBoolean("system_cc_hidedate") || prefs.getBoolean("system_cc_hide_shortcuticons") || prefs.getBoolean("system_cc_clocktweak") || prefs.getBoolean("system_cc_tile_roundedrect") || prefs.getStringAsInt("system_cc_bluetooth_tile_style", 1) > 1 || (prefs.getBoolean("system_separatevolume") && prefs.getBoolean("system_separatevolume_slider")) || (prefs.getInt("system_volumedialogdelay_collapsed", 0) > 0 || prefs.getInt("system_volumedialogdelay_expanded", 0) > 0) || (prefs.getInt("system_volumeblur_collapsed", 0) > 0 || prefs.getInt("system_volumeblur_expanded", 0) > 0)`
 
-### hasAnySystemUiStartupFeature_if_36
+### hasAnySystemUiStartupFeature_if_37
 - source_file: `app/src/main/java/tv/withaibuild/customiuizer/installers/SystemUiInstaller.java`
 - source_method: `hasAnySystemUiStartupFeature`
-- lines: 369-369
+- lines: 373-373
 - phase: `STARTUP_GATE`
 - parse_status: `PARSED`
 - branch_kind: `IF`
@@ -2048,10 +2075,10 @@ It does not judge INSTALLER_ONLY, GATE_ONLY, DEFAULT_MISMATCH, etc.
 - default_kinds: ['IMPLICIT_PREFMAP_DEFAULT']
 - raw_expression: `prefs.getBoolean("system_disableanynotif")`
 
-### hasAnySystemUiStartupFeature_if_37
+### hasAnySystemUiStartupFeature_if_38
 - source_file: `app/src/main/java/tv/withaibuild/customiuizer/installers/SystemUiInstaller.java`
 - source_method: `hasAnySystemUiStartupFeature`
-- lines: 370-370
+- lines: 374-374
 - phase: `STARTUP_GATE`
 - parse_status: `PARSED`
 - branch_kind: `IF`
@@ -2061,10 +2088,10 @@ It does not judge INSTALLER_ONLY, GATE_ONLY, DEFAULT_MISMATCH, etc.
 - default_kinds: ['IMPLICIT_PREFMAP_DEFAULT']
 - raw_expression: `prefs.getBoolean("system_lockscreenshortcuts")`
 
-### hasAnySystemUiStartupFeature_if_38
+### hasAnySystemUiStartupFeature_if_39
 - source_file: `app/src/main/java/tv/withaibuild/customiuizer/installers/SystemUiInstaller.java`
 - source_method: `hasAnySystemUiStartupFeature`
-- lines: 371-371
+- lines: 375-375
 - phase: `STARTUP_GATE`
 - parse_status: `PARSED`
 - branch_kind: `IF`
@@ -2076,10 +2103,10 @@ It does not judge INSTALLER_ONLY, GATE_ONLY, DEFAULT_MISMATCH, etc.
 - boolean_operators: ['OR']
 - raw_expression: `prefs.getBoolean("system_4gtolte") || (prefs.getBoolean("system_statusbar_mobiletype_single") && !prefs.getString("system_statusbar_mobile_showname", "").equals(""))`
 
-### hasAnySystemUiStartupFeature_if_39
+### hasAnySystemUiStartupFeature_if_40
 - source_file: `app/src/main/java/tv/withaibuild/customiuizer/installers/SystemUiInstaller.java`
 - source_method: `hasAnySystemUiStartupFeature`
-- lines: 372-372
+- lines: 376-376
 - phase: `STARTUP_GATE`
 - parse_status: `PARSED`
 - branch_kind: `IF`
@@ -2090,10 +2117,10 @@ It does not judge INSTALLER_ONLY, GATE_ONLY, DEFAULT_MISMATCH, etc.
 - boolean_operators: ['OR', 'OR', 'OR', 'OR', 'OR']
 - raw_expression: `(prefs.getBoolean("system_statusbar_netspeed_atright") || prefs.getBoolean("system_statusbar_alarm_atright") || prefs.getBoolean("system_statusbar_sound_atright") || prefs.getBoolean("system_statusbar_dnd_atright") || prefs.getBoolean("system_statusbar_nfc_atright") || prefs.getBoolean("system_statusbar_btbattery_atright") || prefs.getBoolean("system_statusbar_headset_atright") || prefs.getBoolean("system_statusbar_vpn_atright")) || (prefs.getBoolean("system_statusbar_alarm_atleft") || prefs.getBoolean("system_statusbar_sound_atleft") || prefs.getBoolean("system_statusbar_dnd_atleft") || prefs.getBoolean("system_statusbar_gps_atleft")) || prefs.getBoolean("system_statusbar_netspeed_atleft") || (prefs.getBoolean("system_statusbar_dualrows") && prefs.getBoolean("system_statusbar_netspeed_atsecondrow")) || prefs.getBoolean("system_statusbaricons_wifi_mobile_atleft") || prefs.getBoolean("system_statusbaricons_swap_wifi_mobile")`
 
-### hasAnySystemUiStartupFeature_if_40
+### hasAnySystemUiStartupFeature_if_41
 - source_file: `app/src/main/java/tv/withaibuild/customiuizer/installers/SystemUiInstaller.java`
 - source_method: `hasAnySystemUiStartupFeature`
-- lines: 373-373
+- lines: 377-377
 - phase: `STARTUP_GATE`
 - parse_status: `PARSED`
 - branch_kind: `IF`
@@ -2105,10 +2132,10 @@ It does not judge INSTALLER_ONLY, GATE_ONLY, DEFAULT_MISMATCH, etc.
 - boolean_operators: ['AND', 'NOT']
 - raw_expression: `prefs.getStringAsInt("system_statusbar_clock_position", 1) > 1 && !prefs.getBoolean("system_statusbar_dualrows")`
 
-### hasAnySystemUiStartupFeature_if_41
+### hasAnySystemUiStartupFeature_if_42
 - source_file: `app/src/main/java/tv/withaibuild/customiuizer/installers/SystemUiInstaller.java`
 - source_method: `hasAnySystemUiStartupFeature`
-- lines: 374-374
+- lines: 378-378
 - phase: `STARTUP_GATE`
 - parse_status: `PARSED`
 - branch_kind: `IF`
@@ -2118,10 +2145,10 @@ It does not judge INSTALLER_ONLY, GATE_ONLY, DEFAULT_MISMATCH, etc.
 - default_kinds: ['IMPLICIT_PREFMAP_DEFAULT']
 - raw_expression: `prefs.getBoolean("system_statusbar_batterystyle")`
 
-### hasAnySystemUiStartupFeature_if_42
+### hasAnySystemUiStartupFeature_if_43
 - source_file: `app/src/main/java/tv/withaibuild/customiuizer/installers/SystemUiInstaller.java`
 - source_method: `hasAnySystemUiStartupFeature`
-- lines: 375-375
+- lines: 379-379
 - phase: `STARTUP_GATE`
 - parse_status: `PARSED`
 - branch_kind: `IF`
@@ -2132,10 +2159,10 @@ It does not judge INSTALLER_ONLY, GATE_ONLY, DEFAULT_MISMATCH, etc.
 - boolean_operators: ['OR']
 - raw_expression: `prefs.getBoolean("system_statusbar_batterytempandcurrent") || prefs.getBoolean("system_statusbar_showdevicetemperature")`
 
-### hasAnySystemUiStartupFeature_if_43
+### hasAnySystemUiStartupFeature_if_44
 - source_file: `app/src/main/java/tv/withaibuild/customiuizer/installers/SystemUiInstaller.java`
 - source_method: `hasAnySystemUiStartupFeature`
-- lines: 376-376
+- lines: 380-380
 - phase: `STARTUP_GATE`
 - parse_status: `PARSED`
 - branch_kind: `IF`
@@ -2146,10 +2173,10 @@ It does not judge INSTALLER_ONLY, GATE_ONLY, DEFAULT_MISMATCH, etc.
 - boolean_operators: ['AND']
 - raw_expression: `prefs.getBoolean("system_statusbar_topmargin") && prefs.getBoolean("system_statusbar_topmargin_unset_lockscreen")`
 
-### hasAnySystemUiStartupFeature_if_44
+### hasAnySystemUiStartupFeature_if_45
 - source_file: `app/src/main/java/tv/withaibuild/customiuizer/installers/SystemUiInstaller.java`
 - source_method: `hasAnySystemUiStartupFeature`
-- lines: 377-377
+- lines: 381-381
 - phase: `STARTUP_GATE`
 - parse_status: `PARSED`
 - branch_kind: `IF`
@@ -2159,10 +2186,10 @@ It does not judge INSTALLER_ONLY, GATE_ONLY, DEFAULT_MISMATCH, etc.
 - default_kinds: ['IMPLICIT_PREFMAP_DEFAULT']
 - raw_expression: `prefs.getBoolean("system_statusbar_horizmargin")`
 
-### hasAnySystemUiStartupFeature_if_45
+### hasAnySystemUiStartupFeature_if_46
 - source_file: `app/src/main/java/tv/withaibuild/customiuizer/installers/SystemUiInstaller.java`
 - source_method: `hasAnySystemUiStartupFeature`
-- lines: 378-378
+- lines: 382-382
 - phase: `STARTUP_GATE`
 - parse_status: `PARSED`
 - branch_kind: `IF`
@@ -2172,10 +2199,10 @@ It does not judge INSTALLER_ONLY, GATE_ONLY, DEFAULT_MISMATCH, etc.
 - default_kinds: ['IMPLICIT_PREFMAP_DEFAULT']
 - raw_expression: `prefs.getBoolean("system_showpct")`
 
-### hasAnySystemUiStartupFeature_if_46
+### hasAnySystemUiStartupFeature_if_47
 - source_file: `app/src/main/java/tv/withaibuild/customiuizer/installers/SystemUiInstaller.java`
 - source_method: `hasAnySystemUiStartupFeature`
-- lines: 379-379
+- lines: 383-383
 - phase: `STARTUP_GATE`
 - parse_status: `PARSED`
 - branch_kind: `IF`
@@ -2185,10 +2212,10 @@ It does not judge INSTALLER_ONLY, GATE_ONLY, DEFAULT_MISMATCH, etc.
 - default_kinds: ['IMPLICIT_PREFMAP_DEFAULT']
 - raw_expression: `prefs.getBoolean("system_hidelsstatusbar")`
 
-### hasAnySystemUiStartupFeature_if_47
+### hasAnySystemUiStartupFeature_if_48
 - source_file: `app/src/main/java/tv/withaibuild/customiuizer/installers/SystemUiInstaller.java`
 - source_method: `hasAnySystemUiStartupFeature`
-- lines: 380-380
+- lines: 384-384
 - phase: `STARTUP_GATE`
 - parse_status: `PARSED`
 - branch_kind: `IF`
@@ -2198,10 +2225,10 @@ It does not judge INSTALLER_ONLY, GATE_ONLY, DEFAULT_MISMATCH, etc.
 - default_kinds: ['IMPLICIT_PREFMAP_DEFAULT']
 - raw_expression: `prefs.getBoolean("system_hidelsclock")`
 
-### hasAnySystemUiStartupFeature_if_48
+### hasAnySystemUiStartupFeature_if_49
 - source_file: `app/src/main/java/tv/withaibuild/customiuizer/installers/SystemUiInstaller.java`
 - source_method: `hasAnySystemUiStartupFeature`
-- lines: 381-381
+- lines: 385-385
 - phase: `STARTUP_GATE`
 - parse_status: `PARSED`
 - branch_kind: `IF`
@@ -2211,10 +2238,10 @@ It does not judge INSTALLER_ONLY, GATE_ONLY, DEFAULT_MISMATCH, etc.
 - default_kinds: ['IMPLICIT_PREFMAP_DEFAULT']
 - raw_expression: `prefs.getBoolean("system_ls_force_systemfonts")`
 
-### hasAnySystemUiStartupFeature_if_49
+### hasAnySystemUiStartupFeature_if_50
 - source_file: `app/src/main/java/tv/withaibuild/customiuizer/installers/SystemUiInstaller.java`
 - source_method: `hasAnySystemUiStartupFeature`
-- lines: 382-382
+- lines: 386-386
 - phase: `STARTUP_GATE`
 - parse_status: `PARSED`
 - branch_kind: `IF`
@@ -2224,10 +2251,10 @@ It does not judge INSTALLER_ONLY, GATE_ONLY, DEFAULT_MISMATCH, etc.
 - default_kinds: ['IMPLICIT_PREFMAP_DEFAULT']
 - raw_expression: `prefs.getBoolean("system_hidelshint")`
 
-### hasAnySystemUiStartupFeature_if_50
+### hasAnySystemUiStartupFeature_if_51
 - source_file: `app/src/main/java/tv/withaibuild/customiuizer/installers/SystemUiInstaller.java`
 - source_method: `hasAnySystemUiStartupFeature`
-- lines: 383-383
+- lines: 387-387
 - phase: `STARTUP_GATE`
 - parse_status: `PARSED`
 - branch_kind: `IF`
@@ -2237,10 +2264,10 @@ It does not judge INSTALLER_ONLY, GATE_ONLY, DEFAULT_MISMATCH, etc.
 - default_kinds: ['IMPLICIT_PREFMAP_DEFAULT']
 - raw_expression: `prefs.getBoolean("system_allowdirectreply")`
 
-### hasAnySystemUiStartupFeature_if_51
+### hasAnySystemUiStartupFeature_if_52
 - source_file: `app/src/main/java/tv/withaibuild/customiuizer/installers/SystemUiInstaller.java`
 - source_method: `hasAnySystemUiStartupFeature`
-- lines: 384-384
+- lines: 388-388
 - phase: `STARTUP_GATE`
 - parse_status: `PARSED`
 - branch_kind: `IF`
@@ -2250,10 +2277,10 @@ It does not judge INSTALLER_ONLY, GATE_ONLY, DEFAULT_MISMATCH, etc.
 - default_kinds: ['IMPLICIT_PREFMAP_DEFAULT']
 - raw_expression: `prefs.getBoolean("system_allownotifonkeyguard")`
 
-### hasAnySystemUiStartupFeature_if_52
+### hasAnySystemUiStartupFeature_if_53
 - source_file: `app/src/main/java/tv/withaibuild/customiuizer/installers/SystemUiInstaller.java`
 - source_method: `hasAnySystemUiStartupFeature`
-- lines: 385-385
+- lines: 389-389
 - phase: `STARTUP_GATE`
 - parse_status: `PARSED`
 - branch_kind: `IF`
@@ -2263,10 +2290,10 @@ It does not judge INSTALLER_ONLY, GATE_ONLY, DEFAULT_MISMATCH, etc.
 - default_kinds: ['IMPLICIT_PREFMAP_DEFAULT']
 - raw_expression: `prefs.getBoolean("system_allownotiffloat")`
 
-### hasAnySystemUiStartupFeature_if_53
+### hasAnySystemUiStartupFeature_if_54
 - source_file: `app/src/main/java/tv/withaibuild/customiuizer/installers/SystemUiInstaller.java`
 - source_method: `hasAnySystemUiStartupFeature`
-- lines: 386-386
+- lines: 390-390
 - phase: `STARTUP_GATE`
 - parse_status: `PARSED`
 - branch_kind: `IF`
@@ -2276,10 +2303,10 @@ It does not judge INSTALLER_ONLY, GATE_ONLY, DEFAULT_MISMATCH, etc.
 - default_kinds: ['IMPLICIT_PREFMAP_DEFAULT']
 - raw_expression: `prefs.getBoolean("system_hideqs")`
 
-### hasAnySystemUiStartupFeature_if_54
+### hasAnySystemUiStartupFeature_if_55
 - source_file: `app/src/main/java/tv/withaibuild/customiuizer/installers/SystemUiInstaller.java`
 - source_method: `hasAnySystemUiStartupFeature`
-- lines: 387-387
+- lines: 391-391
 - phase: `STARTUP_GATE`
 - parse_status: `PARSED`
 - branch_kind: `IF`
@@ -2289,10 +2316,10 @@ It does not judge INSTALLER_ONLY, GATE_ONLY, DEFAULT_MISMATCH, etc.
 - default_kinds: ['IMPLICIT_PREFMAP_DEFAULT']
 - raw_expression: `prefs.getBoolean("system_lsalarm")`
 
-### hasAnySystemUiStartupFeature_if_55
+### hasAnySystemUiStartupFeature_if_56
 - source_file: `app/src/main/java/tv/withaibuild/customiuizer/installers/SystemUiInstaller.java`
 - source_method: `hasAnySystemUiStartupFeature`
-- lines: 388-388
+- lines: 392-392
 - phase: `STARTUP_GATE`
 - parse_status: `PARSED`
 - branch_kind: `IF`
@@ -2302,10 +2329,10 @@ It does not judge INSTALLER_ONLY, GATE_ONLY, DEFAULT_MISMATCH, etc.
 - default_kinds: ['IMPLICIT_PREFMAP_DEFAULT']
 - raw_expression: `prefs.getBoolean("system_statusbarcontrols")`
 
-### hasAnySystemUiStartupFeature_if_56
+### hasAnySystemUiStartupFeature_if_57
 - source_file: `app/src/main/java/tv/withaibuild/customiuizer/installers/SystemUiInstaller.java`
 - source_method: `hasAnySystemUiStartupFeature`
-- lines: 389-389
+- lines: 393-393
 - phase: `STARTUP_GATE`
 - parse_status: `PARSED`
 - branch_kind: `IF`
@@ -2315,10 +2342,10 @@ It does not judge INSTALLER_ONLY, GATE_ONLY, DEFAULT_MISMATCH, etc.
 - default_kinds: ['IMPLICIT_PREFMAP_DEFAULT']
 - raw_expression: `prefs.getBoolean("system_nonetspeedseparator")`
 
-### hasAnySystemUiStartupFeature_if_57
+### hasAnySystemUiStartupFeature_if_58
 - source_file: `app/src/main/java/tv/withaibuild/customiuizer/installers/SystemUiInstaller.java`
 - source_method: `hasAnySystemUiStartupFeature`
-- lines: 390-390
+- lines: 394-394
 - phase: `STARTUP_GATE`
 - parse_status: `PARSED`
 - branch_kind: `IF`
@@ -2328,10 +2355,10 @@ It does not judge INSTALLER_ONLY, GATE_ONLY, DEFAULT_MISMATCH, etc.
 - default_kinds: ['IMPLICIT_PREFMAP_DEFAULT']
 - raw_expression: `prefs.getBoolean("system_statusbaricons_clock")`
 
-### hasAnySystemUiStartupFeature_if_58
+### hasAnySystemUiStartupFeature_if_59
 - source_file: `app/src/main/java/tv/withaibuild/customiuizer/installers/SystemUiInstaller.java`
 - source_method: `hasAnySystemUiStartupFeature`
-- lines: 391-391
+- lines: 395-395
 - phase: `STARTUP_GATE`
 - parse_status: `PARSED`
 - branch_kind: `IF`
@@ -2342,25 +2369,25 @@ It does not judge INSTALLER_ONLY, GATE_ONLY, DEFAULT_MISMATCH, etc.
 - boolean_operators: ['OR', 'NOT']
 - raw_expression: `prefs.getBoolean("system_detailednetspeed_fakedualrow") || (!prefs.getBoolean("system_detailednetspeed") && (prefs.getBoolean("system_detailednetspeed_secunit") || prefs.getBoolean("system_detailednetspeed_low") ) )`
 
-### hasAnySystemUiStartupFeature_if_59
-- source_file: `app/src/main/java/tv/withaibuild/customiuizer/installers/SystemUiInstaller.java`
-- source_method: `hasAnySystemUiStartupFeature`
-- lines: 392-392
-- phase: `STARTUP_GATE`
-- parse_status: `PARSED`
-- branch_kind: `IF`
-- preference_keys: ['system_netspeed_fontsize', 'system_netspeed_verticaloffset', 'system_detailednetspeed', 'system_detailednetspeed_fakedualrow', 'system_netspeed_bold', 'system_netspeed_leftmargin', 'system_netspeed_fixedcontent_width', 'system_netspeed_rightmargin', 'system_detailednetspeed_align']
-- accessors: ['getInt', 'getInt', 'getBoolean', 'getBoolean', 'getBoolean', 'getInt', 'getInt', 'getInt', 'getStringAsInt']
-- default_values: [13, 8, False, False, False, 0, 10, 0, 1]
-- default_kinds: ['EXPLICIT', 'EXPLICIT', 'IMPLICIT_PREFMAP_DEFAULT', 'IMPLICIT_PREFMAP_DEFAULT', 'IMPLICIT_PREFMAP_DEFAULT', 'EXPLICIT', 'EXPLICIT', 'EXPLICIT', 'EXPLICIT']
-- comparators: ['>', '!=', '>', '>', '>', '>']
-- boolean_operators: ['OR', 'OR', 'OR', 'OR', 'OR', 'OR', 'OR', 'OR']
-- raw_expression: `prefs.getInt("system_netspeed_fontsize", 13) > 13 || prefs.getInt("system_netspeed_verticaloffset", 8) != 8 || prefs.getBoolean("system_detailednetspeed") || prefs.getBoolean("system_detailednetspeed_fakedualrow") || prefs.getBoolean("system_netspeed_bold") || prefs.getInt("system_netspeed_leftmargin", 0) > 0 || prefs.getInt("system_netspeed_fixedcontent_width", 10) > 10 || prefs.getInt("system_netspeed_rightmargin", 0) > 0 || prefs.getStringAsInt("system_detailednetspeed_align", 1) > 1`
-
 ### hasAnySystemUiStartupFeature_if_60
 - source_file: `app/src/main/java/tv/withaibuild/customiuizer/installers/SystemUiInstaller.java`
 - source_method: `hasAnySystemUiStartupFeature`
-- lines: 393-393
+- lines: 396-396
+- phase: `STARTUP_GATE`
+- parse_status: `PARSED`
+- branch_kind: `IF`
+- preference_keys: ['system_netspeed_fontsize', 'system_netspeed_verticaloffset', 'system_detailednetspeed', 'system_detailednetspeed_fakedualrow', 'system_netspeed_bold', 'system_netspeed_use_clock_style', 'system_netspeed_leftmargin', 'system_netspeed_fixedcontent_width', 'system_netspeed_rightmargin', 'system_detailednetspeed_align']
+- accessors: ['getInt', 'getInt', 'getBoolean', 'getBoolean', 'getBoolean', 'getBoolean', 'getInt', 'getInt', 'getInt', 'getStringAsInt']
+- default_values: [13, 8, False, False, False, False, 0, 10, 0, 1]
+- default_kinds: ['EXPLICIT', 'EXPLICIT', 'IMPLICIT_PREFMAP_DEFAULT', 'IMPLICIT_PREFMAP_DEFAULT', 'IMPLICIT_PREFMAP_DEFAULT', 'IMPLICIT_PREFMAP_DEFAULT', 'EXPLICIT', 'EXPLICIT', 'EXPLICIT', 'EXPLICIT']
+- comparators: ['>', '!=', '>', '>', '>', '>']
+- boolean_operators: ['OR', 'OR', 'OR', 'OR', 'OR', 'OR', 'OR', 'OR', 'OR']
+- raw_expression: `prefs.getInt("system_netspeed_fontsize", 13) > 13 || prefs.getInt("system_netspeed_verticaloffset", 8) != 8 || prefs.getBoolean("system_detailednetspeed") || prefs.getBoolean("system_detailednetspeed_fakedualrow") || prefs.getBoolean("system_netspeed_bold") || prefs.getBoolean("system_netspeed_use_clock_style") || prefs.getInt("system_netspeed_leftmargin", 0) > 0 || prefs.getInt("system_netspeed_fixedcontent_width", 10) > 10 || prefs.getInt("system_netspeed_rightmargin", 0) > 0 || prefs.getStringAsInt("system_detailednetspeed_align", 1) > 1`
+
+### hasAnySystemUiStartupFeature_if_61
+- source_file: `app/src/main/java/tv/withaibuild/customiuizer/installers/SystemUiInstaller.java`
+- source_method: `hasAnySystemUiStartupFeature`
+- lines: 397-397
 - phase: `STARTUP_GATE`
 - parse_status: `PARSED`
 - branch_kind: `IF`
@@ -2370,10 +2397,10 @@ It does not judge INSTALLER_ONLY, GATE_ONLY, DEFAULT_MISMATCH, etc.
 - default_kinds: ['IMPLICIT_PREFMAP_DEFAULT']
 - raw_expression: `prefs.getBoolean("system_taptounlock")`
 
-### hasAnySystemUiStartupFeature_if_61
+### hasAnySystemUiStartupFeature_if_62
 - source_file: `app/src/main/java/tv/withaibuild/customiuizer/installers/SystemUiInstaller.java`
 - source_method: `hasAnySystemUiStartupFeature`
-- lines: 394-394
+- lines: 398-398
 - phase: `STARTUP_GATE`
 - parse_status: `PARSED`
 - branch_kind: `IF`
@@ -2383,10 +2410,10 @@ It does not judge INSTALLER_ONLY, GATE_ONLY, DEFAULT_MISMATCH, etc.
 - default_kinds: ['IMPLICIT_PREFMAP_DEFAULT']
 - raw_expression: `prefs.getBoolean("system_nosos")`
 
-### hasAnySystemUiStartupFeature_if_62
+### hasAnySystemUiStartupFeature_if_63
 - source_file: `app/src/main/java/tv/withaibuild/customiuizer/installers/SystemUiInstaller.java`
 - source_method: `hasAnySystemUiStartupFeature`
-- lines: 395-395
+- lines: 399-399
 - phase: `STARTUP_GATE`
 - parse_status: `PARSED`
 - branch_kind: `IF`
@@ -2396,10 +2423,10 @@ It does not judge INSTALLER_ONLY, GATE_ONLY, DEFAULT_MISMATCH, etc.
 - default_kinds: ['IMPLICIT_PREFMAP_DEFAULT']
 - raw_expression: `prefs.getBoolean("system_morenotif")`
 
-### hasAnySystemUiStartupFeature_if_63
+### hasAnySystemUiStartupFeature_if_64
 - source_file: `app/src/main/java/tv/withaibuild/customiuizer/installers/SystemUiInstaller.java`
 - source_method: `hasAnySystemUiStartupFeature`
-- lines: 396-396
+- lines: 400-400
 - phase: `STARTUP_GATE`
 - parse_status: `PARSED`
 - branch_kind: `IF`
@@ -2409,10 +2436,10 @@ It does not judge INSTALLER_ONLY, GATE_ONLY, DEFAULT_MISMATCH, etc.
 - default_kinds: ['IMPLICIT_PREFMAP_DEFAULT']
 - raw_expression: `prefs.getBoolean("system_charginginfo")`
 
-### hasAnySystemUiStartupFeature_if_64
+### hasAnySystemUiStartupFeature_if_65
 - source_file: `app/src/main/java/tv/withaibuild/customiuizer/installers/SystemUiInstaller.java`
 - source_method: `hasAnySystemUiStartupFeature`
-- lines: 397-397
+- lines: 401-401
 - phase: `STARTUP_GATE`
 - parse_status: `PARSED`
 - branch_kind: `IF`
@@ -2422,10 +2449,10 @@ It does not judge INSTALLER_ONLY, GATE_ONLY, DEFAULT_MISMATCH, etc.
 - default_kinds: ['IMPLICIT_PREFMAP_DEFAULT']
 - raw_expression: `prefs.getBoolean("system_secureqs")`
 
-### hasAnySystemUiStartupFeature_if_65
+### hasAnySystemUiStartupFeature_if_66
 - source_file: `app/src/main/java/tv/withaibuild/customiuizer/installers/SystemUiInstaller.java`
 - source_method: `hasAnySystemUiStartupFeature`
-- lines: 398-398
+- lines: 402-402
 - phase: `STARTUP_GATE`
 - parse_status: `PARSED`
 - branch_kind: `IF`
@@ -2435,10 +2462,10 @@ It does not judge INSTALLER_ONLY, GATE_ONLY, DEFAULT_MISMATCH, etc.
 - default_kinds: ['IMPLICIT_PREFMAP_DEFAULT']
 - raw_expression: `prefs.getBoolean("system_mutevisiblenotif")`
 
-### hasAnySystemUiStartupFeature_if_66
+### hasAnySystemUiStartupFeature_if_67
 - source_file: `app/src/main/java/tv/withaibuild/customiuizer/installers/SystemUiInstaller.java`
 - source_method: `hasAnySystemUiStartupFeature`
-- lines: 399-399
+- lines: 403-403
 - phase: `STARTUP_GATE`
 - parse_status: `PARSED`
 - branch_kind: `IF`
@@ -2448,10 +2475,10 @@ It does not judge INSTALLER_ONLY, GATE_ONLY, DEFAULT_MISMATCH, etc.
 - default_kinds: ['IMPLICIT_PREFMAP_DEFAULT']
 - raw_expression: `prefs.getBoolean("system_statusbaricons_battery1")`
 
-### hasAnySystemUiStartupFeature_if_67
+### hasAnySystemUiStartupFeature_if_68
 - source_file: `app/src/main/java/tv/withaibuild/customiuizer/installers/SystemUiInstaller.java`
 - source_method: `hasAnySystemUiStartupFeature`
-- lines: 400-400
+- lines: 404-404
 - phase: `STARTUP_GATE`
 - parse_status: `PARSED`
 - branch_kind: `IF`
@@ -2462,10 +2489,10 @@ It does not judge INSTALLER_ONLY, GATE_ONLY, DEFAULT_MISMATCH, etc.
 - boolean_operators: ['OR', 'OR']
 - raw_expression: `prefs.getBoolean("system_statusbaricons_battery3") || prefs.getBoolean("system_statusbaricons_battery4") || prefs.getBoolean("system_statusbaricons_battery2")`
 
-### hasAnySystemUiStartupFeature_if_68
+### hasAnySystemUiStartupFeature_if_69
 - source_file: `app/src/main/java/tv/withaibuild/customiuizer/installers/SystemUiInstaller.java`
 - source_method: `hasAnySystemUiStartupFeature`
-- lines: 401-401
+- lines: 405-405
 - phase: `STARTUP_GATE`
 - parse_status: `PARSED`
 - branch_kind: `IF`
@@ -2476,10 +2503,10 @@ It does not judge INSTALLER_ONLY, GATE_ONLY, DEFAULT_MISMATCH, etc.
 - comparators: ['>']
 - raw_expression: `prefs.getStringAsInt("system_statusbaricons_wifistandard", 1) > 1`
 
-### hasAnySystemUiStartupFeature_if_69
+### hasAnySystemUiStartupFeature_if_70
 - source_file: `app/src/main/java/tv/withaibuild/customiuizer/installers/SystemUiInstaller.java`
 - source_method: `hasAnySystemUiStartupFeature`
-- lines: 402-402
+- lines: 406-406
 - phase: `STARTUP_GATE`
 - parse_status: `PARSED`
 - branch_kind: `IF`
@@ -2490,10 +2517,10 @@ It does not judge INSTALLER_ONLY, GATE_ONLY, DEFAULT_MISMATCH, etc.
 - boolean_operators: ['OR', 'OR', 'OR', 'OR', 'OR']
 - raw_expression: `prefs.getBoolean("system_statusbaricons_signal") || prefs.getBoolean("system_statusbaricons_sim1") || prefs.getBoolean("system_statusbaricons_sim2") || prefs.getBoolean("system_statusbaricons_sim_nodata") || prefs.getBoolean("system_statusbaricons_roaming") || prefs.getBoolean("system_statusbaricons_volte")`
 
-### hasAnySystemUiStartupFeature_if_70
+### hasAnySystemUiStartupFeature_if_71
 - source_file: `app/src/main/java/tv/withaibuild/customiuizer/installers/SystemUiInstaller.java`
 - source_method: `hasAnySystemUiStartupFeature`
-- lines: 403-403
+- lines: 407-407
 - phase: `STARTUP_GATE`
 - parse_status: `PARSED`
 - branch_kind: `IF`
@@ -2503,10 +2530,10 @@ It does not judge INSTALLER_ONLY, GATE_ONLY, DEFAULT_MISMATCH, etc.
 - default_kinds: ['IMPLICIT_PREFMAP_DEFAULT']
 - raw_expression: `prefs.getBoolean("system_statusbaricons_vowifi")`
 
-### hasAnySystemUiStartupFeature_if_71
+### hasAnySystemUiStartupFeature_if_72
 - source_file: `app/src/main/java/tv/withaibuild/customiuizer/installers/SystemUiInstaller.java`
 - source_method: `hasAnySystemUiStartupFeature`
-- lines: 404-404
+- lines: 408-408
 - phase: `STARTUP_GATE`
 - parse_status: `PARSED`
 - branch_kind: `IF`
@@ -2518,10 +2545,10 @@ It does not judge INSTALLER_ONLY, GATE_ONLY, DEFAULT_MISMATCH, etc.
 - boolean_operators: ['AND', 'NOT']
 - raw_expression: `!prefs.getBoolean("system_statusbaricons_alarm") && prefs.getInt("system_statusbaricons_alarmn", 0) > 0`
 
-### hasAnySystemUiStartupFeature_if_72
+### hasAnySystemUiStartupFeature_if_73
 - source_file: `app/src/main/java/tv/withaibuild/customiuizer/installers/SystemUiInstaller.java`
 - source_method: `hasAnySystemUiStartupFeature`
-- lines: 405-405
+- lines: 409-409
 - phase: `STARTUP_GATE`
 - parse_status: `PARSED`
 - branch_kind: `IF`
@@ -2533,10 +2560,10 @@ It does not judge INSTALLER_ONLY, GATE_ONLY, DEFAULT_MISMATCH, etc.
 - boolean_operators: ['OR', 'OR', 'NOT', 'NOT', 'NOT']
 - raw_expression: `!prefs.getString("system_shortcut_app", "").equals("") || !prefs.getString("system_calendar_app", "").equals("") || !prefs.getString("system_clock_app", "").equals("")`
 
-### hasAnySystemUiStartupFeature_if_73
+### hasAnySystemUiStartupFeature_if_74
 - source_file: `app/src/main/java/tv/withaibuild/customiuizer/installers/SystemUiInstaller.java`
 - source_method: `hasAnySystemUiStartupFeature`
-- lines: 406-406
+- lines: 410-410
 - phase: `STARTUP_GATE`
 - parse_status: `PARSED`
 - branch_kind: `IF`
@@ -2547,10 +2574,10 @@ It does not judge INSTALLER_ONLY, GATE_ONLY, DEFAULT_MISMATCH, etc.
 - comparators: ['>']
 - raw_expression: `prefs.getStringAsInt("system_qshaptics", 1) > 1`
 
-### hasAnySystemUiStartupFeature_if_74
+### hasAnySystemUiStartupFeature_if_75
 - source_file: `app/src/main/java/tv/withaibuild/customiuizer/installers/SystemUiInstaller.java`
 - source_method: `hasAnySystemUiStartupFeature`
-- lines: 407-407
+- lines: 411-411
 - phase: `STARTUP_GATE`
 - parse_status: `PARSED`
 - branch_kind: `IF`
@@ -2560,10 +2587,10 @@ It does not judge INSTALLER_ONLY, GATE_ONLY, DEFAULT_MISMATCH, etc.
 - default_kinds: ['IMPLICIT_PREFMAP_DEFAULT']
 - raw_expression: `prefs.getBoolean("system_qs_hideoperator")`
 
-### hasAnySystemUiStartupFeature_if_75
+### hasAnySystemUiStartupFeature_if_76
 - source_file: `app/src/main/java/tv/withaibuild/customiuizer/installers/SystemUiInstaller.java`
 - source_method: `hasAnySystemUiStartupFeature`
-- lines: 408-408
+- lines: 412-412
 - phase: `STARTUP_GATE`
 - parse_status: `PARSED`
 - branch_kind: `IF`
@@ -2573,10 +2600,10 @@ It does not judge INSTALLER_ONLY, GATE_ONLY, DEFAULT_MISMATCH, etc.
 - default_kinds: ['IMPLICIT_PREFMAP_DEFAULT']
 - raw_expression: `prefs.getBoolean("system_cc_hideoperator_delimiter")`
 
-### hasAnySystemUiStartupFeature_if_76
+### hasAnySystemUiStartupFeature_if_77
 - source_file: `app/src/main/java/tv/withaibuild/customiuizer/installers/SystemUiInstaller.java`
 - source_method: `hasAnySystemUiStartupFeature`
-- lines: 409-409
+- lines: 413-413
 - phase: `STARTUP_GATE`
 - parse_status: `PARSED`
 - branch_kind: `IF`
@@ -2587,10 +2614,10 @@ It does not judge INSTALLER_ONLY, GATE_ONLY, DEFAULT_MISMATCH, etc.
 - boolean_operators: ['OR']
 - raw_expression: `prefs.getBoolean("system_cc_show_stepcount") || prefs.getBoolean("system_drawer_show_stepcount")`
 
-### hasAnySystemUiStartupFeature_if_77
+### hasAnySystemUiStartupFeature_if_78
 - source_file: `app/src/main/java/tv/withaibuild/customiuizer/installers/SystemUiInstaller.java`
 - source_method: `hasAnySystemUiStartupFeature`
-- lines: 410-410
+- lines: 414-414
 - phase: `STARTUP_GATE`
 - parse_status: `PARSED`
 - branch_kind: `IF`
@@ -2600,10 +2627,10 @@ It does not judge INSTALLER_ONLY, GATE_ONLY, DEFAULT_MISMATCH, etc.
 - default_kinds: ['IMPLICIT_PREFMAP_DEFAULT']
 - raw_expression: `prefs.getBoolean("system_cc_disable_bluetooth_restrict")`
 
-### hasAnySystemUiStartupFeature_if_78
+### hasAnySystemUiStartupFeature_if_79
 - source_file: `app/src/main/java/tv/withaibuild/customiuizer/installers/SystemUiInstaller.java`
 - source_method: `hasAnySystemUiStartupFeature`
-- lines: 411-411
+- lines: 415-415
 - phase: `STARTUP_GATE`
 - parse_status: `PARSED`
 - branch_kind: `IF`
@@ -2613,10 +2640,10 @@ It does not judge INSTALLER_ONLY, GATE_ONLY, DEFAULT_MISMATCH, etc.
 - default_kinds: ['IMPLICIT_PREFMAP_DEFAULT']
 - raw_expression: `prefs.getBoolean("system_cc_collapse_after_clicked")`
 
-### hasAnySystemUiStartupFeature_if_79
+### hasAnySystemUiStartupFeature_if_80
 - source_file: `app/src/main/java/tv/withaibuild/customiuizer/installers/SystemUiInstaller.java`
 - source_method: `hasAnySystemUiStartupFeature`
-- lines: 412-412
+- lines: 416-416
 - phase: `STARTUP_GATE`
 - parse_status: `PARSED`
 - branch_kind: `IF`
@@ -2626,10 +2653,10 @@ It does not judge INSTALLER_ONLY, GATE_ONLY, DEFAULT_MISMATCH, etc.
 - default_kinds: ['IMPLICIT_PREFMAP_DEFAULT']
 - raw_expression: `prefs.getBoolean("system_cc_switch_qsandnotification")`
 
-### hasAnySystemUiStartupFeature_if_80
+### hasAnySystemUiStartupFeature_if_81
 - source_file: `app/src/main/java/tv/withaibuild/customiuizer/installers/SystemUiInstaller.java`
 - source_method: `hasAnySystemUiStartupFeature`
-- lines: 413-413
+- lines: 417-417
 - phase: `STARTUP_GATE`
 - parse_status: `PARSED`
 - branch_kind: `IF`
@@ -2640,10 +2667,10 @@ It does not judge INSTALLER_ONLY, GATE_ONLY, DEFAULT_MISMATCH, etc.
 - comparators: ['>']
 - raw_expression: `prefs.getStringAsInt("system_expandnotifs", 1) > 1`
 
-### hasAnySystemUiStartupFeature_if_81
+### hasAnySystemUiStartupFeature_if_82
 - source_file: `app/src/main/java/tv/withaibuild/customiuizer/installers/SystemUiInstaller.java`
 - source_method: `hasAnySystemUiStartupFeature`
-- lines: 414-414
+- lines: 418-418
 - phase: `STARTUP_GATE`
 - parse_status: `PARSED`
 - branch_kind: `IF`
@@ -2654,10 +2681,10 @@ It does not judge INSTALLER_ONLY, GATE_ONLY, DEFAULT_MISMATCH, etc.
 - comparators: ['>']
 - raw_expression: `prefs.getStringAsInt("system_inactivebrightness", 1) > 1`
 
-### hasAnySystemUiStartupFeature_if_82
+### hasAnySystemUiStartupFeature_if_83
 - source_file: `app/src/main/java/tv/withaibuild/customiuizer/installers/SystemUiInstaller.java`
 - source_method: `hasAnySystemUiStartupFeature`
-- lines: 415-415
+- lines: 419-419
 - phase: `STARTUP_GATE`
 - parse_status: `PARSED`
 - branch_kind: `IF`
@@ -2669,10 +2696,10 @@ It does not judge INSTALLER_ONLY, GATE_ONLY, DEFAULT_MISMATCH, etc.
 - boolean_operators: ['OR', 'OR']
 - raw_expression: `prefs.getStringAsInt("system_mobiletypeicon", 1) > 1 || prefs.getBoolean("system_networkindicator_mobile") || prefs.getBoolean("system_statusbar_mobiletype_show_wificonnected")`
 
-### hasAnySystemUiStartupFeature_if_83
+### hasAnySystemUiStartupFeature_if_84
 - source_file: `app/src/main/java/tv/withaibuild/customiuizer/installers/SystemUiInstaller.java`
 - source_method: `hasAnySystemUiStartupFeature`
-- lines: 416-416
+- lines: 420-420
 - phase: `STARTUP_GATE`
 - parse_status: `PARSED`
 - branch_kind: `IF`
@@ -2683,10 +2710,10 @@ It does not judge INSTALLER_ONLY, GATE_ONLY, DEFAULT_MISMATCH, etc.
 - comparators: ['>']
 - raw_expression: `prefs.getStringAsInt("system_statusbaricons_bluetooth", 1) > 1`
 
-### hasAnySystemUiStartupFeature_if_84
+### hasAnySystemUiStartupFeature_if_85
 - source_file: `app/src/main/java/tv/withaibuild/customiuizer/installers/SystemUiInstaller.java`
 - source_method: `hasAnySystemUiStartupFeature`
-- lines: 417-417
+- lines: 421-421
 - phase: `STARTUP_GATE`
 - parse_status: `PARSED`
 - branch_kind: `IF`
@@ -2696,23 +2723,23 @@ It does not judge INSTALLER_ONLY, GATE_ONLY, DEFAULT_MISMATCH, etc.
 - default_kinds: ['IMPLICIT_PREFMAP_DEFAULT']
 - raw_expression: `prefs.getBoolean("system_epm")`
 
-### hasAnySystemUiStartupFeature_if_85
-- source_file: `app/src/main/java/tv/withaibuild/customiuizer/installers/SystemUiInstaller.java`
-- source_method: `hasAnySystemUiStartupFeature`
-- lines: 418-418
-- phase: `STARTUP_GATE`
-- parse_status: `PARSED`
-- branch_kind: `IF`
-- preference_keys: ['system_statusbaricons_wifi', 'system_statusbaricons_dualwifi', 'system_statusbaricons_alarm', 'system_statusbaricons_profile', 'system_statusbaricons_sound', 'system_statusbaricons_dnd', 'system_statusbaricons_secondspace', 'system_statusbaricons_headset', 'system_statusbaricons_nfc', 'system_statusbaricons_vpn', 'system_statusbaricons_airplane', 'system_statusbaricons_hotspot', 'system_statusbaricons_nosims', 'system_statusbaricons_gps', 'system_statusbaricons_btbattery', 'system_statusbaricons_ble_unlock', 'system_statusbaricons_volte']
-- accessors: ['getBoolean', 'getBoolean', 'getBoolean', 'getBoolean', 'getBoolean', 'getBoolean', 'getBoolean', 'getBoolean', 'getBoolean', 'getBoolean', 'getBoolean', 'getBoolean', 'getBoolean', 'getBoolean', 'getBoolean', 'getBoolean', 'getBoolean']
-- default_values: [False, False, False, False, False, False, False, False, False, False, False, False, False, False, False, False, False]
-- default_kinds: ['IMPLICIT_PREFMAP_DEFAULT', 'IMPLICIT_PREFMAP_DEFAULT', 'IMPLICIT_PREFMAP_DEFAULT', 'IMPLICIT_PREFMAP_DEFAULT', 'IMPLICIT_PREFMAP_DEFAULT', 'IMPLICIT_PREFMAP_DEFAULT', 'IMPLICIT_PREFMAP_DEFAULT', 'IMPLICIT_PREFMAP_DEFAULT', 'IMPLICIT_PREFMAP_DEFAULT', 'IMPLICIT_PREFMAP_DEFAULT', 'IMPLICIT_PREFMAP_DEFAULT', 'IMPLICIT_PREFMAP_DEFAULT', 'IMPLICIT_PREFMAP_DEFAULT', 'IMPLICIT_PREFMAP_DEFAULT', 'IMPLICIT_PREFMAP_DEFAULT', 'IMPLICIT_PREFMAP_DEFAULT', 'IMPLICIT_PREFMAP_DEFAULT']
-- raw_expression: `(prefs.getBoolean("system_statusbaricons_wifi") || prefs.getBoolean("system_statusbaricons_dualwifi") || prefs.getBoolean("system_statusbaricons_alarm") || prefs.getBoolean("system_statusbaricons_profile") || prefs.getBoolean("system_statusbaricons_sound") || prefs.getBoolean("system_statusbaricons_dnd") || prefs.getBoolean("system_statusbaricons_secondspace") || prefs.getBoolean("system_statusbaricons_headset") || prefs.getBoolean("system_statusbaricons_nfc") || prefs.getBoolean("system_statusbaricons_vpn") || prefs.getBoolean("system_statusbaricons_airplane") || prefs.getBoolean("system_statusbaricons_hotspot") || prefs.getBoolean("system_statusbaricons_nosims") || prefs.getBoolean("system_statusbaricons_gps") || prefs.getBoolean("system_statusbaricons_btbattery") || prefs.getBoolean("system_statusbaricons_ble_unlock") || prefs.getBoolean("system_statusbaricons_volte"))`
-
 ### hasAnySystemUiStartupFeature_if_86
 - source_file: `app/src/main/java/tv/withaibuild/customiuizer/installers/SystemUiInstaller.java`
 - source_method: `hasAnySystemUiStartupFeature`
-- lines: 419-419
+- lines: 422-422
+- phase: `STARTUP_GATE`
+- parse_status: `PARSED`
+- branch_kind: `IF`
+- preference_keys: ['system_statusbaricons_wifi', 'system_statusbaricons_dualwifi', 'system_statusbaricons_alarm', 'system_statusbaricons_profile', 'system_statusbaricons_sound', 'system_statusbaricons_dnd', 'system_statusbaricons_secondspace', 'system_statusbaricons_headset', 'system_statusbaricons_wireless_headset', 'system_statusbaricons_nfc', 'system_statusbaricons_vpn', 'system_statusbaricons_airplane', 'system_statusbaricons_hotspot', 'system_statusbaricons_nosims', 'system_statusbaricons_gps', 'system_statusbaricons_btbattery', 'system_statusbaricons_ble_unlock', 'system_statusbaricons_volte']
+- accessors: ['getBoolean', 'getBoolean', 'getBoolean', 'getBoolean', 'getBoolean', 'getBoolean', 'getBoolean', 'getBoolean', 'getBoolean', 'getBoolean', 'getBoolean', 'getBoolean', 'getBoolean', 'getBoolean', 'getBoolean', 'getBoolean', 'getBoolean', 'getBoolean']
+- default_values: [False, False, False, False, False, False, False, False, False, False, False, False, False, False, False, False, False, False]
+- default_kinds: ['IMPLICIT_PREFMAP_DEFAULT', 'IMPLICIT_PREFMAP_DEFAULT', 'IMPLICIT_PREFMAP_DEFAULT', 'IMPLICIT_PREFMAP_DEFAULT', 'IMPLICIT_PREFMAP_DEFAULT', 'IMPLICIT_PREFMAP_DEFAULT', 'IMPLICIT_PREFMAP_DEFAULT', 'IMPLICIT_PREFMAP_DEFAULT', 'IMPLICIT_PREFMAP_DEFAULT', 'IMPLICIT_PREFMAP_DEFAULT', 'IMPLICIT_PREFMAP_DEFAULT', 'IMPLICIT_PREFMAP_DEFAULT', 'IMPLICIT_PREFMAP_DEFAULT', 'IMPLICIT_PREFMAP_DEFAULT', 'IMPLICIT_PREFMAP_DEFAULT', 'IMPLICIT_PREFMAP_DEFAULT', 'IMPLICIT_PREFMAP_DEFAULT', 'IMPLICIT_PREFMAP_DEFAULT']
+- raw_expression: `(prefs.getBoolean("system_statusbaricons_wifi") || prefs.getBoolean("system_statusbaricons_dualwifi") || prefs.getBoolean("system_statusbaricons_alarm") || prefs.getBoolean("system_statusbaricons_profile") || prefs.getBoolean("system_statusbaricons_sound") || prefs.getBoolean("system_statusbaricons_dnd") || prefs.getBoolean("system_statusbaricons_secondspace") || prefs.getBoolean("system_statusbaricons_headset") || prefs.getBoolean("system_statusbaricons_wireless_headset") || prefs.getBoolean("system_statusbaricons_nfc") || prefs.getBoolean("system_statusbaricons_vpn") || prefs.getBoolean("system_statusbaricons_airplane") || prefs.getBoolean("system_statusbaricons_hotspot") || prefs.getBoolean("system_statusbaricons_nosims") || prefs.getBoolean("system_statusbaricons_gps") || prefs.getBoolean("system_statusbaricons_btbattery") || prefs.getBoolean("system_statusbaricons_ble_unlock") || prefs.getBoolean("system_statusbaricons_volte"))`
+
+### hasAnySystemUiStartupFeature_if_87
+- source_file: `app/src/main/java/tv/withaibuild/customiuizer/installers/SystemUiInstaller.java`
+- source_method: `hasAnySystemUiStartupFeature`
+- lines: 423-423
 - phase: `STARTUP_GATE`
 - parse_status: `PARSED`
 - branch_kind: `IF`
@@ -2723,10 +2750,10 @@ It does not judge INSTALLER_ONLY, GATE_ONLY, DEFAULT_MISMATCH, etc.
 - boolean_operators: ['OR', 'OR', 'OR']
 - raw_expression: `prefs.getBoolean("system_statusbaricons_privacy") || prefs.getBoolean("system_statusbaricons_mute") || prefs.getBoolean("system_statusbaricons_speaker") || prefs.getBoolean("system_statusbaricons_record")`
 
-### hasAnySystemUiStartupFeature_if_87
+### hasAnySystemUiStartupFeature_if_88
 - source_file: `app/src/main/java/tv/withaibuild/customiuizer/installers/SystemUiInstaller.java`
 - source_method: `hasAnySystemUiStartupFeature`
-- lines: 420-420
+- lines: 424-424
 - phase: `STARTUP_GATE`
 - parse_status: `PARSED`
 - branch_kind: `IF`
@@ -2737,10 +2764,10 @@ It does not judge INSTALLER_ONLY, GATE_ONLY, DEFAULT_MISMATCH, etc.
 - comparators: ['>']
 - raw_expression: `prefs.getInt("system_messagingstylelines", 0) > 0`
 
-### hasAnySystemUiStartupFeature_if_88
+### hasAnySystemUiStartupFeature_if_89
 - source_file: `app/src/main/java/tv/withaibuild/customiuizer/installers/SystemUiInstaller.java`
 - source_method: `hasAnySystemUiStartupFeature`
-- lines: 421-421
+- lines: 425-425
 - phase: `STARTUP_GATE`
 - parse_status: `PARSED`
 - branch_kind: `IF`
@@ -2750,10 +2777,10 @@ It does not judge INSTALLER_ONLY, GATE_ONLY, DEFAULT_MISMATCH, etc.
 - default_kinds: ['IMPLICIT_PREFMAP_DEFAULT']
 - raw_expression: `prefs.getBoolean("system_betterpopups_allowfloat")`
 
-### hasAnySystemUiStartupFeature_if_89
+### hasAnySystemUiStartupFeature_if_90
 - source_file: `app/src/main/java/tv/withaibuild/customiuizer/installers/SystemUiInstaller.java`
 - source_method: `hasAnySystemUiStartupFeature`
-- lines: 422-422
+- lines: 426-426
 - phase: `STARTUP_GATE`
 - parse_status: `PARSED`
 - branch_kind: `IF`
@@ -2763,10 +2790,10 @@ It does not judge INSTALLER_ONLY, GATE_ONLY, DEFAULT_MISMATCH, etc.
 - default_kinds: ['IMPLICIT_PREFMAP_DEFAULT']
 - raw_expression: `prefs.getBoolean("system_betterpopups_autoclose_expanded")`
 
-### hasAnySystemUiStartupFeature_if_90
+### hasAnySystemUiStartupFeature_if_91
 - source_file: `app/src/main/java/tv/withaibuild/customiuizer/installers/SystemUiInstaller.java`
 - source_method: `hasAnySystemUiStartupFeature`
-- lines: 423-423
+- lines: 427-427
 - phase: `STARTUP_GATE`
 - parse_status: `PARSED`
 - branch_kind: `IF`
@@ -2776,10 +2803,10 @@ It does not judge INSTALLER_ONLY, GATE_ONLY, DEFAULT_MISMATCH, etc.
 - default_kinds: ['IMPLICIT_PREFMAP_DEFAULT']
 - raw_expression: `prefs.getBoolean("system_betterpopups_disablewhenmute")`
 
-### hasAnySystemUiStartupFeature_if_91
+### hasAnySystemUiStartupFeature_if_92
 - source_file: `app/src/main/java/tv/withaibuild/customiuizer/installers/SystemUiInstaller.java`
 - source_method: `hasAnySystemUiStartupFeature`
-- lines: 424-424
+- lines: 428-428
 - phase: `STARTUP_GATE`
 - parse_status: `PARSED`
 - branch_kind: `IF`
@@ -2789,10 +2816,10 @@ It does not judge INSTALLER_ONLY, GATE_ONLY, DEFAULT_MISMATCH, etc.
 - default_kinds: ['IMPLICIT_PREFMAP_DEFAULT']
 - raw_expression: `prefs.getBoolean("system_securecontrolcenter")`
 
-### hasAnySystemUiStartupFeature_if_92
+### hasAnySystemUiStartupFeature_if_93
 - source_file: `app/src/main/java/tv/withaibuild/customiuizer/installers/SystemUiInstaller.java`
 - source_method: `hasAnySystemUiStartupFeature`
-- lines: 425-425
+- lines: 429-429
 - phase: `STARTUP_GATE`
 - parse_status: `PARSED`
 - branch_kind: `IF`
@@ -2802,10 +2829,10 @@ It does not judge INSTALLER_ONLY, GATE_ONLY, DEFAULT_MISMATCH, etc.
 - default_kinds: ['IMPLICIT_PREFMAP_DEFAULT']
 - raw_expression: `prefs.getBoolean("system_minimalnotifview")`
 
-### hasAnySystemUiStartupFeature_if_93
+### hasAnySystemUiStartupFeature_if_94
 - source_file: `app/src/main/java/tv/withaibuild/customiuizer/installers/SystemUiInstaller.java`
 - source_method: `hasAnySystemUiStartupFeature`
-- lines: 426-426
+- lines: 430-430
 - phase: `STARTUP_GATE`
 - parse_status: `PARSED`
 - branch_kind: `IF`
@@ -2815,10 +2842,10 @@ It does not judge INSTALLER_ONLY, GATE_ONLY, DEFAULT_MISMATCH, etc.
 - default_kinds: ['IMPLICIT_PREFMAP_DEFAULT']
 - raw_expression: `prefs.getBoolean("system_notifchannelsettings")`
 
-### hasAnySystemUiStartupFeature_if_94
+### hasAnySystemUiStartupFeature_if_95
 - source_file: `app/src/main/java/tv/withaibuild/customiuizer/installers/SystemUiInstaller.java`
 - source_method: `hasAnySystemUiStartupFeature`
-- lines: 427-427
+- lines: 431-431
 - phase: `STARTUP_GATE`
 - parse_status: `PARSED`
 - branch_kind: `IF`
@@ -2829,10 +2856,10 @@ It does not judge INSTALLER_ONLY, GATE_ONLY, DEFAULT_MISMATCH, etc.
 - comparators: ['!=']
 - raw_expression: `prefs.getStringAsInt("system_maxsbicons", 0) != 0`
 
-### hasAnySystemUiStartupFeature_if_95
+### hasAnySystemUiStartupFeature_if_96
 - source_file: `app/src/main/java/tv/withaibuild/customiuizer/installers/SystemUiInstaller.java`
 - source_method: `hasAnySystemUiStartupFeature`
-- lines: 428-428
+- lines: 432-432
 - phase: `STARTUP_GATE`
 - parse_status: `PARSED`
 - branch_kind: `IF`
@@ -2842,10 +2869,10 @@ It does not judge INSTALLER_ONLY, GATE_ONLY, DEFAULT_MISMATCH, etc.
 - default_kinds: ['IMPLICIT_PREFMAP_DEFAULT']
 - raw_expression: `prefs.getBoolean("system_statusbar_mobiletype_single")`
 
-### hasAnySystemUiStartupFeature_if_96
+### hasAnySystemUiStartupFeature_if_97
 - source_file: `app/src/main/java/tv/withaibuild/customiuizer/installers/SystemUiInstaller.java`
 - source_method: `hasAnySystemUiStartupFeature`
-- lines: 429-429
+- lines: 433-433
 - phase: `STARTUP_GATE`
 - parse_status: `PARSED`
 - branch_kind: `IF`
@@ -2855,10 +2882,10 @@ It does not judge INSTALLER_ONLY, GATE_ONLY, DEFAULT_MISMATCH, etc.
 - default_kinds: ['IMPLICIT_PREFMAP_DEFAULT']
 - raw_expression: `prefs.getBoolean("system_statusbar_dualsimin2rows")`
 
-### hasAnySystemUiStartupFeature_if_97
+### hasAnySystemUiStartupFeature_if_98
 - source_file: `app/src/main/java/tv/withaibuild/customiuizer/installers/SystemUiInstaller.java`
 - source_method: `hasAnySystemUiStartupFeature`
-- lines: 430-430
+- lines: 434-434
 - phase: `STARTUP_GATE`
 - parse_status: `PARSED`
 - branch_kind: `IF`
@@ -2868,10 +2895,10 @@ It does not judge INSTALLER_ONLY, GATE_ONLY, DEFAULT_MISMATCH, etc.
 - default_kinds: ['IMPLICIT_PREFMAP_DEFAULT']
 - raw_expression: `prefs.getBoolean("system_statusbar_dualrows")`
 
-### hasAnySystemUiStartupFeature_if_98
+### hasAnySystemUiStartupFeature_if_99
 - source_file: `app/src/main/java/tv/withaibuild/customiuizer/installers/SystemUiInstaller.java`
 - source_method: `hasAnySystemUiStartupFeature`
-- lines: 431-431
+- lines: 435-435
 - phase: `STARTUP_GATE`
 - parse_status: `PARSED`
 - branch_kind: `IF`
@@ -2883,10 +2910,10 @@ It does not judge INSTALLER_ONLY, GATE_ONLY, DEFAULT_MISMATCH, etc.
 - boolean_operators: ['OR']
 - raw_expression: `prefs.getInt("system_ccgridcolumns", 4) > 4 || prefs.getInt("system_ccgridrows", 4) != 4`
 
-### hasAnySystemUiStartupFeature_if_99
+### hasAnySystemUiStartupFeature_if_100
 - source_file: `app/src/main/java/tv/withaibuild/customiuizer/installers/SystemUiInstaller.java`
 - source_method: `hasAnySystemUiStartupFeature`
-- lines: 432-432
+- lines: 436-436
 - phase: `STARTUP_GATE`
 - parse_status: `PARSED`
 - branch_kind: `IF`
@@ -2897,10 +2924,10 @@ It does not judge INSTALLER_ONLY, GATE_ONLY, DEFAULT_MISMATCH, etc.
 - comparators: ['>']
 - raw_expression: `prefs.getStringAsInt("system_colorizenotifs", 1) > 1`
 
-### hasAnySystemUiStartupFeature_if_100
+### hasAnySystemUiStartupFeature_if_101
 - source_file: `app/src/main/java/tv/withaibuild/customiuizer/installers/SystemUiInstaller.java`
 - source_method: `hasAnySystemUiStartupFeature`
-- lines: 433-433
+- lines: 437-437
 - phase: `STARTUP_GATE`
 - parse_status: `PARSED`
 - branch_kind: `IF`
@@ -2910,10 +2937,10 @@ It does not judge INSTALLER_ONLY, GATE_ONLY, DEFAULT_MISMATCH, etc.
 - default_kinds: ['IMPLICIT_PREFMAP_DEFAULT']
 - raw_expression: `prefs.getBoolean("system_notify_openinfw")`
 
-### hasAnySystemUiStartupFeature_if_101
+### hasAnySystemUiStartupFeature_if_102
 - source_file: `app/src/main/java/tv/withaibuild/customiuizer/installers/SystemUiInstaller.java`
 - source_method: `hasAnySystemUiStartupFeature`
-- lines: 434-434
+- lines: 438-438
 - phase: `STARTUP_GATE`
 - parse_status: `PARSED`
 - branch_kind: `IF`
@@ -2923,10 +2950,10 @@ It does not judge INSTALLER_ONLY, GATE_ONLY, DEFAULT_MISMATCH, etc.
 - default_kinds: ['IMPLICIT_PREFMAP_DEFAULT']
 - raw_expression: `prefs.getBoolean("system_fw_noblacklist")`
 
-### hasAnySystemUiStartupFeature_if_102
+### hasAnySystemUiStartupFeature_if_103
 - source_file: `app/src/main/java/tv/withaibuild/customiuizer/installers/SystemUiInstaller.java`
 - source_method: `hasAnySystemUiStartupFeature`
-- lines: 435-435
+- lines: 439-439
 - phase: `STARTUP_GATE`
 - parse_status: `PARSED`
 - branch_kind: `IF`
@@ -2937,10 +2964,10 @@ It does not judge INSTALLER_ONLY, GATE_ONLY, DEFAULT_MISMATCH, etc.
 - boolean_operators: ['OR', 'OR']
 - raw_expression: `prefs.getBoolean("system_notify_openinfw") || prefs.getBoolean("system_notifrowmenu") || prefs.getBoolean("system_betterpopups_allowfloat")`
 
-### hasAnySystemUiStartupFeature_if_103
+### hasAnySystemUiStartupFeature_if_104
 - source_file: `app/src/main/java/tv/withaibuild/customiuizer/installers/SystemUiInstaller.java`
 - source_method: `hasAnySystemUiStartupFeature`
-- lines: 436-436
+- lines: 440-440
 - phase: `STARTUP_GATE`
 - parse_status: `PARSED`
 - branch_kind: `IF`
@@ -2950,10 +2977,10 @@ It does not judge INSTALLER_ONLY, GATE_ONLY, DEFAULT_MISMATCH, etc.
 - default_kinds: ['IMPLICIT_PREFMAP_DEFAULT']
 - raw_expression: `prefs.getBoolean("system_nosafevolume")`
 
-### hasAnySystemUiStartupFeature_if_104
+### hasAnySystemUiStartupFeature_if_105
 - source_file: `app/src/main/java/tv/withaibuild/customiuizer/installers/SystemUiInstaller.java`
 - source_method: `hasAnySystemUiStartupFeature`
-- lines: 437-437
+- lines: 441-441
 - phase: `STARTUP_GATE`
 - parse_status: `PARSED`
 - branch_kind: `IF`
@@ -2963,10 +2990,10 @@ It does not judge INSTALLER_ONLY, GATE_ONLY, DEFAULT_MISMATCH, etc.
 - default_kinds: ['IMPLICIT_PREFMAP_DEFAULT']
 - raw_expression: `prefs.getBoolean("system_lockscreen_hidezenmode")`
 
-### hasAnySystemUiStartupFeature_if_105
+### hasAnySystemUiStartupFeature_if_106
 - source_file: `app/src/main/java/tv/withaibuild/customiuizer/installers/SystemUiInstaller.java`
 - source_method: `hasAnySystemUiStartupFeature`
-- lines: 438-438
+- lines: 442-442
 - phase: `STARTUP_GATE`
 - parse_status: `PARSED`
 - branch_kind: `IF`
@@ -2976,10 +3003,10 @@ It does not judge INSTALLER_ONLY, GATE_ONLY, DEFAULT_MISMATCH, etc.
 - default_kinds: ['IMPLICIT_PREFMAP_DEFAULT']
 - raw_expression: `prefs.getBoolean("system_nopassword")`
 
-### hasAnySystemUiStartupFeature_if_106
+### hasAnySystemUiStartupFeature_if_107
 - source_file: `app/src/main/java/tv/withaibuild/customiuizer/installers/SystemUiInstaller.java`
 - source_method: `hasAnySystemUiStartupFeature`
-- lines: 439-439
+- lines: 443-443
 - phase: `STARTUP_GATE`
 - parse_status: `PARSED`
 - branch_kind: `IF`
@@ -2989,10 +3016,10 @@ It does not judge INSTALLER_ONLY, GATE_ONLY, DEFAULT_MISMATCH, etc.
 - default_kinds: ['IMPLICIT_PREFMAP_DEFAULT']
 - raw_expression: `prefs.getBoolean("system_statusbar_topmargin")`
 
-### hasAnySystemUiStartupFeature_if_107
+### hasAnySystemUiStartupFeature_if_108
 - source_file: `app/src/main/java/tv/withaibuild/customiuizer/installers/SystemUiInstaller.java`
 - source_method: `hasAnySystemUiStartupFeature`
-- lines: 440-440
+- lines: 444-444
 - phase: `STARTUP_GATE`
 - parse_status: `PARSED`
 - branch_kind: `IF`
@@ -3002,10 +3029,10 @@ It does not judge INSTALLER_ONLY, GATE_ONLY, DEFAULT_MISMATCH, etc.
 - default_kinds: ['IMPLICIT_PREFMAP_DEFAULT']
 - raw_expression: `prefs.getBoolean("system_cc_enable_style_switch")`
 
-### hasAnySystemUiStartupFeature_if_108
+### hasAnySystemUiStartupFeature_if_109
 - source_file: `app/src/main/java/tv/withaibuild/customiuizer/installers/SystemUiInstaller.java`
 - source_method: `hasAnySystemUiStartupFeature`
-- lines: 441-441
+- lines: 445-445
 - phase: `STARTUP_GATE`
 - parse_status: `PARSED`
 - branch_kind: `IF`
@@ -3015,10 +3042,10 @@ It does not judge INSTALLER_ONLY, GATE_ONLY, DEFAULT_MISMATCH, etc.
 - default_kinds: ['IMPLICIT_PREFMAP_DEFAULT']
 - raw_expression: `prefs.getBoolean("system_qs_force_systemfonts")`
 
-### hasAnySystemUiStartupFeature_if_109
+### hasAnySystemUiStartupFeature_if_110
 - source_file: `app/src/main/java/tv/withaibuild/customiuizer/installers/SystemUiInstaller.java`
 - source_method: `hasAnySystemUiStartupFeature`
-- lines: 442-442
+- lines: 446-446
 - phase: `STARTUP_GATE`
 - parse_status: `PARSED`
 - branch_kind: `IF`
@@ -3028,10 +3055,10 @@ It does not judge INSTALLER_ONLY, GATE_ONLY, DEFAULT_MISMATCH, etc.
 - default_kinds: ['IMPLICIT_PREFMAP_DEFAULT']
 - raw_expression: `prefs.getBoolean("system_detailednetspeed_fakedualrow")`
 
-### hasAnySystemUiStartupFeature_if_110
+### hasAnySystemUiStartupFeature_if_111
 - source_file: `app/src/main/java/tv/withaibuild/customiuizer/installers/SystemUiInstaller.java`
 - source_method: `hasAnySystemUiStartupFeature`
-- lines: 443-443
+- lines: 447-447
 - phase: `STARTUP_GATE`
 - parse_status: `PARSED`
 - branch_kind: `IF`
@@ -3041,10 +3068,10 @@ It does not judge INSTALLER_ONLY, GATE_ONLY, DEFAULT_MISMATCH, etc.
 - default_kinds: ['IMPLICIT_PREFMAP_DEFAULT']
 - raw_expression: `prefs.getBoolean("system_volumetimer")`
 
-### hasAnySystemUiStartupFeature_if_111
+### hasAnySystemUiStartupFeature_if_112
 - source_file: `app/src/main/java/tv/withaibuild/customiuizer/installers/SystemUiInstaller.java`
 - source_method: `hasAnySystemUiStartupFeature`
-- lines: 444-444
+- lines: 448-448
 - phase: `STARTUP_GATE`
 - parse_status: `PARSED`
 - branch_kind: `IF`
@@ -3054,10 +3081,10 @@ It does not judge INSTALLER_ONLY, GATE_ONLY, DEFAULT_MISMATCH, etc.
 - default_kinds: ['IMPLICIT_PREFMAP_DEFAULT']
 - raw_expression: `prefs.getBoolean("system_cc_tile_roundedrect")`
 
-### hasAnySystemUiStartupFeature_if_112
+### hasAnySystemUiStartupFeature_if_113
 - source_file: `app/src/main/java/tv/withaibuild/customiuizer/installers/SystemUiInstaller.java`
 - source_method: `hasAnySystemUiStartupFeature`
-- lines: 445-445
+- lines: 449-449
 - phase: `STARTUP_GATE`
 - parse_status: `PARSED`
 - branch_kind: `IF`
@@ -3068,10 +3095,10 @@ It does not judge INSTALLER_ONLY, GATE_ONLY, DEFAULT_MISMATCH, etc.
 - comparators: ['>']
 - raw_expression: `(prefs.getInt("system_statusbar_iconsize", 6)) > 6`
 
-### hasAnySystemUiStartupFeature_if_113
+### hasAnySystemUiStartupFeature_if_114
 - source_file: `app/src/main/java/tv/withaibuild/customiuizer/installers/SystemUiInstaller.java`
 - source_method: `hasAnySystemUiStartupFeature`
-- lines: 446-446
+- lines: 450-450
 - phase: `STARTUP_GATE`
 - parse_status: `PARSED`
 - branch_kind: `IF`
@@ -3081,10 +3108,10 @@ It does not judge INSTALLER_ONLY, GATE_ONLY, DEFAULT_MISMATCH, etc.
 - default_kinds: ['IMPLICIT_PREFMAP_DEFAULT']
 - raw_expression: `prefs.getBoolean("system_cc_show_stepcount")`
 
-### hasAnySystemUiStartupFeature_if_114
+### hasAnySystemUiStartupFeature_if_115
 - source_file: `app/src/main/java/tv/withaibuild/customiuizer/installers/SystemUiInstaller.java`
 - source_method: `hasAnySystemUiStartupFeature`
-- lines: 447-447
+- lines: 451-451
 - phase: `STARTUP_GATE`
 - parse_status: `PARSED`
 - branch_kind: `IF`
@@ -3095,10 +3122,10 @@ It does not judge INSTALLER_ONLY, GATE_ONLY, DEFAULT_MISMATCH, etc.
 - boolean_operators: ['OR']
 - raw_expression: `(prefs.getBoolean("system_statusbaricons_swap_wifi_mobile")) || (prefs.getBoolean("system_statusbaricons_wifi_mobile_atleft"))`
 
-### hasAnySystemUiStartupFeature_if_115
+### hasAnySystemUiStartupFeature_if_116
 - source_file: `app/src/main/java/tv/withaibuild/customiuizer/installers/SystemUiInstaller.java`
 - source_method: `hasAnySystemUiStartupFeature`
-- lines: 448-448
+- lines: 452-452
 - phase: `STARTUP_GATE`
 - parse_status: `PARSED`
 - branch_kind: `IF`
@@ -3108,10 +3135,10 @@ It does not judge INSTALLER_ONLY, GATE_ONLY, DEFAULT_MISMATCH, etc.
 - default_kinds: ['IMPLICIT_PREFMAP_DEFAULT']
 - raw_expression: `prefs.getBoolean("system_screenshot_overlay")`
 
-### hasAnySystemUiStartupFeature_if_116
+### hasAnySystemUiStartupFeature_if_117
 - source_file: `app/src/main/java/tv/withaibuild/customiuizer/installers/SystemUiInstaller.java`
 - source_method: `hasAnySystemUiStartupFeature`
-- lines: 449-449
+- lines: 453-453
 - phase: `STARTUP_GATE`
 - parse_status: `PARSED`
 - branch_kind: `IF`
@@ -3121,10 +3148,10 @@ It does not judge INSTALLER_ONLY, GATE_ONLY, DEFAULT_MISMATCH, etc.
 - default_kinds: ['IMPLICIT_PREFMAP_DEFAULT']
 - raw_expression: `prefs.getBoolean("system_hidestatusbar_whenscreenshot")`
 
-### hasAnySystemUiStartupFeature_if_117
+### hasAnySystemUiStartupFeature_if_118
 - source_file: `app/src/main/java/tv/withaibuild/customiuizer/installers/SystemUiInstaller.java`
 - source_method: `hasAnySystemUiStartupFeature`
-- lines: 450-453
+- lines: 454-457
 - phase: `STARTUP_GATE`
 - parse_status: `PARSED`
 - branch_kind: `IF`
@@ -3139,10 +3166,10 @@ It does not judge INSTALLER_ONLY, GATE_ONLY, DEFAULT_MISMATCH, etc.
                 !prefs.getString("system_cc_dateformat", "").isEmpty()`
 - normalized_expression: `prefs.getBoolean("system_statusbar_clocktweak") || prefs.getBoolean("system_cc_clocktweak") || prefs.getBoolean("system_cc_hidedate") || !prefs.getString("system_cc_dateformat", "").isEmpty()`
 
-### hasAnySystemUiStartupFeature_if_118
+### hasAnySystemUiStartupFeature_if_119
 - source_file: `app/src/main/java/tv/withaibuild/customiuizer/installers/SystemUiInstaller.java`
 - source_method: `hasAnySystemUiStartupFeature`
-- lines: 454-454
+- lines: 458-458
 - phase: `STARTUP_GATE`
 - parse_status: `PARSED`
 - branch_kind: `IF`
@@ -3152,10 +3179,10 @@ It does not judge INSTALLER_ONLY, GATE_ONLY, DEFAULT_MISMATCH, etc.
 - default_kinds: ['IMPLICIT_PREFMAP_DEFAULT']
 - raw_expression: `prefs.getBoolean("system_hidemoreicon")`
 
-### hasAnySystemUiStartupFeature_if_119
+### hasAnySystemUiStartupFeature_if_120
 - source_file: `app/src/main/java/tv/withaibuild/customiuizer/installers/SystemUiInstaller.java`
 - source_method: `hasAnySystemUiStartupFeature`
-- lines: 455-455
+- lines: 459-459
 - phase: `STARTUP_GATE`
 - parse_status: `PARSED`
 - branch_kind: `IF`
@@ -3170,7 +3197,7 @@ It does not judge INSTALLER_ONLY, GATE_ONLY, DEFAULT_MISMATCH, etc.
 ### hasAnyGlobalAction_if_1
 - source_file: `app/src/main/java/tv/withaibuild/customiuizer/installers/SystemUiInstaller.java`
 - source_method: `hasAnyGlobalAction`
-- lines: 463-463
+- lines: 467-467
 - phase: `GLOBAL_ACTION_DOMAIN`
 - parse_status: `PARSED`
 - branch_kind: `IF`
@@ -3181,7 +3208,7 @@ It does not judge INSTALLER_ONLY, GATE_ONLY, DEFAULT_MISMATCH, etc.
 ### hasAnyGlobalAction_if_2
 - source_file: `app/src/main/java/tv/withaibuild/customiuizer/installers/SystemUiInstaller.java`
 - source_method: `hasAnyGlobalAction`
-- lines: 467-467
+- lines: 471-471
 - phase: `GLOBAL_ACTION_DOMAIN`
 - parse_status: `PARSED`
 - branch_kind: `IF`
@@ -3238,7 +3265,7 @@ It does not judge INSTALLER_ONLY, GATE_ONLY, DEFAULT_MISMATCH, etc.
 ### install_installById_5
 - source_file: `app/src/main/java/tv/withaibuild/customiuizer/installers/SystemUiInstaller.java`
 - source_method: `install`
-- lines: 152-152
+- lines: 153-153
 - phase: `POST_RESTART_GUARD_RUNTIME`
 - parse_status: `PARSED`
 - branch_kind: `IF`
@@ -3482,14 +3509,14 @@ It does not judge INSTALLER_ONLY, GATE_ONLY, DEFAULT_MISMATCH, etc.
 ### FeatureCatalog_chargingInfo
 - source_file: `app/src/main/java/tv/withaibuild/customiuizer/mods/catalog/FeatureCatalog.kt`
 - source_method: `FeatureCatalog`
-- lines: 1179-1212
+- lines: 1179-1213
 - phase: `FEATURE_CATALOG_GATE`
 - parse_status: `PARSED`
 - branch_kind: `IF`
 - feature_id: `chargingInfo`
-- declared_preference_keys: ['system_charginginfo', 'system_charginginfo_current', 'system_charginginfo_temp', 'system_charginginfo_view', 'system_charginginfo_voltage', 'system_charginginfo_wattage']
+- declared_preference_keys: ['system_charginginfo', 'system_charginginfo_current', 'system_charginginfo_fontsize', 'system_charginginfo_temp', 'system_charginginfo_view', 'system_charginginfo_voltage', 'system_charginginfo_wattage']
 - condition_preference_keys: ['system_charginginfo']
-- preference_key_difference: ['system_charginginfo_current', 'system_charginginfo_temp', 'system_charginginfo_view', 'system_charginginfo_voltage', 'system_charginginfo_wattage']
+- preference_key_difference: ['system_charginginfo_current', 'system_charginginfo_fontsize', 'system_charginginfo_temp', 'system_charginginfo_view', 'system_charginginfo_voltage', 'system_charginginfo_wattage']
 - preference_keys: ['system_charginginfo']
 - accessors: ['getBoolean']
 - default_values: [False]
@@ -3534,7 +3561,7 @@ It does not judge INSTALLER_ONLY, GATE_ONLY, DEFAULT_MISMATCH, etc.
 ### isWithinSystemUiRestartGuard_predicate
 - source_file: `app/src/main/java/tv/withaibuild/customiuizer/installers/SystemUiInstaller.java`
 - source_method: `isWithinSystemUiRestartGuard`
-- lines: 493-493
+- lines: 497-497
 - phase: `RESTART_GUARD`
 - parse_status: `PARSED`
 - branch_kind: `IF`

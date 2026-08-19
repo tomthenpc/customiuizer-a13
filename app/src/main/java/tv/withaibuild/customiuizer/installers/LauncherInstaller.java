@@ -42,6 +42,7 @@ public final class LauncherInstaller {
         if (MainModule.mPrefs.getInt("launcher_topmargin", 0) > 0) LauncherLayoutHooks.WorkspaceCellPaddingTopHook(lpparam);
         if (MainModule.mPrefs.getInt("launcher_dock_topmargin", 0) > 0) LauncherLayoutHooks.DockMarginTopHook(lpparam);
         if (MainModule.mPrefs.getInt("launcher_dock_bottommargin", 0) > 0) LauncherLayoutHooks.DockMarginBottomHook(lpparam);
+        if (MainModule.mPrefs.getInt("launcher_dock_height", 60) > 60) LauncherLayoutHooks.DockHeightHook(lpparam);
     }
 
     public static void handleLoadLauncher(final PackageReadyParam lpparam) {
@@ -86,7 +87,8 @@ public final class LauncherInstaller {
             if (MainModule.mPrefs.getBoolean("launcher_privacyapps_gest")
                 || MainModule.mPrefs.getInt("launcher_spread_action", 1) != 1) LauncherFolderHooks.PrivacyFolderHook(lpparam);
             if (MainModule.mPrefs.getBoolean("system_hidefromrecents")) LauncherSystemHooks.HideFromRecentsHook(lpparam);
-            if (MainModule.mPrefs.getInt("launcher_folderblur_opacity", 0) > 0) LauncherFolderHooks.FolderBlurHook(lpparam);
+            if (MainModule.mPrefs.getBoolean("launcher_folderblur_disable")
+                || MainModule.mPrefs.getInt("launcher_folderblur_opacity", 0) > 0) LauncherFolderHooks.FolderBlurHook(lpparam);
             if (MainModule.mPrefs.getBoolean("launcher_nounlockanim")) FeatureDispatcher.installById("noUnlockAnimation", launcherRuntime);
             if (MainModule.mPrefs.getBoolean("launcher_nozoomanim")) LauncherAnimationHooks.NoZoomAnimationHook(lpparam);
             if (MainModule.mPrefs.getBoolean("launcher_oldlaunchanim")) LauncherAnimationHooks.UseOldLaunchAnimationHook(lpparam);
@@ -105,9 +107,20 @@ public final class LauncherInstaller {
         ModuleHelper.findAndHookMethod(Application.class, "attach", Context.class, new MethodHook() {
             @Override
             protected void after(AfterHookCallback param) throws Throwable {
+                if (!isTargetPackage(param.getThisObject(), lpparam)) return;
                 handleLoadLauncher(lpparam);
             }
         });
+    }
+
+    /**
+     * Verifies the hooked Application instance belongs to the package this installer was
+     * registered for. This prevents a foreign package's Application.attach in the same
+     * process from re-running legacy hook installation with a stale lpparam.
+     */
+    static boolean isTargetPackage(Object thisObject, PackageReadyParam lpparam) {
+        if (!(thisObject instanceof Application)) return false;
+        return lpparam.getPackageName().equals(((Application) thisObject).getPackageName());
     }
 
     // Startup family predicates for Launcher
@@ -122,6 +135,7 @@ public final class LauncherInstaller {
         if (prefs.getInt("launcher_topmargin", 0) > 0) return true;
         if (prefs.getInt("launcher_dock_topmargin", 0) > 0) return true;
         if (prefs.getInt("launcher_dock_bottommargin", 0) > 0) return true;
+        if (prefs.getInt("launcher_dock_height", 60) > 60) return true;
         return false;
     }
 
@@ -161,7 +175,7 @@ public final class LauncherInstaller {
         if (prefs.getBoolean("launcher_hideseekpoints")) return true;
         if (prefs.getBoolean("launcher_privacyapps_gest") || prefs.getInt("launcher_spread_action", 1) != 1) return true;
         if (prefs.getBoolean("system_hidefromrecents")) return true;
-        if (prefs.getInt("launcher_folderblur_opacity", 0) > 0) return true;
+        if (prefs.getBoolean("launcher_folderblur_disable") || prefs.getInt("launcher_folderblur_opacity", 0) > 0) return true;
         if (prefs.getBoolean("launcher_nounlockanim")) return true;
         if (prefs.getBoolean("launcher_nozoomanim")) return true;
         if (prefs.getBoolean("launcher_oldlaunchanim")) return true;

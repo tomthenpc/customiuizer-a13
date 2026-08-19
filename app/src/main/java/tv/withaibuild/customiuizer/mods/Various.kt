@@ -60,6 +60,7 @@ import tv.withaibuild.customiuizer.mods.utils.HookerClassHelper.AfterHookCallbac
 import tv.withaibuild.customiuizer.mods.utils.HookerClassHelper.BeforeHookCallback
 import tv.withaibuild.customiuizer.mods.utils.HookerClassHelper.MethodHook
 import tv.withaibuild.customiuizer.mods.utils.ModuleHelper
+import tv.withaibuild.customiuizer.mods.utils.RuntimeFatality
 import tv.withaibuild.customiuizer.mods.utils.XposedHelpers
 import tv.withaibuild.customiuizer.utils.HookUtils
 import java.lang.ref.WeakReference
@@ -71,6 +72,7 @@ import java.util.Arrays
 import java.util.Date
 import java.util.Locale
 import java.util.TimeZone
+import java.util.concurrent.atomic.AtomicBoolean
 
 @SuppressLint("StaticFieldLeak")
 object Various {
@@ -102,12 +104,13 @@ object Various {
                         val piField = XposedHelpers.findFirstFieldByExactType(param.thisObject.javaClass, PackageInfo::class.java)
                         if (piField != null) mSupportFragment = param.thisObject
                     } catch (fatal: Throwable) {
-                        if (fatal is OutOfMemoryError || fatal is ThreadDeath || fatal is VirtualMachineError) throw fatal
+                        RuntimeFatality.throwIfFatal(fatal)
                     }
                 }
             })
         }
 
+        val clickHookInstalled = AtomicBoolean(false)
         ModuleHelper.findAndHookMethod(amaCls, "onCreate", Bundle::class.java, object : MethodHook() {
             override fun after(param: AfterHookCallback) {
                 val handler = Handler(Looper.getMainLooper())
@@ -147,76 +150,122 @@ object Various {
                                 addPref[0].invoke(frag, "open_in_store", modRes.getString(R.string.appdetails_playstore), "")
                                 addPref[0].invoke(frag, "launch_app", modRes.getString(R.string.appdetails_launch), "")
                             } catch (t: Throwable) {
-                                if (t is OutOfMemoryError || t is ThreadDeath || t is VirtualMachineError) throw t
+                                RuntimeFatality.throwIfFatal(t)
                                 XposedHelpers.log(t)
                             }
                         }
 
-                    ModuleHelper.hookAllMethods(frag.javaClass, "onPreferenceTreeClick", object : MethodHook() {
-                        override fun before(param: BeforeHookCallback) {
-                            val key = XposedHelpers.callMethod(param.args[0], "getKey") as? String ?: return
-                            val title = XposedHelpers.callMethod(param.args[0], "getTitle") as? CharSequence
-                            when (key) {
-                                "apk_filename" -> {
-                                    (act.getSystemService(Context.CLIPBOARD_SERVICE) as? ClipboardManager)?.setPrimaryClip(ClipData.newPlainText(title, mLastPackageInfo?.applicationInfo?.sourceDir))
-                                    Toast.makeText(act, act.resources.getIdentifier("app_manager_copy_pkg_to_clip", "string", act.packageName), Toast.LENGTH_SHORT).show()
-                                    param.returnAndSkip(true)
-                                }
-                                "data_path" -> {
-                                    (act.getSystemService(Context.CLIPBOARD_SERVICE) as? ClipboardManager)?.setPrimaryClip(ClipData.newPlainText(title, mLastPackageInfo?.applicationInfo?.dataDir))
-                                    Toast.makeText(act, act.resources.getIdentifier("app_manager_copy_pkg_to_clip", "string", act.packageName), Toast.LENGTH_SHORT).show()
-                                    param.returnAndSkip(true)
-                                }
-                                "open_in_store" -> {
-                                    try {
-                                        val launchIntent = Intent(Intent.ACTION_VIEW, Uri.parse("market://details?id=" + mLastPackageInfo!!.packageName))
-                                        launchIntent.flags = Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_RESET_TASK_IF_NEEDED
-                                        act.startActivity(launchIntent)
-                                    } catch (_: android.content.ActivityNotFoundException) {
-                                        val launchIntent = Intent(Intent.ACTION_VIEW, Uri.parse("https://play.google.com/store/apps/details?id=" + mLastPackageInfo!!.packageName))
-                                        launchIntent.flags = Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_RESET_TASK_IF_NEEDED
-                                        act.startActivity(launchIntent)
-                                    }
-                                    param.returnAndSkip(true)
-                                }
-                                "launch_app" -> {
-                                    var launchIntent = act.packageManager.getLaunchIntentForPackage(mLastPackageInfo!!.packageName)
-                                    if (launchIntent == null) {
-                                        Toast.makeText(act, modRes.getString(R.string.appdetails_nolaunch), Toast.LENGTH_SHORT).show()
-                                    } else {
-                                        var user = 0
-                                        try {
-                                            val uid = act.intent.getIntExtra("am_app_uid", -1)
-                                            user = XposedHelpers.callStaticMethod(UserHandle::class.java, "getUserId", uid) as? Int ?: 0
-                                        } catch (t: Throwable) {
-                                            if (t is OutOfMemoryError || t is ThreadDeath || t is VirtualMachineError) throw t
-                                            XposedHelpers.log(t)
-                                        }
-
-                                        launchIntent.flags = Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_RESET_TASK_IF_NEEDED
-                                        if (user != 0) try {
-                                            XposedHelpers.callMethod(act, "startActivityAsUser", launchIntent, XposedHelpers.newInstance(UserHandle::class.java, user))
-                                        } catch (t: Throwable) {
-                                            if (t is OutOfMemoryError || t is ThreadDeath || t is VirtualMachineError) throw t
-                                            XposedHelpers.log(t)
-                                        } else {
-                                            act.startActivity(launchIntent)
-                                        }
-                                    }
-                                    param.returnAndSkip(true)
-                                }
-                            }
-                        }
-                    })
-                } catch (t: Throwable) {
-                    if (t is OutOfMemoryError || t is ThreadDeath || t is VirtualMachineError) throw t
-                    XposedHelpers.log(t)
-                    return@post
-                }
-
+                        tryInstallAppInfoPreferenceClickHook(frag.javaClass, clickHookInstalled)
+                    } catch (t: Throwable) {
+                        RuntimeFatality.throwIfFatal(t)
+                        XposedHelpers.log(t)
+                        return@post
+                    }
                 }
             }
         })
+    }
+
+    private val appInfoPreferenceClickHook = object : MethodHook() {
+        override fun before(param: BeforeHookCallback) {
+            val frag = param.thisObject ?: return
+            val key = XposedHelpers.callMethod(param.args[0], "getKey") as? String ?: return
+            val title = XposedHelpers.callMethod(param.args[0], "getTitle") as? CharSequence
+            val act = activityFromFragment(frag) ?: return
+            val packageInfo = packageInfoFromFragment(frag) ?: return
+            when (key) {
+                "apk_filename" -> {
+                    (act.getSystemService(Context.CLIPBOARD_SERVICE) as? ClipboardManager)?.setPrimaryClip(
+                        ClipData.newPlainText(title, packageInfo.applicationInfo?.sourceDir)
+                    )
+                    Toast.makeText(act, act.resources.getIdentifier("app_manager_copy_pkg_to_clip", "string", act.packageName), Toast.LENGTH_SHORT).show()
+                    param.returnAndSkip(true)
+                }
+                "data_path" -> {
+                    (act.getSystemService(Context.CLIPBOARD_SERVICE) as? ClipboardManager)?.setPrimaryClip(
+                        ClipData.newPlainText(title, packageInfo.applicationInfo?.dataDir)
+                    )
+                    Toast.makeText(act, act.resources.getIdentifier("app_manager_copy_pkg_to_clip", "string", act.packageName), Toast.LENGTH_SHORT).show()
+                    param.returnAndSkip(true)
+                }
+                "open_in_store" -> {
+                    try {
+                        val launchIntent = Intent(Intent.ACTION_VIEW, Uri.parse("market://details?id=" + packageInfo.packageName))
+                        launchIntent.flags = Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_RESET_TASK_IF_NEEDED
+                        act.startActivity(launchIntent)
+                    } catch (_: android.content.ActivityNotFoundException) {
+                        val launchIntent = Intent(Intent.ACTION_VIEW, Uri.parse("https://play.google.com/store/apps/details?id=" + packageInfo.packageName))
+                        launchIntent.flags = Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_RESET_TASK_IF_NEEDED
+                        act.startActivity(launchIntent)
+                    }
+                    param.returnAndSkip(true)
+                }
+                "launch_app" -> {
+                    var launchIntent = act.packageManager.getLaunchIntentForPackage(packageInfo.packageName)
+                    if (launchIntent == null) {
+                        try {
+                            Toast.makeText(act, ModuleHelper.getModuleRes(act).getString(R.string.appdetails_nolaunch), Toast.LENGTH_SHORT).show()
+                        } catch (t: Throwable) {
+                            RuntimeFatality.throwIfFatal(t)
+                            XposedHelpers.log(t)
+                        }
+                    } else {
+                        var user = 0
+                        try {
+                            val uid = act.intent.getIntExtra("am_app_uid", -1)
+                            user = XposedHelpers.callStaticMethod(UserHandle::class.java, "getUserId", uid) as? Int ?: 0
+                        } catch (t: Throwable) {
+                            RuntimeFatality.throwIfFatal(t)
+                            XposedHelpers.log(t)
+                        }
+
+                        launchIntent.flags = Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_RESET_TASK_IF_NEEDED
+                        if (user != 0) try {
+                            XposedHelpers.callMethod(act, "startActivityAsUser", launchIntent, XposedHelpers.newInstance(UserHandle::class.java, user))
+                        } catch (t: Throwable) {
+                            RuntimeFatality.throwIfFatal(t)
+                            XposedHelpers.log(t)
+                        } else {
+                            act.startActivity(launchIntent)
+                        }
+                    }
+                    param.returnAndSkip(true)
+                }
+            }
+        }
+    }
+
+    private fun tryInstallAppInfoPreferenceClickHook(fragmentClass: Class<*>, installed: AtomicBoolean): Boolean {
+        if (installed.get()) return true
+        return try {
+            val unhooks = XposedHelpers.hookAllMethods(fragmentClass, "onPreferenceTreeClick", appInfoPreferenceClickHook)
+            val ok = unhooks.isNotEmpty()
+            if (ok) installed.set(true)
+            ok
+        } catch (t: Throwable) {
+            RuntimeFatality.throwIfFatal(t)
+            XposedHelpers.log("AppInfoHook", t)
+            false
+        }
+    }
+
+    private fun activityFromFragment(fragment: Any): Activity? {
+        return try {
+            XposedHelpers.callMethod(fragment, "getActivity") as? Activity
+        } catch (t: Throwable) {
+            RuntimeFatality.throwIfFatal(t)
+            null
+        }
+    }
+
+    private fun packageInfoFromFragment(fragment: Any): PackageInfo? {
+        return try {
+            val piField = XposedHelpers.findFirstFieldByExactType(fragment.javaClass, PackageInfo::class.java)
+            piField.get(fragment) as? PackageInfo
+        } catch (t: Throwable) {
+            RuntimeFatality.throwIfFatal(t)
+            null
+        }
     }
 
     @JvmStatic
@@ -235,40 +284,68 @@ object Various {
 
     @JvmStatic
     fun AppsDefaultSortHook(lpparam: PackageReadyParam) {
+        val onActivityCreatedInstalled = AtomicBoolean(false)
+        val xfragCls = XposedHelpers.findClassIfExists("androidx.fragment.app.Fragment", lpparam.classLoader)
+        val fragmentCls = XposedHelpers.findClassIfExists("android.app.Fragment", lpparam.classLoader)
+        val activityCls = XposedHelpers.findClassIfExists("com.miui.appmanager.AppManagerMainActivity", lpparam.classLoader)
+        if (activityCls != null) {
+            val fragType = findDeclaredFragmentFieldType(activityCls, xfragCls, fragmentCls)
+            if (fragType != null) {
+                tryInstallSortOnActivityCreated(fragType, onActivityCreatedInstalled)
+            }
+        }
+
         ModuleHelper.findAndHookMethod("com.miui.appmanager.AppManagerMainActivity", lpparam.classLoader, "onCreate", Bundle::class.java, object : MethodHook() {
             override fun before(param: BeforeHookCallback) {
                 param.args[0] = checkBundle(param.thisObject as? Context, param.args[0] as? Bundle)
-
-                val xfragCls = XposedHelpers.findClassIfExists("androidx.fragment.app.Fragment", lpparam.classLoader)
-                val fragmentCls = XposedHelpers.findClassIfExists("android.app.Fragment", lpparam.classLoader)
-                val fields = param.thisObject.javaClass.declaredFields
-                var fragCls: String? = null
-                for (field in fields) {
-                    if ((fragmentCls != null && fragmentCls.isAssignableFrom(field.type)) ||
-                        (xfragCls != null && xfragCls.isAssignableFrom(field.type))
-                    ) {
-                        fragCls = field.type.canonicalName
-                        break
-                    }
-                }
-
-                if (fragCls != null) {
-                    ModuleHelper.hookAllMethods(fragCls, lpparam.classLoader, "onActivityCreated", object : MethodHook() {
-                        override fun before(param: BeforeHookCallback) {
-                            try {
-                                param.args[0] = checkBundle(
-                                    XposedHelpers.callMethod(param.thisObject, "getContext") as? Context,
-                                    param.args[0] as? Bundle
-                                )
-                            } catch (t: Throwable) {
-                                if (t is OutOfMemoryError || t is ThreadDeath || t is VirtualMachineError) throw t
-                                XposedHelpers.log("AppsDefaultSortHook", t.message)
-                            }
-                        }
-                    })
-                }
+                if (onActivityCreatedInstalled.get()) return
+                val runtimeClass = param.thisObject?.javaClass ?: return
+                val fragType = findDeclaredFragmentFieldType(runtimeClass, xfragCls, fragmentCls)
+                if (fragType == null) return
+                tryInstallSortOnActivityCreated(fragType, onActivityCreatedInstalled)
             }
         })
+    }
+
+    private fun findDeclaredFragmentFieldType(
+        hostClass: Class<*>,
+        xfragCls: Class<*>?,
+        fragmentCls: Class<*>?
+    ): Class<*>? {
+        for (field in hostClass.declaredFields) {
+            if ((fragmentCls != null && fragmentCls.isAssignableFrom(field.type)) ||
+                (xfragCls != null && xfragCls.isAssignableFrom(field.type))
+            ) {
+                return field.type
+            }
+        }
+        return null
+    }
+
+    private fun tryInstallSortOnActivityCreated(fragmentClass: Class<*>, installed: AtomicBoolean): Boolean {
+        if (installed.get()) return true
+        return try {
+            val unhooks = XposedHelpers.hookAllMethods(fragmentClass, "onActivityCreated", object : MethodHook() {
+                override fun before(param: BeforeHookCallback) {
+                    try {
+                        param.args[0] = checkBundle(
+                            XposedHelpers.callMethod(param.thisObject, "getContext") as? Context,
+                            param.args[0] as? Bundle
+                        )
+                    } catch (t: Throwable) {
+                        RuntimeFatality.throwIfFatal(t)
+                        XposedHelpers.log("AppsDefaultSortHook", t.message)
+                    }
+                }
+            })
+            val ok = unhooks.isNotEmpty()
+            if (ok) installed.set(true)
+            ok
+        } catch (t: Throwable) {
+            RuntimeFatality.throwIfFatal(t)
+            XposedHelpers.log("AppsDefaultSortHook", t.message)
+            false
+        }
     }
 
     private fun setAppState(act: Activity, pkgName: String, item: MenuItem, enable: Boolean) {
@@ -285,7 +362,7 @@ object Various {
             }
             Handler(Looper.getMainLooper()).postDelayed(Runnable { ModuleHelper.guarded { act.invalidateOptionsMenu() } }, 500)
         } catch (t: Throwable) {
-            if (t is OutOfMemoryError || t is ThreadDeath || t is VirtualMachineError) throw t
+            RuntimeFatality.throwIfFatal(t)
             XposedHelpers.log(t)
         }
     }
@@ -326,7 +403,7 @@ object Various {
                 val appInfo = try {
                     pm.getApplicationInfo(mPackageInfo.packageName, PackageManager.GET_META_DATA)
                 } catch (fatal: Throwable) {
-                    if (fatal is OutOfMemoryError || fatal is ThreadDeath || fatal is VirtualMachineError) throw fatal
+                    RuntimeFatality.throwIfFatal(fatal)
                     return
                 }
                 val isSystem = (appInfo.flags and ApplicationInfo.FLAG_SYSTEM) != 0
@@ -380,27 +457,32 @@ object Various {
 
     @JvmStatic
     fun AppsRestrictHook(lpparam: PackageReadyParam) {
-        val mGetAppInfo = XposedHelpers.findMethodsByExactParameters(
-            XposedHelpers.findClass("com.miui.appmanager.AppManageUtils", lpparam.classLoader),
-            ApplicationInfo::class.java,
-            Any::class.java,
-            PackageManager::class.java,
-            String::class.java,
-            Int::class.javaPrimitiveType,
-            Int::class.javaPrimitiveType
-        )
-        if (mGetAppInfo.isEmpty()) {
-            XposedHelpers.log("AppsRestrictHook", "Cannot find getAppInfo method!")
+        val appManageUtils = XposedHelpers.findClassIfExists("com.miui.appmanager.AppManageUtils", lpparam.classLoader)
+        if (appManageUtils == null) {
+            XposedHelpers.log("AppsRestrictHook", "Cannot find AppManageUtils class!")
         } else {
-            ModuleHelper.hookMethod(mGetAppInfo[0], object : MethodHook() {
-                override fun after(param: AfterHookCallback) {
-                    if ((param.args[3] as? Int ?: -1) == 128 && (param.args[4] as? Int ?: -1) == 0) {
-                        val appInfo = param.result as? ApplicationInfo ?: return
-                        appInfo.flags = appInfo.flags and ApplicationInfo.FLAG_SYSTEM.inv()
-                        param.setResult(appInfo)
+            val mGetAppInfo = XposedHelpers.findMethodsByExactParameters(
+                appManageUtils,
+                ApplicationInfo::class.java,
+                Any::class.java,
+                PackageManager::class.java,
+                String::class.java,
+                Int::class.javaPrimitiveType,
+                Int::class.javaPrimitiveType
+            )
+            if (mGetAppInfo.isEmpty()) {
+                XposedHelpers.log("AppsRestrictHook", "Cannot find getAppInfo method!")
+            } else {
+                ModuleHelper.hookMethod(mGetAppInfo[0], object : MethodHook() {
+                    override fun after(param: AfterHookCallback) {
+                        if ((param.args[3] as? Int ?: -1) == 128 && (param.args[4] as? Int ?: -1) == 0) {
+                            val appInfo = param.result as? ApplicationInfo ?: return
+                            appInfo.flags = appInfo.flags and ApplicationInfo.FLAG_SYSTEM.inv()
+                            param.setResult(appInfo)
+                        }
                     }
-                }
-            })
+                })
+            }
         }
 
         ModuleHelper.findAndHookMethod("com.miui.networkassistant.ui.fragment.ShowAppDetailFragment", lpparam.classLoader, "initFirewallData", object : MethodHook() {
@@ -545,7 +627,7 @@ object Various {
                                     view.setBackground(null)
                                 }
                             } catch (t: Throwable) {
-                                if (t is OutOfMemoryError || t is ThreadDeath || t is VirtualMachineError) throw t
+                                RuntimeFatality.throwIfFatal(t)
                                 XposedHelpers.log(t)
                             }
                         }
@@ -588,7 +670,14 @@ object Various {
 
     @JvmStatic
     fun InterceptPermHook(lpparam: PackageReadyParam) {
-        val interceptBaseFragmentClass = XposedHelpers.findClass("com.miui.permcenter.privacymanager.InterceptBaseFragment", lpparam.classLoader)
+        val interceptBaseFragmentClass = XposedHelpers.findClassIfExists(
+            "com.miui.permcenter.privacymanager.InterceptBaseFragment",
+            lpparam.classLoader
+        )
+        if (interceptBaseFragmentClass == null) {
+            XposedHelpers.log("InterceptPermHook", "Cannot find InterceptBaseFragment class!")
+            return
+        }
         val innerClasses = interceptBaseFragmentClass.declaredClasses
         var handlerClass: Class<*>? = null
         for (innerClass in innerClasses) {
@@ -712,34 +801,49 @@ object Various {
         } else {
             ModuleHelper.findAndHookMethod("com.lbe.security.ui.ClipboardTipDialog", lpparam.classLoader, "customReadClipboardDialog", Context::class.java, String::class.java, HookerClassHelper.returnConstant(true))
 
-            val securityPromptHandler = XposedHelpers.findClass("com.lbe.security.ui.SecurityPromptHandler", lpparam.classLoader)
-            ModuleHelper.hookAllMethods(securityPromptHandler, "handleNewRequest", object : MethodHook() {
-                override fun before(param: BeforeHookCallback) {
-                    val permissionRequest = param.args[0] ?: return
-                    val permId = XposedHelpers.callMethod(permissionRequest, "getPermission") as? Long ?: return
-                    if (permId == 274877906944L) {
-                        XposedHelpers.setAdditionalInstanceField(param.thisObject, "currentStopped", XposedHelpers.getBooleanField(param.thisObject, "mStopped"))
-                    }
-                }
-
-                override fun after(param: AfterHookCallback) {
-                    val permissionRequest = param.args[0] ?: return
-                    val permId = XposedHelpers.callMethod(permissionRequest, "getPermission") as? Long ?: return
-                    if (permId == 274877906944L) {
-                        val mStopped = XposedHelpers.getAdditionalInstanceField(param.thisObject, "currentStopped") as? Boolean ?: return
-                        if (mStopped) {
-                            XposedHelpers.callMethod(param.thisObject, "gotChoice", 3, true, true)
+            try {
+                val securityPromptHandler = XposedHelpers.findClassIfExists(
+                    "com.lbe.security.ui.SecurityPromptHandler",
+                    lpparam.classLoader
+                ) ?: return
+                ModuleHelper.hookAllMethods(securityPromptHandler, "handleNewRequest", object : MethodHook() {
+                    override fun before(param: BeforeHookCallback) {
+                        val permissionRequest = param.args[0] ?: return
+                        val permId = XposedHelpers.callMethod(permissionRequest, "getPermission") as? Long ?: return
+                        if (permId == 274877906944L) {
+                            XposedHelpers.setAdditionalInstanceField(param.thisObject, "currentStopped", XposedHelpers.getBooleanField(param.thisObject, "mStopped"))
                         }
-                        XposedHelpers.removeAdditionalInstanceField(param.thisObject, "currentStopped")
                     }
-                }
-            })
+
+                    override fun after(param: AfterHookCallback) {
+                        val permissionRequest = param.args[0] ?: return
+                        val permId = XposedHelpers.callMethod(permissionRequest, "getPermission") as? Long ?: return
+                        if (permId == 274877906944L) {
+                            val mStopped = XposedHelpers.getAdditionalInstanceField(param.thisObject, "currentStopped") as? Boolean ?: return
+                            if (mStopped) {
+                                XposedHelpers.callMethod(param.thisObject, "gotChoice", 3, true, true)
+                            }
+                            XposedHelpers.removeAdditionalInstanceField(param.thisObject, "currentStopped")
+                        }
+                    }
+                })
+            } catch (t: Throwable) {
+                RuntimeFatality.throwIfFatal(t)
+                XposedHelpers.log(t)
+            }
         }
     }
 
     @JvmStatic
     fun ShowTempInBatteryHook(lpparam: PackageReadyParam) {
-        val interceptBaseFragmentClass = XposedHelpers.findClass("com.miui.powercenter.BatteryFragment", lpparam.classLoader)
+        val interceptBaseFragmentClass = XposedHelpers.findClassIfExists(
+            "com.miui.powercenter.BatteryFragment",
+            lpparam.classLoader
+        )
+        if (interceptBaseFragmentClass == null) {
+            XposedHelpers.log("ShowTempInBatteryHook", "Cannot find BatteryFragment class!")
+            return
+        }
         val innerClasses = interceptBaseFragmentClass.declaredClasses
         var handlerClass: Class<*>? = null
         for (innerClass in innerClasses) {
@@ -819,7 +923,7 @@ object Various {
                             featMap["mi_lab_ai_clipboard_enable"] = 0
                             featMap["mi_lab_blur_location_enable"] = 0
                         } catch (fatal: Throwable) {
-                            if (fatal is OutOfMemoryError || fatal is ThreadDeath || fatal is VirtualMachineError) throw fatal
+                            RuntimeFatality.throwIfFatal(fatal)
                         }
                     }
                 }
@@ -1166,5 +1270,102 @@ object Various {
                 })
             }
         })
+    }
+
+    @JvmStatic
+    internal fun shouldHideReportMenuItem(itemId: Int): Boolean = itemId == 4
+
+    @JvmStatic
+    fun HideReportButtonHook(lpparam: PackageReadyParam) {
+        ModuleHelper.findAndHookMethod(
+            "com.miui.appmanager.ApplicationsDetailsActivity",
+            lpparam.classLoader,
+            "onCreateOptionsMenu",
+            Menu::class.java,
+            object : MethodHook() {
+                override fun after(param: AfterHookCallback) {
+                    val menu = param.args[0] as? Menu ?: return
+                    val reportMenu = menu.findItem(4)
+                    if (reportMenu != null && shouldHideReportMenuItem(reportMenu.itemId)) {
+                        reportMenu.isVisible = false
+                    }
+                }
+            }
+        )
+    }
+
+    @JvmStatic
+    internal fun purifiedInstallerBoolean(prefKey: String): Boolean? = when (prefKey) {
+        "ads_enable", "app_store_recommend", "secure_verify_enable" -> false
+        "secure_verify_cloud_once" -> true
+        else -> null
+    }
+
+    @JvmStatic
+    internal fun purifiedInstallerSystemInt(prefKey: String): Int? =
+        if (prefKey == "virus_scan_install") 0 else null
+
+    @JvmStatic
+    internal fun purifiedInstallerSecureInt(prefKey: String): Int? =
+        if (prefKey == "miui_safe_mode") 0 else null
+
+    @JvmStatic
+    fun PurePackageInstallerHook(lpparam: PackageReadyParam) {
+        ModuleHelper.findAndHookMethod(
+            "android.app.SharedPreferencesImpl",
+            lpparam.classLoader,
+            "getBoolean",
+            String::class.java,
+            Boolean::class.javaPrimitiveType,
+            object : MethodHook() {
+                override fun before(param: BeforeHookCallback) {
+                    val override = purifiedInstallerBoolean(param.getArg(0) as? String ?: return)
+                    if (override != null) param.returnAndSkip(override)
+                }
+            }
+        )
+        ModuleHelper.findAndHookMethod(
+            Settings.System::class.java,
+            "getInt",
+            ContentResolver::class.java,
+            String::class.java,
+            Int::class.javaPrimitiveType,
+            object : MethodHook() {
+                override fun before(param: BeforeHookCallback) {
+                    val override = purifiedInstallerSystemInt(param.getArg(1) as? String ?: return)
+                    if (override != null) param.returnAndSkip(override)
+                }
+            }
+        )
+        ModuleHelper.findAndHookMethod(
+            Settings.Secure::class.java,
+            "getInt",
+            ContentResolver::class.java,
+            String::class.java,
+            Int::class.javaPrimitiveType,
+            object : MethodHook() {
+                override fun before(param: BeforeHookCallback) {
+                    val override = purifiedInstallerSecureInt(param.getArg(1) as? String ?: return)
+                    if (override != null) param.returnAndSkip(override)
+                }
+            }
+        )
+        ModuleHelper.findAndHookMethodSilently(
+            "com.miui.packageInstaller.ui.listcomponets.SafeModeTipViewObject\$ViewHolder",
+            lpparam.classLoader,
+            "updateSuggestionMsgState",
+            Context::class.java,
+            Boolean::class.javaPrimitiveType,
+            object : MethodHook() {
+                override fun after(param: AfterHookCallback) {
+                    val itemView = XposedHelpers.getObjectField(param.getThisObject(), "itemView") as? View ?: return
+                    itemView.visibility = View.GONE
+                    itemView.layoutParams?.let { lp ->
+                        lp.height = 0
+                        itemView.layoutParams = lp
+                    }
+                }
+            }
+        )
     }
 }

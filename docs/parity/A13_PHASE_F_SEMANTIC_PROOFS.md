@@ -1,0 +1,7548 @@
+# A13 Phase F-R5 Semantic Proofs
+
+Automatic PRESENT requires normalized body IDENTICAL, the same relevant preference keys,
+and compatible installer ownership (BODY_RELATION=IDENTICAL).
+Non-identical owners require an explicit reviewed manifest (BODY_RELATION=REVIEWED_VARIANT)
+with filled difference fields and KEY_OWNERSHIP_EVIDENCE.
+Prefix, ranked-first, same-XML, and same-basename-alone never assign semantic ownership.
+SequenceMatcher ratio never authorizes PRESENT.
+Same-key reads or a visible row in both XML files alone are IMPLEMENTATION_PRESENCE.
+
+## PROOF_ACTION_SLOT_controls_backlong
+
+- PROOF_ID: `PROOF_ACTION_SLOT_controls_backlong`
+- BODY_RELATION: `REVIEWED_VARIANT`
+- A14_OWNER_PATH: `mods/utils/GlobalActionConfig.kt / action picker`
+- A14_SYMBOL: `handleAction/handleNavBarAction`
+- A14_INSTALLER: `SystemUiInstaller / LauncherInstaller / SystemServerInstaller`
+- A14_HOOK_TARGETS: `(no ROM member; GlobalActions dispatcher)`
+- A14_CALLBACK_PHASE: `n/a`
+- A13_OWNER_PATH: `mods/GlobalActions.kt / Controls.kt / LauncherGestureHooks.kt`
+- A13_SYMBOL: `handleAction/handleNavBarAction`
+- A13_INSTALLER: `installers/*Installer.java`
+- A13_HOOK_TARGETS: `(no ROM member; GlobalActions dispatcher)`
+- A13_CALLBACK_PHASE: `n/a`
+- PREFERENCE_KEYS: `controls_backlong,controls_backlong_action`
+- VALUE_DOMAIN: action picker; stored as controls_backlong_action
+- DEFAULT_SEMANTICS: action=1 keeps ROM default
+- RESULT/ARGUMENT_BEHAVIOR: UI key opens the action picker; the int in _action selects handleAction
+- API33_VARIANT_REASON: A13 and A14 share the visible picker row plus the companion _action int domain.
+- DIFF_SUMMARY: Both trees persist the selected action id in `controls_backlong_action`. The visible `controls_backlong` row is the picker, not a host hook. Dispatcher is handleAction/handleNavBarAction on both trees.
+- VALUE_DEFAULT_COMPARISON: Both default the stored action id to 1 (keep ROM handler).
+- HOOK_TARGET_COMPARISON: No SystemUI/Home class dump: the UI key has no host member; consumption is in-module GlobalActions.
+- CALLBACK_SEMANTICS_COMPARISON: No Xposed callback on the picker row; click opens the action selector.
+- ARG_RESULT_COMPARISON: No setResult on this row. The stored int is later dispatched by handleAction.
+- A14_ONLY_BRANCHES: none for the slot row itself
+- WHY_USER_BEHAVIOR_IS_EQUIVALENT: The user configures the same action picker; the companion _action integer is consumed by the shared GlobalActions dispatcher on both trees.
+- KEY_OWNERSHIP_EVIDENCE: controls_backlong: companion persisted key controls_backlong_action is read by handleAction/handleNavBarAction on both trees
+- A14_KEY_OWNER_REFERENCE: GlobalActions handleAction companion controls_backlong_action
+- A13_KEY_OWNER_REFERENCE: GlobalActions handleAction companion controls_backlong_action
+- PROOF_CONCLUSION: `PRESENT_A13_VARIANT`
+
+## PROOF_OG_FINGERPRINT_HAPTIC_FAILURE
+
+- PROOF_ID: `PROOF_OG_FINGERPRINT_HAPTIC_FAILURE`
+- BODY_RELATION: `REVIEWED_VARIANT`
+- A14_OWNER_PATH: `app/src/main/java/tv/withaibuild/customiuizer/mods/Controls.kt`
+- A14_SYMBOL: `FingerprintHapticFailureHook`
+- A14_INSTALLER: `installer condition controls_fingerprintfailure`
+- A14_HOOK_TARGETS: `com.android.server.biometrics.sensors.AcquisitionClient#vibrateError`
+- A14_CALLBACK_PHASE: `intercept`
+- A13_OWNER_PATH: `app/src/main/java/tv/withaibuild/customiuizer/mods/Controls.kt`
+- A13_SYMBOL: `FingerprintHapticFailureHook`
+- A13_INSTALLER: `installers/SystemServerInstaller.java if controls_fingerprintfailure`
+- A13_HOOK_TARGETS: `com.android.server.biometrics.sensors.AcquisitionClient#vibrateError`
+- A13_CALLBACK_PHASE: `before`
+- PREFERENCE_KEYS: `controls_fingerprintfailure`
+- VALUE_DOMAIN: boolean; default false
+- DEFAULT_SEMANTICS: off keeps ROM error vibration
+- RESULT/ARGUMENT_BEHAVIOR: Skip AcquisitionClient.vibrateError entirely so fingerprint failure does not vibrate.
+- API33_VARIANT_REASON: A14 intercept sets skipped=true result=null and never proceeds. A13 before returnAndSkip(null). Same skip of vibrateError.
+- DIFF_SUMMARY: Same member vibrateError skipped unconditionally once the installer gate is on. Callback adapter only.
+- VALUE_DEFAULT_COMPARISON: Boolean gate on both trees; no extra failure-haptic modes.
+- HOOK_TARGET_COMPARISON: Same AcquisitionClient.vibrateError.
+- CALLBACK_SEMANTICS_COMPARISON: A14 intercept skip vs A13 before returnAndSkip; original not called.
+- ARG_RESULT_COMPARISON: Skipped result null; no argument rewrite.
+- A14_ONLY_BRANCHES: none for this key
+- WHY_USER_BEHAVIOR_IS_EQUIVALENT: Toggle on means no error haptic on fingerprint failure. Same skipped ROM method.
+- KEY_OWNERSHIP_EVIDENCE: controls_fingerprintfailure: INSTALLER_CALLEE → FingerprintHapticFailureHook on both trees
+- A14_KEY_OWNER_REFERENCE: Controls.kt::FingerprintHapticFailureHook INSTALLER_CALLEE
+- A13_KEY_OWNER_REFERENCE: Controls.kt::FingerprintHapticFailureHook INSTALLER_CALLEE via SystemServerInstaller.java
+- PROOF_CONCLUSION: `PRESENT_A13_VARIANT`
+
+## PROOF_OG_FINGERPRINT_SCREEN_ON
+
+- PROOF_ID: `PROOF_OG_FINGERPRINT_SCREEN_ON`
+- BODY_RELATION: `REVIEWED_VARIANT`
+- A14_OWNER_PATH: `app/src/main/java/tv/withaibuild/customiuizer/mods/Controls.kt`
+- A14_SYMBOL: `FingerprintScreenOnHook`
+- A14_INSTALLER: `installer condition controls_fingerprintscreen`
+- A14_HOOK_TARGETS: `com.android.server.biometrics.sensors.AuthenticationClient#onAuthenticated`
+- A14_CALLBACK_PHASE: `intercept`
+- A13_OWNER_PATH: `app/src/main/java/tv/withaibuild/customiuizer/mods/Controls.kt`
+- A13_SYMBOL: `FingerprintScreenOnHook`
+- A13_INSTALLER: `installers/SystemServerInstaller.java if controls_fingerprintscreen`
+- A13_HOOK_TARGETS: `com.android.server.biometrics.sensors.AuthenticationClient#onAuthenticated`
+- A13_CALLBACK_PHASE: `after`
+- PREFERENCE_KEYS: `controls_fingerprintscreen`
+- VALUE_DOMAIN: boolean; default false
+- DEFAULT_SEMANTICS: off keeps ROM screen-off fingerprint failure behavior
+- RESULT/ARGUMENT_BEHAVIOR: After onAuthenticated, if authentication failed and PowerManager is not interactive, send WakeUp. Success path does not wake. Authentication result is unchanged.
+- API33_VARIANT_REASON: A14 intercept proceeds once then applies the wake side-effect. A13 after applies the same mAuthSuccess / isInteractive tests and WakeUp. No extra A14 wake condition.
+- DIFF_SUMMARY: Shared: onAuthenticated; skip wake on success or if already interactive; WakeUp on failed auth while screen off. Adapter: intercept vs after.
+- VALUE_DEFAULT_COMPARISON: Boolean installer gate on both trees.
+- HOOK_TARGET_COMPARISON: Same AuthenticationClient.onAuthenticated.
+- CALLBACK_SEMANTICS_COMPARISON: A14 proceed-once then side-effect equals A13 after side-effect.
+- ARG_RESULT_COMPARISON: Host result unchanged; WakeUp is a GlobalActions side-effect.
+- A14_ONLY_BRANCHES: none for this key
+- WHY_USER_BEHAVIOR_IS_EQUIVALENT: Failed fingerprint while the screen is off wakes the device. Same tests and action.
+- KEY_OWNERSHIP_EVIDENCE: controls_fingerprintscreen: INSTALLER_CALLEE → FingerprintScreenOnHook on both trees
+- A14_KEY_OWNER_REFERENCE: Controls.kt::FingerprintScreenOnHook INSTALLER_CALLEE
+- A13_KEY_OWNER_REFERENCE: Controls.kt::FingerprintScreenOnHook INSTALLER_CALLEE via SystemServerInstaller.java
+- PROOF_CONCLUSION: `PRESENT_A13_VARIANT`
+
+## PROOF_OG_FINGERPRINT_HAPTIC_SUCCESS
+
+- PROOF_ID: `PROOF_OG_FINGERPRINT_HAPTIC_SUCCESS`
+- BODY_RELATION: `REVIEWED_VARIANT`
+- A14_OWNER_PATH: `app/src/main/java/tv/withaibuild/customiuizer/mods/Controls.kt`
+- A14_SYMBOL: `FingerprintHapticSuccessHook`
+- A14_INSTALLER: `installer condition controls_fingerprintsuccess > 1`
+- A14_HOOK_TARGETS: `com.android.server.biometrics.sensors.AuthenticationClient#onAuthenticated`
+- A14_CALLBACK_PHASE: `intercept`
+- A13_OWNER_PATH: `app/src/main/java/tv/withaibuild/customiuizer/mods/Controls.kt`
+- A13_SYMBOL: `FingerprintHapticSuccessHook`
+- A13_INSTALLER: `installers/SystemServerInstaller.java if controls_fingerprintsuccess > 1`
+- A13_HOOK_TARGETS: `com.android.server.biometrics.sensors.AuthenticationClient#onAuthenticated`
+- A13_CALLBACK_PHASE: `after`
+- PREFERENCE_KEYS: `controls_fingerprintsuccess,controls_fingerprintsuccess_ignore`
+- VALUE_DOMAIN: string-int 1=ROM default, 2=light haptic, 3=strong haptic; controls_fingerprintsuccess_ignore is a boolean helper consumed by this same hook
+- DEFAULT_SEMANTICS: default `1` keeps ROM success haptic; 2/3 replace it
+- RESULT/ARGUMENT_BEHAVIOR: After AuthenticationClient.onAuthenticated, if mAuthSuccess: opt 2 light vibration, opt 3 strong vibration; ignoreSystem comes from controls_fingerprintsuccess_ignore. The authentication result is not rewritten.
+- API33_VARIANT_REASON: A14 intercept always chain.proceed() once then runs the haptic side-effect. A13 after runs the same haptic side-effect. No skip of onAuthenticated.
+- DIFF_SUMMARY: Shared: AuthenticationClient.onAuthenticated; mAuthSuccess gate; getString(controls_fingerprintsuccess) 2/3 haptic; ignore boolean. Differ: A14 intercept+proceed then haptic vs A13 after haptic. A14 uses toInt(); A13 uses toIntOrNull()?:1. Unknown values keep default 1 on A13; A14 toInt() can throw and is caught.
+- VALUE_DEFAULT_COMPARISON: Both default the visible list to 1 (keep ROM). The ignore helper is consumed by this same hook, not by system_vibration/toast owners.
+- HOOK_TARGET_COMPARISON: Same AuthenticationClient.onAuthenticated member.
+- CALLBACK_SEMANTICS_COMPARISON: A14 proceed-once then side-effect equals A13 after side-effect; neither returnAndSkip.
+- ARG_RESULT_COMPARISON: Host return value unchanged; only vibrator side-effect after success.
+- A14_ONLY_BRANCHES: none that add a fourth haptic mode; intercept wrapper only
+- WHY_USER_BEHAVIOR_IS_EQUIVALENT: The user-visible control is success-haptic strength. Both trees apply light/strong vibration only on authenticated success and leave ROM behavior at value 1.
+- KEY_OWNERSHIP_EVIDENCE: controls_fingerprintsuccess: LITERAL_READ + INSTALLER_CALLEE in FingerprintHapticSuccessHook; controls_fingerprintsuccess_ignore: LITERAL_READ in the same hook (ignoreSystem). system_blocktoasts / system_nolightuponcharges / system_vibration are not consumed here.
+- A14_KEY_OWNER_REFERENCE: Controls.kt::FingerprintHapticSuccessHook LITERAL_READ controls_fingerprintsuccess,controls_fingerprintsuccess_ignore
+- A13_KEY_OWNER_REFERENCE: Controls.kt::FingerprintHapticSuccessHook LITERAL_READ + SystemServerInstaller INSTALLER_CALLEE
+- PROOF_CONCLUSION: `PRESENT_A13_VARIANT`
+
+## PROOF_OG_NO_FINGERPRINT_WAKE
+
+- PROOF_ID: `PROOF_OG_NO_FINGERPRINT_WAKE`
+- BODY_RELATION: `REVIEWED_VARIANT`
+- A14_OWNER_PATH: `app/src/main/java/tv/withaibuild/customiuizer/mods/Controls.kt`
+- A14_SYMBOL: `NoFingerprintWakeHook`
+- A14_INSTALLER: `A14 SystemServer feature / installer condition controls_fingerprintwake`
+- A14_HOOK_TARGETS: `com.android.server.policy.MiuiPhoneWindowManager#processBackFingerprintDpcenterEvent`
+- A14_CALLBACK_PHASE: `intercept`
+- A13_OWNER_PATH: `app/src/main/java/tv/withaibuild/customiuizer/mods/Controls.kt`
+- A13_SYMBOL: `NoFingerprintWakeHook`
+- A13_INSTALLER: `installers/SystemServerInstaller.java if controls_fingerprintwake`
+- A13_HOOK_TARGETS: `com.android.server.policy.MiuiPhoneWindowManager#processBackFingerprintDpcenterEvent`
+- A13_CALLBACK_PHASE: `before`
+- PREFERENCE_KEYS: `controls_fingerprintwake`
+- VALUE_DOMAIN: boolean; default false; installer gate only (hook body has no pref read)
+- DEFAULT_SEMANTICS: off keeps ROM back-fingerprint wake-when-screen-off
+- RESULT/ARGUMENT_BEHAVIOR: When the hooked method's screen-on boolean is false, skip the original processBackFingerprintDpcenterEvent so a back-fingerprint tap does not wake the device. When screen-on is true, the original method runs.
+- API33_VARIANT_REASON: A14 intercept: if !isScreenOn skip with null and do not chain.proceed(); else one proceed. A13 before: if !isScreenOn returnAndSkip(null). Same member, same screen-on test, same skip.
+- DIFF_SUMMARY: Shared: MiuiPhoneWindowManager.processBackFingerprintDpcenterEvent(KeyEvent, boolean); skip original when arg1 is false. Differ: A14 intercept/proceed-once vs A13 before skip. No extra A14 user-visible branch on controls_fingerprintwake.
+- VALUE_DEFAULT_COMPARISON: Both use a boolean installer gate; neither introduces extra modes.
+- HOOK_TARGET_COMPARISON: Same class and member on both trees.
+- CALLBACK_SEMANTICS_COMPARISON: A14 intercept skip-or-proceed-once maps to A13 before returnAndSkip; the original is not invoked on the skipped path on either tree.
+- ARG_RESULT_COMPARISON: Skipped result is null; the KeyEvent is not rewritten.
+- A14_ONLY_BRANCHES: none for this key; intercept scaffolding only
+- WHY_USER_BEHAVIOR_IS_EQUIVALENT: User contract is: with the toggle on, a back-fingerprint press while the screen is off does not wake the device. That is the same skip on the same ROM method.
+- KEY_OWNERSHIP_EVIDENCE: controls_fingerprintwake: INSTALLER_CALLEE on both trees (SystemServerInstaller / A14 installer condition → NoFingerprintWakeHook)
+- A14_KEY_OWNER_REFERENCE: Controls.kt::NoFingerprintWakeHook INSTALLER_CALLEE controls_fingerprintwake
+- A13_KEY_OWNER_REFERENCE: Controls.kt::NoFingerprintWakeHook INSTALLER_CALLEE via SystemServerInstaller.java
+- PROOF_CONCLUSION: `PRESENT_A13_VARIANT`
+
+## PROOF_ACTION_SLOT_controls_fsg_assist_left
+
+- PROOF_ID: `PROOF_ACTION_SLOT_controls_fsg_assist_left`
+- BODY_RELATION: `REVIEWED_VARIANT`
+- A14_OWNER_PATH: `mods/utils/GlobalActionConfig.kt / action picker`
+- A14_SYMBOL: `handleAction/handleNavBarAction`
+- A14_INSTALLER: `SystemUiInstaller / LauncherInstaller / SystemServerInstaller`
+- A14_HOOK_TARGETS: `(no ROM member; GlobalActions dispatcher)`
+- A14_CALLBACK_PHASE: `n/a`
+- A13_OWNER_PATH: `mods/GlobalActions.kt / Controls.kt / LauncherGestureHooks.kt`
+- A13_SYMBOL: `handleAction/handleNavBarAction`
+- A13_INSTALLER: `installers/*Installer.java`
+- A13_HOOK_TARGETS: `(no ROM member; GlobalActions dispatcher)`
+- A13_CALLBACK_PHASE: `n/a`
+- PREFERENCE_KEYS: `controls_fsg_assist_left,controls_fsg_assist_left_action`
+- VALUE_DOMAIN: action picker; stored as controls_fsg_assist_left_action
+- DEFAULT_SEMANTICS: action=1 keeps ROM default
+- RESULT/ARGUMENT_BEHAVIOR: UI key opens the action picker; the int in _action selects handleAction
+- API33_VARIANT_REASON: A13 and A14 share the visible picker row plus the companion _action int domain.
+- DIFF_SUMMARY: Both trees persist the selected action id in `controls_fsg_assist_left_action`. The visible `controls_fsg_assist_left` row is the picker, not a host hook. Dispatcher is handleAction/handleNavBarAction on both trees.
+- VALUE_DEFAULT_COMPARISON: Both default the stored action id to 1 (keep ROM handler).
+- HOOK_TARGET_COMPARISON: No SystemUI/Home class dump: the UI key has no host member; consumption is in-module GlobalActions.
+- CALLBACK_SEMANTICS_COMPARISON: No Xposed callback on the picker row; click opens the action selector.
+- ARG_RESULT_COMPARISON: No setResult on this row. The stored int is later dispatched by handleAction.
+- A14_ONLY_BRANCHES: none for the slot row itself
+- WHY_USER_BEHAVIOR_IS_EQUIVALENT: The user configures the same action picker; the companion _action integer is consumed by the shared GlobalActions dispatcher on both trees.
+- KEY_OWNERSHIP_EVIDENCE: controls_fsg_assist_left: companion persisted key controls_fsg_assist_left_action is read by handleAction/handleNavBarAction on both trees
+- A14_KEY_OWNER_REFERENCE: GlobalActions handleAction companion controls_fsg_assist_left_action
+- A13_KEY_OWNER_REFERENCE: GlobalActions handleAction companion controls_fsg_assist_left_action
+- PROOF_CONCLUSION: `PRESENT_A13_VARIANT`
+
+## PROOF_ACTION_SLOT_controls_fsg_assist_right
+
+- PROOF_ID: `PROOF_ACTION_SLOT_controls_fsg_assist_right`
+- BODY_RELATION: `REVIEWED_VARIANT`
+- A14_OWNER_PATH: `mods/utils/GlobalActionConfig.kt / action picker`
+- A14_SYMBOL: `handleAction/handleNavBarAction`
+- A14_INSTALLER: `SystemUiInstaller / LauncherInstaller / SystemServerInstaller`
+- A14_HOOK_TARGETS: `(no ROM member; GlobalActions dispatcher)`
+- A14_CALLBACK_PHASE: `n/a`
+- A13_OWNER_PATH: `mods/GlobalActions.kt / Controls.kt / LauncherGestureHooks.kt`
+- A13_SYMBOL: `handleAction/handleNavBarAction`
+- A13_INSTALLER: `installers/*Installer.java`
+- A13_HOOK_TARGETS: `(no ROM member; GlobalActions dispatcher)`
+- A13_CALLBACK_PHASE: `n/a`
+- PREFERENCE_KEYS: `controls_fsg_assist_right,controls_fsg_assist_right_action`
+- VALUE_DOMAIN: action picker; stored as controls_fsg_assist_right_action
+- DEFAULT_SEMANTICS: action=1 keeps ROM default
+- RESULT/ARGUMENT_BEHAVIOR: UI key opens the action picker; the int in _action selects handleAction
+- API33_VARIANT_REASON: A13 and A14 share the visible picker row plus the companion _action int domain.
+- DIFF_SUMMARY: Both trees persist the selected action id in `controls_fsg_assist_right_action`. The visible `controls_fsg_assist_right` row is the picker, not a host hook. Dispatcher is handleAction/handleNavBarAction on both trees.
+- VALUE_DEFAULT_COMPARISON: Both default the stored action id to 1 (keep ROM handler).
+- HOOK_TARGET_COMPARISON: No SystemUI/Home class dump: the UI key has no host member; consumption is in-module GlobalActions.
+- CALLBACK_SEMANTICS_COMPARISON: No Xposed callback on the picker row; click opens the action selector.
+- ARG_RESULT_COMPARISON: No setResult on this row. The stored int is later dispatched by handleAction.
+- A14_ONLY_BRANCHES: none for the slot row itself
+- WHY_USER_BEHAVIOR_IS_EQUIVALENT: The user configures the same action picker; the companion _action integer is consumed by the shared GlobalActions dispatcher on both trees.
+- KEY_OWNERSHIP_EVIDENCE: controls_fsg_assist_right: companion persisted key controls_fsg_assist_right_action is read by handleAction/handleNavBarAction on both trees
+- A14_KEY_OWNER_REFERENCE: GlobalActions handleAction companion controls_fsg_assist_right_action
+- A13_KEY_OWNER_REFERENCE: GlobalActions handleAction companion controls_fsg_assist_right_action
+- PROOF_CONCLUSION: `PRESENT_A13_VARIANT`
+
+## PROOF_R5_BackGestureAreaHeightHook_controls_fsg_coverage
+
+- PROOF_ID: `PROOF_R5_BackGestureAreaHeightHook_controls_fsg_coverage`
+- BODY_RELATION: `REVIEWED_VARIANT`
+- A14_OWNER_PATH: `app/src/main/java/tv/withaibuild/customiuizer/mods/Controls.kt`
+- A14_SYMBOL: `BackGestureAreaHeightHook`
+- A14_INSTALLER: `A14 installer/spec gate for controls_fsg_coverage`
+- A14_HOOK_TARGETS: `com.miui.home.recents.GestureStubView#getGestureStubWindowParam`
+- A14_CALLBACK_PHASE: `intercept`
+- A13_OWNER_PATH: `app/src/main/java/tv/withaibuild/customiuizer/mods/Controls.kt`
+- A13_SYMBOL: `BackGestureAreaHeightHook`
+- A13_INSTALLER: `A13 installer gate for controls_fsg_coverage`
+- A13_HOOK_TARGETS: `com.miui.home.recents.GestureStubView#getGestureStubWindowParam`
+- A13_CALLBACK_PHASE: `after`
+- PREFERENCE_KEYS: `controls_fsg_coverage`
+- VALUE_DOMAIN: owner-local preference domain
+- DEFAULT_SEMANTICS: same persisted keys consumed by both owners
+- RESULT/ARGUMENT_BEHAVIOR: A14 ops: result_assign[null]; chain.proceed[chain.proceed()]. A13 ops: setResult[lp]. Keys controls_fsg_coverage rewrite the same host members.
+- API33_VARIANT_REASON: A14 callback intercept vs A13 after on members A14[com.miui.home.recents.GestureStubView#getGestureStubWindowParam] / A13[com.miui.home.recents.GestureStubView#getGestureStubWindowParam]. Inner preference reads of controls_fsg_coverage match; intercept proceed-once maps to before returnAndSkip or after side-effect.
+- DIFF_SUMMARY: Shared members com.miui.home.recents.GestureStubView#getGestureStubWindowParam. Differ: A14 phases intercept vs A13 after; A14 result_assign[null]; chain.proceed[chain.proceed()] vs A13 setResult[lp].
+- VALUE_DEFAULT_COMPARISON: both consume controls_fsg_coverage in the owner body or installer gate
+- HOOK_TARGET_COMPARISON: A14=com.miui.home.recents.GestureStubView#getGestureStubWindowParam; A13=com.miui.home.recents.GestureStubView#getGestureStubWindowParam
+- CALLBACK_SEMANTICS_COMPARISON: A14 intercept vs A13 after; skipped paths do not invoke the original, proceed-once equals after side-effect
+- ARG_RESULT_COMPARISON: A14=result_assign[null]; chain.proceed[chain.proceed()]; A13=setResult[lp]
+- A14_ONLY_BRANCHES: none beyond intercept scaffolding for this owner pair
+- WHY_USER_BEHAVIOR_IS_EQUIVALENT: User-visible contract of controls_fsg_coverage is the same host rewrite; callback adapter and null-safety differ.
+- KEY_OWNERSHIP_EVIDENCE: controls_fsg_coverage: LITERAL_READ and/or INSTALLER_CALLEE in BackGestureAreaHeightHook/BackGestureAreaHeightHook
+- A14_KEY_OWNER_REFERENCE: app/src/main/java/tv/withaibuild/customiuizer/mods/Controls.kt::BackGestureAreaHeightHook
+- A13_KEY_OWNER_REFERENCE: app/src/main/java/tv/withaibuild/customiuizer/mods/Controls.kt::BackGestureAreaHeightHook
+- PROOF_CONCLUSION: `PRESENT_A13_VARIANT`
+
+## PROOF_FSG_HORIZ
+
+- PROOF_ID: `PROOF_FSG_HORIZ`
+- BODY_RELATION: `REVIEWED_VARIANT`
+- A14_OWNER_PATH: `app/src/main/java/tv/withaibuild/customiuizer/mods/LauncherGestureHooks.kt`
+- A14_SYMBOL: `FSGesturesHook`
+- A14_INSTALLER: `ForceFsgNavBarCallerScope + Launcher installer / A14 launcher features`
+- A14_HOOK_TARGETS: `com.miui.home.launcher.DeviceConfig#usingFsGesture,com.miui.home.recents.BaseRecentsImpl#createAndAddNavStubView,com.miui.home.recents.BaseRecentsImpl#updateFsgWindowState,com.miui.launcher.utils.MiuiSettingsUtils#getGlobalBoolean,com.miui.home.recents.GestureStubView#onTouchEvent,BaseRecentsImpl#lambda$showBackStubWindow,BaseRecentsImpl#lambda$updateFsgWindowVisibilityState`
+- A14_CALLBACK_PHASE: `intercept`
+- A13_OWNER_PATH: `app/src/main/java/tv/withaibuild/customiuizer/mods/LauncherGestureHooks.kt`
+- A13_SYMBOL: `FSGesturesHook`
+- A13_INSTALLER: `installers/LauncherInstaller.java`
+- A13_HOOK_TARGETS: `com.miui.home.launcher.DeviceConfig#usingFsGesture,com.miui.home.recents.BaseRecentsImpl#createAndAddNavStubView,com.miui.home.recents.BaseRecentsImpl#updateFsgWindowState,com.miui.launcher.utils.MiuiSettingsUtils#getGlobalBoolean,com.miui.home.recents.GestureStubView#onTouchEvent`
+- A13_CALLBACK_PHASE: `before,after`
+- PREFERENCE_KEYS: `controls_fsg_horiz,controls_fsg_horiz_apps`
+- VALUE_DOMAIN: boolean force-FSG + StringSet skip-apps
+- DEFAULT_SEMANTICS: controls_fsg_horiz default false; controls_fsg_horiz_apps default empty set
+- RESULT/ARGUMENT_BEHAVIOR: usingFsGesture constant true; createAndAddNavStubView skipped when REAL_FORCE_FSG_NAV_BAR is false; updateFsgWindowState removes mNavStubView when not fsg; getGlobalBoolean(force_fsg_nav_bar) stashes the real result then reports true for BaseRecents callers; GestureStubView.onTouchEvent skipped for packages in controls_fsg_horiz_apps
+- API33_VARIANT_REASON: A13 identifies BaseRecentsImpl callers of getGlobalBoolean by walking Thread.currentThread().stackTrace for class com.miui.home.recents.BaseRecentsImpl. A14 uses ForceFsgNavBarCallerScope ThreadLocal around three verified HyperOS members. On API33/MIUI 14 the lambda names are not required; the stack-trace class filter preserves force-FSG plus per-app skip without those members.
+- DIFF_SUMMARY: Shared: DeviceConfig.usingFsGesture=true, createAndAddNavStubView skip, updateFsgWindowState stub removal, GestureStubView skip-apps. Differ: A14 intercept/chain.proceed + ForceFsgNavBarCallerScope ThreadLocal on updateFsgWindowState and two BaseRecentsImpl lambdas; A13 before/after + stack-trace class scan in getGlobalBoolean.
+- VALUE_DEFAULT_COMPARISON: Both treat controls_fsg_horiz as the enable gate and controls_fsg_horiz_apps as the skip package set; neither inverts the boolean or replaces the StringSet with a whitelist.
+- HOOK_TARGET_COMPARISON: Shared members: usingFsGesture, createAndAddNavStubView, updateFsgWindowState, getGlobalBoolean, GestureStubView.onTouchEvent. A14-only: lambda$showBackStubWindow$*$BaseRecentsImpl(boolean) and lambda$updateFsgWindowVisibilityState$*$BaseRecentsImpl(boolean, String).
+- CALLBACK_SEMANTICS_COMPARISON: A14: intercept with one chain.proceed() on the unskipped path. A13: before returnAndSkip for createAndAddNavStubView/GestureStubView; after setResult(true) for getGlobalBoolean. proceed-once vs skip/setResult maps to the same skip-or-force-true user path.
+- ARG_RESULT_COMPARISON: Both stash REAL_FORCE_FSG_NAV_BAR from the real getGlobalBoolean result then report true to BaseRecents; both returnAndSkip(false) on GestureStubView ACTION_DOWN when the foreground package is in controls_fsg_horiz_apps; neither rewrites the MotionEvent.
+- A14_ONLY_BRANCHES: ForceFsgNavBarCallerScope fail-closed install of three verified BaseRecentsImpl callers; lambda$showBackStubWindow and lambda$updateFsgWindowVisibilityState. A13 does not hook those lambdas.
+- WHY_USER_BEHAVIOR_IS_EQUIVALENT: User-visible contract is force full-screen gestures plus disable horizontal FSG in selected apps. A13's stack-trace BaseRecentsImpl filter is the API33-compatible caller scope: it does not depend on HyperOS-only lambda names that MIUI 14 Home may lack. Extra A14 caller wrappers are robustness, not a second toggle.
+- PROOF_CONCLUSION: `PRESENT_A13_VARIANT`
+
+## PROOF_R5F_SwipeAndStopActionHook_controls_fsg_swipeandstop
+
+- PROOF_ID: `PROOF_R5F_SwipeAndStopActionHook_controls_fsg_swipeandstop`
+- BODY_RELATION: `REVIEWED_VARIANT`
+- A14_OWNER_PATH: `app/src/main/java/tv/withaibuild/customiuizer/mods/LauncherGestureHooks.kt`
+- A14_SYMBOL: `SwipeAndStopActionHook`
+- A14_INSTALLER: `A14 installer/spec gate for controls_fsg_swipeandstop,controls_fsg_swipeandstop_disablevibrate`
+- A14_HOOK_TARGETS: `com.miui.home.recents.GestureBackArrowView#setReadyFinish,com.miui.home.recents.GestureStubView#disableQuickSwitch,com.miui.home.recents.GestureStubView#isDisableQuickSwitch,com.miui.home.recents.GestureStubView$3#onSwipeStop,com.miui.home.recents.GestureStubView#getNextTask`
+- A14_CALLBACK_PHASE: `intercept`
+- A13_OWNER_PATH: `app/src/main/java/tv/withaibuild/customiuizer/mods/LauncherGestureHooks.kt`
+- A13_SYMBOL: `SwipeAndStopActionHook`
+- A13_INSTALLER: `A13 installer gate for controls_fsg_swipeandstop,controls_fsg_swipeandstop_disablevibrate`
+- A13_HOOK_TARGETS: `com.miui.home.recents.GestureBackArrowView#setReadyFinish,com.miui.home.recents.GestureStubView#disableQuickSwitch,com.miui.home.recents.GestureStubView#isDisableQuickSwitch,com.miui.home.recents.GestureStubView#getNextTask,android.os.Vibrator#vibrate`
+- A13_CALLBACK_PHASE: `before,after`
+- PREFERENCE_KEYS: `controls_fsg_swipeandstop,controls_fsg_swipeandstop_disablevibrate`
+- VALUE_DOMAIN: owner-local preference domain
+- DEFAULT_SEMANTICS: handleAction uses getInt(controls_fsg_swipeandstop_action,1); installer both require >1. getBoolean(controls_fsg_swipeandstop_disablevibrate) default false on both.
+- RESULT/ARGUMENT_BEHAVIOR: disableQuickSwitch: both rewrite arg[0]=false then proceed. isDisableQuickSwitch: both constant false. getNextTask: A13 never proceeds (dummy Task or null); A14 always proceeds then side-effect. setReadyFinish: A13 proceeds with optional nested vibrate skip; A14 proceeds after mutating mReadyState/mScale.
+- API33_VARIANT_REASON: Same toggle implemented on MIUI14 by skipping getNextTask and wrapping Vibrator.vibrate, versus HyperOS ReadyState animation + inner-class onSwipeStop + proceed-then-side-effect. Extra A13 Vibrator#vibrate wrap implements the same disablevibrate flag as A14 skipping performStrongVibration. Shared disableQuickSwitch/isDisableQuickSwitch rewrite is identical.
+- DIFF_SUMMARY: Shared: GestureStubView.disableQuickSwitch arg[0] forced false; isDisableQuickSwitch returnConstant(false). Custom action key is controls_fsg_swipeandstop with inDirection bundle. A13 MIUI14: nested Vibrator.vibrate DO_NOTHING around setReadyFinish when disablevibrate; getNextTask before always skips original — if switchApp && handleAction then returnAndSkip(new Task()) else returnAndSkip(null). A14 HyperOS: setReadyFinish intercepts ReadyState BACK->RECENT scale 1.17 + optional HookUtils.performStrongVibration unless disablevibrate; extra GestureStubView$3.onSwipeStop captures outer this; getNextTask proceeds then if nextTaskInfo && captured stub calls onBackCancelled + handleAction.
+- VALUE_DEFAULT_COMPARISON: handleAction uses getInt(controls_fsg_swipeandstop_action,1); installer both require >1. getBoolean(controls_fsg_swipeandstop_disablevibrate) default false on both.
+- HOOK_TARGET_COMPARISON: A14=com.miui.home.recents.GestureBackArrowView#setReadyFinish,com.miui.home.recents.GestureStubView#disableQuickSwitch,com.miui.home.recents.GestureStubView#isDisableQuickSwitch,com.miui.home.recents.GestureStubView$3#onSwipeStop,com.miui.home.recents.GestureStubView#getNextTask; A13=com.miui.home.recents.GestureBackArrowView#setReadyFinish,com.miui.home.recents.GestureStubView#disableQuickSwitch,com.miui.home.recents.GestureStubView#isDisableQuickSwitch,com.miui.home.recents.GestureStubView#getNextTask,android.os.Vibrator#vibrate
+- CALLBACK_SEMANTICS_COMPARISON: A14 intercept proceed-once on disableQuickSwitch/setReadyFinish/onSwipeStop/getNextTask. A13 before arg rewrite on disableQuickSwitch; before skip on getNextTask; before+after nested unhook around setReadyFinish. Skipped getNextTask on A13 does not invoke original; A14 getNextTask always invokes original.
+- ARG_RESULT_COMPARISON: Shared arg[0]=false on disableQuickSwitch; shared false result on isDisableQuickSwitch. A13 getNextTask result is new Task() or null and original is skipped. A14 getNextTask result is the ROM result. A13 dummy Task skip versus A14 unchanged result plus onBackCancelled is the MIUI 14 versus HyperOS 1 hijack shape.
+- A14_ONLY_BRANCHES: GestureBackArrowView$ReadyState READY_STATE_RECENT/BACK scale animation; GestureStubView$3.onSwipeStop capture; getNextTask proceeds original then onBackCancelled+handleAction instead of skipping.
+- WHY_USER_BEHAVIOR_IS_EQUIVALENT: Swipe-and-stop still fires controls_fsg_swipeandstop and still keeps quick-switch enabled (disableQuickSwitch false). disablevibrate still suppresses the ready-state haptic. A13 extra MIUI14 members (Vibrator.vibrate wrap, getNextTask skip/dummy Task) implement that same toggle without GestureStubView$3.
+- KEY_OWNERSHIP_EVIDENCE: controls_fsg_swipeandstop: LITERAL_READ as handleAction prefix (A13 LauncherGestureHooks.kt:493; A14:889) consuming controls_fsg_swipeandstop_action. INSTALLER_CALLEE A13 LauncherInstaller.java:100 and A14 LauncherSwipeAndStopActionFeature when *_action>1. controls_fsg_swipeandstop_disablevibrate: LITERAL_READ A13:466 and A14:782.
+- A14_KEY_OWNER_REFERENCE: app/src/main/java/tv/withaibuild/customiuizer/mods/LauncherGestureHooks.kt::SwipeAndStopActionHook
+- A13_KEY_OWNER_REFERENCE: app/src/main/java/tv/withaibuild/customiuizer/mods/LauncherGestureHooks.kt::SwipeAndStopActionHook
+- PROOF_CONCLUSION: `PRESENT_A13_VARIANT`
+
+## PROOF_R5_BackGestureAreaWidthHook_controls_fsg_width
+
+- PROOF_ID: `PROOF_R5_BackGestureAreaWidthHook_controls_fsg_width`
+- BODY_RELATION: `REVIEWED_VARIANT`
+- A14_OWNER_PATH: `app/src/main/java/tv/withaibuild/customiuizer/mods/Controls.kt`
+- A14_SYMBOL: `BackGestureAreaWidthHook`
+- A14_INSTALLER: `A14 installer/spec gate for controls_fsg_width`
+- A14_HOOK_TARGETS: `com.miui.home.recents.GestureStubView#initScreenSizeAndDensity,com.miui.home.recents.GestureStubView#setSize`
+- A14_CALLBACK_PHASE: `intercept`
+- A13_OWNER_PATH: `app/src/main/java/tv/withaibuild/customiuizer/mods/Controls.kt`
+- A13_SYMBOL: `BackGestureAreaWidthHook`
+- A13_INSTALLER: `A13 installer gate for controls_fsg_width`
+- A13_HOOK_TARGETS: `com.miui.home.recents.GestureStubView#initScreenSizeAndDensity,com.miui.home.recents.GestureStubView#setSize`
+- A13_CALLBACK_PHASE: `after,before`
+- PREFERENCE_KEYS: `controls_fsg_width`
+- VALUE_DOMAIN: owner-local preference domain
+- DEFAULT_SEMANTICS: same persisted keys consumed by both owners
+- RESULT/ARGUMENT_BEHAVIOR: A14 ops: result_assign[null,null]; chain.proceed[chain.proceed()]. A13 ops: no result/argument rewrite literals. Keys controls_fsg_width rewrite the same host members.
+- API33_VARIANT_REASON: A14 callback intercept vs A13 after,before on members A14[com.miui.home.recents.GestureStubView#initScreenSizeAndDensity,com.miui.home.recents.GestureStubView#setSize] / A13[com.miui.home.recents.GestureStubView#initScreenSizeAndDensity,com.miui.home.recents.GestureStubView#setSize]. Inner preference reads of controls_fsg_width match; intercept proceed-once maps to before returnAndSkip or after side-effect.
+- DIFF_SUMMARY: Shared members com.miui.home.recents.GestureStubView#initScreenSizeAndDensity,com.miui.home.recents.GestureStubView#setSize. Differ: A14 phases intercept vs A13 after,before; A14 result_assign[null,null]; chain.proceed[chain.proceed()] vs A13 no result/argument rewrite literals.
+- VALUE_DEFAULT_COMPARISON: both consume controls_fsg_width in the owner body or installer gate
+- HOOK_TARGET_COMPARISON: A14=com.miui.home.recents.GestureStubView#initScreenSizeAndDensity,com.miui.home.recents.GestureStubView#setSize; A13=com.miui.home.recents.GestureStubView#initScreenSizeAndDensity,com.miui.home.recents.GestureStubView#setSize
+- CALLBACK_SEMANTICS_COMPARISON: A14 intercept vs A13 after,before; skipped paths do not invoke the original, proceed-once equals after side-effect
+- ARG_RESULT_COMPARISON: A14=result_assign[null,null]; chain.proceed[chain.proceed()]; A13=no result/argument rewrite literals
+- A14_ONLY_BRANCHES: none beyond intercept scaffolding for this owner pair
+- WHY_USER_BEHAVIOR_IS_EQUIVALENT: User-visible contract of controls_fsg_width is the same host rewrite; callback adapter and null-safety differ.
+- KEY_OWNERSHIP_EVIDENCE: controls_fsg_width: LITERAL_READ and/or INSTALLER_CALLEE in BackGestureAreaWidthHook/BackGestureAreaWidthHook
+- A14_KEY_OWNER_REFERENCE: app/src/main/java/tv/withaibuild/customiuizer/mods/Controls.kt::BackGestureAreaWidthHook
+- A13_KEY_OWNER_REFERENCE: app/src/main/java/tv/withaibuild/customiuizer/mods/Controls.kt::BackGestureAreaWidthHook
+- PROOF_CONCLUSION: `PRESENT_A13_VARIANT`
+
+## PROOF_HIDE_IME_DISMISS
+
+- PROOF_ID: `PROOF_HIDE_IME_DISMISS`
+- BODY_RELATION: `REVIEWED_VARIANT`
+- A14_OWNER_PATH: `app/src/main/java/tv/withaibuild/customiuizer/mods/Controls.kt`
+- A14_SYMBOL: `HideImeDismissButtonHook`
+- A14_INSTALLER: `mods/utils/feature/SystemUiFeatures.kt`
+- A14_HOOK_TARGETS: `com.android.systemui.navigationbar.NavigationBarView#updateNavButtonIcons`
+- A14_CALLBACK_PHASE: `after`
+- A13_OWNER_PATH: `app/src/main/java/tv/withaibuild/customiuizer/mods/Controls.kt`
+- A13_SYMBOL: `HideImeDismissButtonHook`
+- A13_INSTALLER: `installers/SystemUiInstaller.java`
+- A13_HOOK_TARGETS: `com.android.systemui.navigationbar.NavigationBarView#updateNavButtonIcons`
+- A13_CALLBACK_PHASE: `after`
+- PREFERENCE_KEYS: `controls_hide_ime_dismiss_button`
+- VALUE_DOMAIN: boolean
+- DEFAULT_SEMANTICS: false keeps stock IME dismiss
+- RESULT/ARGUMENT_BEHAVIOR: after updateNavButtonIcons, set IME back-alt visibility INVISIBLE when gestural
+- API33_VARIANT_REASON: Same NavigationBarView member; A13 uses installer boolean vs A14 FeatureSpec.
+- DIFF_SUMMARY: Same NavigationBarView member; A13 uses installer boolean vs A14 FeatureSpec.
+- VALUE_DEFAULT_COMPARISON: false keeps stock IME dismiss
+- HOOK_TARGET_COMPARISON: A14=com.android.systemui.navigationbar.NavigationBarView#updateNavButtonIcons; A13=com.android.systemui.navigationbar.NavigationBarView#updateNavButtonIcons
+- CALLBACK_SEMANTICS_COMPARISON: A14=after; A13=after
+- ARG_RESULT_COMPARISON: after updateNavButtonIcons, set IME back-alt visibility INVISIBLE when gestural
+- A14_ONLY_BRANCHES: Same NavigationBarView member; A13 uses installer boolean vs A14 FeatureSpec.
+- WHY_USER_BEHAVIOR_IS_EQUIVALENT: after updateNavButtonIcons, set IME back-alt visibility INVISIBLE when gestural. Same NavigationBarView member; A13 uses installer boolean vs A14 FeatureSpec.
+- PROOF_CONCLUSION: `PRESENT_A13_VARIANT`
+
+## PROOF_R5_HideNavBarBeforeScreenshotHook_controls_hidenavbar_whenscreenshot
+
+- PROOF_ID: `PROOF_R5_HideNavBarBeforeScreenshotHook_controls_hidenavbar_whenscreenshot`
+- BODY_RELATION: `REVIEWED_VARIANT`
+- A14_OWNER_PATH: `app/src/main/java/tv/withaibuild/customiuizer/mods/SystemUIScreenshotHooks.kt`
+- A14_SYMBOL: `HideNavBarBeforeScreenshotHook`
+- A14_INSTALLER: `A14 installer/spec gate for controls_hidenavbar_whenscreenshot`
+- A14_HOOK_TARGETS: `com.android.systemui.navigationbar.NavigationBar#onInit`
+- A14_CALLBACK_PHASE: `after`
+- A13_OWNER_PATH: `app/src/main/java/tv/withaibuild/customiuizer/mods/SystemUIScreenshotHooks.kt`
+- A13_SYMBOL: `HideNavBarBeforeScreenshotHook`
+- A13_INSTALLER: `A13 installer gate for controls_hidenavbar_whenscreenshot`
+- A13_HOOK_TARGETS: `com.android.systemui.navigationbar.NavigationBar#onInit`
+- A13_CALLBACK_PHASE: `after`
+- PREFERENCE_KEYS: `controls_hidenavbar_whenscreenshot`
+- VALUE_DOMAIN: owner-local preference domain
+- DEFAULT_SEMANTICS: same persisted keys consumed by both owners
+- RESULT/ARGUMENT_BEHAVIOR: A14 ops: no result/argument rewrite literals. A13 ops: no result/argument rewrite literals. Keys controls_hidenavbar_whenscreenshot rewrite the same host members.
+- API33_VARIANT_REASON: A14 callback after vs A13 after on members A14[com.android.systemui.navigationbar.NavigationBar#onInit] / A13[com.android.systemui.navigationbar.NavigationBar#onInit]. Inner preference reads of controls_hidenavbar_whenscreenshot match; intercept proceed-once maps to before returnAndSkip or after side-effect.
+- DIFF_SUMMARY: Shared members com.android.systemui.navigationbar.NavigationBar#onInit. Differ: A14 phases after vs A13 after; A14 no result/argument rewrite literals vs A13 no result/argument rewrite literals.
+- VALUE_DEFAULT_COMPARISON: both consume controls_hidenavbar_whenscreenshot in the owner body or installer gate
+- HOOK_TARGET_COMPARISON: A14=com.android.systemui.navigationbar.NavigationBar#onInit; A13=com.android.systemui.navigationbar.NavigationBar#onInit
+- CALLBACK_SEMANTICS_COMPARISON: A14 after vs A13 after; skipped paths do not invoke the original, proceed-once equals after side-effect
+- ARG_RESULT_COMPARISON: A14=no result/argument rewrite literals; A13=no result/argument rewrite literals
+- A14_ONLY_BRANCHES: none beyond intercept scaffolding for this owner pair
+- WHY_USER_BEHAVIOR_IS_EQUIVALENT: User-visible contract of controls_hidenavbar_whenscreenshot is the same host rewrite; callback adapter and null-safety differ.
+- KEY_OWNERSHIP_EVIDENCE: controls_hidenavbar_whenscreenshot: LITERAL_READ and/or INSTALLER_CALLEE in HideNavBarBeforeScreenshotHook/HideNavBarBeforeScreenshotHook
+- A14_KEY_OWNER_REFERENCE: app/src/main/java/tv/withaibuild/customiuizer/mods/SystemUIScreenshotHooks.kt::HideNavBarBeforeScreenshotHook
+- A13_KEY_OWNER_REFERENCE: app/src/main/java/tv/withaibuild/customiuizer/mods/SystemUIScreenshotHooks.kt::HideNavBarBeforeScreenshotHook
+- PROOF_CONCLUSION: `PRESENT_A13_VARIANT`
+
+## PROOF_ACTION_SLOT_controls_homelong
+
+- PROOF_ID: `PROOF_ACTION_SLOT_controls_homelong`
+- BODY_RELATION: `REVIEWED_VARIANT`
+- A14_OWNER_PATH: `mods/utils/GlobalActionConfig.kt / action picker`
+- A14_SYMBOL: `handleAction/handleNavBarAction`
+- A14_INSTALLER: `SystemUiInstaller / LauncherInstaller / SystemServerInstaller`
+- A14_HOOK_TARGETS: `(no ROM member; GlobalActions dispatcher)`
+- A14_CALLBACK_PHASE: `n/a`
+- A13_OWNER_PATH: `mods/GlobalActions.kt / Controls.kt / LauncherGestureHooks.kt`
+- A13_SYMBOL: `handleAction/handleNavBarAction`
+- A13_INSTALLER: `installers/*Installer.java`
+- A13_HOOK_TARGETS: `(no ROM member; GlobalActions dispatcher)`
+- A13_CALLBACK_PHASE: `n/a`
+- PREFERENCE_KEYS: `controls_homelong,controls_homelong_action`
+- VALUE_DOMAIN: action picker; stored as controls_homelong_action
+- DEFAULT_SEMANTICS: action=1 keeps ROM default
+- RESULT/ARGUMENT_BEHAVIOR: UI key opens the action picker; the int in _action selects handleAction
+- API33_VARIANT_REASON: A13 and A14 share the visible picker row plus the companion _action int domain.
+- DIFF_SUMMARY: Both trees persist the selected action id in `controls_homelong_action`. The visible `controls_homelong` row is the picker, not a host hook. Dispatcher is handleAction/handleNavBarAction on both trees.
+- VALUE_DEFAULT_COMPARISON: Both default the stored action id to 1 (keep ROM handler).
+- HOOK_TARGET_COMPARISON: No SystemUI/Home class dump: the UI key has no host member; consumption is in-module GlobalActions.
+- CALLBACK_SEMANTICS_COMPARISON: No Xposed callback on the picker row; click opens the action selector.
+- ARG_RESULT_COMPARISON: No setResult on this row. The stored int is later dispatched by handleAction.
+- A14_ONLY_BRANCHES: none for the slot row itself
+- WHY_USER_BEHAVIOR_IS_EQUIVALENT: The user configures the same action picker; the companion _action integer is consumed by the shared GlobalActions dispatcher on both trees.
+- KEY_OWNERSHIP_EVIDENCE: controls_homelong: companion persisted key controls_homelong_action is read by handleAction/handleNavBarAction on both trees
+- A14_KEY_OWNER_REFERENCE: GlobalActions handleAction companion controls_homelong_action
+- A13_KEY_OWNER_REFERENCE: GlobalActions handleAction companion controls_homelong_action
+- PROOF_CONCLUSION: `PRESENT_A13_VARIANT`
+
+## PROOF_R5X_MEDIAPLAYER_APPS
+
+- PROOF_ID: `PROOF_R5X_MEDIAPLAYER_APPS`
+- BODY_RELATION: `REVIEWED_VARIANT`
+- A14_OWNER_PATH: `app/src/main/java/tv/withaibuild/customiuizer/mods/utils/feature/SystemServerFeatures.kt`
+- A14_SYMBOL: `VolumeMediaButtonsFeature / GenericApp volume-media gate`
+- A14_INSTALLER: `A14 installer/spec gate for controls_mediaplayer_apps`
+- A14_HOOK_TARGETS: `(no ROM member; app-selector gate)`
+- A14_CALLBACK_PHASE: `n/a`
+- A13_OWNER_PATH: `app/src/main/java/tv/withaibuild/customiuizer/installers/GenericAppInstaller.java`
+- A13_SYMBOL: `needGlobalActions / GenericAppInstaller volume-media`
+- A13_INSTALLER: `A13 installer gate for controls_mediaplayer_apps`
+- A13_HOOK_TARGETS: `(no ROM member; app-selector gate)`
+- A13_CALLBACK_PHASE: `n/a`
+- PREFERENCE_KEYS: `controls_mediaplayer_apps`
+- VALUE_DOMAIN: owner-local preference domain
+- DEFAULT_SEMANTICS: Empty set means no media-app rewrite.
+- RESULT/ARGUMENT_BEHAVIOR: No hook rewrite on this row; it is the selector consumed by VolumeMediaButtonsHook.
+- API33_VARIANT_REASON: No host member. Same StringSet gate on API33.
+- DIFF_SUMMARY: Both use the app set as a whitelist for screen-off volume-media rewrite. A13 also requires the set non-empty before installing GlobalActions volume hooks.
+- VALUE_DEFAULT_COMPARISON: Empty set means no media-app rewrite.
+- HOOK_TARGET_COMPARISON: A14=(no ROM member; app-selector gate); A13=(no ROM member; app-selector gate)
+- CALLBACK_SEMANTICS_COMPARISON: No Xposed callback on the selector row.
+- ARG_RESULT_COMPARISON: No setResult. Membership is StringSet.contains(pkg).
+- A14_ONLY_BRANCHES: none
+- WHY_USER_BEHAVIOR_IS_EQUIVALENT: Selected media apps still receive the volume-media key rewrite; empty set still disables it.
+- KEY_OWNERSHIP_EVIDENCE: controls_mediaplayer_apps: LITERAL_READ StringSet in A13 GenericAppInstaller.java and SystemServerInstaller.needGlobalActions; A14 GenericApp/volume-media enabled when the set is non-empty.
+- A14_KEY_OWNER_REFERENCE: app/src/main/java/tv/withaibuild/customiuizer/mods/utils/feature/SystemServerFeatures.kt::VolumeMediaButtonsFeature / GenericApp volume-media gate
+- A13_KEY_OWNER_REFERENCE: app/src/main/java/tv/withaibuild/customiuizer/installers/GenericAppInstaller.java::needGlobalActions / GenericAppInstaller volume-media
+- PROOF_CONCLUSION: `PRESENT_A13_VARIANT`
+
+## PROOF_ACTION_SLOT_controls_menulong
+
+- PROOF_ID: `PROOF_ACTION_SLOT_controls_menulong`
+- BODY_RELATION: `REVIEWED_VARIANT`
+- A14_OWNER_PATH: `mods/utils/GlobalActionConfig.kt / action picker`
+- A14_SYMBOL: `handleAction/handleNavBarAction`
+- A14_INSTALLER: `SystemUiInstaller / LauncherInstaller / SystemServerInstaller`
+- A14_HOOK_TARGETS: `(no ROM member; GlobalActions dispatcher)`
+- A14_CALLBACK_PHASE: `n/a`
+- A13_OWNER_PATH: `mods/GlobalActions.kt / Controls.kt / LauncherGestureHooks.kt`
+- A13_SYMBOL: `handleAction/handleNavBarAction`
+- A13_INSTALLER: `installers/*Installer.java`
+- A13_HOOK_TARGETS: `(no ROM member; GlobalActions dispatcher)`
+- A13_CALLBACK_PHASE: `n/a`
+- PREFERENCE_KEYS: `controls_menulong,controls_menulong_action`
+- VALUE_DOMAIN: action picker; stored as controls_menulong_action
+- DEFAULT_SEMANTICS: action=1 keeps ROM default
+- RESULT/ARGUMENT_BEHAVIOR: UI key opens the action picker; the int in _action selects handleAction
+- API33_VARIANT_REASON: A13 and A14 share the visible picker row plus the companion _action int domain.
+- DIFF_SUMMARY: Both trees persist the selected action id in `controls_menulong_action`. The visible `controls_menulong` row is the picker, not a host hook. Dispatcher is handleAction/handleNavBarAction on both trees.
+- VALUE_DEFAULT_COMPARISON: Both default the stored action id to 1 (keep ROM handler).
+- HOOK_TARGET_COMPARISON: No SystemUI/Home class dump: the UI key has no host member; consumption is in-module GlobalActions.
+- CALLBACK_SEMANTICS_COMPARISON: No Xposed callback on the picker row; click opens the action selector.
+- ARG_RESULT_COMPARISON: No setResult on this row. The stored int is later dispatched by handleAction.
+- A14_ONLY_BRANCHES: none for the slot row itself
+- WHY_USER_BEHAVIOR_IS_EQUIVALENT: The user configures the same action picker; the companion _action integer is consumed by the shared GlobalActions dispatcher on both trees.
+- KEY_OWNERSHIP_EVIDENCE: controls_menulong: companion persisted key controls_menulong_action is read by handleAction/handleNavBarAction on both trees
+- A14_KEY_OWNER_REFERENCE: GlobalActions handleAction companion controls_menulong_action
+- A13_KEY_OWNER_REFERENCE: GlobalActions handleAction companion controls_menulong_action
+- PROOF_CONCLUSION: `PRESENT_A13_VARIANT`
+
+## PROOF_R5_addCustomNavBarKeys_controls_navbarleft
+
+- PROOF_ID: `PROOF_R5_addCustomNavBarKeys_controls_navbarleft`
+- BODY_RELATION: `REVIEWED_VARIANT`
+- A14_OWNER_PATH: `app/src/main/java/tv/withaibuild/customiuizer/mods/Controls.kt`
+- A14_SYMBOL: `addCustomNavBarKeys`
+- A14_INSTALLER: `A14 installer/spec gate for controls_navbarleft,controls_navbarleftlong,controls_navbarright,controls_navbarrightlong`
+- A14_HOOK_TARGETS: `(no host member literals)`
+- A14_CALLBACK_PHASE: `unknown`
+- A13_OWNER_PATH: `app/src/main/java/tv/withaibuild/customiuizer/mods/Controls.kt`
+- A13_SYMBOL: `addCustomNavBarKeys`
+- A13_INSTALLER: `A13 installer gate for controls_navbarleft,controls_navbarleftlong,controls_navbarright,controls_navbarrightlong`
+- A13_HOOK_TARGETS: `(no host member literals)`
+- A13_CALLBACK_PHASE: `unknown`
+- PREFERENCE_KEYS: `controls_navbarleft,controls_navbarleftlong,controls_navbarright,controls_navbarrightlong`
+- VALUE_DOMAIN: owner-local preference domain
+- DEFAULT_SEMANTICS: same persisted keys consumed by both owners
+- RESULT/ARGUMENT_BEHAVIOR: A14 ops: no result/argument rewrite literals. A13 ops: no result/argument rewrite literals. Keys controls_navbarleft,controls_navbarleftlong,controls_navbarright,controls_navbarrightlong rewrite the same host members.
+- API33_VARIANT_REASON: A14 callback unknown vs A13 unknown on members A14[(none)] / A13[(none)]. Inner preference reads of controls_navbarleft,controls_navbarleftlong,controls_navbarright,controls_navbarrightlong match; intercept proceed-once maps to before returnAndSkip or after side-effect.
+- DIFF_SUMMARY: Shared members (none). Differ: A14 phases unknown vs A13 unknown; A14 no result/argument rewrite literals vs A13 no result/argument rewrite literals.
+- VALUE_DEFAULT_COMPARISON: both consume controls_navbarleft,controls_navbarleftlong,controls_navbarright,controls_navbarrightlong in the owner body or installer gate
+- HOOK_TARGET_COMPARISON: A14=(none); A13=(none)
+- CALLBACK_SEMANTICS_COMPARISON: A14 unknown vs A13 unknown; skipped paths do not invoke the original, proceed-once equals after side-effect
+- ARG_RESULT_COMPARISON: A14=no result/argument rewrite literals; A13=no result/argument rewrite literals
+- A14_ONLY_BRANCHES: none beyond intercept scaffolding for this owner pair
+- WHY_USER_BEHAVIOR_IS_EQUIVALENT: User-visible contract of controls_navbarleft,controls_navbarleftlong,controls_navbarright,controls_navbarrightlong is the same host rewrite; callback adapter and null-safety differ.
+- KEY_OWNERSHIP_EVIDENCE: controls_navbarleft,controls_navbarleftlong,controls_navbarright,controls_navbarrightlong: LITERAL_READ and/or INSTALLER_CALLEE in addCustomNavBarKeys/addCustomNavBarKeys
+- A14_KEY_OWNER_REFERENCE: app/src/main/java/tv/withaibuild/customiuizer/mods/Controls.kt::addCustomNavBarKeys
+- A13_KEY_OWNER_REFERENCE: app/src/main/java/tv/withaibuild/customiuizer/mods/Controls.kt::addCustomNavBarKeys
+- PROOF_CONCLUSION: `PRESENT_A13_VARIANT`
+
+## PROOF_R5_reposNavBarButtons_controls_navbarmargin
+
+- PROOF_ID: `PROOF_R5_reposNavBarButtons_controls_navbarmargin`
+- BODY_RELATION: `REVIEWED_VARIANT`
+- A14_OWNER_PATH: `app/src/main/java/tv/withaibuild/customiuizer/mods/Controls.kt`
+- A14_SYMBOL: `reposNavBarButtons`
+- A14_INSTALLER: `A14 installer/spec gate for controls_navbarmargin`
+- A14_HOOK_TARGETS: `(no host member literals)`
+- A14_CALLBACK_PHASE: `unknown`
+- A13_OWNER_PATH: `app/src/main/java/tv/withaibuild/customiuizer/mods/Controls.kt`
+- A13_SYMBOL: `reposNavBarButtons`
+- A13_INSTALLER: `A13 installer gate for controls_navbarmargin`
+- A13_HOOK_TARGETS: `(no host member literals)`
+- A13_CALLBACK_PHASE: `unknown`
+- PREFERENCE_KEYS: `controls_navbarmargin`
+- VALUE_DOMAIN: owner-local preference domain
+- DEFAULT_SEMANTICS: same persisted keys consumed by both owners
+- RESULT/ARGUMENT_BEHAVIOR: A14 ops: no result/argument rewrite literals. A13 ops: no result/argument rewrite literals. Keys controls_navbarmargin rewrite the same host members.
+- API33_VARIANT_REASON: A14 callback unknown vs A13 unknown on members A14[(none)] / A13[(none)]. Inner preference reads of controls_navbarmargin match; intercept proceed-once maps to before returnAndSkip or after side-effect.
+- DIFF_SUMMARY: Shared members (none). Differ: A14 phases unknown vs A13 unknown; A14 no result/argument rewrite literals vs A13 no result/argument rewrite literals.
+- VALUE_DEFAULT_COMPARISON: both consume controls_navbarmargin in the owner body or installer gate
+- HOOK_TARGET_COMPARISON: A14=(none); A13=(none)
+- CALLBACK_SEMANTICS_COMPARISON: A14 unknown vs A13 unknown; skipped paths do not invoke the original, proceed-once equals after side-effect
+- ARG_RESULT_COMPARISON: A14=no result/argument rewrite literals; A13=no result/argument rewrite literals
+- A14_ONLY_BRANCHES: none beyond intercept scaffolding for this owner pair
+- WHY_USER_BEHAVIOR_IS_EQUIVALENT: User-visible contract of controls_navbarmargin is the same host rewrite; callback adapter and null-safety differ.
+- KEY_OWNERSHIP_EVIDENCE: controls_navbarmargin: LITERAL_READ and/or INSTALLER_CALLEE in reposNavBarButtons/reposNavBarButtons
+- A14_KEY_OWNER_REFERENCE: app/src/main/java/tv/withaibuild/customiuizer/mods/Controls.kt::reposNavBarButtons
+- A13_KEY_OWNER_REFERENCE: app/src/main/java/tv/withaibuild/customiuizer/mods/Controls.kt::reposNavBarButtons
+- PROOF_CONCLUSION: `PRESENT_A13_VARIANT`
+
+## PROOF_R5F_HideNavBarHook_controls_nonavbar
+
+- PROOF_ID: `PROOF_R5F_HideNavBarHook_controls_nonavbar`
+- BODY_RELATION: `REVIEWED_VARIANT`
+- A14_OWNER_PATH: `app/src/main/java/tv/withaibuild/customiuizer/mods/Controls.kt`
+- A14_SYMBOL: `HideNavBarHook`
+- A14_INSTALLER: `A14 installer/spec gate for controls_nonavbar`
+- A14_HOOK_TARGETS: `com.android.systemui.recents.OverviewProxyService#<init>,com.android.systemui.recents.OverviewProxyService$CommandQueueCallback#setWindowState,com.android.systemui.navigationbar.NavigationBarController#createNavigationBar`
+- A14_CALLBACK_PHASE: `intercept`
+- A13_OWNER_PATH: `app/src/main/java/tv/withaibuild/customiuizer/mods/LauncherLayoutHooks.kt`
+- A13_SYMBOL: `HideNavBarHook`
+- A13_INSTALLER: `A13 installer gate for controls_nonavbar`
+- A13_HOOK_TARGETS: `com.miui.home.launcher.DeviceConfig#loadScreenSize,com.miui.home.recents.views.RecentsContainer#showLandscapeOverviewGestureView,com.miui.home.recents.NavStubView#isMistakeTouch,com.miui.home.recents.NavStubView#onPointerEvent,com.miui.home.recents.NavStubView#updateScreenSize`
+- A13_CALLBACK_PHASE: `before`
+- PREFERENCE_KEYS: `controls_nonavbar`
+- VALUE_DOMAIN: owner-local preference domain
+- DEFAULT_SEMANTICS: Both installers gate on getBoolean(controls_nonavbar) default false. No numeric default inside either flagged body.
+- RESULT/ARGUMENT_BEHAVIOR: A14 createNavigationBar: skip original with result null when args>=3. A14 setWindowState: proceed after field write. A13 loadScreenSize: Settings write, original still runs. A13 showLandscapeOverviewGestureView: DO_NOTHING (skip). A13 isMistakeTouch: returnAndSkip(misTouch). A13 onPointerEvent/updateScreenSize: field writes, original still runs.
+- API33_VARIANT_REASON: MIUI14 SystemUI hides via NavigationModeControllerExt + MiuiDockIndicatorService; HyperOS uses GestureObserver. MIUI14 Home uses force_immersive_nav_bar + isMistakeTouch; HyperOS uses onSystemUiFlagsChanged + isImmersive. Shared createNavigationBar skip and NavStubView mHideGestureLine rewrite.
+- DIFF_SUMMARY: Classifier paired A14 Controls.HideNavBarHook (SystemUI) with A13 LauncherLayoutHooks.HideNavBarHook (Home). Both trees actually install two owners. SystemUI: both skip NavigationBarController.createNavigationBar when args>=3. A13 extra NavigationModeControllerExt.hideNavigationBar=true and MiuiDockIndicatorService.onNavigationModeChanged returnAndSkip after clearing mNavigationBarView. A14 extra OverviewProxyService.<init> plus GestureObserver.mGestureLineEnable=true. Home: both NavStubView.onPointerEvent ACTION_DOWN sets mHideGestureLine=true and updateScreenSize sets it false; both RecentsContainer.showLandscapeOverviewGestureView. A13 extra Settings.Global force_immersive_nav_bar=1 and isMistakeTouch skip. A14 extra onSystemUiFlagsChanged clears flag 2 and isImmersive=!showNavBar.
+- VALUE_DEFAULT_COMPARISON: Both installers gate on getBoolean(controls_nonavbar) default false. No numeric default inside either flagged body.
+- HOOK_TARGET_COMPARISON: A14=com.android.systemui.recents.OverviewProxyService#<init>,com.android.systemui.recents.OverviewProxyService$CommandQueueCallback#setWindowState,com.android.systemui.navigationbar.NavigationBarController#createNavigationBar; A13=com.miui.home.launcher.DeviceConfig#loadScreenSize,com.miui.home.recents.views.RecentsContainer#showLandscapeOverviewGestureView,com.miui.home.recents.NavStubView#isMistakeTouch,com.miui.home.recents.NavStubView#onPointerEvent,com.miui.home.recents.NavStubView#updateScreenSize
+- CALLBACK_SEMANTICS_COMPARISON: Not comparable as the same callback: A14 intercept on SystemUI NavigationBarController/OverviewProxyService vs A13 before on Home DeviceConfig/NavStubView. Shared-looking Home onPointerEvent/updateScreenSize live in A14 Launcher.HideNavBarHook, not in flagged Controls.HideNavBarHook.
+- ARG_RESULT_COMPARISON: No overlapping arg/result contract. A14 skips createNavigationBar; A13 flagged body never touches NavigationBarController. A13 skips isMistakeTouch and showLandscapeOverviewGestureView; A14 flagged body never touches those Home methods.
+- A14_ONLY_BRANCHES: SystemUI OverviewProxyService/GestureObserver; Home onSystemUiFlagsChanged/isImmersive. Not extra user toggles.
+- WHY_USER_BEHAVIOR_IS_EQUIVALENT: controls_nonavbar still hides the navigation bar in SystemUI and hides the Home gesture line. The flagged pair is a scanner mismatch; the sibling owners on each tree implement the same two-host contract.
+- KEY_OWNERSHIP_EVIDENCE: controls_nonavbar: INSTALLER_CALLEE only in this flagged pair (bodies have no pref get). A14 SystemUiFeatures.HideNavBarFeature -> Controls.HideNavBarHook; A13 LauncherInstaller.java:67 -> LauncherLayoutHooks.HideNavBarHook. Sibling not in this pair: A13 SystemUiInstaller.java:131 also calls Controls.HideNavBarHook; A14 LauncherHideNavBarFeature calls Launcher.HideNavBarHook.
+- A14_KEY_OWNER_REFERENCE: app/src/main/java/tv/withaibuild/customiuizer/mods/Controls.kt::HideNavBarHook
+- A13_KEY_OWNER_REFERENCE: app/src/main/java/tv/withaibuild/customiuizer/mods/LauncherLayoutHooks.kt::HideNavBarHook
+- PROOF_CONCLUSION: `PRESENT_A13_VARIANT`
+
+## PROOF_R5_FixInputMethodBottomMarginHook_controls_nonavbar_fix_inputmethod
+
+- PROOF_ID: `PROOF_R5_FixInputMethodBottomMarginHook_controls_nonavbar_fix_inputmethod`
+- BODY_RELATION: `REVIEWED_VARIANT`
+- A14_OWNER_PATH: `app/src/main/java/tv/withaibuild/customiuizer/mods/Various.kt`
+- A14_SYMBOL: `FixInputMethodBottomMarginHook`
+- A14_INSTALLER: `A14 installer/spec gate for controls_nonavbar_fix_inputmethod`
+- A14_HOOK_TARGETS: `#addMiuiBottomView,#updateGestureLineEnable`
+- A14_CALLBACK_PHASE: `intercept`
+- A13_OWNER_PATH: `app/src/main/java/tv/withaibuild/customiuizer/mods/Various.kt`
+- A13_SYMBOL: `FixInputMethodBottomMarginHook`
+- A13_INSTALLER: `A13 installer gate for controls_nonavbar_fix_inputmethod`
+- A13_HOOK_TARGETS: `#addMiuiBottomView,#updateGestureLineEnable`
+- A13_CALLBACK_PHASE: `after,before`
+- PREFERENCE_KEYS: `controls_nonavbar_fix_inputmethod`
+- VALUE_DOMAIN: owner-local preference domain
+- DEFAULT_SEMANTICS: same persisted keys consumed by both owners
+- RESULT/ARGUMENT_BEHAVIOR: A14 ops: result_assign[null,null,null]; chain.proceed[chain.proceed(),chain.proceed()]. A13 ops: returnAndSkip[null]. Keys controls_nonavbar_fix_inputmethod rewrite the same host members.
+- API33_VARIANT_REASON: A14 callback intercept vs A13 after,before on members A14[#addMiuiBottomView,#updateGestureLineEnable] / A13[#addMiuiBottomView,#updateGestureLineEnable]. Inner preference reads of controls_nonavbar_fix_inputmethod match; intercept proceed-once maps to before returnAndSkip or after side-effect.
+- DIFF_SUMMARY: Shared members #addMiuiBottomView,#updateGestureLineEnable. Differ: A14 phases intercept vs A13 after,before; A14 result_assign[null,null,null]; chain.proceed[chain.proceed(),chain.proceed()] vs A13 returnAndSkip[null].
+- VALUE_DEFAULT_COMPARISON: both consume controls_nonavbar_fix_inputmethod in the owner body or installer gate
+- HOOK_TARGET_COMPARISON: A14=#addMiuiBottomView,#updateGestureLineEnable; A13=#addMiuiBottomView,#updateGestureLineEnable
+- CALLBACK_SEMANTICS_COMPARISON: A14 intercept vs A13 after,before; skipped paths do not invoke the original, proceed-once equals after side-effect
+- ARG_RESULT_COMPARISON: A14=result_assign[null,null,null]; chain.proceed[chain.proceed(),chain.proceed()]; A13=returnAndSkip[null]
+- A14_ONLY_BRANCHES: none beyond intercept scaffolding for this owner pair
+- WHY_USER_BEHAVIOR_IS_EQUIVALENT: User-visible contract of controls_nonavbar_fix_inputmethod is the same host rewrite; callback adapter and null-safety differ.
+- KEY_OWNERSHIP_EVIDENCE: controls_nonavbar_fix_inputmethod: LITERAL_READ and/or INSTALLER_CALLEE in FixInputMethodBottomMarginHook/FixInputMethodBottomMarginHook
+- A14_KEY_OWNER_REFERENCE: app/src/main/java/tv/withaibuild/customiuizer/mods/Various.kt::FixInputMethodBottomMarginHook
+- A13_KEY_OWNER_REFERENCE: app/src/main/java/tv/withaibuild/customiuizer/mods/Various.kt::FixInputMethodBottomMarginHook
+- PROOF_CONCLUSION: `PRESENT_A13_VARIANT`
+
+## PROOF_R5F_PowerDoubleTapActionHook_controls_powerdt
+
+- PROOF_ID: `PROOF_R5F_PowerDoubleTapActionHook_controls_powerdt`
+- BODY_RELATION: `REVIEWED_VARIANT`
+- A14_OWNER_PATH: `app/src/main/java/tv/withaibuild/customiuizer/mods/Controls.kt`
+- A14_SYMBOL: `PowerDoubleTapActionHook`
+- A14_INSTALLER: `SystemServerFeatures.PowerDoubleTapActionFeature.evaluateEnabled same gate`
+- A14_HOOK_TARGETS: `com.miui.server.input.util.ShortCutActionsUtils#triggerFunction,com.android.server.policy.MiuiShortcutTriggerHelper#getDoubleVolumeDownKeyFunction,com.android.server.input.shortcut.singlekeyrule.VolumeDownKeyRule#isEnableLaunchCamera`
+- A14_CALLBACK_PHASE: `intercept`
+- A13_OWNER_PATH: `app/src/main/java/tv/withaibuild/customiuizer/mods/Controls.kt`
+- A13_SYMBOL: `PowerDoubleTapActionHook`
+- A13_INSTALLER: `SystemServerInstaller.java + FeatureCatalog.powerDoubleTapAction (controls_powerdt_action>1 || controls_volumedowndt_torch); ConfigReloadMode.NONE / REBOOT`
+- A13_HOOK_TARGETS: `com.miui.server.input.util.ShortCutActionsUtils#triggerFunction,com.android.server.policy.MiuiKeyShortcutManager#getVolumeKeyLaunchCamera`
+- A13_CALLBACK_PHASE: `before`
+- PREFERENCE_KEYS: `controls_powerdt,controls_powerdt_action,controls_volumedowndt_torch`
+- VALUE_DOMAIN: owner-local preference domain
+- DEFAULT_SEMANTICS: Torch boolean default false. Power action slot default 1 (no custom action). Installer both require action>1 or torch true.
+- RESULT/ARGUMENT_BEHAVIOR: A14: args[0]=turn_on_torch or skipped result=true. A13: args[0]=turn_on_torch or returnAndSkip(true). Camera helpers returnConstant true/launch_camera.
+- API33_VARIANT_REASON: MIUI14 volume-DT camera enable is getVolumeKeyLaunchCamera, not HyperOS VolumeDownKeyRule/ShortcutTriggerHelper. User-visible torch vs power-DT slot on MIUI14 is the same mutual exclusion. A14 live-reread of torch/action is extra vs A13 install-time capture; catalog reload is NONE so reboot is required either way.
+- DIFF_SUMMARY: Shared ShortCutActionsUtils.triggerFunction rewrite: volume-down DT arg0:=turn_on_torch; else custom power-DT handleAction+skip true. When volume-torch is on, both skip custom power-DT (A13 else-if !dtFromVolumeDown; A14 if/else). Camera-launch gate is ABI-split: A13 MiuiKeyShortcutManager.getVolumeKeyLaunchCamera=true (OPTIONAL catalog member); A14 HyperOS MiuiShortcutTriggerHelper.getDoubleVolumeDownKeyFunction="launch_camera" plus VolumeDownKeyRule.isEnableLaunchCamera=true.
+- VALUE_DEFAULT_COMPARISON: Torch boolean default false. Power action slot default 1 (no custom action). Installer both require action>1 or torch true.
+- HOOK_TARGET_COMPARISON: A14=com.miui.server.input.util.ShortCutActionsUtils#triggerFunction,com.android.server.policy.MiuiShortcutTriggerHelper#getDoubleVolumeDownKeyFunction,com.android.server.input.shortcut.singlekeyrule.VolumeDownKeyRule#isEnableLaunchCamera; A13=com.miui.server.input.util.ShortCutActionsUtils#triggerFunction,com.android.server.policy.MiuiKeyShortcutManager#getVolumeKeyLaunchCamera
+- CALLBACK_SEMANTICS_COMPARISON: A14 intercept proceed-once unless skipped; A13 before rewrite/returnAndSkip. Skip paths do not invoke original triggerFunction.
+- ARG_RESULT_COMPARISON: A14 result_assign[true,null] / proceed(args); A13 returnAndSkip[true] plus arg0 rewrite. Same user-visible skip/rewrite.
+- A14_ONLY_BRANCHES: MiuiShortcutTriggerHelper.getDoubleVolumeDownKeyFunction constant launch_camera; VolumeDownKeyRule.isEnableLaunchCamera=true; intercept-time re-read of controls_volumedowndt_torch and controls_powerdt_action>1.
+- WHY_USER_BEHAVIOR_IS_EQUIVALENT: On MIUI14 the toggle still: (1) volume-down double-tap torch via triggerFunction rewrite plus getVolumeKeyLaunchCamera gate, (2) custom power double-tap via controls_powerdt action slot, (3) torch on skips custom power-DT. HyperOS camera-launch members have an A13 counterpart and do not add a second user-visible rule.
+- KEY_OWNERSHIP_EVIDENCE: Installer/catalog consume controls_powerdt_action and controls_volumedowndt_torch. Body reads controls_volumedowndt_torch and GlobalActions.handleAction(..., "controls_powerdt"). A13 FeatureCatalog preferenceKeys include controls_powerdt_action; compact keys_only14 is a body-literal false positive.
+- A14_KEY_OWNER_REFERENCE: app/src/main/java/tv/withaibuild/customiuizer/mods/Controls.kt::PowerDoubleTapActionHook
+- A13_KEY_OWNER_REFERENCE: app/src/main/java/tv/withaibuild/customiuizer/mods/Controls.kt::PowerDoubleTapActionHook
+- PROOF_CONCLUSION: `PRESENT_A13_VARIANT`
+
+## PROOF_OG_POWER_KEY_FLASH
+
+- PROOF_ID: `PROOF_OG_POWER_KEY_FLASH`
+- BODY_RELATION: `REVIEWED_VARIANT`
+- A14_OWNER_PATH: `app/src/main/java/tv/withaibuild/customiuizer/mods/Controls.kt`
+- A14_SYMBOL: `PowerKeyHook`
+- A14_INSTALLER: `installer condition controls_powerflash`
+- A14_HOOK_TARGETS: `com.android.server.policy.PhoneWindowManager#init,com.android.server.policy.MiuiPhoneWindowManager#interceptKeyBeforeQueueing`
+- A14_CALLBACK_PHASE: `intercept,after`
+- A13_OWNER_PATH: `app/src/main/java/tv/withaibuild/customiuizer/mods/Controls.kt`
+- A13_SYMBOL: `PowerKeyHook`
+- A13_INSTALLER: `installers/SystemServerInstaller.java if controls_powerflash`
+- A13_HOOK_TARGETS: `com.android.server.policy.PhoneWindowManager#init,com.android.server.policy.MiuiPhoneWindowManager#interceptKeyBeforeQueueing`
+- A13_CALLBACK_PHASE: `before,after`
+- PREFERENCE_KEYS: `controls_powerflash,controls_powerflash_delay`
+- VALUE_DOMAIN: boolean; default false
+- DEFAULT_SEMANTICS: off keeps ROM power-key behavior
+- RESULT/ARGUMENT_BEHAVIOR: When the screen is off, KEYCODE_POWER down starts a long-press timer; long-press toggles torch and holds a wake lock. Short press wakes and turns torch off. controls_powerflash_delay triples ViewConfiguration.getLongPressTimeout when true. Volume-down torch is a different installer key.
+- API33_VARIANT_REASON: A14 intercept: ACTION_DOWN skip with result 0 and never proceeds; ACTION_UP skip 0 after wake/torch-off. A13 before: returnAndSkip(0) on the same paths. A14 registers the SCREEN_ON receiver through registerModuleReceiver; A13 uses Context.registerReceiver with explicit unregister of the previous owner.
+- DIFF_SUMMARY: Shared: PhoneWindowManager.init SCREEN_ON receiver; MiuiPhoneWindowManager.interceptKeyBeforeQueueing KEYCODE_POWER; FLAG_VIRTUAL_HARD_KEY / FLAG_FROM_SYSTEM filters; isInteractive early return; controls_powerflash_delay long-press timeout. Differ: A14 intercept skip-0 vs A13 before returnAndSkip(0); A14 guarded inline long-press runnable vs A13 mPowerLongPressRunnable; A14 registerModuleReceiver vs A13 registerReceiver.
+- VALUE_DEFAULT_COMPARISON: controls_powerflash boolean installer gate; controls_powerflash_delay boolean default false on both trees.
+- HOOK_TARGET_COMPARISON: PhoneWindowManager.init and MiuiPhoneWindowManager.interceptKeyBeforeQueueing on both trees.
+- CALLBACK_SEMANTICS_COMPARISON: A14 intercept skip-or-proceed vs A13 before returnAndSkip; init side-effect is after-equivalent (A14 proceeds once then registers).
+- ARG_RESULT_COMPARISON: Skipped queue result is 0; KeyEvent is not rewritten. Torch/wake are side-effects.
+- A14_ONLY_BRANCHES: receiver helper name torchScreenOnReceiver; no extra user-visible flashlight mode; does not consume fingerprint/toast/vibration keys
+- WHY_USER_BEHAVIOR_IS_EQUIVALENT: User contract is power-key flashlight while the screen is off, with an optional longer delay. Same filters, same torch/wake side-effects, same delay key.
+- KEY_OWNERSHIP_EVIDENCE: controls_powerflash: INSTALLER_CALLEE → PowerKeyHook; controls_powerflash_delay: LITERAL_READ inside PowerKeyHook. controls_volumedowndt_torch is not consumed here.
+- A14_KEY_OWNER_REFERENCE: Controls.kt::PowerKeyHook INSTALLER_CALLEE controls_powerflash; LITERAL_READ controls_powerflash_delay
+- A13_KEY_OWNER_REFERENCE: Controls.kt::PowerKeyHook INSTALLER_CALLEE via SystemServerInstaller.java; LITERAL_READ controls_powerflash_delay
+- PROOF_CONCLUSION: `PRESENT_A13_VARIANT`
+
+## PROOF_R5_VolumeCursorHook_controls_volumecursor
+
+- PROOF_ID: `PROOF_R5_VolumeCursorHook_controls_volumecursor`
+- BODY_RELATION: `REVIEWED_VARIANT`
+- A14_OWNER_PATH: `app/src/main/java/tv/withaibuild/customiuizer/mods/Controls.kt`
+- A14_SYMBOL: `VolumeCursorHook`
+- A14_INSTALLER: `A14 installer/spec gate for controls_volumecursor,controls_volumecursor_apps,controls_volumecursor_reverse`
+- A14_HOOK_TARGETS: `android.inputmethodservice.InputMethodService#onKeyDown,android.inputmethodservice.InputMethodService#onKeyUp`
+- A14_CALLBACK_PHASE: `intercept`
+- A13_OWNER_PATH: `app/src/main/java/tv/withaibuild/customiuizer/mods/Controls.kt`
+- A13_SYMBOL: `VolumeCursorHook`
+- A13_INSTALLER: `A13 installer gate for controls_volumecursor,controls_volumecursor_apps,controls_volumecursor_reverse`
+- A13_HOOK_TARGETS: `android.inputmethodservice.InputMethodService#onKeyDown,android.inputmethodservice.InputMethodService#onKeyUp`
+- A13_CALLBACK_PHASE: `before`
+- PREFERENCE_KEYS: `controls_volumecursor,controls_volumecursor_apps,controls_volumecursor_reverse`
+- VALUE_DOMAIN: owner-local preference domain
+- DEFAULT_SEMANTICS: same persisted keys consumed by both owners
+- RESULT/ARGUMENT_BEHAVIOR: A14 ops: result_assign[true,null,true,null]; chain.proceed[chain.proceed(),chain.proceed()]. A13 ops: returnAndSkip[true,true]. Keys controls_volumecursor,controls_volumecursor_apps,controls_volumecursor_reverse rewrite the same host members.
+- API33_VARIANT_REASON: A14 callback intercept vs A13 before on members A14[android.inputmethodservice.InputMethodService#onKeyDown,android.inputmethodservice.InputMethodService#onKeyUp] / A13[android.inputmethodservice.InputMethodService#onKeyDown,android.inputmethodservice.InputMethodService#onKeyUp]. Inner preference reads of controls_volumecursor,controls_volumecursor_apps,controls_volumecursor_reverse match; intercept proceed-once maps to before returnAndSkip or after side-effect.
+- DIFF_SUMMARY: Shared members android.inputmethodservice.InputMethodService#onKeyDown,android.inputmethodservice.InputMethodService#onKeyUp. Differ: A14 phases intercept vs A13 before; A14 result_assign[true,null,true,null]; chain.proceed[chain.proceed(),chain.proceed()] vs A13 returnAndSkip[true,true].
+- VALUE_DEFAULT_COMPARISON: both consume controls_volumecursor,controls_volumecursor_apps,controls_volumecursor_reverse in the owner body or installer gate
+- HOOK_TARGET_COMPARISON: A14=android.inputmethodservice.InputMethodService#onKeyDown,android.inputmethodservice.InputMethodService#onKeyUp; A13=android.inputmethodservice.InputMethodService#onKeyDown,android.inputmethodservice.InputMethodService#onKeyUp
+- CALLBACK_SEMANTICS_COMPARISON: A14 intercept vs A13 before; skipped paths do not invoke the original, proceed-once equals after side-effect
+- ARG_RESULT_COMPARISON: A14=result_assign[true,null,true,null]; chain.proceed[chain.proceed(),chain.proceed()]; A13=returnAndSkip[true,true]
+- A14_ONLY_BRANCHES: none beyond intercept scaffolding for this owner pair
+- WHY_USER_BEHAVIOR_IS_EQUIVALENT: User-visible contract of controls_volumecursor,controls_volumecursor_apps,controls_volumecursor_reverse is the same host rewrite; callback adapter and null-safety differ.
+- KEY_OWNERSHIP_EVIDENCE: controls_volumecursor,controls_volumecursor_apps,controls_volumecursor_reverse: LITERAL_READ and/or INSTALLER_CALLEE in VolumeCursorHook/VolumeCursorHook
+- A14_KEY_OWNER_REFERENCE: app/src/main/java/tv/withaibuild/customiuizer/mods/Controls.kt::VolumeCursorHook
+- A13_KEY_OWNER_REFERENCE: app/src/main/java/tv/withaibuild/customiuizer/mods/Controls.kt::VolumeCursorHook
+- PROOF_CONCLUSION: `PRESENT_A13_VARIANT`
+
+## PROOF_R5F_VolumeMediaButtonsHook_controls_volumemedia_down
+
+- PROOF_ID: `PROOF_R5F_VolumeMediaButtonsHook_controls_volumemedia_down`
+- BODY_RELATION: `REVIEWED_VARIANT`
+- A14_OWNER_PATH: `app/src/main/java/tv/withaibuild/customiuizer/mods/Controls.kt`
+- A14_SYMBOL: `VolumeMediaButtonsHook`
+- A14_INSTALLER: `SystemServerFeatures.VolumeMediaButtonsFeature same getStringAsInt gate`
+- A14_HOOK_TARGETS: `com.android.server.policy.MiuiPhoneWindowManager#interceptKeyBeforeQueueing`
+- A14_CALLBACK_PHASE: `intercept`
+- A13_OWNER_PATH: `app/src/main/java/tv/withaibuild/customiuizer/mods/Controls.kt`
+- A13_SYMBOL: `VolumeMediaButtonsHook`
+- A13_INSTALLER: `SystemServerInstaller.java getStringAsInt(controls_volumemedia_up,0)>0 || getStringAsInt(controls_volumemedia_down,0)>0`
+- A13_HOOK_TARGETS: `com.android.server.policy.MiuiPhoneWindowManager#interceptKeyBeforeQueueing`
+- A13_CALLBACK_PHASE: `before`
+- PREFERENCE_KEYS: `controls_volumemedia_down,controls_volumemedia_up`
+- VALUE_DOMAIN: owner-local preference domain
+- DEFAULT_SEMANTICS: Both getStringAsInt default 0 meaning unset; installer requires either key >0. Runnable no-ops if the pressed-side pref is 0.
+- RESULT/ARGUMENT_BEHAVIOR: Both skip original with result 0 on ACTION_DOWN and ACTION_UP for FROM_SYSTEM volume keys when not interactive.
+- API33_VARIANT_REASON: Same host member and skip-0 contract. Callback adapter before/returnAndSkip vs intercept skip. Key consumption is installer+runnable, not a literal getBoolean in the hook callback.
+- DIFF_SUMMARY: Same MiuiPhoneWindowManager.interceptKeyBeforeQueueing rewrite: screen-off volume DOWN/UP skip original (result 0), long-press sends configured media key, short-press adjusts music/incall or wake. A13 posts shared mVolumeLongPressRunnable with sVolumeContext/sVolumeKeyCode; A14 inlines the delayed runnable. A13 removeCallbacks(runnable) vs A14 removeCallbacksAndMessages(null).
+- VALUE_DEFAULT_COMPARISON: Both getStringAsInt default 0 meaning unset; installer requires either key >0. Runnable no-ops if the pressed-side pref is 0.
+- HOOK_TARGET_COMPARISON: A14=com.android.server.policy.MiuiPhoneWindowManager#interceptKeyBeforeQueueing; A13=com.android.server.policy.MiuiPhoneWindowManager#interceptKeyBeforeQueueing
+- CALLBACK_SEMANTICS_COMPARISON: A14 intercept skip result=0 without proceed; A13 before returnAndSkip(0). Early-outs (power pressed, virtual hard key, interactive) proceed/return original.
+- ARG_RESULT_COMPARISON: A14 result_assign[null] proceed-or-skip0; A13 returnAndSkip[0,0]. Same skip-0 rewrite.
+- A14_ONLY_BRANCHES: none beyond intercept scaffolding and broader Handler.cancel via removeCallbacksAndMessages(null).
+- WHY_USER_BEHAVIOR_IS_EQUIVALENT: User-visible screen-off volume long-press media actions and short-press volume/wake match. interceptKeyBeforeQueueing is rewritten the same way.
+- KEY_OWNERSHIP_EVIDENCE: A13 hook body does not getBoolean the keys; installer gates plus mVolumeLongPressRunnable getStringAsInt both keys (default 0). Same as A14 intercept runnable. compact keys_only14 is installer/body-split, not missing ownership.
+- A14_KEY_OWNER_REFERENCE: app/src/main/java/tv/withaibuild/customiuizer/mods/Controls.kt::VolumeMediaButtonsHook
+- A13_KEY_OWNER_REFERENCE: app/src/main/java/tv/withaibuild/customiuizer/mods/Controls.kt::VolumeMediaButtonsHook
+- PROOF_CONCLUSION: `PRESENT_A13_VARIANT`
+
+## PROOF_R5_sendDownUpKeyEvent_controls_volumemedia_vibrate
+
+- PROOF_ID: `PROOF_R5_sendDownUpKeyEvent_controls_volumemedia_vibrate`
+- BODY_RELATION: `REVIEWED_VARIANT`
+- A14_OWNER_PATH: `app/src/main/java/tv/withaibuild/customiuizer/mods/GlobalActions.kt`
+- A14_SYMBOL: `sendDownUpKeyEvent`
+- A14_INSTALLER: `A14 installer/spec gate for controls_volumemedia_vibrate,controls_volumemedia_vibrate_ignore`
+- A14_HOOK_TARGETS: `(no host member literals)`
+- A14_CALLBACK_PHASE: `unknown`
+- A13_OWNER_PATH: `app/src/main/java/tv/withaibuild/customiuizer/mods/GlobalActions.kt`
+- A13_SYMBOL: `sendDownUpKeyEvent`
+- A13_INSTALLER: `A13 installer gate for controls_volumemedia_vibrate,controls_volumemedia_vibrate_ignore`
+- A13_HOOK_TARGETS: `(no host member literals)`
+- A13_CALLBACK_PHASE: `unknown`
+- PREFERENCE_KEYS: `controls_volumemedia_vibrate,controls_volumemedia_vibrate_ignore`
+- VALUE_DOMAIN: owner-local preference domain
+- DEFAULT_SEMANTICS: same persisted keys consumed by both owners
+- RESULT/ARGUMENT_BEHAVIOR: A14 ops: no result/argument rewrite literals. A13 ops: no result/argument rewrite literals. Keys controls_volumemedia_vibrate,controls_volumemedia_vibrate_ignore rewrite the same host members.
+- API33_VARIANT_REASON: A14 callback unknown vs A13 unknown on members A14[(none)] / A13[(none)]. Inner preference reads of controls_volumemedia_vibrate,controls_volumemedia_vibrate_ignore match; intercept proceed-once maps to before returnAndSkip or after side-effect.
+- DIFF_SUMMARY: Shared members (none). Differ: A14 phases unknown vs A13 unknown; A14 no result/argument rewrite literals vs A13 no result/argument rewrite literals.
+- VALUE_DEFAULT_COMPARISON: both consume controls_volumemedia_vibrate,controls_volumemedia_vibrate_ignore in the owner body or installer gate
+- HOOK_TARGET_COMPARISON: A14=(none); A13=(none)
+- CALLBACK_SEMANTICS_COMPARISON: A14 unknown vs A13 unknown; skipped paths do not invoke the original, proceed-once equals after side-effect
+- ARG_RESULT_COMPARISON: A14=no result/argument rewrite literals; A13=no result/argument rewrite literals
+- A14_ONLY_BRANCHES: none beyond intercept scaffolding for this owner pair
+- WHY_USER_BEHAVIOR_IS_EQUIVALENT: User-visible contract of controls_volumemedia_vibrate,controls_volumemedia_vibrate_ignore is the same host rewrite; callback adapter and null-safety differ.
+- KEY_OWNERSHIP_EVIDENCE: controls_volumemedia_vibrate,controls_volumemedia_vibrate_ignore: LITERAL_READ and/or INSTALLER_CALLEE in sendDownUpKeyEvent/sendDownUpKeyEvent
+- A14_KEY_OWNER_REFERENCE: app/src/main/java/tv/withaibuild/customiuizer/mods/GlobalActions.kt::sendDownUpKeyEvent
+- A13_KEY_OWNER_REFERENCE: app/src/main/java/tv/withaibuild/customiuizer/mods/GlobalActions.kt::sendDownUpKeyEvent
+- PROOF_CONCLUSION: `PRESENT_A13_VARIANT`
+
+## PROOF_R5_CloseFolderOrDrawerOnLaunchShortcutMenuHook_launcher_closedrawer
+
+- PROOF_ID: `PROOF_R5_CloseFolderOrDrawerOnLaunchShortcutMenuHook_launcher_closedrawer`
+- BODY_RELATION: `REVIEWED_VARIANT`
+- A14_OWNER_PATH: `app/src/main/java/tv/withaibuild/customiuizer/mods/LauncherFolderHooks.kt`
+- A14_SYMBOL: `CloseFolderOrDrawerOnLaunchShortcutMenuHook`
+- A14_INSTALLER: `A14 installer/spec gate for launcher_closedrawer,launcher_closefolders`
+- A14_HOOK_TARGETS: `com.miui.home.launcher.shortcuts.AppShortcutMenuItem#getOnClickListener`
+- A14_CALLBACK_PHASE: `intercept`
+- A13_OWNER_PATH: `app/src/main/java/tv/withaibuild/customiuizer/mods/LauncherFolderHooks.kt`
+- A13_SYMBOL: `CloseFolderOrDrawerOnLaunchShortcutMenuHook`
+- A13_INSTALLER: `A13 installer gate for launcher_closedrawer,launcher_closefolders`
+- A13_HOOK_TARGETS: `com.miui.home.launcher.shortcuts.AppShortcutMenuItem#getOnClickListener`
+- A13_CALLBACK_PHASE: `after`
+- PREFERENCE_KEYS: `launcher_closedrawer,launcher_closefolders`
+- VALUE_DOMAIN: owner-local preference domain
+- DEFAULT_SEMANTICS: same persisted keys consumed by both owners
+- RESULT/ARGUMENT_BEHAVIOR: A14 ops: result_assign[null]; chain.proceed[chain.proceed()]. A13 ops: setResult[View.OnClickListener { view -> listener.onClick(view]. Keys launcher_closedrawer,launcher_closefolders rewrite the same host members.
+- API33_VARIANT_REASON: A14 callback intercept vs A13 after on members A14[com.miui.home.launcher.shortcuts.AppShortcutMenuItem#getOnClickListener] / A13[com.miui.home.launcher.shortcuts.AppShortcutMenuItem#getOnClickListener]. Inner preference reads of launcher_closedrawer,launcher_closefolders match; intercept proceed-once maps to before returnAndSkip or after side-effect.
+- DIFF_SUMMARY: Shared members com.miui.home.launcher.shortcuts.AppShortcutMenuItem#getOnClickListener. Differ: A14 phases intercept vs A13 after; A14 result_assign[null]; chain.proceed[chain.proceed()] vs A13 setResult[View.OnClickListener { view -> listener.onClick(view].
+- VALUE_DEFAULT_COMPARISON: both consume launcher_closedrawer,launcher_closefolders in the owner body or installer gate
+- HOOK_TARGET_COMPARISON: A14=com.miui.home.launcher.shortcuts.AppShortcutMenuItem#getOnClickListener; A13=com.miui.home.launcher.shortcuts.AppShortcutMenuItem#getOnClickListener
+- CALLBACK_SEMANTICS_COMPARISON: A14 intercept vs A13 after; skipped paths do not invoke the original, proceed-once equals after side-effect
+- ARG_RESULT_COMPARISON: A14=result_assign[null]; chain.proceed[chain.proceed()]; A13=setResult[View.OnClickListener { view -> listener.onClick(view]
+- A14_ONLY_BRANCHES: none beyond intercept scaffolding for this owner pair
+- WHY_USER_BEHAVIOR_IS_EQUIVALENT: User-visible contract of launcher_closedrawer,launcher_closefolders is the same host rewrite; callback adapter and null-safety differ.
+- KEY_OWNERSHIP_EVIDENCE: launcher_closedrawer,launcher_closefolders: LITERAL_READ and/or INSTALLER_CALLEE in CloseFolderOrDrawerOnLaunchShortcutMenuHook/CloseFolderOrDrawerOnLaunchShortcutMenuHook
+- A14_KEY_OWNER_REFERENCE: app/src/main/java/tv/withaibuild/customiuizer/mods/LauncherFolderHooks.kt::CloseFolderOrDrawerOnLaunchShortcutMenuHook
+- A13_KEY_OWNER_REFERENCE: app/src/main/java/tv/withaibuild/customiuizer/mods/LauncherFolderHooks.kt::CloseFolderOrDrawerOnLaunchShortcutMenuHook
+- PROOF_CONCLUSION: `PRESENT_A13_VARIANT`
+
+## PROOF_R5_TitleShadowHook_launcher_darkershadow
+
+- PROOF_ID: `PROOF_R5_TitleShadowHook_launcher_darkershadow`
+- BODY_RELATION: `REVIEWED_VARIANT`
+- A14_OWNER_PATH: `app/src/main/java/tv/withaibuild/customiuizer/mods/LauncherIconHooks.kt`
+- A14_SYMBOL: `TitleShadowHook`
+- A14_INSTALLER: `A14 installer/spec gate for launcher_darkershadow`
+- A14_HOOK_TARGETS: `com.miui.home.launcher.WallpaperUtils#getIconTitleShadowColor,com.miui.home.launcher.WallpaperUtils#getTitleShadowColor`
+- A14_CALLBACK_PHASE: `intercept`
+- A13_OWNER_PATH: `app/src/main/java/tv/withaibuild/customiuizer/mods/LauncherIconHooks.kt`
+- A13_SYMBOL: `TitleShadowHook`
+- A13_INSTALLER: `A13 installer gate for launcher_darkershadow`
+- A13_HOOK_TARGETS: `com.miui.home.launcher.WallpaperUtils#getIconTitleShadowColor,com.miui.home.launcher.WallpaperUtils#getTitleShadowColor`
+- A13_CALLBACK_PHASE: `after`
+- PREFERENCE_KEYS: `launcher_darkershadow`
+- VALUE_DOMAIN: owner-local preference domain
+- DEFAULT_SEMANTICS: same persisted keys consumed by both owners
+- RESULT/ARGUMENT_BEHAVIOR: A14 ops: result_assign[null,null]; chain.proceed[chain.proceed(),chain.proceed()]. A13 ops: setResult[Color.argb(Math.round(Color.alpha(color,Color.argb(Math.round(Color.alpha(color]. Keys launcher_darkershadow rewrite the same host members.
+- API33_VARIANT_REASON: A14 callback intercept vs A13 after on members A14[com.miui.home.launcher.WallpaperUtils#getIconTitleShadowColor,com.miui.home.launcher.WallpaperUtils#getTitleShadowColor] / A13[com.miui.home.launcher.WallpaperUtils#getIconTitleShadowColor,com.miui.home.launcher.WallpaperUtils#getTitleShadowColor]. Inner preference reads of launcher_darkershadow match; intercept proceed-once maps to before returnAndSkip or after side-effect.
+- DIFF_SUMMARY: Shared members com.miui.home.launcher.WallpaperUtils#getIconTitleShadowColor,com.miui.home.launcher.WallpaperUtils#getTitleShadowColor. Differ: A14 phases intercept vs A13 after; A14 result_assign[null,null]; chain.proceed[chain.proceed(),chain.proceed()] vs A13 setResult[Color.argb(Math.round(Color.alpha(color,Color.argb(Math.round(Color.alpha(color].
+- VALUE_DEFAULT_COMPARISON: both consume launcher_darkershadow in the owner body or installer gate
+- HOOK_TARGET_COMPARISON: A14=com.miui.home.launcher.WallpaperUtils#getIconTitleShadowColor,com.miui.home.launcher.WallpaperUtils#getTitleShadowColor; A13=com.miui.home.launcher.WallpaperUtils#getIconTitleShadowColor,com.miui.home.launcher.WallpaperUtils#getTitleShadowColor
+- CALLBACK_SEMANTICS_COMPARISON: A14 intercept vs A13 after; skipped paths do not invoke the original, proceed-once equals after side-effect
+- ARG_RESULT_COMPARISON: A14=result_assign[null,null]; chain.proceed[chain.proceed(),chain.proceed()]; A13=setResult[Color.argb(Math.round(Color.alpha(color,Color.argb(Math.round(Color.alpha(color]
+- A14_ONLY_BRANCHES: none beyond intercept scaffolding for this owner pair
+- WHY_USER_BEHAVIOR_IS_EQUIVALENT: User-visible contract of launcher_darkershadow is the same host rewrite; callback adapter and null-safety differ.
+- KEY_OWNERSHIP_EVIDENCE: launcher_darkershadow: LITERAL_READ and/or INSTALLER_CALLEE in TitleShadowHook/TitleShadowHook
+- A14_KEY_OWNER_REFERENCE: app/src/main/java/tv/withaibuild/customiuizer/mods/LauncherIconHooks.kt::TitleShadowHook
+- A13_KEY_OWNER_REFERENCE: app/src/main/java/tv/withaibuild/customiuizer/mods/LauncherIconHooks.kt::TitleShadowHook
+- PROOF_CONCLUSION: `PRESENT_A13_VARIANT`
+
+## PROOF_R5_DisableLauncherLogHook_launcher_disable_log
+
+- PROOF_ID: `PROOF_R5_DisableLauncherLogHook_launcher_disable_log`
+- BODY_RELATION: `REVIEWED_VARIANT`
+- A14_OWNER_PATH: `app/src/main/java/tv/withaibuild/customiuizer/mods/Launcher.kt`
+- A14_SYMBOL: `DisableLauncherLogHook`
+- A14_INSTALLER: `A14 installer/spec gate for launcher_disable_log`
+- A14_HOOK_TARGETS: `com.miui.home.launcher.AnalyticalDataCollectorJobService#onStartJob,com.miui.home.launcher.AnalyticalDataCollector#canTrackLaunchAppEvent`
+- A14_CALLBACK_PHASE: `unknown`
+- A13_OWNER_PATH: `app/src/main/java/tv/withaibuild/customiuizer/mods/LauncherSystemHooks.kt`
+- A13_SYMBOL: `DisableLauncherLogHook`
+- A13_INSTALLER: `A13 installer gate for launcher_disable_log`
+- A13_HOOK_TARGETS: `com.miui.home.launcher.AnalyticalDataCollectorJobService#onStartJob,com.miui.home.launcher.AnalyticalDataCollector#canTrackLaunchAppEvent`
+- A13_CALLBACK_PHASE: `unknown`
+- PREFERENCE_KEYS: `launcher_disable_log`
+- VALUE_DOMAIN: owner-local preference domain
+- DEFAULT_SEMANTICS: same persisted keys consumed by both owners
+- RESULT/ARGUMENT_BEHAVIOR: A14 ops: no result/argument rewrite literals. A13 ops: no result/argument rewrite literals. Keys launcher_disable_log rewrite the same host members.
+- API33_VARIANT_REASON: A14 callback unknown vs A13 unknown on members A14[com.miui.home.launcher.AnalyticalDataCollectorJobService#onStartJob,com.miui.home.launcher.AnalyticalDataCollector#canTrackLaunchAppEvent] / A13[com.miui.home.launcher.AnalyticalDataCollectorJobService#onStartJob,com.miui.home.launcher.AnalyticalDataCollector#canTrackLaunchAppEvent]. Inner preference reads of launcher_disable_log match; intercept proceed-once maps to before returnAndSkip or after side-effect.
+- DIFF_SUMMARY: Shared members com.miui.home.launcher.AnalyticalDataCollectorJobService#onStartJob,com.miui.home.launcher.AnalyticalDataCollector#canTrackLaunchAppEvent. Differ: A14 phases unknown vs A13 unknown; A14 no result/argument rewrite literals vs A13 no result/argument rewrite literals.
+- VALUE_DEFAULT_COMPARISON: both consume launcher_disable_log in the owner body or installer gate
+- HOOK_TARGET_COMPARISON: A14=com.miui.home.launcher.AnalyticalDataCollectorJobService#onStartJob,com.miui.home.launcher.AnalyticalDataCollector#canTrackLaunchAppEvent; A13=com.miui.home.launcher.AnalyticalDataCollectorJobService#onStartJob,com.miui.home.launcher.AnalyticalDataCollector#canTrackLaunchAppEvent
+- CALLBACK_SEMANTICS_COMPARISON: A14 unknown vs A13 unknown; skipped paths do not invoke the original, proceed-once equals after side-effect
+- ARG_RESULT_COMPARISON: A14=no result/argument rewrite literals; A13=no result/argument rewrite literals
+- A14_ONLY_BRANCHES: none beyond intercept scaffolding for this owner pair
+- WHY_USER_BEHAVIOR_IS_EQUIVALENT: User-visible contract of launcher_disable_log is the same host rewrite; callback adapter and null-safety differ.
+- KEY_OWNERSHIP_EVIDENCE: launcher_disable_log: LITERAL_READ and/or INSTALLER_CALLEE in DisableLauncherLogHook/DisableLauncherLogHook
+- A14_KEY_OWNER_REFERENCE: app/src/main/java/tv/withaibuild/customiuizer/mods/Launcher.kt::DisableLauncherLogHook
+- A13_KEY_OWNER_REFERENCE: app/src/main/java/tv/withaibuild/customiuizer/mods/LauncherSystemHooks.kt::DisableLauncherLogHook
+- PROOF_CONCLUSION: `PRESENT_A13_VARIANT`
+
+## PROOF_R5_DisableLauncherWallpaperScale_launcher_disable_wallpaperscale
+
+- PROOF_ID: `PROOF_R5_DisableLauncherWallpaperScale_launcher_disable_wallpaperscale`
+- BODY_RELATION: `REVIEWED_VARIANT`
+- A14_OWNER_PATH: `app/src/main/java/tv/withaibuild/customiuizer/mods/LauncherAnimationHooks.kt`
+- A14_SYMBOL: `DisableLauncherWallpaperScale`
+- A14_INSTALLER: `A14 installer/spec gate for launcher_disable_wallpaperscale`
+- A14_HOOK_TARGETS: `com.miui.home.recents.DimLayer#isSupportDim,com.miui.home.recents.OverviewState#onStateEnabled`
+- A14_CALLBACK_PHASE: `intercept`
+- A13_OWNER_PATH: `app/src/main/java/tv/withaibuild/customiuizer/mods/LauncherAnimationHooks.kt`
+- A13_SYMBOL: `DisableLauncherWallpaperScale`
+- A13_INSTALLER: `A13 installer gate for launcher_disable_wallpaperscale`
+- A13_HOOK_TARGETS: `com.miui.home.recents.DimLayer#isSupportDim,com.miui.home.recents.OverviewState#onStateEnabled`
+- A13_CALLBACK_PHASE: `before,after`
+- PREFERENCE_KEYS: `launcher_disable_wallpaperscale`
+- VALUE_DOMAIN: owner-local preference domain
+- DEFAULT_SEMANTICS: same persisted keys consumed by both owners
+- RESULT/ARGUMENT_BEHAVIOR: A14 ops: result_assign[null]; chain.proceed[chain.proceed()]. A13 ops: no result/argument rewrite literals. Keys launcher_disable_wallpaperscale rewrite the same host members.
+- API33_VARIANT_REASON: A14 callback intercept vs A13 before,after on members A14[com.miui.home.recents.DimLayer#isSupportDim,com.miui.home.recents.OverviewState#onStateEnabled] / A13[com.miui.home.recents.DimLayer#isSupportDim,com.miui.home.recents.OverviewState#onStateEnabled]. Inner preference reads of launcher_disable_wallpaperscale match; intercept proceed-once maps to before returnAndSkip or after side-effect.
+- DIFF_SUMMARY: Shared members com.miui.home.recents.DimLayer#isSupportDim,com.miui.home.recents.OverviewState#onStateEnabled. Differ: A14 phases intercept vs A13 before,after; A14 result_assign[null]; chain.proceed[chain.proceed()] vs A13 no result/argument rewrite literals.
+- VALUE_DEFAULT_COMPARISON: both consume launcher_disable_wallpaperscale in the owner body or installer gate
+- HOOK_TARGET_COMPARISON: A14=com.miui.home.recents.DimLayer#isSupportDim,com.miui.home.recents.OverviewState#onStateEnabled; A13=com.miui.home.recents.DimLayer#isSupportDim,com.miui.home.recents.OverviewState#onStateEnabled
+- CALLBACK_SEMANTICS_COMPARISON: A14 intercept vs A13 before,after; skipped paths do not invoke the original, proceed-once equals after side-effect
+- ARG_RESULT_COMPARISON: A14=result_assign[null]; chain.proceed[chain.proceed()]; A13=no result/argument rewrite literals
+- A14_ONLY_BRANCHES: none beyond intercept scaffolding for this owner pair
+- WHY_USER_BEHAVIOR_IS_EQUIVALENT: User-visible contract of launcher_disable_wallpaperscale is the same host rewrite; callback adapter and null-safety differ.
+- KEY_OWNERSHIP_EVIDENCE: launcher_disable_wallpaperscale: LITERAL_READ and/or INSTALLER_CALLEE in DisableLauncherWallpaperScale/DisableLauncherWallpaperScale
+- A14_KEY_OWNER_REFERENCE: app/src/main/java/tv/withaibuild/customiuizer/mods/LauncherAnimationHooks.kt::DisableLauncherWallpaperScale
+- A13_KEY_OWNER_REFERENCE: app/src/main/java/tv/withaibuild/customiuizer/mods/LauncherAnimationHooks.kt::DisableLauncherWallpaperScale
+- PROOF_CONCLUSION: `PRESENT_A13_VARIANT`
+
+## PROOF_R5_DockMarginBottomHook_launcher_dock_bottommargin
+
+- PROOF_ID: `PROOF_R5_DockMarginBottomHook_launcher_dock_bottommargin`
+- BODY_RELATION: `REVIEWED_VARIANT`
+- A14_OWNER_PATH: `app/src/main/java/tv/withaibuild/customiuizer/mods/LauncherLayoutHooks.kt`
+- A14_SYMBOL: `DockMarginBottomHook`
+- A14_INSTALLER: `A14 installer/spec gate for launcher_dock_bottommargin`
+- A14_HOOK_TARGETS: `com.miui.home.launcher.DeviceConfig#calcHotSeatsMarginBottom`
+- A14_CALLBACK_PHASE: `intercept`
+- A13_OWNER_PATH: `app/src/main/java/tv/withaibuild/customiuizer/mods/LauncherLayoutHooks.kt`
+- A13_SYMBOL: `DockMarginBottomHook`
+- A13_INSTALLER: `A13 installer gate for launcher_dock_bottommargin`
+- A13_HOOK_TARGETS: `com.miui.home.launcher.DeviceConfig#calcHotSeatsMarginBottom`
+- A13_CALLBACK_PHASE: `before`
+- PREFERENCE_KEYS: `launcher_dock_bottommargin`
+- VALUE_DOMAIN: owner-local preference domain
+- DEFAULT_SEMANTICS: same persisted keys consumed by both owners
+- RESULT/ARGUMENT_BEHAVIOR: A14 ops: result_assign[null]; chain.proceed[chain.proceed()]. A13 ops: returnAndSkip[Math.round(HookUtils.dp2px(opt.toFloat(]. Keys launcher_dock_bottommargin rewrite the same host members.
+- API33_VARIANT_REASON: A14 callback intercept vs A13 before on members A14[com.miui.home.launcher.DeviceConfig#calcHotSeatsMarginBottom] / A13[com.miui.home.launcher.DeviceConfig#calcHotSeatsMarginBottom]. Inner preference reads of launcher_dock_bottommargin match; intercept proceed-once maps to before returnAndSkip or after side-effect.
+- DIFF_SUMMARY: Shared members com.miui.home.launcher.DeviceConfig#calcHotSeatsMarginBottom. Differ: A14 phases intercept vs A13 before; A14 result_assign[null]; chain.proceed[chain.proceed()] vs A13 returnAndSkip[Math.round(HookUtils.dp2px(opt.toFloat(].
+- VALUE_DEFAULT_COMPARISON: both consume launcher_dock_bottommargin in the owner body or installer gate
+- HOOK_TARGET_COMPARISON: A14=com.miui.home.launcher.DeviceConfig#calcHotSeatsMarginBottom; A13=com.miui.home.launcher.DeviceConfig#calcHotSeatsMarginBottom
+- CALLBACK_SEMANTICS_COMPARISON: A14 intercept vs A13 before; skipped paths do not invoke the original, proceed-once equals after side-effect
+- ARG_RESULT_COMPARISON: A14=result_assign[null]; chain.proceed[chain.proceed()]; A13=returnAndSkip[Math.round(HookUtils.dp2px(opt.toFloat(]
+- A14_ONLY_BRANCHES: none beyond intercept scaffolding for this owner pair
+- WHY_USER_BEHAVIOR_IS_EQUIVALENT: User-visible contract of launcher_dock_bottommargin is the same host rewrite; callback adapter and null-safety differ.
+- KEY_OWNERSHIP_EVIDENCE: launcher_dock_bottommargin: LITERAL_READ and/or INSTALLER_CALLEE in DockMarginBottomHook/DockMarginBottomHook
+- A14_KEY_OWNER_REFERENCE: app/src/main/java/tv/withaibuild/customiuizer/mods/LauncherLayoutHooks.kt::DockMarginBottomHook
+- A13_KEY_OWNER_REFERENCE: app/src/main/java/tv/withaibuild/customiuizer/mods/LauncherLayoutHooks.kt::DockMarginBottomHook
+- PROOF_CONCLUSION: `PRESENT_A13_VARIANT`
+
+## PROOF_LAUNCHER_DOCK_HEIGHT
+
+- PROOF_ID: `PROOF_LAUNCHER_DOCK_HEIGHT`
+- BODY_RELATION: `REVIEWED_VARIANT`
+- A14_OWNER_PATH: `app/src/main/java/tv/withaibuild/customiuizer/mods/LauncherLayoutHooks.kt`
+- A14_SYMBOL: `DockHeightHook`
+- A14_INSTALLER: `mods/utils/feature/LauncherPackageReadyFeatures.kt`
+- A14_HOOK_TARGETS: `com.miui.home.launcher.DeviceConfig#calcHotSeatsHeight`
+- A14_CALLBACK_PHASE: `before`
+- A13_OWNER_PATH: `app/src/main/java/tv/withaibuild/customiuizer/mods/LauncherLayoutHooks.kt`
+- A13_SYMBOL: `DockHeightHook`
+- A13_INSTALLER: `installers/LauncherInstaller.java`
+- A13_HOOK_TARGETS: `com.miui.home.launcher.DeviceConfig#calcHotSeatsHeight`
+- A13_CALLBACK_PHASE: `before`
+- PREFERENCE_KEYS: `launcher_dock_height`
+- VALUE_DOMAIN: int dp, default 60
+- DEFAULT_SEMANTICS: <=60 keeps ROM hotseat height
+- RESULT/ARGUMENT_BEHAVIOR: before-hook returnAndSkip dp2px(dockHeight)
+- API33_VARIANT_REASON: Same DeviceConfig.calcHotSeatsHeight member on MIUI Home.
+- DIFF_SUMMARY: Same DeviceConfig.calcHotSeatsHeight member on MIUI Home.
+- VALUE_DEFAULT_COMPARISON: <=60 keeps ROM hotseat height
+- HOOK_TARGET_COMPARISON: A14=com.miui.home.launcher.DeviceConfig#calcHotSeatsHeight; A13=com.miui.home.launcher.DeviceConfig#calcHotSeatsHeight
+- CALLBACK_SEMANTICS_COMPARISON: A14=before; A13=before
+- ARG_RESULT_COMPARISON: before-hook returnAndSkip dp2px(dockHeight)
+- A14_ONLY_BRANCHES: Same DeviceConfig.calcHotSeatsHeight member on MIUI Home.
+- WHY_USER_BEHAVIOR_IS_EQUIVALENT: before-hook returnAndSkip dp2px(dockHeight). Same DeviceConfig.calcHotSeatsHeight member on MIUI Home.
+- PROOF_CONCLUSION: `PRESENT_A13_VARIANT`
+
+## PROOF_R5_DockMarginTopHook_launcher_dock_topmargin
+
+- PROOF_ID: `PROOF_R5_DockMarginTopHook_launcher_dock_topmargin`
+- BODY_RELATION: `REVIEWED_VARIANT`
+- A14_OWNER_PATH: `app/src/main/java/tv/withaibuild/customiuizer/mods/LauncherLayoutHooks.kt`
+- A14_SYMBOL: `DockMarginTopHook`
+- A14_INSTALLER: `A14 installer/spec gate for launcher_dock_topmargin`
+- A14_HOOK_TARGETS: `com.miui.home.launcher.DeviceConfig#calcHotSeatsMarginTop`
+- A14_CALLBACK_PHASE: `intercept`
+- A13_OWNER_PATH: `app/src/main/java/tv/withaibuild/customiuizer/mods/LauncherLayoutHooks.kt`
+- A13_SYMBOL: `DockMarginTopHook`
+- A13_INSTALLER: `A13 installer gate for launcher_dock_topmargin`
+- A13_HOOK_TARGETS: `com.miui.home.launcher.DeviceConfig#calcHotSeatsMarginTop`
+- A13_CALLBACK_PHASE: `before`
+- PREFERENCE_KEYS: `launcher_dock_topmargin`
+- VALUE_DOMAIN: owner-local preference domain
+- DEFAULT_SEMANTICS: same persisted keys consumed by both owners
+- RESULT/ARGUMENT_BEHAVIOR: A14 ops: result_assign[null]; chain.proceed[chain.proceed()]. A13 ops: returnAndSkip[Math.round(HookUtils.dp2px(opt.toFloat(]. Keys launcher_dock_topmargin rewrite the same host members.
+- API33_VARIANT_REASON: A14 callback intercept vs A13 before on members A14[com.miui.home.launcher.DeviceConfig#calcHotSeatsMarginTop] / A13[com.miui.home.launcher.DeviceConfig#calcHotSeatsMarginTop]. Inner preference reads of launcher_dock_topmargin match; intercept proceed-once maps to before returnAndSkip or after side-effect.
+- DIFF_SUMMARY: Shared members com.miui.home.launcher.DeviceConfig#calcHotSeatsMarginTop. Differ: A14 phases intercept vs A13 before; A14 result_assign[null]; chain.proceed[chain.proceed()] vs A13 returnAndSkip[Math.round(HookUtils.dp2px(opt.toFloat(].
+- VALUE_DEFAULT_COMPARISON: both consume launcher_dock_topmargin in the owner body or installer gate
+- HOOK_TARGET_COMPARISON: A14=com.miui.home.launcher.DeviceConfig#calcHotSeatsMarginTop; A13=com.miui.home.launcher.DeviceConfig#calcHotSeatsMarginTop
+- CALLBACK_SEMANTICS_COMPARISON: A14 intercept vs A13 before; skipped paths do not invoke the original, proceed-once equals after side-effect
+- ARG_RESULT_COMPARISON: A14=result_assign[null]; chain.proceed[chain.proceed()]; A13=returnAndSkip[Math.round(HookUtils.dp2px(opt.toFloat(]
+- A14_ONLY_BRANCHES: none beyond intercept scaffolding for this owner pair
+- WHY_USER_BEHAVIOR_IS_EQUIVALENT: User-visible contract of launcher_dock_topmargin is the same host rewrite; callback adapter and null-safety differ.
+- KEY_OWNERSHIP_EVIDENCE: launcher_dock_topmargin: LITERAL_READ and/or INSTALLER_CALLEE in DockMarginTopHook/DockMarginTopHook
+- A14_KEY_OWNER_REFERENCE: app/src/main/java/tv/withaibuild/customiuizer/mods/LauncherLayoutHooks.kt::DockMarginTopHook
+- A13_KEY_OWNER_REFERENCE: app/src/main/java/tv/withaibuild/customiuizer/mods/LauncherLayoutHooks.kt::DockMarginTopHook
+- PROOF_CONCLUSION: `PRESENT_A13_VARIANT`
+
+## PROOF_R5X_DOCKTITLES
+
+- PROOF_ID: `PROOF_R5X_DOCKTITLES`
+- BODY_RELATION: `REVIEWED_VARIANT`
+- A14_OWNER_PATH: `app/src/main/java/tv/withaibuild/customiuizer/mods/LauncherIconHooks.kt`
+- A14_SYMBOL: `ShowHotseatTitlesHook`
+- A14_INSTALLER: `A14 installer/spec gate for launcher_docktitles`
+- A14_HOOK_TARGETS: `com.miui.home bool config_hide_hotseats_app_title (resource + optional hook)`
+- A14_CALLBACK_PHASE: `n/a`
+- A13_OWNER_PATH: `app/src/main/java/tv/withaibuild/customiuizer/mods/LauncherLayoutHooks.kt`
+- A13_SYMBOL: `ShowHotseatTitlesRes`
+- A13_INSTALLER: `LauncherInstaller.java getBoolean(launcher_docktitles)`
+- A13_HOOK_TARGETS: `com.miui.home / com.mi.android.globallauncher bool config_hide_hotseats_app_title`
+- A13_CALLBACK_PHASE: `n/a`
+- PREFERENCE_KEYS: `launcher_docktitles`
+- VALUE_DOMAIN: owner-local preference domain
+- DEFAULT_SEMANTICS: Boolean default false keeps ROM hide-titles.
+- RESULT/ARGUMENT_BEHAVIOR: Resource replacement, not setResult.
+- API33_VARIANT_REASON: Same Home boolean resource. A13 extra globallauncher package name.
+- DIFF_SUMMARY: Both force config_hide_hotseats_app_title=false so dock icon titles show. A13 ResourceHooks replacement also covers globallauncher. A14 FeatureSpec calls ShowHotseatTitlesHook.
+- VALUE_DEFAULT_COMPARISON: Boolean default false keeps ROM hide-titles.
+- HOOK_TARGET_COMPARISON: A14=com.miui.home bool config_hide_hotseats_app_title (resource + optional hook); A13=com.miui.home / com.mi.android.globallauncher bool config_hide_hotseats_app_title
+- CALLBACK_SEMANTICS_COMPARISON: No Xposed callback required for the bool replacement.
+- ARG_RESULT_COMPARISON: Replacement value false.
+- A14_ONLY_BRANCHES: FeatureSpec wrapper name ShowHotseatTitlesHook vs A13 Res helper.
+- WHY_USER_BEHAVIOR_IS_EQUIVALENT: Dock icon titles still appear when the toggle is on.
+- KEY_OWNERSHIP_EVIDENCE: launcher_docktitles: INSTALLER_CALLEE A13 LauncherInstaller.java:38 ShowHotseatTitlesRes; A14 LauncherPackageReadyFeatures ShowHotseatTitlesHook.
+- A14_KEY_OWNER_REFERENCE: app/src/main/java/tv/withaibuild/customiuizer/mods/LauncherIconHooks.kt::ShowHotseatTitlesHook
+- A13_KEY_OWNER_REFERENCE: app/src/main/java/tv/withaibuild/customiuizer/mods/LauncherLayoutHooks.kt::ShowHotseatTitlesRes
+- PROOF_CONCLUSION: `PRESENT_A13_VARIANT`
+
+## PROOF_R5_LauncherDoubleTapHook_launcher_doubletap
+
+- PROOF_ID: `PROOF_R5_LauncherDoubleTapHook_launcher_doubletap`
+- BODY_RELATION: `REVIEWED_VARIANT`
+- A14_OWNER_PATH: `app/src/main/java/tv/withaibuild/customiuizer/mods/LauncherGestureHooks.kt`
+- A14_SYMBOL: `LauncherDoubleTapHook`
+- A14_INSTALLER: `A14 installer/spec gate for launcher_doubletap`
+- A14_HOOK_TARGETS: `com.miui.home.launcher.Workspace#dispatchTouchEvent,com.miui.home.launcher.Workspace#<init>`
+- A14_CALLBACK_PHASE: `intercept`
+- A13_OWNER_PATH: `app/src/main/java/tv/withaibuild/customiuizer/mods/LauncherGestureHooks.kt`
+- A13_SYMBOL: `LauncherDoubleTapHook`
+- A13_INSTALLER: `A13 installer gate for launcher_doubletap`
+- A13_HOOK_TARGETS: `com.miui.home.launcher.Workspace#dispatchTouchEvent,com.miui.home.launcher.Workspace#<init>`
+- A13_CALLBACK_PHASE: `after,before`
+- PREFERENCE_KEYS: `launcher_doubletap`
+- VALUE_DOMAIN: owner-local preference domain
+- DEFAULT_SEMANTICS: same persisted keys consumed by both owners
+- RESULT/ARGUMENT_BEHAVIOR: A14 ops: chain.proceed[chain.proceed()]. A13 ops: no result/argument rewrite literals. Keys launcher_doubletap rewrite the same host members.
+- API33_VARIANT_REASON: A14 callback intercept vs A13 after,before on members A14[com.miui.home.launcher.Workspace#dispatchTouchEvent,com.miui.home.launcher.Workspace#<init>] / A13[com.miui.home.launcher.Workspace#dispatchTouchEvent,com.miui.home.launcher.Workspace#<init>]. Inner preference reads of launcher_doubletap match; intercept proceed-once maps to before returnAndSkip or after side-effect.
+- DIFF_SUMMARY: Shared members com.miui.home.launcher.Workspace#dispatchTouchEvent,com.miui.home.launcher.Workspace#<init>. Differ: A14 phases intercept vs A13 after,before; A14 chain.proceed[chain.proceed()] vs A13 no result/argument rewrite literals.
+- VALUE_DEFAULT_COMPARISON: both consume launcher_doubletap in the owner body or installer gate
+- HOOK_TARGET_COMPARISON: A14=com.miui.home.launcher.Workspace#dispatchTouchEvent,com.miui.home.launcher.Workspace#<init>; A13=com.miui.home.launcher.Workspace#dispatchTouchEvent,com.miui.home.launcher.Workspace#<init>
+- CALLBACK_SEMANTICS_COMPARISON: A14 intercept vs A13 after,before; skipped paths do not invoke the original, proceed-once equals after side-effect
+- ARG_RESULT_COMPARISON: A14=chain.proceed[chain.proceed()]; A13=no result/argument rewrite literals
+- A14_ONLY_BRANCHES: none beyond intercept scaffolding for this owner pair
+- WHY_USER_BEHAVIOR_IS_EQUIVALENT: User-visible contract of launcher_doubletap is the same host rewrite; callback adapter and null-safety differ.
+- KEY_OWNERSHIP_EVIDENCE: launcher_doubletap: LITERAL_READ and/or INSTALLER_CALLEE in LauncherDoubleTapHook/LauncherDoubleTapHook
+- A14_KEY_OWNER_REFERENCE: app/src/main/java/tv/withaibuild/customiuizer/mods/LauncherGestureHooks.kt::LauncherDoubleTapHook
+- A13_KEY_OWNER_REFERENCE: app/src/main/java/tv/withaibuild/customiuizer/mods/LauncherGestureHooks.kt::LauncherDoubleTapHook
+- PROOF_CONCLUSION: `PRESENT_A13_VARIANT`
+
+## PROOF_R5_FixAnimHook_launcher_fixanim
+
+- PROOF_ID: `PROOF_R5_FixAnimHook_launcher_fixanim`
+- BODY_RELATION: `REVIEWED_VARIANT`
+- A14_OWNER_PATH: `app/src/main/java/tv/withaibuild/customiuizer/mods/LauncherAnimationHooks.kt`
+- A14_SYMBOL: `FixAnimHook`
+- A14_INSTALLER: `A14 installer/spec gate for launcher_fixanim`
+- A14_HOOK_TARGETS: `com.miui.home.launcher.animate.SpringAnimator#getSpringForce,com.miui.home.recents.util.RectFSpringAnim#initAllAnimations`
+- A14_CALLBACK_PHASE: `intercept`
+- A13_OWNER_PATH: `app/src/main/java/tv/withaibuild/customiuizer/mods/LauncherAnimationHooks.kt`
+- A13_SYMBOL: `FixAnimHook`
+- A13_INSTALLER: `A13 installer gate for launcher_fixanim`
+- A13_HOOK_TARGETS: `com.miui.home.launcher.animate.SpringAnimator#getSpringForce,com.miui.home.recents.util.RectFSpringAnim#initAllAnimations`
+- A13_CALLBACK_PHASE: `before`
+- PREFERENCE_KEYS: `launcher_fixanim`
+- VALUE_DOMAIN: owner-local preference domain
+- DEFAULT_SEMANTICS: same persisted keys consumed by both owners
+- RESULT/ARGUMENT_BEHAVIOR: A14 ops: result_assign[null,null]; chain.proceed[chain.proceed()]. A13 ops: no result/argument rewrite literals. Keys launcher_fixanim rewrite the same host members.
+- API33_VARIANT_REASON: A14 callback intercept vs A13 before on members A14[com.miui.home.launcher.animate.SpringAnimator#getSpringForce,com.miui.home.recents.util.RectFSpringAnim#initAllAnimations] / A13[com.miui.home.launcher.animate.SpringAnimator#getSpringForce,com.miui.home.recents.util.RectFSpringAnim#initAllAnimations]. Inner preference reads of launcher_fixanim match; intercept proceed-once maps to before returnAndSkip or after side-effect.
+- DIFF_SUMMARY: Shared members com.miui.home.launcher.animate.SpringAnimator#getSpringForce,com.miui.home.recents.util.RectFSpringAnim#initAllAnimations. Differ: A14 phases intercept vs A13 before; A14 result_assign[null,null]; chain.proceed[chain.proceed()] vs A13 no result/argument rewrite literals.
+- VALUE_DEFAULT_COMPARISON: both consume launcher_fixanim in the owner body or installer gate
+- HOOK_TARGET_COMPARISON: A14=com.miui.home.launcher.animate.SpringAnimator#getSpringForce,com.miui.home.recents.util.RectFSpringAnim#initAllAnimations; A13=com.miui.home.launcher.animate.SpringAnimator#getSpringForce,com.miui.home.recents.util.RectFSpringAnim#initAllAnimations
+- CALLBACK_SEMANTICS_COMPARISON: A14 intercept vs A13 before; skipped paths do not invoke the original, proceed-once equals after side-effect
+- ARG_RESULT_COMPARISON: A14=result_assign[null,null]; chain.proceed[chain.proceed()]; A13=no result/argument rewrite literals
+- A14_ONLY_BRANCHES: none beyond intercept scaffolding for this owner pair
+- WHY_USER_BEHAVIOR_IS_EQUIVALENT: User-visible contract of launcher_fixanim is the same host rewrite; callback adapter and null-safety differ.
+- KEY_OWNERSHIP_EVIDENCE: launcher_fixanim: LITERAL_READ and/or INSTALLER_CALLEE in FixAnimHook/FixAnimHook
+- A14_KEY_OWNER_REFERENCE: app/src/main/java/tv/withaibuild/customiuizer/mods/LauncherAnimationHooks.kt::FixAnimHook
+- A13_KEY_OWNER_REFERENCE: app/src/main/java/tv/withaibuild/customiuizer/mods/LauncherAnimationHooks.kt::FixAnimHook
+- PROOF_CONCLUSION: `PRESENT_A13_VARIANT`
+
+## PROOF_R5F_FixAppInfoLaunchHook_launcher_fixlaunch
+
+- PROOF_ID: `PROOF_R5F_FixAppInfoLaunchHook_launcher_fixlaunch`
+- BODY_RELATION: `REVIEWED_VARIANT`
+- A14_OWNER_PATH: `app/src/main/java/tv/withaibuild/customiuizer/mods/Launcher.kt`
+- A14_SYMBOL: `FixAppInfoLaunchHook`
+- A14_INSTALLER: `A14 installer/spec gate for launcher_fixlaunch`
+- A14_HOOK_TARGETS: `com.miui.home.launcher.shortcuts.ShortcutMenuManager#startAppDetailsActivity`
+- A14_CALLBACK_PHASE: `intercept`
+- A13_OWNER_PATH: `app/src/main/java/tv/withaibuild/customiuizer/mods/LauncherSystemHooks.kt`
+- A13_SYMBOL: `FixAppInfoLaunchHook`
+- A13_INSTALLER: `A13 installer gate for launcher_fixlaunch`
+- A13_HOOK_TARGETS: `com.miui.home.launcher.shortcuts.ShortcutMenuManager#startAppDetailsActivity,com.miui.home.launcher.util.Utilities#startDetailsActivityForInfo`
+- A13_CALLBACK_PHASE: `before`
+- PREFERENCE_KEYS: `launcher_fixlaunch`
+- VALUE_DOMAIN: owner-local preference domain
+- DEFAULT_SEMANTICS: Installer getBoolean(launcher_fixlaunch) default false. User-handle fallback 0 is the same on both when getUserHandle/getUser is null.
+- RESULT/ARGUMENT_BEHAVIOR: ShortcutMenuManager.startAppDetailsActivity skipped with null on both when component and view resolve. A13 globallauncher startDetailsActivityForInfo skipped with true. If component/view is null, both proceed original.
+- API33_VARIANT_REASON: Owner file rename Launcher.kt -> LauncherSystemHooks.kt with the same ShortcutMenuManager.startAppDetailsActivity rewrite. Extra A13 MIUI14/global member Utilities.startDetailsActivityForInfo is the globallauncher (com.mi.android.globallauncher) name for the same open-app-info skip.
+- DIFF_SUMMARY: com.miui.home path is the same: ShortcutMenuManager.startAppDetailsActivity before/intercept gets ComponentName + View, ModuleHelper.openAppInfo(view.context, pkg, userHandle.hashCode()?:0), skip original (A13 returnAndSkip(null); A14 skipped result null). A13 extra globallauncher branch: Utilities.startDetailsActivityForInfo with ComponentName from getComponentName / intent.getComponent / providerName / providerInfo.provider, then openAppInfo(context, pkg, getUser.hashCode()?:0) and returnAndSkip(true).
+- VALUE_DEFAULT_COMPARISON: Installer getBoolean(launcher_fixlaunch) default false. User-handle fallback 0 is the same on both when getUserHandle/getUser is null.
+- HOOK_TARGET_COMPARISON: A14=com.miui.home.launcher.shortcuts.ShortcutMenuManager#startAppDetailsActivity; A13=com.miui.home.launcher.shortcuts.ShortcutMenuManager#startAppDetailsActivity,com.miui.home.launcher.util.Utilities#startDetailsActivityForInfo
+- CALLBACK_SEMANTICS_COMPARISON: A14 intercept skip-without-proceed equals A13 before returnAndSkip. Original is not invoked on the success path. Failure/null path both proceed.
+- ARG_RESULT_COMPARISON: No arg rewrite. Success result is null (ShortcutMenuManager) on both; A13 globallauncher extra success result is true. Original is skipped on success.
+- A14_ONLY_BRANCHES: none
+- WHY_USER_BEHAVIOR_IS_EQUIVALENT: App-info from the shortcut menu still opens via ModuleHelper.openAppInfo and skips the ROM details activity. A13 extra startDetailsActivityForInfo is globallauncher's equivalent entry.
+- KEY_OWNERSHIP_EVIDENCE: launcher_fixlaunch: INSTALLER_CALLEE only. A13 LauncherInstaller.java:70 FeatureDispatcher.installById("fixAppInfoLaunch"); A14 LauncherFixAppInfoLaunchFeature. Bodies have no pref get. CatalogContracts.fixAppInfoLaunch lists both ShortcutMenuManager.startAppDetailsActivity and Utilities.startDetailsActivityForInfo as AnyOf candidates.
+- A14_KEY_OWNER_REFERENCE: app/src/main/java/tv/withaibuild/customiuizer/mods/Launcher.kt::FixAppInfoLaunchHook
+- A13_KEY_OWNER_REFERENCE: app/src/main/java/tv/withaibuild/customiuizer/mods/LauncherSystemHooks.kt::FixAppInfoLaunchHook
+- PROOF_CONCLUSION: `PRESENT_A13_VARIANT`
+
+## PROOF_R5F_FolderColumnsHook_launcher_folder_cols
+
+- PROOF_ID: `PROOF_R5F_FolderColumnsHook_launcher_folder_cols`
+- BODY_RELATION: `REVIEWED_VARIANT`
+- A14_OWNER_PATH: `app/src/main/java/tv/withaibuild/customiuizer/mods/LauncherFolderHooks.kt`
+- A14_SYMBOL: `FolderColumnsHook`
+- A14_INSTALLER: `A14 installer/spec gate for launcher_folder_cols,launcher_folderspace,launcher_folderwidth`
+- A14_HOOK_TARGETS: `com.miui.home.launcher.Folder#onFinishInflate,com.miui.home.launcher.Folder#resetViewsLayoutParams,com.miui.home.launcher.Folder#onLayout`
+- A14_CALLBACK_PHASE: `intercept`
+- A13_OWNER_PATH: `app/src/main/java/tv/withaibuild/customiuizer/mods/LauncherFolderHooks.kt`
+- A13_SYMBOL: `FolderColumnsHook`
+- A13_INSTALLER: `A13 installer gate for launcher_folder_cols,launcher_folderspace,launcher_folderwidth`
+- A13_HOOK_TARGETS: `com.miui.home.launcher.Folder#onFinishInflate,com.miui.home.launcher.Folder#onLayout,com.miui.home.launcher.Folder#resetViewsLayoutParams`
+- A13_CALLBACK_PHASE: `after,before`
+- PREFERENCE_KEYS: `launcher_folder_cols,launcher_folderspace,launcher_folderwidth`
+- VALUE_DOMAIN: owner-local preference domain
+- DEFAULT_SEMANTICS: Both getInt(launcher_folder_cols,1); getBoolean(launcher_folderspace) default false; getBoolean(launcher_folderwidth) default false. Installer both require cols>1 before the owner is installed.
+- RESULT/ARGUMENT_BEHAVIOR: Neither owner skips Folder methods or rewrites arguments. A13 after sets GridView.numColumns and layoutParams.width; A14 intercept proceeds then setFolderWidth / padding / mFakeIcon.layout. No result_assign of the Folder methods themselves.
+- API33_VARIANT_REASON: A13 MIUI14 assigns Folder.mContent GridView.numColumns in-hook; A14 HyperOS replaces config_folder_columns_count via FolderColumnsRes. Width/space rewrites share the same three Folder members. A14 intercept proceed-then-side-effect maps to A13 after; A13 extra before onLayout only re-applies MATCH_PARENT width.
+- DIFF_SUMMARY: Shared Folder.onFinishInflate/onLayout/resetViewsLayoutParams. A13 writes GridView.numColumns=cols in onFinishInflate; A14 FolderColumnsHook does not set numColumns and instead sibling FolderColumnsRes replaces integer config_folder_columns_count. Both set mContent width MATCH_PARENT when launcher_folderwidth and shrink mBackgroundView left/right padding /3 when cols>3 && launcher_folderspace. A13 caches original padding in additionalInstanceField folderOriginalPadding; A14 divides current padding each inflate. A13 onLayout before also re-applies width; A14 onLayout only lays out mFakeIcon when width enabled. A14 snapshot also observes folder-blur keys (shared with FolderBlurHook).
+- VALUE_DEFAULT_COMPARISON: Both getInt(launcher_folder_cols,1); getBoolean(launcher_folderspace) default false; getBoolean(launcher_folderwidth) default false. Installer both require cols>1 before the owner is installed.
+- HOOK_TARGET_COMPARISON: A14=com.miui.home.launcher.Folder#onFinishInflate,com.miui.home.launcher.Folder#resetViewsLayoutParams,com.miui.home.launcher.Folder#onLayout; A13=com.miui.home.launcher.Folder#onFinishInflate,com.miui.home.launcher.Folder#onLayout,com.miui.home.launcher.Folder#resetViewsLayoutParams
+- CALLBACK_SEMANTICS_COMPARISON: A14 intercept always chain.proceed() then mutates views. A13 after onFinishInflate/resetViewsLayoutParams; onLayout before applyFolderWidth and after mFakeIcon.layout. Original Folder methods run on both sides.
+- ARG_RESULT_COMPARISON: No arg rewrite. No skip of original Folder callbacks. View mutations only (numColumns, layoutParams, padding, mFakeIcon bounds).
+- A14_ONLY_BRANCHES: Sibling FolderColumnsRes(config_folder_columns_count) not inside FolderColumnsHook; snapshot observer also refreshes folder blur keys.
+- WHY_USER_BEHAVIOR_IS_EQUIVALENT: Same toggles: folder column count, optional full-width folder, optional tighter padding when cols>3. A13 extra in-hook numColumns and padding cache implement the same launcher_folder_cols/folderspace/folderwidth contract as A14 res+snapshot.
+- KEY_OWNERSHIP_EVIDENCE: launcher_folder_cols: LITERAL_READ FolderColumnsHook onFinishInflate (A13 LauncherFolderHooks.kt:51, A14 LauncherFolderHooks.kt:166). launcher_folderspace: LITERAL_READ same callbacks (A13:60, A14:167). launcher_folderwidth: A13 LITERAL_READ applyFolderWidth (LauncherFolderHooks.kt:37); A14 SNAPSHOT_FIELD folderWidthEnabled via installFolderPreferenceSnapshot PREF_FOLDER_WIDTH (LauncherFolderHooks.kt:26,61,140-146). Installer: A13 FeatureCatalog folderColumns when launcher_folder_cols>1; A14 LauncherFolderColumnsFeature same gate plus sibling FolderColumnsRes.
+- A14_KEY_OWNER_REFERENCE: app/src/main/java/tv/withaibuild/customiuizer/mods/LauncherFolderHooks.kt::FolderColumnsHook
+- A13_KEY_OWNER_REFERENCE: app/src/main/java/tv/withaibuild/customiuizer/mods/LauncherFolderHooks.kt::FolderColumnsHook
+- PROOF_CONCLUSION: `PRESENT_A13_VARIANT`
+
+## PROOF_FOLDER_BLUR_DISABLE
+
+- PROOF_ID: `PROOF_FOLDER_BLUR_DISABLE`
+- BODY_RELATION: `REVIEWED_VARIANT`
+- A14_OWNER_PATH: `app/src/main/java/tv/withaibuild/customiuizer/mods/LauncherFolderHooks.kt`
+- A14_SYMBOL: `FolderBlurHook`
+- A14_INSTALLER: `mods/utils/feature/LauncherPostAttachFeatures.kt`
+- A14_HOOK_TARGETS: `com.miui.home.launcher.common.BlurUtils#getLauncherBlur; FolderCling#open`
+- A14_CALLBACK_PHASE: `before/after`
+- A13_OWNER_PATH: `app/src/main/java/tv/withaibuild/customiuizer/mods/LauncherFolderHooks.kt`
+- A13_SYMBOL: `FolderBlurHook`
+- A13_INSTALLER: `installers/LauncherInstaller.java`
+- A13_HOOK_TARGETS: `com.miui.home.launcher.common.BlurUtils#getLauncherBlur; FolderCling#open`
+- A13_CALLBACK_PHASE: `before/after`
+- PREFERENCE_KEYS: `launcher_folderblur_disable,launcher_folderblur_opacity`
+- VALUE_DOMAIN: boolean disable + int opacity
+- DEFAULT_SEMANTICS: disable=false uses opacity overlay; disable=true forces clear background
+- RESULT/ARGUMENT_BEHAVIOR: resolveFolderBlurRatio(disable, opacity) skipped into getLauncherBlur
+- API33_VARIANT_REASON: A13 FolderBlurHook gained the A14 disable flag without replacing opacity storage.
+- DIFF_SUMMARY: A13 FolderBlurHook gained the A14 disable flag without replacing opacity storage.
+- VALUE_DEFAULT_COMPARISON: disable=false uses opacity overlay; disable=true forces clear background
+- HOOK_TARGET_COMPARISON: A14=com.miui.home.launcher.common.BlurUtils#getLauncherBlur; FolderCling#open; A13=com.miui.home.launcher.common.BlurUtils#getLauncherBlur; FolderCling#open
+- CALLBACK_SEMANTICS_COMPARISON: A14=before/after; A13=before/after
+- ARG_RESULT_COMPARISON: resolveFolderBlurRatio(disable, opacity) skipped into getLauncherBlur
+- A14_ONLY_BRANCHES: A13 FolderBlurHook gained the A14 disable flag without replacing opacity storage.
+- WHY_USER_BEHAVIOR_IS_EQUIVALENT: resolveFolderBlurRatio(disable, opacity) skipped into getLauncherBlur. A13 FolderBlurHook gained the A14 disable flag without replacing opacity storage.
+- PROOF_CONCLUSION: `PRESENT_A13_VARIANT`
+
+## PROOF_R5_HideSeekPointsHook_launcher_hideseekpoints
+
+- PROOF_ID: `PROOF_R5_HideSeekPointsHook_launcher_hideseekpoints`
+- BODY_RELATION: `REVIEWED_VARIANT`
+- A14_OWNER_PATH: `app/src/main/java/tv/withaibuild/customiuizer/mods/LauncherLayoutHooks.kt`
+- A14_SYMBOL: `HideSeekPointsHook`
+- A14_INSTALLER: `A14 installer/spec gate for launcher_hideseekpoints,launcher_hideseekpoints_edit`
+- A14_HOOK_TARGETS: `com.miui.home.launcher.pageindicators.AllAppsIndicator#shouldHide,com.miui.home.launcher.pageindicators.AllAppsIndicator#hideAllAppsArrow`
+- A14_CALLBACK_PHASE: `intercept`
+- A13_OWNER_PATH: `app/src/main/java/tv/withaibuild/customiuizer/mods/LauncherLayoutHooks.kt`
+- A13_SYMBOL: `HideSeekPointsHook`
+- A13_INSTALLER: `A13 installer gate for launcher_hideseekpoints,launcher_hideseekpoints_edit`
+- A13_HOOK_TARGETS: `com.miui.home.launcher.pageindicators.AllAppsIndicator#shouldHide,com.miui.home.launcher.pageindicators.AllAppsIndicator#hideAllAppsArrow`
+- A13_CALLBACK_PHASE: `after`
+- PREFERENCE_KEYS: `launcher_hideseekpoints,launcher_hideseekpoints_edit`
+- VALUE_DOMAIN: owner-local preference domain
+- DEFAULT_SEMANTICS: same persisted keys consumed by both owners
+- RESULT/ARGUMENT_BEHAVIOR: A14 ops: result_assign[null]; chain.proceed[chain.proceed()]. A13 ops: no result/argument rewrite literals. Keys launcher_hideseekpoints,launcher_hideseekpoints_edit rewrite the same host members.
+- API33_VARIANT_REASON: A14 callback intercept vs A13 after on members A14[com.miui.home.launcher.pageindicators.AllAppsIndicator#shouldHide,com.miui.home.launcher.pageindicators.AllAppsIndicator#hideAllAppsArrow] / A13[com.miui.home.launcher.pageindicators.AllAppsIndicator#shouldHide,com.miui.home.launcher.pageindicators.AllAppsIndicator#hideAllAppsArrow]. Inner preference reads of launcher_hideseekpoints,launcher_hideseekpoints_edit match; intercept proceed-once maps to before returnAndSkip or after side-effect.
+- DIFF_SUMMARY: Shared members com.miui.home.launcher.pageindicators.AllAppsIndicator#shouldHide,com.miui.home.launcher.pageindicators.AllAppsIndicator#hideAllAppsArrow. Differ: A14 phases intercept vs A13 after; A14 result_assign[null]; chain.proceed[chain.proceed()] vs A13 no result/argument rewrite literals.
+- VALUE_DEFAULT_COMPARISON: both consume launcher_hideseekpoints,launcher_hideseekpoints_edit in the owner body or installer gate
+- HOOK_TARGET_COMPARISON: A14=com.miui.home.launcher.pageindicators.AllAppsIndicator#shouldHide,com.miui.home.launcher.pageindicators.AllAppsIndicator#hideAllAppsArrow; A13=com.miui.home.launcher.pageindicators.AllAppsIndicator#shouldHide,com.miui.home.launcher.pageindicators.AllAppsIndicator#hideAllAppsArrow
+- CALLBACK_SEMANTICS_COMPARISON: A14 intercept vs A13 after; skipped paths do not invoke the original, proceed-once equals after side-effect
+- ARG_RESULT_COMPARISON: A14=result_assign[null]; chain.proceed[chain.proceed()]; A13=no result/argument rewrite literals
+- A14_ONLY_BRANCHES: none beyond intercept scaffolding for this owner pair
+- WHY_USER_BEHAVIOR_IS_EQUIVALENT: User-visible contract of launcher_hideseekpoints,launcher_hideseekpoints_edit is the same host rewrite; callback adapter and null-safety differ.
+- KEY_OWNERSHIP_EVIDENCE: launcher_hideseekpoints,launcher_hideseekpoints_edit: LITERAL_READ and/or INSTALLER_CALLEE in HideSeekPointsHook/HideSeekPointsHook
+- A14_KEY_OWNER_REFERENCE: app/src/main/java/tv/withaibuild/customiuizer/mods/LauncherLayoutHooks.kt::HideSeekPointsHook
+- A13_KEY_OWNER_REFERENCE: app/src/main/java/tv/withaibuild/customiuizer/mods/LauncherLayoutHooks.kt::HideSeekPointsHook
+- PROOF_CONCLUSION: `PRESENT_A13_VARIANT`
+
+## PROOF_R5_HideTitlesHook_launcher_hidetitles
+
+- PROOF_ID: `PROOF_R5_HideTitlesHook_launcher_hidetitles`
+- BODY_RELATION: `REVIEWED_VARIANT`
+- A14_OWNER_PATH: `app/src/main/java/tv/withaibuild/customiuizer/mods/LauncherIconHooks.kt`
+- A14_SYMBOL: `HideTitlesHook`
+- A14_INSTALLER: `A14 installer/spec gate for launcher_hidetitles`
+- A14_HOOK_TARGETS: `com.miui.home.launcher.ItemIcon#onFinishInflate`
+- A14_CALLBACK_PHASE: `intercept`
+- A13_OWNER_PATH: `app/src/main/java/tv/withaibuild/customiuizer/mods/LauncherIconHooks.kt`
+- A13_SYMBOL: `HideTitlesHook`
+- A13_INSTALLER: `A13 installer gate for launcher_hidetitles`
+- A13_HOOK_TARGETS: `com.miui.home.launcher.ItemIcon#onFinishInflate`
+- A13_CALLBACK_PHASE: `after`
+- PREFERENCE_KEYS: `launcher_hidetitles`
+- VALUE_DOMAIN: owner-local preference domain
+- DEFAULT_SEMANTICS: same persisted keys consumed by both owners
+- RESULT/ARGUMENT_BEHAVIOR: A14 ops: result_assign[null]; chain.proceed[chain.proceed()]. A13 ops: no result/argument rewrite literals. Keys launcher_hidetitles rewrite the same host members.
+- API33_VARIANT_REASON: A14 callback intercept vs A13 after on members A14[com.miui.home.launcher.ItemIcon#onFinishInflate] / A13[com.miui.home.launcher.ItemIcon#onFinishInflate]. Inner preference reads of launcher_hidetitles match; intercept proceed-once maps to before returnAndSkip or after side-effect.
+- DIFF_SUMMARY: Shared members com.miui.home.launcher.ItemIcon#onFinishInflate. Differ: A14 phases intercept vs A13 after; A14 result_assign[null]; chain.proceed[chain.proceed()] vs A13 no result/argument rewrite literals.
+- VALUE_DEFAULT_COMPARISON: both consume launcher_hidetitles in the owner body or installer gate
+- HOOK_TARGET_COMPARISON: A14=com.miui.home.launcher.ItemIcon#onFinishInflate; A13=com.miui.home.launcher.ItemIcon#onFinishInflate
+- CALLBACK_SEMANTICS_COMPARISON: A14 intercept vs A13 after; skipped paths do not invoke the original, proceed-once equals after side-effect
+- ARG_RESULT_COMPARISON: A14=result_assign[null]; chain.proceed[chain.proceed()]; A13=no result/argument rewrite literals
+- A14_ONLY_BRANCHES: none beyond intercept scaffolding for this owner pair
+- WHY_USER_BEHAVIOR_IS_EQUIVALENT: User-visible contract of launcher_hidetitles is the same host rewrite; callback adapter and null-safety differ.
+- KEY_OWNERSHIP_EVIDENCE: launcher_hidetitles: LITERAL_READ and/or INSTALLER_CALLEE in HideTitlesHook/HideTitlesHook
+- A14_KEY_OWNER_REFERENCE: app/src/main/java/tv/withaibuild/customiuizer/mods/LauncherIconHooks.kt::HideTitlesHook
+- A13_KEY_OWNER_REFERENCE: app/src/main/java/tv/withaibuild/customiuizer/mods/LauncherIconHooks.kt::HideTitlesHook
+- PROOF_CONCLUSION: `PRESENT_A13_VARIANT`
+
+## PROOF_R5_HorizontalSpacingRes_launcher_horizmargin
+
+- PROOF_ID: `PROOF_R5_HorizontalSpacingRes_launcher_horizmargin`
+- BODY_RELATION: `REVIEWED_VARIANT`
+- A14_OWNER_PATH: `app/src/main/java/tv/withaibuild/customiuizer/mods/LauncherLayoutHooks.kt`
+- A14_SYMBOL: `HorizontalSpacingRes`
+- A14_INSTALLER: `A14 installer/spec gate for launcher_horizmargin`
+- A14_HOOK_TARGETS: `(no host member literals)`
+- A14_CALLBACK_PHASE: `unknown`
+- A13_OWNER_PATH: `app/src/main/java/tv/withaibuild/customiuizer/mods/LauncherLayoutHooks.kt`
+- A13_SYMBOL: `HorizontalSpacingRes`
+- A13_INSTALLER: `A13 installer gate for launcher_horizmargin`
+- A13_HOOK_TARGETS: `(no host member literals)`
+- A13_CALLBACK_PHASE: `unknown`
+- PREFERENCE_KEYS: `launcher_horizmargin`
+- VALUE_DOMAIN: owner-local preference domain
+- DEFAULT_SEMANTICS: same persisted keys consumed by both owners
+- RESULT/ARGUMENT_BEHAVIOR: A14 ops: no result/argument rewrite literals. A13 ops: no result/argument rewrite literals. Keys launcher_horizmargin rewrite the same host members.
+- API33_VARIANT_REASON: A14 callback unknown vs A13 unknown on members A14[(none)] / A13[(none)]. Inner preference reads of launcher_horizmargin match; intercept proceed-once maps to before returnAndSkip or after side-effect.
+- DIFF_SUMMARY: Shared members (none). Differ: A14 phases unknown vs A13 unknown; A14 no result/argument rewrite literals vs A13 no result/argument rewrite literals.
+- VALUE_DEFAULT_COMPARISON: both consume launcher_horizmargin in the owner body or installer gate
+- HOOK_TARGET_COMPARISON: A14=(none); A13=(none)
+- CALLBACK_SEMANTICS_COMPARISON: A14 unknown vs A13 unknown; skipped paths do not invoke the original, proceed-once equals after side-effect
+- ARG_RESULT_COMPARISON: A14=no result/argument rewrite literals; A13=no result/argument rewrite literals
+- A14_ONLY_BRANCHES: none beyond intercept scaffolding for this owner pair
+- WHY_USER_BEHAVIOR_IS_EQUIVALENT: User-visible contract of launcher_horizmargin is the same host rewrite; callback adapter and null-safety differ.
+- KEY_OWNERSHIP_EVIDENCE: launcher_horizmargin: LITERAL_READ and/or INSTALLER_CALLEE in HorizontalSpacingRes/HorizontalSpacingRes
+- A14_KEY_OWNER_REFERENCE: app/src/main/java/tv/withaibuild/customiuizer/mods/LauncherLayoutHooks.kt::HorizontalSpacingRes
+- A13_KEY_OWNER_REFERENCE: app/src/main/java/tv/withaibuild/customiuizer/mods/LauncherLayoutHooks.kt::HorizontalSpacingRes
+- PROOF_CONCLUSION: `PRESENT_A13_VARIANT`
+
+## PROOF_R5_HorizontalWidgetSpacingHook_launcher_horizwidgetmargin
+
+- PROOF_ID: `PROOF_R5_HorizontalWidgetSpacingHook_launcher_horizwidgetmargin`
+- BODY_RELATION: `REVIEWED_VARIANT`
+- A14_OWNER_PATH: `app/src/main/java/tv/withaibuild/customiuizer/mods/LauncherLayoutHooks.kt`
+- A14_SYMBOL: `HorizontalWidgetSpacingHook`
+- A14_INSTALLER: `A14 installer/spec gate for launcher_horizwidgetmargin`
+- A14_HOOK_TARGETS: `com.miui.home.launcher.DeviceConfig#getMiuiWidgetSizeSpec,com.miui.home.launcher.MIUIWidgetUtil#getMiuiWidgetPadding`
+- A14_CALLBACK_PHASE: `intercept`
+- A13_OWNER_PATH: `app/src/main/java/tv/withaibuild/customiuizer/mods/LauncherLayoutHooks.kt`
+- A13_SYMBOL: `HorizontalWidgetSpacingHook`
+- A13_INSTALLER: `A13 installer gate for launcher_horizwidgetmargin`
+- A13_HOOK_TARGETS: `com.miui.home.launcher.DeviceConfig#getMiuiWidgetSizeSpec,com.miui.home.launcher.MIUIWidgetUtil#getMiuiWidgetPadding`
+- A13_CALLBACK_PHASE: `after`
+- PREFERENCE_KEYS: `launcher_horizwidgetmargin`
+- VALUE_DOMAIN: owner-local preference domain
+- DEFAULT_SEMANTICS: same persisted keys consumed by both owners
+- RESULT/ARGUMENT_BEHAVIOR: A14 ops: result_assign[null,null]; chain.proceed[chain.proceed(),chain.proceed()]. A13 ops: setResult[(width.toLong(,Rect(]. Keys launcher_horizwidgetmargin rewrite the same host members.
+- API33_VARIANT_REASON: A14 callback intercept vs A13 after on members A14[com.miui.home.launcher.DeviceConfig#getMiuiWidgetSizeSpec,com.miui.home.launcher.MIUIWidgetUtil#getMiuiWidgetPadding] / A13[com.miui.home.launcher.DeviceConfig#getMiuiWidgetSizeSpec,com.miui.home.launcher.MIUIWidgetUtil#getMiuiWidgetPadding]. Inner preference reads of launcher_horizwidgetmargin match; intercept proceed-once maps to before returnAndSkip or after side-effect.
+- DIFF_SUMMARY: Shared members com.miui.home.launcher.DeviceConfig#getMiuiWidgetSizeSpec,com.miui.home.launcher.MIUIWidgetUtil#getMiuiWidgetPadding. Differ: A14 phases intercept vs A13 after; A14 result_assign[null,null]; chain.proceed[chain.proceed(),chain.proceed()] vs A13 setResult[(width.toLong(,Rect(].
+- VALUE_DEFAULT_COMPARISON: both consume launcher_horizwidgetmargin in the owner body or installer gate
+- HOOK_TARGET_COMPARISON: A14=com.miui.home.launcher.DeviceConfig#getMiuiWidgetSizeSpec,com.miui.home.launcher.MIUIWidgetUtil#getMiuiWidgetPadding; A13=com.miui.home.launcher.DeviceConfig#getMiuiWidgetSizeSpec,com.miui.home.launcher.MIUIWidgetUtil#getMiuiWidgetPadding
+- CALLBACK_SEMANTICS_COMPARISON: A14 intercept vs A13 after; skipped paths do not invoke the original, proceed-once equals after side-effect
+- ARG_RESULT_COMPARISON: A14=result_assign[null,null]; chain.proceed[chain.proceed(),chain.proceed()]; A13=setResult[(width.toLong(,Rect(]
+- A14_ONLY_BRANCHES: none beyond intercept scaffolding for this owner pair
+- WHY_USER_BEHAVIOR_IS_EQUIVALENT: User-visible contract of launcher_horizwidgetmargin is the same host rewrite; callback adapter and null-safety differ.
+- KEY_OWNERSHIP_EVIDENCE: launcher_horizwidgetmargin: LITERAL_READ and/or INSTALLER_CALLEE in HorizontalWidgetSpacingHook/HorizontalWidgetSpacingHook
+- A14_KEY_OWNER_REFERENCE: app/src/main/java/tv/withaibuild/customiuizer/mods/LauncherLayoutHooks.kt::HorizontalWidgetSpacingHook
+- A13_KEY_OWNER_REFERENCE: app/src/main/java/tv/withaibuild/customiuizer/mods/LauncherLayoutHooks.kt::HorizontalWidgetSpacingHook
+- PROOF_CONCLUSION: `PRESENT_A13_VARIANT`
+
+## PROOF_R5_IconScaleHook_launcher_iconscale
+
+- PROOF_ID: `PROOF_R5_IconScaleHook_launcher_iconscale`
+- BODY_RELATION: `REVIEWED_VARIANT`
+- A14_OWNER_PATH: `app/src/main/java/tv/withaibuild/customiuizer/mods/LauncherIconHooks.kt`
+- A14_SYMBOL: `IconScaleHook`
+- A14_INSTALLER: `A14 installer/spec gate for launcher_iconscale`
+- A14_HOOK_TARGETS: `com.miui.home.launcher.ShortcutIcon#restoreToInitState,com.miui.home.launcher.ItemIcon#onFinishInflate,com.miui.home.launcher.ItemIcon#getIconLocation,com.miui.home.launcher.gadget.ClearButton#onCreate`
+- A14_CALLBACK_PHASE: `intercept`
+- A13_OWNER_PATH: `app/src/main/java/tv/withaibuild/customiuizer/mods/LauncherIconHooks.kt`
+- A13_SYMBOL: `IconScaleHook`
+- A13_INSTALLER: `A13 installer gate for launcher_iconscale`
+- A13_HOOK_TARGETS: `com.miui.home.launcher.ShortcutIcon#restoreToInitState,com.miui.home.launcher.ItemIcon#onFinishInflate,com.miui.home.launcher.ItemIcon#getIconLocation,com.miui.home.launcher.gadget.ClearButton#onCreate`
+- A13_CALLBACK_PHASE: `after`
+- PREFERENCE_KEYS: `launcher_iconscale`
+- VALUE_DOMAIN: owner-local preference domain
+- DEFAULT_SEMANTICS: same persisted keys consumed by both owners
+- RESULT/ARGUMENT_BEHAVIOR: A14 ops: result_assign[null,null,null,null]; chain.proceed[chain.proceed(),chain.proceed(),chain.proceed(),chain.proceed()]. A13 ops: setResult[rect]. Keys launcher_iconscale rewrite the same host members.
+- API33_VARIANT_REASON: A14 callback intercept vs A13 after on members A14[com.miui.home.launcher.ShortcutIcon#restoreToInitState,com.miui.home.launcher.ItemIcon#onFinishInflate,com.miui.home.launcher.ItemIcon#getIconLocation,com.miui.home.launcher.gadget.ClearButton#onCreate] / A13[com.miui.home.launcher.ShortcutIcon#restoreToInitState,com.miui.home.launcher.ItemIcon#onFinishInflate,com.miui.home.launcher.ItemIcon#getIconLocation,com.miui.home.launcher.gadget.ClearButton#onCreate]. Inner preference reads of launcher_iconscale match; intercept proceed-once maps to before returnAndSkip or after side-effect.
+- DIFF_SUMMARY: Shared members com.miui.home.launcher.ShortcutIcon#restoreToInitState,com.miui.home.launcher.ItemIcon#onFinishInflate,com.miui.home.launcher.ItemIcon#getIconLocation,com.miui.home.launcher.gadget.ClearButton#onCreate. Differ: A14 phases intercept vs A13 after; A14 result_assign[null,null,null,null]; chain.proceed[chain.proceed(),chain.proceed(),chain.proceed(),chain.proceed()] vs A13 setResult[rect].
+- VALUE_DEFAULT_COMPARISON: both consume launcher_iconscale in the owner body or installer gate
+- HOOK_TARGET_COMPARISON: A14=com.miui.home.launcher.ShortcutIcon#restoreToInitState,com.miui.home.launcher.ItemIcon#onFinishInflate,com.miui.home.launcher.ItemIcon#getIconLocation,com.miui.home.launcher.gadget.ClearButton#onCreate; A13=com.miui.home.launcher.ShortcutIcon#restoreToInitState,com.miui.home.launcher.ItemIcon#onFinishInflate,com.miui.home.launcher.ItemIcon#getIconLocation,com.miui.home.launcher.gadget.ClearButton#onCreate
+- CALLBACK_SEMANTICS_COMPARISON: A14 intercept vs A13 after; skipped paths do not invoke the original, proceed-once equals after side-effect
+- ARG_RESULT_COMPARISON: A14=result_assign[null,null,null,null]; chain.proceed[chain.proceed(),chain.proceed(),chain.proceed(),chain.proceed()]; A13=setResult[rect]
+- A14_ONLY_BRANCHES: none beyond intercept scaffolding for this owner pair
+- WHY_USER_BEHAVIOR_IS_EQUIVALENT: User-visible contract of launcher_iconscale is the same host rewrite; callback adapter and null-safety differ.
+- KEY_OWNERSHIP_EVIDENCE: launcher_iconscale: LITERAL_READ and/or INSTALLER_CALLEE in IconScaleHook/IconScaleHook
+- A14_KEY_OWNER_REFERENCE: app/src/main/java/tv/withaibuild/customiuizer/mods/LauncherIconHooks.kt::IconScaleHook
+- A13_KEY_OWNER_REFERENCE: app/src/main/java/tv/withaibuild/customiuizer/mods/LauncherIconHooks.kt::IconScaleHook
+- PROOF_CONCLUSION: `PRESENT_A13_VARIANT`
+
+## PROOF_R5_IndicatorMarginTopHook_launcher_indicator_topmargin
+
+- PROOF_ID: `PROOF_R5_IndicatorMarginTopHook_launcher_indicator_topmargin`
+- BODY_RELATION: `REVIEWED_VARIANT`
+- A14_OWNER_PATH: `app/src/main/java/tv/withaibuild/customiuizer/mods/LauncherLayoutHooks.kt`
+- A14_SYMBOL: `IndicatorMarginTopHook`
+- A14_INSTALLER: `A14 installer/spec gate for launcher_indicator_topmargin`
+- A14_HOOK_TARGETS: `com.miui.home.launcher.util.DimenUtils1X#getDimensionPixelSize`
+- A14_CALLBACK_PHASE: `intercept`
+- A13_OWNER_PATH: `app/src/main/java/tv/withaibuild/customiuizer/mods/LauncherLayoutHooks.kt`
+- A13_SYMBOL: `IndicatorMarginTopHook`
+- A13_INSTALLER: `A13 installer gate for launcher_indicator_topmargin`
+- A13_HOOK_TARGETS: `com.miui.home.launcher.util.DimenUtils1X#getDimensionPixelSize`
+- A13_CALLBACK_PHASE: `before`
+- PREFERENCE_KEYS: `launcher_indicator_topmargin`
+- VALUE_DOMAIN: owner-local preference domain
+- DEFAULT_SEMANTICS: same persisted keys consumed by both owners
+- RESULT/ARGUMENT_BEHAVIOR: A14 ops: result_assign[null]; chain.proceed[chain.proceed()]. A13 ops: returnAndSkip[Math.round(HookUtils.dp2px(opt.toFloat(]. Keys launcher_indicator_topmargin rewrite the same host members.
+- API33_VARIANT_REASON: A14 callback intercept vs A13 before on members A14[com.miui.home.launcher.util.DimenUtils1X#getDimensionPixelSize] / A13[com.miui.home.launcher.util.DimenUtils1X#getDimensionPixelSize]. Inner preference reads of launcher_indicator_topmargin match; intercept proceed-once maps to before returnAndSkip or after side-effect.
+- DIFF_SUMMARY: Shared members com.miui.home.launcher.util.DimenUtils1X#getDimensionPixelSize. Differ: A14 phases intercept vs A13 before; A14 result_assign[null]; chain.proceed[chain.proceed()] vs A13 returnAndSkip[Math.round(HookUtils.dp2px(opt.toFloat(].
+- VALUE_DEFAULT_COMPARISON: both consume launcher_indicator_topmargin in the owner body or installer gate
+- HOOK_TARGET_COMPARISON: A14=com.miui.home.launcher.util.DimenUtils1X#getDimensionPixelSize; A13=com.miui.home.launcher.util.DimenUtils1X#getDimensionPixelSize
+- CALLBACK_SEMANTICS_COMPARISON: A14 intercept vs A13 before; skipped paths do not invoke the original, proceed-once equals after side-effect
+- ARG_RESULT_COMPARISON: A14=result_assign[null]; chain.proceed[chain.proceed()]; A13=returnAndSkip[Math.round(HookUtils.dp2px(opt.toFloat(]
+- A14_ONLY_BRANCHES: none beyond intercept scaffolding for this owner pair
+- WHY_USER_BEHAVIOR_IS_EQUIVALENT: User-visible contract of launcher_indicator_topmargin is the same host rewrite; callback adapter and null-safety differ.
+- KEY_OWNERSHIP_EVIDENCE: launcher_indicator_topmargin: LITERAL_READ and/or INSTALLER_CALLEE in IndicatorMarginTopHook/IndicatorMarginTopHook
+- A14_KEY_OWNER_REFERENCE: app/src/main/java/tv/withaibuild/customiuizer/mods/LauncherLayoutHooks.kt::IndicatorMarginTopHook
+- A13_KEY_OWNER_REFERENCE: app/src/main/java/tv/withaibuild/customiuizer/mods/LauncherLayoutHooks.kt::IndicatorMarginTopHook
+- PROOF_CONCLUSION: `PRESENT_A13_VARIANT`
+
+## PROOF_R5_IndicatorHeightRes_launcher_indicatorheight
+
+- PROOF_ID: `PROOF_R5_IndicatorHeightRes_launcher_indicatorheight`
+- BODY_RELATION: `REVIEWED_VARIANT`
+- A14_OWNER_PATH: `app/src/main/java/tv/withaibuild/customiuizer/mods/LauncherLayoutHooks.kt`
+- A14_SYMBOL: `IndicatorHeightRes`
+- A14_INSTALLER: `A14 installer/spec gate for launcher_indicatorheight`
+- A14_HOOK_TARGETS: `(no host member literals)`
+- A14_CALLBACK_PHASE: `unknown`
+- A13_OWNER_PATH: `app/src/main/java/tv/withaibuild/customiuizer/mods/LauncherLayoutHooks.kt`
+- A13_SYMBOL: `IndicatorHeightRes`
+- A13_INSTALLER: `A13 installer gate for launcher_indicatorheight`
+- A13_HOOK_TARGETS: `(no host member literals)`
+- A13_CALLBACK_PHASE: `unknown`
+- PREFERENCE_KEYS: `launcher_indicatorheight`
+- VALUE_DOMAIN: owner-local preference domain
+- DEFAULT_SEMANTICS: same persisted keys consumed by both owners
+- RESULT/ARGUMENT_BEHAVIOR: A14 ops: no result/argument rewrite literals. A13 ops: no result/argument rewrite literals. Keys launcher_indicatorheight rewrite the same host members.
+- API33_VARIANT_REASON: A14 callback unknown vs A13 unknown on members A14[(none)] / A13[(none)]. Inner preference reads of launcher_indicatorheight match; intercept proceed-once maps to before returnAndSkip or after side-effect.
+- DIFF_SUMMARY: Shared members (none). Differ: A14 phases unknown vs A13 unknown; A14 no result/argument rewrite literals vs A13 no result/argument rewrite literals.
+- VALUE_DEFAULT_COMPARISON: both consume launcher_indicatorheight in the owner body or installer gate
+- HOOK_TARGET_COMPARISON: A14=(none); A13=(none)
+- CALLBACK_SEMANTICS_COMPARISON: A14 unknown vs A13 unknown; skipped paths do not invoke the original, proceed-once equals after side-effect
+- ARG_RESULT_COMPARISON: A14=no result/argument rewrite literals; A13=no result/argument rewrite literals
+- A14_ONLY_BRANCHES: none beyond intercept scaffolding for this owner pair
+- WHY_USER_BEHAVIOR_IS_EQUIVALENT: User-visible contract of launcher_indicatorheight is the same host rewrite; callback adapter and null-safety differ.
+- KEY_OWNERSHIP_EVIDENCE: launcher_indicatorheight: LITERAL_READ and/or INSTALLER_CALLEE in IndicatorHeightRes/IndicatorHeightRes
+- A14_KEY_OWNER_REFERENCE: app/src/main/java/tv/withaibuild/customiuizer/mods/LauncherLayoutHooks.kt::IndicatorHeightRes
+- A13_KEY_OWNER_REFERENCE: app/src/main/java/tv/withaibuild/customiuizer/mods/LauncherLayoutHooks.kt::IndicatorHeightRes
+- PROOF_CONCLUSION: `PRESENT_A13_VARIANT`
+
+## PROOF_R5_InfiniteScrollHook_launcher_infinitescroll
+
+- PROOF_ID: `PROOF_R5_InfiniteScrollHook_launcher_infinitescroll`
+- BODY_RELATION: `REVIEWED_VARIANT`
+- A14_OWNER_PATH: `app/src/main/java/tv/withaibuild/customiuizer/mods/LauncherLayoutHooks.kt`
+- A14_SYMBOL: `InfiniteScrollHook`
+- A14_INSTALLER: `A14 installer/spec gate for launcher_infinitescroll`
+- A14_HOOK_TARGETS: `com.miui.home.launcher.ScreenView#getSnapToScreenIndex,com.miui.home.launcher.ScreenView#getSnapUnitIndex`
+- A14_CALLBACK_PHASE: `intercept`
+- A13_OWNER_PATH: `app/src/main/java/tv/withaibuild/customiuizer/mods/LauncherLayoutHooks.kt`
+- A13_SYMBOL: `InfiniteScrollHook`
+- A13_INSTALLER: `A13 installer gate for launcher_infinitescroll`
+- A13_HOOK_TARGETS: `com.miui.home.launcher.ScreenView#getSnapToScreenIndex,com.miui.home.launcher.ScreenView#getSnapUnitIndex`
+- A13_CALLBACK_PHASE: `after`
+- PREFERENCE_KEYS: `launcher_infinitescroll`
+- VALUE_DOMAIN: owner-local preference domain
+- DEFAULT_SEMANTICS: same persisted keys consumed by both owners
+- RESULT/ARGUMENT_BEHAVIOR: A14 ops: result_assign[null,null]; chain.proceed[chain.proceed(),chain.proceed()]. A13 ops: setResult[screenCount,0,screenCount,0]. Keys launcher_infinitescroll rewrite the same host members.
+- API33_VARIANT_REASON: A14 callback intercept vs A13 after on members A14[com.miui.home.launcher.ScreenView#getSnapToScreenIndex,com.miui.home.launcher.ScreenView#getSnapUnitIndex] / A13[com.miui.home.launcher.ScreenView#getSnapToScreenIndex,com.miui.home.launcher.ScreenView#getSnapUnitIndex]. Inner preference reads of launcher_infinitescroll match; intercept proceed-once maps to before returnAndSkip or after side-effect.
+- DIFF_SUMMARY: Shared members com.miui.home.launcher.ScreenView#getSnapToScreenIndex,com.miui.home.launcher.ScreenView#getSnapUnitIndex. Differ: A14 phases intercept vs A13 after; A14 result_assign[null,null]; chain.proceed[chain.proceed(),chain.proceed()] vs A13 setResult[screenCount,0,screenCount,0].
+- VALUE_DEFAULT_COMPARISON: both consume launcher_infinitescroll in the owner body or installer gate
+- HOOK_TARGET_COMPARISON: A14=com.miui.home.launcher.ScreenView#getSnapToScreenIndex,com.miui.home.launcher.ScreenView#getSnapUnitIndex; A13=com.miui.home.launcher.ScreenView#getSnapToScreenIndex,com.miui.home.launcher.ScreenView#getSnapUnitIndex
+- CALLBACK_SEMANTICS_COMPARISON: A14 intercept vs A13 after; skipped paths do not invoke the original, proceed-once equals after side-effect
+- ARG_RESULT_COMPARISON: A14=result_assign[null,null]; chain.proceed[chain.proceed(),chain.proceed()]; A13=setResult[screenCount,0,screenCount,0]
+- A14_ONLY_BRANCHES: none beyond intercept scaffolding for this owner pair
+- WHY_USER_BEHAVIOR_IS_EQUIVALENT: User-visible contract of launcher_infinitescroll is the same host rewrite; callback adapter and null-safety differ.
+- KEY_OWNERSHIP_EVIDENCE: launcher_infinitescroll: LITERAL_READ and/or INSTALLER_CALLEE in InfiniteScrollHook/InfiniteScrollHook
+- A14_KEY_OWNER_REFERENCE: app/src/main/java/tv/withaibuild/customiuizer/mods/LauncherLayoutHooks.kt::InfiniteScrollHook
+- A13_KEY_OWNER_REFERENCE: app/src/main/java/tv/withaibuild/customiuizer/mods/LauncherLayoutHooks.kt::InfiniteScrollHook
+- PROOF_CONCLUSION: `PRESENT_A13_VARIANT`
+
+## PROOF_R5X_NOCLOCKHIDE
+
+- PROOF_ID: `PROOF_R5X_NOCLOCKHIDE`
+- BODY_RELATION: `REVIEWED_VARIANT`
+- A14_OWNER_PATH: `app/src/main/java/tv/withaibuild/customiuizer/mods/LauncherIconHooks.kt`
+- A14_SYMBOL: `NoClockHideHook`
+- A14_INSTALLER: `A14 installer/spec gate for launcher_noclockhide`
+- A14_HOOK_TARGETS: `com.miui.home.launcher.Launcher#updateStatusBarClock`
+- A14_CALLBACK_PHASE: `n/a`
+- A13_OWNER_PATH: `app/src/main/java/tv/withaibuild/customiuizer/mods/LauncherSystemHooks.kt`
+- A13_SYMBOL: `NoClockHideHook`
+- A13_INSTALLER: `A13 installer gate for launcher_noclockhide`
+- A13_HOOK_TARGETS: `com.miui.home.launcher.Launcher#updateStatusBarClock`
+- A13_CALLBACK_PHASE: `n/a`
+- PREFERENCE_KEYS: `launcher_noclockhide`
+- VALUE_DOMAIN: owner-local preference domain
+- DEFAULT_SEMANTICS: Boolean default false keeps ROM clock-hide.
+- RESULT/ARGUMENT_BEHAVIOR: Original updateStatusBarClock skipped (DO_NOTHING).
+- API33_VARIANT_REASON: Same Launcher member. A13 file LauncherSystemHooks vs A14 LauncherIconHooks.
+- DIFF_SUMMARY: Both DO_NOTHING Launcher.updateStatusBarClock so Home cannot hide the status-bar clock.
+- VALUE_DEFAULT_COMPARISON: Boolean default false keeps ROM clock-hide.
+- HOOK_TARGET_COMPARISON: A14=com.miui.home.launcher.Launcher#updateStatusBarClock; A13=com.miui.home.launcher.Launcher#updateStatusBarClock
+- CALLBACK_SEMANTICS_COMPARISON: Constant skip on both.
+- ARG_RESULT_COMPARISON: No args. Skip original.
+- A14_ONLY_BRANCHES: none
+- WHY_USER_BEHAVIOR_IS_EQUIVALENT: Launcher no longer hides the status-bar clock when the toggle is on.
+- KEY_OWNERSHIP_EVIDENCE: launcher_noclockhide: INSTALLER_CALLEE A13 FeatureCatalog.noClockHide / LauncherInstaller.hasAnyLauncherApplicationFeature; A14 LauncherNoClockHideFeature.
+- A14_KEY_OWNER_REFERENCE: app/src/main/java/tv/withaibuild/customiuizer/mods/LauncherIconHooks.kt::NoClockHideHook
+- A13_KEY_OWNER_REFERENCE: app/src/main/java/tv/withaibuild/customiuizer/mods/LauncherSystemHooks.kt::NoClockHideHook
+- PROOF_CONCLUSION: `PRESENT_A13_VARIANT`
+
+## PROOF_R5_NoUnlockAnimationHook_launcher_nounlockanim
+
+- PROOF_ID: `PROOF_R5_NoUnlockAnimationHook_launcher_nounlockanim`
+- BODY_RELATION: `IDENTICAL`
+- A14_OWNER_PATH: `app/src/main/java/tv/withaibuild/customiuizer/mods/LauncherAnimationHooks.kt`
+- A14_SYMBOL: `NoUnlockAnimationHook`
+- A14_INSTALLER: `A14 installer/spec gate for launcher_nounlockanim`
+- A14_HOOK_TARGETS: `com.miui.launcher.utils.MiuiSettingsUtils#isSystemAnimationOpen`
+- A14_CALLBACK_PHASE: `unknown`
+- A13_OWNER_PATH: `app/src/main/java/tv/withaibuild/customiuizer/mods/LauncherAnimationHooks.kt`
+- A13_SYMBOL: `NoUnlockAnimationHook`
+- A13_INSTALLER: `A13 installer gate for launcher_nounlockanim`
+- A13_HOOK_TARGETS: `com.miui.launcher.utils.MiuiSettingsUtils#isSystemAnimationOpen`
+- A13_CALLBACK_PHASE: `unknown`
+- PREFERENCE_KEYS: `launcher_nounlockanim`
+- VALUE_DOMAIN: owner-local preference domain
+- DEFAULT_SEMANTICS: identical owner body; shared defaults
+- RESULT/ARGUMENT_BEHAVIOR: no result/argument rewrite literals
+- API33_VARIANT_REASON: Normalized bodies are IDENTICAL. A14/A13 both hook com.miui.launcher.utils.MiuiSettingsUtils#isSystemAnimationOpen.
+- KEY_OWNERSHIP_EVIDENCE: launcher_nounlockanim: LITERAL_READ and/or INSTALLER_CALLEE in NoUnlockAnimationHook/NoUnlockAnimationHook
+- A14_KEY_OWNER_REFERENCE: app/src/main/java/tv/withaibuild/customiuizer/mods/LauncherAnimationHooks.kt::NoUnlockAnimationHook
+- A13_KEY_OWNER_REFERENCE: app/src/main/java/tv/withaibuild/customiuizer/mods/LauncherAnimationHooks.kt::NoUnlockAnimationHook
+- PROOF_CONCLUSION: `PRESENT_EQUIVALENT`
+
+## PROOF_R5X_NOWIDGETONLY
+
+- PROOF_ID: `PROOF_R5X_NOWIDGETONLY`
+- BODY_RELATION: `REVIEWED_VARIANT`
+- A14_OWNER_PATH: `app/src/main/java/tv/withaibuild/customiuizer/mods/LauncherLayoutHooks.kt`
+- A14_SYMBOL: `NoWidgetOnlyHook`
+- A14_INSTALLER: `A14 installer/spec gate for launcher_nowidgetonly`
+- A14_HOOK_TARGETS: `com.miui.home.launcher.Workspace widget-only mode members`
+- A14_CALLBACK_PHASE: `n/a`
+- A13_OWNER_PATH: `app/src/main/java/tv/withaibuild/customiuizer/mods/LauncherLayoutHooks.kt`
+- A13_SYMBOL: `NoWidgetOnlyHook`
+- A13_INSTALLER: `A13 installer gate for launcher_nowidgetonly`
+- A13_HOOK_TARGETS: `com.miui.home.launcher.Workspace widget-only mode members`
+- A13_CALLBACK_PHASE: `n/a`
+- PREFERENCE_KEYS: `launcher_nowidgetonly`
+- VALUE_DOMAIN: owner-local preference domain
+- DEFAULT_SEMANTICS: Boolean default false keeps ROM widget-only.
+- RESULT/ARGUMENT_BEHAVIOR: Hook skips/forces the ROM widget-only check false.
+- API33_VARIANT_REASON: Same Home owner file. FeatureSpec vs catalog installer.
+- DIFF_SUMMARY: Both disable Home widget-only workspace restriction via NoWidgetOnlyHook in LauncherLayoutHooks.kt.
+- VALUE_DEFAULT_COMPARISON: Boolean default false keeps ROM widget-only.
+- HOOK_TARGET_COMPARISON: A14=com.miui.home.launcher.Workspace widget-only mode members; A13=com.miui.home.launcher.Workspace widget-only mode members
+- CALLBACK_SEMANTICS_COMPARISON: Same owner; intercept vs before adapter.
+- ARG_RESULT_COMPARISON: Widget-only check result forced off.
+- A14_ONLY_BRANCHES: none beyond FeatureSpec wrapper
+- WHY_USER_BEHAVIOR_IS_EQUIVALENT: Widget-only launcher mode stays disabled when the toggle is on.
+- KEY_OWNERSHIP_EVIDENCE: launcher_nowidgetonly: INSTALLER_CALLEE A13 FeatureCatalog.noWidgetOnly / LauncherInstaller; A14 LauncherNoWidgetOnlyFeature.
+- A14_KEY_OWNER_REFERENCE: app/src/main/java/tv/withaibuild/customiuizer/mods/LauncherLayoutHooks.kt::NoWidgetOnlyHook
+- A13_KEY_OWNER_REFERENCE: app/src/main/java/tv/withaibuild/customiuizer/mods/LauncherLayoutHooks.kt::NoWidgetOnlyHook
+- PROOF_CONCLUSION: `PRESENT_A13_VARIANT`
+
+## PROOF_R5_NoZoomAnimationHook_launcher_nozoomanim
+
+- PROOF_ID: `PROOF_R5_NoZoomAnimationHook_launcher_nozoomanim`
+- BODY_RELATION: `IDENTICAL`
+- A14_OWNER_PATH: `app/src/main/java/tv/withaibuild/customiuizer/mods/LauncherAnimationHooks.kt`
+- A14_SYMBOL: `NoZoomAnimationHook`
+- A14_INSTALLER: `A14 installer/spec gate for launcher_nozoomanim`
+- A14_HOOK_TARGETS: `com.miui.home.recents.util.SpringAnimationUtils#startShortcutMenuLayerFadeOutAnim,com.miui.home.recents.util.SpringAnimationUtils#startShortcutMenuLayerFadeInAnim`
+- A14_CALLBACK_PHASE: `unknown`
+- A13_OWNER_PATH: `app/src/main/java/tv/withaibuild/customiuizer/mods/LauncherAnimationHooks.kt`
+- A13_SYMBOL: `NoZoomAnimationHook`
+- A13_INSTALLER: `A13 installer gate for launcher_nozoomanim`
+- A13_HOOK_TARGETS: `com.miui.home.recents.util.SpringAnimationUtils#startShortcutMenuLayerFadeOutAnim,com.miui.home.recents.util.SpringAnimationUtils#startShortcutMenuLayerFadeInAnim`
+- A13_CALLBACK_PHASE: `unknown`
+- PREFERENCE_KEYS: `launcher_nozoomanim`
+- VALUE_DOMAIN: owner-local preference domain
+- DEFAULT_SEMANTICS: identical owner body; shared defaults
+- RESULT/ARGUMENT_BEHAVIOR: no result/argument rewrite literals
+- API33_VARIANT_REASON: Normalized bodies are IDENTICAL. A14/A13 both hook com.miui.home.recents.util.SpringAnimationUtils#startShortcutMenuLayerFadeOutAnim,com.miui.home.recents.util.SpringAnimationUtils#startShortcutMenuLayerFadeInAnim.
+- KEY_OWNERSHIP_EVIDENCE: launcher_nozoomanim: LITERAL_READ and/or INSTALLER_CALLEE in NoZoomAnimationHook/NoZoomAnimationHook
+- A14_KEY_OWNER_REFERENCE: app/src/main/java/tv/withaibuild/customiuizer/mods/LauncherAnimationHooks.kt::NoZoomAnimationHook
+- A13_KEY_OWNER_REFERENCE: app/src/main/java/tv/withaibuild/customiuizer/mods/LauncherAnimationHooks.kt::NoZoomAnimationHook
+- PROOF_CONCLUSION: `PRESENT_EQUIVALENT`
+
+## PROOF_R5_UseOldLaunchAnimationHook_launcher_oldlaunchanim
+
+- PROOF_ID: `PROOF_R5_UseOldLaunchAnimationHook_launcher_oldlaunchanim`
+- BODY_RELATION: `IDENTICAL`
+- A14_OWNER_PATH: `app/src/main/java/tv/withaibuild/customiuizer/mods/LauncherAnimationHooks.kt`
+- A14_SYMBOL: `UseOldLaunchAnimationHook`
+- A14_INSTALLER: `A14 installer/spec gate for launcher_oldlaunchanim`
+- A14_HOOK_TARGETS: `com.miui.home.recents.QuickstepAppTransitionManagerImpl#hasControlRemoteAppTransitionPermission`
+- A14_CALLBACK_PHASE: `unknown`
+- A13_OWNER_PATH: `app/src/main/java/tv/withaibuild/customiuizer/mods/LauncherAnimationHooks.kt`
+- A13_SYMBOL: `UseOldLaunchAnimationHook`
+- A13_INSTALLER: `A13 installer gate for launcher_oldlaunchanim`
+- A13_HOOK_TARGETS: `com.miui.home.recents.QuickstepAppTransitionManagerImpl#hasControlRemoteAppTransitionPermission`
+- A13_CALLBACK_PHASE: `unknown`
+- PREFERENCE_KEYS: `launcher_oldlaunchanim`
+- VALUE_DOMAIN: owner-local preference domain
+- DEFAULT_SEMANTICS: identical owner body; shared defaults
+- RESULT/ARGUMENT_BEHAVIOR: no result/argument rewrite literals
+- API33_VARIANT_REASON: Normalized bodies are IDENTICAL. A14/A13 both hook com.miui.home.recents.QuickstepAppTransitionManagerImpl#hasControlRemoteAppTransitionPermission.
+- KEY_OWNERSHIP_EVIDENCE: launcher_oldlaunchanim: LITERAL_READ and/or INSTALLER_CALLEE in UseOldLaunchAnimationHook/UseOldLaunchAnimationHook
+- A14_KEY_OWNER_REFERENCE: app/src/main/java/tv/withaibuild/customiuizer/mods/LauncherAnimationHooks.kt::UseOldLaunchAnimationHook
+- A13_KEY_OWNER_REFERENCE: app/src/main/java/tv/withaibuild/customiuizer/mods/LauncherAnimationHooks.kt::UseOldLaunchAnimationHook
+- PROOF_CONCLUSION: `PRESENT_EQUIVALENT`
+
+## PROOF_R5_LauncherPinchHook_launcher_pinch
+
+- PROOF_ID: `PROOF_R5_LauncherPinchHook_launcher_pinch`
+- BODY_RELATION: `REVIEWED_VARIANT`
+- A14_OWNER_PATH: `app/src/main/java/tv/withaibuild/customiuizer/mods/LauncherGestureHooks.kt`
+- A14_SYMBOL: `LauncherPinchHook`
+- A14_INSTALLER: `A14 installer/spec gate for launcher_pinch`
+- A14_HOOK_TARGETS: `com.miui.home.launcher.Workspace#onPinching,com.miui.home.launcher.Workspace#onPinchingEnd`
+- A14_CALLBACK_PHASE: `intercept`
+- A13_OWNER_PATH: `app/src/main/java/tv/withaibuild/customiuizer/mods/LauncherGestureHooks.kt`
+- A13_SYMBOL: `LauncherPinchHook`
+- A13_INSTALLER: `A13 installer gate for launcher_pinch`
+- A13_HOOK_TARGETS: `com.miui.home.launcher.Workspace#onPinching,com.miui.home.launcher.Workspace#onPinchingEnd`
+- A13_CALLBACK_PHASE: `before`
+- PREFERENCE_KEYS: `launcher_pinch`
+- VALUE_DOMAIN: owner-local preference domain
+- DEFAULT_SEMANTICS: same persisted keys consumed by both owners
+- RESULT/ARGUMENT_BEHAVIOR: A14 ops: result_assign[false]; chain.proceed[chain.proceed()]. A13 ops: returnAndSkip[false,null]. Keys launcher_pinch rewrite the same host members.
+- API33_VARIANT_REASON: A14 callback intercept vs A13 before on members A14[com.miui.home.launcher.Workspace#onPinching,com.miui.home.launcher.Workspace#onPinchingEnd] / A13[com.miui.home.launcher.Workspace#onPinching,com.miui.home.launcher.Workspace#onPinchingEnd]. Inner preference reads of launcher_pinch match; intercept proceed-once maps to before returnAndSkip or after side-effect.
+- DIFF_SUMMARY: Shared members com.miui.home.launcher.Workspace#onPinching,com.miui.home.launcher.Workspace#onPinchingEnd. Differ: A14 phases intercept vs A13 before; A14 result_assign[false]; chain.proceed[chain.proceed()] vs A13 returnAndSkip[false,null].
+- VALUE_DEFAULT_COMPARISON: both consume launcher_pinch in the owner body or installer gate
+- HOOK_TARGET_COMPARISON: A14=com.miui.home.launcher.Workspace#onPinching,com.miui.home.launcher.Workspace#onPinchingEnd; A13=com.miui.home.launcher.Workspace#onPinching,com.miui.home.launcher.Workspace#onPinchingEnd
+- CALLBACK_SEMANTICS_COMPARISON: A14 intercept vs A13 before; skipped paths do not invoke the original, proceed-once equals after side-effect
+- ARG_RESULT_COMPARISON: A14=result_assign[false]; chain.proceed[chain.proceed()]; A13=returnAndSkip[false,null]
+- A14_ONLY_BRANCHES: none beyond intercept scaffolding for this owner pair
+- WHY_USER_BEHAVIOR_IS_EQUIVALENT: User-visible contract of launcher_pinch is the same host rewrite; callback adapter and null-safety differ.
+- KEY_OWNERSHIP_EVIDENCE: launcher_pinch: LITERAL_READ and/or INSTALLER_CALLEE in LauncherPinchHook/LauncherPinchHook
+- A14_KEY_OWNER_REFERENCE: app/src/main/java/tv/withaibuild/customiuizer/mods/LauncherGestureHooks.kt::LauncherPinchHook
+- A13_KEY_OWNER_REFERENCE: app/src/main/java/tv/withaibuild/customiuizer/mods/LauncherGestureHooks.kt::LauncherPinchHook
+- PROOF_CONCLUSION: `PRESENT_A13_VARIANT`
+
+## PROOF_R5F_PrivacyFolderHook_launcher_privacyapps_gest
+
+- PROOF_ID: `PROOF_R5F_PrivacyFolderHook_launcher_privacyapps_gest`
+- BODY_RELATION: `REVIEWED_VARIANT`
+- A14_OWNER_PATH: `app/src/main/java/tv/withaibuild/customiuizer/mods/LauncherFolderHooks.kt`
+- A14_SYMBOL: `PrivacyFolderHook`
+- A14_INSTALLER: `A14 installer/spec gate for launcher_privacyapps_gest,launcher_spread`
+- A14_HOOK_TARGETS: `com.miui.home.launcher.Launcher#registerBroadcastReceivers,com.miui.home.launcher.Launcher#startSecurityHide,com.miui.home.launcher.Launcher#onDestroy`
+- A14_CALLBACK_PHASE: `intercept`
+- A13_OWNER_PATH: `app/src/main/java/tv/withaibuild/customiuizer/mods/LauncherFolderHooks.kt`
+- A13_SYMBOL: `PrivacyFolderHook`
+- A13_INSTALLER: `A13 installer gate for launcher_privacyapps_gest,launcher_spread`
+- A13_HOOK_TARGETS: `com.miui.home.launcher.Launcher#registerBroadcastReceivers,com.miui.home.launcher.Launcher#startSecurityHide`
+- A13_CALLBACK_PHASE: `after,before`
+- PREFERENCE_KEYS: `launcher_privacyapps_gest,launcher_spread`
+- VALUE_DOMAIN: owner-local preference domain
+- DEFAULT_SEMANTICS: getBoolean(launcher_privacyapps_gest) default false. handleAction(launcher_spread) uses getInt(launcher_spread_action,1); action<=1 means no custom spread. Installer both: privacyapps_gest || spread_action!=1.
+- RESULT/ARGUMENT_BEHAVIOR: startSecurityHide: A13 before returnAndSkip(null) when spread handled or privacyapps_gest; A14 intercept sets skipped/result=null and does not proceed. Secret-code path both proceed original startSecurityHide after clearing fromSecretCode. registerBroadcastReceivers always proceeds then registers the receiver.
+- API33_VARIANT_REASON: Same startSecurityHide skip/allow rules. Lifecycle only: A13 registerModuleReceiver keyed to launcher.secretCodeReceiver vs A14 registerOwnedReceiver plus Launcher.onDestroy unregisterOwnedReceiver. A14 intercept skip-without-proceed equals A13 before returnAndSkip(null).
+- DIFF_SUMMARY: Shared rewrite: if launcher_privacyapps_gest, after registerBroadcastReceivers register SECRET_CODE 233233 receiver that sets fromSecretCode and calls startSecurityHide. startSecurityHide: if fromSecretCode, clear flag and allow original; else if handleAction(launcher_spread) skip original; else if privacyapps_gest skip original. A14 extra Launcher.onDestroy unregisters owned receivers secretCodeReceiver and fetchAppConfigReceiver. A13 uses ModuleHelper.registerModuleReceiver(act,"launcher.secretCodeReceiver",...) instead of registerOwnedReceiver+onDestroy. A13 does not register fetchAppConfigReceiver in this owner.
+- VALUE_DEFAULT_COMPARISON: getBoolean(launcher_privacyapps_gest) default false. handleAction(launcher_spread) uses getInt(launcher_spread_action,1); action<=1 means no custom spread. Installer both: privacyapps_gest || spread_action!=1.
+- HOOK_TARGET_COMPARISON: A14=com.miui.home.launcher.Launcher#registerBroadcastReceivers,com.miui.home.launcher.Launcher#startSecurityHide,com.miui.home.launcher.Launcher#onDestroy; A13=com.miui.home.launcher.Launcher#registerBroadcastReceivers,com.miui.home.launcher.Launcher#startSecurityHide
+- CALLBACK_SEMANTICS_COMPARISON: A14 intercept on registerBroadcastReceivers proceeds then registers; A13 after does the same. A14 intercept on startSecurityHide skip-without-proceed equals A13 before returnAndSkip. A14 extra onDestroy proceeds after unregister.
+- ARG_RESULT_COMPARISON: No arg rewrite. startSecurityHide skipped result is null on both when custom path wins. Secret-code path does not skip.
+- A14_ONLY_BRANCHES: Launcher.onDestroy unregisterOwnedReceiver(secretCodeReceiver, fetchAppConfigReceiver). fetchAppConfigReceiver is not installed by this A13 owner.
+- WHY_USER_BEHAVIOR_IS_EQUIVALENT: Dialer secret-code 233233 still opens privacy folder; spread gesture still runs launcher_spread action and suppresses startSecurityHide; privacyapps_gest still swallows non-secret startSecurityHide. Extra A14 onDestroy is receiver teardown, not a different user rewrite.
+- KEY_OWNERSHIP_EVIDENCE: launcher_privacyapps_gest: LITERAL_READ in both bodies (A13 LauncherFolderHooks.kt:103,146; A14:235,292) and INSTALLER_CALLEE (A13 LauncherInstaller.java:87-88; A14 LauncherPrivacyFolderFeature.evaluateEnabled). launcher_spread: LITERAL_READ via GlobalActions.handleAction(..., "launcher_spread") which reads launcher_spread_action (A13:142, A14:289). Installer also gates on launcher_spread_action!=1.
+- A14_KEY_OWNER_REFERENCE: app/src/main/java/tv/withaibuild/customiuizer/mods/LauncherFolderHooks.kt::PrivacyFolderHook
+- A13_KEY_OWNER_REFERENCE: app/src/main/java/tv/withaibuild/customiuizer/mods/LauncherFolderHooks.kt::PrivacyFolderHook
+- PROOF_CONCLUSION: `PRESENT_A13_VARIANT`
+
+## PROOF_R5X_PRIVACYAPPS_LIST
+
+- PROOF_ID: `PROOF_R5X_PRIVACYAPPS_LIST`
+- BODY_RELATION: `REVIEWED_VARIANT`
+- A14_OWNER_PATH: `app/src/main/java/tv/withaibuild/customiuizer/subs/Launcher.kt`
+- A14_SYMBOL: `privacy apps picker`
+- A14_INSTALLER: `A14 installer/spec gate for launcher_privacyapps_list`
+- A14_HOOK_TARGETS: `(no ROM member; app-selector UI)`
+- A14_CALLBACK_PHASE: `n/a`
+- A13_OWNER_PATH: `app/src/main/java/tv/withaibuild/customiuizer/subs/Launcher.kt`
+- A13_SYMBOL: `onPrivacyAppClick`
+- A13_INSTALLER: `A13 installer gate for launcher_privacyapps_list`
+- A13_HOOK_TARGETS: `(no ROM member; app-selector UI)`
+- A13_CALLBACK_PHASE: `n/a`
+- PREFERENCE_KEYS: `launcher_privacyapps_list`
+- VALUE_DOMAIN: owner-local preference domain
+- DEFAULT_SEMANTICS: Empty set means no extra privacy apps.
+- RESULT/ARGUMENT_BEHAVIOR: No hook on this row.
+- API33_VARIANT_REASON: In-module picker, not a host member.
+- DIFF_SUMMARY: Visible row is the privacy-app selector. Hook consumption is PrivacyFolderHook already reviewed.
+- VALUE_DEFAULT_COMPARISON: Empty set means no extra privacy apps.
+- HOOK_TARGET_COMPARISON: A14=(no ROM member; app-selector UI); A13=(no ROM member; app-selector UI)
+- CALLBACK_SEMANTICS_COMPARISON: Preference click opens the app selector.
+- ARG_RESULT_COMPARISON: StringSet persisted for the privacy folder owner.
+- A14_ONLY_BRANCHES: none
+- WHY_USER_BEHAVIOR_IS_EQUIVALENT: User still picks which apps belong to the privacy folder.
+- KEY_OWNERSHIP_EVIDENCE: launcher_privacyapps_list: settings picker in subs/Launcher.kt on both trees; consumed with launcher_privacyapps_gest by PrivacyFolderHook.
+- A14_KEY_OWNER_REFERENCE: app/src/main/java/tv/withaibuild/customiuizer/subs/Launcher.kt::privacy apps picker
+- A13_KEY_OWNER_REFERENCE: app/src/main/java/tv/withaibuild/customiuizer/subs/Launcher.kt::onPrivacyAppClick
+- PROOF_CONCLUSION: `PRESENT_A13_VARIANT`
+
+## PROOF_R5F_RenameShortcutsHook_launcher_renameapps
+
+- PROOF_ID: `PROOF_R5F_RenameShortcutsHook_launcher_renameapps`
+- BODY_RELATION: `REVIEWED_VARIANT`
+- A14_OWNER_PATH: `app/src/main/java/tv/withaibuild/customiuizer/mods/LauncherIconHooks.kt`
+- A14_SYMBOL: `RenameShortcutsHook`
+- A14_INSTALLER: `A14 installer/spec gate for launcher_renameapps,launcher_renameapps_list`
+- A14_HOOK_TARGETS: `com.miui.home.launcher.Launcher#onCreate,com.miui.home.launcher.Launcher#onDestroy,com.miui.home.launcher.ShortcutInfo#<init>,com.miui.home.launcher.ShortcutInfo#loadToggleInfo,com.miui.home.launcher.ShortcutInfo#setLabelAndUpdateDB,com.miui.home.launcher.ShortcutInfo#load,com.miui.home.launcher.BaseAppInfo#resetTitle`
+- A14_CALLBACK_PHASE: `intercept`
+- A13_OWNER_PATH: `app/src/main/java/tv/withaibuild/customiuizer/mods/LauncherIconHooks.kt`
+- A13_SYMBOL: `RenameShortcutsHook`
+- A13_INSTALLER: `A13 installer gate for launcher_renameapps,launcher_renameapps_list`
+- A13_HOOK_TARGETS: `com.miui.home.launcher.Launcher#onCreate,com.miui.home.launcher.ShortcutInfo#<init>,com.miui.home.launcher.ShortcutInfo#loadToggleInfo,com.miui.home.launcher.ShortcutInfo#setLabelAndUpdateDB,com.miui.home.launcher.ShortcutInfo#load,com.miui.home.launcher.BaseAppInfo#resetTitle`
+- A13_CALLBACK_PHASE: `after`
+- PREFERENCE_KEYS: `launcher_renameapps,launcher_renameapps_list`
+- VALUE_DOMAIN: owner-local preference domain
+- DEFAULT_SEMANTICS: getString(launcher_renameapps_list:..., "") empty means keep ROM title. Installer both require getBoolean(launcher_renameapps). PrefMap.normalizeKey adds pref_key_ so stored list values are the same family on both trees.
+- RESULT/ARGUMENT_BEHAVIOR: No skip of original ShortcutInfo/Launcher methods. Side-effect field writes to mLabel / mLabelOrig only. Live path does not rewrite method results.
+- API33_VARIANT_REASON: Same mLabel rewrite on the same ShortcutInfo/BaseAppInfo members. Lifecycle only: A13 owned observer vs A14 onDestroy unregister. A14 intercept proceed-then-modifyTitle equals A13 after.
+- DIFF_SUMMARY: Shared modifyTitle: if isApplicatoin, write ShortcutInfo.mLabel from launcher_renameapps_list:pkg|class|userHash when non-empty. Shared after-construct/loadToggleInfo/setLabelAndUpdateDB/load/resetTitle apply that rewrite and stash mLabelOrig. Live reload: both walk mAllLoadedShortcut or mAllLoadedApps, match the changed list key, restore mLabelOrig or new title, updateBuddyIconView / getBuddyIconView.updateInfo. A13 extra field fallback mLoadedAppsAndShortcut. A13 observeOwnedPreferenceChange("launcher.renameShortcuts", launcher) vs A14 observePreferenceChange(..., thisObject) plus Launcher.onDestroy unregisterPreferenceObserver. Observer match: A13 contains pref_key_launcher_renameapps_list (matches PreferenceBootstrap raw keys); A14 startsWith launcher_renameapps_list.
+- VALUE_DEFAULT_COMPARISON: getString(launcher_renameapps_list:..., "") empty means keep ROM title. Installer both require getBoolean(launcher_renameapps). PrefMap.normalizeKey adds pref_key_ so stored list values are the same family on both trees.
+- HOOK_TARGET_COMPARISON: A14=com.miui.home.launcher.Launcher#onCreate,com.miui.home.launcher.Launcher#onDestroy,com.miui.home.launcher.ShortcutInfo#<init>,com.miui.home.launcher.ShortcutInfo#loadToggleInfo,com.miui.home.launcher.ShortcutInfo#setLabelAndUpdateDB,com.miui.home.launcher.ShortcutInfo#load,com.miui.home.launcher.BaseAppInfo#resetTitle; A13=com.miui.home.launcher.Launcher#onCreate,com.miui.home.launcher.ShortcutInfo#<init>,com.miui.home.launcher.ShortcutInfo#loadToggleInfo,com.miui.home.launcher.ShortcutInfo#setLabelAndUpdateDB,com.miui.home.launcher.ShortcutInfo#load,com.miui.home.launcher.BaseAppInfo#resetTitle
+- CALLBACK_SEMANTICS_COMPARISON: A14 intercept proceeds then modifyTitle / register observer. A13 after does the same. Original constructors and load methods run both sides. A14 extra onDestroy proceeds after unregister.
+- ARG_RESULT_COMPARISON: No argument rewrite. No returnAndSkip. Results are original; only ShortcutInfo.mLabel is overwritten when the list value is non-empty.
+- A14_ONLY_BRANCHES: Launcher.onDestroy unregisterPreferenceObserver. Observer key match without pref_key_ prefix.
+- WHY_USER_BEHAVIOR_IS_EQUIVALENT: Renamed app titles still replace mLabel from launcher_renameapps_list on load/init/reset, and live pref changes still refresh buddy icons. Extra A14 onDestroy only tears down the observer.
+- KEY_OWNERSHIP_EVIDENCE: launcher_renameapps: INSTALLER_CALLEE A13 LauncherInstaller.java:65 and A14 LauncherRenameShortcutsFeature; body does not getBoolean it. launcher_renameapps_list: LITERAL_READ in modifyTitle getString("launcher_renameapps_list:pkg|act|user","") on both (A13 LauncherIconHooks.kt:35; A14:40). Live observer also matches that list key (A13 pref_key_launcher_renameapps_list prefix, A14 launcher_renameapps_list prefix).
+- A14_KEY_OWNER_REFERENCE: app/src/main/java/tv/withaibuild/customiuizer/mods/LauncherIconHooks.kt::RenameShortcutsHook
+- A13_KEY_OWNER_REFERENCE: app/src/main/java/tv/withaibuild/customiuizer/mods/LauncherIconHooks.kt::RenameShortcutsHook
+- PROOF_CONCLUSION: `PRESENT_A13_VARIANT`
+
+## PROOF_R5_ReverseLauncherPortraitHook_launcher_sensorportrait
+
+- PROOF_ID: `PROOF_R5_ReverseLauncherPortraitHook_launcher_sensorportrait`
+- BODY_RELATION: `REVIEWED_VARIANT`
+- A14_OWNER_PATH: `app/src/main/java/tv/withaibuild/customiuizer/mods/Launcher.kt`
+- A14_SYMBOL: `ReverseLauncherPortraitHook`
+- A14_INSTALLER: `A14 installer/spec gate for launcher_sensorportrait`
+- A14_HOOK_TARGETS: `com.miui.home.launcher.Launcher#onCreate`
+- A14_CALLBACK_PHASE: `intercept`
+- A13_OWNER_PATH: `app/src/main/java/tv/withaibuild/customiuizer/mods/LauncherAnimationHooks.kt`
+- A13_SYMBOL: `ReverseLauncherPortraitHook`
+- A13_INSTALLER: `A13 installer gate for launcher_sensorportrait`
+- A13_HOOK_TARGETS: `com.miui.home.launcher.Launcher#onCreate`
+- A13_CALLBACK_PHASE: `after`
+- PREFERENCE_KEYS: `launcher_sensorportrait`
+- VALUE_DOMAIN: owner-local preference domain
+- DEFAULT_SEMANTICS: same persisted keys consumed by both owners
+- RESULT/ARGUMENT_BEHAVIOR: A14 ops: result_assign[null]; chain.proceed[chain.proceed()]. A13 ops: no result/argument rewrite literals. Keys launcher_sensorportrait rewrite the same host members.
+- API33_VARIANT_REASON: A14 callback intercept vs A13 after on members A14[com.miui.home.launcher.Launcher#onCreate] / A13[com.miui.home.launcher.Launcher#onCreate]. Inner preference reads of launcher_sensorportrait match; intercept proceed-once maps to before returnAndSkip or after side-effect.
+- DIFF_SUMMARY: Shared members com.miui.home.launcher.Launcher#onCreate. Differ: A14 phases intercept vs A13 after; A14 result_assign[null]; chain.proceed[chain.proceed()] vs A13 no result/argument rewrite literals.
+- VALUE_DEFAULT_COMPARISON: both consume launcher_sensorportrait in the owner body or installer gate
+- HOOK_TARGET_COMPARISON: A14=com.miui.home.launcher.Launcher#onCreate; A13=com.miui.home.launcher.Launcher#onCreate
+- CALLBACK_SEMANTICS_COMPARISON: A14 intercept vs A13 after; skipped paths do not invoke the original, proceed-once equals after side-effect
+- ARG_RESULT_COMPARISON: A14=result_assign[null]; chain.proceed[chain.proceed()]; A13=no result/argument rewrite literals
+- A14_ONLY_BRANCHES: none beyond intercept scaffolding for this owner pair
+- WHY_USER_BEHAVIOR_IS_EQUIVALENT: User-visible contract of launcher_sensorportrait is the same host rewrite; callback adapter and null-safety differ.
+- KEY_OWNERSHIP_EVIDENCE: launcher_sensorportrait: LITERAL_READ and/or INSTALLER_CALLEE in ReverseLauncherPortraitHook/ReverseLauncherPortraitHook
+- A14_KEY_OWNER_REFERENCE: app/src/main/java/tv/withaibuild/customiuizer/mods/Launcher.kt::ReverseLauncherPortraitHook
+- A13_KEY_OWNER_REFERENCE: app/src/main/java/tv/withaibuild/customiuizer/mods/LauncherAnimationHooks.kt::ReverseLauncherPortraitHook
+- PROOF_CONCLUSION: `PRESENT_A13_VARIANT`
+
+## PROOF_R5_executeShakeAction_launcher_shake
+
+- PROOF_ID: `PROOF_R5_executeShakeAction_launcher_shake`
+- BODY_RELATION: `IDENTICAL`
+- A14_OWNER_PATH: `app/src/main/java/tv/withaibuild/customiuizer/mods/utils/ShakeManager.kt`
+- A14_SYMBOL: `executeShakeAction`
+- A14_INSTALLER: `A14 installer/spec gate for launcher_shake`
+- A14_HOOK_TARGETS: `(no host member literals)`
+- A14_CALLBACK_PHASE: `unknown`
+- A13_OWNER_PATH: `app/src/main/java/tv/withaibuild/customiuizer/mods/utils/ShakeManager.kt`
+- A13_SYMBOL: `executeShakeAction`
+- A13_INSTALLER: `A13 installer gate for launcher_shake`
+- A13_HOOK_TARGETS: `(no host member literals)`
+- A13_CALLBACK_PHASE: `unknown`
+- PREFERENCE_KEYS: `launcher_shake`
+- VALUE_DOMAIN: owner-local preference domain
+- DEFAULT_SEMANTICS: identical owner body; shared defaults
+- RESULT/ARGUMENT_BEHAVIOR: no result/argument rewrite literals
+- API33_VARIANT_REASON: Normalized bodies are IDENTICAL. A14/A13 both hook (none).
+- KEY_OWNERSHIP_EVIDENCE: launcher_shake: LITERAL_READ and/or INSTALLER_CALLEE in executeShakeAction/executeShakeAction
+- A14_KEY_OWNER_REFERENCE: app/src/main/java/tv/withaibuild/customiuizer/mods/utils/ShakeManager.kt::executeShakeAction
+- A13_KEY_OWNER_REFERENCE: app/src/main/java/tv/withaibuild/customiuizer/mods/utils/ShakeManager.kt::executeShakeAction
+- PROOF_CONCLUSION: `PRESENT_EQUIVALENT`
+
+## PROOF_R5_HomescreenSwipesHook_launcher_swipedown
+
+- PROOF_ID: `PROOF_R5_HomescreenSwipesHook_launcher_swipedown`
+- BODY_RELATION: `REVIEWED_VARIANT`
+- A14_OWNER_PATH: `app/src/main/java/tv/withaibuild/customiuizer/mods/LauncherGestureHooks.kt`
+- A14_SYMBOL: `HomescreenSwipesHook`
+- A14_INSTALLER: `A14 installer/spec gate for launcher_swipedown,launcher_swipedown2,launcher_swipeup,launcher_swipeup2`
+- A14_HOOK_TARGETS: `com.miui.home.launcher.Workspace#onVerticalGesture,com.miui.home.launcher.uioverrides.StatusBarSwipeController#canInterceptTouch,com.miui.home.launcher.uioverrides.AllAppsSwipeController#canInterceptTouch,com.miui.home.launcher.allapps.LauncherMode#getPullDownGesture,com.miui.home.launcher.allapps.LauncherMode#getSlideUpGesture,com.miui.home.launcher.DeviceConfig#isGlobalSearchEnable,com.miui.home.launcher.search.SearchEdgeLayout#isTopSearchEnable,com.miui.home.launcher.search.SearchEdgeLayout#isBottomGlobalSearchEnable,com.miui.home.launcher.DeviceConfig#isGlobalSearchBottomEffectEnable,com.miui.home.launcher.DeviceConfig#allowedSlidingUpToStartGolbalSearch`
+- A14_CALLBACK_PHASE: `intercept`
+- A13_OWNER_PATH: `app/src/main/java/tv/withaibuild/customiuizer/mods/LauncherGestureHooks.kt`
+- A13_SYMBOL: `HomescreenSwipesHook`
+- A13_INSTALLER: `A13 installer gate for launcher_swipedown,launcher_swipedown2,launcher_swipeup,launcher_swipeup2`
+- A13_HOOK_TARGETS: `com.miui.home.launcher.Workspace#onVerticalGesture,com.miui.home.launcher.uioverrides.StatusBarSwipeController#canInterceptTouch,com.miui.home.launcher.uioverrides.AllAppsSwipeController#canInterceptTouch,com.miui.home.launcher.allapps.LauncherMode#getPullDownGesture,com.miui.home.launcher.allapps.LauncherMode#getSlideUpGesture,com.miui.home.launcher.DeviceConfig#isGlobalSearchEnable,com.miui.home.launcher.search.SearchEdgeLayout#isTopSearchEnable,com.miui.home.launcher.search.SearchEdgeLayout#isBottomGlobalSearchEnable,com.miui.home.launcher.DeviceConfig#isGlobalSearchBottomEffectEnable,com.miui.home.launcher.DeviceConfig#allowedSlidingUpToStartGolbalSearch`
+- A13_CALLBACK_PHASE: `before,after`
+- PREFERENCE_KEYS: `launcher_swipedown,launcher_swipedown2,launcher_swipeup,launcher_swipeup2`
+- VALUE_DOMAIN: owner-local preference domain
+- DEFAULT_SEMANTICS: same persisted keys consumed by both owners
+- RESULT/ARGUMENT_BEHAVIOR: A14 ops: result_assign[true,true,false,null]; chain.proceed[chain.proceed(),chain.proceed(),chain.proceed(),chain.proceed()]. A13 ops: returnAndSkip[true,true,false,false]; setResult["no_action"]. Keys launcher_swipedown,launcher_swipedown2,launcher_swipeup,launcher_swipeup2 rewrite the same host members.
+- API33_VARIANT_REASON: A14 callback intercept vs A13 before,after on members A14[com.miui.home.launcher.Workspace#onVerticalGesture,com.miui.home.launcher.uioverrides.StatusBarSwipeController#canInterceptTouch,com.miui.home.launcher.uioverrides.AllAppsSwipeController#canInterceptTouch,com.miui.home.launcher.allapps.LauncherMode#getPullDownGesture,com.miui.home.launcher.allapps.LauncherMode#getSlideUpGesture,com.miui.home.launcher.DeviceConfig#isGlobalSearchEnable,com.miui.home.launcher.search.SearchEdgeLayout#isTopSearchEnable,com.miui.home.launcher.search.SearchEdgeLayout#isBottomGlobalSearchEnable,com.miui.home.launcher.DeviceConfig#isGlobalSearchBottomEffectEnable,com.miui.home.launcher.DeviceConfig#allowedSlidingUpToStartGolbalSearch] / A13[com.miui.home.launcher.Workspace#onVerticalGesture,com.miui.home.launcher.uioverrides.StatusBarSwipeController#canInterceptTouch,com.miui.home.launcher.uioverrides.AllAppsSwipeController#canInterceptTouch,com.miui.home.launcher.allapps.LauncherMode#getPullDownGesture,com.miui.home.launcher.allapps.LauncherMode#getSlideUpGesture,com.miui.home.launcher.DeviceConfig#isGlobalSearchEnable,com.miui.home.launcher.search.SearchEdgeLayout#isTopSearchEnable,com.miui.home.launcher.search.SearchEdgeLayout#isBottomGlobalSearchEnable,com.miui.home.launcher.DeviceConfig#isGlobalSearchBottomEffectEnable,com.miui.home.launcher.DeviceConfig#allowedSlidingUpToStartGolbalSearch]. Inner preference reads of launcher_swipedown,launcher_swipedown2,launcher_swipeup,launcher_swipeup2 match; intercept proceed-once maps to before returnAndSkip or after side-effect.
+- DIFF_SUMMARY: Shared members com.miui.home.launcher.Workspace#onVerticalGesture,com.miui.home.launcher.uioverrides.StatusBarSwipeController#canInterceptTouch,com.miui.home.launcher.uioverrides.AllAppsSwipeController#canInterceptTouch,com.miui.home.launcher.allapps.LauncherMode#getPullDownGesture,com.miui.home.launcher.allapps.LauncherMode#getSlideUpGesture,com.miui.home.launcher.DeviceConfig#isGlobalSearchEnable,com.miui.home.launcher.search.SearchEdgeLayout#isTopSearchEnable,com.miui.home.launcher.search.SearchEdgeLayout#isBottomGlobalSearchEnable,com.miui.home.launcher.DeviceConfig#isGlobalSearchBottomEffectEnable,com.miui.home.launcher.DeviceConfig#allowedSlidingUpToStartGolbalSearch. Differ: A14 phases intercept vs A13 before,after; A14 result_assign[true,true,false,null]; chain.proceed[chain.proceed(),chain.proceed(),chain.proceed(),chain.proceed()] vs A13 returnAndSkip[true,true,false,false]; setResult["no_action"].
+- VALUE_DEFAULT_COMPARISON: both consume launcher_swipedown,launcher_swipedown2,launcher_swipeup,launcher_swipeup2 in the owner body or installer gate
+- HOOK_TARGET_COMPARISON: A14=com.miui.home.launcher.Workspace#onVerticalGesture,com.miui.home.launcher.uioverrides.StatusBarSwipeController#canInterceptTouch,com.miui.home.launcher.uioverrides.AllAppsSwipeController#canInterceptTouch,com.miui.home.launcher.allapps.LauncherMode#getPullDownGesture,com.miui.home.launcher.allapps.LauncherMode#getSlideUpGesture,com.miui.home.launcher.DeviceConfig#isGlobalSearchEnable,com.miui.home.launcher.search.SearchEdgeLayout#isTopSearchEnable,com.miui.home.launcher.search.SearchEdgeLayout#isBottomGlobalSearchEnable,com.miui.home.launcher.DeviceConfig#isGlobalSearchBottomEffectEnable,com.miui.home.launcher.DeviceConfig#allowedSlidingUpToStartGolbalSearch; A13=com.miui.home.launcher.Workspace#onVerticalGesture,com.miui.home.launcher.uioverrides.StatusBarSwipeController#canInterceptTouch,com.miui.home.launcher.uioverrides.AllAppsSwipeController#canInterceptTouch,com.miui.home.launcher.allapps.LauncherMode#getPullDownGesture,com.miui.home.launcher.allapps.LauncherMode#getSlideUpGesture,com.miui.home.launcher.DeviceConfig#isGlobalSearchEnable,com.miui.home.launcher.search.SearchEdgeLayout#isTopSearchEnable,com.miui.home.launcher.search.SearchEdgeLayout#isBottomGlobalSearchEnable,com.miui.home.launcher.DeviceConfig#isGlobalSearchBottomEffectEnable,com.miui.home.launcher.DeviceConfig#allowedSlidingUpToStartGolbalSearch
+- CALLBACK_SEMANTICS_COMPARISON: A14 intercept vs A13 before,after; skipped paths do not invoke the original, proceed-once equals after side-effect
+- ARG_RESULT_COMPARISON: A14=result_assign[true,true,false,null]; chain.proceed[chain.proceed(),chain.proceed(),chain.proceed(),chain.proceed()]; A13=returnAndSkip[true,true,false,false]; setResult["no_action"]
+- A14_ONLY_BRANCHES: none beyond intercept scaffolding for this owner pair
+- WHY_USER_BEHAVIOR_IS_EQUIVALENT: User-visible contract of launcher_swipedown,launcher_swipedown2,launcher_swipeup,launcher_swipeup2 is the same host rewrite; callback adapter and null-safety differ.
+- KEY_OWNERSHIP_EVIDENCE: launcher_swipedown,launcher_swipedown2,launcher_swipeup,launcher_swipeup2: LITERAL_READ and/or INSTALLER_CALLEE in HomescreenSwipesHook/HomescreenSwipesHook
+- A14_KEY_OWNER_REFERENCE: app/src/main/java/tv/withaibuild/customiuizer/mods/LauncherGestureHooks.kt::HomescreenSwipesHook
+- A13_KEY_OWNER_REFERENCE: app/src/main/java/tv/withaibuild/customiuizer/mods/LauncherGestureHooks.kt::HomescreenSwipesHook
+- PROOF_CONCLUSION: `PRESENT_A13_VARIANT`
+
+## PROOF_R5F_HotSeatSwipesHook_launcher_swipeleft
+
+- PROOF_ID: `PROOF_R5F_HotSeatSwipesHook_launcher_swipeleft`
+- BODY_RELATION: `REVIEWED_VARIANT`
+- A14_OWNER_PATH: `app/src/main/java/tv/withaibuild/customiuizer/mods/LauncherGestureHooks.kt`
+- A14_SYMBOL: `HotSeatSwipesHook`
+- A14_INSTALLER: `A14 installer/spec gate for launcher_swipeleft,launcher_swiperight`
+- A14_HOOK_TARGETS: `com.miui.home.launcher.overlay.assistant.AssistantOverlaySwipeController#canInterceptTouch,com.miui.home.launcher.hotseats.HotSeats#dispatchTouchEvent`
+- A14_CALLBACK_PHASE: `intercept`
+- A13_OWNER_PATH: `app/src/main/java/tv/withaibuild/customiuizer/mods/LauncherGestureHooks.kt`
+- A13_SYMBOL: `HotSeatSwipesHook`
+- A13_INSTALLER: `A13 installer gate for launcher_swipeleft,launcher_swiperight`
+- A13_HOOK_TARGETS: `com.miui.home.launcher.overlay.assistant.AssistantOverlaySwipeController#canInterceptTouch,com.miui.home.launcher.hotseats.HotSeats#dispatchTouchEvent`
+- A13_CALLBACK_PHASE: `after,before`
+- PREFERENCE_KEYS: `launcher_swipeleft,launcher_swiperight`
+- VALUE_DOMAIN: owner-local preference domain
+- DEFAULT_SEMANTICS: handleAction reads getInt(key+_action,1); default 1 means no custom action. Installer both require swipeleft_action!=1 || swiperight_action!=1. Density thresholds 75 and 33 are hardcoded on both, not prefs.
+- RESULT/ARGUMENT_BEHAVIOR: canInterceptTouch: both keep original unless true and point-in-HotSeats, then result=false. dispatchTouchEvent: no skip, no arg rewrite; gesture side-effect only.
+- API33_VARIANT_REASON: Package/class names are the same two Home members. A13 extra is the MIUI14 manual velocity detector (plus |dy|<=scaledTouchSlop) versus A14 GestureDetector.onFling. A14 intercept proceed-then-rewrite-result false equals A13 after setResult(false).
+- DIFF_SUMMARY: Both hook the same two members. canInterceptTouch: if ROM result true and event is inside HotSeats hit rect, force false so assistant overlay does not steal the swipe. A13 caches hit rect once; A14 refreshes getHotSeats().getHitRect every intercept. dispatchTouchEvent always proceeds. Detection: A14 GestureDetector + SwipeListenerHorizontal.onFling (75*density min distance, 33*density velocityX). A13 manual ACTION_DOWN/UP: |dy|<=touchSlop AND |dx|*1000/dt > velocityThreshold AND |dx|>minDistance (same 75/33 density). Scanner-only13 HotSeats.dispatchTouchEvent / AssistantOverlaySwipeController.canInterceptTouch are present on A14 too.
+- VALUE_DEFAULT_COMPARISON: handleAction reads getInt(key+_action,1); default 1 means no custom action. Installer both require swipeleft_action!=1 || swiperight_action!=1. Density thresholds 75 and 33 are hardcoded on both, not prefs.
+- HOOK_TARGET_COMPARISON: A14=com.miui.home.launcher.overlay.assistant.AssistantOverlaySwipeController#canInterceptTouch,com.miui.home.launcher.hotseats.HotSeats#dispatchTouchEvent; A13=com.miui.home.launcher.overlay.assistant.AssistantOverlaySwipeController#canInterceptTouch,com.miui.home.launcher.hotseats.HotSeats#dispatchTouchEvent
+- CALLBACK_SEMANTICS_COMPARISON: A14 intercept proceeds canInterceptTouch then maybe sets result false. A13 after setResult(false) on the same condition. dispatchTouchEvent: A13 before records gesture without skip; A14 intercept runs detector then chain.proceed(). Original dispatch runs both sides.
+- ARG_RESULT_COMPARISON: No arg rewrite. Only canInterceptTouch result forced false inside HotSeats bounds. dispatchTouchEvent result is original.
+- A14_ONLY_BRANCHES: None at the hooked-member level. Inner SwipeListenerHorizontal.onFling is the A14 detector shape, not an extra ROM member. A14 re-queries HotSeats hit rect every canInterceptTouch.
+- WHY_USER_BEHAVIOR_IS_EQUIVALENT: Hotseat left/right swipe still fires launcher_swipeleft / launcher_swiperight actions at the same 75dp/33dp thresholds, and assistant overlay still yields when the down point is on HotSeats.
+- KEY_OWNERSHIP_EVIDENCE: launcher_swipeleft / launcher_swiperight: LITERAL_READ as GlobalActions.handleAction prefixes (A13 LauncherGestureHooks.kt:210-212; A14 SwipeListenerHorizontal.onFling 361-364), which consume launcher_swipeleft_action / launcher_swiperight_action. INSTALLER_CALLEE A13 LauncherInstaller.java:55-56 and A14 LauncherHotSeatSwipesFeature when those *_action != 1. Scanner a14_targets empty and a14_symbol onFling are misses; onFling is the A14 GestureDetector listener inside the same owner.
+- A14_KEY_OWNER_REFERENCE: app/src/main/java/tv/withaibuild/customiuizer/mods/LauncherGestureHooks.kt::HotSeatSwipesHook
+- A13_KEY_OWNER_REFERENCE: app/src/main/java/tv/withaibuild/customiuizer/mods/LauncherGestureHooks.kt::HotSeatSwipesHook
+- PROOF_CONCLUSION: `PRESENT_A13_VARIANT`
+
+## PROOF_R5_TitleTopMarginHook_launcher_titlefontsize
+
+- PROOF_ID: `PROOF_R5_TitleTopMarginHook_launcher_titlefontsize`
+- BODY_RELATION: `REVIEWED_VARIANT`
+- A14_OWNER_PATH: `app/src/main/java/tv/withaibuild/customiuizer/mods/LauncherIconHooks.kt`
+- A14_SYMBOL: `TitleTopMarginHook`
+- A14_INSTALLER: `A14 installer/spec gate for launcher_titlefontsize,launcher_titletopmargin`
+- A14_HOOK_TARGETS: `com.miui.home.launcher.ItemIcon#onFinishInflate`
+- A14_CALLBACK_PHASE: `intercept`
+- A13_OWNER_PATH: `app/src/main/java/tv/withaibuild/customiuizer/mods/LauncherIconHooks.kt`
+- A13_SYMBOL: `TitleTopMarginHook`
+- A13_INSTALLER: `A13 installer gate for launcher_titlefontsize,launcher_titletopmargin`
+- A13_HOOK_TARGETS: `com.miui.home.launcher.ItemIcon#onFinishInflate`
+- A13_CALLBACK_PHASE: `after`
+- PREFERENCE_KEYS: `launcher_titlefontsize,launcher_titletopmargin`
+- VALUE_DOMAIN: owner-local preference domain
+- DEFAULT_SEMANTICS: same persisted keys consumed by both owners
+- RESULT/ARGUMENT_BEHAVIOR: A14 ops: result_assign[null]; chain.proceed[chain.proceed()]. A13 ops: no result/argument rewrite literals. Keys launcher_titlefontsize,launcher_titletopmargin rewrite the same host members.
+- API33_VARIANT_REASON: A14 callback intercept vs A13 after on members A14[com.miui.home.launcher.ItemIcon#onFinishInflate] / A13[com.miui.home.launcher.ItemIcon#onFinishInflate]. Inner preference reads of launcher_titlefontsize,launcher_titletopmargin match; intercept proceed-once maps to before returnAndSkip or after side-effect.
+- DIFF_SUMMARY: Shared members com.miui.home.launcher.ItemIcon#onFinishInflate. Differ: A14 phases intercept vs A13 after; A14 result_assign[null]; chain.proceed[chain.proceed()] vs A13 no result/argument rewrite literals.
+- VALUE_DEFAULT_COMPARISON: both consume launcher_titlefontsize,launcher_titletopmargin in the owner body or installer gate
+- HOOK_TARGET_COMPARISON: A14=com.miui.home.launcher.ItemIcon#onFinishInflate; A13=com.miui.home.launcher.ItemIcon#onFinishInflate
+- CALLBACK_SEMANTICS_COMPARISON: A14 intercept vs A13 after; skipped paths do not invoke the original, proceed-once equals after side-effect
+- ARG_RESULT_COMPARISON: A14=result_assign[null]; chain.proceed[chain.proceed()]; A13=no result/argument rewrite literals
+- A14_ONLY_BRANCHES: none beyond intercept scaffolding for this owner pair
+- WHY_USER_BEHAVIOR_IS_EQUIVALENT: User-visible contract of launcher_titlefontsize,launcher_titletopmargin is the same host rewrite; callback adapter and null-safety differ.
+- KEY_OWNERSHIP_EVIDENCE: launcher_titlefontsize,launcher_titletopmargin: LITERAL_READ and/or INSTALLER_CALLEE in TitleTopMarginHook/TitleTopMarginHook
+- A14_KEY_OWNER_REFERENCE: app/src/main/java/tv/withaibuild/customiuizer/mods/LauncherIconHooks.kt::TitleTopMarginHook
+- A13_KEY_OWNER_REFERENCE: app/src/main/java/tv/withaibuild/customiuizer/mods/LauncherIconHooks.kt::TitleTopMarginHook
+- PROOF_CONCLUSION: `PRESENT_A13_VARIANT`
+
+## PROOF_R5_WorkspaceCellPaddingTopHook_launcher_topmargin
+
+- PROOF_ID: `PROOF_R5_WorkspaceCellPaddingTopHook_launcher_topmargin`
+- BODY_RELATION: `REVIEWED_VARIANT`
+- A14_OWNER_PATH: `app/src/main/java/tv/withaibuild/customiuizer/mods/LauncherLayoutHooks.kt`
+- A14_SYMBOL: `WorkspaceCellPaddingTopHook`
+- A14_INSTALLER: `A14 installer/spec gate for launcher_topmargin`
+- A14_HOOK_TARGETS: `com.miui.home.launcher.DeviceConfig#getWorkspaceCellPaddingTop`
+- A14_CALLBACK_PHASE: `intercept`
+- A13_OWNER_PATH: `app/src/main/java/tv/withaibuild/customiuizer/mods/LauncherLayoutHooks.kt`
+- A13_SYMBOL: `WorkspaceCellPaddingTopHook`
+- A13_INSTALLER: `A13 installer gate for launcher_topmargin`
+- A13_HOOK_TARGETS: `com.miui.home.launcher.DeviceConfig#getWorkspaceCellPaddingTop`
+- A13_CALLBACK_PHASE: `before`
+- PREFERENCE_KEYS: `launcher_topmargin`
+- VALUE_DOMAIN: owner-local preference domain
+- DEFAULT_SEMANTICS: same persisted keys consumed by both owners
+- RESULT/ARGUMENT_BEHAVIOR: A14 ops: result_assign[null]; chain.proceed[chain.proceed()]. A13 ops: returnAndSkip[Math.round(HookUtils.dp2px(opt.toFloat(]. Keys launcher_topmargin rewrite the same host members.
+- API33_VARIANT_REASON: A14 callback intercept vs A13 before on members A14[com.miui.home.launcher.DeviceConfig#getWorkspaceCellPaddingTop] / A13[com.miui.home.launcher.DeviceConfig#getWorkspaceCellPaddingTop]. Inner preference reads of launcher_topmargin match; intercept proceed-once maps to before returnAndSkip or after side-effect.
+- DIFF_SUMMARY: Shared members com.miui.home.launcher.DeviceConfig#getWorkspaceCellPaddingTop. Differ: A14 phases intercept vs A13 before; A14 result_assign[null]; chain.proceed[chain.proceed()] vs A13 returnAndSkip[Math.round(HookUtils.dp2px(opt.toFloat(].
+- VALUE_DEFAULT_COMPARISON: both consume launcher_topmargin in the owner body or installer gate
+- HOOK_TARGET_COMPARISON: A14=com.miui.home.launcher.DeviceConfig#getWorkspaceCellPaddingTop; A13=com.miui.home.launcher.DeviceConfig#getWorkspaceCellPaddingTop
+- CALLBACK_SEMANTICS_COMPARISON: A14 intercept vs A13 before; skipped paths do not invoke the original, proceed-once equals after side-effect
+- ARG_RESULT_COMPARISON: A14=result_assign[null]; chain.proceed[chain.proceed()]; A13=returnAndSkip[Math.round(HookUtils.dp2px(opt.toFloat(]
+- A14_ONLY_BRANCHES: none beyond intercept scaffolding for this owner pair
+- WHY_USER_BEHAVIOR_IS_EQUIVALENT: User-visible contract of launcher_topmargin is the same host rewrite; callback adapter and null-safety differ.
+- KEY_OWNERSHIP_EVIDENCE: launcher_topmargin: LITERAL_READ and/or INSTALLER_CALLEE in WorkspaceCellPaddingTopHook/WorkspaceCellPaddingTopHook
+- A14_KEY_OWNER_REFERENCE: app/src/main/java/tv/withaibuild/customiuizer/mods/LauncherLayoutHooks.kt::WorkspaceCellPaddingTopHook
+- A13_KEY_OWNER_REFERENCE: app/src/main/java/tv/withaibuild/customiuizer/mods/LauncherLayoutHooks.kt::WorkspaceCellPaddingTopHook
+- PROOF_CONCLUSION: `PRESENT_A13_VARIANT`
+
+## PROOF_R5F_UnlockGridsHook_launcher_unlockgrids
+
+- PROOF_ID: `PROOF_R5F_UnlockGridsHook_launcher_unlockgrids`
+- BODY_RELATION: `REVIEWED_VARIANT`
+- A14_OWNER_PATH: `app/src/main/java/tv/withaibuild/customiuizer/mods/LauncherLayoutHooks.kt`
+- A14_SYMBOL: `UnlockGridsHook`
+- A14_INSTALLER: `A14 installer/spec gate for launcher_unlockgrids`
+- A14_HOOK_TARGETS: `com.miui.home.launcher.Launcher#onCreate,com.miui.home.launcher.DeviceConfig#loadCellsCountConfig,com.miui.home.launcher.ScreenUtils#getScreenCellsSizeOptions,com.miui.home.launcher.compat.LauncherCellCountCompatNoWord#setLoadResCellConfig,com.miui.home.launcher.DeviceConfig#isCellSizeChangedByTheme`
+- A14_CALLBACK_PHASE: `intercept`
+- A13_OWNER_PATH: `app/src/main/java/tv/withaibuild/customiuizer/mods/LauncherLayoutHooks.kt`
+- A13_SYMBOL: `UnlockGridsHook`
+- A13_INSTALLER: `A13 installer gate for launcher_unlockgrids`
+- A13_HOOK_TARGETS: `com.miui.home.launcher.compat.LauncherCellCountCompatDevice#shouldUseDeviceValue,com.miui.home.launcher.compat.LauncherCellCountCompatDeviceFold#shouldUseDeviceValue,com.miui.home.settings.MiuiHomeSettings#onCreatePreferences,com.miui.home.launcher.DeviceConfig#loadCellsCountConfig,com.miui.home.launcher.ScreenUtils#getScreenCellsSizeOptions,com.miui.home.launcher.compat.LauncherCellCountCompatNoWord#setLoadResCellConfig,com.miui.home.launcher.DeviceConfig#isCellSizeChangedByTheme,com.miui.home.launcher.common.Utilities#isNoWordModel`
+- A13_CALLBACK_PHASE: `after,before`
+- PREFERENCE_KEYS: `launcher_unlockgrids`
+- VALUE_DOMAIN: owner-local preference domain
+- DEFAULT_SEMANTICS: Installer getBoolean(launcher_unlockgrids) default false. Grid bounds 3-8 x 4-10 and sCellCountY>6 folder-height copy are hardcoded identically, not prefs. Sibling UnlockGridsRes uses the same integer replacements on both.
+- RESULT/ARGUMENT_BEHAVIOR: getScreenCellsSizeOptions: both skip original and return the 3..8 x 4..10 ArrayList. setLoadResCellConfig: both rewrite arg[0]=true and proceed. shouldUseDeviceValue (A13 only): constant false. loadCellsCountConfig / isCellSizeChangedByTheme: proceed then/around side-effects. Visibility: proceed then setVisible(true).
+- API33_VARIANT_REASON: Same grid-option list and no-word/cell-config rewrites. Extra A13 MIUI14 members LauncherCellCountCompatDevice / DeviceFold.shouldUseDeviceValue implement the same unlock-grids toggle. Visibility host is Launcher.onCreate on A14 vs MiuiHomeSettings.onCreatePreferences on A13 (class rename of the settings entry, same setVisible(true)).
+- DIFF_SUMMARY: Shared: getScreenCellsSizeOptions replaced with 3x4..8x10 list; setLoadResCellConfig arg[0]=true then proceed; loadCellsCountConfig after copies getCellHeight into sFolderCellHeight when sCellCountY>6; isCellSizeChangedByTheme proceeds while isNoWordModel is forced false for that call. Visibility of mScreenCellsConfig: A14 Launcher.onCreate setVisible(true); A13 MiuiHomeSettings.onCreatePreferences setVisible(true). A13 extra returnConstant(false) on LauncherCellCountCompatDevice.shouldUseDeviceValue and LauncherCellCountCompatDeviceFold.shouldUseDeviceValue. A13 wraps Utilities.isNoWordModel only during isCellSizeChangedByTheme (hook/unhook); A14 uses thread-scoped installUnlockGridsNoWordScope enter/exit. Sibling UnlockGridsRes on both replaces config_cell_count_* integers 3/4/3/4/8/10 — not XML-only, and not sufficient alone.
+- VALUE_DEFAULT_COMPARISON: Installer getBoolean(launcher_unlockgrids) default false. Grid bounds 3-8 x 4-10 and sCellCountY>6 folder-height copy are hardcoded identically, not prefs. Sibling UnlockGridsRes uses the same integer replacements on both.
+- HOOK_TARGET_COMPARISON: A14=com.miui.home.launcher.Launcher#onCreate,com.miui.home.launcher.DeviceConfig#loadCellsCountConfig,com.miui.home.launcher.ScreenUtils#getScreenCellsSizeOptions,com.miui.home.launcher.compat.LauncherCellCountCompatNoWord#setLoadResCellConfig,com.miui.home.launcher.DeviceConfig#isCellSizeChangedByTheme; A13=com.miui.home.launcher.compat.LauncherCellCountCompatDevice#shouldUseDeviceValue,com.miui.home.launcher.compat.LauncherCellCountCompatDeviceFold#shouldUseDeviceValue,com.miui.home.settings.MiuiHomeSettings#onCreatePreferences,com.miui.home.launcher.DeviceConfig#loadCellsCountConfig,com.miui.home.launcher.ScreenUtils#getScreenCellsSizeOptions,com.miui.home.launcher.compat.LauncherCellCountCompatNoWord#setLoadResCellConfig,com.miui.home.launcher.DeviceConfig#isCellSizeChangedByTheme,com.miui.home.launcher.common.Utilities#isNoWordModel
+- CALLBACK_SEMANTICS_COMPARISON: A14 intercept skip of getScreenCellsSizeOptions equals A13 before returnAndSkip(arrayList). A14 intercept proceed(args) after arg rewrite equals A13 before arg[0]=true then original. A13 extra before/after wrap on isNoWordModel vs A14 enter/finally exit scope around proceed.
+- ARG_RESULT_COMPARISON: Shared: getScreenCellsSizeOptions result is the synthetic list; setLoadResCellConfig arg0=true. A13 extra shouldUseDeviceValue result false. No other result rewrite.
+- A14_ONLY_BRANCHES: Launcher.onCreate mScreenCellsConfig.setVisible(true) instead of MiuiHomeSettings.onCreatePreferences. Thread-scoped isNoWordModel instead of wrap/unhook.
+- WHY_USER_BEHAVIOR_IS_EQUIVALENT: Home settings still expose 3x4 through 8x10 grids, device-forced cell counts are ignored on A13 fold/device compat, no-word model cannot block the custom cell size, and folder cell height still tracks tall grids. Extra A13 device/fold members are the MIUI14 path for the same unlock.
+- KEY_OWNERSHIP_EVIDENCE: launcher_unlockgrids: INSTALLER_CALLEE only in the hook bodies. A13 LauncherInstaller.java:34-36 calls UnlockGridsRes+UnlockGridsHook; A14 LauncherUnlockGridsFeature.installHook does the same pair. No pref get inside UnlockGridsHook.
+- A14_KEY_OWNER_REFERENCE: app/src/main/java/tv/withaibuild/customiuizer/mods/LauncherLayoutHooks.kt::UnlockGridsHook
+- A13_KEY_OWNER_REFERENCE: app/src/main/java/tv/withaibuild/customiuizer/mods/LauncherLayoutHooks.kt::UnlockGridsHook
+- PROOF_CONCLUSION: `PRESENT_A13_VARIANT`
+
+## PROOF_R5F_MaxHotseatIconsCountHook_launcher_unlockhotseat
+
+- PROOF_ID: `PROOF_R5F_MaxHotseatIconsCountHook_launcher_unlockhotseat`
+- BODY_RELATION: `REVIEWED_VARIANT`
+- A14_OWNER_PATH: `app/src/main/java/tv/withaibuild/customiuizer/mods/LauncherLayoutHooks.kt`
+- A14_SYMBOL: `MaxHotseatIconsCountHook`
+- A14_INSTALLER: `A14 installer/spec gate for launcher_unlockhotseat`
+- A14_HOOK_TARGETS: `com.miui.home.launcher.DeviceConfig#getHotseatMaxCount`
+- A14_CALLBACK_PHASE: `replace_constant`
+- A13_OWNER_PATH: `app/src/main/java/tv/withaibuild/customiuizer/mods/LauncherLayoutHooks.kt`
+- A13_SYMBOL: `MaxHotseatIconsCountHook`
+- A13_INSTALLER: `A13 installer gate for launcher_unlockhotseat`
+- A13_HOOK_TARGETS: `com.miui.home.launcher.DeviceConfig#getHotseatMaxCount,com.miui.home.launcher.DeviceConfig#getHotseatCount`
+- A13_CALLBACK_PHASE: `replace_constant`
+- PREFERENCE_KEYS: `launcher_unlockhotseat`
+- VALUE_DOMAIN: owner-local preference domain
+- DEFAULT_SEMANTICS: Installer getBoolean(launcher_unlockhotseat) default false. Hardcoded 666 is the same replacement value, not a pref default.
+- RESULT/ARGUMENT_BEHAVIOR: Both replace the getter result with 666 and skip original. No argument rewrite.
+- API33_VARIANT_REASON: Same constant rewrite of DeviceConfig hotseat max. A13 extra MIUI14/global launcher member name getHotseatCount for com.mi.android.globallauncher; com.miui.home uses the same getHotseatMaxCount as A14.
+- DIFF_SUMMARY: Both HookerClassHelper.returnConstant(666) on DeviceConfig. A14 always getHotseatMaxCount. A13 extra getHotseatCount for globallauncher (POCO/global Home package), getHotseatMaxCount for com.miui.home.
+- VALUE_DEFAULT_COMPARISON: Installer getBoolean(launcher_unlockhotseat) default false. Hardcoded 666 is the same replacement value, not a pref default.
+- HOOK_TARGET_COMPARISON: A14=com.miui.home.launcher.DeviceConfig#getHotseatMaxCount; A13=com.miui.home.launcher.DeviceConfig#getHotseatMaxCount,com.miui.home.launcher.DeviceConfig#getHotseatCount
+- CALLBACK_SEMANTICS_COMPARISON: Both are returnConstant(666) replacements, not intercept/before adapters. Original DeviceConfig getter does not run.
+- ARG_RESULT_COMPARISON: Result is 666 on both. No args.
+- A14_ONLY_BRANCHES: none
+- WHY_USER_BEHAVIOR_IS_EQUIVALENT: Unlock-hotseat still forces DeviceConfig hotseat max to 666. A13 extra getHotseatCount is the globallauncher name for the same getter.
+- KEY_OWNERSHIP_EVIDENCE: launcher_unlockhotseat: INSTALLER_CALLEE only (bodies have no pref get). A13 LauncherInstaller.java:73; A14 LauncherMaxHotseatIconsFeature.evaluateEnabled. Scanner a13_targets empty because A13 chooses the member name at runtime: getHotseatCount if package is com.mi.android.globallauncher else getHotseatMaxCount (LauncherLayoutHooks.kt:315-316).
+- A14_KEY_OWNER_REFERENCE: app/src/main/java/tv/withaibuild/customiuizer/mods/LauncherLayoutHooks.kt::MaxHotseatIconsCountHook
+- A13_KEY_OWNER_REFERENCE: app/src/main/java/tv/withaibuild/customiuizer/mods/LauncherLayoutHooks.kt::MaxHotseatIconsCountHook
+- PROOF_CONCLUSION: `PRESENT_A13_VARIANT`
+
+## PROOF_R5F_performRestore_miuizer_launchericon
+
+- PROOF_ID: `PROOF_R5F_performRestore_miuizer_launchericon`
+- BODY_RELATION: `REVIEWED_VARIANT`
+- A14_OWNER_PATH: `app/src/main/java/tv/withaibuild/customiuizer/utils/BackupRestore.kt`
+- A14_SYMBOL: `performRestore`
+- A14_INSTALLER: `settings-app restore pipeline (no host hook)`
+- A14_HOOK_TARGETS: `(no host member literals)`
+- A14_CALLBACK_PHASE: `unknown`
+- A13_OWNER_PATH: `app/src/main/java/tv/withaibuild/customiuizer/utils/BackupRestore.kt`
+- A13_SYMBOL: `performRestore`
+- A13_INSTALLER: `settings-app restore pipeline (no host hook)`
+- A13_HOOK_TARGETS: `(no host member literals)`
+- A13_CALLBACK_PHASE: `unknown`
+- PREFERENCE_KEYS: `miuizer_launchericon,pref_key_miuizer_launchericon`
+- VALUE_DOMAIN: owner-local preference domain
+- DEFAULT_SEMANTICS: Both getBoolean default true (icon shown).
+- RESULT/ARGUMENT_BEHAVIOR: No host hook. RestoreResult status SUCCESS vs PARTIAL_FAILURE from launcherReconciled.
+- API33_VARIANT_REASON: Launcher component enable/disable after restore is identical. Contract-revision stamp is A14 backup-format extra already covered by V2 restore, not a different icon key.
+- DIFF_SUMMARY: Same post-commit launcher-icon reconcile. A14 also writes CurrentPreferenceContract.CONTRACT_REVISION_KEY into the primary restore transaction.
+- VALUE_DEFAULT_COMPARISON: Both getBoolean default true (icon shown).
+- HOOK_TARGET_COMPARISON: A14=(none); A13=(none)
+- CALLBACK_SEMANTICS_COMPARISON: n/a (settings app, no Xposed callback).
+- ARG_RESULT_COMPARISON: no result/argument rewrite literals.
+- A14_ONLY_BRANCHES: primaryEditor.putInt(CONTRACT_REVISION_KEY, CONTRACT_REVISION); unknownIgnored restore accounting.
+- WHY_USER_BEHAVIOR_IS_EQUIVALENT: Restoring backups still applies the launcher shortcut visibility from pref_key_miuizer_launchericon default true.
+- KEY_OWNERSHIP_EVIDENCE: Both read prefs.getBoolean("pref_key_miuizer_launchericon", true) after durable commit then launcherReconciler. compact keys_only13 pref_key_miuizer_launchericon is prefix-extraction, not A13-only.
+- A14_KEY_OWNER_REFERENCE: app/src/main/java/tv/withaibuild/customiuizer/utils/BackupRestore.kt::performRestore
+- A13_KEY_OWNER_REFERENCE: app/src/main/java/tv/withaibuild/customiuizer/utils/BackupRestore.kt::performRestore
+- PROOF_CONCLUSION: `PRESENT_A13_VARIANT`
+
+## PROOF_MIUIZER_LOCALE
+
+- PROOF_ID: `PROOF_MIUIZER_LOCALE`
+- BODY_RELATION: `REVIEWED_VARIANT`
+- A14_OWNER_PATH: `app/src/main/java/tv/withaibuild/customiuizer/utils/AppLocaleController.kt`
+- A14_SYMBOL: `AppLocaleController`
+- A14_INSTALLER: `Settings app / MainApplication apply()`
+- A14_HOOK_TARGETS: `(settings app, no host hook)`
+- A14_CALLBACK_PHASE: `n/a`
+- A13_OWNER_PATH: `app/src/main/java/tv/withaibuild/customiuizer/utils/AppLocaleController.kt`
+- A13_SYMBOL: `AppLocaleController`
+- A13_INSTALLER: `AboutFragment.setupLocalePreference + MainApplication.apply()`
+- A13_HOOK_TARGETS: `(settings app, no host hook)`
+- A13_CALLBACK_PHASE: `n/a`
+- PREFERENCE_KEYS: `miuizer_locale`
+- VALUE_DOMAIN: locale tag: auto|en|zh-CN|zh-TW|ru-RU|ja-JP|vi-VN|cs-CZ|pt-BR|tr-TR|es-ES
+- DEFAULT_SEMANTICS: default `auto`; unknown/legacy `1` normalize to auto
+- RESULT/ARGUMENT_BEHAVIOR: Persists pref_key_miuizer_locale; apply() writes LocaleManager.applicationLocales or clears on auto; pref_key_miuizer_locale_applied is a derived fast-path marker, not a second user setting
+- API33_VARIANT_REASON: Both trees own AppLocaleController on API33 LocaleManager. A13 ListPreferenceEx lives on About; A14 row is on prefs_main.xml. Screen placement does not change the persisted tag or apply() contract.
+- DIFF_SUMMARY: Shared: same LOCALE_PREF_KEY / APPLIED_LOCALE_PREF_KEY, same SUPPORTED_LOCALE_TAGS, auto fast-path, LocaleManager.applicationLocales. A14 adds setUserLocale commit rollback, Locale.setDefault, AppLocaleGateway test seam, FatalErrors. A13 keeps optional Context apply(), applicationLocaleApplier/Provider hooks, getLocaleContext no-op.
+- VALUE_DEFAULT_COMPARISON: Both default getString(pref_key_miuizer_locale, auto) and normalize unknown tags to auto.
+- HOOK_TARGET_COMPARISON: Neither side hooks SystemUI/Home; this is module Settings/app locale only.
+- CALLBACK_SEMANTICS_COMPARISON: No Xposed callback. Change is persist + process restart / next apply().
+- ARG_RESULT_COMPARISON: No host setResult. Framework write is LocaleManager.applicationLocales = tag list or empty for auto.
+- A14_ONLY_BRANCHES: setUserLocale rollback on failed commit; Locale.setDefault; AppLocaleGateway.
+- WHY_USER_BEHAVIOR_IS_EQUIVALENT: The user-visible control is the same language list persisted in pref_key_miuizer_locale and applied through Android 13 LocaleManager. No SystemUI/Home dump is required to decide this row.
+- PROOF_CONCLUSION: `PRESENT_A13_VARIANT`
+
+## PROOF_R5_miuizerSettingsHook_miuizer_settingsiconpos
+
+- PROOF_ID: `PROOF_R5_miuizerSettingsHook_miuizer_settingsiconpos`
+- BODY_RELATION: `REVIEWED_VARIANT`
+- A14_OWNER_PATH: `app/src/main/java/tv/withaibuild/customiuizer/mods/GlobalActions.kt`
+- A14_SYMBOL: `miuizerSettingsHook`
+- A14_INSTALLER: `A14 installer/spec gate for miuizer_settingsiconpos`
+- A14_HOOK_TARGETS: `com.android.settings.MiuiSettings#updateHeaderList,com.android.settings.MiuiSettings\$HeaderAdapter#setIcon`
+- A14_CALLBACK_PHASE: `intercept`
+- A13_OWNER_PATH: `app/src/main/java/tv/withaibuild/customiuizer/mods/GlobalActions.kt`
+- A13_SYMBOL: `miuizerSettingsHook`
+- A13_INSTALLER: `A13 installer gate for miuizer_settingsiconpos`
+- A13_HOOK_TARGETS: `com.android.settings.MiuiSettings#updateHeaderList,com.android.settings.MiuiSettings\$HeaderAdapter#setIcon`
+- A13_CALLBACK_PHASE: `after`
+- PREFERENCE_KEYS: `miuizer_settingsiconpos`
+- VALUE_DOMAIN: owner-local preference domain
+- DEFAULT_SEMANTICS: same persisted keys consumed by both owners
+- RESULT/ARGUMENT_BEHAVIOR: A14 ops: result_assign[null,null]; chain.proceed[chain.proceed(),chain.proceed()]. A13 ops: no result/argument rewrite literals. Keys miuizer_settingsiconpos rewrite the same host members.
+- API33_VARIANT_REASON: A14 callback intercept vs A13 after on members A14[com.android.settings.MiuiSettings#updateHeaderList,com.android.settings.MiuiSettings\$HeaderAdapter#setIcon] / A13[com.android.settings.MiuiSettings#updateHeaderList,com.android.settings.MiuiSettings\$HeaderAdapter#setIcon]. Inner preference reads of miuizer_settingsiconpos match; intercept proceed-once maps to before returnAndSkip or after side-effect.
+- DIFF_SUMMARY: Shared members com.android.settings.MiuiSettings#updateHeaderList,com.android.settings.MiuiSettings\$HeaderAdapter#setIcon. Differ: A14 phases intercept vs A13 after; A14 result_assign[null,null]; chain.proceed[chain.proceed(),chain.proceed()] vs A13 no result/argument rewrite literals.
+- VALUE_DEFAULT_COMPARISON: both consume miuizer_settingsiconpos in the owner body or installer gate
+- HOOK_TARGET_COMPARISON: A14=com.android.settings.MiuiSettings#updateHeaderList,com.android.settings.MiuiSettings\$HeaderAdapter#setIcon; A13=com.android.settings.MiuiSettings#updateHeaderList,com.android.settings.MiuiSettings\$HeaderAdapter#setIcon
+- CALLBACK_SEMANTICS_COMPARISON: A14 intercept vs A13 after; skipped paths do not invoke the original, proceed-once equals after side-effect
+- ARG_RESULT_COMPARISON: A14=result_assign[null,null]; chain.proceed[chain.proceed(),chain.proceed()]; A13=no result/argument rewrite literals
+- A14_ONLY_BRANCHES: none beyond intercept scaffolding for this owner pair
+- WHY_USER_BEHAVIOR_IS_EQUIVALENT: User-visible contract of miuizer_settingsiconpos is the same host rewrite; callback adapter and null-safety differ.
+- KEY_OWNERSHIP_EVIDENCE: miuizer_settingsiconpos: LITERAL_READ and/or INSTALLER_CALLEE in miuizerSettingsHook/miuizerSettingsHook
+- A14_KEY_OWNER_REFERENCE: app/src/main/java/tv/withaibuild/customiuizer/mods/GlobalActions.kt::miuizerSettingsHook
+- A13_KEY_OWNER_REFERENCE: app/src/main/java/tv/withaibuild/customiuizer/mods/GlobalActions.kt::miuizerSettingsHook
+- PROOF_CONCLUSION: `PRESENT_A13_VARIANT`
+
+## PROOF_R5F_MobileNetworkTypeHook_system_4gtolte
+
+- PROOF_ID: `PROOF_R5F_MobileNetworkTypeHook_system_4gtolte`
+- BODY_RELATION: `REVIEWED_VARIANT`
+- A14_OWNER_PATH: `app/src/main/java/tv/withaibuild/customiuizer/mods/SystemUIStatusBarHooks.kt`
+- A14_SYMBOL: `MobileNetworkTypeHook`
+- A14_INSTALLER: `A14 installer/spec gate for system_4gtolte,system_statusbar_mobile_showname`
+- A14_HOOK_TARGETS: `com.android.systemui.statusbar.connectivity.MobileSignalController#getMobileTypeName`
+- A14_CALLBACK_PHASE: `after`
+- A13_OWNER_PATH: `app/src/main/java/tv/withaibuild/customiuizer/mods/SystemStatusBarMoreHooks.kt`
+- A13_SYMBOL: `MobileNetworkTypeHook`
+- A13_INSTALLER: `A13 installer gate for system_4gtolte,system_statusbar_mobile_showname`
+- A13_HOOK_TARGETS: `com.android.systemui.statusbar.connectivity.MobileSignalController#getMobileTypeName`
+- A13_CALLBACK_PHASE: `after`
+- PREFERENCE_KEYS: `system_4gtolte,system_statusbar_mobile_showname`
+- VALUE_DOMAIN: owner-local preference domain
+- DEFAULT_SEMANTICS: system_4gtolte default false; showname default empty.
+- RESULT/ARGUMENT_BEHAVIOR: Both after setResult("LTE"), setResult("LTE+"), or setResult(mobileType).
+- API33_VARIANT_REASON: None; identical host member.
+- DIFF_SUMMARY: Same class#method. 4G->LTE / 4G+->LTE+ or custom name. Classifier missed A13 target literals.
+- VALUE_DEFAULT_COMPARISON: system_4gtolte default false; showname default empty.
+- HOOK_TARGET_COMPARISON: A14=com.android.systemui.statusbar.connectivity.MobileSignalController#getMobileTypeName; A13=com.android.systemui.statusbar.connectivity.MobileSignalController#getMobileTypeName
+- CALLBACK_SEMANTICS_COMPARISON: Both after; original getMobileTypeName always runs.
+- ARG_RESULT_COMPARISON: Identical setResult literals.
+- A14_ONLY_BRANCHES: none beyond documented extras
+- WHY_USER_BEHAVIOR_IS_EQUIVALENT: Type label rewrite is the same string mapping.
+- KEY_OWNERSHIP_EVIDENCE: Both after-hooks read system_4gtolte and else system_statusbar_mobile_showname.
+- A14_KEY_OWNER_REFERENCE: app/src/main/java/tv/withaibuild/customiuizer/mods/SystemUIStatusBarHooks.kt::MobileNetworkTypeHook
+- A13_KEY_OWNER_REFERENCE: app/src/main/java/tv/withaibuild/customiuizer/mods/SystemStatusBarMoreHooks.kt::MobileNetworkTypeHook
+- PROOF_CONCLUSION: `PRESENT_A13_VARIANT`
+
+## PROOF_R5F_LockScreenAlbumArtHook_system_albumartonlock
+
+- PROOF_ID: `PROOF_R5F_LockScreenAlbumArtHook_system_albumartonlock`
+- BODY_RELATION: `REVIEWED_VARIANT`
+- A14_OWNER_PATH: `app/src/main/java/tv/withaibuild/customiuizer/mods/SystemUILockScreenHooks.kt`
+- A14_SYMBOL: `LockScreenAlbumArtHook`
+- A14_INSTALLER: `A14 installer/spec gate for system_albumartonlock,system_albumartonlock_blur,system_albumartonlock_gray,system_albumartonlock_scale`
+- A14_HOOK_TARGETS: `phone or shade MiuiNotificationPanelViewController#<init>/updateThemeBackground/updateThemeBackgroundVisibility/linkageViewAnim,NotificationMediaManager#updateMediaMetaData,NotificationMediaManager#clearCurrentMediaNotification`
+- A14_CALLBACK_PHASE: `after,before`
+- A13_OWNER_PATH: `app/src/main/java/tv/withaibuild/customiuizer/mods/SystemUILockScreenHooks.kt`
+- A13_SYMBOL: `LockScreenAlbumArtHook`
+- A13_INSTALLER: `A13 installer gate for system_albumartonlock,system_albumartonlock_blur,system_albumartonlock_gray,system_albumartonlock_scale`
+- A13_HOOK_TARGETS: `com.android.systemui.statusbar.phone.MiuiNotificationPanelViewController#<init>/updateThemeBackground/updateThemeBackgroundVisibility,NotificationMediaManager#updateMediaMetaData,NotificationMediaManager#clearCurrentMediaNotification`
+- A13_CALLBACK_PHASE: `after,before`
+- PREFERENCE_KEYS: `system_albumartonlock,system_albumartonlock_blur,system_albumartonlock_gray,system_albumartonlock_scale`
+- VALUE_DOMAIN: owner-local preference domain
+- DEFAULT_SEMANTICS: blur default 0; scale string-int 1; gray boolean false
+- RESULT/ARGUMENT_BEHAVIOR: updateThemeBackground* returnAndSkip after applying controller. Media hooks after side-effect.
+- API33_VARIANT_REASON: Panel class may live in shade; AOD linkageViewAnim HyperOS.
+- DIFF_SUMMARY: Shared LockScreenAlbumArtController + default-theme check + mThemeBackgroundView + media art. A14 also tries shade.MiuiNotificationPanelViewController and linkageViewAnim AOD hide. Field notificationShadeDepthController vs mDepthController.
+- VALUE_DEFAULT_COMPARISON: blur default 0; scale string-int 1; gray boolean false
+- HOOK_TARGET_COMPARISON: A14=phone or shade MiuiNotificationPanelViewController#<init>/updateThemeBackground/updateThemeBackgroundVisibility/linkageViewAnim,NotificationMediaManager#updateMediaMetaData,NotificationMediaManager#clearCurrentMediaNotification; A13=com.android.systemui.statusbar.phone.MiuiNotificationPanelViewController#<init>/updateThemeBackground/updateThemeBackgroundVisibility,NotificationMediaManager#updateMediaMetaData,NotificationMediaManager#clearCurrentMediaNotification
+- CALLBACK_SEMANTICS_COMPARISON: Same before skip of theme background update; after media metadata.
+- ARG_RESULT_COMPARISON: Theme background original skipped when default theme; media methods proceed.
+- A14_ONLY_BRANCHES: shade class fallback; linkageViewAnim AOD (screenStates[0]) forces GONE
+- WHY_USER_BEHAVIOR_IS_EQUIVALENT: Playing media shows album art as lockscreen background with the same blur/scale/gray sliders.
+- KEY_OWNERSHIP_EVIDENCE: system_albumartonlock_blur/scale/gray: LITERAL_READ in both updateMediaMetaData (scanner keys_only13 false-positive)
+- A14_KEY_OWNER_REFERENCE: app/src/main/java/tv/withaibuild/customiuizer/mods/SystemUILockScreenHooks.kt::LockScreenAlbumArtHook
+- A13_KEY_OWNER_REFERENCE: app/src/main/java/tv/withaibuild/customiuizer/mods/SystemUILockScreenHooks.kt::LockScreenAlbumArtHook
+- PROOF_CONCLUSION: `PRESENT_A13_VARIANT`
+
+## PROOF_R5F_AllowAllFloatHook_system_allownotiffloat
+
+- PROOF_ID: `PROOF_R5F_AllowAllFloatHook_system_allownotiffloat`
+- BODY_RELATION: `REVIEWED_VARIANT`
+- A14_OWNER_PATH: `app/src/main/java/tv/withaibuild/customiuizer/mods/SystemWindowHooks.kt`
+- A14_SYMBOL: `AllowAllFloatHook`
+- A14_INSTALLER: `A14 installer/spec gate for system_allownotiffloat`
+- A14_HOOK_TARGETS: `com.android.systemui.statusbar.notification.ExpandedNotification#isEnableFloat,com.android.systemui.statusbar.notification.NotificationSettingsManager#canFloat`
+- A14_CALLBACK_PHASE: `unknown`
+- A13_OWNER_PATH: `app/src/main/java/tv/withaibuild/customiuizer/mods/SystemAudioAndVisualAndMoreHooks.kt`
+- A13_SYMBOL: `AllowAllFloatHook`
+- A13_INSTALLER: `A13 installer gate for system_allownotiffloat`
+- A13_HOOK_TARGETS: `android.app.Notification#setEnableFloat,android.app.Notification#isEnableFloat,com.android.systemui.statusbar.notification.MiuiNotificationCompat#isEnableFloat`
+- A13_CALLBACK_PHASE: `before`
+- PREFERENCE_KEYS: `system_allownotiffloat`
+- VALUE_DOMAIN: owner-local preference domain
+- DEFAULT_SEMANTICS: boolean installer gate; off keeps ROM per-app float policy
+- RESULT/ARGUMENT_BEHAVIOR: A13 args[0]=true on setEnableFloat; isEnableFloat/MiuiNotificationCompat returnConstant(true). A14 returnConstant(true) on isEnableFloat and canFloat.
+- API33_VARIANT_REASON: MIUI14 Notification/MiuiNotificationCompat float flags vs HyperOS ExpandedNotification + NotificationSettingsManager.
+- DIFF_SUMMARY: A13 Notification.setEnableFloat/isEnableFloat + MiuiNotificationCompat.isEnableFloat. A14 ExpandedNotification.isEnableFloat + NotificationSettingsManager.canFloat. Same force-true.
+- VALUE_DEFAULT_COMPARISON: boolean installer gate; off keeps ROM per-app float policy
+- HOOK_TARGET_COMPARISON: A14=com.android.systemui.statusbar.notification.ExpandedNotification#isEnableFloat,com.android.systemui.statusbar.notification.NotificationSettingsManager#canFloat; A13=android.app.Notification#setEnableFloat,android.app.Notification#isEnableFloat,com.android.systemui.statusbar.notification.MiuiNotificationCompat#isEnableFloat
+- CALLBACK_SEMANTICS_COMPARISON: A13 before rewrite / constant-return; A14 constant-return.
+- ARG_RESULT_COMPARISON: Float predicates result true; A13 also rewrites setter argument.
+- A14_ONLY_BRANCHES: none
+- WHY_USER_BEHAVIOR_IS_EQUIVALENT: Toggle on allows every notification to heads-up/float; both hard-true the ROM float predicate.
+- KEY_OWNERSHIP_EVIDENCE: system_allownotiffloat: INSTALLER_CALLEE → AllowAllFloatHook; bodies force-enable float
+- A14_KEY_OWNER_REFERENCE: app/src/main/java/tv/withaibuild/customiuizer/mods/SystemWindowHooks.kt::AllowAllFloatHook
+- A13_KEY_OWNER_REFERENCE: app/src/main/java/tv/withaibuild/customiuizer/mods/SystemAudioAndVisualAndMoreHooks.kt::AllowAllFloatHook
+- PROOF_CONCLUSION: `PRESENT_A13_VARIANT`
+
+## PROOF_R5F_AllowAllKeyguardHook_system_allownotifonkeyguard
+
+- PROOF_ID: `PROOF_R5F_AllowAllKeyguardHook_system_allownotifonkeyguard`
+- BODY_RELATION: `REVIEWED_VARIANT`
+- A14_OWNER_PATH: `app/src/main/java/tv/withaibuild/customiuizer/mods/SystemLockScreenHooks.kt`
+- A14_SYMBOL: `AllowAllKeyguardHook`
+- A14_INSTALLER: `A14 installer/spec gate for system_allownotifonkeyguard`
+- A14_HOOK_TARGETS: `com.android.systemui.statusbar.notification.ExpandedNotification#isEnableKeyguard,com.android.systemui.statusbar.notification.NotificationSettingsManager#canShowOnKeyguard`
+- A14_CALLBACK_PHASE: `unknown`
+- A13_OWNER_PATH: `app/src/main/java/tv/withaibuild/customiuizer/mods/SystemAudioAndVisualAndMoreHooks.kt`
+- A13_SYMBOL: `AllowAllKeyguardHook`
+- A13_INSTALLER: `A13 installer gate for system_allownotifonkeyguard`
+- A13_HOOK_TARGETS: `android.app.Notification#setEnableKeyguard,android.app.Notification#isEnableKeyguard,com.android.systemui.statusbar.notification.MiuiNotificationCompat#isEnableKeyguard`
+- A13_CALLBACK_PHASE: `before`
+- PREFERENCE_KEYS: `system_allownotifonkeyguard`
+- VALUE_DOMAIN: owner-local preference domain
+- DEFAULT_SEMANTICS: boolean installer gate; off keeps ROM keyguard notification policy
+- RESULT/ARGUMENT_BEHAVIOR: A13 args[0]=true on setEnableKeyguard; isEnableKeyguard returnConstant(true). A14 returnConstant(true) on isEnableKeyguard and canShowOnKeyguard.
+- API33_VARIANT_REASON: Same MIUI14 NotificationCompat vs HyperOS SettingsManager split as AllowAllFloatHook.
+- DIFF_SUMMARY: A13 Notification.setEnableKeyguard/isEnableKeyguard + MiuiNotificationCompat.isEnableKeyguard. A14 ExpandedNotification.isEnableKeyguard + NotificationSettingsManager.canShowOnKeyguard.
+- VALUE_DEFAULT_COMPARISON: boolean installer gate; off keeps ROM keyguard notification policy
+- HOOK_TARGET_COMPARISON: A14=com.android.systemui.statusbar.notification.ExpandedNotification#isEnableKeyguard,com.android.systemui.statusbar.notification.NotificationSettingsManager#canShowOnKeyguard; A13=android.app.Notification#setEnableKeyguard,android.app.Notification#isEnableKeyguard,com.android.systemui.statusbar.notification.MiuiNotificationCompat#isEnableKeyguard
+- CALLBACK_SEMANTICS_COMPARISON: A13 before / constant-return; A14 constant-return.
+- ARG_RESULT_COMPARISON: Forced true results; A13 also rewrites setter argument.
+- A14_ONLY_BRANCHES: none
+- WHY_USER_BEHAVIOR_IS_EQUIVALENT: Toggle on shows all notifications on the lockscreen; both force the keyguard-visible predicate true.
+- KEY_OWNERSHIP_EVIDENCE: system_allownotifonkeyguard: INSTALLER_CALLEE → AllowAllKeyguardHook; bodies force keyguard show true
+- A14_KEY_OWNER_REFERENCE: app/src/main/java/tv/withaibuild/customiuizer/mods/SystemLockScreenHooks.kt::AllowAllKeyguardHook
+- A13_KEY_OWNER_REFERENCE: app/src/main/java/tv/withaibuild/customiuizer/mods/SystemAudioAndVisualAndMoreHooks.kt::AllowAllKeyguardHook
+- PROOF_CONCLUSION: `PRESENT_A13_VARIANT`
+
+## PROOF_R5_AllRotationsHook_system_allrotations2
+
+- PROOF_ID: `PROOF_R5_AllRotationsHook_system_allrotations2`
+- BODY_RELATION: `REVIEWED_VARIANT`
+- A14_OWNER_PATH: `app/src/main/java/tv/withaibuild/customiuizer/mods/SystemWindowHooks.kt`
+- A14_SYMBOL: `AllRotationsHook`
+- A14_INSTALLER: `A14 installer/spec gate for system_allrotations2`
+- A14_HOOK_TARGETS: `com.android.server.wm.DisplayRotation#<init>`
+- A14_CALLBACK_PHASE: `intercept`
+- A13_OWNER_PATH: `app/src/main/java/tv/withaibuild/customiuizer/mods/SystemAudioAndVisualAndMoreHooks.kt`
+- A13_SYMBOL: `AllRotationsHook`
+- A13_INSTALLER: `A13 installer gate for system_allrotations2`
+- A13_HOOK_TARGETS: `com.android.server.wm.DisplayRotation#<init>`
+- A13_CALLBACK_PHASE: `after`
+- PREFERENCE_KEYS: `system_allrotations2`
+- VALUE_DOMAIN: owner-local preference domain
+- DEFAULT_SEMANTICS: same persisted keys consumed by both owners
+- RESULT/ARGUMENT_BEHAVIOR: A14 ops: result_assign[null]; chain.proceed[chain.proceed()]. A13 ops: no result/argument rewrite literals. Keys system_allrotations2 rewrite the same host members.
+- API33_VARIANT_REASON: A14 callback intercept vs A13 after on members A14[com.android.server.wm.DisplayRotation#<init>] / A13[com.android.server.wm.DisplayRotation#<init>]. Inner preference reads of system_allrotations2 match; intercept proceed-once maps to before returnAndSkip or after side-effect.
+- DIFF_SUMMARY: Shared members com.android.server.wm.DisplayRotation#<init>. Differ: A14 phases intercept vs A13 after; A14 result_assign[null]; chain.proceed[chain.proceed()] vs A13 no result/argument rewrite literals.
+- VALUE_DEFAULT_COMPARISON: both consume system_allrotations2 in the owner body or installer gate
+- HOOK_TARGET_COMPARISON: A14=com.android.server.wm.DisplayRotation#<init>; A13=com.android.server.wm.DisplayRotation#<init>
+- CALLBACK_SEMANTICS_COMPARISON: A14 intercept vs A13 after; skipped paths do not invoke the original, proceed-once equals after side-effect
+- ARG_RESULT_COMPARISON: A14=result_assign[null]; chain.proceed[chain.proceed()]; A13=no result/argument rewrite literals
+- A14_ONLY_BRANCHES: none beyond intercept scaffolding for this owner pair
+- WHY_USER_BEHAVIOR_IS_EQUIVALENT: User-visible contract of system_allrotations2 is the same host rewrite; callback adapter and null-safety differ.
+- KEY_OWNERSHIP_EVIDENCE: system_allrotations2: LITERAL_READ and/or INSTALLER_CALLEE in AllRotationsHook/AllRotationsHook
+- A14_KEY_OWNER_REFERENCE: app/src/main/java/tv/withaibuild/customiuizer/mods/SystemWindowHooks.kt::AllRotationsHook
+- A13_KEY_OWNER_REFERENCE: app/src/main/java/tv/withaibuild/customiuizer/mods/SystemAudioAndVisualAndMoreHooks.kt::AllRotationsHook
+- PROOF_CONCLUSION: `PRESENT_A13_VARIANT`
+
+## PROOF_R5X_ANIMATION_SCALE
+
+- PROOF_ID: `PROOF_R5X_ANIMATION_SCALE`
+- BODY_RELATION: `REVIEWED_VARIANT`
+- A14_OWNER_PATH: `app/src/main/java/tv/withaibuild/customiuizer/subs/System.kt`
+- A14_SYMBOL: `Helpers.setAnimationScale`
+- A14_INSTALLER: `A14 installer/spec gate for system_animationscale_window,system_animationscale_transition,system_animationscale_animator`
+- A14_HOOK_TARGETS: `android.view.IWindowManager#setAnimationScale`
+- A14_CALLBACK_PHASE: `n/a`
+- A13_OWNER_PATH: `app/src/main/java/tv/withaibuild/customiuizer/subs/System.kt`
+- A13_SYMBOL: `Helpers.setAnimationScale`
+- A13_INSTALLER: `A13 installer gate for system_animationscale_window,system_animationscale_transition,system_animationscale_animator`
+- A13_HOOK_TARGETS: `android.view.IWindowManager#setAnimationScale`
+- A13_CALLBACK_PHASE: `n/a`
+- PREFERENCE_KEYS: `system_animationscale_window,system_animationscale_transition,system_animationscale_animator`
+- VALUE_DOMAIN: owner-local preference domain
+- DEFAULT_SEMANTICS: Seekbars initialize from getAnimationScale; 10 means 1.0x.
+- RESULT/ARGUMENT_BEHAVIOR: Binder setAnimationScale; no Xposed setResult.
+- API33_VARIANT_REASON: Same IWindowManager.setAnimationScale Binder on API33.
+- DIFF_SUMMARY: Module-owned settings write WindowManager animation scales 0/1/2. Not a SystemUI hook. A13 and A14 share Helpers.get/setAnimationScale.
+- VALUE_DEFAULT_COMPARISON: Seekbars initialize from getAnimationScale; 10 means 1.0x.
+- HOOK_TARGET_COMPARISON: A14=android.view.IWindowManager#setAnimationScale; A13=android.view.IWindowManager#setAnimationScale
+- CALLBACK_SEMANTICS_COMPARISON: SeekBar change, not an Xposed callback.
+- ARG_RESULT_COMPARISON: type 0/1/2 and float value=progress/10.
+- A14_ONLY_BRANCHES: none
+- WHY_USER_BEHAVIOR_IS_EQUIVALENT: Window/transition/animator duration scales still change from the three seekbars.
+- KEY_OWNERSHIP_EVIDENCE: LITERAL_READ of the three keys in subs/System.kt SeekBar listeners; both call Helpers.setAnimationScale(0/1/2, progress/10f).
+- A14_KEY_OWNER_REFERENCE: app/src/main/java/tv/withaibuild/customiuizer/subs/System.kt::Helpers.setAnimationScale
+- A13_KEY_OWNER_REFERENCE: app/src/main/java/tv/withaibuild/customiuizer/subs/System.kt::Helpers.setAnimationScale
+- PROOF_CONCLUSION: `PRESENT_A13_VARIANT`
+
+## PROOF_R5F_NoSignatureVerifyServiceHook_system_apksign
+
+- PROOF_ID: `PROOF_R5F_NoSignatureVerifyServiceHook_system_apksign`
+- BODY_RELATION: `REVIEWED_VARIANT`
+- A14_OWNER_PATH: `app/src/main/java/tv/withaibuild/customiuizer/mods/SystemSecurityHooks.kt`
+- A14_SYMBOL: `NoSignatureVerifyServiceHook`
+- A14_INSTALLER: `SystemServerFeatures.NoSignatureVerifyServiceFeature getBoolean(system_apksign)`
+- A14_HOOK_TARGETS: `android.content.pm.SigningDetails#checkCapability,android.util.jar.StrictJarVerifier#<init>,android.util.jar.StrictJarVerifier#verifyMessageDigest,android.util.jar.StrictJarVerifier#verify,com.android.server.pm.PackageManagerServiceUtils#verifySignatures,com.android.server.pm.InstallPackageHelper#doesSignatureMatchForPermissions,com.android.server.pm.InstallPackageHelper#cannotInstallWithBadPermissionGroups,com.android.server.pm.permission.PermissionManagerServiceImpl#shouldGrantPermissionBySignature,android.content.pm.ApplicationInfo#isSignedWithPlatformKey`
+- A14_CALLBACK_PHASE: `intercept`
+- A13_OWNER_PATH: `app/src/main/java/tv/withaibuild/customiuizer/mods/SystemSecurityAndSystemHooks.kt`
+- A13_SYMBOL: `NoSignatureVerifyServiceHook`
+- A13_INSTALLER: `SystemServerInstaller.java + FeatureCatalog.noSignatureVerify getBoolean(system_apksign)`
+- A13_HOOK_TARGETS: `android.content.pm.SigningDetails#checkCapability,android.util.jar.StrictJarVerifier#<init>,android.util.jar.StrictJarVerifier#verifyMessageDigest,android.util.jar.StrictJarVerifier#verify,com.android.server.pm.PackageManagerServiceUtils#verifySignatures,com.android.server.pm.InstallPackageHelper#doesSignatureMatchForPermissions,com.android.server.pm.InstallPackageHelper#cannotInstallWithBadPermissionGroups,com.android.server.pm.permission.PermissionManagerServiceImpl#shouldGrantPermissionBySignature`
+- A13_CALLBACK_PHASE: `before,after`
+- PREFERENCE_KEYS: `system_apksign`
+- VALUE_DOMAIN: owner-local preference domain
+- DEFAULT_SEMANTICS: Boolean default false keeps ROM signature checks.
+- RESULT/ARGUMENT_BEHAVIOR: Shared constant/skip rewrites as above. A14 extra may overwrite isSignedWithPlatformKey result.
+- API33_VARIANT_REASON: User-visible string is allow updating when APK signature differs. That path is the shared verifier/PMS members on API33. isSignedWithPlatformKey privilege rewrite is A14 extra, not required for the MIUI14 update-mismatch contract.
+- DIFF_SUMMARY: Shared PMS/jar verifier bypass set matches CatalogContracts.noSignatureVerify: UNKNOWN capability false, other flags true, rollbackProtectionsEnforced=false, verify*=true, verifySignatures=false, same-package permission signature true, cannotInstallWithBadPermissionGroups=false, system shouldGrantPermissionBySignature true. A14 extra after-hook: isSignedWithPlatformKey false rewritten true for FLAG_SYSTEM/FLAG_UPDATED_SYSTEM_APP.
+- VALUE_DEFAULT_COMPARISON: Boolean default false keeps ROM signature checks.
+- HOOK_TARGET_COMPARISON: A14=android.content.pm.SigningDetails#checkCapability,android.util.jar.StrictJarVerifier#<init>,android.util.jar.StrictJarVerifier#verifyMessageDigest,android.util.jar.StrictJarVerifier#verify,com.android.server.pm.PackageManagerServiceUtils#verifySignatures,com.android.server.pm.InstallPackageHelper#doesSignatureMatchForPermissions,com.android.server.pm.InstallPackageHelper#cannotInstallWithBadPermissionGroups,com.android.server.pm.permission.PermissionManagerServiceImpl#shouldGrantPermissionBySignature,android.content.pm.ApplicationInfo#isSignedWithPlatformKey; A13=android.content.pm.SigningDetails#checkCapability,android.util.jar.StrictJarVerifier#<init>,android.util.jar.StrictJarVerifier#verifyMessageDigest,android.util.jar.StrictJarVerifier#verify,com.android.server.pm.PackageManagerServiceUtils#verifySignatures,com.android.server.pm.InstallPackageHelper#doesSignatureMatchForPermissions,com.android.server.pm.InstallPackageHelper#cannotInstallWithBadPermissionGroups,com.android.server.pm.permission.PermissionManagerServiceImpl#shouldGrantPermissionBySignature
+- CALLBACK_SEMANTICS_COMPARISON: A14 intercept skip/proceed; A13 before returnAndSkip / after field write. Same skip constants.
+- ARG_RESULT_COMPARISON: A14 result_assign[true,null,null,true]; A13 returnAndSkip[false,true,true,true] plus verifySignatures false. UNKNOWN checkCapability false on both.
+- A14_ONLY_BRANCHES: ApplicationInfo.isSignedWithPlatformKey rewrite for FLAG_SYSTEM | FLAG_UPDATED_SYSTEM_APP.
+- WHY_USER_BEHAVIOR_IS_EQUIVALENT: Different-signature update still goes through the same StrictJarVerifier/verifySignatures/doesSignatureMatchForPermissions rewrites. Callback adapter only.
+- KEY_OWNERSHIP_EVIDENCE: Installer getBoolean(system_apksign); catalog preferenceKeys={system_apksign}.
+- A14_KEY_OWNER_REFERENCE: app/src/main/java/tv/withaibuild/customiuizer/mods/SystemSecurityHooks.kt::NoSignatureVerifyServiceHook
+- A13_KEY_OWNER_REFERENCE: app/src/main/java/tv/withaibuild/customiuizer/mods/SystemSecurityAndSystemHooks.kt::NoSignatureVerifyServiceHook
+- PROOF_CONCLUSION: `PRESENT_A13_VARIANT`
+
+## PROOF_R5_AppLockHook_system_applock
+
+- PROOF_ID: `PROOF_R5_AppLockHook_system_applock`
+- BODY_RELATION: `REVIEWED_VARIANT`
+- A14_OWNER_PATH: `app/src/main/java/tv/withaibuild/customiuizer/mods/SystemLockScreenHooks.kt`
+- A14_SYMBOL: `AppLockHook`
+- A14_INSTALLER: `A14 installer/spec gate for system_applock`
+- A14_HOOK_TARGETS: `com.miui.server.SecurityManagerService#removeAccessControlPassLocked`
+- A14_CALLBACK_PHASE: `intercept`
+- A13_OWNER_PATH: `app/src/main/java/tv/withaibuild/customiuizer/mods/SystemLockScreenMoreHooks.kt`
+- A13_SYMBOL: `AppLockHook`
+- A13_INSTALLER: `A13 installer gate for system_applock`
+- A13_HOOK_TARGETS: `com.miui.server.SecurityManagerService#removeAccessControlPassLocked`
+- A13_CALLBACK_PHASE: `before`
+- PREFERENCE_KEYS: `system_applock`
+- VALUE_DOMAIN: owner-local preference domain
+- DEFAULT_SEMANTICS: same persisted keys consumed by both owners
+- RESULT/ARGUMENT_BEHAVIOR: A14 ops: result_assign[null,null]; chain.proceed[chain.proceed()]. A13 ops: returnAndSkip[null]. Keys system_applock rewrite the same host members.
+- API33_VARIANT_REASON: A14 callback intercept vs A13 before on members A14[com.miui.server.SecurityManagerService#removeAccessControlPassLocked] / A13[com.miui.server.SecurityManagerService#removeAccessControlPassLocked]. Inner preference reads of system_applock match; intercept proceed-once maps to before returnAndSkip or after side-effect.
+- DIFF_SUMMARY: Shared members com.miui.server.SecurityManagerService#removeAccessControlPassLocked. Differ: A14 phases intercept vs A13 before; A14 result_assign[null,null]; chain.proceed[chain.proceed()] vs A13 returnAndSkip[null].
+- VALUE_DEFAULT_COMPARISON: both consume system_applock in the owner body or installer gate
+- HOOK_TARGET_COMPARISON: A14=com.miui.server.SecurityManagerService#removeAccessControlPassLocked; A13=com.miui.server.SecurityManagerService#removeAccessControlPassLocked
+- CALLBACK_SEMANTICS_COMPARISON: A14 intercept vs A13 before; skipped paths do not invoke the original, proceed-once equals after side-effect
+- ARG_RESULT_COMPARISON: A14=result_assign[null,null]; chain.proceed[chain.proceed()]; A13=returnAndSkip[null]
+- A14_ONLY_BRANCHES: none beyond intercept scaffolding for this owner pair
+- WHY_USER_BEHAVIOR_IS_EQUIVALENT: User-visible contract of system_applock is the same host rewrite; callback adapter and null-safety differ.
+- KEY_OWNERSHIP_EVIDENCE: system_applock: LITERAL_READ and/or INSTALLER_CALLEE in AppLockHook/AppLockHook
+- A14_KEY_OWNER_REFERENCE: app/src/main/java/tv/withaibuild/customiuizer/mods/SystemLockScreenHooks.kt::AppLockHook
+- A13_KEY_OWNER_REFERENCE: app/src/main/java/tv/withaibuild/customiuizer/mods/SystemLockScreenMoreHooks.kt::AppLockHook
+- PROOF_CONCLUSION: `PRESENT_A13_VARIANT`
+
+## PROOF_R5X_SETTINGS_SHORTCUTS
+
+- PROOF_ID: `PROOF_R5X_SETTINGS_SHORTCUTS`
+- BODY_RELATION: `REVIEWED_VARIANT`
+- A14_OWNER_PATH: `app/src/main/java/tv/withaibuild/customiuizer/subs/Various_HiddenFeatures.kt`
+- A14_SYMBOL: `hidden-feature shortcuts / System.kt test clicks`
+- A14_INSTALLER: `A14 installer/spec gate for various_aospnotif,various_batteryoptimization,various_runningservices,various_allow_untrusted_touch,system_credentials,system_applock_list,system_batteryindicator_test,system_cleanshare_test,system_cleanopenwith_test`
+- A14_HOOK_TARGETS: `(no ROM hook; Settings intents / component enable / test intents)`
+- A14_CALLBACK_PHASE: `n/a`
+- A13_OWNER_PATH: `app/src/main/java/tv/withaibuild/customiuizer/subs/Various_HiddenFeatures.kt`
+- A13_SYMBOL: `Various_HiddenFeatures / System.kt / Various.kt`
+- A13_INSTALLER: `A13 installer gate for various_aospnotif,various_batteryoptimization,various_runningservices,various_allow_untrusted_touch,system_credentials,system_applock_list,system_batteryindicator_test,system_cleanshare_test,system_cleanopenwith_test`
+- A13_HOOK_TARGETS: `(no ROM hook; Settings intents / component enable / test intents)`
+- A13_CALLBACK_PHASE: `n/a`
+- PREFERENCE_KEYS: `various_aospnotif,various_batteryoptimization,various_runningservices,various_allow_untrusted_touch,system_credentials,system_applock_list,system_batteryindicator_test,system_cleanshare_test,system_cleanopenwith_test`
+- VALUE_DOMAIN: owner-local preference domain
+- DEFAULT_SEMANTICS: Credentials off; untrusted-touch follows the checkbox; test rows are click-only.
+- RESULT/ARGUMENT_BEHAVIOR: startActivity / setComponentEnabledSetting / Settings.Global.putInt. No Xposed setResult.
+- API33_VARIANT_REASON: Settings.Global.block_untrusted_touches exists on API33. CredentialsLauncher is in-module. Test intents do not require ROM members.
+- DIFF_SUMMARY: These rows are module Settings UI, not host hooks. AOSP shortcuts, untrusted-touch global, credentials activity, applock picker, and share/open-with/battery-indicator test clicks match on both trees.
+- VALUE_DEFAULT_COMPARISON: Credentials off; untrusted-touch follows the checkbox; test rows are click-only.
+- HOOK_TARGET_COMPARISON: A14=(no ROM hook; Settings intents / component enable / test intents); A13=(no ROM hook; Settings intents / component enable / test intents)
+- CALLBACK_SEMANTICS_COMPARISON: Preference click/change, not an Xposed callback.
+- ARG_RESULT_COMPARISON: n/a
+- A14_ONLY_BRANCHES: none for these UI rows
+- WHY_USER_BEHAVIOR_IS_EQUIVALENT: Tapping the rows still opens the same Settings pages, toggles untrusted touch, enables the credentials launcher, edits applock apps, or fires the share/open-with/indicator tests.
+- KEY_OWNERSHIP_EVIDENCE: Click handlers: Various_HiddenFeatures.kt AOSP notification/battery-optimization/running-services intents. various_allow_untrusted_touch writes Settings.Global block_untrusted_touches 0/2 in subs/Various.kt. system_credentials enables CredentialsLauncher component. applock_list/batteryindicator_test/cleanshare_test/cleanopenwith_test are settings pickers/test intents in subs/System.kt and System_BatteryIndicator.kt. Same files exist on A14.
+- A14_KEY_OWNER_REFERENCE: app/src/main/java/tv/withaibuild/customiuizer/subs/Various_HiddenFeatures.kt::hidden-feature shortcuts / System.kt test clicks
+- A13_KEY_OWNER_REFERENCE: app/src/main/java/tv/withaibuild/customiuizer/subs/Various_HiddenFeatures.kt::Various_HiddenFeatures / System.kt / Various.kt
+- PROOF_CONCLUSION: `PRESENT_A13_VARIANT`
+
+## PROOF_R5_ScrambleAppLockPINHook_system_applock_scramblepin
+
+- PROOF_ID: `PROOF_R5_ScrambleAppLockPINHook_system_applock_scramblepin`
+- BODY_RELATION: `REVIEWED_VARIANT`
+- A14_OWNER_PATH: `app/src/main/java/tv/withaibuild/customiuizer/mods/SystemLockScreenHooks.kt`
+- A14_SYMBOL: `ScrambleAppLockPINHook`
+- A14_INSTALLER: `A14 installer/spec gate for system_applock_scramblepin`
+- A14_HOOK_TARGETS: `com.miui.applicationlock.widget.MiuiNumericInputView#<init>`
+- A14_CALLBACK_PHASE: `intercept`
+- A13_OWNER_PATH: `app/src/main/java/tv/withaibuild/customiuizer/mods/SystemAudioAndVisualAndMoreHooks.kt`
+- A13_SYMBOL: `ScrambleAppLockPINHook`
+- A13_INSTALLER: `A13 installer gate for system_applock_scramblepin`
+- A13_HOOK_TARGETS: `com.miui.applicationlock.widget.MiuiNumericInputView#<init>`
+- A13_CALLBACK_PHASE: `after`
+- PREFERENCE_KEYS: `system_applock_scramblepin`
+- VALUE_DOMAIN: owner-local preference domain
+- DEFAULT_SEMANTICS: same persisted keys consumed by both owners
+- RESULT/ARGUMENT_BEHAVIOR: A14 ops: result_assign[null]; chain.proceed[chain.proceed()]. A13 ops: no result/argument rewrite literals. Keys system_applock_scramblepin rewrite the same host members.
+- API33_VARIANT_REASON: A14 callback intercept vs A13 after on members A14[com.miui.applicationlock.widget.MiuiNumericInputView#<init>] / A13[com.miui.applicationlock.widget.MiuiNumericInputView#<init>]. Inner preference reads of system_applock_scramblepin match; intercept proceed-once maps to before returnAndSkip or after side-effect.
+- DIFF_SUMMARY: Shared members com.miui.applicationlock.widget.MiuiNumericInputView#<init>. Differ: A14 phases intercept vs A13 after; A14 result_assign[null]; chain.proceed[chain.proceed()] vs A13 no result/argument rewrite literals.
+- VALUE_DEFAULT_COMPARISON: both consume system_applock_scramblepin in the owner body or installer gate
+- HOOK_TARGET_COMPARISON: A14=com.miui.applicationlock.widget.MiuiNumericInputView#<init>; A13=com.miui.applicationlock.widget.MiuiNumericInputView#<init>
+- CALLBACK_SEMANTICS_COMPARISON: A14 intercept vs A13 after; skipped paths do not invoke the original, proceed-once equals after side-effect
+- ARG_RESULT_COMPARISON: A14=result_assign[null]; chain.proceed[chain.proceed()]; A13=no result/argument rewrite literals
+- A14_ONLY_BRANCHES: none beyond intercept scaffolding for this owner pair
+- WHY_USER_BEHAVIOR_IS_EQUIVALENT: User-visible contract of system_applock_scramblepin is the same host rewrite; callback adapter and null-safety differ.
+- KEY_OWNERSHIP_EVIDENCE: system_applock_scramblepin: LITERAL_READ and/or INSTALLER_CALLEE in ScrambleAppLockPINHook/ScrambleAppLockPINHook
+- A14_KEY_OWNER_REFERENCE: app/src/main/java/tv/withaibuild/customiuizer/mods/SystemLockScreenHooks.kt::ScrambleAppLockPINHook
+- A13_KEY_OWNER_REFERENCE: app/src/main/java/tv/withaibuild/customiuizer/mods/SystemAudioAndVisualAndMoreHooks.kt::ScrambleAppLockPINHook
+- PROOF_CONCLUSION: `PRESENT_A13_VARIANT`
+
+## PROOF_R5_SkipAppLockHook_system_applock_skip
+
+- PROOF_ID: `PROOF_R5_SkipAppLockHook_system_applock_skip`
+- BODY_RELATION: `REVIEWED_VARIANT`
+- A14_OWNER_PATH: `app/src/main/java/tv/withaibuild/customiuizer/mods/SystemLockScreenHooks.kt`
+- A14_SYMBOL: `SkipAppLockHook`
+- A14_INSTALLER: `A14 installer/spec gate for system_applock_skip,system_applock_skip_activities`
+- A14_HOOK_TARGETS: `com.miui.server.AccessController#skipActivity`
+- A14_CALLBACK_PHASE: `intercept`
+- A13_OWNER_PATH: `app/src/main/java/tv/withaibuild/customiuizer/mods/SystemLockScreenMoreHooks.kt`
+- A13_SYMBOL: `SkipAppLockHook`
+- A13_INSTALLER: `A13 installer gate for system_applock_skip,system_applock_skip_activities`
+- A13_HOOK_TARGETS: `com.miui.server.AccessController#skipActivity`
+- A13_CALLBACK_PHASE: `after`
+- PREFERENCE_KEYS: `system_applock_skip,system_applock_skip_activities`
+- VALUE_DOMAIN: owner-local preference domain
+- DEFAULT_SEMANTICS: same persisted keys consumed by both owners
+- RESULT/ARGUMENT_BEHAVIOR: A14 ops: result_assign[null,true]; chain.proceed[chain.proceed()]. A13 ops: setResult[true]. Keys system_applock_skip,system_applock_skip_activities rewrite the same host members.
+- API33_VARIANT_REASON: A14 callback intercept vs A13 after on members A14[com.miui.server.AccessController#skipActivity] / A13[com.miui.server.AccessController#skipActivity]. Inner preference reads of system_applock_skip,system_applock_skip_activities match; intercept proceed-once maps to before returnAndSkip or after side-effect.
+- DIFF_SUMMARY: Shared members com.miui.server.AccessController#skipActivity. Differ: A14 phases intercept vs A13 after; A14 result_assign[null,true]; chain.proceed[chain.proceed()] vs A13 setResult[true].
+- VALUE_DEFAULT_COMPARISON: both consume system_applock_skip,system_applock_skip_activities in the owner body or installer gate
+- HOOK_TARGET_COMPARISON: A14=com.miui.server.AccessController#skipActivity; A13=com.miui.server.AccessController#skipActivity
+- CALLBACK_SEMANTICS_COMPARISON: A14 intercept vs A13 after; skipped paths do not invoke the original, proceed-once equals after side-effect
+- ARG_RESULT_COMPARISON: A14=result_assign[null,true]; chain.proceed[chain.proceed()]; A13=setResult[true]
+- A14_ONLY_BRANCHES: none beyond intercept scaffolding for this owner pair
+- WHY_USER_BEHAVIOR_IS_EQUIVALENT: User-visible contract of system_applock_skip,system_applock_skip_activities is the same host rewrite; callback adapter and null-safety differ.
+- KEY_OWNERSHIP_EVIDENCE: system_applock_skip,system_applock_skip_activities: LITERAL_READ and/or INSTALLER_CALLEE in SkipAppLockHook/SkipAppLockHook
+- A14_KEY_OWNER_REFERENCE: app/src/main/java/tv/withaibuild/customiuizer/mods/SystemLockScreenHooks.kt::SkipAppLockHook
+- A13_KEY_OWNER_REFERENCE: app/src/main/java/tv/withaibuild/customiuizer/mods/SystemLockScreenMoreHooks.kt::SkipAppLockHook
+- PROOF_CONCLUSION: `PRESENT_A13_VARIANT`
+
+## PROOF_R5F_AppLockTimeoutHook_system_applock_timeout
+
+- PROOF_ID: `PROOF_R5F_AppLockTimeoutHook_system_applock_timeout`
+- BODY_RELATION: `REVIEWED_VARIANT`
+- A14_OWNER_PATH: `app/src/main/java/tv/withaibuild/customiuizer/mods/SystemLockScreenHooks.kt`
+- A14_SYMBOL: `AppLockTimeoutHook`
+- A14_INSTALLER: `A14 installer/spec gate for system_applock_timeout`
+- A14_HOOK_TARGETS: `com.miui.server.SecurityManagerService#addAccessControlPassForUser,SecurityManagerService#checkAccessControlPassLocked,SecurityManagerService#activityResume`
+- A14_CALLBACK_PHASE: `intercept`
+- A13_OWNER_PATH: `app/src/main/java/tv/withaibuild/customiuizer/mods/SystemLockScreenMoreHooks.kt`
+- A13_SYMBOL: `AppLockTimeoutHook`
+- A13_INSTALLER: `A13 installer gate for system_applock_timeout`
+- A13_HOOK_TARGETS: `com.miui.server.SecurityManagerService#addAccessControlPassForUser,SecurityManagerService#checkAccessControlPassLocked`
+- A13_CALLBACK_PHASE: `before,after`
+- PREFERENCE_KEYS: `system_applock_timeout`
+- VALUE_DOMAIN: owner-local preference domain
+- DEFAULT_SEMANTICS: getInt(system_applock_timeout, 1) minutes on both
+- RESULT/ARGUMENT_BEHAVIOR: No result rewrite; mutates mAccessControlLastCheck ArrayMap.
+- API33_VARIANT_REASON: A14 extra activityResume is HyperOS resume path; core timeout math is the same on the two shared members.
+- DIFF_SUMMARY: Same saveLastCheck/checkLastCheck around addAccessControlPassForUser and checkAccessControlPassLocked. A14 also saveLastCheck on activityResume.
+- VALUE_DEFAULT_COMPARISON: getInt(system_applock_timeout, 1) minutes on both
+- HOOK_TARGET_COMPARISON: A14=com.miui.server.SecurityManagerService#addAccessControlPassForUser,SecurityManagerService#checkAccessControlPassLocked,SecurityManagerService#activityResume; A13=com.miui.server.SecurityManagerService#addAccessControlPassForUser,SecurityManagerService#checkAccessControlPassLocked
+- CALLBACK_SEMANTICS_COMPARISON: A14 intercept proceed-once between save/check ≡ A13 before+after.
+- ARG_RESULT_COMPARISON: Host method results unchanged.
+- A14_ONLY_BRANCHES: SecurityManagerService.activityResume saveLastCheck
+- WHY_USER_BEHAVIOR_IS_EQUIVALENT: App lock re-lock delay is system_applock_timeout minutes instead of ROM 1 minute.
+- KEY_OWNERSHIP_EVIDENCE: system_applock_timeout: LITERAL_READ in checkLastCheck; both rewrite mAccessControlLastCheck by (timeout-60000)
+- A14_KEY_OWNER_REFERENCE: app/src/main/java/tv/withaibuild/customiuizer/mods/SystemLockScreenHooks.kt::AppLockTimeoutHook
+- A13_KEY_OWNER_REFERENCE: app/src/main/java/tv/withaibuild/customiuizer/mods/SystemLockScreenMoreHooks.kt::AppLockTimeoutHook
+- PROOF_CONCLUSION: `PRESENT_A13_VARIANT`
+
+## PROOF_R5X_AUTOBRIGHTNESS
+
+- PROOF_ID: `PROOF_R5X_AUTOBRIGHTNESS`
+- BODY_RELATION: `REVIEWED_VARIANT`
+- A14_OWNER_PATH: `app/src/main/java/tv/withaibuild/customiuizer/mods/SystemDisplayHooks.kt`
+- A14_SYMBOL: `AutoBrightnessRangeHook`
+- A14_INSTALLER: `A14 installer/spec gate for system_autobrightness,system_autobrightness_limitmin,system_autobrightness_min,system_autobrightness_limitmax,system_autobrightness_max`
+- A14_HOOK_TARGETS: `com.android.server.display brightness range members`
+- A14_CALLBACK_PHASE: `n/a`
+- A13_OWNER_PATH: `app/src/main/java/tv/withaibuild/customiuizer/mods/SystemDisplayAndWindowHooks.kt`
+- A13_SYMBOL: `AutoBrightnessRange / getInt system_autobrightness_min`
+- A13_INSTALLER: `A13 installer gate for system_autobrightness,system_autobrightness_limitmin,system_autobrightness_min,system_autobrightness_limitmax,system_autobrightness_max`
+- A13_HOOK_TARGETS: `com.android.server.display brightness range members`
+- A13_CALLBACK_PHASE: `n/a`
+- PREFERENCE_KEYS: `system_autobrightness,system_autobrightness_limitmin,system_autobrightness_min,system_autobrightness_limitmax,system_autobrightness_max`
+- VALUE_DOMAIN: owner-local preference domain
+- DEFAULT_SEMANTICS: Master boolean; min default 25; max from UI; limit toggles default false.
+- RESULT/ARGUMENT_BEHAVIOR: Brightness range field/arg rewrite, original compute proceeds.
+- API33_VARIANT_REASON: AOSP DisplayPowerController brightness curve exists on API33. Same min/max percent contract.
+- DIFF_SUMMARY: Both clamp automatic brightness using min/max percent. Settings page System_AutoBrightness.kt is shared. A13 catalog id autoBrightnessRange.
+- VALUE_DEFAULT_COMPARISON: Master boolean; min default 25; max from UI; limit toggles default false.
+- HOOK_TARGET_COMPARISON: A14=com.android.server.display brightness range members; A13=com.android.server.display brightness range members
+- CALLBACK_SEMANTICS_COMPARISON: after/intercept on the display brightness owner.
+- ARG_RESULT_COMPARISON: Percent coerced 0-100; defaults min 25.
+- A14_ONLY_BRANCHES: none beyond intercept scaffolding
+- WHY_USER_BEHAVIOR_IS_EQUIVALENT: Auto-brightness still respects the min/max percent sliders when the limits are enabled.
+- KEY_OWNERSHIP_EVIDENCE: system_autobrightness_min/max LITERAL_READ in A13 SystemDisplayAndWindowHooks.kt; limitmin/limitmax/master are installer/UI gates in FeatureCatalog.autoBrightnessRange and System_AutoBrightness.kt on both trees.
+- A14_KEY_OWNER_REFERENCE: app/src/main/java/tv/withaibuild/customiuizer/mods/SystemDisplayHooks.kt::AutoBrightnessRangeHook
+- A13_KEY_OWNER_REFERENCE: app/src/main/java/tv/withaibuild/customiuizer/mods/SystemDisplayAndWindowHooks.kt::AutoBrightnessRange / getInt system_autobrightness_min
+- PROOF_CONCLUSION: `PRESENT_A13_VARIANT`
+
+## PROOF_R5F_updateParameters_system_batteryindicator
+
+- PROOF_ID: `PROOF_R5F_updateParameters_system_batteryindicator`
+- BODY_RELATION: `REVIEWED_VARIANT`
+- A14_OWNER_PATH: `app/src/main/java/tv/withaibuild/customiuizer/utils/BatteryIndicator.kt`
+- A14_SYMBOL: `updateParameters`
+- A14_INSTALLER: `A14 installer/spec gate for system_batteryindicator,system_batteryindicator_align,system_batteryindicator_centered,system_batteryindicator_color,system_batteryindicator_glow,system_batteryindicator_height,system_batteryindicator_limitvis,system_batteryindicator_lowlevel,system_batteryindicator_padding,system_batteryindicator_rounded,system_batteryindicator_transp,system_batteryindicator_colorval1,system_batteryindicator_colorval2,system_batteryindicator_colorval3,system_batteryindicator_colorval4`
+- A14_HOOK_TARGETS: `(no host member literals)`
+- A14_CALLBACK_PHASE: `unknown`
+- A13_OWNER_PATH: `app/src/main/java/tv/withaibuild/customiuizer/utils/BatteryIndicator.kt`
+- A13_SYMBOL: `updateParameters`
+- A13_INSTALLER: `A13 installer gate for system_batteryindicator,system_batteryindicator_align,system_batteryindicator_centered,system_batteryindicator_color,system_batteryindicator_glow,system_batteryindicator_height,system_batteryindicator_limitvis,system_batteryindicator_lowlevel,system_batteryindicator_padding,system_batteryindicator_rounded,system_batteryindicator_transp,system_batteryindicator_colorval1,system_batteryindicator_colorval2,system_batteryindicator_colorval3,system_batteryindicator_colorval4`
+- A13_HOOK_TARGETS: `(no host member literals)`
+- A13_CALLBACK_PHASE: `unknown`
+- PREFERENCE_KEYS: `system_batteryindicator,system_batteryindicator_align,system_batteryindicator_centered,system_batteryindicator_color,system_batteryindicator_glow,system_batteryindicator_height,system_batteryindicator_limitvis,system_batteryindicator_lowlevel,system_batteryindicator_padding,system_batteryindicator_rounded,system_batteryindicator_transp,system_batteryindicator_colorval1,system_batteryindicator_colorval2,system_batteryindicator_colorval3,system_batteryindicator_colorval4`
+- VALUE_DOMAIN: owner-local preference domain
+- DEFAULT_SEMANTICS: color mode default 1; height 5; glow 0; align 1; transp/padding 0; lowlevel system config; master boolean default false.
+- RESULT/ARGUMENT_BEHAVIOR: No hooks; LayoutParams + visibility.
+- API33_VARIANT_REASON: No ROM member. Pref ints colorval1-4 are consumed by the same BatteryIndicator.updateParameters on API33.
+- DIFF_SUMMARY: A13 updateParameters now reads colorval1-4 into mFullColor/mLowColor/mPowerSaveColor/mChargingColor with the same GREEN/RED/orange/YELLOW defaults as A14. Remaining difference is A14 var field assignment shape only.
+- VALUE_DEFAULT_COMPARISON: color mode default 1; height 5; glow 0; align 1; transp/padding 0; lowlevel system config; master boolean default false.
+- HOOK_TARGET_COMPARISON: A14=(none); A13=(none)
+- CALLBACK_SEMANTICS_COMPARISON: n/a
+- ARG_RESULT_COMPARISON: n/a
+- A14_ONLY_BRANCHES: none after A13 colorval read upgrade
+- WHY_USER_BEHAVIOR_IS_EQUIVALENT: Custom indicator colors now apply on A13 the same way as A14; layout/visibility keys were already shared.
+- KEY_OWNERSHIP_EVIDENCE: Both updateParameters read these 11 keys into the same fields. A13 does not read colorval1–4 (hardcoded GREEN/RED/orange/YELLOW).
+- A14_KEY_OWNER_REFERENCE: app/src/main/java/tv/withaibuild/customiuizer/utils/BatteryIndicator.kt::updateParameters
+- A13_KEY_OWNER_REFERENCE: app/src/main/java/tv/withaibuild/customiuizer/utils/BatteryIndicator.kt::updateParameters
+- PROOF_CONCLUSION: `PRESENT_A13_VARIANT`
+
+## PROOF_R5F_OpenAppInFreeFormHook_system_betterpopups_allowfloat
+
+- PROOF_ID: `PROOF_R5F_OpenAppInFreeFormHook_system_betterpopups_allowfloat`
+- BODY_RELATION: `REVIEWED_VARIANT`
+- A14_OWNER_PATH: `app/src/main/java/tv/withaibuild/customiuizer/mods/SystemWindowHooks.kt`
+- A14_SYMBOL: `OpenAppInFreeFormHook`
+- A14_INSTALLER: `A14 installer/spec gate for system_betterpopups_allowfloat`
+- A14_HOOK_TARGETS: `com.android.server.wm.ActivityTaskManagerService#onSystemReady,com.miui.server.SecurityManagerService$LocalService#checkGameBoosterPayPassAsUser,com.android.server.wm.ActivityStarterImpl#checkStartActivityByFreeForm`
+- A14_CALLBACK_PHASE: `intercept`
+- A13_OWNER_PATH: `app/src/main/java/tv/withaibuild/customiuizer/mods/SystemFreeformAndMultiWindowHooks.kt`
+- A13_SYMBOL: `OpenAppInFreeFormHook`
+- A13_INSTALLER: `A13 installer gate for system_betterpopups_allowfloat`
+- A13_HOOK_TARGETS: `com.android.server.wm.ActivityTaskManagerService#onSystemReady,com.android.server.wm.ActivityStarter#executeRequest`
+- A13_CALLBACK_PHASE: `after,before`
+- PREFERENCE_KEYS: `system_betterpopups_allowfloat`
+- VALUE_DOMAIN: owner-local preference domain
+- DEFAULT_SEMANTICS: boolean installer gate; helper keys consumed in shouldOpenInFreeForm
+- RESULT/ARGUMENT_BEHAVIOR: A13 before setActivityOptions, no skip. A14 intercept rewrites freeform check results then proceed.
+- API33_VARIANT_REASON: ActivityStarter.executeRequest vs ActivityStarterImpl.checkStartActivityByFreeForm on HyperOS.
+- DIFF_SUMMARY: Shared ATMS.onSystemReady receiver. A13 ActivityStarter.executeRequest setActivityOptions(MiuiMultiWindowUtils). A14 ActivityStarterImpl.checkStartActivityByFreeForm + checkGameBoosterPayPassAsUser.
+- VALUE_DEFAULT_COMPARISON: boolean installer gate; helper keys consumed in shouldOpenInFreeForm
+- HOOK_TARGET_COMPARISON: A14=com.android.server.wm.ActivityTaskManagerService#onSystemReady,com.miui.server.SecurityManagerService$LocalService#checkGameBoosterPayPassAsUser,com.android.server.wm.ActivityStarterImpl#checkStartActivityByFreeForm; A13=com.android.server.wm.ActivityTaskManagerService#onSystemReady,com.android.server.wm.ActivityStarter#executeRequest
+- CALLBACK_SEMANTICS_COMPARISON: A14 intercept proceed-once ≡ A13 after receiver + before options.
+- ARG_RESULT_COMPARISON: A13 no setResult on executeRequest. A14 may replace Boolean freeform-check result.
+- A14_ONLY_BRANCHES: checkGameBoosterPayPassAsUser result rewrite; RECEIVER_NOT_EXPORTED vs A13 EXPORTED
+- WHY_USER_BEHAVIOR_IS_EQUIVALENT: When the feature is on, share/next-package launches open in freeform using the same shouldOpenInFreeForm helper.
+- KEY_OWNERSHIP_EVIDENCE: system_betterpopups_allowfloat: INSTALLER_CALLEE → OpenAppInFreeFormHook; both register SetFreeFormPackage receiver and force freeform via shouldOpenInFreeForm
+- A14_KEY_OWNER_REFERENCE: app/src/main/java/tv/withaibuild/customiuizer/mods/SystemWindowHooks.kt::OpenAppInFreeFormHook
+- A13_KEY_OWNER_REFERENCE: app/src/main/java/tv/withaibuild/customiuizer/mods/SystemFreeformAndMultiWindowHooks.kt::OpenAppInFreeFormHook
+- PROOF_CONCLUSION: `PRESENT_A13_VARIANT`
+
+## PROOF_R5F_BetterPopupsAllowFloatHook_system_betterpopups_allowfloat_apps
+
+- PROOF_ID: `PROOF_R5F_BetterPopupsAllowFloatHook_system_betterpopups_allowfloat_apps`
+- BODY_RELATION: `REVIEWED_VARIANT`
+- A14_OWNER_PATH: `app/src/main/java/tv/withaibuild/customiuizer/mods/SystemWindowHooks.kt`
+- A14_SYMBOL: `BetterPopupsAllowFloatHook`
+- A14_INSTALLER: `A14 installer/spec gate for system_betterpopups_allowfloat_apps`
+- A14_HOOK_TARGETS: `com.android.systemui.statusbar.notification.row.MiuiExpandableNotificationRow#updateMiniWindowBar`
+- A14_CALLBACK_PHASE: `intercept`
+- A13_OWNER_PATH: `app/src/main/java/tv/withaibuild/customiuizer/mods/SystemFreeformAndMultiWindowHooks.kt`
+- A13_SYMBOL: `BetterPopupsAllowFloatHook`
+- A13_INSTALLER: `A13 installer gate for system_betterpopups_allowfloat_apps`
+- A13_HOOK_TARGETS: `com.android.systemui.statusbar.notification.NotificationSettingsManager#canSlide,com.android.systemui.statusbar.notification.policy.MiniWindowPolicy#canSlidePackage`
+- A13_CALLBACK_PHASE: `after,before`
+- PREFERENCE_KEYS: `system_betterpopups_allowfloat_apps`
+- VALUE_DOMAIN: owner-local preference domain
+- DEFAULT_SEMANTICS: string-set empty means no extra allow/deny
+- RESULT/ARGUMENT_BEHAVIOR: A13 returnAndSkip(true) on canSlidePackage; setResult true/false on canSlide. A14 proceed after list add/remove.
+- API33_VARIANT_REASON: MIUI14 canSlide/canSlidePackage vs HyperOS MiuiExpandableNotificationRow.updateMiniWindowBar list mutation.
+- DIFF_SUMMARY: Whitelist/blacklist of mini-window slide. A13 canSlide setResult true/false and MiniWindowPolicy.canSlidePackage returnAndSkip(true). A14 mutates mAllowNotificationSlide then proceed updateMiniWindowBar.
+- VALUE_DEFAULT_COMPARISON: string-set empty means no extra allow/deny
+- HOOK_TARGET_COMPARISON: A14=com.android.systemui.statusbar.notification.row.MiuiExpandableNotificationRow#updateMiniWindowBar; A13=com.android.systemui.statusbar.notification.NotificationSettingsManager#canSlide,com.android.systemui.statusbar.notification.policy.MiniWindowPolicy#canSlidePackage
+- CALLBACK_SEMANTICS_COMPARISON: A14 intercept proceed-once vs A13 after setResult + before skip.
+- ARG_RESULT_COMPARISON: A13 canSlidePackage always true then filtered at canSlide. A14 only mutates allow list.
+- A14_ONLY_BRANCHES: none
+- WHY_USER_BEHAVIOR_IS_EQUIVALENT: Selected apps may slide notification to mini-window; blacklist denied.
+- KEY_OWNERSHIP_EVIDENCE: system_betterpopups_allowfloat_apps and _apps_black: LITERAL_READ in both
+- A14_KEY_OWNER_REFERENCE: app/src/main/java/tv/withaibuild/customiuizer/mods/SystemWindowHooks.kt::BetterPopupsAllowFloatHook
+- A13_KEY_OWNER_REFERENCE: app/src/main/java/tv/withaibuild/customiuizer/mods/SystemFreeformAndMultiWindowHooks.kt::BetterPopupsAllowFloatHook
+- PROOF_CONCLUSION: `PRESENT_A13_VARIANT`
+
+## PROOF_R5F_AutoDismissExpandedPopupsHook_system_betterpopups_autoclose_expanded
+
+- PROOF_ID: `PROOF_R5F_AutoDismissExpandedPopupsHook_system_betterpopups_autoclose_expanded`
+- BODY_RELATION: `REVIEWED_VARIANT`
+- A14_OWNER_PATH: `app/src/main/java/tv/withaibuild/customiuizer/mods/SystemNotificationHooks.kt`
+- A14_SYMBOL: `AutoDismissExpandedPopupsHook`
+- A14_INSTALLER: `A14 installer/spec gate for system_betterpopups_autoclose_expanded`
+- A14_HOOK_TARGETS: `HeadsUpManagerPhone$HeadsUpEntryPhone#updateEntry,StatusBarNotificationPresenter#onExpandClicked`
+- A14_CALLBACK_PHASE: `intercept`
+- A13_OWNER_PATH: `app/src/main/java/tv/withaibuild/customiuizer/mods/SystemNotificationMoreHooks.kt`
+- A13_SYMBOL: `AutoDismissExpandedPopupsHook`
+- A13_INSTALLER: `A13 installer gate for system_betterpopups_autoclose_expanded`
+- A13_HOOK_TARGETS: `com.android.systemui.statusbar.phone.HeadsUpManagerPhone$HeadsUpEntryPhone#setExpanded`
+- A13_CALLBACK_PHASE: `before`
+- PREFERENCE_KEYS: `system_betterpopups_autoclose_expanded`
+- VALUE_DOMAIN: owner-local preference domain
+- DEFAULT_SEMANTICS: boolean installer gate; delays are hardcoded not keyed
+- RESULT/ARGUMENT_BEHAVIOR: A13 returnAndSkip(null) when expanding. A14 proceed then reschedule runnable.
+- API33_VARIANT_REASON: setExpanded vs updateEntry + onExpandClicked on HyperOS heads-up.
+- DIFF_SUMMARY: Both post mRemoveAlertRunnable on expanded heads-up. A13 setExpanded(true) returnAndSkip after 5000ms. A14 updateEntry schedules 4500/10000 if expanded+pinned+!remoteInput; also onExpandClicked.
+- VALUE_DEFAULT_COMPARISON: boolean installer gate; delays are hardcoded not keyed
+- HOOK_TARGET_COMPARISON: A14=HeadsUpManagerPhone$HeadsUpEntryPhone#updateEntry,StatusBarNotificationPresenter#onExpandClicked; A13=com.android.systemui.statusbar.phone.HeadsUpManagerPhone$HeadsUpEntryPhone#setExpanded
+- CALLBACK_SEMANTICS_COMPARISON: A13 before skip original setExpanded(true). A14 proceed updateEntry then timer.
+- ARG_RESULT_COMPARISON: A13 skips ROM expanded=true path after custom timer. A14 lets updateEntry run.
+- A14_ONLY_BRANCHES: onExpandClicked; extended 10000ms vs 4500ms
+- WHY_USER_BEHAVIOR_IS_EQUIVALENT: Expanded heads-up still auto-dismisses after a few seconds instead of sticking.
+- KEY_OWNERSHIP_EVIDENCE: system_betterpopups_autoclose_expanded: INSTALLER_CALLEE → AutoDismissExpandedPopupsHook
+- A14_KEY_OWNER_REFERENCE: app/src/main/java/tv/withaibuild/customiuizer/mods/SystemNotificationHooks.kt::AutoDismissExpandedPopupsHook
+- A13_KEY_OWNER_REFERENCE: app/src/main/java/tv/withaibuild/customiuizer/mods/SystemNotificationMoreHooks.kt::AutoDismissExpandedPopupsHook
+- PROOF_CONCLUSION: `PRESENT_A13_VARIANT`
+
+## PROOF_R5_BetterPopupsCenteredHook_system_betterpopups_center
+
+- PROOF_ID: `PROOF_R5_BetterPopupsCenteredHook_system_betterpopups_center`
+- BODY_RELATION: `REVIEWED_VARIANT`
+- A14_OWNER_PATH: `app/src/main/java/tv/withaibuild/customiuizer/mods/SystemNotificationHooks.kt`
+- A14_SYMBOL: `BetterPopupsCenteredHook`
+- A14_INSTALLER: `A14 installer/spec gate for system_betterpopups_center`
+- A14_HOOK_TARGETS: `com.android.systemui.statusbar.policy.HeadsUpManagerInjector#miuiHeadsUpInset`
+- A14_CALLBACK_PHASE: `intercept`
+- A13_OWNER_PATH: `app/src/main/java/tv/withaibuild/customiuizer/mods/SystemNotificationMoreHooks.kt`
+- A13_SYMBOL: `BetterPopupsCenteredHook`
+- A13_INSTALLER: `A13 installer gate for system_betterpopups_center`
+- A13_HOOK_TARGETS: `com.android.systemui.statusbar.policy.HeadsUpManagerInjector#miuiHeadsUpInset`
+- A13_CALLBACK_PHASE: `after`
+- PREFERENCE_KEYS: `system_betterpopups_center`
+- VALUE_DOMAIN: owner-local preference domain
+- DEFAULT_SEMANTICS: same persisted keys consumed by both owners
+- RESULT/ARGUMENT_BEHAVIOR: A14 ops: result_assign[null]; chain.proceed[chain.proceed()]. A13 ops: setResult[topMargin]. Keys system_betterpopups_center rewrite the same host members.
+- API33_VARIANT_REASON: A14 callback intercept vs A13 after on members A14[com.android.systemui.statusbar.policy.HeadsUpManagerInjector#miuiHeadsUpInset] / A13[com.android.systemui.statusbar.policy.HeadsUpManagerInjector#miuiHeadsUpInset]. Inner preference reads of system_betterpopups_center match; intercept proceed-once maps to before returnAndSkip or after side-effect.
+- DIFF_SUMMARY: Shared members com.android.systemui.statusbar.policy.HeadsUpManagerInjector#miuiHeadsUpInset. Differ: A14 phases intercept vs A13 after; A14 result_assign[null]; chain.proceed[chain.proceed()] vs A13 setResult[topMargin].
+- VALUE_DEFAULT_COMPARISON: both consume system_betterpopups_center in the owner body or installer gate
+- HOOK_TARGET_COMPARISON: A14=com.android.systemui.statusbar.policy.HeadsUpManagerInjector#miuiHeadsUpInset; A13=com.android.systemui.statusbar.policy.HeadsUpManagerInjector#miuiHeadsUpInset
+- CALLBACK_SEMANTICS_COMPARISON: A14 intercept vs A13 after; skipped paths do not invoke the original, proceed-once equals after side-effect
+- ARG_RESULT_COMPARISON: A14=result_assign[null]; chain.proceed[chain.proceed()]; A13=setResult[topMargin]
+- A14_ONLY_BRANCHES: none beyond intercept scaffolding for this owner pair
+- WHY_USER_BEHAVIOR_IS_EQUIVALENT: User-visible contract of system_betterpopups_center is the same host rewrite; callback adapter and null-safety differ.
+- KEY_OWNERSHIP_EVIDENCE: system_betterpopups_center: LITERAL_READ and/or INSTALLER_CALLEE in BetterPopupsCenteredHook/BetterPopupsCenteredHook
+- A14_KEY_OWNER_REFERENCE: app/src/main/java/tv/withaibuild/customiuizer/mods/SystemNotificationHooks.kt::BetterPopupsCenteredHook
+- A13_KEY_OWNER_REFERENCE: app/src/main/java/tv/withaibuild/customiuizer/mods/SystemNotificationMoreHooks.kt::BetterPopupsCenteredHook
+- PROOF_CONCLUSION: `PRESENT_A13_VARIANT`
+
+## PROOF_R5F_BetterPopupsHideDelayHook_system_betterpopups_delay
+
+- PROOF_ID: `PROOF_R5F_BetterPopupsHideDelayHook_system_betterpopups_delay`
+- BODY_RELATION: `REVIEWED_VARIANT`
+- A14_OWNER_PATH: `app/src/main/java/tv/withaibuild/customiuizer/mods/SystemNotificationHooks.kt`
+- A14_SYMBOL: `BetterPopupsHideDelayHook`
+- A14_INSTALLER: `A14 installer/spec gate for system_betterpopups_delay,system_betterpopups_nohide`
+- A14_HOOK_TARGETS: `android.app.MiuiNotification#getFloatTime,com.android.systemui.statusbar.policy.HeadsUpManager#<init>`
+- A14_CALLBACK_PHASE: `intercept`
+- A13_OWNER_PATH: `app/src/main/java/tv/withaibuild/customiuizer/mods/SystemNotificationPopupsHooks.kt`
+- A13_SYMBOL: `BetterPopupsHideDelayHook`
+- A13_INSTALLER: `A13 installer gate for system_betterpopups_delay,system_betterpopups_nohide`
+- A13_HOOK_TARGETS: `android.app.MiuiNotification#getFloatTime,com.android.systemui.statusbar.policy.HeadsUpManager#<init>`
+- A13_CALLBACK_PHASE: `after`
+- PREFERENCE_KEYS: `system_betterpopups_delay,system_betterpopups_nohide`
+- VALUE_DOMAIN: owner-local preference domain
+- DEFAULT_SEMANTICS: getInt(delay,0)*1000; if 0 then 5000 both
+- RESULT/ARGUMENT_BEHAVIOR: getFloatTime result 0. Constructor result unchanged.
+- API33_VARIANT_REASON: A14 intercept proceed-once vs A13 after; A14 preflight findField.
+- DIFF_SUMMARY: getFloatTime returnConstant(0); constructor sets mMinimumDisplayTime and mHeadsUpNotificationDecay to delay*1000 (0→5000) and observes delay key.
+- VALUE_DEFAULT_COMPARISON: getInt(delay,0)*1000; if 0 then 5000 both
+- HOOK_TARGET_COMPARISON: A14=android.app.MiuiNotification#getFloatTime,com.android.systemui.statusbar.policy.HeadsUpManager#<init>; A13=android.app.MiuiNotification#getFloatTime,com.android.systemui.statusbar.policy.HeadsUpManager#<init>
+- CALLBACK_SEMANTICS_COMPARISON: A14 intercept proceed-once ≡ A13 after.
+- ARG_RESULT_COMPARISON: getFloatTime constant 0 both.
+- A14_ONLY_BRANCHES: none in HideDelay body
+- WHY_USER_BEHAVIOR_IS_EQUIVALENT: Heads-up display time is the delay seekbar (0 means 5s). nohide is implemented by BetterPopupsNoHideHook on both.
+- KEY_OWNERSHIP_EVIDENCE: system_betterpopups_delay: LITERAL_READ in both HeadsUpManager constructors. system_betterpopups_nohide is sibling owner BetterPopupsNoHideHook on both trees (not this body).
+- A14_KEY_OWNER_REFERENCE: app/src/main/java/tv/withaibuild/customiuizer/mods/SystemNotificationHooks.kt::BetterPopupsHideDelayHook
+- A13_KEY_OWNER_REFERENCE: app/src/main/java/tv/withaibuild/customiuizer/mods/SystemNotificationPopupsHooks.kt::BetterPopupsHideDelayHook
+- PROOF_CONCLUSION: `PRESENT_A13_VARIANT`
+
+## PROOF_R5F_DisableHeadsUpWhenMuteHook_system_betterpopups_disablewhenmute
+
+- PROOF_ID: `PROOF_R5F_DisableHeadsUpWhenMuteHook_system_betterpopups_disablewhenmute`
+- BODY_RELATION: `REVIEWED_VARIANT`
+- A14_OWNER_PATH: `app/src/main/java/tv/withaibuild/customiuizer/mods/SystemUINotificationHooks.kt`
+- A14_SYMBOL: `DisableHeadsUpWhenMuteHook`
+- A14_INSTALLER: `A14 installer/spec gate for system_betterpopups_disablewhenmute`
+- A14_HOOK_TARGETS: `com.android.systemui.statusbar.notification.interruption.NotificationInterruptStateProviderImpl#canAlertAwakeCommon,com.android.systemui.statusbar.phone.MiuiPhoneStatusBarPolicy#updateVolumeZen`
+- A14_CALLBACK_PHASE: `before,after`
+- A13_OWNER_PATH: `app/src/main/java/tv/withaibuild/customiuizer/mods/SystemUINotificationHooks.kt`
+- A13_SYMBOL: `DisableHeadsUpWhenMuteHook`
+- A13_INSTALLER: `A13 installer gate for system_betterpopups_disablewhenmute`
+- A13_HOOK_TARGETS: `com.android.systemui.statusbar.notification.interruption.MiuiNotificationInterruptStateProviderImpl#shouldPeek,com.android.systemui.statusbar.phone.MiuiPhoneStatusBarPolicy#updateVolumeZen`
+- A13_CALLBACK_PHASE: `after`
+- PREFERENCE_KEYS: `system_betterpopups_disablewhenmute`
+- VALUE_DOMAIN: owner-local preference domain
+- DEFAULT_SEMANTICS: boolean installer gate
+- RESULT/ARGUMENT_BEHAVIOR: A13 setResult(false) after shouldPeek. A14 returnAndSkip(false) before canAlertAwakeCommon.
+- API33_VARIANT_REASON: MIUI14 MiuiNotificationInterruptStateProviderImpl.shouldPeek vs HyperOS NotificationInterruptStateProviderImpl.canAlertAwakeCommon.
+- DIFF_SUMMARY: Shared mMuteVisible from updateVolumeZen. A13 after shouldPeek setResult(false) if canPopup && mMuteVisible. A14 before canAlertAwakeCommon returnAndSkip(false) if mMuteVisible.
+- VALUE_DEFAULT_COMPARISON: boolean installer gate
+- HOOK_TARGET_COMPARISON: A14=com.android.systemui.statusbar.notification.interruption.NotificationInterruptStateProviderImpl#canAlertAwakeCommon,com.android.systemui.statusbar.phone.MiuiPhoneStatusBarPolicy#updateVolumeZen; A13=com.android.systemui.statusbar.notification.interruption.MiuiNotificationInterruptStateProviderImpl#shouldPeek,com.android.systemui.statusbar.phone.MiuiPhoneStatusBarPolicy#updateVolumeZen
+- CALLBACK_SEMANTICS_COMPARISON: A14 before skip original canAlertAwakeCommon. A13 after rewrites shouldPeek result; original ran.
+- ARG_RESULT_COMPARISON: Peek/alert result false when muted. A14 never runs original awake-alert check when muted.
+- A14_ONLY_BRANCHES: none
+- WHY_USER_BEHAVIOR_IS_EQUIVALENT: Heads-up popups are suppressed while the status-bar mute icon is visible.
+- KEY_OWNERSHIP_EVIDENCE: system_betterpopups_disablewhenmute: INSTALLER_CALLEE → DisableHeadsUpWhenMuteHook; both cache mMuteVisible from MiuiPhoneStatusBarPolicy.updateVolumeZen
+- A14_KEY_OWNER_REFERENCE: app/src/main/java/tv/withaibuild/customiuizer/mods/SystemUINotificationHooks.kt::DisableHeadsUpWhenMuteHook
+- A13_KEY_OWNER_REFERENCE: app/src/main/java/tv/withaibuild/customiuizer/mods/SystemUINotificationHooks.kt::DisableHeadsUpWhenMuteHook
+- PROOF_CONCLUSION: `PRESENT_A13_VARIANT`
+
+## PROOF_R5_SelectiveToastsHook_system_blocktoasts
+
+- PROOF_ID: `PROOF_R5_SelectiveToastsHook_system_blocktoasts`
+- BODY_RELATION: `REVIEWED_VARIANT`
+- A14_OWNER_PATH: `app/src/main/java/tv/withaibuild/customiuizer/mods/System.kt`
+- A14_SYMBOL: `SelectiveToastsHook`
+- A14_INSTALLER: `A14 installer/spec gate for system_blocktoasts`
+- A14_HOOK_TARGETS: `com.android.server.notification.NotificationManagerService#tryShowToast`
+- A14_CALLBACK_PHASE: `intercept`
+- A13_OWNER_PATH: `app/src/main/java/tv/withaibuild/customiuizer/mods/SystemStatusBarAndClockHooks.kt`
+- A13_SYMBOL: `SelectiveToastsHook`
+- A13_INSTALLER: `A13 installer gate for system_blocktoasts`
+- A13_HOOK_TARGETS: `com.android.server.notification.NotificationManagerService#tryShowToast`
+- A13_CALLBACK_PHASE: `before`
+- PREFERENCE_KEYS: `system_blocktoasts`
+- VALUE_DOMAIN: owner-local preference domain
+- DEFAULT_SEMANTICS: same persisted keys consumed by both owners
+- RESULT/ARGUMENT_BEHAVIOR: A14 ops: result_assign[false,null]; chain.proceed[chain.proceed()]. A13 ops: returnAndSkip[false]. Keys system_blocktoasts rewrite the same host members.
+- API33_VARIANT_REASON: A14 callback intercept vs A13 before on members A14[com.android.server.notification.NotificationManagerService#tryShowToast] / A13[com.android.server.notification.NotificationManagerService#tryShowToast]. Inner preference reads of system_blocktoasts match; intercept proceed-once maps to before returnAndSkip or after side-effect.
+- DIFF_SUMMARY: Shared members com.android.server.notification.NotificationManagerService#tryShowToast. Differ: A14 phases intercept vs A13 before; A14 result_assign[false,null]; chain.proceed[chain.proceed()] vs A13 returnAndSkip[false].
+- VALUE_DEFAULT_COMPARISON: both consume system_blocktoasts in the owner body or installer gate
+- HOOK_TARGET_COMPARISON: A14=com.android.server.notification.NotificationManagerService#tryShowToast; A13=com.android.server.notification.NotificationManagerService#tryShowToast
+- CALLBACK_SEMANTICS_COMPARISON: A14 intercept vs A13 before; skipped paths do not invoke the original, proceed-once equals after side-effect
+- ARG_RESULT_COMPARISON: A14=result_assign[false,null]; chain.proceed[chain.proceed()]; A13=returnAndSkip[false]
+- A14_ONLY_BRANCHES: none beyond intercept scaffolding for this owner pair
+- WHY_USER_BEHAVIOR_IS_EQUIVALENT: User-visible contract of system_blocktoasts is the same host rewrite; callback adapter and null-safety differ.
+- KEY_OWNERSHIP_EVIDENCE: system_blocktoasts: LITERAL_READ and/or INSTALLER_CALLEE in SelectiveToastsHook/SelectiveToastsHook
+- A14_KEY_OWNER_REFERENCE: app/src/main/java/tv/withaibuild/customiuizer/mods/System.kt::SelectiveToastsHook
+- A13_KEY_OWNER_REFERENCE: app/src/main/java/tv/withaibuild/customiuizer/mods/SystemStatusBarAndClockHooks.kt::SelectiveToastsHook
+- PROOF_CONCLUSION: `PRESENT_A13_VARIANT`
+
+## PROOF_R5_checkToast_system_blocktoasts_apps
+
+- PROOF_ID: `PROOF_R5_checkToast_system_blocktoasts_apps`
+- BODY_RELATION: `REVIEWED_VARIANT`
+- A14_OWNER_PATH: `app/src/main/java/tv/withaibuild/customiuizer/mods/System.kt`
+- A14_SYMBOL: `checkToast`
+- A14_INSTALLER: `A14 installer/spec gate for system_blocktoasts_apps`
+- A14_HOOK_TARGETS: `(no host member literals)`
+- A14_CALLBACK_PHASE: `unknown`
+- A13_OWNER_PATH: `app/src/main/java/tv/withaibuild/customiuizer/mods/SystemStatusBarAndClockHooks.kt`
+- A13_SYMBOL: `checkToast`
+- A13_INSTALLER: `A13 installer gate for system_blocktoasts_apps`
+- A13_HOOK_TARGETS: `(no host member literals)`
+- A13_CALLBACK_PHASE: `unknown`
+- PREFERENCE_KEYS: `system_blocktoasts_apps`
+- VALUE_DOMAIN: owner-local preference domain
+- DEFAULT_SEMANTICS: same persisted keys consumed by both owners
+- RESULT/ARGUMENT_BEHAVIOR: A14 ops: no result/argument rewrite literals. A13 ops: no result/argument rewrite literals. Keys system_blocktoasts_apps rewrite the same host members.
+- API33_VARIANT_REASON: A14 callback unknown vs A13 unknown on members A14[(none)] / A13[(none)]. Inner preference reads of system_blocktoasts_apps match; intercept proceed-once maps to before returnAndSkip or after side-effect.
+- DIFF_SUMMARY: Shared members (none). Differ: A14 phases unknown vs A13 unknown; A14 no result/argument rewrite literals vs A13 no result/argument rewrite literals.
+- VALUE_DEFAULT_COMPARISON: both consume system_blocktoasts_apps in the owner body or installer gate
+- HOOK_TARGET_COMPARISON: A14=(none); A13=(none)
+- CALLBACK_SEMANTICS_COMPARISON: A14 unknown vs A13 unknown; skipped paths do not invoke the original, proceed-once equals after side-effect
+- ARG_RESULT_COMPARISON: A14=no result/argument rewrite literals; A13=no result/argument rewrite literals
+- A14_ONLY_BRANCHES: none beyond intercept scaffolding for this owner pair
+- WHY_USER_BEHAVIOR_IS_EQUIVALENT: User-visible contract of system_blocktoasts_apps is the same host rewrite; callback adapter and null-safety differ.
+- KEY_OWNERSHIP_EVIDENCE: system_blocktoasts_apps: LITERAL_READ and/or INSTALLER_CALLEE in checkToast/checkToast
+- A14_KEY_OWNER_REFERENCE: app/src/main/java/tv/withaibuild/customiuizer/mods/System.kt::checkToast
+- A13_KEY_OWNER_REFERENCE: app/src/main/java/tv/withaibuild/customiuizer/mods/SystemStatusBarAndClockHooks.kt::checkToast
+- PROOF_CONCLUSION: `PRESENT_A13_VARIANT`
+
+## PROOF_R5_ReplaceShortcutAppHook_system_calendar_app
+
+- PROOF_ID: `PROOF_R5_ReplaceShortcutAppHook_system_calendar_app`
+- BODY_RELATION: `REVIEWED_VARIANT`
+- A14_OWNER_PATH: `app/src/main/java/tv/withaibuild/customiuizer/mods/SystemUILockScreenHooks.kt`
+- A14_SYMBOL: `ReplaceShortcutAppHook`
+- A14_INSTALLER: `A14 installer/spec gate for system_calendar_app,system_clock_app,system_shortcut_app`
+- A14_HOOK_TARGETS: `com.miui.systemui.util.CommonUtil#startSettingsApp,com.miui.systemui.util.CommonUtil#startCalendarApp,com.miui.systemui.util.CommonUtil#startClockApp`
+- A14_CALLBACK_PHASE: `before`
+- A13_OWNER_PATH: `app/src/main/java/tv/withaibuild/customiuizer/mods/SystemUINotificationHooks.kt`
+- A13_SYMBOL: `ReplaceShortcutAppHook`
+- A13_INSTALLER: `A13 installer gate for system_calendar_app,system_clock_app,system_shortcut_app`
+- A13_HOOK_TARGETS: `com.miui.systemui.util.CommonUtil#startSettingsApp,com.miui.systemui.util.CommonUtil#startCalendarApp,com.miui.systemui.util.CommonUtil#startClockApp`
+- A13_CALLBACK_PHASE: `before`
+- PREFERENCE_KEYS: `system_calendar_app,system_clock_app,system_shortcut_app`
+- VALUE_DOMAIN: owner-local preference domain
+- DEFAULT_SEMANTICS: same persisted keys consumed by both owners
+- RESULT/ARGUMENT_BEHAVIOR: A14 ops: no result/argument rewrite literals. A13 ops: returnAndSkip[null]. Keys system_calendar_app,system_clock_app,system_shortcut_app rewrite the same host members.
+- API33_VARIANT_REASON: A14 callback before vs A13 before on members A14[com.miui.systemui.util.CommonUtil#startSettingsApp,com.miui.systemui.util.CommonUtil#startCalendarApp,com.miui.systemui.util.CommonUtil#startClockApp] / A13[com.miui.systemui.util.CommonUtil#startSettingsApp,com.miui.systemui.util.CommonUtil#startCalendarApp,com.miui.systemui.util.CommonUtil#startClockApp]. Inner preference reads of system_calendar_app,system_clock_app,system_shortcut_app match; intercept proceed-once maps to before returnAndSkip or after side-effect.
+- DIFF_SUMMARY: Shared members com.miui.systemui.util.CommonUtil#startSettingsApp,com.miui.systemui.util.CommonUtil#startCalendarApp,com.miui.systemui.util.CommonUtil#startClockApp. Differ: A14 phases before vs A13 before; A14 no result/argument rewrite literals vs A13 returnAndSkip[null].
+- VALUE_DEFAULT_COMPARISON: both consume system_calendar_app,system_clock_app,system_shortcut_app in the owner body or installer gate
+- HOOK_TARGET_COMPARISON: A14=com.miui.systemui.util.CommonUtil#startSettingsApp,com.miui.systemui.util.CommonUtil#startCalendarApp,com.miui.systemui.util.CommonUtil#startClockApp; A13=com.miui.systemui.util.CommonUtil#startSettingsApp,com.miui.systemui.util.CommonUtil#startCalendarApp,com.miui.systemui.util.CommonUtil#startClockApp
+- CALLBACK_SEMANTICS_COMPARISON: A14 before vs A13 before; skipped paths do not invoke the original, proceed-once equals after side-effect
+- ARG_RESULT_COMPARISON: A14=no result/argument rewrite literals; A13=returnAndSkip[null]
+- A14_ONLY_BRANCHES: none beyond intercept scaffolding for this owner pair
+- WHY_USER_BEHAVIOR_IS_EQUIVALENT: User-visible contract of system_calendar_app,system_clock_app,system_shortcut_app is the same host rewrite; callback adapter and null-safety differ.
+- KEY_OWNERSHIP_EVIDENCE: system_calendar_app,system_clock_app,system_shortcut_app: LITERAL_READ and/or INSTALLER_CALLEE in ReplaceShortcutAppHook/ReplaceShortcutAppHook
+- A14_KEY_OWNER_REFERENCE: app/src/main/java/tv/withaibuild/customiuizer/mods/SystemUILockScreenHooks.kt::ReplaceShortcutAppHook
+- A13_KEY_OWNER_REFERENCE: app/src/main/java/tv/withaibuild/customiuizer/mods/SystemUINotificationHooks.kt::ReplaceShortcutAppHook
+- PROOF_CONCLUSION: `PRESENT_A13_VARIANT`
+
+## PROOF_R5F_StatusBarClockTweakHook_system_cc_clocktweak
+
+- PROOF_ID: `PROOF_R5F_StatusBarClockTweakHook_system_cc_clocktweak`
+- BODY_RELATION: `REVIEWED_VARIANT`
+- A14_OWNER_PATH: `app/src/main/java/tv/withaibuild/customiuizer/mods/SystemClockHooks.kt`
+- A14_SYMBOL: `StatusBarClockTweakHook`
+- A14_INSTALLER: `A14 installer/spec gate for system_statusbar_clocktweak,system_cc_clocktweak,system_cc_hidedate,system_cc_dateformat,system_statusbar_clock_show_seconds,system_statusbar_clock_show_ampm,system_statusbar_clock_leadingzero,system_statusbar_clock_24hour_format,system_statusbar_clock_customformat_enable,system_statusbar_clock_customformat,system_cc_clock_fontsize,system_cc_clock_customformat,system_cc_clock_verticaloffset,system_cc_clock_topmargin_indrawer`
+- A14_HOOK_TARGETS: `com.android.systemui.statusbar.views.MiuiClock#updateTime,com.android.systemui.statusbar.views.MiuiStatusBarClock#updateTime,com.android.systemui.statusbar.views.MiuiClock#onAttachedToWindow,com.android.systemui.statusbar.phone.MiuiPhoneStatusBarView#onAttachedToWindow,com.android.systemui.statusbar.views.MiuiClock#onDarkChanged,com.android.systemui.statusbar.policy.FakeStatusBarClockController#initState,com.android.systemui.statusbar.policy.MiuiStatusBarClockController#<init>,com.android.systemui.statusbar.views.MiuiClock#<init>`
+- A14_CALLBACK_PHASE: `intercept`
+- A13_OWNER_PATH: `app/src/main/java/tv/withaibuild/customiuizer/mods/SystemStatusBarClockAndMoreHooks.kt`
+- A13_SYMBOL: `StatusBarClockTweakHook`
+- A13_INSTALLER: `A13 installer gate for system_statusbar_clocktweak,system_cc_clocktweak,system_cc_hidedate,system_cc_dateformat,system_statusbar_clock_show_seconds,system_statusbar_clock_show_ampm,system_statusbar_clock_leadingzero,system_statusbar_clock_24hour_format,system_statusbar_clock_customformat_enable,system_statusbar_clock_customformat,system_cc_clock_fontsize,system_cc_clock_customformat,system_cc_clock_verticaloffset,system_cc_clock_topmargin_indrawer`
+- A13_HOOK_TARGETS: `com.android.systemui.statusbar.policy.MiuiStatusBarClockController#fireTimeChange,com.android.systemui.statusbar.views.MiuiClock#updateTime,com.android.systemui.statusbar.views.MiuiClock#setClockVisibility,com.android.systemui.statusbar.phone.MiuiPhoneStatusBarView#onAttachedToWindow,com.android.systemui.qs.MiuiNotificationHeaderView#updateResources,com.android.systemui.qs.MiuiQSHeaderView#updateResources,com.android.systemui.statusbar.policy.MiuiStatusBarClockController#<init>,com.android.systemui.statusbar.views.MiuiClock#<init>`
+- A13_CALLBACK_PHASE: `after,before`
+- PREFERENCE_KEYS: `system_statusbar_clocktweak,system_cc_clocktweak,system_cc_hidedate,system_cc_dateformat,system_statusbar_clock_show_seconds,system_statusbar_clock_show_ampm,system_statusbar_clock_leadingzero,system_statusbar_clock_24hour_format,system_statusbar_clock_customformat_enable,system_statusbar_clock_customformat,system_cc_clock_fontsize,system_cc_clock_customformat,system_cc_clock_verticaloffset,system_cc_clock_topmargin_indrawer`
+- VALUE_DOMAIN: owner-local preference domain
+- DEFAULT_SEMANTICS: Master tweaks default false; format strings default empty; seconds/AMPM/leading-zero default false.
+- RESULT/ARGUMENT_BEHAVIOR: A14 intercept result_assign null + proceed; A13 returnAndSkip on skipped visibility/time paths.
+- API33_VARIANT_REASON: MIUI14 clock controller uses fireTimeChange + QS header views; HyperOS split status-bar clock vs fake clock and dark-change.
+- DIFF_SUMMARY: A14 adds FakeStatusBarClockController#initState, MiuiStatusBarClock#updateTime, MiuiClock#onDarkChanged. A13 extra MIUI14 QS header updateResources plus setClockVisibility/fireTimeChange second-ticker.
+- VALUE_DEFAULT_COMPARISON: Master tweaks default false; format strings default empty; seconds/AMPM/leading-zero default false.
+- HOOK_TARGET_COMPARISON: A14=com.android.systemui.statusbar.views.MiuiClock#updateTime,com.android.systemui.statusbar.views.MiuiStatusBarClock#updateTime,com.android.systemui.statusbar.views.MiuiClock#onAttachedToWindow,com.android.systemui.statusbar.phone.MiuiPhoneStatusBarView#onAttachedToWindow,com.android.systemui.statusbar.views.MiuiClock#onDarkChanged,com.android.systemui.statusbar.policy.FakeStatusBarClockController#initState,com.android.systemui.statusbar.policy.MiuiStatusBarClockController#<init>,com.android.systemui.statusbar.views.MiuiClock#<init>; A13=com.android.systemui.statusbar.policy.MiuiStatusBarClockController#fireTimeChange,com.android.systemui.statusbar.views.MiuiClock#updateTime,com.android.systemui.statusbar.views.MiuiClock#setClockVisibility,com.android.systemui.statusbar.phone.MiuiPhoneStatusBarView#onAttachedToWindow,com.android.systemui.qs.MiuiNotificationHeaderView#updateResources,com.android.systemui.qs.MiuiQSHeaderView#updateResources,com.android.systemui.statusbar.policy.MiuiStatusBarClockController#<init>,com.android.systemui.statusbar.views.MiuiClock#<init>
+- CALLBACK_SEMANTICS_COMPARISON: A14 intercept+proceed-once vs A13 after constructor/time hooks.
+- ARG_RESULT_COMPARISON: A13 returnAndSkip[null] on some visibility paths; A14 proceeds then ClockEffectPublication.
+- A14_ONLY_BRANCHES: system_statusbar_enable_weather_param,system_statusbaricons_clock,system_drawer_hidedate
+- WHY_USER_BEHAVIOR_IS_EQUIVALENT: Status-bar and CC clocks still honor tweak/seconds/custom format/hide-date. Format subkeys consumed by A14 ClockResolver with the same defaults.
+- KEY_OWNERSHIP_EVIDENCE: A13 StatusBarClockTweakHook gates on statusbar/cc clocktweak and reads format/seconds/AMPM/leading-zero/custom-format/CC size keys. A14 ClockResolver snapshot reads the same format keys.
+- A14_KEY_OWNER_REFERENCE: app/src/main/java/tv/withaibuild/customiuizer/mods/SystemClockHooks.kt::StatusBarClockTweakHook
+- A13_KEY_OWNER_REFERENCE: app/src/main/java/tv/withaibuild/customiuizer/mods/SystemStatusBarClockAndMoreHooks.kt::StatusBarClockTweakHook
+- PROOF_CONCLUSION: `PRESENT_A13_VARIANT`
+
+## PROOF_R5_CollapseCCAfterClickHook_system_cc_collapse_after_clicked
+
+- PROOF_ID: `PROOF_R5_CollapseCCAfterClickHook_system_cc_collapse_after_clicked`
+- BODY_RELATION: `REVIEWED_VARIANT`
+- A14_OWNER_PATH: `app/src/main/java/tv/withaibuild/customiuizer/mods/SystemUIControlCenterHooks.kt`
+- A14_SYMBOL: `CollapseCCAfterClickHook`
+- A14_INSTALLER: `A14 installer/spec gate for system_cc_collapse_after_clicked`
+- A14_HOOK_TARGETS: `com.android.systemui.qs.tileimpl.QSTileImpl#click`
+- A14_CALLBACK_PHASE: `after`
+- A13_OWNER_PATH: `app/src/main/java/tv/withaibuild/customiuizer/mods/SystemSettingsAndConnectivityHooks.kt`
+- A13_SYMBOL: `CollapseCCAfterClickHook`
+- A13_INSTALLER: `A13 installer gate for system_cc_collapse_after_clicked`
+- A13_HOOK_TARGETS: `com.android.systemui.qs.tileimpl.QSTileImpl#click`
+- A13_CALLBACK_PHASE: `after`
+- PREFERENCE_KEYS: `system_cc_collapse_after_clicked`
+- VALUE_DOMAIN: owner-local preference domain
+- DEFAULT_SEMANTICS: same persisted keys consumed by both owners
+- RESULT/ARGUMENT_BEHAVIOR: A14 ops: no result/argument rewrite literals. A13 ops: no result/argument rewrite literals. Keys system_cc_collapse_after_clicked rewrite the same host members.
+- API33_VARIANT_REASON: A14 callback after vs A13 after on members A14[com.android.systemui.qs.tileimpl.QSTileImpl#click] / A13[com.android.systemui.qs.tileimpl.QSTileImpl#click]. Inner preference reads of system_cc_collapse_after_clicked match; intercept proceed-once maps to before returnAndSkip or after side-effect.
+- DIFF_SUMMARY: Shared members com.android.systemui.qs.tileimpl.QSTileImpl#click. Differ: A14 phases after vs A13 after; A14 no result/argument rewrite literals vs A13 no result/argument rewrite literals.
+- VALUE_DEFAULT_COMPARISON: both consume system_cc_collapse_after_clicked in the owner body or installer gate
+- HOOK_TARGET_COMPARISON: A14=com.android.systemui.qs.tileimpl.QSTileImpl#click; A13=com.android.systemui.qs.tileimpl.QSTileImpl#click
+- CALLBACK_SEMANTICS_COMPARISON: A14 after vs A13 after; skipped paths do not invoke the original, proceed-once equals after side-effect
+- ARG_RESULT_COMPARISON: A14=no result/argument rewrite literals; A13=no result/argument rewrite literals
+- A14_ONLY_BRANCHES: none beyond intercept scaffolding for this owner pair
+- WHY_USER_BEHAVIOR_IS_EQUIVALENT: User-visible contract of system_cc_collapse_after_clicked is the same host rewrite; callback adapter and null-safety differ.
+- KEY_OWNERSHIP_EVIDENCE: system_cc_collapse_after_clicked: LITERAL_READ and/or INSTALLER_CALLEE in CollapseCCAfterClickHook/CollapseCCAfterClickHook
+- A14_KEY_OWNER_REFERENCE: app/src/main/java/tv/withaibuild/customiuizer/mods/SystemUIControlCenterHooks.kt::CollapseCCAfterClickHook
+- A13_KEY_OWNER_REFERENCE: app/src/main/java/tv/withaibuild/customiuizer/mods/SystemSettingsAndConnectivityHooks.kt::CollapseCCAfterClickHook
+- PROOF_CONCLUSION: `PRESENT_A13_VARIANT`
+
+## PROOF_R5X_SB_LAYOUT
+
+- PROOF_ID: `PROOF_R5X_SB_LAYOUT`
+- BODY_RELATION: `REVIEWED_VARIANT`
+- A14_OWNER_PATH: `app/src/main/java/tv/withaibuild/customiuizer/mods/SystemUIStatusBarHooks.kt`
+- A14_SYMBOL: `StatusBarHeightConfig / initStatusBarLayout`
+- A14_INSTALLER: `A14 installer/spec gate for system_statusbarheight,system_statusbar_iconsize,system_statusbar_topmargin_val,system_statusbarcolor,system_statusbarcolor_apps,system_cc_enable_style_switch,system_qs_force_systemfonts,system_recents_disable_wallpaperscale`
+- A14_HOOK_TARGETS: `status_bar_height dimen / status-bar layout`
+- A14_CALLBACK_PHASE: `n/a`
+- A13_OWNER_PATH: `app/src/main/java/tv/withaibuild/customiuizer/mods/SystemUIStatusBarHooks.kt`
+- A13_SYMBOL: `StatusBarHeightRes / SystemUIStatusBarHooks layout`
+- A13_INSTALLER: `A13 installer gate for system_statusbarheight,system_statusbar_iconsize,system_statusbar_topmargin_val,system_statusbarcolor,system_statusbarcolor_apps,system_cc_enable_style_switch,system_qs_force_systemfonts,system_recents_disable_wallpaperscale`
+- A13_HOOK_TARGETS: `status_bar_height dimen / status-bar layout`
+- A13_CALLBACK_PHASE: `n/a`
+- PREFERENCE_KEYS: `system_statusbarheight,system_statusbar_iconsize,system_statusbar_topmargin_val,system_statusbarcolor,system_statusbarcolor_apps,system_cc_enable_style_switch,system_qs_force_systemfonts,system_recents_disable_wallpaperscale`
+- VALUE_DOMAIN: owner-local preference domain
+- DEFAULT_SEMANTICS: height sentinel 19 A13 / 11 A14; iconsize 6 inactive unless >; topmargin_val used only when topmargin boolean on.
+- RESULT/ARGUMENT_BEHAVIOR: Resource replacement and layout mutation; color hook per app process.
+- API33_VARIANT_REASON: status_bar_height overlay exists on API33. Sentinel values differ (19 vs 11) but both mean 'stock until above sentinel'.
+- DIFF_SUMMARY: Height is a resource replacement (A13 sentinel 19 vs A14 sentinel 11). Icon size, top margin, CC style switch, QS system fonts are live layout reads. Status-bar color is GenericApp per-app hook. Recents wallpaper scale shares DisableLauncherWallpaperScale.
+- VALUE_DEFAULT_COMPARISON: height sentinel 19 A13 / 11 A14; iconsize 6 inactive unless >; topmargin_val used only when topmargin boolean on.
+- HOOK_TARGET_COMPARISON: A14=status_bar_height dimen / status-bar layout; A13=status_bar_height dimen / status-bar layout
+- CALLBACK_SEMANTICS_COMPARISON: Installer-gated resource hook plus layout after inflate.
+- ARG_RESULT_COMPARISON: No skip of SystemUI constructors beyond documented layout writes.
+- A14_ONLY_BRANCHES: StatusBarHeightConfig sentinel 11 vs A13 19
+- WHY_USER_BEHAVIOR_IS_EQUIVALENT: Status-bar height/icon size/top margin/color and CC style/font still apply. Recents wallpaper scale still disabled when the recents toggle is on.
+- KEY_OWNERSHIP_EVIDENCE: LITERAL_READ: A13 StatusBarHeightRes getInt(system_statusbarheight,19); SystemUIStatusBarHooks topmargin_val/iconsize/cc_enable_style_switch/qs_force_systemfonts; GenericAppInstaller statusbarcolor+_apps; LauncherInstaller recents_disable_wallpaperscale.
+- A14_KEY_OWNER_REFERENCE: app/src/main/java/tv/withaibuild/customiuizer/mods/SystemUIStatusBarHooks.kt::StatusBarHeightConfig / initStatusBarLayout
+- A13_KEY_OWNER_REFERENCE: app/src/main/java/tv/withaibuild/customiuizer/mods/SystemUIStatusBarHooks.kt::StatusBarHeightRes / SystemUIStatusBarHooks layout
+- PROOF_CONCLUSION: `PRESENT_A13_VARIANT`
+
+## PROOF_R5F_AddCustomTileHook_system_cc_fpstile
+
+- PROOF_ID: `PROOF_R5F_AddCustomTileHook_system_cc_fpstile`
+- BODY_RELATION: `REVIEWED_VARIANT`
+- A14_OWNER_PATH: `app/src/main/java/tv/withaibuild/customiuizer/mods/SystemUIControlCenterHooks.kt`
+- A14_SYMBOL: `AddCustomTileHook`
+- A14_INSTALLER: `A14 installer/spec gate for system_fivegtile,system_cc_fpstile`
+- A14_HOOK_TARGETS: `com.android.systemui.SystemUIApplication#onCreate,com.android.systemui.qs.tileimpl.MiuiQSFactory#createTile,com.android.systemui.qs.tiles.MiuiNfcTile#isAvailable`
+- A14_CALLBACK_PHASE: `after,before`
+- A13_OWNER_PATH: `app/src/main/java/tv/withaibuild/customiuizer/mods/SystemUIMonitorAndTileHooks.kt`
+- A13_SYMBOL: `AddCustomTileHook`
+- A13_INSTALLER: `A13 installer gate for system_fivegtile,system_cc_fpstile`
+- A13_HOOK_TARGETS: `com.android.systemui.SystemUIApplication#onCreate,com.android.systemui.qs.tileimpl.MiuiQSFactory#createTile,com.android.systemui.qs.tiles.MiuiNfcTile#isAvailable`
+- A13_CALLBACK_PHASE: `after,before`
+- PREFERENCE_KEYS: `system_fivegtile,system_cc_fpstile`
+- VALUE_DOMAIN: owner-local preference domain
+- DEFAULT_SEMANTICS: Booleans default false.
+- RESULT/ARGUMENT_BEHAVIOR: Both before returnAndSkip(tile) from createTile for custom_* names; isAvailable returnAndSkip(enable5G/enableFps).
+- API33_VARIANT_REASON: None for these two tiles. A14 extra custom_floatingtime is system_cc_floatingtimetile, not claimed here.
+- DIFF_SUMMARY: Classifier saw an empty A14 wrapper. Real A14 body appends custom_5G/custom_FPS to miui_quick_settings_tiles_stock and clones MiuiNfcTile the same way.
+- VALUE_DEFAULT_COMPARISON: Booleans default false.
+- HOOK_TARGET_COMPARISON: A14=com.android.systemui.SystemUIApplication#onCreate,com.android.systemui.qs.tileimpl.MiuiQSFactory#createTile,com.android.systemui.qs.tiles.MiuiNfcTile#isAvailable; A13=com.android.systemui.SystemUIApplication#onCreate,com.android.systemui.qs.tileimpl.MiuiQSFactory#createTile,com.android.systemui.qs.tiles.MiuiNfcTile#isAvailable
+- CALLBACK_SEMANTICS_COMPARISON: Same before skip of factory/tile methods.
+- ARG_RESULT_COMPARISON: returnAndSkip tile / boolean availability.
+- A14_ONLY_BRANCHES: system_cc_floatingtimetile custom_floatingtime
+- WHY_USER_BEHAVIOR_IS_EQUIVALENT: 5G and FPS QS tiles appear, listen, and click with the same NFC-tile clone.
+- KEY_OWNERSHIP_EVIDENCE: A14 SystemUIControlCenterHooks.AddCustomTileHook delegates to SystemUIMonitorAndTileHooks.AddCustomTileHook which reads system_fivegtile and system_cc_fpstile like A13.
+- A14_KEY_OWNER_REFERENCE: app/src/main/java/tv/withaibuild/customiuizer/mods/SystemUIControlCenterHooks.kt::AddCustomTileHook
+- A13_KEY_OWNER_REFERENCE: app/src/main/java/tv/withaibuild/customiuizer/mods/SystemUIMonitorAndTileHooks.kt::AddCustomTileHook
+- PROOF_CONCLUSION: `PRESENT_A13_VARIANT`
+
+## PROOF_R5X_OPERATOR_NOTIF_NET
+
+- PROOF_ID: `PROOF_R5X_OPERATOR_NOTIF_NET`
+- BODY_RELATION: `REVIEWED_VARIANT`
+- A14_OWNER_PATH: `app/src/main/java/tv/withaibuild/customiuizer/mods/SystemSettingsAndConnectivityHooks.kt`
+- A14_SYMBOL: `HideCCOperatorHook / NetworkIndicator / MoreNotifications`
+- A14_INSTALLER: `A14 installer/spec gate for system_qs_hideoperator,system_cc_hideoperator_delimiter,system_morenotif,system_networkindicator_wifi,system_lstimeout,system_statusbaricons_clock,system_nooverscroll,system_nooverscroll_apps`
+- A14_HOOK_TARGETS: `ControlCenterStatusBar / MiuiCarrierTextController / NetworkSpeed / Notification limits / PhoneWindow userActivityTimeout`
+- A14_CALLBACK_PHASE: `n/a`
+- A13_OWNER_PATH: `app/src/main/java/tv/withaibuild/customiuizer/mods/SystemSettingsAndConnectivityHooks.kt`
+- A13_SYMBOL: `HideCCOperatorHook / HideCCOperatorDelimiterHook / MoreNotificationsHook / LockScreenTimeoutHook`
+- A13_INSTALLER: `A13 installer gate for system_qs_hideoperator,system_cc_hideoperator_delimiter,system_morenotif,system_networkindicator_wifi,system_lstimeout,system_statusbaricons_clock,system_nooverscroll,system_nooverscroll_apps`
+- A13_HOOK_TARGETS: `ControlCenterStatusBar#updateFlaresInfo,MiuiCarrierTextController#fireCarrierTextChanged,MoreNotificationsHook,LockScreenTimeoutHook`
+- A13_CALLBACK_PHASE: `n/a`
+- PREFERENCE_KEYS: `system_qs_hideoperator,system_cc_hideoperator_delimiter,system_morenotif,system_networkindicator_wifi,system_lstimeout,system_statusbaricons_clock,system_nooverscroll,system_nooverscroll_apps`
+- VALUE_DOMAIN: owner-local preference domain
+- DEFAULT_SEMANTICS: booleans false; lstimeout 3 seconds sentinel; overscroll apps empty.
+- RESULT/ARGUMENT_BEHAVIOR: View GONE / string strip / timeout field write / per-app overscroll skip.
+- API33_VARIANT_REASON: MIUI14 ControlCenterStatusBar/MiuiQSHeaderView vs HyperOS CC package names; delimiter member MiuiCarrierTextController is the A13 ABI.
+- DIFF_SUMMARY: Hide operator GONE on CC/QS carrier TextView. Delimiter strips ' | ' in fireCarrierTextChanged. More notifications raises the shade cap. Wi-Fi network indicator catalog feature. LS timeout writes userActivityTimeout=lstimeout*1000. Clock hide uses hideIconsClock. Overscroll disabled per selected apps.
+- VALUE_DEFAULT_COMPARISON: booleans false; lstimeout 3 seconds sentinel; overscroll apps empty.
+- HOOK_TARGET_COMPARISON: A14=ControlCenterStatusBar / MiuiCarrierTextController / NetworkSpeed / Notification limits / PhoneWindow userActivityTimeout; A13=ControlCenterStatusBar#updateFlaresInfo,MiuiCarrierTextController#fireCarrierTextChanged,MoreNotificationsHook,LockScreenTimeoutHook
+- CALLBACK_SEMANTICS_COMPARISON: after GONE; before delimiter rewrite; catalog hide-clock.
+- ARG_RESULT_COMPARISON: Delimiter rewrites arg0 string; timeout setLongField.
+- A14_ONLY_BRANCHES: HyperOS CC class names for operator hide
+- WHY_USER_BEHAVIOR_IS_EQUIVALENT: CC operator text, delimiter, notification count, Wi-Fi indicator, lock timeout, clock hide, and overscroll still honor these keys.
+- KEY_OWNERSHIP_EVIDENCE: INSTALLER_CALLEE SystemUiInstaller: qs_hideoperator→HideCCOperatorHook, cc_hideoperator_delimiter→HideCCOperatorDelimiterHook, morenotif→MoreNotificationsHook, networkindicator_wifi→FeatureCatalog, lstimeout→LockScreenTimeoutHook, statusbaricons_clock→hideIconsClock. nooverscroll+_apps GenericAppInstaller LITERAL_READ.
+- A14_KEY_OWNER_REFERENCE: app/src/main/java/tv/withaibuild/customiuizer/mods/SystemSettingsAndConnectivityHooks.kt::HideCCOperatorHook / NetworkIndicator / MoreNotifications
+- A13_KEY_OWNER_REFERENCE: app/src/main/java/tv/withaibuild/customiuizer/mods/SystemSettingsAndConnectivityHooks.kt::HideCCOperatorHook / HideCCOperatorDelimiterHook / MoreNotificationsHook / LockScreenTimeoutHook
+- PROOF_CONCLUSION: `PRESENT_A13_VARIANT`
+
+## PROOF_R5F_ShowCCStepCountHook_system_cc_show_stepcount
+
+- PROOF_ID: `PROOF_R5F_ShowCCStepCountHook_system_cc_show_stepcount`
+- BODY_RELATION: `REVIEWED_VARIANT`
+- A14_OWNER_PATH: `app/src/main/java/tv/withaibuild/customiuizer/mods/SystemUIControlCenterHooks.kt`
+- A14_SYMBOL: `CCHeaderHook`
+- A14_INSTALLER: `A14 installer/spec gate for system_cc_show_stepcount,system_drawer_show_stepcount`
+- A14_HOOK_TARGETS: `miui.systemui.controlcenter.panel.main.header.StatusHeaderController#adjustCarrierOrPrompt,miui.systemui.controlcenter.panel.main.header.StatusHeaderController#createStatusBarViews,miui.systemui.controlcenter.panel.main.header.StatusHeaderController#onExpandChange,miui.systemui.controlcenter.panel.main.header.StatusHeaderController#updateConstraint`
+- A14_CALLBACK_PHASE: `after`
+- A13_OWNER_PATH: `app/src/main/java/tv/withaibuild/customiuizer/mods/SystemUIControlCenterHooks.kt`
+- A13_SYMBOL: `ShowCCStepCountHook`
+- A13_INSTALLER: `A13 installer gate for system_cc_show_stepcount,system_drawer_show_stepcount`
+- A13_HOOK_TARGETS: `com.android.systemui.qs.MiuiNotificationHeaderView#themeChanged,com.android.systemui.controlcenter.phone.widget.ControlCenterStatusBar#updateHeaderColor`
+- A13_CALLBACK_PHASE: `after`
+- PREFERENCE_KEYS: `system_cc_show_stepcount,system_drawer_show_stepcount`
+- VALUE_DOMAIN: owner-local preference domain
+- DEFAULT_SEMANTICS: Booleans default false.
+- RESULT/ARGUMENT_BEHAVIOR: No result rewrite; child view injection.
+- API33_VARIANT_REASON: HyperOS StatusHeaderController has no MIUI14 class of that name; A13 uses MIUI14 status-bar/header widgets for the same step-count toggle.
+- DIFF_SUMMARY: HyperOS header is miui.systemui.controlcenter.panel.main.header.StatusHeaderController; MIUI14 is ControlCenterStatusBar#updateHeaderColor plus notification-header themeChanged. A14 also hides operator (different keys, not claimed here).
+- VALUE_DEFAULT_COMPARISON: Booleans default false.
+- HOOK_TARGET_COMPARISON: A14=miui.systemui.controlcenter.panel.main.header.StatusHeaderController#adjustCarrierOrPrompt,miui.systemui.controlcenter.panel.main.header.StatusHeaderController#createStatusBarViews,miui.systemui.controlcenter.panel.main.header.StatusHeaderController#onExpandChange,miui.systemui.controlcenter.panel.main.header.StatusHeaderController#updateConstraint; A13=com.android.systemui.qs.MiuiNotificationHeaderView#themeChanged,com.android.systemui.controlcenter.phone.widget.ControlCenterStatusBar#updateHeaderColor
+- CALLBACK_SEMANTICS_COMPARISON: Both after header-color/create hooks.
+- ARG_RESULT_COMPARISON: No arg/result rewrite.
+- A14_ONLY_BRANCHES: system_qs_hideoperator / system_cc_hideoperator_delimiter carrier blanking
+- WHY_USER_BEHAVIOR_IS_EQUIVALENT: CC (and A13 notification-header) show a live step-count TextView next to the carrier.
+- KEY_OWNERSHIP_EVIDENCE: A13 injects a tagged step TextView beside carrierText/mCarrierText when system_cc_show_stepcount or system_drawer_show_stepcount. A14 CCHeaderHook uses the same StepInControlCenter tag when system_cc_show_stepcount.
+- A14_KEY_OWNER_REFERENCE: app/src/main/java/tv/withaibuild/customiuizer/mods/SystemUIControlCenterHooks.kt::CCHeaderHook
+- A13_KEY_OWNER_REFERENCE: app/src/main/java/tv/withaibuild/customiuizer/mods/SystemUIControlCenterHooks.kt::ShowCCStepCountHook
+- PROOF_CONCLUSION: `PRESENT_A13_VARIANT`
+
+## PROOF_R5_SwitchCCAndNotificationHook_system_cc_switch_qsandnotification
+
+- PROOF_ID: `PROOF_R5_SwitchCCAndNotificationHook_system_cc_switch_qsandnotification`
+- BODY_RELATION: `REVIEWED_VARIANT`
+- A14_OWNER_PATH: `app/src/main/java/tv/withaibuild/customiuizer/mods/SystemUIControlCenterHooks.kt`
+- A14_SYMBOL: `SwitchCCAndNotificationHook`
+- A14_INSTALLER: `A14 installer/spec gate for system_cc_switch_qsandnotification`
+- A14_HOOK_TARGETS: `com.android.systemui.statusbar.phone.MiuiPhoneStatusBarView#handleEvent,com.android.systemui.controlcenter.phone.ControlPanelWindowManager#dispatchToControlPanel`
+- A14_CALLBACK_PHASE: `before`
+- A13_OWNER_PATH: `app/src/main/java/tv/withaibuild/customiuizer/mods/SystemUIControlCenterHooks.kt`
+- A13_SYMBOL: `SwitchCCAndNotificationHook`
+- A13_INSTALLER: `A13 installer gate for system_cc_switch_qsandnotification`
+- A13_HOOK_TARGETS: `com.android.systemui.statusbar.phone.MiuiPhoneStatusBarView#handleEvent,com.android.systemui.controlcenter.phone.ControlPanelWindowManager#dispatchToControlPanel`
+- A13_CALLBACK_PHASE: `before`
+- PREFERENCE_KEYS: `system_cc_switch_qsandnotification`
+- VALUE_DOMAIN: owner-local preference domain
+- DEFAULT_SEMANTICS: same persisted keys consumed by both owners
+- RESULT/ARGUMENT_BEHAVIOR: A14 ops: returnAndSkip[false,dispatchToControlPanel,false,false]. A13 ops: returnAndSkip[dispatchToControlPanel,false,false,XposedHelpers.callMethod(controlCenterWindowView, "handleMotionEvent", motionEvent, true]. Keys system_cc_switch_qsandnotification rewrite the same host members.
+- API33_VARIANT_REASON: A14 callback before vs A13 before on members A14[com.android.systemui.statusbar.phone.MiuiPhoneStatusBarView#handleEvent,com.android.systemui.controlcenter.phone.ControlPanelWindowManager#dispatchToControlPanel] / A13[com.android.systemui.statusbar.phone.MiuiPhoneStatusBarView#handleEvent,com.android.systemui.controlcenter.phone.ControlPanelWindowManager#dispatchToControlPanel]. Inner preference reads of system_cc_switch_qsandnotification match; intercept proceed-once maps to before returnAndSkip or after side-effect.
+- DIFF_SUMMARY: Shared members com.android.systemui.statusbar.phone.MiuiPhoneStatusBarView#handleEvent,com.android.systemui.controlcenter.phone.ControlPanelWindowManager#dispatchToControlPanel. Differ: A14 phases before vs A13 before; A14 returnAndSkip[false,dispatchToControlPanel,false,false] vs A13 returnAndSkip[dispatchToControlPanel,false,false,XposedHelpers.callMethod(controlCenterWindowView, "handleMotionEvent", motionEvent, true].
+- VALUE_DEFAULT_COMPARISON: both consume system_cc_switch_qsandnotification in the owner body or installer gate
+- HOOK_TARGET_COMPARISON: A14=com.android.systemui.statusbar.phone.MiuiPhoneStatusBarView#handleEvent,com.android.systemui.controlcenter.phone.ControlPanelWindowManager#dispatchToControlPanel; A13=com.android.systemui.statusbar.phone.MiuiPhoneStatusBarView#handleEvent,com.android.systemui.controlcenter.phone.ControlPanelWindowManager#dispatchToControlPanel
+- CALLBACK_SEMANTICS_COMPARISON: A14 before vs A13 before; skipped paths do not invoke the original, proceed-once equals after side-effect
+- ARG_RESULT_COMPARISON: A14=returnAndSkip[false,dispatchToControlPanel,false,false]; A13=returnAndSkip[dispatchToControlPanel,false,false,XposedHelpers.callMethod(controlCenterWindowView, "handleMotionEvent", motionEvent, true]
+- A14_ONLY_BRANCHES: none beyond intercept scaffolding for this owner pair
+- WHY_USER_BEHAVIOR_IS_EQUIVALENT: User-visible contract of system_cc_switch_qsandnotification is the same host rewrite; callback adapter and null-safety differ.
+- KEY_OWNERSHIP_EVIDENCE: system_cc_switch_qsandnotification: LITERAL_READ and/or INSTALLER_CALLEE in SwitchCCAndNotificationHook/SwitchCCAndNotificationHook
+- A14_KEY_OWNER_REFERENCE: app/src/main/java/tv/withaibuild/customiuizer/mods/SystemUIControlCenterHooks.kt::SwitchCCAndNotificationHook
+- A13_KEY_OWNER_REFERENCE: app/src/main/java/tv/withaibuild/customiuizer/mods/SystemUIControlCenterHooks.kt::SwitchCCAndNotificationHook
+- PROOF_CONCLUSION: `PRESENT_A13_VARIANT`
+
+## PROOF_R5F_CCTileCornerHook_system_cc_tile_roundedrect
+
+- PROOF_ID: `PROOF_R5F_CCTileCornerHook_system_cc_tile_roundedrect`
+- BODY_RELATION: `REVIEWED_VARIANT`
+- A14_OWNER_PATH: `app/src/main/java/tv/withaibuild/customiuizer/mods/SystemUIControlCenterHooks.kt`
+- A14_SYMBOL: `CCTileCornerHook`
+- A14_INSTALLER: `A14 installer/spec gate for system_cc_tile_roundedrect`
+- A14_HOOK_TARGETS: `miui.systemui.controlcenter.qs.tileview.QSTileItemIconView#getCornerRadius,miui.systemui.controlcenter.qs.tileview.QSTileItemIconView#getDisabledBackgroundDrawable,miui.systemui.controlcenter.qs.tileview.QSTileItemIconView#getActiveBackgroundDrawable`
+- A14_CALLBACK_PHASE: `before,after`
+- A13_OWNER_PATH: `app/src/main/java/tv/withaibuild/customiuizer/mods/SystemUIControlCenterHooks.kt`
+- A13_SYMBOL: `CCTileCornerHook`
+- A13_INSTALLER: `A13 installer gate for system_cc_tile_roundedrect`
+- A13_HOOK_TARGETS: `miui.systemui.controlcenter.qs.tileview.ExpandableIconView#setCornerRadius,miui.systemui.dagger.PluginComponentFactory#create,android.content.res.Resources#getDrawable,android.content.res.Resources.Theme#getDrawable`
+- A13_CALLBACK_PHASE: `before`
+- PREFERENCE_KEYS: `system_cc_tile_roundedrect`
+- VALUE_DOMAIN: owner-local preference domain
+- DEFAULT_SEMANTICS: Boolean default false; radius ~18–20dp scaled by tile width on A13, 20*iconScaleRatio on A14.
+- RESULT/ARGUMENT_BEHAVIOR: A14 returnAndSkip radius from getCornerRadius. A13 rewrites setCornerRadius arg[0] and returnAndSkip custom drawable from Resources#getDrawable.
+- API33_VARIANT_REASON: MIUI14 plugin class is ExpandableIconView; HyperOS is QSTileItemIconView. Same rounded-rect tile toggle; do not port QSTileItemIconView onto MIUI14.
+- DIFF_SUMMARY: HyperOS plugin uses QSTileItemIconView#getCornerRadius returnAndSkip(dp2px(20*iconScaleRatio)) and rounds GradientDrawable from getActive/DisabledBackgroundDrawable. MIUI14 plugin uses ExpandableIconView#setCornerRadius arg rewrite plus qs_background_enabled drawable replacement.
+- VALUE_DEFAULT_COMPARISON: Boolean default false; radius ~18–20dp scaled by tile width on A13, 20*iconScaleRatio on A14.
+- HOOK_TARGET_COMPARISON: A14=miui.systemui.controlcenter.qs.tileview.QSTileItemIconView#getCornerRadius,miui.systemui.controlcenter.qs.tileview.QSTileItemIconView#getDisabledBackgroundDrawable,miui.systemui.controlcenter.qs.tileview.QSTileItemIconView#getActiveBackgroundDrawable; A13=miui.systemui.controlcenter.qs.tileview.ExpandableIconView#setCornerRadius,miui.systemui.dagger.PluginComponentFactory#create,android.content.res.Resources#getDrawable,android.content.res.Resources.Theme#getDrawable
+- CALLBACK_SEMANTICS_COMPARISON: A14 before skip of getter vs A13 before arg rewrite of setter; both prevent stock circular radius.
+- ARG_RESULT_COMPARISON: A14 returnAndSkip[dp2px]; A13 returnAndSkip[enableTile drawable] on matching resId.
+- A14_ONLY_BRANCHES: QSTileItemIconView getActive/DisabledBackgroundDrawable cornerRadius
+- WHY_USER_BEHAVIOR_IS_EQUIVALENT: CC QS tiles render with a rounded rectangle enabled background instead of the stock circle.
+- KEY_OWNERSHIP_EVIDENCE: Both installed when system_cc_tile_roundedrect is true from the plugin loader.
+- A14_KEY_OWNER_REFERENCE: app/src/main/java/tv/withaibuild/customiuizer/mods/SystemUIControlCenterHooks.kt::CCTileCornerHook
+- A13_KEY_OWNER_REFERENCE: app/src/main/java/tv/withaibuild/customiuizer/mods/SystemUIControlCenterHooks.kt::CCTileCornerHook
+- PROOF_CONCLUSION: `PRESENT_A13_VARIANT`
+
+## PROOF_R5_ShowVolumePctHook_system_cc_volume_showpct
+
+- PROOF_ID: `PROOF_R5_ShowVolumePctHook_system_cc_volume_showpct`
+- BODY_RELATION: `REVIEWED_VARIANT`
+- A14_OWNER_PATH: `app/src/main/java/tv/withaibuild/customiuizer/mods/SystemUIControlCenterHooks.kt`
+- A14_SYMBOL: `ShowVolumePctHook`
+- A14_INSTALLER: `A14 installer/spec gate for system_cc_volume_showpct`
+- A14_HOOK_TARGETS: `com.android.systemui.miui.volume.MiuiVolumeDialogImpl\$VolumeSeekBarChangeListener#onProgressChanged,#showVolumeDialogH,#dismissH`
+- A14_CALLBACK_PHASE: `after`
+- A13_OWNER_PATH: `app/src/main/java/tv/withaibuild/customiuizer/mods/SystemUIControlCenterHooks.kt`
+- A13_SYMBOL: `ShowVolumePctHook`
+- A13_INSTALLER: `A13 installer gate for system_cc_volume_showpct`
+- A13_HOOK_TARGETS: `com.android.systemui.miui.volume.MiuiVolumeDialogImpl\$VolumeSeekBarChangeListener#onProgressChanged,#showVolumeDialogH,#dismissH`
+- A13_CALLBACK_PHASE: `after`
+- PREFERENCE_KEYS: `system_cc_volume_showpct`
+- VALUE_DOMAIN: owner-local preference domain
+- DEFAULT_SEMANTICS: same persisted keys consumed by both owners
+- RESULT/ARGUMENT_BEHAVIOR: A14 ops: no result/argument rewrite literals. A13 ops: no result/argument rewrite literals. Keys system_cc_volume_showpct rewrite the same host members.
+- API33_VARIANT_REASON: A14 callback after vs A13 after on members A14[com.android.systemui.miui.volume.MiuiVolumeDialogImpl\$VolumeSeekBarChangeListener#onProgressChanged,#showVolumeDialogH,#dismissH] / A13[com.android.systemui.miui.volume.MiuiVolumeDialogImpl\$VolumeSeekBarChangeListener#onProgressChanged,#showVolumeDialogH,#dismissH]. Inner preference reads of system_cc_volume_showpct match; intercept proceed-once maps to before returnAndSkip or after side-effect.
+- DIFF_SUMMARY: Shared members com.android.systemui.miui.volume.MiuiVolumeDialogImpl\$VolumeSeekBarChangeListener#onProgressChanged,#showVolumeDialogH,#dismissH. Differ: A14 phases after vs A13 after; A14 no result/argument rewrite literals vs A13 no result/argument rewrite literals.
+- VALUE_DEFAULT_COMPARISON: both consume system_cc_volume_showpct in the owner body or installer gate
+- HOOK_TARGET_COMPARISON: A14=com.android.systemui.miui.volume.MiuiVolumeDialogImpl\$VolumeSeekBarChangeListener#onProgressChanged,#showVolumeDialogH,#dismissH; A13=com.android.systemui.miui.volume.MiuiVolumeDialogImpl\$VolumeSeekBarChangeListener#onProgressChanged,#showVolumeDialogH,#dismissH
+- CALLBACK_SEMANTICS_COMPARISON: A14 after vs A13 after; skipped paths do not invoke the original, proceed-once equals after side-effect
+- ARG_RESULT_COMPARISON: A14=no result/argument rewrite literals; A13=no result/argument rewrite literals
+- A14_ONLY_BRANCHES: none beyond intercept scaffolding for this owner pair
+- WHY_USER_BEHAVIOR_IS_EQUIVALENT: User-visible contract of system_cc_volume_showpct is the same host rewrite; callback adapter and null-safety differ.
+- KEY_OWNERSHIP_EVIDENCE: system_cc_volume_showpct: LITERAL_READ and/or INSTALLER_CALLEE in ShowVolumePctHook/ShowVolumePctHook
+- A14_KEY_OWNER_REFERENCE: app/src/main/java/tv/withaibuild/customiuizer/mods/SystemUIControlCenterHooks.kt::ShowVolumePctHook
+- A13_KEY_OWNER_REFERENCE: app/src/main/java/tv/withaibuild/customiuizer/mods/SystemUIControlCenterHooks.kt::ShowVolumePctHook
+- PROOF_CONCLUSION: `PRESENT_A13_VARIANT`
+
+## PROOF_R5F_SystemCCGridHook_system_ccgridcolumns
+
+- PROOF_ID: `PROOF_R5F_SystemCCGridHook_system_ccgridcolumns`
+- BODY_RELATION: `REVIEWED_VARIANT`
+- A14_OWNER_PATH: `app/src/main/java/tv/withaibuild/customiuizer/mods/SystemUIControlCenterHooks.kt`
+- A14_SYMBOL: `initControlCenter`
+- A14_INSTALLER: `A14 installer/spec gate for system_ccgridcolumns,system_ccgridrows,system_qsnolabels`
+- A14_HOOK_TARGETS: `miui.systemui.controlcenter.qs.tileview.QSTileItemView#updateSize,miui.systemui.controlcenter.qs.tileview.QSTileItemView#onFinishInflate,miui.systemui.controlcenter.panel.main.MainPanelController#setUseSeparatedPanels,miui.systemui.controlcenter.qs.QSPager#distributeTiles`
+- A14_CALLBACK_PHASE: `after,before`
+- A13_OWNER_PATH: `app/src/main/java/tv/withaibuild/customiuizer/mods/SystemUIControlCenterHooks.kt`
+- A13_SYMBOL: `SystemCCGridHook`
+- A13_INSTALLER: `A13 installer gate for system_ccgridcolumns,system_ccgridrows,system_qsnolabels`
+- A13_HOOK_TARGETS: `com.android.systemui.SystemUIApplication#onCreate,miui.systemui.controlcenter.qs.QSPager#<init>,miui.systemui.controlcenter.qs.tileview.StandardTileView#createLabel,miui.systemui.controlcenter.qs.QSPager#distributeTiles`
+- A13_CALLBACK_PHASE: `after`
+- PREFERENCE_KEYS: `system_ccgridcolumns,system_ccgridrows,system_qsnolabels`
+- VALUE_DOMAIN: owner-local preference domain
+- DEFAULT_SEMANTICS: columns/rows default 4; hook inactive at default.
+- RESULT/ARGUMENT_BEHAVIOR: A13 sets QSPager.columns field after ctor. A14 returnAndSkip span sizes / panel layout.
+- API33_VARIANT_REASON: HyperOS plugin MainPanelController/QSTileItemView have no MIUI14 equivalent; A13 QSPager.columns + StandardTileView#createLabel is the MIUI14 grid path for the same column count.
+- DIFF_SUMMARY: Classifier paired grid hook with initControlCenter. Real A14 SystemCCGridHookLoader uses HyperOS QSTileItemView/MainPanelController. A13 sets QSPager.columns and dimen qs_control_tiles_columns / tile width.
+- VALUE_DEFAULT_COMPARISON: columns/rows default 4; hook inactive at default.
+- HOOK_TARGET_COMPARISON: A14=miui.systemui.controlcenter.qs.tileview.QSTileItemView#updateSize,miui.systemui.controlcenter.qs.tileview.QSTileItemView#onFinishInflate,miui.systemui.controlcenter.panel.main.MainPanelController#setUseSeparatedPanels,miui.systemui.controlcenter.qs.QSPager#distributeTiles; A13=com.android.systemui.SystemUIApplication#onCreate,miui.systemui.controlcenter.qs.QSPager#<init>,miui.systemui.controlcenter.qs.tileview.StandardTileView#createLabel,miui.systemui.controlcenter.qs.QSPager#distributeTiles
+- CALLBACK_SEMANTICS_COMPARISON: Different plugin members, same user column contract.
+- ARG_RESULT_COMPARISON: A13 field write; A14 span returnAndSkip(cols).
+- A14_ONLY_BRANCHES: MainPanelController#setUseSeparatedPanels / distributePanels,initControlCenter unrelated CC color keys
+- WHY_USER_BEHAVIOR_IS_EQUIVALENT: CC tile grid column count (and A13 row paging / label marquee) still follow system_ccgridcolumns (>4).
+- KEY_OWNERSHIP_EVIDENCE: A13 reads cols/rows and qsnolabels. Real A14 grid owner is SystemCCGridHookLoader (initControlCenter only dispatches when cols>4).
+- A14_KEY_OWNER_REFERENCE: app/src/main/java/tv/withaibuild/customiuizer/mods/SystemUIControlCenterHooks.kt::initControlCenter
+- A13_KEY_OWNER_REFERENCE: app/src/main/java/tv/withaibuild/customiuizer/mods/SystemUIControlCenterHooks.kt::SystemCCGridHook
+- PROOF_CONCLUSION: `PRESENT_A13_VARIANT`
+
+## PROOF_R5F_ChargeAnimationHook_system_chargeanimtime
+
+- PROOF_ID: `PROOF_R5F_ChargeAnimationHook_system_chargeanimtime`
+- BODY_RELATION: `REVIEWED_VARIANT`
+- A14_OWNER_PATH: `app/src/main/java/tv/withaibuild/customiuizer/mods/SystemDisplayHooks.kt`
+- A14_SYMBOL: `ChargeAnimationHook`
+- A14_INSTALLER: `A14 installer/spec gate for system_chargeanimtime`
+- A14_HOOK_TARGETS: `com.miui.charge.container.MiuiChargeAnimationView#getAnimationDuration`
+- A14_CALLBACK_PHASE: `unknown`
+- A13_OWNER_PATH: `app/src/main/java/tv/withaibuild/customiuizer/mods/SystemDisplayAndWindowHooks.kt`
+- A13_SYMBOL: `ChargeAnimationHook`
+- A13_INSTALLER: `A13 installer gate for system_chargeanimtime`
+- A13_HOOK_TARGETS: `com.android.keyguard.charge.MiuiWirelessChargeController/MiuiChargeController#showWirelessChargeAnimation,#showRapidChargeAnimation,#showWirelessRapidChargeAnimation`
+- A13_CALLBACK_PHASE: `after`
+- PREFERENCE_KEYS: `system_chargeanimtime`
+- VALUE_DOMAIN: owner-local preference domain
+- DEFAULT_SEMANTICS: getInt(system_chargeanimtime, 20) seconds on both
+- RESULT/ARGUMENT_BEHAVIOR: A14 constant return of timeout ms. A13 delays Handler runnables; no show* result rewrite.
+- API33_VARIANT_REASON: MIUI14 keyguard.charge show*Animation vs HyperOS com.miui.charge.container.MiuiChargeAnimationView.getAnimationDuration.
+- DIFF_SUMMARY: Same second-based duration. A13 after show*ChargeAnimation reschedules mScreenOnWakeLock.release and mScreenOffRunnable. A14 returnConstant(timeout) on getAnimationDuration.
+- VALUE_DEFAULT_COMPARISON: getInt(system_chargeanimtime, 20) seconds on both
+- HOOK_TARGET_COMPARISON: A14=com.miui.charge.container.MiuiChargeAnimationView#getAnimationDuration; A13=com.android.keyguard.charge.MiuiWirelessChargeController/MiuiChargeController#showWirelessChargeAnimation,#showRapidChargeAnimation,#showWirelessRapidChargeAnimation
+- CALLBACK_SEMANTICS_COMPARISON: A14 constant-return skip of original duration vs A13 after side-effect on show* methods.
+- ARG_RESULT_COMPARISON: A14 result=timeout. A13 no setResult.
+- A14_ONLY_BRANCHES: none beyond the duration getter
+- WHY_USER_BEHAVIOR_IS_EQUIVALENT: Charge animation/wake overlay lasts system_chargeanimtime seconds (default 20).
+- KEY_OWNERSHIP_EVIDENCE: system_chargeanimtime: LITERAL_READ in both; timeout = getInt(...,20)*1000
+- A14_KEY_OWNER_REFERENCE: app/src/main/java/tv/withaibuild/customiuizer/mods/SystemDisplayHooks.kt::ChargeAnimationHook
+- A13_KEY_OWNER_REFERENCE: app/src/main/java/tv/withaibuild/customiuizer/mods/SystemDisplayAndWindowHooks.kt::ChargeAnimationHook
+- PROOF_CONCLUSION: `PRESENT_A13_VARIANT`
+
+## PROOF_R5F_ChargingInfoHook_system_charginginfo
+
+- PROOF_ID: `PROOF_R5F_ChargingInfoHook_system_charginginfo`
+- BODY_RELATION: `REVIEWED_VARIANT`
+- A14_OWNER_PATH: `app/src/main/java/tv/withaibuild/customiuizer/mods/SystemLockScreenHooks.kt`
+- A14_SYMBOL: `ChargingInfoHook`
+- A14_INSTALLER: `A14 installer/spec gate for system_charginginfo,system_charginginfo_current,system_charginginfo_voltage,system_charginginfo_wattage,system_charginginfo_temp,system_charginginfo_view,system_charginginfo_fontsize`
+- A14_HOOK_TARGETS: `com.miui.charge.ChargeUtils#getChargingHintText,com.android.systemui.statusbar.phone.KeyguardIndicationTextView#onFinishInflate,com.android.systemui.statusbar.phone.KeyguardIndicationTextView#setNextIndication`
+- A14_CALLBACK_PHASE: `intercept,after`
+- A13_OWNER_PATH: `app/src/main/java/tv/withaibuild/customiuizer/mods/SystemChargingAndWallpaperHooks.kt`
+- A13_SYMBOL: `ChargingInfoHook`
+- A13_INSTALLER: `A13 installer gate for system_charginginfo,system_charginginfo_current,system_charginginfo_voltage,system_charginginfo_wattage,system_charginginfo_temp,system_charginginfo_view,system_charginginfo_fontsize`
+- A13_HOOK_TARGETS: `com.android.keyguard.charge.ChargeUtils#getChargingHintText,com.android.systemui.statusbar.phone.KeyguardIndicationTextView#<init>`
+- A13_CALLBACK_PHASE: `after`
+- PREFERENCE_KEYS: `system_charginginfo,system_charginginfo_current,system_charginginfo_voltage,system_charginginfo_wattage,system_charginginfo_temp,system_charginginfo_view,system_charginginfo_fontsize`
+- VALUE_DOMAIN: owner-local preference domain
+- DEFAULT_SEMANTICS: view default 1; fontsize default 16; detail booleans default false.
+- RESULT/ARGUMENT_BEHAVIOR: A13 after setResult(hint+info). A14 intercept chain.proceed() then replaces result.
+- API33_VARIANT_REASON: MIUI14 lockscreen helper remains com.android.keyguard.charge.ChargeUtils; A13 charge index args[2] vs A14 intercept getArg(0). Constructor vs onFinishInflate is MIUI14 inflate lifecycle.
+- DIFF_SUMMARY: HyperOS ChargeUtils is com.miui.charge.ChargeUtils; MIUI14 is com.android.keyguard.charge.ChargeUtils#getChargingHintText. A13 styles KeyguardIndicationTextView constructors; A14 onFinishInflate plus setNextIndication restyle.
+- VALUE_DEFAULT_COMPARISON: view default 1; fontsize default 16; detail booleans default false.
+- HOOK_TARGET_COMPARISON: A14=com.miui.charge.ChargeUtils#getChargingHintText,com.android.systemui.statusbar.phone.KeyguardIndicationTextView#onFinishInflate,com.android.systemui.statusbar.phone.KeyguardIndicationTextView#setNextIndication; A13=com.android.keyguard.charge.ChargeUtils#getChargingHintText,com.android.systemui.statusbar.phone.KeyguardIndicationTextView#<init>
+- CALLBACK_SEMANTICS_COMPARISON: A14 intercept+proceed-once equals A13 after rewrite; setNextIndication after is HyperOS text-appearance reapply.
+- ARG_RESULT_COMPARISON: A13 setResult three concatenations; A14 replacement assigned to intercept result.
+- A14_ONLY_BRANCHES: installChargingHintCallerScopes,KeyguardIndicationTextView#setNextIndication restyle
+- WHY_USER_BEHAVIOR_IS_EQUIVALENT: Same charging metrics appended to the keyguard hint (newline / middle-dot / prefix via system_charginginfo_view) and same optional SP font size.
+- KEY_OWNERSHIP_EVIDENCE: A13 after getChargingHintText reads current/voltage/wattage/temp/view; constructor reads fontsize. A14 computeChargingInfoReplacement/applyChargingInfoStyle consume the same family. Fontsize closed proof preserved.
+- A14_KEY_OWNER_REFERENCE: app/src/main/java/tv/withaibuild/customiuizer/mods/SystemLockScreenHooks.kt::ChargingInfoHook
+- A13_KEY_OWNER_REFERENCE: app/src/main/java/tv/withaibuild/customiuizer/mods/SystemChargingAndWallpaperHooks.kt::ChargingInfoHook
+- PROOF_CONCLUSION: `PRESENT_A13_VARIANT`
+
+## PROOF_R5_CleanOpenWithMenuHook_system_cleanopenwith
+
+- PROOF_ID: `PROOF_R5_CleanOpenWithMenuHook_system_cleanopenwith`
+- BODY_RELATION: `REVIEWED_VARIANT`
+- A14_OWNER_PATH: `app/src/main/java/tv/withaibuild/customiuizer/mods/SystemShareMenuHooks.kt`
+- A14_SYMBOL: `CleanOpenWithMenuHook`
+- A14_INSTALLER: `A14 installer/spec gate for system_cleanopenwith`
+- A14_HOOK_TARGETS: `miui.securityspace.XSpaceResolverActivityHelper.ResolverActivityRunner#run`
+- A14_CALLBACK_PHASE: `intercept`
+- A13_OWNER_PATH: `app/src/main/java/tv/withaibuild/customiuizer/mods/SystemShareAndOpenWithHooks.kt`
+- A13_SYMBOL: `CleanOpenWithMenuHook`
+- A13_INSTALLER: `A13 installer gate for system_cleanopenwith`
+- A13_HOOK_TARGETS: `miui.securityspace.XSpaceResolverActivityHelper.ResolverActivityRunner#run`
+- A13_CALLBACK_PHASE: `after`
+- PREFERENCE_KEYS: `system_cleanopenwith`
+- VALUE_DOMAIN: owner-local preference domain
+- DEFAULT_SEMANTICS: same persisted keys consumed by both owners
+- RESULT/ARGUMENT_BEHAVIOR: A14 ops: result_assign[null]; chain.proceed[chain.proceed()]. A13 ops: no result/argument rewrite literals. Keys system_cleanopenwith rewrite the same host members.
+- API33_VARIANT_REASON: A14 callback intercept vs A13 after on members A14[miui.securityspace.XSpaceResolverActivityHelper.ResolverActivityRunner#run] / A13[miui.securityspace.XSpaceResolverActivityHelper.ResolverActivityRunner#run]. Inner preference reads of system_cleanopenwith match; intercept proceed-once maps to before returnAndSkip or after side-effect.
+- DIFF_SUMMARY: Shared members miui.securityspace.XSpaceResolverActivityHelper.ResolverActivityRunner#run. Differ: A14 phases intercept vs A13 after; A14 result_assign[null]; chain.proceed[chain.proceed()] vs A13 no result/argument rewrite literals.
+- VALUE_DEFAULT_COMPARISON: both consume system_cleanopenwith in the owner body or installer gate
+- HOOK_TARGET_COMPARISON: A14=miui.securityspace.XSpaceResolverActivityHelper.ResolverActivityRunner#run; A13=miui.securityspace.XSpaceResolverActivityHelper.ResolverActivityRunner#run
+- CALLBACK_SEMANTICS_COMPARISON: A14 intercept vs A13 after; skipped paths do not invoke the original, proceed-once equals after side-effect
+- ARG_RESULT_COMPARISON: A14=result_assign[null]; chain.proceed[chain.proceed()]; A13=no result/argument rewrite literals
+- A14_ONLY_BRANCHES: none beyond intercept scaffolding for this owner pair
+- WHY_USER_BEHAVIOR_IS_EQUIVALENT: User-visible contract of system_cleanopenwith is the same host rewrite; callback adapter and null-safety differ.
+- KEY_OWNERSHIP_EVIDENCE: system_cleanopenwith: LITERAL_READ and/or INSTALLER_CALLEE in CleanOpenWithMenuHook/CleanOpenWithMenuHook
+- A14_KEY_OWNER_REFERENCE: app/src/main/java/tv/withaibuild/customiuizer/mods/SystemShareMenuHooks.kt::CleanOpenWithMenuHook
+- A13_KEY_OWNER_REFERENCE: app/src/main/java/tv/withaibuild/customiuizer/mods/SystemShareAndOpenWithHooks.kt::CleanOpenWithMenuHook
+- PROOF_CONCLUSION: `PRESENT_A13_VARIANT`
+
+## PROOF_R5_isRemoveApp_system_cleanopenwith_apps
+
+- PROOF_ID: `PROOF_R5_isRemoveApp_system_cleanopenwith_apps`
+- BODY_RELATION: `REVIEWED_VARIANT`
+- A14_OWNER_PATH: `app/src/main/java/tv/withaibuild/customiuizer/mods/SystemShareMenuHooks.kt`
+- A14_SYMBOL: `isRemoveApp`
+- A14_INSTALLER: `A14 installer/spec gate for system_cleanopenwith_apps`
+- A14_HOOK_TARGETS: `(no host member literals)`
+- A14_CALLBACK_PHASE: `unknown`
+- A13_OWNER_PATH: `app/src/main/java/tv/withaibuild/customiuizer/mods/SystemShareAndOpenWithHooks.kt`
+- A13_SYMBOL: `isRemoveApp`
+- A13_INSTALLER: `A13 installer gate for system_cleanopenwith_apps`
+- A13_HOOK_TARGETS: `(no host member literals)`
+- A13_CALLBACK_PHASE: `unknown`
+- PREFERENCE_KEYS: `system_cleanopenwith_apps`
+- VALUE_DOMAIN: owner-local preference domain
+- DEFAULT_SEMANTICS: same persisted keys consumed by both owners
+- RESULT/ARGUMENT_BEHAVIOR: A14 ops: no result/argument rewrite literals. A13 ops: no result/argument rewrite literals. Keys system_cleanopenwith_apps rewrite the same host members.
+- API33_VARIANT_REASON: A14 callback unknown vs A13 unknown on members A14[(none)] / A13[(none)]. Inner preference reads of system_cleanopenwith_apps match; intercept proceed-once maps to before returnAndSkip or after side-effect.
+- DIFF_SUMMARY: Shared members (none). Differ: A14 phases unknown vs A13 unknown; A14 no result/argument rewrite literals vs A13 no result/argument rewrite literals.
+- VALUE_DEFAULT_COMPARISON: both consume system_cleanopenwith_apps in the owner body or installer gate
+- HOOK_TARGET_COMPARISON: A14=(none); A13=(none)
+- CALLBACK_SEMANTICS_COMPARISON: A14 unknown vs A13 unknown; skipped paths do not invoke the original, proceed-once equals after side-effect
+- ARG_RESULT_COMPARISON: A14=no result/argument rewrite literals; A13=no result/argument rewrite literals
+- A14_ONLY_BRANCHES: none beyond intercept scaffolding for this owner pair
+- WHY_USER_BEHAVIOR_IS_EQUIVALENT: User-visible contract of system_cleanopenwith_apps is the same host rewrite; callback adapter and null-safety differ.
+- KEY_OWNERSHIP_EVIDENCE: system_cleanopenwith_apps: LITERAL_READ and/or INSTALLER_CALLEE in isRemoveApp/isRemoveApp
+- A14_KEY_OWNER_REFERENCE: app/src/main/java/tv/withaibuild/customiuizer/mods/SystemShareMenuHooks.kt::isRemoveApp
+- A13_KEY_OWNER_REFERENCE: app/src/main/java/tv/withaibuild/customiuizer/mods/SystemShareAndOpenWithHooks.kt::isRemoveApp
+- PROOF_CONCLUSION: `PRESENT_A13_VARIANT`
+
+## PROOF_R5_CleanShareMenuHook_system_cleanshare
+
+- PROOF_ID: `PROOF_R5_CleanShareMenuHook_system_cleanshare`
+- BODY_RELATION: `REVIEWED_VARIANT`
+- A14_OWNER_PATH: `app/src/main/java/tv/withaibuild/customiuizer/mods/SystemShareMenuHooks.kt`
+- A14_SYMBOL: `CleanShareMenuHook`
+- A14_INSTALLER: `A14 installer/spec gate for system_cleanshare,system_cleanshare_apps`
+- A14_HOOK_TARGETS: `miui.securityspace.XSpaceResolverActivityHelper.ResolverActivityRunner#run`
+- A14_CALLBACK_PHASE: `intercept`
+- A13_OWNER_PATH: `app/src/main/java/tv/withaibuild/customiuizer/mods/SystemShareAndOpenWithHooks.kt`
+- A13_SYMBOL: `CleanShareMenuHook`
+- A13_INSTALLER: `A13 installer gate for system_cleanshare,system_cleanshare_apps`
+- A13_HOOK_TARGETS: `miui.securityspace.XSpaceResolverActivityHelper.ResolverActivityRunner#run`
+- A13_CALLBACK_PHASE: `after`
+- PREFERENCE_KEYS: `system_cleanshare,system_cleanshare_apps`
+- VALUE_DOMAIN: owner-local preference domain
+- DEFAULT_SEMANTICS: same persisted keys consumed by both owners
+- RESULT/ARGUMENT_BEHAVIOR: A14 ops: result_assign[null]; chain.proceed[chain.proceed()]. A13 ops: no result/argument rewrite literals. Keys system_cleanshare,system_cleanshare_apps rewrite the same host members.
+- API33_VARIANT_REASON: A14 callback intercept vs A13 after on members A14[miui.securityspace.XSpaceResolverActivityHelper.ResolverActivityRunner#run] / A13[miui.securityspace.XSpaceResolverActivityHelper.ResolverActivityRunner#run]. Inner preference reads of system_cleanshare,system_cleanshare_apps match; intercept proceed-once maps to before returnAndSkip or after side-effect.
+- DIFF_SUMMARY: Shared members miui.securityspace.XSpaceResolverActivityHelper.ResolverActivityRunner#run. Differ: A14 phases intercept vs A13 after; A14 result_assign[null]; chain.proceed[chain.proceed()] vs A13 no result/argument rewrite literals.
+- VALUE_DEFAULT_COMPARISON: both consume system_cleanshare,system_cleanshare_apps in the owner body or installer gate
+- HOOK_TARGET_COMPARISON: A14=miui.securityspace.XSpaceResolverActivityHelper.ResolverActivityRunner#run; A13=miui.securityspace.XSpaceResolverActivityHelper.ResolverActivityRunner#run
+- CALLBACK_SEMANTICS_COMPARISON: A14 intercept vs A13 after; skipped paths do not invoke the original, proceed-once equals after side-effect
+- ARG_RESULT_COMPARISON: A14=result_assign[null]; chain.proceed[chain.proceed()]; A13=no result/argument rewrite literals
+- A14_ONLY_BRANCHES: none beyond intercept scaffolding for this owner pair
+- WHY_USER_BEHAVIOR_IS_EQUIVALENT: User-visible contract of system_cleanshare,system_cleanshare_apps is the same host rewrite; callback adapter and null-safety differ.
+- KEY_OWNERSHIP_EVIDENCE: system_cleanshare,system_cleanshare_apps: LITERAL_READ and/or INSTALLER_CALLEE in CleanShareMenuHook/CleanShareMenuHook
+- A14_KEY_OWNER_REFERENCE: app/src/main/java/tv/withaibuild/customiuizer/mods/SystemShareMenuHooks.kt::CleanShareMenuHook
+- A13_KEY_OWNER_REFERENCE: app/src/main/java/tv/withaibuild/customiuizer/mods/SystemShareAndOpenWithHooks.kt::CleanShareMenuHook
+- PROOF_CONCLUSION: `PRESENT_A13_VARIANT`
+
+## PROOF_R5_ClearAllTasksHook_system_clearalltasks
+
+- PROOF_ID: `PROOF_R5_ClearAllTasksHook_system_clearalltasks`
+- BODY_RELATION: `REVIEWED_VARIANT`
+- A14_OWNER_PATH: `app/src/main/java/tv/withaibuild/customiuizer/mods/System.kt`
+- A14_SYMBOL: `ClearAllTasksHook`
+- A14_INSTALLER: `A14 installer/spec gate for system_clearalltasks`
+- A14_HOOK_TARGETS: `(no host member literals)`
+- A14_CALLBACK_PHASE: `intercept`
+- A13_OWNER_PATH: `app/src/main/java/tv/withaibuild/customiuizer/mods/SystemAudioAndVisualAndMoreHooks.kt`
+- A13_SYMBOL: `ClearAllTasksHook`
+- A13_INSTALLER: `A13 installer gate for system_clearalltasks`
+- A13_HOOK_TARGETS: `(no host member literals)`
+- A13_CALLBACK_PHASE: `after`
+- PREFERENCE_KEYS: `system_clearalltasks`
+- VALUE_DOMAIN: owner-local preference domain
+- DEFAULT_SEMANTICS: same persisted keys consumed by both owners
+- RESULT/ARGUMENT_BEHAVIOR: A14 ops: result_assign[null,null]; chain.proceed[chain.proceed()]. A13 ops: setResult[null]. Keys system_clearalltasks rewrite the same host members.
+- API33_VARIANT_REASON: A14 callback intercept vs A13 after on members A14[(none)] / A13[(none)]. Inner preference reads of system_clearalltasks match; intercept proceed-once maps to before returnAndSkip or after side-effect.
+- DIFF_SUMMARY: Shared members (none). Differ: A14 phases intercept vs A13 after; A14 result_assign[null,null]; chain.proceed[chain.proceed()] vs A13 setResult[null].
+- VALUE_DEFAULT_COMPARISON: both consume system_clearalltasks in the owner body or installer gate
+- HOOK_TARGET_COMPARISON: A14=(none); A13=(none)
+- CALLBACK_SEMANTICS_COMPARISON: A14 intercept vs A13 after; skipped paths do not invoke the original, proceed-once equals after side-effect
+- ARG_RESULT_COMPARISON: A14=result_assign[null,null]; chain.proceed[chain.proceed()]; A13=setResult[null]
+- A14_ONLY_BRANCHES: none beyond intercept scaffolding for this owner pair
+- WHY_USER_BEHAVIOR_IS_EQUIVALENT: User-visible contract of system_clearalltasks is the same host rewrite; callback adapter and null-safety differ.
+- KEY_OWNERSHIP_EVIDENCE: system_clearalltasks: LITERAL_READ and/or INSTALLER_CALLEE in ClearAllTasksHook/ClearAllTasksHook
+- A14_KEY_OWNER_REFERENCE: app/src/main/java/tv/withaibuild/customiuizer/mods/System.kt::ClearAllTasksHook
+- A13_KEY_OWNER_REFERENCE: app/src/main/java/tv/withaibuild/customiuizer/mods/SystemAudioAndVisualAndMoreHooks.kt::ClearAllTasksHook
+- PROOF_CONCLUSION: `PRESENT_A13_VARIANT`
+
+## PROOF_R5F_ColorizeNotificationCardHook_system_colorizenotifs
+
+- PROOF_ID: `PROOF_R5F_ColorizeNotificationCardHook_system_colorizenotifs`
+- BODY_RELATION: `REVIEWED_VARIANT`
+- A14_OWNER_PATH: `app/src/main/java/tv/withaibuild/customiuizer/mods/SystemColorizeNotificationHooks.kt`
+- A14_SYMBOL: `ColorizeNotificationCardHook`
+- A14_INSTALLER: `A14 installer/spec gate for system_colorizenotifs,system_colorizenotifs_apps`
+- A14_HOOK_TARGETS: `MiuiExpandableNotificationRow#updateBlurBg,ExpandableNotificationRow#onNotificationUpdated,NotificationBackgroundView#setTint,NotificationViewWrapper#getCustomBackgroundColor,NotificationContentView#updateAllSingleLineViews,NotificationContentInflaterInjector#handle3thThemeColor,createRemoteViews`
+- A14_CALLBACK_PHASE: `intercept`
+- A13_OWNER_PATH: `app/src/main/java/tv/withaibuild/customiuizer/mods/SystemNotificationAndShareHooks.kt`
+- A13_SYMBOL: `ColorizeNotificationCardHook`
+- A13_INSTALLER: `A13 installer gate for system_colorizenotifs,system_colorizenotifs_apps`
+- A13_HOOK_TARGETS: `ExpandableNotificationRow#updateNotificationColor,ExpandableNotificationRow#onNotificationUpdated,NotificationBackgroundView#setTint,NotificationViewWrapper#getCustomBackgroundColor,HybridGroupManager#bindFromNotificationWithStyle,NotificationContentInflaterInjector#handle3thThemeColor,createMiuiContentView/Expanded/PublicView`
+- A13_CALLBACK_PHASE: `after,before`
+- PREFERENCE_KEYS: `system_colorizenotifs,system_colorizenotifs_apps`
+- VALUE_DOMAIN: owner-local preference domain
+- DEFAULT_SEMANTICS: boolean + app set; off keeps ROM colors
+- RESULT/ARGUMENT_BEHAVIOR: A13 updateNotificationColor returnAndSkip; getCustomBackgroundColor returnAndSkip(mBackgroundColor). A14 intercept skip/result assign equivalents.
+- API33_VARIANT_REASON: MIUI14 Miui content view factories vs HyperOS createRemoteViews; blur-bg flag.
+- DIFF_SUMMARY: Shared Builder colors, onNotificationUpdated tint, setTint skip 0, getCustomBackgroundColor→mBackgroundColor, handle3thThemeColor. Inflater: A13 createMiuiContent/Expanded/PublicView vs A14 createRemoteViews. A14 updateBlurBg args[2]=false.
+- VALUE_DEFAULT_COMPARISON: boolean + app set; off keeps ROM colors
+- HOOK_TARGET_COMPARISON: A14=MiuiExpandableNotificationRow#updateBlurBg,ExpandableNotificationRow#onNotificationUpdated,NotificationBackgroundView#setTint,NotificationViewWrapper#getCustomBackgroundColor,NotificationContentView#updateAllSingleLineViews,NotificationContentInflaterInjector#handle3thThemeColor,createRemoteViews; A13=ExpandableNotificationRow#updateNotificationColor,ExpandableNotificationRow#onNotificationUpdated,NotificationBackgroundView#setTint,NotificationViewWrapper#getCustomBackgroundColor,HybridGroupManager#bindFromNotificationWithStyle,NotificationContentInflaterInjector#handle3thThemeColor,createMiuiContentView/Expanded/PublicView
+- CALLBACK_SEMANTICS_COMPARISON: A14 intercept ≡ A13 before skip / after tint.
+- ARG_RESULT_COMPARISON: Background color/tint rewritten; A13 skip updateNotificationColor when overflow color present.
+- A14_ONLY_BRANCHES: notification.extras miui_unimportant fold-entrance skip; updateBlurBg force false
+- WHY_USER_BEHAVIOR_IS_EQUIVALENT: Selected apps notification cards use extracted/monet colors instead of stock grey.
+- KEY_OWNERSHIP_EVIDENCE: system_colorizenotifs / _apps: LITERAL_READ in both Monet/color application paths
+- A14_KEY_OWNER_REFERENCE: app/src/main/java/tv/withaibuild/customiuizer/mods/SystemColorizeNotificationHooks.kt::ColorizeNotificationCardHook
+- A13_KEY_OWNER_REFERENCE: app/src/main/java/tv/withaibuild/customiuizer/mods/SystemNotificationAndShareHooks.kt::ColorizeNotificationCardHook
+- PROOF_CONCLUSION: `PRESENT_A13_VARIANT`
+
+## PROOF_R5F_initNetSpeedStyle_system_netspeed_fontsize
+
+- PROOF_ID: `PROOF_R5F_initNetSpeedStyle_system_netspeed_fontsize`
+- BODY_RELATION: `REVIEWED_VARIANT`
+- A14_OWNER_PATH: `app/src/main/java/tv/withaibuild/customiuizer/mods/SystemUIStatusBarHooks.kt`
+- A14_SYMBOL: `buildNetSpeedTextStyleSnapshot`
+- A14_INSTALLER: `A14 installer/spec gate for system_netspeed_fontsize,system_netspeed_rowspacing,system_netspeed_verticaloffset,system_detailednetspeed,system_detailednetspeed_fakedualrow,system_netspeed_use_clock_style,system_detailednetspeed_align,system_netspeed_leftmargin,system_netspeed_rightmargin`
+- A14_HOOK_TARGETS: `(no host member literals)`
+- A14_CALLBACK_PHASE: `unknown`
+- A13_OWNER_PATH: `app/src/main/java/tv/withaibuild/customiuizer/mods/SystemUIStatusBarHooks.kt`
+- A13_SYMBOL: `initNetSpeedStyle`
+- A13_INSTALLER: `A13 installer gate for system_netspeed_fontsize,system_netspeed_rowspacing,system_netspeed_verticaloffset,system_detailednetspeed,system_detailednetspeed_fakedualrow,system_netspeed_use_clock_style,system_detailednetspeed_align,system_netspeed_leftmargin,system_netspeed_rightmargin`
+- A13_HOOK_TARGETS: `(no host member literals)`
+- A13_CALLBACK_PHASE: `unknown`
+- PREFERENCE_KEYS: `system_netspeed_fontsize,system_netspeed_rowspacing,system_netspeed_verticaloffset,system_detailednetspeed,system_detailednetspeed_fakedualrow,system_netspeed_use_clock_style,system_detailednetspeed_align,system_netspeed_leftmargin,system_netspeed_rightmargin`
+- VALUE_DOMAIN: owner-local preference domain
+- DEFAULT_SEMANTICS: fontsize default 13; verticaloffset default 8; rowspacing default 100; align default 1; clock style default false.
+- RESULT/ARGUMENT_BEHAVIOR: No hook rewrite; view style mutation.
+- API33_VARIANT_REASON: Same user style keys; A14 extracted snapshot + HyperOS setTextAppearance. A13 extra detailed/fakedualrow dual-line branch is MIUI14 layout for the same net-speed style family.
+- DIFF_SUMMARY: A13 applies TextAppearance.StatusBar.Clock when use_clock_style, then DIP textSize/padding/lineSpacing. A14 snapshot is pref cache; actual apply is NetSpeedStyleHook onFinishInflate/setTextAppearance.
+- VALUE_DEFAULT_COMPARISON: fontsize default 13; verticaloffset default 8; rowspacing default 100; align default 1; clock style default false.
+- HOOK_TARGET_COMPARISON: A14=(none); A13=(none)
+- CALLBACK_SEMANTICS_COMPARISON: Helper, not a hook phase.
+- ARG_RESULT_COMPARISON: n/a
+- A14_ONLY_BRANCHES: system_detailednetspeed_style and system_netspeed_boldfont in snapshot
+- WHY_USER_BEHAVIOR_IS_EQUIVALENT: Font size, row spacing, vertical offset, alignment, margins, and clock TextAppearance still style the net-speed text. Clock-style closed proof preserved.
+- KEY_OWNERSHIP_EVIDENCE: A13 initNetSpeedStyle reads fontsize/rowspacing/verticaloffset/detailed/fakedualrow/use_clock_style/align/margins. A14 snapshot reads fontsize/rowspacing/verticaloffset/align/margins plus boldfont/style/fixedwidth. Clock-style closed proof: A14 NetSpeedStyleHook still reads system_netspeed_use_clock_style; not reopened.
+- A14_KEY_OWNER_REFERENCE: app/src/main/java/tv/withaibuild/customiuizer/mods/SystemUIStatusBarHooks.kt::buildNetSpeedTextStyleSnapshot
+- A13_KEY_OWNER_REFERENCE: app/src/main/java/tv/withaibuild/customiuizer/mods/SystemUIStatusBarHooks.kt::initNetSpeedStyle
+- PROOF_CONCLUSION: `PRESENT_A13_VARIANT`
+
+## PROOF_R5F_DetailedNetSpeedHook_system_detailednetspeed_icon
+
+- PROOF_ID: `PROOF_R5F_DetailedNetSpeedHook_system_detailednetspeed_icon`
+- BODY_RELATION: `REVIEWED_VARIANT`
+- A14_OWNER_PATH: `app/src/main/java/tv/withaibuild/customiuizer/mods/SystemUIStatusBarHooks.kt`
+- A14_SYMBOL: `buildDetailedNetSpeedFormatSnapshot`
+- A14_INSTALLER: `A14 installer/spec gate for system_detailednetspeed_icon,system_detailednetspeed_low,system_detailednetspeed_lowlevel,system_detailednetspeed_secunit`
+- A14_HOOK_TARGETS: `NetworkSpeedController.mBgHandler#handleMessage,com.android.systemui.statusbar.policy.NetworkSpeedController#updateText`
+- A14_CALLBACK_PHASE: `before`
+- A13_OWNER_PATH: `app/src/main/java/tv/withaibuild/customiuizer/mods/SystemUIStatusBarHooks.kt`
+- A13_SYMBOL: `DetailedNetSpeedHook`
+- A13_INSTALLER: `A13 installer gate for system_detailednetspeed_icon,system_detailednetspeed_low,system_detailednetspeed_lowlevel,system_detailednetspeed_secunit`
+- A13_HOOK_TARGETS: `com.android.systemui.statusbar.policy.NetworkSpeedController#updateNetworkSpeed,com.android.systemui.statusbar.policy.NetworkSpeedController#updateText`
+- A13_CALLBACK_PHASE: `before`
+- PREFERENCE_KEYS: `system_detailednetspeed_icon,system_detailednetspeed_low,system_detailednetspeed_lowlevel,system_detailednetspeed_secunit`
+- VALUE_DOMAIN: owner-local preference domain
+- DEFAULT_SEMANTICS: icon default 2; lowlevel default 1 KiB; low/secunit default false.
+- RESULT/ARGUMENT_BEHAVIOR: Both rewrite updateText args[0] to formatted dual-line text.
+- API33_VARIANT_REASON: MIUI14 still exposes updateNetworkSpeed; HyperOS samples on handler message 200001.
+- DIFF_SUMMARY: A13 hooks updateNetworkSpeed before. A14 hooks NetworkSpeedController.mBgHandler#handleMessage what==200001 then updateText.
+- VALUE_DEFAULT_COMPARISON: icon default 2; lowlevel default 1 KiB; low/secunit default false.
+- HOOK_TARGET_COMPARISON: A14=NetworkSpeedController.mBgHandler#handleMessage,com.android.systemui.statusbar.policy.NetworkSpeedController#updateText; A13=com.android.systemui.statusbar.policy.NetworkSpeedController#updateNetworkSpeed,com.android.systemui.statusbar.policy.NetworkSpeedController#updateText
+- CALLBACK_SEMANTICS_COMPARISON: Both before on the text-update path.
+- ARG_RESULT_COMPARISON: A13/A14 set updateText first argument to formatted CharSequence.
+- A14_ONLY_BRANCHES: system_detailednetspeed_style in snapshot (not consumed by this A13 function)
+- WHY_USER_BEHAVIOR_IS_EQUIVALENT: Status-bar net speed still shows separate tx/rx with optional icons, low-speed hide, and /s unit hide.
+- KEY_OWNERSHIP_EVIDENCE: A13 DetailedNetSpeedHook samples traffic in updateNetworkSpeed and formats updateText using icon/low/secunit. Real A14 owner is DetailedNetSpeedHook; snapshot is only the pref cache.
+- A14_KEY_OWNER_REFERENCE: app/src/main/java/tv/withaibuild/customiuizer/mods/SystemUIStatusBarHooks.kt::buildDetailedNetSpeedFormatSnapshot
+- A13_KEY_OWNER_REFERENCE: app/src/main/java/tv/withaibuild/customiuizer/mods/SystemUIStatusBarHooks.kt::DetailedNetSpeedHook
+- PROOF_CONCLUSION: `PRESENT_A13_VARIANT`
+
+## PROOF_R5F_FormatNetworkSpeedHook_system_detailednetspeed_low
+
+- PROOF_ID: `PROOF_R5F_FormatNetworkSpeedHook_system_detailednetspeed_low`
+- BODY_RELATION: `REVIEWED_VARIANT`
+- A14_OWNER_PATH: `app/src/main/java/tv/withaibuild/customiuizer/mods/SystemUIStatusBarHooks.kt`
+- A14_SYMBOL: `buildDetailedNetSpeedFormatSnapshot`
+- A14_INSTALLER: `A14 installer/spec gate for system_detailednetspeed_low,system_detailednetspeed_lowlevel,system_detailednetspeed_secunit`
+- A14_HOOK_TARGETS: `com.android.systemui.statusbar.policy.NetworkSpeedController#updateText`
+- A14_CALLBACK_PHASE: `before`
+- A13_OWNER_PATH: `app/src/main/java/tv/withaibuild/customiuizer/mods/SystemUIStatusBarHooks.kt`
+- A13_SYMBOL: `FormatNetworkSpeedHook`
+- A13_INSTALLER: `A13 installer gate for system_detailednetspeed_low,system_detailednetspeed_lowlevel,system_detailednetspeed_secunit`
+- A13_HOOK_TARGETS: `com.android.systemui.statusbar.policy.NetworkSpeedController#formatSpeed`
+- A13_CALLBACK_PHASE: `before,after`
+- PREFERENCE_KEYS: `system_detailednetspeed_low,system_detailednetspeed_lowlevel,system_detailednetspeed_secunit`
+- VALUE_DOMAIN: owner-local preference domain
+- DEFAULT_SEMANTICS: lowlevel default 1*1024; booleans default false.
+- RESULT/ARGUMENT_BEHAVIOR: A13 before returnAndSkip("" or arrayOf("","")); after setResult(stripNetSpeedSuffix). A14 writes formatted text into updateText args.
+- API33_VARIANT_REASON: MIUI14 NetworkSpeedController#formatSpeed still exists; A14 dropped that hook and folded the prefs into detailed updateText.
+- DIFF_SUMMARY: A13 intercepts stock formatSpeed (returnAndSkip empty / strip /s). A14 applies hide-low and hide-unit inside detailed updateText formatting.
+- VALUE_DEFAULT_COMPARISON: lowlevel default 1*1024; booleans default false.
+- HOOK_TARGET_COMPARISON: A14=com.android.systemui.statusbar.policy.NetworkSpeedController#updateText; A13=com.android.systemui.statusbar.policy.NetworkSpeedController#formatSpeed
+- CALLBACK_SEMANTICS_COMPARISON: A13 before-skip of formatSpeed vs A14 before arg rewrite of updateText.
+- ARG_RESULT_COMPARISON: A13 returnAndSkip empty + setResult stripped; A14 no formatSpeed hook.
+- A14_ONLY_BRANCHES: system_detailednetspeed_style / icon in snapshot, owned by DetailedNetSpeedHook
+- WHY_USER_BEHAVIOR_IS_EQUIVALENT: Low speeds can be blanked and the /s suffix can be stripped for the detailed net-speed path.
+- KEY_OWNERSHIP_EVIDENCE: A13 FormatNetworkSpeedHook reads low/lowlevel/secunit on formatSpeed. A14 has no FormatNetworkSpeedHook; DetailedNetSpeedHook formatDetailedNetSpeedText reads the same keys from the snapshot.
+- A14_KEY_OWNER_REFERENCE: app/src/main/java/tv/withaibuild/customiuizer/mods/SystemUIStatusBarHooks.kt::buildDetailedNetSpeedFormatSnapshot
+- A13_KEY_OWNER_REFERENCE: app/src/main/java/tv/withaibuild/customiuizer/mods/SystemUIStatusBarHooks.kt::FormatNetworkSpeedHook
+- PROOF_CONCLUSION: `PRESENT_A13_VARIANT`
+
+## PROOF_R5F_ScreenDimTimeHook_system_dimtime
+
+- PROOF_ID: `PROOF_R5F_ScreenDimTimeHook_system_dimtime`
+- BODY_RELATION: `REVIEWED_VARIANT`
+- A14_OWNER_PATH: `app/src/main/java/tv/withaibuild/customiuizer/mods/SystemDisplayHooks.kt`
+- A14_SYMBOL: `ScreenDimTimeHook`
+- A14_INSTALLER: `A14 installer/spec gate for system_dimtime`
+- A14_HOOK_TARGETS: `com.android.server.power.PowerManagerService#readConfigurationLocked`
+- A14_CALLBACK_PHASE: `intercept`
+- A13_OWNER_PATH: `app/src/main/java/tv/withaibuild/customiuizer/mods/SystemAudioAndVisualAndMoreHooks.kt`
+- A13_SYMBOL: `ScreenDimTimeHook`
+- A13_INSTALLER: `A13 installer gate for system_dimtime`
+- A13_HOOK_TARGETS: `com.android.server.power.PowerManagerService#readConfigurationLocked`
+- A13_CALLBACK_PHASE: `after,before`
+- PREFERENCE_KEYS: `system_dimtime`
+- VALUE_DOMAIN: owner-local preference domain
+- DEFAULT_SEMANTICS: UI default 0 (ROM dim). A13 getInt(system_screendimtime,15000) is milliseconds, not the 0-99% slider domain
+- RESULT/ARGUMENT_BEHAVIOR: A14 proceed-once then field writes. A13 after field write; before returnAndSkip(null) on setStayOnSettingInternal when alias==0.
+- API33_VARIANT_REASON: AOSP 13 PowerManagerService still has mMaximumScreenDimDurationConfig and mMaximumScreenDimRatioConfig. Callback is intercept vs after; field writes match.
+- DIFF_SUMMARY: Both PowerManagerService.readConfigurationLocked after-proceed write mMaximumScreenDimDurationConfig=600000 and mMaximumScreenDimRatioConfig=system_dimtime/100f. A13 previously wrote mScreenOffTimeoutSetting from unused system_screendimtime; that drift is removed. A14 intercept vs A13 after.
+- VALUE_DEFAULT_COMPARISON: UI default 0 (ROM dim). A13 getInt(system_screendimtime,15000) is milliseconds, not the 0-99% slider domain
+- HOOK_TARGET_COMPARISON: A14=com.android.server.power.PowerManagerService#readConfigurationLocked; A13=com.android.server.power.PowerManagerService#readConfigurationLocked
+- CALLBACK_SEMANTICS_COMPARISON: A14 intercept proceed-once vs A13 after+before skip.
+- ARG_RESULT_COMPARISON: A13 may skip setStayOnSettingInternal; A14 never skips readConfigurationLocked. Different fields.
+- A14_ONLY_BRANCHES: none beyond intercept scaffolding
+- WHY_USER_BEHAVIOR_IS_EQUIVALENT: The 0-99% dim-duration slider still sets the maximum screen dim ratio of the screen-off timeout.
+- KEY_OWNERSHIP_EVIDENCE: UI/installer/catalog gate is system_dimtime (0-99%). A13 body LITERAL_READ system_screendimtime (default 15000); PreferenceSchema does not alias it.
+- A14_KEY_OWNER_REFERENCE: app/src/main/java/tv/withaibuild/customiuizer/mods/SystemDisplayHooks.kt::ScreenDimTimeHook
+- A13_KEY_OWNER_REFERENCE: app/src/main/java/tv/withaibuild/customiuizer/mods/SystemAudioAndVisualAndMoreHooks.kt::ScreenDimTimeHook
+- PROOF_CONCLUSION: `PRESENT_A13_VARIANT`
+
+## PROOF_R5_DisableAnyNotificationBlockHook_system_disableanynotif
+
+- PROOF_ID: `PROOF_R5_DisableAnyNotificationBlockHook_system_disableanynotif`
+- BODY_RELATION: `REVIEWED_VARIANT`
+- A14_OWNER_PATH: `app/src/main/java/tv/withaibuild/customiuizer/mods/SystemNotificationHooks.kt`
+- A14_SYMBOL: `DisableAnyNotificationBlockHook`
+- A14_INSTALLER: `A14 installer/spec gate for system_disableanynotif`
+- A14_HOOK_TARGETS: `android.app.NotificationChannel#isBlockable,android.app.NotificationChannel#setBlockable`
+- A14_CALLBACK_PHASE: `intercept`
+- A13_OWNER_PATH: `app/src/main/java/tv/withaibuild/customiuizer/mods/SystemNotificationMoreHooks.kt`
+- A13_SYMBOL: `DisableAnyNotificationBlockHook`
+- A13_INSTALLER: `A13 installer gate for system_disableanynotif`
+- A13_HOOK_TARGETS: `android.app.NotificationChannel#isBlockable,android.app.NotificationChannel#setBlockable`
+- A13_CALLBACK_PHASE: `before`
+- PREFERENCE_KEYS: `system_disableanynotif`
+- VALUE_DOMAIN: owner-local preference domain
+- DEFAULT_SEMANTICS: same persisted keys consumed by both owners
+- RESULT/ARGUMENT_BEHAVIOR: A14 ops: result_assign[null]. A13 ops: no result/argument rewrite literals. Keys system_disableanynotif rewrite the same host members.
+- API33_VARIANT_REASON: A14 callback intercept vs A13 before on members A14[android.app.NotificationChannel#isBlockable,android.app.NotificationChannel#setBlockable] / A13[android.app.NotificationChannel#isBlockable,android.app.NotificationChannel#setBlockable]. Inner preference reads of system_disableanynotif match; intercept proceed-once maps to before returnAndSkip or after side-effect.
+- DIFF_SUMMARY: Shared members android.app.NotificationChannel#isBlockable,android.app.NotificationChannel#setBlockable. Differ: A14 phases intercept vs A13 before; A14 result_assign[null] vs A13 no result/argument rewrite literals.
+- VALUE_DEFAULT_COMPARISON: both consume system_disableanynotif in the owner body or installer gate
+- HOOK_TARGET_COMPARISON: A14=android.app.NotificationChannel#isBlockable,android.app.NotificationChannel#setBlockable; A13=android.app.NotificationChannel#isBlockable,android.app.NotificationChannel#setBlockable
+- CALLBACK_SEMANTICS_COMPARISON: A14 intercept vs A13 before; skipped paths do not invoke the original, proceed-once equals after side-effect
+- ARG_RESULT_COMPARISON: A14=result_assign[null]; A13=no result/argument rewrite literals
+- A14_ONLY_BRANCHES: none beyond intercept scaffolding for this owner pair
+- WHY_USER_BEHAVIOR_IS_EQUIVALENT: User-visible contract of system_disableanynotif is the same host rewrite; callback adapter and null-safety differ.
+- KEY_OWNERSHIP_EVIDENCE: system_disableanynotif: LITERAL_READ and/or INSTALLER_CALLEE in DisableAnyNotificationBlockHook/DisableAnyNotificationBlockHook
+- A14_KEY_OWNER_REFERENCE: app/src/main/java/tv/withaibuild/customiuizer/mods/SystemNotificationHooks.kt::DisableAnyNotificationBlockHook
+- A13_KEY_OWNER_REFERENCE: app/src/main/java/tv/withaibuild/customiuizer/mods/SystemNotificationMoreHooks.kt::DisableAnyNotificationBlockHook
+- PROOF_CONCLUSION: `PRESENT_A13_VARIANT`
+
+## PROOF_R5_DisableSystemIntegrityHook_system_disableintegrity
+
+- PROOF_ID: `PROOF_R5_DisableSystemIntegrityHook_system_disableintegrity`
+- BODY_RELATION: `REVIEWED_VARIANT`
+- A14_OWNER_PATH: `app/src/main/java/tv/withaibuild/customiuizer/mods/SystemSecurityHooks.kt`
+- A14_SYMBOL: `DisableSystemIntegrityHook`
+- A14_INSTALLER: `A14 installer/spec gate for system_disableintegrity`
+- A14_HOOK_TARGETS: `android.util.apk.ApkSignatureVerifier#getMinimumSignatureSchemeVersionForTargetSdk`
+- A14_CALLBACK_PHASE: `unknown`
+- A13_OWNER_PATH: `app/src/main/java/tv/withaibuild/customiuizer/mods/SystemSecurityAndSystemHooks.kt`
+- A13_SYMBOL: `DisableSystemIntegrityHook`
+- A13_INSTALLER: `A13 installer gate for system_disableintegrity`
+- A13_HOOK_TARGETS: `android.util.apk.ApkSignatureVerifier#getMinimumSignatureSchemeVersionForTargetSdk`
+- A13_CALLBACK_PHASE: `unknown`
+- PREFERENCE_KEYS: `system_disableintegrity`
+- VALUE_DOMAIN: owner-local preference domain
+- DEFAULT_SEMANTICS: same persisted keys consumed by both owners
+- RESULT/ARGUMENT_BEHAVIOR: A14 ops: no result/argument rewrite literals. A13 ops: no result/argument rewrite literals. Keys system_disableintegrity rewrite the same host members.
+- API33_VARIANT_REASON: A14 callback unknown vs A13 unknown on members A14[android.util.apk.ApkSignatureVerifier#getMinimumSignatureSchemeVersionForTargetSdk] / A13[android.util.apk.ApkSignatureVerifier#getMinimumSignatureSchemeVersionForTargetSdk]. Inner preference reads of system_disableintegrity match; intercept proceed-once maps to before returnAndSkip or after side-effect.
+- DIFF_SUMMARY: Shared members android.util.apk.ApkSignatureVerifier#getMinimumSignatureSchemeVersionForTargetSdk. Differ: A14 phases unknown vs A13 unknown; A14 no result/argument rewrite literals vs A13 no result/argument rewrite literals.
+- VALUE_DEFAULT_COMPARISON: both consume system_disableintegrity in the owner body or installer gate
+- HOOK_TARGET_COMPARISON: A14=android.util.apk.ApkSignatureVerifier#getMinimumSignatureSchemeVersionForTargetSdk; A13=android.util.apk.ApkSignatureVerifier#getMinimumSignatureSchemeVersionForTargetSdk
+- CALLBACK_SEMANTICS_COMPARISON: A14 unknown vs A13 unknown; skipped paths do not invoke the original, proceed-once equals after side-effect
+- ARG_RESULT_COMPARISON: A14=no result/argument rewrite literals; A13=no result/argument rewrite literals
+- A14_ONLY_BRANCHES: none beyond intercept scaffolding for this owner pair
+- WHY_USER_BEHAVIOR_IS_EQUIVALENT: User-visible contract of system_disableintegrity is the same host rewrite; callback adapter and null-safety differ.
+- KEY_OWNERSHIP_EVIDENCE: system_disableintegrity: LITERAL_READ and/or INSTALLER_CALLEE in DisableSystemIntegrityHook/DisableSystemIntegrityHook
+- A14_KEY_OWNER_REFERENCE: app/src/main/java/tv/withaibuild/customiuizer/mods/SystemSecurityHooks.kt::DisableSystemIntegrityHook
+- A13_KEY_OWNER_REFERENCE: app/src/main/java/tv/withaibuild/customiuizer/mods/SystemSecurityAndSystemHooks.kt::DisableSystemIntegrityHook
+- PROOF_CONCLUSION: `PRESENT_A13_VARIANT`
+
+## PROOF_R5_NoVersionCheckHook_system_downgrade
+
+- PROOF_ID: `PROOF_R5_NoVersionCheckHook_system_downgrade`
+- BODY_RELATION: `IDENTICAL`
+- A14_OWNER_PATH: `app/src/main/java/tv/withaibuild/customiuizer/mods/SystemSecurityHooks.kt`
+- A14_SYMBOL: `NoVersionCheckHook`
+- A14_INSTALLER: `A14 installer/spec gate for system_downgrade`
+- A14_HOOK_TARGETS: `com.android.server.pm.PackageManagerServiceUtils#checkDowngrade`
+- A14_CALLBACK_PHASE: `unknown`
+- A13_OWNER_PATH: `app/src/main/java/tv/withaibuild/customiuizer/mods/SystemSecurityAndSystemHooks.kt`
+- A13_SYMBOL: `NoVersionCheckHook`
+- A13_INSTALLER: `A13 installer gate for system_downgrade`
+- A13_HOOK_TARGETS: `com.android.server.pm.PackageManagerServiceUtils#checkDowngrade`
+- A13_CALLBACK_PHASE: `unknown`
+- PREFERENCE_KEYS: `system_downgrade`
+- VALUE_DOMAIN: owner-local preference domain
+- DEFAULT_SEMANTICS: identical owner body; shared defaults
+- RESULT/ARGUMENT_BEHAVIOR: no result/argument rewrite literals
+- API33_VARIANT_REASON: Normalized bodies are IDENTICAL. A14/A13 both hook com.android.server.pm.PackageManagerServiceUtils#checkDowngrade.
+- KEY_OWNERSHIP_EVIDENCE: system_downgrade: LITERAL_READ and/or INSTALLER_CALLEE in NoVersionCheckHook/NoVersionCheckHook
+- A14_KEY_OWNER_REFERENCE: app/src/main/java/tv/withaibuild/customiuizer/mods/SystemSecurityHooks.kt::NoVersionCheckHook
+- A13_KEY_OWNER_REFERENCE: app/src/main/java/tv/withaibuild/customiuizer/mods/SystemSecurityAndSystemHooks.kt::NoVersionCheckHook
+- PROOF_CONCLUSION: `PRESENT_EQUIVALENT`
+
+## PROOF_R5F_DrawerBlurRatioHook_system_drawer_blur
+
+- PROOF_ID: `PROOF_R5F_DrawerBlurRatioHook_system_drawer_blur`
+- BODY_RELATION: `REVIEWED_VARIANT`
+- A14_OWNER_PATH: `app/src/main/java/tv/withaibuild/customiuizer/mods/SystemDisplayHooks.kt`
+- A14_SYMBOL: `DrawerBlurRatioHook`
+- A14_INSTALLER: `A14 installer/spec gate for system_drawer_blur`
+- A14_HOOK_TARGETS: `NotificationShadeDepthController$updateBlurCallback$1#doFrame,BlurUtilsExt#applyBlur,ControlPanelWindowManager#setBlurRatio`
+- A14_CALLBACK_PHASE: `intercept`
+- A13_OWNER_PATH: `app/src/main/java/tv/withaibuild/customiuizer/mods/SystemDisplayAndWindowHooks.kt`
+- A13_SYMBOL: `DrawerBlurRatioHook`
+- A13_INSTALLER: `A13 installer gate for system_drawer_blur`
+- A13_HOOK_TARGETS: `com.android.systemui.statusbar.phone.MiuiNotificationPanelViewController#<init>,NotificationShadeDepthController$updateBlurCallback$1#doFrame,BlurUtilsExt#applyBlurByRadius,ControlPanelWindowManager#setBlurRatio`
+- A13_CALLBACK_PHASE: `before,after`
+- PREFERENCE_KEYS: `system_drawer_blur`
+- VALUE_DOMAIN: owner-local preference domain
+- DEFAULT_SEMANTICS: getInt(system_drawer_blur, 100) on both
+- RESULT/ARGUMENT_BEHAVIOR: Both rewrite blur radius/ratio arguments; setBlurRatio args[0] *= modifier/100.
+- API33_VARIANT_REASON: BlurUtilsExt.applyBlurByRadius (int) vs applyBlur (float,boolean) on HyperOS.
+- DIFF_SUMMARY: Both scale shade and CC blur by percent. A13 applyBlurByRadius(View,int); A14 applyBlur(View,float,boolean). A13 also hooks panel constructor to seed modifier.
+- VALUE_DEFAULT_COMPARISON: getInt(system_drawer_blur, 100) on both
+- HOOK_TARGET_COMPARISON: A14=NotificationShadeDepthController$updateBlurCallback$1#doFrame,BlurUtilsExt#applyBlur,ControlPanelWindowManager#setBlurRatio; A13=com.android.systemui.statusbar.phone.MiuiNotificationPanelViewController#<init>,NotificationShadeDepthController$updateBlurCallback$1#doFrame,BlurUtilsExt#applyBlurByRadius,ControlPanelWindowManager#setBlurRatio
+- CALLBACK_SEMANTICS_COMPARISON: A14 intercept ≡ A13 before on apply/setBlurRatio and doFrame.
+- ARG_RESULT_COMPARISON: Argument rewrite of radius/ratio; no host result replace.
+- A14_ONLY_BRANCHES: per-thread DrawerBlurScope target WeakReference; no panel constructor seed
+- WHY_USER_BEHAVIOR_IS_EQUIVALENT: Drawer/CC blur intensity is system_drawer_blur percent of ROM blur (default 100).
+- KEY_OWNERSHIP_EVIDENCE: system_drawer_blur: LITERAL_READ; A13 stashes mCustomBlurModifier; A14 DrawerBlurScope/snapshot
+- A14_KEY_OWNER_REFERENCE: app/src/main/java/tv/withaibuild/customiuizer/mods/SystemDisplayHooks.kt::DrawerBlurRatioHook
+- A13_KEY_OWNER_REFERENCE: app/src/main/java/tv/withaibuild/customiuizer/mods/SystemDisplayAndWindowHooks.kt::DrawerBlurRatioHook
+- PROOF_CONCLUSION: `PRESENT_A13_VARIANT`
+
+## PROOF_R5F_StatusBarClockTweakHook_system_drawer_hidedate
+
+- PROOF_ID: `PROOF_R5F_StatusBarClockTweakHook_system_drawer_hidedate`
+- BODY_RELATION: `HOLD`
+- A14_OWNER_PATH: `app/src/main/java/tv/withaibuild/customiuizer/mods/SystemClockHooks.kt`
+- A14_SYMBOL: `StatusBarClockTweakHook`
+- A14_INSTALLER: `A14 installer/spec gate for system_drawer_hidedate`
+- A14_HOOK_TARGETS: `(no host member literals)`
+- A14_CALLBACK_PHASE: `intercept`
+- A13_OWNER_PATH: `app/src/main/java/tv/withaibuild/customiuizer/mods/SystemStatusBarClockAndMoreHooks.kt`
+- A13_SYMBOL: `StatusBarClockTweakHook`
+- A13_INSTALLER: `A13 installer gate for system_drawer_hidedate`
+- A13_HOOK_TARGETS: `(no host member literals)`
+- A13_CALLBACK_PHASE: `after,before`
+- PREFERENCE_KEYS: `system_drawer_hidedate`
+- VALUE_DOMAIN: owner-local preference domain
+- DEFAULT_SEMANTICS: A14 boolean default false; A13 unread.
+- RESULT/ARGUMENT_BEHAVIOR: n/a on A13
+- API33_VARIANT_REASON: Not an API33 rename of system_cc_hidedate; extra A14 drawer contract.
+- KEY_OWNERSHIP_EVIDENCE: A14 StatusBarClockTweakHook reads system_drawer_hidedate. A13 owner reads system_cc_hidedate only.
+- A14_KEY_OWNER_REFERENCE: app/src/main/java/tv/withaibuild/customiuizer/mods/SystemClockHooks.kt::StatusBarClockTweakHook
+- A13_KEY_OWNER_REFERENCE: app/src/main/java/tv/withaibuild/customiuizer/mods/SystemStatusBarClockAndMoreHooks.kt::StatusBarClockTweakHook
+- PROOF_CONCLUSION: `HOLD_EVIDENCE`
+
+## PROOF_R5_HideNoficationAccessIconHook_system_drawer_removeshortcut
+
+- PROOF_ID: `PROOF_R5_HideNoficationAccessIconHook_system_drawer_removeshortcut`
+- BODY_RELATION: `REVIEWED_VARIANT`
+- A14_OWNER_PATH: `app/src/main/java/tv/withaibuild/customiuizer/mods/SystemUINotificationHooks.kt`
+- A14_SYMBOL: `HideNoficationAccessIconHook`
+- A14_INSTALLER: `A14 installer/spec gate for system_drawer_removeshortcut`
+- A14_HOOK_TARGETS: `com.android.systemui.qs.MiuiQSHeaderView#updateShortCutVisibility,com.android.systemui.qs.MiuiNotificationHeaderView#updateShortCutVisibility`
+- A14_CALLBACK_PHASE: `before`
+- A13_OWNER_PATH: `app/src/main/java/tv/withaibuild/customiuizer/mods/SystemUINotificationHooks.kt`
+- A13_SYMBOL: `HideNoficationAccessIconHook`
+- A13_INSTALLER: `A13 installer gate for system_drawer_removeshortcut`
+- A13_HOOK_TARGETS: `com.android.systemui.qs.MiuiQSHeaderView#updateShortCutVisibility,com.android.systemui.qs.MiuiNotificationHeaderView#updateShortCutVisibility`
+- A13_CALLBACK_PHASE: `before`
+- PREFERENCE_KEYS: `system_drawer_removeshortcut`
+- VALUE_DOMAIN: owner-local preference domain
+- DEFAULT_SEMANTICS: same persisted keys consumed by both owners
+- RESULT/ARGUMENT_BEHAVIOR: A14 ops: returnAndSkip[null]. A13 ops: returnAndSkip[null]. Keys system_drawer_removeshortcut rewrite the same host members.
+- API33_VARIANT_REASON: A14 callback before vs A13 before on members A14[com.android.systemui.qs.MiuiQSHeaderView#updateShortCutVisibility,com.android.systemui.qs.MiuiNotificationHeaderView#updateShortCutVisibility] / A13[com.android.systemui.qs.MiuiQSHeaderView#updateShortCutVisibility,com.android.systemui.qs.MiuiNotificationHeaderView#updateShortCutVisibility]. Inner preference reads of system_drawer_removeshortcut match; intercept proceed-once maps to before returnAndSkip or after side-effect.
+- DIFF_SUMMARY: Shared members com.android.systemui.qs.MiuiQSHeaderView#updateShortCutVisibility,com.android.systemui.qs.MiuiNotificationHeaderView#updateShortCutVisibility. Differ: A14 phases before vs A13 before; A14 returnAndSkip[null] vs A13 returnAndSkip[null].
+- VALUE_DEFAULT_COMPARISON: both consume system_drawer_removeshortcut in the owner body or installer gate
+- HOOK_TARGET_COMPARISON: A14=com.android.systemui.qs.MiuiQSHeaderView#updateShortCutVisibility,com.android.systemui.qs.MiuiNotificationHeaderView#updateShortCutVisibility; A13=com.android.systemui.qs.MiuiQSHeaderView#updateShortCutVisibility,com.android.systemui.qs.MiuiNotificationHeaderView#updateShortCutVisibility
+- CALLBACK_SEMANTICS_COMPARISON: A14 before vs A13 before; skipped paths do not invoke the original, proceed-once equals after side-effect
+- ARG_RESULT_COMPARISON: A14=returnAndSkip[null]; A13=returnAndSkip[null]
+- A14_ONLY_BRANCHES: none beyond intercept scaffolding for this owner pair
+- WHY_USER_BEHAVIOR_IS_EQUIVALENT: User-visible contract of system_drawer_removeshortcut is the same host rewrite; callback adapter and null-safety differ.
+- KEY_OWNERSHIP_EVIDENCE: system_drawer_removeshortcut: LITERAL_READ and/or INSTALLER_CALLEE in HideNoficationAccessIconHook/HideNoficationAccessIconHook
+- A14_KEY_OWNER_REFERENCE: app/src/main/java/tv/withaibuild/customiuizer/mods/SystemUINotificationHooks.kt::HideNoficationAccessIconHook
+- A13_KEY_OWNER_REFERENCE: app/src/main/java/tv/withaibuild/customiuizer/mods/SystemUINotificationHooks.kt::HideNoficationAccessIconHook
+- PROOF_CONCLUSION: `PRESENT_A13_VARIANT`
+
+## PROOF_R5F_DoubleTapToSleepHook_system_dttosleep
+
+- PROOF_ID: `PROOF_R5F_DoubleTapToSleepHook_system_dttosleep`
+- BODY_RELATION: `REVIEWED_VARIANT`
+- A14_OWNER_PATH: `app/src/main/java/tv/withaibuild/customiuizer/mods/SystemLockScreenHooks.kt`
+- A14_SYMBOL: `DoubleTapToSleepHook`
+- A14_INSTALLER: `A14 installer/spec gate for system_dttosleep`
+- A14_HOOK_TARGETS: `com.android.systemui.shade.NotificationsQuickSettingsContainer#onFinishInflate`
+- A14_CALLBACK_PHASE: `intercept`
+- A13_OWNER_PATH: `app/src/main/java/tv/withaibuild/customiuizer/mods/SystemDisplayAndWindowHooks.kt`
+- A13_SYMBOL: `DoubleTapToSleepHook`
+- A13_INSTALLER: `A13 installer gate for system_dttosleep`
+- A13_HOOK_TARGETS: `com.android.systemui.statusbar.phone.NotificationsQuickSettingsContainer#onFinishInflate`
+- A13_CALLBACK_PHASE: `after`
+- PREFERENCE_KEYS: `system_dttosleep`
+- VALUE_DOMAIN: owner-local preference domain
+- DEFAULT_SEMANTICS: boolean installer gate
+- RESULT/ARGUMENT_BEHAVIOR: A14 proceed-once then set listener. A13 after set listener. Listener returns false.
+- API33_VARIANT_REASON: NotificationsQuickSettingsContainer package rename shade vs statusbar.phone.
+- DIFF_SUMMARY: Same 250ms / 100px double-tap → KeyguardManager.isKeyguardLocked → GlobalActions GoToSleep. Class moved statusbar.phone → shade.
+- VALUE_DEFAULT_COMPARISON: boolean installer gate
+- HOOK_TARGET_COMPARISON: A14=com.android.systemui.shade.NotificationsQuickSettingsContainer#onFinishInflate; A13=com.android.systemui.statusbar.phone.NotificationsQuickSettingsContainer#onFinishInflate
+- CALLBACK_SEMANTICS_COMPARISON: A14 intercept proceed-once ≡ A13 after.
+- ARG_RESULT_COMPARISON: Host onFinishInflate result unchanged.
+- A14_ONLY_BRANCHES: none
+- WHY_USER_BEHAVIOR_IS_EQUIVALENT: Double-tap the notification shade container on keyguard sleeps the device.
+- KEY_OWNERSHIP_EVIDENCE: system_dttosleep: INSTALLER_CALLEE → DoubleTapToSleepHook; both set OnTouchListener after inflate
+- A14_KEY_OWNER_REFERENCE: app/src/main/java/tv/withaibuild/customiuizer/mods/SystemLockScreenHooks.kt::DoubleTapToSleepHook
+- A13_KEY_OWNER_REFERENCE: app/src/main/java/tv/withaibuild/customiuizer/mods/SystemDisplayAndWindowHooks.kt::DoubleTapToSleepHook
+- PROOF_CONCLUSION: `PRESENT_A13_VARIANT`
+
+## PROOF_R5F_ExtendedPowerMenuHook_system_epm
+
+- PROOF_ID: `PROOF_R5F_ExtendedPowerMenuHook_system_epm`
+- BODY_RELATION: `HOLD`
+- A14_OWNER_PATH: `app/src/main/java/tv/withaibuild/customiuizer/mods/SystemUI.kt`
+- A14_SYMBOL: `ExtendedPowerMenuHook`
+- A14_INSTALLER: `A14 installer/spec gate for system_epm`
+- A14_HOOK_TARGETS: `com.android.systemui.globalactions.GlobalActionsDialogLite#createActionItems,GlobalActionsDialogLite$SinglePressAction#<init>,GlobalActionsDialogLite$PowerOptionsAction#onPress,com.android.systemui.plugins.PluginEnablerImpl#isEnabled`
+- A14_CALLBACK_PHASE: `before,after`
+- A13_OWNER_PATH: `app/src/main/java/tv/withaibuild/customiuizer/mods/SystemUINotificationHooks.kt`
+- A13_SYMBOL: `ExtendedPowerMenuHook`
+- A13_INSTALLER: `A13 installer gate for system_epm`
+- A13_HOOK_TARGETS: `com.android.systemui.SystemUIApplication#onCreate,com.miui.maml.util.ZipResourceLoader#<init>,com.miui.maml.ScreenElementRoot#issueExternCommand,com.android.systemui.plugins.PluginEnablerImpl#isEnabled`
+- A13_CALLBACK_PHASE: `after,before`
+- PREFERENCE_KEYS: `system_epm`
+- VALUE_DOMAIN: owner-local preference domain
+- DEFAULT_SEMANTICS: boolean installer gate; A13 extra softreboot command in MAML
+- RESULT/ARGUMENT_BEHAVIOR: Both PluginEnablerImpl returnAndSkip(false) for GlobalActions components. A13 issueExternCommand returnAndSkip(null) after custom reboot. A14 onPress returnAndSkip(null) after showing confirm dialog.
+- API33_VARIANT_REASON: Not a portable API33 rename: MIUI14 MAML power menu vs HyperOS GlobalActionsDialogLite. PluginEnablerImpl is an unportable plugin gate.
+- KEY_OWNERSHIP_EVIDENCE: system_epm: INSTALLER_CALLEE → ExtendedPowerMenuHook on both trees
+- A14_KEY_OWNER_REFERENCE: app/src/main/java/tv/withaibuild/customiuizer/mods/SystemUI.kt::ExtendedPowerMenuHook
+- A13_KEY_OWNER_REFERENCE: app/src/main/java/tv/withaibuild/customiuizer/mods/SystemUINotificationHooks.kt::ExtendedPowerMenuHook
+- PROOF_CONCLUSION: `HOLD_EVIDENCE`
+
+## PROOF_R5_ExpandHeadsUpHook_system_expandheadups
+
+- PROOF_ID: `PROOF_R5_ExpandHeadsUpHook_system_expandheadups`
+- BODY_RELATION: `REVIEWED_VARIANT`
+- A14_OWNER_PATH: `app/src/main/java/tv/withaibuild/customiuizer/mods/SystemNotificationHooks.kt`
+- A14_SYMBOL: `ExpandHeadsUpHook`
+- A14_INSTALLER: `A14 installer/spec gate for system_expandheadups,system_expandheadups_apps`
+- A14_HOOK_TARGETS: `com.android.systemui.statusbar.notification.row.ExpandableNotificationRow#setHeadsUp`
+- A14_CALLBACK_PHASE: `intercept`
+- A13_OWNER_PATH: `app/src/main/java/tv/withaibuild/customiuizer/mods/SystemStatusBarClockAndMoreHooks.kt`
+- A13_SYMBOL: `ExpandHeadsUpHook`
+- A13_INSTALLER: `A13 installer gate for system_expandheadups,system_expandheadups_apps`
+- A13_HOOK_TARGETS: `com.android.systemui.statusbar.notification.row.ExpandableNotificationRow#setHeadsUp`
+- A13_CALLBACK_PHASE: `after`
+- PREFERENCE_KEYS: `system_expandheadups,system_expandheadups_apps`
+- VALUE_DOMAIN: owner-local preference domain
+- DEFAULT_SEMANTICS: same persisted keys consumed by both owners
+- RESULT/ARGUMENT_BEHAVIOR: A14 ops: result_assign[null]; chain.proceed[chain.proceed()]. A13 ops: no result/argument rewrite literals. Keys system_expandheadups,system_expandheadups_apps rewrite the same host members.
+- API33_VARIANT_REASON: A14 callback intercept vs A13 after on members A14[com.android.systemui.statusbar.notification.row.ExpandableNotificationRow#setHeadsUp] / A13[com.android.systemui.statusbar.notification.row.ExpandableNotificationRow#setHeadsUp]. Inner preference reads of system_expandheadups,system_expandheadups_apps match; intercept proceed-once maps to before returnAndSkip or after side-effect.
+- DIFF_SUMMARY: Shared members com.android.systemui.statusbar.notification.row.ExpandableNotificationRow#setHeadsUp. Differ: A14 phases intercept vs A13 after; A14 result_assign[null]; chain.proceed[chain.proceed()] vs A13 no result/argument rewrite literals.
+- VALUE_DEFAULT_COMPARISON: both consume system_expandheadups,system_expandheadups_apps in the owner body or installer gate
+- HOOK_TARGET_COMPARISON: A14=com.android.systemui.statusbar.notification.row.ExpandableNotificationRow#setHeadsUp; A13=com.android.systemui.statusbar.notification.row.ExpandableNotificationRow#setHeadsUp
+- CALLBACK_SEMANTICS_COMPARISON: A14 intercept vs A13 after; skipped paths do not invoke the original, proceed-once equals after side-effect
+- ARG_RESULT_COMPARISON: A14=result_assign[null]; chain.proceed[chain.proceed()]; A13=no result/argument rewrite literals
+- A14_ONLY_BRANCHES: none beyond intercept scaffolding for this owner pair
+- WHY_USER_BEHAVIOR_IS_EQUIVALENT: User-visible contract of system_expandheadups,system_expandheadups_apps is the same host rewrite; callback adapter and null-safety differ.
+- KEY_OWNERSHIP_EVIDENCE: system_expandheadups,system_expandheadups_apps: LITERAL_READ and/or INSTALLER_CALLEE in ExpandHeadsUpHook/ExpandHeadsUpHook
+- A14_KEY_OWNER_REFERENCE: app/src/main/java/tv/withaibuild/customiuizer/mods/SystemNotificationHooks.kt::ExpandHeadsUpHook
+- A13_KEY_OWNER_REFERENCE: app/src/main/java/tv/withaibuild/customiuizer/mods/SystemStatusBarClockAndMoreHooks.kt::ExpandHeadsUpHook
+- PROOF_CONCLUSION: `PRESENT_A13_VARIANT`
+
+## PROOF_R5F_ExpandNotificationsHook_system_expandnotifs
+
+- PROOF_ID: `PROOF_R5F_ExpandNotificationsHook_system_expandnotifs`
+- BODY_RELATION: `REVIEWED_VARIANT`
+- A14_OWNER_PATH: `app/src/main/java/tv/withaibuild/customiuizer/mods/SystemNotificationHooks.kt`
+- A14_SYMBOL: `ExpandNotificationsHook`
+- A14_INSTALLER: `A14 installer/spec gate for system_expandnotifs,system_expandnotifs_apps`
+- A14_HOOK_TARGETS: `com.android.systemui.statusbar.notification.row.ExpandableNotificationRow#setFeedbackIcon`
+- A14_CALLBACK_PHASE: `intercept`
+- A13_OWNER_PATH: `app/src/main/java/tv/withaibuild/customiuizer/mods/SystemStatusBarClockAndMoreHooks.kt`
+- A13_SYMBOL: `ExpandNotificationsHook`
+- A13_INSTALLER: `A13 installer gate for system_expandnotifs,system_expandnotifs_apps`
+- A13_HOOK_TARGETS: `com.android.systemui.statusbar.notification.row.ExpandableNotificationRow#setFeedbackIcon`
+- A13_CALLBACK_PHASE: `before`
+- PREFERENCE_KEYS: `system_expandnotifs,system_expandnotifs_apps`
+- VALUE_DOMAIN: owner-local preference domain
+- DEFAULT_SEMANTICS: system_expandnotifs default 1; apps is a StringSet.
+- RESULT/ARGUMENT_BEHAVIOR: Neither rewrites setFeedbackIcon result; expansion is a side effect.
+- API33_VARIANT_REASON: Same ExpandableNotificationRow#setFeedbackIcon. A14 intercept vs A13 before; A13 uses isOnKeyguard().
+- DIFF_SUMMARY: A14 ExpandNotificationsHook delegates to NotificationAutoExpandHook.install; A13 inlines before callback calling setSystemExpanded(true) off keyguard.
+- VALUE_DEFAULT_COMPARISON: system_expandnotifs default 1; apps is a StringSet.
+- HOOK_TARGET_COMPARISON: A14=com.android.systemui.statusbar.notification.row.ExpandableNotificationRow#setFeedbackIcon; A13=com.android.systemui.statusbar.notification.row.ExpandableNotificationRow#setFeedbackIcon
+- CALLBACK_SEMANTICS_COMPARISON: A14 intercept proceed-once maps to A13 before side-effect without returnAndSkip.
+- ARG_RESULT_COMPARISON: No result rewrite on either side.
+- A14_ONLY_BRANCHES: NotificationAutoExpandResolver ABI probe
+- WHY_USER_BEHAVIOR_IS_EQUIVALENT: Selected/unselected packages still auto-expand shade rows off keyguard; opt 2/3 plus app set is the same contract.
+- KEY_OWNERSHIP_EVIDENCE: A13 before-hook reads system_expandnotifs and system_expandnotifs_apps; A14 NotificationAutoExpandHook.install wires the same setFeedbackIcon member.
+- A14_KEY_OWNER_REFERENCE: app/src/main/java/tv/withaibuild/customiuizer/mods/SystemNotificationHooks.kt::ExpandNotificationsHook
+- A13_KEY_OWNER_REFERENCE: app/src/main/java/tv/withaibuild/customiuizer/mods/SystemStatusBarClockAndMoreHooks.kt::ExpandNotificationsHook
+- PROOF_CONCLUSION: `PRESENT_A13_VARIANT`
+
+## PROOF_R5_FirstVolumePressHook_system_firstpress
+
+- PROOF_ID: `PROOF_R5_FirstVolumePressHook_system_firstpress`
+- BODY_RELATION: `REVIEWED_VARIANT`
+- A14_OWNER_PATH: `app/src/main/java/tv/withaibuild/customiuizer/mods/SystemAudioHooks.kt`
+- A14_SYMBOL: `FirstVolumePressHook`
+- A14_INSTALLER: `A14 installer/spec gate for system_firstpress`
+- A14_HOOK_TARGETS: `com.android.server.audio.AudioService\$VolumeController#suppressAdjustment`
+- A14_CALLBACK_PHASE: `intercept`
+- A13_OWNER_PATH: `app/src/main/java/tv/withaibuild/customiuizer/mods/SystemAudioAndVisualAndMoreHooks.kt`
+- A13_SYMBOL: `FirstVolumePressHook`
+- A13_INSTALLER: `A13 installer gate for system_firstpress`
+- A13_HOOK_TARGETS: `com.android.server.audio.AudioService\$VolumeController#suppressAdjustment`
+- A13_CALLBACK_PHASE: `after`
+- PREFERENCE_KEYS: `system_firstpress`
+- VALUE_DOMAIN: owner-local preference domain
+- DEFAULT_SEMANTICS: same persisted keys consumed by both owners
+- RESULT/ARGUMENT_BEHAVIOR: A14 ops: result_assign[null,false]; chain.proceed[chain.proceed()]. A13 ops: setResult[false]. Keys system_firstpress rewrite the same host members.
+- API33_VARIANT_REASON: A14 callback intercept vs A13 after on members A14[com.android.server.audio.AudioService\$VolumeController#suppressAdjustment] / A13[com.android.server.audio.AudioService\$VolumeController#suppressAdjustment]. Inner preference reads of system_firstpress match; intercept proceed-once maps to before returnAndSkip or after side-effect.
+- DIFF_SUMMARY: Shared members com.android.server.audio.AudioService\$VolumeController#suppressAdjustment. Differ: A14 phases intercept vs A13 after; A14 result_assign[null,false]; chain.proceed[chain.proceed()] vs A13 setResult[false].
+- VALUE_DEFAULT_COMPARISON: both consume system_firstpress in the owner body or installer gate
+- HOOK_TARGET_COMPARISON: A14=com.android.server.audio.AudioService\$VolumeController#suppressAdjustment; A13=com.android.server.audio.AudioService\$VolumeController#suppressAdjustment
+- CALLBACK_SEMANTICS_COMPARISON: A14 intercept vs A13 after; skipped paths do not invoke the original, proceed-once equals after side-effect
+- ARG_RESULT_COMPARISON: A14=result_assign[null,false]; chain.proceed[chain.proceed()]; A13=setResult[false]
+- A14_ONLY_BRANCHES: none beyond intercept scaffolding for this owner pair
+- WHY_USER_BEHAVIOR_IS_EQUIVALENT: User-visible contract of system_firstpress is the same host rewrite; callback adapter and null-safety differ.
+- KEY_OWNERSHIP_EVIDENCE: system_firstpress: LITERAL_READ and/or INSTALLER_CALLEE in FirstVolumePressHook/FirstVolumePressHook
+- A14_KEY_OWNER_REFERENCE: app/src/main/java/tv/withaibuild/customiuizer/mods/SystemAudioHooks.kt::FirstVolumePressHook
+- A13_KEY_OWNER_REFERENCE: app/src/main/java/tv/withaibuild/customiuizer/mods/SystemAudioAndVisualAndMoreHooks.kt::FirstVolumePressHook
+- PROOF_CONCLUSION: `PRESENT_A13_VARIANT`
+
+## PROOF_R5_ForceCloseHook_system_forceclose
+
+- PROOF_ID: `PROOF_R5_ForceCloseHook_system_forceclose`
+- BODY_RELATION: `REVIEWED_VARIANT`
+- A14_OWNER_PATH: `app/src/main/java/tv/withaibuild/customiuizer/mods/System.kt`
+- A14_SYMBOL: `ForceCloseHook`
+- A14_INSTALLER: `A14 installer/spec gate for system_forceclose,system_forceclose_apps`
+- A14_HOOK_TARGETS: `com.android.server.policy.BaseMiuiPhoneWindowManager#<init>`
+- A14_CALLBACK_PHASE: `intercept`
+- A13_OWNER_PATH: `app/src/main/java/tv/withaibuild/customiuizer/mods/SystemSecurityAndSystemHooks.kt`
+- A13_SYMBOL: `ForceCloseHook`
+- A13_INSTALLER: `A13 installer gate for system_forceclose,system_forceclose_apps`
+- A13_HOOK_TARGETS: `com.android.server.policy.BaseMiuiPhoneWindowManager#<init>`
+- A13_CALLBACK_PHASE: `after`
+- PREFERENCE_KEYS: `system_forceclose,system_forceclose_apps`
+- VALUE_DOMAIN: owner-local preference domain
+- DEFAULT_SEMANTICS: same persisted keys consumed by both owners
+- RESULT/ARGUMENT_BEHAVIOR: A14 ops: result_assign[null]; chain.proceed[chain.proceed()]. A13 ops: no result/argument rewrite literals. Keys system_forceclose,system_forceclose_apps rewrite the same host members.
+- API33_VARIANT_REASON: A14 callback intercept vs A13 after on members A14[com.android.server.policy.BaseMiuiPhoneWindowManager#<init>] / A13[com.android.server.policy.BaseMiuiPhoneWindowManager#<init>]. Inner preference reads of system_forceclose,system_forceclose_apps match; intercept proceed-once maps to before returnAndSkip or after side-effect.
+- DIFF_SUMMARY: Shared members com.android.server.policy.BaseMiuiPhoneWindowManager#<init>. Differ: A14 phases intercept vs A13 after; A14 result_assign[null]; chain.proceed[chain.proceed()] vs A13 no result/argument rewrite literals.
+- VALUE_DEFAULT_COMPARISON: both consume system_forceclose,system_forceclose_apps in the owner body or installer gate
+- HOOK_TARGET_COMPARISON: A14=com.android.server.policy.BaseMiuiPhoneWindowManager#<init>; A13=com.android.server.policy.BaseMiuiPhoneWindowManager#<init>
+- CALLBACK_SEMANTICS_COMPARISON: A14 intercept vs A13 after; skipped paths do not invoke the original, proceed-once equals after side-effect
+- ARG_RESULT_COMPARISON: A14=result_assign[null]; chain.proceed[chain.proceed()]; A13=no result/argument rewrite literals
+- A14_ONLY_BRANCHES: none beyond intercept scaffolding for this owner pair
+- WHY_USER_BEHAVIOR_IS_EQUIVALENT: User-visible contract of system_forceclose,system_forceclose_apps is the same host rewrite; callback adapter and null-safety differ.
+- KEY_OWNERSHIP_EVIDENCE: system_forceclose,system_forceclose_apps: LITERAL_READ and/or INSTALLER_CALLEE in ForceCloseHook/ForceCloseHook
+- A14_KEY_OWNER_REFERENCE: app/src/main/java/tv/withaibuild/customiuizer/mods/System.kt::ForceCloseHook
+- A13_KEY_OWNER_REFERENCE: app/src/main/java/tv/withaibuild/customiuizer/mods/SystemSecurityAndSystemHooks.kt::ForceCloseHook
+- PROOF_CONCLUSION: `PRESENT_A13_VARIANT`
+
+## PROOF_R5F_shouldOpenInFreeForm_system_fw_forcein_actionsend
+
+- PROOF_ID: `PROOF_R5F_shouldOpenInFreeForm_system_fw_forcein_actionsend`
+- BODY_RELATION: `REVIEWED_VARIANT`
+- A14_OWNER_PATH: `app/src/main/java/tv/withaibuild/customiuizer/mods/SystemWindowHooks.kt`
+- A14_SYMBOL: `shouldOpenInFreeForm`
+- A14_INSTALLER: `A14 installer/spec gate for system_fw_forcein_actionsend,system_fw_forcein_actionsend_apps,system_fw_forcein_actionsend_in_whitelist`
+- A14_HOOK_TARGETS: `(no host member literals)`
+- A14_CALLBACK_PHASE: `unknown`
+- A13_OWNER_PATH: `app/src/main/java/tv/withaibuild/customiuizer/mods/SystemFreeformAndMultiWindowHooks.kt`
+- A13_SYMBOL: `shouldOpenInFreeForm`
+- A13_INSTALLER: `A13 installer gate for system_fw_forcein_actionsend,system_fw_forcein_actionsend_apps,system_fw_forcein_actionsend_in_whitelist`
+- A13_HOOK_TARGETS: `(no host member literals)`
+- A13_CALLBACK_PHASE: `unknown`
+- PREFERENCE_KEYS: `system_fw_forcein_actionsend,system_fw_forcein_actionsend_apps,system_fw_forcein_actionsend_in_whitelist`
+- VALUE_DOMAIN: owner-local preference domain
+- DEFAULT_SEMANTICS: boolean share toggle default false; whitelist boolean; app set
+- RESULT/ARGUMENT_BEHAVIOR: Pure Boolean helper; no Xposed result.
+- API33_VARIANT_REASON: Package installer activity class rename; helper is not a hook.
+- DIFF_SUMMARY: Shared: home/camera/systemui blacklist, ACTION_SEND, WeChat WXEntryActivity, nextFreeformPackage, whitelist xor. Installer activity NewPackageInstallerActivity vs InstallPrepareAlertActivity.
+- VALUE_DEFAULT_COMPARISON: boolean share toggle default false; whitelist boolean; app set
+- HOOK_TARGET_COMPARISON: A14=(none); A13=(none)
+- CALLBACK_SEMANTICS_COMPARISON: No callback.
+- ARG_RESULT_COMPARISON: Boolean return consumed by OpenAppInFreeFormHook.
+- A14_ONLY_BRANCHES: QQ JumpActivity/LoginActivity/AgentActivity; system_cc_freeform_when_longclick Settings/MobileNetworkSettings from SystemUI
+- WHY_USER_BEHAVIOR_IS_EQUIVALENT: ACTION_SEND to another app (and WeChat entry) opens in freeform when the share toggle/whitelist match.
+- KEY_OWNERSHIP_EVIDENCE: system_fw_forcein_actionsend / _apps / _in_whitelist: LITERAL_READ in both helpers
+- A14_KEY_OWNER_REFERENCE: app/src/main/java/tv/withaibuild/customiuizer/mods/SystemWindowHooks.kt::shouldOpenInFreeForm
+- A13_KEY_OWNER_REFERENCE: app/src/main/java/tv/withaibuild/customiuizer/mods/SystemFreeformAndMultiWindowHooks.kt::shouldOpenInFreeForm
+- PROOF_CONCLUSION: `PRESENT_A13_VARIANT`
+
+## PROOF_R5F_NoFloatingWindowBlacklistHook_system_fw_noblacklist
+
+- PROOF_ID: `PROOF_R5F_NoFloatingWindowBlacklistHook_system_fw_noblacklist`
+- BODY_RELATION: `REVIEWED_VARIANT`
+- A14_OWNER_PATH: `app/src/main/java/tv/withaibuild/customiuizer/mods/SystemWindowHooks.kt`
+- A14_SYMBOL: `NoFloatingWindowBlacklistHook`
+- A14_INSTALLER: `A14 installer/spec gate for system_fw_noblacklist`
+- A14_HOOK_TARGETS: `android string-array freeform_black_list theme replacement,DisableFloatingWindowBlacklistHook,com.android.server.wm.MiuiFreeformUtilImpl#supportsFreeform`
+- A14_CALLBACK_PHASE: `unknown`
+- A13_OWNER_PATH: `app/src/main/java/tv/withaibuild/customiuizer/mods/SystemFreeformAndMultiWindowHooks.kt`
+- A13_SYMBOL: `NoFloatingWindowBlacklistHook`
+- A13_INSTALLER: `A13 installer gate for system_fw_noblacklist`
+- A13_HOOK_TARGETS: `android/com.miui.rom array freeform_black_list res replacement,DisableFloatingWindowBlacklistHook,com.android.server.wm.MiuiFreeformServicesUtils#supportsFreeform`
+- A13_CALLBACK_PHASE: `before`
+- PREFERENCE_KEYS: `system_fw_noblacklist`
+- VALUE_DOMAIN: owner-local preference domain
+- DEFAULT_SEMANTICS: boolean installer gate
+- RESULT/ARGUMENT_BEHAVIOR: supportsFreeform forced true on both.
+- API33_VARIANT_REASON: MiuiFreeformServicesUtils vs MiuiFreeformUtilImpl; setResReplacement vs setThemeValueReplacement.
+- DIFF_SUMMARY: Both replace freeform_black_list, clear runtime blacklist (keep camera), supportsFreeform=true. A13 MiuiFreeformServicesUtils returnAndSkip(true); A14 MiuiFreeformUtilImpl returnConstant(true).
+- VALUE_DEFAULT_COMPARISON: boolean installer gate
+- HOOK_TARGET_COMPARISON: A14=android string-array freeform_black_list theme replacement,DisableFloatingWindowBlacklistHook,com.android.server.wm.MiuiFreeformUtilImpl#supportsFreeform; A13=android/com.miui.rom array freeform_black_list res replacement,DisableFloatingWindowBlacklistHook,com.android.server.wm.MiuiFreeformServicesUtils#supportsFreeform
+- CALLBACK_SEMANTICS_COMPARISON: A13 before skip vs A14 constant-return; both skip original supportsFreeform.
+- ARG_RESULT_COMPARISON: result true.
+- A14_ONLY_BRANCHES: none
+- WHY_USER_BEHAVIOR_IS_EQUIVALENT: Apps are not blocked from freeform by the ROM blacklist (camera still listed in clearer).
+- KEY_OWNERSHIP_EVIDENCE: system_fw_noblacklist: INSTALLER_CALLEE → NoFloatingWindowBlacklistHook
+- A14_KEY_OWNER_REFERENCE: app/src/main/java/tv/withaibuild/customiuizer/mods/SystemWindowHooks.kt::NoFloatingWindowBlacklistHook
+- A13_KEY_OWNER_REFERENCE: app/src/main/java/tv/withaibuild/customiuizer/mods/SystemFreeformAndMultiWindowHooks.kt::NoFloatingWindowBlacklistHook
+- PROOF_CONCLUSION: `PRESENT_A13_VARIANT`
+
+## PROOF_R5_MultiWindowPlusHook_system_fw_splitscreen
+
+- PROOF_ID: `PROOF_R5_MultiWindowPlusHook_system_fw_splitscreen`
+- BODY_RELATION: `REVIEWED_VARIANT`
+- A14_OWNER_PATH: `app/src/main/java/tv/withaibuild/customiuizer/mods/SystemWindowHooks.kt`
+- A14_SYMBOL: `MultiWindowPlusHook`
+- A14_INSTALLER: `A14 installer/spec gate for system_fw_splitscreen`
+- A14_HOOK_TARGETS: `#updateResizeBlackList,#getSplitScreenBlackListFromXml,#inResizeBlackList`
+- A14_CALLBACK_PHASE: `unknown`
+- A13_OWNER_PATH: `app/src/main/java/tv/withaibuild/customiuizer/mods/SystemFreeformAndMultiWindowHooks.kt`
+- A13_SYMBOL: `MultiWindowPlusHook`
+- A13_INSTALLER: `A13 installer gate for system_fw_splitscreen`
+- A13_HOOK_TARGETS: `#updateResizeBlackList,#getSplitScreenBlackListFromXml,#inResizeBlackList`
+- A13_CALLBACK_PHASE: `unknown`
+- PREFERENCE_KEYS: `system_fw_splitscreen`
+- VALUE_DOMAIN: owner-local preference domain
+- DEFAULT_SEMANTICS: same persisted keys consumed by both owners
+- RESULT/ARGUMENT_BEHAVIOR: A14 ops: no result/argument rewrite literals. A13 ops: no result/argument rewrite literals. Keys system_fw_splitscreen rewrite the same host members.
+- API33_VARIANT_REASON: A14 callback unknown vs A13 unknown on members A14[#updateResizeBlackList,#getSplitScreenBlackListFromXml,#inResizeBlackList] / A13[#updateResizeBlackList,#getSplitScreenBlackListFromXml,#inResizeBlackList]. Inner preference reads of system_fw_splitscreen match; intercept proceed-once maps to before returnAndSkip or after side-effect.
+- DIFF_SUMMARY: Shared members #updateResizeBlackList,#getSplitScreenBlackListFromXml,#inResizeBlackList. Differ: A14 phases unknown vs A13 unknown; A14 no result/argument rewrite literals vs A13 no result/argument rewrite literals.
+- VALUE_DEFAULT_COMPARISON: both consume system_fw_splitscreen in the owner body or installer gate
+- HOOK_TARGET_COMPARISON: A14=#updateResizeBlackList,#getSplitScreenBlackListFromXml,#inResizeBlackList; A13=#updateResizeBlackList,#getSplitScreenBlackListFromXml,#inResizeBlackList
+- CALLBACK_SEMANTICS_COMPARISON: A14 unknown vs A13 unknown; skipped paths do not invoke the original, proceed-once equals after side-effect
+- ARG_RESULT_COMPARISON: A14=no result/argument rewrite literals; A13=no result/argument rewrite literals
+- A14_ONLY_BRANCHES: none beyond intercept scaffolding for this owner pair
+- WHY_USER_BEHAVIOR_IS_EQUIVALENT: User-visible contract of system_fw_splitscreen is the same host rewrite; callback adapter and null-safety differ.
+- KEY_OWNERSHIP_EVIDENCE: system_fw_splitscreen: LITERAL_READ and/or INSTALLER_CALLEE in MultiWindowPlusHook/MultiWindowPlusHook
+- A14_KEY_OWNER_REFERENCE: app/src/main/java/tv/withaibuild/customiuizer/mods/SystemWindowHooks.kt::MultiWindowPlusHook
+- A13_KEY_OWNER_REFERENCE: app/src/main/java/tv/withaibuild/customiuizer/mods/SystemFreeformAndMultiWindowHooks.kt::MultiWindowPlusHook
+- PROOF_CONCLUSION: `PRESENT_A13_VARIANT`
+
+## PROOF_R5_GalleryScreenshotPathHook_system_gallery_screenshots_path
+
+- PROOF_ID: `PROOF_R5_GalleryScreenshotPathHook_system_gallery_screenshots_path`
+- BODY_RELATION: `REVIEWED_VARIANT`
+- A14_OWNER_PATH: `app/src/main/java/tv/withaibuild/customiuizer/mods/System.kt`
+- A14_SYMBOL: `GalleryScreenshotPathHook`
+- A14_INSTALLER: `A14 installer/spec gate for system_gallery_screenshots_path`
+- A14_HOOK_TARGETS: `(no host member literals)`
+- A14_CALLBACK_PHASE: `unknown`
+- A13_OWNER_PATH: `app/src/main/java/tv/withaibuild/customiuizer/mods/SystemAudioAndVisualAndMoreHooks.kt`
+- A13_SYMBOL: `GalleryScreenshotPathHook`
+- A13_INSTALLER: `A13 installer gate for system_gallery_screenshots_path`
+- A13_HOOK_TARGETS: `(no host member literals)`
+- A13_CALLBACK_PHASE: `unknown`
+- PREFERENCE_KEYS: `system_gallery_screenshots_path`
+- VALUE_DOMAIN: owner-local preference domain
+- DEFAULT_SEMANTICS: same persisted keys consumed by both owners
+- RESULT/ARGUMENT_BEHAVIOR: A14 ops: no result/argument rewrite literals. A13 ops: no result/argument rewrite literals. Keys system_gallery_screenshots_path rewrite the same host members.
+- API33_VARIANT_REASON: A14 callback unknown vs A13 unknown on members A14[(none)] / A13[(none)]. Inner preference reads of system_gallery_screenshots_path match; intercept proceed-once maps to before returnAndSkip or after side-effect.
+- DIFF_SUMMARY: Shared members (none). Differ: A14 phases unknown vs A13 unknown; A14 no result/argument rewrite literals vs A13 no result/argument rewrite literals.
+- VALUE_DEFAULT_COMPARISON: both consume system_gallery_screenshots_path in the owner body or installer gate
+- HOOK_TARGET_COMPARISON: A14=(none); A13=(none)
+- CALLBACK_SEMANTICS_COMPARISON: A14 unknown vs A13 unknown; skipped paths do not invoke the original, proceed-once equals after side-effect
+- ARG_RESULT_COMPARISON: A14=no result/argument rewrite literals; A13=no result/argument rewrite literals
+- A14_ONLY_BRANCHES: none beyond intercept scaffolding for this owner pair
+- WHY_USER_BEHAVIOR_IS_EQUIVALENT: User-visible contract of system_gallery_screenshots_path is the same host rewrite; callback adapter and null-safety differ.
+- KEY_OWNERSHIP_EVIDENCE: system_gallery_screenshots_path: LITERAL_READ and/or INSTALLER_CALLEE in GalleryScreenshotPathHook/GalleryScreenshotPathHook
+- A14_KEY_OWNER_REFERENCE: app/src/main/java/tv/withaibuild/customiuizer/mods/System.kt::GalleryScreenshotPathHook
+- A13_KEY_OWNER_REFERENCE: app/src/main/java/tv/withaibuild/customiuizer/mods/SystemAudioAndVisualAndMoreHooks.kt::GalleryScreenshotPathHook
+- PROOF_CONCLUSION: `PRESENT_A13_VARIANT`
+
+## PROOF_R5F_HideFromRecentsHook_system_hidefromrecents
+
+- PROOF_ID: `PROOF_R5F_HideFromRecentsHook_system_hidefromrecents`
+- BODY_RELATION: `REVIEWED_VARIANT`
+- A14_OWNER_PATH: `app/src/main/java/tv/withaibuild/customiuizer/mods/Launcher.kt`
+- A14_SYMBOL: `HideFromRecentsHook`
+- A14_INSTALLER: `LauncherPostAttachFeatures evaluateEnabled getBoolean(system_hidefromrecents)`
+- A14_HOOK_TARGETS: `com.android.systemui.shared.recents.system.ActivityManagerWrapper#needRemoveTask`
+- A14_CALLBACK_PHASE: `intercept`
+- A13_OWNER_PATH: `app/src/main/java/tv/withaibuild/customiuizer/mods/LauncherSystemHooks.kt`
+- A13_SYMBOL: `HideFromRecentsHook`
+- A13_INSTALLER: `LauncherInstaller.java getBoolean(system_hidefromrecents)`
+- A13_HOOK_TARGETS: `com.android.systemui.shared.recents.system.ActivityManagerWrapper#needRemoveTask`
+- A13_CALLBACK_PHASE: `after`
+- PREFERENCE_KEYS: `system_hidefromrecents,system_hidefromrecents_apps`
+- VALUE_DOMAIN: owner-local preference domain
+- DEFAULT_SEMANTICS: Master boolean default false. App set empty means no hide. Both consume the same keys.
+- RESULT/ARGUMENT_BEHAVIOR: A14 result=true after proceed; A13 setResult(true) after original.
+- API33_VARIANT_REASON: Same recents wrapper member. after setResult vs intercept rewrite. A13 extra null checks; A14 extra baseIntent fallback. Compact only13_targets #needRemoveTask is classifier class-literal split, both hook the same method.
+- DIFF_SUMMARY: Same needRemoveTask: if task package is in system_hidefromrecents_apps, result=true. A13 after+null-safe topActivity only. A14 intercept proceed then also falls back to baseIntent.component when topActivity is null.
+- VALUE_DEFAULT_COMPARISON: Master boolean default false. App set empty means no hide. Both consume the same keys.
+- HOOK_TARGET_COMPARISON: A14=com.android.systemui.shared.recents.system.ActivityManagerWrapper#needRemoveTask; A13=com.android.systemui.shared.recents.system.ActivityManagerWrapper#needRemoveTask
+- CALLBACK_SEMANTICS_COMPARISON: A14 intercept proceed-once then maybe overwrite result; A13 after setResult. Original always runs first.
+- ARG_RESULT_COMPARISON: A14 result_assign[null,true]; A13 setResult[true]. Same hide=true rewrite.
+- A14_ONLY_BRANCHES: pkgName from baseIntent.component when topActivity is null.
+- WHY_USER_BEHAVIOR_IS_EQUIVALENT: Selected apps still disappear from recents via needRemoveTask=true. baseIntent fallback is extra A14 coverage, not a different toggle.
+- KEY_OWNERSHIP_EVIDENCE: Installer boolean system_hidefromrecents. Body StringSet system_hidefromrecents_apps.contains(pkgName).
+- A14_KEY_OWNER_REFERENCE: app/src/main/java/tv/withaibuild/customiuizer/mods/Launcher.kt::HideFromRecentsHook
+- A13_KEY_OWNER_REFERENCE: app/src/main/java/tv/withaibuild/customiuizer/mods/LauncherSystemHooks.kt::HideFromRecentsHook
+- PROOF_CONCLUSION: `PRESENT_A13_VARIANT`
+
+## PROOF_R5_NoLowBatteryWarningHook_system_hidelowbatwarn
+
+- PROOF_ID: `PROOF_R5_NoLowBatteryWarningHook_system_hidelowbatwarn`
+- BODY_RELATION: `REVIEWED_VARIANT`
+- A14_OWNER_PATH: `app/src/main/java/tv/withaibuild/customiuizer/mods/Various.kt`
+- A14_SYMBOL: `NoLowBatteryWarningHook`
+- A14_INSTALLER: `A14 installer/spec gate for system_hidelowbatwarn`
+- A14_HOOK_TARGETS: `(no host member literals)`
+- A14_CALLBACK_PHASE: `intercept`
+- A13_OWNER_PATH: `app/src/main/java/tv/withaibuild/customiuizer/mods/Various.kt`
+- A13_SYMBOL: `NoLowBatteryWarningHook`
+- A13_INSTALLER: `A13 installer gate for system_hidelowbatwarn`
+- A13_HOOK_TARGETS: `(no host member literals)`
+- A13_CALLBACK_PHASE: `before`
+- PREFERENCE_KEYS: `system_hidelowbatwarn`
+- VALUE_DOMAIN: owner-local preference domain
+- DEFAULT_SEMANTICS: same persisted keys consumed by both owners
+- RESULT/ARGUMENT_BEHAVIOR: A14 ops: result_assign[null,null]; chain.proceed[chain.proceed()]. A13 ops: returnAndSkip[1,null]. Keys system_hidelowbatwarn rewrite the same host members.
+- API33_VARIANT_REASON: A14 callback intercept vs A13 before on members A14[(none)] / A13[(none)]. Inner preference reads of system_hidelowbatwarn match; intercept proceed-once maps to before returnAndSkip or after side-effect.
+- DIFF_SUMMARY: Shared members (none). Differ: A14 phases intercept vs A13 before; A14 result_assign[null,null]; chain.proceed[chain.proceed()] vs A13 returnAndSkip[1,null].
+- VALUE_DEFAULT_COMPARISON: both consume system_hidelowbatwarn in the owner body or installer gate
+- HOOK_TARGET_COMPARISON: A14=(none); A13=(none)
+- CALLBACK_SEMANTICS_COMPARISON: A14 intercept vs A13 before; skipped paths do not invoke the original, proceed-once equals after side-effect
+- ARG_RESULT_COMPARISON: A14=result_assign[null,null]; chain.proceed[chain.proceed()]; A13=returnAndSkip[1,null]
+- A14_ONLY_BRANCHES: none beyond intercept scaffolding for this owner pair
+- WHY_USER_BEHAVIOR_IS_EQUIVALENT: User-visible contract of system_hidelowbatwarn is the same host rewrite; callback adapter and null-safety differ.
+- KEY_OWNERSHIP_EVIDENCE: system_hidelowbatwarn: LITERAL_READ and/or INSTALLER_CALLEE in NoLowBatteryWarningHook/NoLowBatteryWarningHook
+- A14_KEY_OWNER_REFERENCE: app/src/main/java/tv/withaibuild/customiuizer/mods/Various.kt::NoLowBatteryWarningHook
+- A13_KEY_OWNER_REFERENCE: app/src/main/java/tv/withaibuild/customiuizer/mods/Various.kt::NoLowBatteryWarningHook
+- PROOF_CONCLUSION: `PRESENT_A13_VARIANT`
+
+## PROOF_R5F_HideLockScreenClockHook_system_hidelsclock
+
+- PROOF_ID: `PROOF_R5F_HideLockScreenClockHook_system_hidelsclock`
+- BODY_RELATION: `REVIEWED_VARIANT`
+- A14_OWNER_PATH: `app/src/main/java/tv/withaibuild/customiuizer/mods/SystemLockScreenHooks.kt`
+- A14_SYMBOL: `HideLockScreenClockHook`
+- A14_INSTALLER: `A14 installer/spec gate for system_hidelsclock`
+- A14_HOOK_TARGETS: `com.android.keyguard.clock.KeyguardClockContainer#setVisibility,KeyguardClockContainer#onFinishInflate,KeyguardClockContainer#doAnimationToAod`
+- A14_CALLBACK_PHASE: `intercept`
+- A13_OWNER_PATH: `app/src/main/java/tv/withaibuild/customiuizer/mods/SystemLockScreenMoreHooks.kt`
+- A13_SYMBOL: `HideLockScreenClockHook`
+- A13_INSTALLER: `A13 installer gate for system_hidelsclock`
+- A13_HOOK_TARGETS: `com.android.keyguard.KeyguardClockSwitch#setClockPlugin,KeyguardClockSwitch#updateClockViews`
+- A13_CALLBACK_PHASE: `after`
+- PREFERENCE_KEYS: `system_hidelsclock`
+- VALUE_DOMAIN: owner-local preference domain
+- DEFAULT_SEMANTICS: boolean installer gate
+- RESULT/ARGUMENT_BEHAVIOR: A13 after visibility INVISIBLE. A14 skip setVisibility(VISIBLE) result=null; inflate proceed then setVisibility(GONE).
+- API33_VARIANT_REASON: KeyguardClockSwitch frames vs KeyguardClockContainer on HyperOS.
+- DIFF_SUMMARY: A13 after setClockPlugin/updateClockViews sets mClockFrame/mLargeClockFrame INVISIBLE. A14 skips KeyguardClockContainer.setVisibility(VISIBLE) except AOD, GONE on inflate.
+- VALUE_DEFAULT_COMPARISON: boolean installer gate
+- HOOK_TARGET_COMPARISON: A14=com.android.keyguard.clock.KeyguardClockContainer#setVisibility,KeyguardClockContainer#onFinishInflate,KeyguardClockContainer#doAnimationToAod; A13=com.android.keyguard.KeyguardClockSwitch#setClockPlugin,KeyguardClockSwitch#updateClockViews
+- CALLBACK_SEMANTICS_COMPARISON: A14 intercept skip ≡ hide; A13 after force INVISIBLE.
+- ARG_RESULT_COMPARISON: A14 skipped setVisibility does not run original. A13 original runs then frames forced INVISIBLE.
+- A14_ONLY_BRANCHES: doAnimationToAod mToAod flag so AOD clock can become visible
+- WHY_USER_BEHAVIOR_IS_EQUIVALENT: Lockscreen clock is hidden (AOD animation still allowed on A14).
+- KEY_OWNERSHIP_EVIDENCE: system_hidelsclock: INSTALLER_CALLEE → HideLockScreenClockHook
+- A14_KEY_OWNER_REFERENCE: app/src/main/java/tv/withaibuild/customiuizer/mods/SystemLockScreenHooks.kt::HideLockScreenClockHook
+- A13_KEY_OWNER_REFERENCE: app/src/main/java/tv/withaibuild/customiuizer/mods/SystemLockScreenMoreHooks.kt::HideLockScreenClockHook
+- PROOF_CONCLUSION: `PRESENT_A13_VARIANT`
+
+## PROOF_R5F_HideLockScreenHintHook_system_hidelshint
+
+- PROOF_ID: `PROOF_R5F_HideLockScreenHintHook_system_hidelshint`
+- BODY_RELATION: `REVIEWED_VARIANT`
+- A14_OWNER_PATH: `app/src/main/java/tv/withaibuild/customiuizer/mods/SystemLockScreenHooks.kt`
+- A14_SYMBOL: `HideLockScreenHintHook`
+- A14_INSTALLER: `A14 installer/spec gate for system_hidelshint`
+- A14_HOOK_TARGETS: `com.android.systemui.statusbar.KeyguardIndicationController#updateDeviceEntryIndication`
+- A14_CALLBACK_PHASE: `intercept`
+- A13_OWNER_PATH: `app/src/main/java/tv/withaibuild/customiuizer/mods/SystemLockScreenMoreHooks.kt`
+- A13_SYMBOL: `HideLockScreenHintHook`
+- A13_INSTALLER: `A13 installer gate for system_hidelshint`
+- A13_HOOK_TARGETS: `com.android.systemui.keyguard.KeyguardIndicationRotateTextViewController#hasIndicationsExceptResting`
+- A13_CALLBACK_PHASE: `unknown`
+- PREFERENCE_KEYS: `system_hidelshint`
+- VALUE_DOMAIN: owner-local preference domain
+- DEFAULT_SEMANTICS: boolean installer gate
+- RESULT/ARGUMENT_BEHAVIOR: A13 constant true. A14 field clear then proceed.
+- API33_VARIANT_REASON: RotateTextViewController vs KeyguardIndicationController persistent message on HyperOS.
+- DIFF_SUMMARY: A13 hasIndicationsExceptResting returnConstant(true). A14 clears mPersistentUnlockMessage then proceed updateDeviceEntryIndication.
+- VALUE_DEFAULT_COMPARISON: boolean installer gate
+- HOOK_TARGET_COMPARISON: A14=com.android.systemui.statusbar.KeyguardIndicationController#updateDeviceEntryIndication; A13=com.android.systemui.keyguard.KeyguardIndicationRotateTextViewController#hasIndicationsExceptResting
+- CALLBACK_SEMANTICS_COMPARISON: A13 constant-return skip vs A14 intercept proceed-once after clearing message.
+- ARG_RESULT_COMPARISON: A13 result true. A14 host result of updateDeviceEntryIndication kept.
+- A14_ONLY_BRANCHES: none
+- WHY_USER_BEHAVIOR_IS_EQUIVALENT: Lockscreen unlock/swipe hint text is suppressed.
+- KEY_OWNERSHIP_EVIDENCE: system_hidelshint: INSTALLER_CALLEE → HideLockScreenHintHook
+- A14_KEY_OWNER_REFERENCE: app/src/main/java/tv/withaibuild/customiuizer/mods/SystemLockScreenHooks.kt::HideLockScreenHintHook
+- A13_KEY_OWNER_REFERENCE: app/src/main/java/tv/withaibuild/customiuizer/mods/SystemLockScreenMoreHooks.kt::HideLockScreenHintHook
+- PROOF_CONCLUSION: `PRESENT_A13_VARIANT`
+
+## PROOF_R5F_HideLockScreenStatusBarHook_system_hidelsstatusbar
+
+- PROOF_ID: `PROOF_R5F_HideLockScreenStatusBarHook_system_hidelsstatusbar`
+- BODY_RELATION: `REVIEWED_VARIANT`
+- A14_OWNER_PATH: `app/src/main/java/tv/withaibuild/customiuizer/mods/SystemLockScreenHooks.kt`
+- A14_SYMBOL: `HideLockScreenStatusBarHook`
+- A14_INSTALLER: `A14 installer/spec gate for system_hidelsstatusbar`
+- A14_HOOK_TARGETS: `com.android.systemui.statusbar.phone.MiuiKeyguardStatusBarView#onFinishInflate`
+- A14_CALLBACK_PHASE: `intercept`
+- A13_OWNER_PATH: `app/src/main/java/tv/withaibuild/customiuizer/mods/SystemLockScreenMoreHooks.kt`
+- A13_SYMBOL: `HideLockScreenStatusBarHook`
+- A13_INSTALLER: `A13 installer gate for system_hidelsstatusbar`
+- A13_HOOK_TARGETS: `com.android.systemui.statusbar.phone.CentralSurfacesImpl#makeStatusBarView`
+- A13_CALLBACK_PHASE: `after`
+- PREFERENCE_KEYS: `system_hidelsstatusbar`
+- VALUE_DOMAIN: owner-local preference domain
+- DEFAULT_SEMANTICS: boolean installer gate
+- RESULT/ARGUMENT_BEHAVIOR: Side-effect visibility/translation; host result unchanged.
+- API33_VARIANT_REASON: Hide via CentralSurfacesImpl panel field vs dedicated MiuiKeyguardStatusBarView inflate.
+- DIFF_SUMMARY: A13 after makeStatusBarView sets mKeyguardStatusBar.translationY=-999. A14 after MiuiKeyguardStatusBarView.onFinishInflate sets GONE and translationY=-499.
+- VALUE_DEFAULT_COMPARISON: boolean installer gate
+- HOOK_TARGET_COMPARISON: A14=com.android.systemui.statusbar.phone.MiuiKeyguardStatusBarView#onFinishInflate; A13=com.android.systemui.statusbar.phone.CentralSurfacesImpl#makeStatusBarView
+- CALLBACK_SEMANTICS_COMPARISON: A14 intercept proceed-once ≡ A13 after.
+- ARG_RESULT_COMPARISON: No setResult.
+- A14_ONLY_BRANCHES: View.GONE in addition to translation
+- WHY_USER_BEHAVIOR_IS_EQUIVALENT: Keyguard status bar is not visible.
+- KEY_OWNERSHIP_EVIDENCE: system_hidelsstatusbar: INSTALLER_CALLEE → HideLockScreenStatusBarHook
+- A14_KEY_OWNER_REFERENCE: app/src/main/java/tv/withaibuild/customiuizer/mods/SystemLockScreenHooks.kt::HideLockScreenStatusBarHook
+- A13_KEY_OWNER_REFERENCE: app/src/main/java/tv/withaibuild/customiuizer/mods/SystemLockScreenMoreHooks.kt::HideLockScreenStatusBarHook
+- PROOF_CONCLUSION: `PRESENT_A13_VARIANT`
+
+## PROOF_R5_HideProximityWarningHook_system_hideproxywarn
+
+- PROOF_ID: `PROOF_R5_HideProximityWarningHook_system_hideproxywarn`
+- BODY_RELATION: `IDENTICAL`
+- A14_OWNER_PATH: `app/src/main/java/tv/withaibuild/customiuizer/mods/System.kt`
+- A14_SYMBOL: `HideProximityWarningHook`
+- A14_INSTALLER: `A14 installer/spec gate for system_hideproxywarn`
+- A14_HOOK_TARGETS: `com.android.server.policy.MiuiScreenOnProximityLock#showHint,com.android.server.policy.MiuiScreenOnProximityLock#prepareHintWindow`
+- A14_CALLBACK_PHASE: `unknown`
+- A13_OWNER_PATH: `app/src/main/java/tv/withaibuild/customiuizer/mods/SystemDisplayAndWindowHooks.kt`
+- A13_SYMBOL: `HideProximityWarningHook`
+- A13_INSTALLER: `A13 installer gate for system_hideproxywarn`
+- A13_HOOK_TARGETS: `com.android.server.policy.MiuiScreenOnProximityLock#showHint,com.android.server.policy.MiuiScreenOnProximityLock#prepareHintWindow`
+- A13_CALLBACK_PHASE: `unknown`
+- PREFERENCE_KEYS: `system_hideproxywarn`
+- VALUE_DOMAIN: owner-local preference domain
+- DEFAULT_SEMANTICS: identical owner body; shared defaults
+- RESULT/ARGUMENT_BEHAVIOR: no result/argument rewrite literals
+- API33_VARIANT_REASON: Normalized bodies are IDENTICAL. A14/A13 both hook com.android.server.policy.MiuiScreenOnProximityLock#showHint,com.android.server.policy.MiuiScreenOnProximityLock#prepareHintWindow.
+- KEY_OWNERSHIP_EVIDENCE: system_hideproxywarn: LITERAL_READ and/or INSTALLER_CALLEE in HideProximityWarningHook/HideProximityWarningHook
+- A14_KEY_OWNER_REFERENCE: app/src/main/java/tv/withaibuild/customiuizer/mods/System.kt::HideProximityWarningHook
+- A13_KEY_OWNER_REFERENCE: app/src/main/java/tv/withaibuild/customiuizer/mods/SystemDisplayAndWindowHooks.kt::HideProximityWarningHook
+- PROOF_CONCLUSION: `PRESENT_EQUIVALENT`
+
+## PROOF_R5_registerCallbacks_system_hidestatusbar_whenscreenshot
+
+- PROOF_ID: `PROOF_R5_registerCallbacks_system_hidestatusbar_whenscreenshot`
+- BODY_RELATION: `REVIEWED_VARIANT`
+- A14_OWNER_PATH: `app/src/main/java/tv/withaibuild/customiuizer/utils/BatteryIndicator.kt`
+- A14_SYMBOL: `init`
+- A14_INSTALLER: `A14 installer/spec gate for system_hidestatusbar_whenscreenshot`
+- A14_HOOK_TARGETS: `(no host member literals)`
+- A14_CALLBACK_PHASE: `unknown`
+- A13_OWNER_PATH: `app/src/main/java/tv/withaibuild/customiuizer/utils/BatteryIndicator.kt`
+- A13_SYMBOL: `registerCallbacks`
+- A13_INSTALLER: `A13 installer gate for system_hidestatusbar_whenscreenshot`
+- A13_HOOK_TARGETS: `(no host member literals)`
+- A13_CALLBACK_PHASE: `unknown`
+- PREFERENCE_KEYS: `system_hidestatusbar_whenscreenshot`
+- VALUE_DOMAIN: owner-local preference domain
+- DEFAULT_SEMANTICS: same persisted keys consumed by both owners
+- RESULT/ARGUMENT_BEHAVIOR: A14 ops: no result/argument rewrite literals. A13 ops: no result/argument rewrite literals. Keys system_hidestatusbar_whenscreenshot rewrite the same host members.
+- API33_VARIANT_REASON: A14 callback unknown vs A13 unknown on members A14[(none)] / A13[(none)]. Inner preference reads of system_hidestatusbar_whenscreenshot match; intercept proceed-once maps to before returnAndSkip or after side-effect.
+- DIFF_SUMMARY: Shared members (none). Differ: A14 phases unknown vs A13 unknown; A14 no result/argument rewrite literals vs A13 no result/argument rewrite literals.
+- VALUE_DEFAULT_COMPARISON: both consume system_hidestatusbar_whenscreenshot in the owner body or installer gate
+- HOOK_TARGET_COMPARISON: A14=(none); A13=(none)
+- CALLBACK_SEMANTICS_COMPARISON: A14 unknown vs A13 unknown; skipped paths do not invoke the original, proceed-once equals after side-effect
+- ARG_RESULT_COMPARISON: A14=no result/argument rewrite literals; A13=no result/argument rewrite literals
+- A14_ONLY_BRANCHES: none beyond intercept scaffolding for this owner pair
+- WHY_USER_BEHAVIOR_IS_EQUIVALENT: User-visible contract of system_hidestatusbar_whenscreenshot is the same host rewrite; callback adapter and null-safety differ.
+- KEY_OWNERSHIP_EVIDENCE: system_hidestatusbar_whenscreenshot: LITERAL_READ and/or INSTALLER_CALLEE in init/registerCallbacks
+- A14_KEY_OWNER_REFERENCE: app/src/main/java/tv/withaibuild/customiuizer/utils/BatteryIndicator.kt::init
+- A13_KEY_OWNER_REFERENCE: app/src/main/java/tv/withaibuild/customiuizer/utils/BatteryIndicator.kt::registerCallbacks
+- PROOF_CONCLUSION: `PRESENT_A13_VARIANT`
+
+## PROOF_R5_NoCallInterruptionHook_system_ignorecalls
+
+- PROOF_ID: `PROOF_R5_NoCallInterruptionHook_system_ignorecalls`
+- BODY_RELATION: `REVIEWED_VARIANT`
+- A14_OWNER_PATH: `app/src/main/java/tv/withaibuild/customiuizer/mods/SystemAudioHooks.kt`
+- A14_SYMBOL: `NoCallInterruptionHook`
+- A14_INSTALLER: `A14 installer/spec gate for system_ignorecalls`
+- A14_HOOK_TARGETS: `com.android.server.audio.AudioService#requestAudioFocus,com.android.server.TelephonyRegistry#notifyCallState,com.android.server.TelephonyRegistry#notifyCallStateForPhoneId`
+- A14_CALLBACK_PHASE: `intercept`
+- A13_OWNER_PATH: `app/src/main/java/tv/withaibuild/customiuizer/mods/SystemAudioAndVisualAndMoreHooks.kt`
+- A13_SYMBOL: `NoCallInterruptionHook`
+- A13_INSTALLER: `A13 installer gate for system_ignorecalls`
+- A13_HOOK_TARGETS: `com.android.server.audio.AudioService#requestAudioFocus,com.android.server.TelephonyRegistry#notifyCallState,com.android.server.TelephonyRegistry#notifyCallStateForPhoneId`
+- A13_CALLBACK_PHASE: `before,after`
+- PREFERENCE_KEYS: `system_ignorecalls`
+- VALUE_DOMAIN: owner-local preference domain
+- DEFAULT_SEMANTICS: same persisted keys consumed by both owners
+- RESULT/ARGUMENT_BEHAVIOR: A14 ops: result_assign[null,null,null]; chain.proceed[chain.proceed(),chain.proceed(),chain.proceed()]. A13 ops: returnAndSkip[1]. Keys system_ignorecalls rewrite the same host members.
+- API33_VARIANT_REASON: A14 callback intercept vs A13 before,after on members A14[com.android.server.audio.AudioService#requestAudioFocus,com.android.server.TelephonyRegistry#notifyCallState,com.android.server.TelephonyRegistry#notifyCallStateForPhoneId] / A13[com.android.server.audio.AudioService#requestAudioFocus,com.android.server.TelephonyRegistry#notifyCallState,com.android.server.TelephonyRegistry#notifyCallStateForPhoneId]. Inner preference reads of system_ignorecalls match; intercept proceed-once maps to before returnAndSkip or after side-effect.
+- DIFF_SUMMARY: Shared members com.android.server.audio.AudioService#requestAudioFocus,com.android.server.TelephonyRegistry#notifyCallState,com.android.server.TelephonyRegistry#notifyCallStateForPhoneId. Differ: A14 phases intercept vs A13 before,after; A14 result_assign[null,null,null]; chain.proceed[chain.proceed(),chain.proceed(),chain.proceed()] vs A13 returnAndSkip[1].
+- VALUE_DEFAULT_COMPARISON: both consume system_ignorecalls in the owner body or installer gate
+- HOOK_TARGET_COMPARISON: A14=com.android.server.audio.AudioService#requestAudioFocus,com.android.server.TelephonyRegistry#notifyCallState,com.android.server.TelephonyRegistry#notifyCallStateForPhoneId; A13=com.android.server.audio.AudioService#requestAudioFocus,com.android.server.TelephonyRegistry#notifyCallState,com.android.server.TelephonyRegistry#notifyCallStateForPhoneId
+- CALLBACK_SEMANTICS_COMPARISON: A14 intercept vs A13 before,after; skipped paths do not invoke the original, proceed-once equals after side-effect
+- ARG_RESULT_COMPARISON: A14=result_assign[null,null,null]; chain.proceed[chain.proceed(),chain.proceed(),chain.proceed()]; A13=returnAndSkip[1]
+- A14_ONLY_BRANCHES: none beyond intercept scaffolding for this owner pair
+- WHY_USER_BEHAVIOR_IS_EQUIVALENT: User-visible contract of system_ignorecalls is the same host rewrite; callback adapter and null-safety differ.
+- KEY_OWNERSHIP_EVIDENCE: system_ignorecalls: LITERAL_READ and/or INSTALLER_CALLEE in NoCallInterruptionHook/NoCallInterruptionHook
+- A14_KEY_OWNER_REFERENCE: app/src/main/java/tv/withaibuild/customiuizer/mods/SystemAudioHooks.kt::NoCallInterruptionHook
+- A13_KEY_OWNER_REFERENCE: app/src/main/java/tv/withaibuild/customiuizer/mods/SystemAudioAndVisualAndMoreHooks.kt::NoCallInterruptionHook
+- PROOF_CONCLUSION: `PRESENT_A13_VARIANT`
+
+## PROOF_R5_removeListener_system_ignorecalls_apps
+
+- PROOF_ID: `PROOF_R5_removeListener_system_ignorecalls_apps`
+- BODY_RELATION: `REVIEWED_VARIANT`
+- A14_OWNER_PATH: `app/src/main/java/tv/withaibuild/customiuizer/mods/SystemAudioHooks.kt`
+- A14_SYMBOL: `removeListener`
+- A14_INSTALLER: `A14 installer/spec gate for system_ignorecalls_apps`
+- A14_HOOK_TARGETS: `(no host member literals)`
+- A14_CALLBACK_PHASE: `unknown`
+- A13_OWNER_PATH: `app/src/main/java/tv/withaibuild/customiuizer/mods/SystemAudioAndVisualAndMoreHooks.kt`
+- A13_SYMBOL: `removeListener`
+- A13_INSTALLER: `A13 installer gate for system_ignorecalls_apps`
+- A13_HOOK_TARGETS: `(no host member literals)`
+- A13_CALLBACK_PHASE: `unknown`
+- PREFERENCE_KEYS: `system_ignorecalls_apps`
+- VALUE_DOMAIN: owner-local preference domain
+- DEFAULT_SEMANTICS: same persisted keys consumed by both owners
+- RESULT/ARGUMENT_BEHAVIOR: A14 ops: no result/argument rewrite literals. A13 ops: no result/argument rewrite literals. Keys system_ignorecalls_apps rewrite the same host members.
+- API33_VARIANT_REASON: A14 callback unknown vs A13 unknown on members A14[(none)] / A13[(none)]. Inner preference reads of system_ignorecalls_apps match; intercept proceed-once maps to before returnAndSkip or after side-effect.
+- DIFF_SUMMARY: Shared members (none). Differ: A14 phases unknown vs A13 unknown; A14 no result/argument rewrite literals vs A13 no result/argument rewrite literals.
+- VALUE_DEFAULT_COMPARISON: both consume system_ignorecalls_apps in the owner body or installer gate
+- HOOK_TARGET_COMPARISON: A14=(none); A13=(none)
+- CALLBACK_SEMANTICS_COMPARISON: A14 unknown vs A13 unknown; skipped paths do not invoke the original, proceed-once equals after side-effect
+- ARG_RESULT_COMPARISON: A14=no result/argument rewrite literals; A13=no result/argument rewrite literals
+- A14_ONLY_BRANCHES: none beyond intercept scaffolding for this owner pair
+- WHY_USER_BEHAVIOR_IS_EQUIVALENT: User-visible contract of system_ignorecalls_apps is the same host rewrite; callback adapter and null-safety differ.
+- KEY_OWNERSHIP_EVIDENCE: system_ignorecalls_apps: LITERAL_READ and/or INSTALLER_CALLEE in removeListener/removeListener
+- A14_KEY_OWNER_REFERENCE: app/src/main/java/tv/withaibuild/customiuizer/mods/SystemAudioHooks.kt::removeListener
+- A13_KEY_OWNER_REFERENCE: app/src/main/java/tv/withaibuild/customiuizer/mods/SystemAudioAndVisualAndMoreHooks.kt::removeListener
+- PROOF_CONCLUSION: `PRESENT_A13_VARIANT`
+
+## PROOF_R5_Disable72hStrongAuthHook_system_lockscreen_disable_strongauth_72h
+
+- PROOF_ID: `PROOF_R5_Disable72hStrongAuthHook_system_lockscreen_disable_strongauth_72h`
+- BODY_RELATION: `REVIEWED_VARIANT`
+- A14_OWNER_PATH: `app/src/main/java/tv/withaibuild/customiuizer/mods/SystemLockScreenHooks.kt`
+- A14_SYMBOL: `Disable72hStrongAuthHook`
+- A14_INSTALLER: `A14 installer/spec gate for system_lockscreen_disable_strongauth_72h`
+- A14_HOOK_TARGETS: `com.android.server.locksettings.LockSettingsStrongAuth#rescheduleStrongAuthTimeoutAlarm`
+- A14_CALLBACK_PHASE: `unknown`
+- A13_OWNER_PATH: `app/src/main/java/tv/withaibuild/customiuizer/mods/SystemNotificationMoreHooks.kt`
+- A13_SYMBOL: `Disable72hStrongAuthHook`
+- A13_INSTALLER: `A13 installer gate for system_lockscreen_disable_strongauth_72h`
+- A13_HOOK_TARGETS: `com.android.server.locksettings.LockSettingsStrongAuth#rescheduleStrongAuthTimeoutAlarm`
+- A13_CALLBACK_PHASE: `unknown`
+- PREFERENCE_KEYS: `system_lockscreen_disable_strongauth_72h`
+- VALUE_DOMAIN: owner-local preference domain
+- DEFAULT_SEMANTICS: same persisted keys consumed by both owners
+- RESULT/ARGUMENT_BEHAVIOR: A14 ops: no result/argument rewrite literals. A13 ops: no result/argument rewrite literals. Keys system_lockscreen_disable_strongauth_72h rewrite the same host members.
+- API33_VARIANT_REASON: A14 callback unknown vs A13 unknown on members A14[com.android.server.locksettings.LockSettingsStrongAuth#rescheduleStrongAuthTimeoutAlarm] / A13[com.android.server.locksettings.LockSettingsStrongAuth#rescheduleStrongAuthTimeoutAlarm]. Inner preference reads of system_lockscreen_disable_strongauth_72h match; intercept proceed-once maps to before returnAndSkip or after side-effect.
+- DIFF_SUMMARY: Shared members com.android.server.locksettings.LockSettingsStrongAuth#rescheduleStrongAuthTimeoutAlarm. Differ: A14 phases unknown vs A13 unknown; A14 no result/argument rewrite literals vs A13 no result/argument rewrite literals.
+- VALUE_DEFAULT_COMPARISON: both consume system_lockscreen_disable_strongauth_72h in the owner body or installer gate
+- HOOK_TARGET_COMPARISON: A14=com.android.server.locksettings.LockSettingsStrongAuth#rescheduleStrongAuthTimeoutAlarm; A13=com.android.server.locksettings.LockSettingsStrongAuth#rescheduleStrongAuthTimeoutAlarm
+- CALLBACK_SEMANTICS_COMPARISON: A14 unknown vs A13 unknown; skipped paths do not invoke the original, proceed-once equals after side-effect
+- ARG_RESULT_COMPARISON: A14=no result/argument rewrite literals; A13=no result/argument rewrite literals
+- A14_ONLY_BRANCHES: none beyond intercept scaffolding for this owner pair
+- WHY_USER_BEHAVIOR_IS_EQUIVALENT: User-visible contract of system_lockscreen_disable_strongauth_72h is the same host rewrite; callback adapter and null-safety differ.
+- KEY_OWNERSHIP_EVIDENCE: system_lockscreen_disable_strongauth_72h: LITERAL_READ and/or INSTALLER_CALLEE in Disable72hStrongAuthHook/Disable72hStrongAuthHook
+- A14_KEY_OWNER_REFERENCE: app/src/main/java/tv/withaibuild/customiuizer/mods/SystemLockScreenHooks.kt::Disable72hStrongAuthHook
+- A13_KEY_OWNER_REFERENCE: app/src/main/java/tv/withaibuild/customiuizer/mods/SystemNotificationMoreHooks.kt::Disable72hStrongAuthHook
+- PROOF_CONCLUSION: `PRESENT_A13_VARIANT`
+
+## PROOF_R5F_HideLockscreenZenModeHook_system_lockscreen_hidezenmode
+
+- PROOF_ID: `PROOF_R5F_HideLockscreenZenModeHook_system_lockscreen_hidezenmode`
+- BODY_RELATION: `REVIEWED_VARIANT`
+- A14_OWNER_PATH: `app/src/main/java/tv/withaibuild/customiuizer/mods/SystemUILockScreenHooks.kt`
+- A14_SYMBOL: `HideLockscreenZenModeHook`
+- A14_INSTALLER: `A14 installer/spec gate for system_lockscreen_hidezenmode`
+- A14_HOOK_TARGETS: `com.android.systemui.statusbar.notification.zen.ZenModeViewController#updateVisibility`
+- A14_CALLBACK_PHASE: `before,after`
+- A13_OWNER_PATH: `app/src/main/java/tv/withaibuild/customiuizer/mods/SystemUILockScreenHooks.kt`
+- A13_SYMBOL: `HideLockscreenZenModeHook`
+- A13_INSTALLER: `A13 installer gate for system_lockscreen_hidezenmode`
+- A13_HOOK_TARGETS: `com.android.systemui.statusbar.notification.zen.ZenModeViewController#shouldBeVisible`
+- A13_CALLBACK_PHASE: `unknown`
+- PREFERENCE_KEYS: `system_lockscreen_hidezenmode`
+- VALUE_DOMAIN: owner-local preference domain
+- DEFAULT_SEMANTICS: boolean installer gate
+- RESULT/ARGUMENT_BEHAVIOR: A13 result false. A14 no result rewrite; field spoof.
+- API33_VARIANT_REASON: shouldBeVisible vs updateVisibility+manuallyDismissed on HyperOS zen view.
+- DIFF_SUMMARY: A13 shouldBeVisible returnConstant(false). A14 updateVisibility temporarily sets manuallyDismissed=true around proceed so the zen row stays hidden.
+- VALUE_DEFAULT_COMPARISON: boolean installer gate
+- HOOK_TARGET_COMPARISON: A14=com.android.systemui.statusbar.notification.zen.ZenModeViewController#updateVisibility; A13=com.android.systemui.statusbar.notification.zen.ZenModeViewController#shouldBeVisible
+- CALLBACK_SEMANTICS_COMPARISON: A13 constant-return skip vs A14 before/after around original updateVisibility.
+- ARG_RESULT_COMPARISON: A13 original shouldBeVisible not used. A14 original updateVisibility runs with dismissed=true.
+- A14_ONLY_BRANCHES: restore previous manuallyDismissed after updateVisibility
+- WHY_USER_BEHAVIOR_IS_EQUIVALENT: DND/zen banner on lockscreen/shade is hidden.
+- KEY_OWNERSHIP_EVIDENCE: system_lockscreen_hidezenmode: INSTALLER_CALLEE → HideLockscreenZenModeHook
+- A14_KEY_OWNER_REFERENCE: app/src/main/java/tv/withaibuild/customiuizer/mods/SystemUILockScreenHooks.kt::HideLockscreenZenModeHook
+- A13_KEY_OWNER_REFERENCE: app/src/main/java/tv/withaibuild/customiuizer/mods/SystemUILockScreenHooks.kt::HideLockscreenZenModeHook
+- PROOF_CONCLUSION: `PRESENT_A13_VARIANT`
+
+## PROOF_R5F_LockScreenShortcutHook_system_lockscreenshortcuts
+
+- PROOF_ID: `PROOF_R5F_LockScreenShortcutHook_system_lockscreenshortcuts`
+- BODY_RELATION: `REVIEWED_VARIANT`
+- A14_OWNER_PATH: `app/src/main/java/tv/withaibuild/customiuizer/mods/SystemUILockScreenHooks.kt`
+- A14_SYMBOL: `LockScreenShortcutHook`
+- A14_INSTALLER: `A14 installer/spec gate for system_lockscreenshortcuts,system_lockscreenshortcuts_left_off,system_lockscreenshortcuts_left_tapaction,system_lockscreenshortcuts_right,system_lockscreenshortcuts_right_off`
+- A14_HOOK_TARGETS: `com.android.keyguard.injector.KeyguardBottomAreaInjector#updateLeftIcon/updateRightIcon/updateIcons/<init>,KeyguardMoveHelper#setTranslation/endMotion,KeyguardMoveRightController#onTouchDown/onTouchMove`
+- A14_CALLBACK_PHASE: `after,before`
+- A13_OWNER_PATH: `app/src/main/java/tv/withaibuild/customiuizer/mods/SystemUILockScreenHooks.kt`
+- A13_SYMBOL: `LockScreenShortcutHook`
+- A13_INSTALLER: `A13 installer gate for system_lockscreenshortcuts,system_lockscreenshortcuts_left_off,system_lockscreenshortcuts_left_tapaction,system_lockscreenshortcuts_right,system_lockscreenshortcuts_right_off`
+- A13_HOOK_TARGETS: `KeyguardBottomAreaView$MiuiDefaultLeftButton#getIcon,KeyguardBottomAreaView$MiuiDefaultRightButton#getIcon,KeyguardBottomAreaView#initTipsView/onFinishInflate/updateLeftAffordanceIcon/onClick/launchCamera,MiuiKeyguardCameraView#*,KeyguardMoveHelper#setTranslation/fling`
+- A13_CALLBACK_PHASE: `after,before`
+- PREFERENCE_KEYS: `system_lockscreenshortcuts,system_lockscreenshortcuts_left_off,system_lockscreenshortcuts_left_tapaction,system_lockscreenshortcuts_right,system_lockscreenshortcuts_right_off`
+- VALUE_DOMAIN: owner-local preference domain
+- DEFAULT_SEMANTICS: booleans default false; A14 right_action default 1 (ROM camera)
+- RESULT/ARGUMENT_BEHAVIOR: A13 after getIcon mutates drawable/isVisible; some before returnAndSkip on click/launchCamera. A14 after updateLeft/RightIcon setImageDrawable / GONE.
+- API33_VARIANT_REASON: MIUI14 KeyguardBottomAreaView vs HyperOS KeyguardBottomAreaInjector.
+- DIFF_SUMMARY: Same user actions: hide left/right affordances, left long-press flashlight, optional right custom icon. A13 KeyguardBottomAreaView + MiuiKeyguardCameraView. A14 KeyguardBottomAreaInjector + move controllers.
+- VALUE_DEFAULT_COMPARISON: booleans default false; A14 right_action default 1 (ROM camera)
+- HOOK_TARGET_COMPARISON: A14=com.android.keyguard.injector.KeyguardBottomAreaInjector#updateLeftIcon/updateRightIcon/updateIcons/<init>,KeyguardMoveHelper#setTranslation/endMotion,KeyguardMoveRightController#onTouchDown/onTouchMove; A13=KeyguardBottomAreaView$MiuiDefaultLeftButton#getIcon,KeyguardBottomAreaView$MiuiDefaultRightButton#getIcon,KeyguardBottomAreaView#initTipsView/onFinishInflate/updateLeftAffordanceIcon/onClick/launchCamera,MiuiKeyguardCameraView#*,KeyguardMoveHelper#setTranslation/fling
+- CALLBACK_SEMANTICS_COMPARISON: Both after icon updates; A13 extra before skips on camera/click when left tap-action.
+- ARG_RESULT_COMPARISON: A13 may skip original click/launchCamera. A14 generally proceeds then overlays icons.
+- A14_ONLY_BRANCHES: torch_state ContentObserver; right_action int>1 vs A13 right_image boolean; KeyguardMoveRightController touch
+- WHY_USER_BEHAVIOR_IS_EQUIVALENT: Lockscreen left/right shortcuts can be hidden, left can be flashlight, right can show the module icon; swipe/camera paths are retargeted on each ROM.
+- KEY_OWNERSHIP_EVIDENCE: system_lockscreenshortcuts_left_off / left_tapaction / right_off: LITERAL_READ in both. A13 also system_lockscreenshortcuts_right_image; A14 system_lockscreenshortcuts_right_action int.
+- A14_KEY_OWNER_REFERENCE: app/src/main/java/tv/withaibuild/customiuizer/mods/SystemUILockScreenHooks.kt::LockScreenShortcutHook
+- A13_KEY_OWNER_REFERENCE: app/src/main/java/tv/withaibuild/customiuizer/mods/SystemUILockScreenHooks.kt::LockScreenShortcutHook
+- PROOF_CONCLUSION: `PRESENT_A13_VARIANT`
+
+## PROOF_R5F_LockScreenAlarmHook_system_lsalarm
+
+- PROOF_ID: `PROOF_R5F_LockScreenAlarmHook_system_lsalarm`
+- BODY_RELATION: `REVIEWED_VARIANT`
+- A14_OWNER_PATH: `app/src/main/java/tv/withaibuild/customiuizer/mods/SystemLockScreenHooks.kt`
+- A14_SYMBOL: `LockScreenAlarmHook`
+- A14_INSTALLER: `A14 installer/spec gate for system_lsalarm`
+- A14_HOOK_TARGETS: `com.android.systemui.statusbar.KeyguardIndicationController#setIndicationArea,KeyguardIndicationController#updateDeviceEntryIndication,com.android.keyguard.injector.KeyguardBottomAreaInjector#handleBottomButtonClickedAnimation`
+- A14_CALLBACK_PHASE: `intercept`
+- A13_OWNER_PATH: `app/src/main/java/tv/withaibuild/customiuizer/mods/SystemAudioAndVisualAndMoreHooks.kt`
+- A13_SYMBOL: `LockScreenAlarmHook`
+- A13_INSTALLER: `A13 installer gate for system_lsalarm`
+- A13_HOOK_TARGETS: `com.android.keyguard.clock.MiuiKeyguardSingleClock#updateTime,com.android.keyguard.clock.MiuiKeyguardDualClock#updateTime`
+- A13_CALLBACK_PHASE: `after`
+- PREFERENCE_KEYS: `system_lsalarm`
+- VALUE_DOMAIN: owner-local preference domain
+- DEFAULT_SEMANTICS: system_lsalarm_format default 1; system_lsalarm_all optional stock alarm on both
+- RESULT/ARGUMENT_BEHAVIOR: A13 after append; A14 proceed-once then set text/visibility. No updateTime result rewrite.
+- API33_VARIANT_REASON: MIUI14 clock widgets vs HyperOS KeyguardIndicationController indication area.
+- DIFF_SUMMARY: Same alarm string builder. A13 appends onto MiuiKeyguardSingleClock/DualClock date TextViews. A14 writes KeyguardIndicationController.mTopIndicationView.
+- VALUE_DEFAULT_COMPARISON: system_lsalarm_format default 1; system_lsalarm_all optional stock alarm on both
+- HOOK_TARGET_COMPARISON: A14=com.android.systemui.statusbar.KeyguardIndicationController#setIndicationArea,KeyguardIndicationController#updateDeviceEntryIndication,com.android.keyguard.injector.KeyguardBottomAreaInjector#handleBottomButtonClickedAnimation; A13=com.android.keyguard.clock.MiuiKeyguardSingleClock#updateTime,com.android.keyguard.clock.MiuiKeyguardDualClock#updateTime
+- CALLBACK_SEMANTICS_COMPARISON: A14 intercept proceed-once ≡ A13 after.
+- ARG_RESULT_COMPARISON: No setResult; TextView.text / visibility mutations.
+- A14_ONLY_BRANCHES: Gxzw bottomMargin; hide mTopIndicationView during handleBottomButtonClickedAnimation(showTips=true)
+- WHY_USER_BEHAVIOR_IS_EQUIVALENT: Next alarm is shown on the lockscreen using the same format keys; empty when no alarm.
+- KEY_OWNERSHIP_EVIDENCE: system_lsalarm (+ system_lsalarm_all / system_lsalarm_format in helper): INSTALLER_CALLEE → LockScreenAlarmHook; both use getNextMIUIAlarmTime / getNextStockAlarmTime
+- A14_KEY_OWNER_REFERENCE: app/src/main/java/tv/withaibuild/customiuizer/mods/SystemLockScreenHooks.kt::LockScreenAlarmHook
+- A13_KEY_OWNER_REFERENCE: app/src/main/java/tv/withaibuild/customiuizer/mods/SystemAudioAndVisualAndMoreHooks.kt::LockScreenAlarmHook
+- PROOF_CONCLUSION: `PRESENT_A13_VARIANT`
+
+## PROOF_R5_hookUpdateTime_system_lsalarm_all
+
+- PROOF_ID: `PROOF_R5_hookUpdateTime_system_lsalarm_all`
+- BODY_RELATION: `REVIEWED_VARIANT`
+- A14_OWNER_PATH: `app/src/main/java/tv/withaibuild/customiuizer/mods/SystemLockScreenHooks.kt`
+- A14_SYMBOL: `hookUpdateTime`
+- A14_INSTALLER: `A14 installer/spec gate for system_lsalarm_all,system_lsalarm_format`
+- A14_HOOK_TARGETS: `(no host member literals)`
+- A14_CALLBACK_PHASE: `unknown`
+- A13_OWNER_PATH: `app/src/main/java/tv/withaibuild/customiuizer/mods/SystemAudioAndVisualAndMoreHooks.kt`
+- A13_SYMBOL: `hookUpdateTime`
+- A13_INSTALLER: `A13 installer gate for system_lsalarm_all,system_lsalarm_format`
+- A13_HOOK_TARGETS: `(no host member literals)`
+- A13_CALLBACK_PHASE: `unknown`
+- PREFERENCE_KEYS: `system_lsalarm_all,system_lsalarm_format`
+- VALUE_DOMAIN: owner-local preference domain
+- DEFAULT_SEMANTICS: same persisted keys consumed by both owners
+- RESULT/ARGUMENT_BEHAVIOR: A14 ops: no result/argument rewrite literals. A13 ops: no result/argument rewrite literals. Keys system_lsalarm_all,system_lsalarm_format rewrite the same host members.
+- API33_VARIANT_REASON: A14 callback unknown vs A13 unknown on members A14[(none)] / A13[(none)]. Inner preference reads of system_lsalarm_all,system_lsalarm_format match; intercept proceed-once maps to before returnAndSkip or after side-effect.
+- DIFF_SUMMARY: Shared members (none). Differ: A14 phases unknown vs A13 unknown; A14 no result/argument rewrite literals vs A13 no result/argument rewrite literals.
+- VALUE_DEFAULT_COMPARISON: both consume system_lsalarm_all,system_lsalarm_format in the owner body or installer gate
+- HOOK_TARGET_COMPARISON: A14=(none); A13=(none)
+- CALLBACK_SEMANTICS_COMPARISON: A14 unknown vs A13 unknown; skipped paths do not invoke the original, proceed-once equals after side-effect
+- ARG_RESULT_COMPARISON: A14=no result/argument rewrite literals; A13=no result/argument rewrite literals
+- A14_ONLY_BRANCHES: none beyond intercept scaffolding for this owner pair
+- WHY_USER_BEHAVIOR_IS_EQUIVALENT: User-visible contract of system_lsalarm_all,system_lsalarm_format is the same host rewrite; callback adapter and null-safety differ.
+- KEY_OWNERSHIP_EVIDENCE: system_lsalarm_all,system_lsalarm_format: LITERAL_READ and/or INSTALLER_CALLEE in hookUpdateTime/hookUpdateTime
+- A14_KEY_OWNER_REFERENCE: app/src/main/java/tv/withaibuild/customiuizer/mods/SystemLockScreenHooks.kt::hookUpdateTime
+- A13_KEY_OWNER_REFERENCE: app/src/main/java/tv/withaibuild/customiuizer/mods/SystemAudioAndVisualAndMoreHooks.kt::hookUpdateTime
+- PROOF_CONCLUSION: `PRESENT_A13_VARIANT`
+
+## PROOF_R5_SetLockscreenWallpaperHook_system_lswallpaper
+
+- PROOF_ID: `PROOF_R5_SetLockscreenWallpaperHook_system_lswallpaper`
+- BODY_RELATION: `REVIEWED_VARIANT`
+- A14_OWNER_PATH: `app/src/main/java/tv/withaibuild/customiuizer/mods/SystemLockScreenHooks.kt`
+- A14_SYMBOL: `SetLockscreenWallpaperHook`
+- A14_INSTALLER: `A14 installer/spec gate for system_lswallpaper`
+- A14_HOOK_TARGETS: `com.android.server.wallpaper.WallpaperManagerService#setWallpaper`
+- A14_CALLBACK_PHASE: `intercept`
+- A13_OWNER_PATH: `app/src/main/java/tv/withaibuild/customiuizer/mods/SystemChargingAndWallpaperHooks.kt`
+- A13_SYMBOL: `SetLockscreenWallpaperHook`
+- A13_INSTALLER: `A13 installer gate for system_lswallpaper`
+- A13_HOOK_TARGETS: `com.android.server.wallpaper.WallpaperManagerService#setWallpaper`
+- A13_CALLBACK_PHASE: `after`
+- PREFERENCE_KEYS: `system_lswallpaper`
+- VALUE_DOMAIN: owner-local preference domain
+- DEFAULT_SEMANTICS: same persisted keys consumed by both owners
+- RESULT/ARGUMENT_BEHAVIOR: A14 ops: result_assign[null]; chain.proceed[chain.proceed()]. A13 ops: no result/argument rewrite literals. Keys system_lswallpaper rewrite the same host members.
+- API33_VARIANT_REASON: A14 callback intercept vs A13 after on members A14[com.android.server.wallpaper.WallpaperManagerService#setWallpaper] / A13[com.android.server.wallpaper.WallpaperManagerService#setWallpaper]. Inner preference reads of system_lswallpaper match; intercept proceed-once maps to before returnAndSkip or after side-effect.
+- DIFF_SUMMARY: Shared members com.android.server.wallpaper.WallpaperManagerService#setWallpaper. Differ: A14 phases intercept vs A13 after; A14 result_assign[null]; chain.proceed[chain.proceed()] vs A13 no result/argument rewrite literals.
+- VALUE_DEFAULT_COMPARISON: both consume system_lswallpaper in the owner body or installer gate
+- HOOK_TARGET_COMPARISON: A14=com.android.server.wallpaper.WallpaperManagerService#setWallpaper; A13=com.android.server.wallpaper.WallpaperManagerService#setWallpaper
+- CALLBACK_SEMANTICS_COMPARISON: A14 intercept vs A13 after; skipped paths do not invoke the original, proceed-once equals after side-effect
+- ARG_RESULT_COMPARISON: A14=result_assign[null]; chain.proceed[chain.proceed()]; A13=no result/argument rewrite literals
+- A14_ONLY_BRANCHES: none beyond intercept scaffolding for this owner pair
+- WHY_USER_BEHAVIOR_IS_EQUIVALENT: User-visible contract of system_lswallpaper is the same host rewrite; callback adapter and null-safety differ.
+- KEY_OWNERSHIP_EVIDENCE: system_lswallpaper: LITERAL_READ and/or INSTALLER_CALLEE in SetLockscreenWallpaperHook/SetLockscreenWallpaperHook
+- A14_KEY_OWNER_REFERENCE: app/src/main/java/tv/withaibuild/customiuizer/mods/SystemLockScreenHooks.kt::SetLockscreenWallpaperHook
+- A13_KEY_OWNER_REFERENCE: app/src/main/java/tv/withaibuild/customiuizer/mods/SystemChargingAndWallpaperHooks.kt::SetLockscreenWallpaperHook
+- PROOF_CONCLUSION: `PRESENT_A13_VARIANT`
+
+## PROOF_R5F_MaxNotificationIconsHook_system_maxsbicons
+
+- PROOF_ID: `PROOF_R5F_MaxNotificationIconsHook_system_maxsbicons`
+- BODY_RELATION: `REVIEWED_VARIANT`
+- A14_OWNER_PATH: `app/src/main/java/tv/withaibuild/customiuizer/mods/SystemNotificationHooks.kt`
+- A14_SYMBOL: `MaxNotificationIconsHook`
+- A14_INSTALLER: `A14 installer/spec gate for system_maxsbicons`
+- A14_HOOK_TARGETS: `com.android.systemui.statusbar.phone.NotificationIconContainer#resetViewStates`
+- A14_CALLBACK_PHASE: `intercept`
+- A13_OWNER_PATH: `app/src/main/java/tv/withaibuild/customiuizer/mods/SystemNotificationMoreHooks.kt`
+- A13_SYMBOL: `MaxNotificationIconsHook`
+- A13_INSTALLER: `A13 installer gate for system_maxsbicons`
+- A13_HOOK_TARGETS: `com.android.systemui.statusbar.phone.NotificationIconContainer#miuiShowNotificationIcons`
+- A13_CALLBACK_PHASE: `before`
+- PREFERENCE_KEYS: `system_maxsbicons`
+- VALUE_DOMAIN: owner-local preference domain
+- DEFAULT_SEMANTICS: string-int default 0 (ROM); -1 means 999 both
+- RESULT/ARGUMENT_BEHAVIOR: A13 returnAndSkip after field writes. A14 proceed after field writes.
+- API33_VARIANT_REASON: MIUI14 miuiShowNotificationIcons vs HyperOS resetViewStates field names mMax*.
+- DIFF_SUMMARY: A13 miuiShowNotificationIcons sets MAX_STATIC_ICONS / MAX_ICONS_ON_LOCKSCREEN then updateState returnAndSkip. A14 resetViewStates sets mMaxStaticIcons / mMaxIconsOnLockscreen then proceed.
+- VALUE_DEFAULT_COMPARISON: string-int default 0 (ROM); -1 means 999 both
+- HOOK_TARGET_COMPARISON: A14=com.android.systemui.statusbar.phone.NotificationIconContainer#resetViewStates; A13=com.android.systemui.statusbar.phone.NotificationIconContainer#miuiShowNotificationIcons
+- CALLBACK_SEMANTICS_COMPARISON: A13 before skip vs A14 intercept proceed-once.
+- ARG_RESULT_COMPARISON: A13 skips original miuiShowNotificationIcons. A14 still runs resetViewStates.
+- A14_ONLY_BRANCHES: only writes when opt != current && current != 0
+- WHY_USER_BEHAVIOR_IS_EQUIVALENT: Status-bar/lockscreen notification icon cap is the seekbar (unlimited if -1).
+- KEY_OWNERSHIP_EVIDENCE: system_maxsbicons: LITERAL_READ string-int; -1 → 999
+- A14_KEY_OWNER_REFERENCE: app/src/main/java/tv/withaibuild/customiuizer/mods/SystemNotificationHooks.kt::MaxNotificationIconsHook
+- A13_KEY_OWNER_REFERENCE: app/src/main/java/tv/withaibuild/customiuizer/mods/SystemNotificationMoreHooks.kt::MaxNotificationIconsHook
+- PROOF_CONCLUSION: `PRESENT_A13_VARIANT`
+
+## PROOF_R5_MinimalNotificationViewHook_system_minimalnotifview
+
+- PROOF_ID: `PROOF_R5_MinimalNotificationViewHook_system_minimalnotifview`
+- BODY_RELATION: `REVIEWED_VARIANT`
+- A14_OWNER_PATH: `app/src/main/java/tv/withaibuild/customiuizer/mods/SystemNotificationHooks.kt`
+- A14_SYMBOL: `MinimalNotificationViewHook`
+- A14_INSTALLER: `A14 installer/spec gate for system_minimalnotifview`
+- A14_HOOK_TARGETS: `com.android.systemui.statusbar.phone.StatusBar#updateNotification`
+- A14_CALLBACK_PHASE: `intercept`
+- A13_OWNER_PATH: `app/src/main/java/tv/withaibuild/customiuizer/mods/SystemNotificationMoreHooks.kt`
+- A13_SYMBOL: `MinimalNotificationViewHook`
+- A13_INSTALLER: `A13 installer gate for system_minimalnotifview`
+- A13_HOOK_TARGETS: `com.android.systemui.statusbar.phone.StatusBar#updateNotification`
+- A13_CALLBACK_PHASE: `after`
+- PREFERENCE_KEYS: `system_minimalnotifview`
+- VALUE_DOMAIN: owner-local preference domain
+- DEFAULT_SEMANTICS: same persisted keys consumed by both owners
+- RESULT/ARGUMENT_BEHAVIOR: A14 ops: result_assign[null]; chain.proceed[chain.proceed()]. A13 ops: no result/argument rewrite literals. Keys system_minimalnotifview rewrite the same host members.
+- API33_VARIANT_REASON: A14 callback intercept vs A13 after on members A14[com.android.systemui.statusbar.phone.StatusBar#updateNotification] / A13[com.android.systemui.statusbar.phone.StatusBar#updateNotification]. Inner preference reads of system_minimalnotifview match; intercept proceed-once maps to before returnAndSkip or after side-effect.
+- DIFF_SUMMARY: Shared members com.android.systemui.statusbar.phone.StatusBar#updateNotification. Differ: A14 phases intercept vs A13 after; A14 result_assign[null]; chain.proceed[chain.proceed()] vs A13 no result/argument rewrite literals.
+- VALUE_DEFAULT_COMPARISON: both consume system_minimalnotifview in the owner body or installer gate
+- HOOK_TARGET_COMPARISON: A14=com.android.systemui.statusbar.phone.StatusBar#updateNotification; A13=com.android.systemui.statusbar.phone.StatusBar#updateNotification
+- CALLBACK_SEMANTICS_COMPARISON: A14 intercept vs A13 after; skipped paths do not invoke the original, proceed-once equals after side-effect
+- ARG_RESULT_COMPARISON: A14=result_assign[null]; chain.proceed[chain.proceed()]; A13=no result/argument rewrite literals
+- A14_ONLY_BRANCHES: none beyond intercept scaffolding for this owner pair
+- WHY_USER_BEHAVIOR_IS_EQUIVALENT: User-visible contract of system_minimalnotifview is the same host rewrite; callback adapter and null-safety differ.
+- KEY_OWNERSHIP_EVIDENCE: system_minimalnotifview: LITERAL_READ and/or INSTALLER_CALLEE in MinimalNotificationViewHook/MinimalNotificationViewHook
+- A14_KEY_OWNER_REFERENCE: app/src/main/java/tv/withaibuild/customiuizer/mods/SystemNotificationHooks.kt::MinimalNotificationViewHook
+- A13_KEY_OWNER_REFERENCE: app/src/main/java/tv/withaibuild/customiuizer/mods/SystemNotificationMoreHooks.kt::MinimalNotificationViewHook
+- PROOF_CONCLUSION: `PRESENT_A13_VARIANT`
+
+## PROOF_R5F_HideMobileNetworkIndicatorHook_system_mobiletypeicon
+
+- PROOF_ID: `PROOF_R5F_HideMobileNetworkIndicatorHook_system_mobiletypeicon`
+- BODY_RELATION: `REVIEWED_VARIANT`
+- A14_OWNER_PATH: `app/src/main/java/tv/withaibuild/customiuizer/mods/SystemUIStatusBarHooks.kt`
+- A14_SYMBOL: `HideMobileNetworkIndicatorHook`
+- A14_INSTALLER: `A14 installer/spec gate for system_mobiletypeicon,system_networkindicator_mobile,system_statusbar_mobiletype_show_wificonnected`
+- A14_HOOK_TARGETS: `com.android.systemui.statusbar.StatusBarMobileView#applyMobileState,com.android.systemui.statusbar.StatusBarMobileView#updateState`
+- A14_CALLBACK_PHASE: `before,after`
+- A13_OWNER_PATH: `app/src/main/java/tv/withaibuild/customiuizer/mods/SystemUIStatusBarHooks.kt`
+- A13_SYMBOL: `HideMobileNetworkIndicatorHook`
+- A13_INSTALLER: `A13 installer gate for system_mobiletypeicon,system_networkindicator_mobile,system_statusbar_mobiletype_show_wificonnected`
+- A13_HOOK_TARGETS: `com.android.systemui.statusbar.StatusBarMobileView#initViewState,com.android.systemui.statusbar.StatusBarMobileView#updateState`
+- A13_CALLBACK_PHASE: `after`
+- PREFERENCE_KEYS: `system_mobiletypeicon,system_networkindicator_mobile,system_statusbar_mobiletype_show_wificonnected`
+- VALUE_DOMAIN: owner-local preference domain
+- DEFAULT_SEMANTICS: mobiletypeicon default 1; booleans default false.
+- RESULT/ARGUMENT_BEHAVIOR: View.setVisibility; no method skip.
+- API33_VARIANT_REASON: HyperOS applyMobileState replaces MIUI14 initViewState; A14 before distinguishes init vs updateState.
+- DIFF_SUMMARY: applyMobileState vs initViewState. A14 extra before initAction (mState==null) so first applyMobileState behaves like init.
+- VALUE_DEFAULT_COMPARISON: mobiletypeicon default 1; booleans default false.
+- HOOK_TARGET_COMPARISON: A14=com.android.systemui.statusbar.StatusBarMobileView#applyMobileState,com.android.systemui.statusbar.StatusBarMobileView#updateState; A13=com.android.systemui.statusbar.StatusBarMobileView#initViewState,com.android.systemui.statusbar.StatusBarMobileView#updateState
+- CALLBACK_SEMANTICS_COMPARISON: A13 after only; A14 before+after to emulate init.
+- ARG_RESULT_COMPARISON: No result rewrite.
+- A14_ONLY_BRANCHES: before initAction flag on applyMobileState
+- WHY_USER_BEHAVIOR_IS_EQUIVALENT: Mobile type icon and activity indicator visibility still follow the same opt 1/2/3 and Wi-Fi exception.
+- KEY_OWNERSHIP_EVIDENCE: Both read mobiletypeicon / networkindicator_mobile / show_wificonnected and toggle mMobileType / mMobileTypeSingle visibility.
+- A14_KEY_OWNER_REFERENCE: app/src/main/java/tv/withaibuild/customiuizer/mods/SystemUIStatusBarHooks.kt::HideMobileNetworkIndicatorHook
+- A13_KEY_OWNER_REFERENCE: app/src/main/java/tv/withaibuild/customiuizer/mods/SystemUIStatusBarHooks.kt::HideMobileNetworkIndicatorHook
+- PROOF_CONCLUSION: `PRESENT_A13_VARIANT`
+
+## PROOF_R5F_MuteVisibleNotificationsHook_system_mutevisiblenotif
+
+- PROOF_ID: `PROOF_R5F_MuteVisibleNotificationsHook_system_mutevisiblenotif`
+- BODY_RELATION: `REVIEWED_VARIANT`
+- A14_OWNER_PATH: `app/src/main/java/tv/withaibuild/customiuizer/mods/SystemNotificationHooks.kt`
+- A14_SYMBOL: `MuteVisibleNotificationsHook`
+- A14_INSTALLER: `A14 installer/spec gate for system_mutevisiblenotif`
+- A14_HOOK_TARGETS: `com.android.systemui.statusbar.notification.policy.MiuiAlertManager#buzzBeepBlink`
+- A14_CALLBACK_PHASE: `intercept`
+- A13_OWNER_PATH: `app/src/main/java/tv/withaibuild/customiuizer/mods/SystemNotificationMoreHooks.kt`
+- A13_SYMBOL: `MuteVisibleNotificationsHook`
+- A13_INSTALLER: `A13 installer gate for system_mutevisiblenotif`
+- A13_HOOK_TARGETS: `com.android.systemui.statusbar.notification.policy.NotificationAlertController#buzzBeepBlink`
+- A13_CALLBACK_PHASE: `before`
+- PREFERENCE_KEYS: `system_mutevisiblenotif`
+- VALUE_DOMAIN: owner-local preference domain
+- DEFAULT_SEMANTICS: boolean installer gate
+- RESULT/ARGUMENT_BEHAVIOR: A13 returnAndSkip(null). A14 skipped result=null.
+- API33_VARIANT_REASON: MIUI14 NotificationAlertController vs HyperOS MiuiAlertManager.
+- DIFF_SUMMARY: If PowerManager.isInteractive, skip buzzBeepBlink. Class NotificationAlertController vs MiuiAlertManager.
+- VALUE_DEFAULT_COMPARISON: boolean installer gate
+- HOOK_TARGET_COMPARISON: A14=com.android.systemui.statusbar.notification.policy.MiuiAlertManager#buzzBeepBlink; A13=com.android.systemui.statusbar.notification.policy.NotificationAlertController#buzzBeepBlink
+- CALLBACK_SEMANTICS_COMPARISON: A14 intercept skip ≡ A13 before returnAndSkip.
+- ARG_RESULT_COMPARISON: Original buzzBeepBlink not called when interactive.
+- A14_ONLY_BRANCHES: none
+- WHY_USER_BEHAVIOR_IS_EQUIVALENT: Notifications do not sound/vibrate/blink while the screen is on.
+- KEY_OWNERSHIP_EVIDENCE: system_mutevisiblenotif: INSTALLER_CALLEE → MuteVisibleNotificationsHook
+- A14_KEY_OWNER_REFERENCE: app/src/main/java/tv/withaibuild/customiuizer/mods/SystemNotificationHooks.kt::MuteVisibleNotificationsHook
+- A13_KEY_OWNER_REFERENCE: app/src/main/java/tv/withaibuild/customiuizer/mods/SystemNotificationMoreHooks.kt::MuteVisibleNotificationsHook
+- PROOF_CONCLUSION: `PRESENT_A13_VARIANT`
+
+## PROOF_NETSPEED_BOLDFONT_RENAME
+
+- PROOF_ID: `PROOF_NETSPEED_BOLDFONT_RENAME`
+- BODY_RELATION: `REVIEWED_VARIANT`
+- A14_OWNER_PATH: `app/src/main/java/tv/withaibuild/customiuizer/mods/SystemUIStatusBarHooks.kt`
+- A14_SYMBOL: `NetSpeedTypefaceHelper`
+- A14_INSTALLER: `A14 SystemUiFeatures / netspeed style`
+- A14_HOOK_TARGETS: `network speed text typeface path`
+- A14_CALLBACK_PHASE: `after`
+- A13_OWNER_PATH: `app/src/main/java/tv/withaibuild/customiuizer/mods/SystemUIStatusBarHooks.kt`
+- A13_SYMBOL: `NetSpeedTypefaceHelper`
+- A13_INSTALLER: `installers/SystemUiInstaller.java`
+- A13_HOOK_TARGETS: `network speed text typeface path`
+- A13_CALLBACK_PHASE: `after`
+- PREFERENCE_KEYS: `system_netspeed_boldfont,system_netspeed_bold`
+- VALUE_DOMAIN: boolean bold typeface
+- DEFAULT_SEMANTICS: false = stock weight
+- RESULT/ARGUMENT_BEHAVIOR: A13 key system_netspeed_bold drives the same typeface helper as A14 boldfont
+- API33_VARIANT_REASON: Capability-preserving key rename; not a second netspeed product.
+- DIFF_SUMMARY: Capability-preserving key rename; not a second netspeed product.
+- VALUE_DEFAULT_COMPARISON: false = stock weight
+- HOOK_TARGET_COMPARISON: A14=network speed text typeface path; A13=network speed text typeface path
+- CALLBACK_SEMANTICS_COMPARISON: A14=after; A13=after
+- ARG_RESULT_COMPARISON: A13 key system_netspeed_bold drives the same typeface helper as A14 boldfont
+- A14_ONLY_BRANCHES: Capability-preserving key rename; not a second netspeed product.
+- WHY_USER_BEHAVIOR_IS_EQUIVALENT: A13 key system_netspeed_bold drives the same typeface helper as A14 boldfont. Capability-preserving key rename; not a second netspeed product.
+- PROOF_CONCLUSION: `PRESENT_A13_VARIANT`
+
+## PROOF_R5F_NetSpeedStyleHook_system_detailednetspeed_align
+
+- PROOF_ID: `PROOF_R5F_NetSpeedStyleHook_system_detailednetspeed_align`
+- BODY_RELATION: `REVIEWED_VARIANT`
+- A14_OWNER_PATH: `app/src/main/java/tv/withaibuild/customiuizer/mods/SystemUIStatusBarHooks.kt`
+- A14_SYMBOL: `NetSpeedStyleHook`
+- A14_INSTALLER: `A14 installer/spec gate for system_detailednetspeed_align,system_netspeed_fixedcontent_width,system_netspeed_leftmargin,system_netspeed_rightmargin`
+- A14_HOOK_TARGETS: `android.widget.TextView#setTextAppearance,com.android.systemui.statusbar.views.NetworkSpeedView#setNetworkSpeed,com.android.systemui.statusbar.views.NetworkSpeedView#onFinishInflate`
+- A14_CALLBACK_PHASE: `after`
+- A13_OWNER_PATH: `app/src/main/java/tv/withaibuild/customiuizer/mods/SystemUIStatusBarHooks.kt`
+- A13_SYMBOL: `NetSpeedStyleHook`
+- A13_INSTALLER: `A13 installer gate for system_detailednetspeed_align,system_netspeed_fixedcontent_width,system_netspeed_leftmargin,system_netspeed_rightmargin`
+- A13_HOOK_TARGETS: `com.android.systemui.statusbar.views.NetworkSpeedView#<init>,com.android.systemui.statusbar.views.NetworkSpeedView#setNetworkSpeed`
+- A13_CALLBACK_PHASE: `after`
+- PREFERENCE_KEYS: `system_detailednetspeed_align,system_netspeed_fixedcontent_width,system_netspeed_leftmargin,system_netspeed_rightmargin`
+- VALUE_DOMAIN: owner-local preference domain
+- DEFAULT_SEMANTICS: fixedcontent_width default 10 (inactive unless >10); align default 1; margins default 0.
+- RESULT/ARGUMENT_BEHAVIOR: No result rewrite; LayoutParams/padding/alignment side effects.
+- API33_VARIANT_REASON: MIUI14 NetworkSpeedView still inits in constructors; HyperOS restyles after onFinishInflate/setTextAppearance.
+- DIFF_SUMMARY: A13 constructor + setNetworkSpeed. A14 onFinishInflate + setNetworkSpeed + TextView#setTextAppearance for HyperOS view hierarchy.
+- VALUE_DEFAULT_COMPARISON: fixedcontent_width default 10 (inactive unless >10); align default 1; margins default 0.
+- HOOK_TARGET_COMPARISON: A14=android.widget.TextView#setTextAppearance,com.android.systemui.statusbar.views.NetworkSpeedView#setNetworkSpeed,com.android.systemui.statusbar.views.NetworkSpeedView#onFinishInflate; A13=com.android.systemui.statusbar.views.NetworkSpeedView#<init>,com.android.systemui.statusbar.views.NetworkSpeedView#setNetworkSpeed
+- CALLBACK_SEMANTICS_COMPARISON: Both after.
+- ARG_RESULT_COMPARISON: No arg/result rewrite.
+- A14_ONLY_BRANCHES: TextView#setTextAppearance clock-style restyle path
+- WHY_USER_BEHAVIOR_IS_EQUIVALENT: Fixed width, alignment, and left/right margins still apply to the net-speed view.
+- KEY_OWNERSHIP_EVIDENCE: A13 NetSpeedStyleHook applies fixedcontent_width on construct then calls initNetSpeedStyle (align/margins). A14 applies snapshot via onFinishInflate/setNetworkSpeed/setTextAppearance.
+- A14_KEY_OWNER_REFERENCE: app/src/main/java/tv/withaibuild/customiuizer/mods/SystemUIStatusBarHooks.kt::NetSpeedStyleHook
+- A13_KEY_OWNER_REFERENCE: app/src/main/java/tv/withaibuild/customiuizer/mods/SystemUIStatusBarHooks.kt::NetSpeedStyleHook
+- PROOF_CONCLUSION: `PRESENT_A13_VARIANT`
+
+## PROOF_R5F_NetSpeedIntervalHook_system_netspeedinterval
+
+- PROOF_ID: `PROOF_R5F_NetSpeedIntervalHook_system_netspeedinterval`
+- BODY_RELATION: `REVIEWED_VARIANT`
+- A14_OWNER_PATH: `app/src/main/java/tv/withaibuild/customiuizer/mods/SystemUIStatusBarHooks.kt`
+- A14_SYMBOL: `NetSpeedIntervalHook`
+- A14_INSTALLER: `A14 installer/spec gate for system_netspeedinterval`
+- A14_HOOK_TARGETS: `NetworkSpeedController.mBgHandler#handleMessage`
+- A14_CALLBACK_PHASE: `after`
+- A13_OWNER_PATH: `app/src/main/java/tv/withaibuild/customiuizer/mods/SystemUIStatusBarHooks.kt`
+- A13_SYMBOL: `NetSpeedIntervalHook`
+- A13_INSTALLER: `A13 installer gate for system_netspeedinterval`
+- A13_HOOK_TARGETS: `com.android.systemui.statusbar.policy.NetworkSpeedController#postUpdateNetworkSpeedDelay`
+- A13_CALLBACK_PHASE: `before`
+- PREFERENCE_KEYS: `system_netspeedinterval`
+- VALUE_DOMAIN: owner-local preference domain
+- DEFAULT_SEMANTICS: Int default 4 seconds.
+- RESULT/ARGUMENT_BEHAVIOR: A13 args[0]=newInterval then original posts. A14 does not skip handleMessage; it replaces the delayed message.
+- API33_VARIANT_REASON: MIUI14 still has postUpdateNetworkSpeedDelay(Long); HyperOS schedules via handler message 200001.
+- DIFF_SUMMARY: A13 before-hooks postUpdateNetworkSpeedDelay and rewrites the 4000L arg. A14 after-hooks mBgHandler.handleMessage what==200001, removeMessages, sendEmptyMessageDelayed(newInterval).
+- VALUE_DEFAULT_COMPARISON: Int default 4 seconds.
+- HOOK_TARGET_COMPARISON: A14=NetworkSpeedController.mBgHandler#handleMessage; A13=com.android.systemui.statusbar.policy.NetworkSpeedController#postUpdateNetworkSpeedDelay
+- CALLBACK_SEMANTICS_COMPARISON: A13 before arg rewrite vs A14 after reschedule. Original compute still runs once per tick.
+- ARG_RESULT_COMPARISON: A13 no skip; A14 no result rewrite.
+- A14_ONLY_BRANCHES: handler what==200001 reschedule
+- WHY_USER_BEHAVIOR_IS_EQUIVALENT: Network-speed text still refreshes at the same user interval.
+- KEY_OWNERSHIP_EVIDENCE: Both read system_netspeedinterval (default 4) * 1000L as the refresh delay.
+- A14_KEY_OWNER_REFERENCE: app/src/main/java/tv/withaibuild/customiuizer/mods/SystemUIStatusBarHooks.kt::NetSpeedIntervalHook
+- A13_KEY_OWNER_REFERENCE: app/src/main/java/tv/withaibuild/customiuizer/mods/SystemUIStatusBarHooks.kt::NetSpeedIntervalHook
+- PROOF_CONCLUSION: `PRESENT_A13_VARIANT`
+
+## PROOF_R5_NoDuckingHook_system_noducking
+
+- PROOF_ID: `PROOF_R5_NoDuckingHook_system_noducking`
+- BODY_RELATION: `REVIEWED_VARIANT`
+- A14_OWNER_PATH: `app/src/main/java/tv/withaibuild/customiuizer/mods/SystemAudioHooks.kt`
+- A14_SYMBOL: `NoDuckingHook`
+- A14_INSTALLER: `A14 installer/spec gate for system_noducking`
+- A14_HOOK_TARGETS: `com.android.server.audio.FocusRequester#handleFocusLoss`
+- A14_CALLBACK_PHASE: `intercept`
+- A13_OWNER_PATH: `app/src/main/java/tv/withaibuild/customiuizer/mods/SystemNotificationMoreHooks.kt`
+- A13_SYMBOL: `NoDuckingHook`
+- A13_INSTALLER: `A13 installer gate for system_noducking`
+- A13_HOOK_TARGETS: `com.android.server.audio.FocusRequester#handleFocusLoss`
+- A13_CALLBACK_PHASE: `before`
+- PREFERENCE_KEYS: `system_noducking`
+- VALUE_DOMAIN: owner-local preference domain
+- DEFAULT_SEMANTICS: same persisted keys consumed by both owners
+- RESULT/ARGUMENT_BEHAVIOR: A14 ops: result_assign[null,null]; chain.proceed[chain.proceed()]. A13 ops: returnAndSkip[null]. Keys system_noducking rewrite the same host members.
+- API33_VARIANT_REASON: A14 callback intercept vs A13 before on members A14[com.android.server.audio.FocusRequester#handleFocusLoss] / A13[com.android.server.audio.FocusRequester#handleFocusLoss]. Inner preference reads of system_noducking match; intercept proceed-once maps to before returnAndSkip or after side-effect.
+- DIFF_SUMMARY: Shared members com.android.server.audio.FocusRequester#handleFocusLoss. Differ: A14 phases intercept vs A13 before; A14 result_assign[null,null]; chain.proceed[chain.proceed()] vs A13 returnAndSkip[null].
+- VALUE_DEFAULT_COMPARISON: both consume system_noducking in the owner body or installer gate
+- HOOK_TARGET_COMPARISON: A14=com.android.server.audio.FocusRequester#handleFocusLoss; A13=com.android.server.audio.FocusRequester#handleFocusLoss
+- CALLBACK_SEMANTICS_COMPARISON: A14 intercept vs A13 before; skipped paths do not invoke the original, proceed-once equals after side-effect
+- ARG_RESULT_COMPARISON: A14=result_assign[null,null]; chain.proceed[chain.proceed()]; A13=returnAndSkip[null]
+- A14_ONLY_BRANCHES: none beyond intercept scaffolding for this owner pair
+- WHY_USER_BEHAVIOR_IS_EQUIVALENT: User-visible contract of system_noducking is the same host rewrite; callback adapter and null-safety differ.
+- KEY_OWNERSHIP_EVIDENCE: system_noducking: LITERAL_READ and/or INSTALLER_CALLEE in NoDuckingHook/NoDuckingHook
+- A14_KEY_OWNER_REFERENCE: app/src/main/java/tv/withaibuild/customiuizer/mods/SystemAudioHooks.kt::NoDuckingHook
+- A13_KEY_OWNER_REFERENCE: app/src/main/java/tv/withaibuild/customiuizer/mods/SystemNotificationMoreHooks.kt::NoDuckingHook
+- PROOF_CONCLUSION: `PRESENT_A13_VARIANT`
+
+## PROOF_R5F_NoLightUpOnChargeHook_system_nolightuponcharges
+
+- PROOF_ID: `PROOF_R5F_NoLightUpOnChargeHook_system_nolightuponcharges`
+- BODY_RELATION: `REVIEWED_VARIANT`
+- A14_OWNER_PATH: `app/src/main/java/tv/withaibuild/customiuizer/mods/SystemDisplayHooks.kt`
+- A14_SYMBOL: `NoLightUpOnChargeHook`
+- A14_INSTALLER: `A14 installer/spec gate for system_nolightuponcharges`
+- A14_HOOK_TARGETS: `com.android.server.power.PowerManagerService#wakePowerGroupLocked`
+- A14_CALLBACK_PHASE: `intercept`
+- A13_OWNER_PATH: `app/src/main/java/tv/withaibuild/customiuizer/mods/SystemDisplayAndWindowHooks.kt`
+- A13_SYMBOL: `NoLightUpOnChargeHook`
+- A13_INSTALLER: `A13 installer gate for system_nolightuponcharges`
+- A13_HOOK_TARGETS: `com.android.server.power.PowerManagerService#wakePowerGroupLocked`
+- A13_CALLBACK_PHASE: `before`
+- PREFERENCE_KEYS: `system_nolightuponcharges`
+- VALUE_DOMAIN: owner-local preference domain
+- DEFAULT_SEMANTICS: string-int default 1 (ROM lights up); 2/3 enable
+- RESULT/ARGUMENT_BEHAVIOR: A13 returnAndSkip(false). A14 skipped result=null without proceed.
+- API33_VARIANT_REASON: Same SystemServer member; A14 splits option 3 to SystemUI MiuiChargeController.shouldShowChargeAnim=false.
+- DIFF_SUMMARY: Same wakePowerGroupLocked reason string. A13 option 2 skips POWER+PLUGGED+RAPID/WIRELESS, returnAndSkip(false); option 3 skips POWER+PLUGGED. A14 (option==2 only) skips PLUGGED+RAPID/WIRELESS, result=null, does not skip android.server.power:POWER.
+- VALUE_DEFAULT_COMPARISON: string-int default 1 (ROM lights up); 2/3 enable
+- HOOK_TARGET_COMPARISON: A14=com.android.server.power.PowerManagerService#wakePowerGroupLocked; A13=com.android.server.power.PowerManagerService#wakePowerGroupLocked
+- CALLBACK_SEMANTICS_COMPARISON: A14 intercept skip ≡ A13 before returnAndSkip; skipped original not called.
+- ARG_RESULT_COMPARISON: A13 false vs A14 null skip result; both prevent wake for charge-plug reasons.
+- A14_ONLY_BRANCHES: none in this SystemServer body; missing POWER skip vs A13 option 2
+- WHY_USER_BEHAVIOR_IS_EQUIVALENT: Option 2 does not wake the screen for plug/charge reasons on both. Option 3 on A13 lives in this function; A14 handles charge-anim hide in a different owner.
+- KEY_OWNERSHIP_EVIDENCE: system_nolightuponcharges: A13 LITERAL_READ string-int 1/2/3 in body. A14 SystemServerFeatures installs this owner only when getStringAsInt==2 (option 3 is SystemUI.NoLightUpOnChargeHook, not this group).
+- A14_KEY_OWNER_REFERENCE: app/src/main/java/tv/withaibuild/customiuizer/mods/SystemDisplayHooks.kt::NoLightUpOnChargeHook
+- A13_KEY_OWNER_REFERENCE: app/src/main/java/tv/withaibuild/customiuizer/mods/SystemDisplayAndWindowHooks.kt::NoLightUpOnChargeHook
+- PROOF_CONCLUSION: `PRESENT_A13_VARIANT`
+
+## PROOF_R5_NoPasswordHook_system_nopassword
+
+- PROOF_ID: `PROOF_R5_NoPasswordHook_system_nopassword`
+- BODY_RELATION: `REVIEWED_VARIANT`
+- A14_OWNER_PATH: `app/src/main/java/tv/withaibuild/customiuizer/mods/SystemLockScreenHooks.kt`
+- A14_SYMBOL: `NoPasswordHook`
+- A14_INSTALLER: `A14 installer/spec gate for system_nopassword`
+- A14_HOOK_TARGETS: `(no host member literals)`
+- A14_CALLBACK_PHASE: `unknown`
+- A13_OWNER_PATH: `app/src/main/java/tv/withaibuild/customiuizer/mods/SystemLockScreenHooks.kt`
+- A13_SYMBOL: `NoPasswordHook`
+- A13_INSTALLER: `A13 installer gate for system_nopassword`
+- A13_HOOK_TARGETS: `(no host member literals)`
+- A13_CALLBACK_PHASE: `unknown`
+- PREFERENCE_KEYS: `system_nopassword`
+- VALUE_DOMAIN: owner-local preference domain
+- DEFAULT_SEMANTICS: same persisted keys consumed by both owners
+- RESULT/ARGUMENT_BEHAVIOR: A14 ops: no result/argument rewrite literals. A13 ops: no result/argument rewrite literals. Keys system_nopassword rewrite the same host members.
+- API33_VARIANT_REASON: A14 callback unknown vs A13 unknown on members A14[(none)] / A13[(none)]. Inner preference reads of system_nopassword match; intercept proceed-once maps to before returnAndSkip or after side-effect.
+- DIFF_SUMMARY: Shared members (none). Differ: A14 phases unknown vs A13 unknown; A14 no result/argument rewrite literals vs A13 no result/argument rewrite literals.
+- VALUE_DEFAULT_COMPARISON: both consume system_nopassword in the owner body or installer gate
+- HOOK_TARGET_COMPARISON: A14=(none); A13=(none)
+- CALLBACK_SEMANTICS_COMPARISON: A14 unknown vs A13 unknown; skipped paths do not invoke the original, proceed-once equals after side-effect
+- ARG_RESULT_COMPARISON: A14=no result/argument rewrite literals; A13=no result/argument rewrite literals
+- A14_ONLY_BRANCHES: none beyond intercept scaffolding for this owner pair
+- WHY_USER_BEHAVIOR_IS_EQUIVALENT: User-visible contract of system_nopassword is the same host rewrite; callback adapter and null-safety differ.
+- KEY_OWNERSHIP_EVIDENCE: system_nopassword: LITERAL_READ and/or INSTALLER_CALLEE in NoPasswordHook/NoPasswordHook
+- A14_KEY_OWNER_REFERENCE: app/src/main/java/tv/withaibuild/customiuizer/mods/SystemLockScreenHooks.kt::NoPasswordHook
+- A13_KEY_OWNER_REFERENCE: app/src/main/java/tv/withaibuild/customiuizer/mods/SystemLockScreenHooks.kt::NoPasswordHook
+- PROOF_CONCLUSION: `PRESENT_A13_VARIANT`
+
+## PROOF_R5F_HideSafeVolumeDlgHook_system_nosafevolume
+
+- PROOF_ID: `PROOF_R5F_HideSafeVolumeDlgHook_system_nosafevolume`
+- BODY_RELATION: `REVIEWED_VARIANT`
+- A14_OWNER_PATH: `app/src/main/java/tv/withaibuild/customiuizer/mods/SystemUIControlCenterHooks.kt`
+- A14_SYMBOL: `HideSafeVolumeDlgHook`
+- A14_INSTALLER: `A14 installer/spec gate for system_nosafevolume`
+- A14_HOOK_TARGETS: `com.android.systemui.volume.VolumeUI#start`
+- A14_CALLBACK_PHASE: `after`
+- A13_OWNER_PATH: `app/src/main/java/tv/withaibuild/customiuizer/mods/SystemUIControlCenterHooks.kt`
+- A13_SYMBOL: `HideSafeVolumeDlgHook`
+- A13_INSTALLER: `A13 installer gate for system_nosafevolume`
+- A13_HOOK_TARGETS: `com.android.systemui.volume.VolumeDialogControllerImpl#onShowSafetyWarningW`
+- A13_CALLBACK_PHASE: `before`
+- PREFERENCE_KEYS: `system_nosafevolume`
+- VALUE_DOMAIN: owner-local preference domain
+- DEFAULT_SEMANTICS: Boolean default false.
+- RESULT/ARGUMENT_BEHAVIOR: A13 returnAndSkip(null) skips the warning method. A14 does not skip start(); it flips the flag.
+- API33_VARIANT_REASON: MIUI14 still shows the warning via onShowSafetyWarningW; HyperOS gates it with VolumeUI mShowSafetyWarning at start.
+- DIFF_SUMMARY: A13 before-hooks VolumeDialogControllerImpl#onShowSafetyWarningW, disableSafeMediaVolume, returnAndSkip. A14 after VolumeUI#start sets mShowSafetyWarning=false then disableSafeMediaVolume.
+- VALUE_DEFAULT_COMPARISON: Boolean default false.
+- HOOK_TARGET_COMPARISON: A14=com.android.systemui.volume.VolumeUI#start; A13=com.android.systemui.volume.VolumeDialogControllerImpl#onShowSafetyWarningW
+- CALLBACK_SEMANTICS_COMPARISON: A13 before-skip equals A14 start-time flag so onShowSafetyWarningW never appears.
+- ARG_RESULT_COMPARISON: A13 returnAndSkip[null]; A14 no result rewrite.
+- A14_ONLY_BRANCHES: mShowSafetyWarning=false on VolumeDialogControllerImpl
+- WHY_USER_BEHAVIOR_IS_EQUIVALENT: Safe-volume warning dialog is suppressed and safe-media-volume is disabled.
+- KEY_OWNERSHIP_EVIDENCE: Installer-gated by system_nosafevolume; both call AudioManager.disableSafeMediaVolume.
+- A14_KEY_OWNER_REFERENCE: app/src/main/java/tv/withaibuild/customiuizer/mods/SystemUIControlCenterHooks.kt::HideSafeVolumeDlgHook
+- A13_KEY_OWNER_REFERENCE: app/src/main/java/tv/withaibuild/customiuizer/mods/SystemUIControlCenterHooks.kt::HideSafeVolumeDlgHook
+- PROOF_CONCLUSION: `PRESENT_A13_VARIANT`
+
+## PROOF_R5F_NoScreenLockHook_system_noscreenlock
+
+- PROOF_ID: `PROOF_R5F_NoScreenLockHook_system_noscreenlock`
+- BODY_RELATION: `REVIEWED_VARIANT`
+- A14_OWNER_PATH: `app/src/main/java/tv/withaibuild/customiuizer/mods/SystemLockScreenHooks.kt`
+- A14_SYMBOL: `NoScreenLockHook`
+- A14_INSTALLER: `A14 installer/spec gate for system_noscreenlock,system_noscreenlock_act,system_noscreenlock_skip`
+- A14_HOOK_TARGETS: `KeyguardViewMediator#handleKeyguardDone,KeyguardUpdateMonitor#onFingerprintAuthenticated,KeyguardSecurityContainerController#onInit,KeyguardViewMediator#doKeyguardLocked,KeyguardViewMediator#setupLocked,KeyguardSecurityModel#getSecurityMode,BluetoothControllerImpl#<init>/updateConnected`
+- A14_CALLBACK_PHASE: `intercept`
+- A13_OWNER_PATH: `app/src/main/java/tv/withaibuild/customiuizer/mods/SystemLockScreenMoreHooks.kt`
+- A13_SYMBOL: `NoScreenLockHook`
+- A13_INSTALLER: `A13 installer gate for system_noscreenlock,system_noscreenlock_act,system_noscreenlock_skip`
+- A13_HOOK_TARGETS: `KeyguardViewMediator#handleKeyguardDone,KeyguardUpdateMonitor#onFingerprintAuthenticated,KeyguardSecurityContainerController#<init>,KeyguardViewMediator#doKeyguardLocked,KeyguardViewMediator#setupLocked,KeyguardSecurityModel#getSecurityMode,FaceUnlockManager#startFaceUnlock,BluetoothControllerImpl#<init>/updateConnected`
+- A13_CALLBACK_PHASE: `after,before`
+- PREFERENCE_KEYS: `system_noscreenlock,system_noscreenlock_act,system_noscreenlock_skip`
+- VALUE_DOMAIN: owner-local preference domain
+- DEFAULT_SEMANTICS: system_noscreenlock default 1 (off); _skip boolean; _req default 1
+- RESULT/ARGUMENT_BEHAVIOR: A13 doKeyguardLocked returnAndSkip(null) when skip; getSecurityMode setResult(None). A14 doKeyguardLocked return null when skip after keyguardDone; same None result.
+- API33_VARIANT_REASON: KeyguardSecurityContainerController constructor vs onInit; FaceUnlockManager only on MIUI14.
+- DIFF_SUMMARY: Shared smart-lock: trusted WiFi/BT, skip vs None security mode, UnlockStrongAuth receiver, doKeyguardLocked skip+keyguardDone. A13 constructor vs A14 onInit. reportUnlockAttempt (0,true,0,0) vs (0,0,0,true).
+- VALUE_DEFAULT_COMPARISON: system_noscreenlock default 1 (off); _skip boolean; _req default 1
+- HOOK_TARGET_COMPARISON: A14=KeyguardViewMediator#handleKeyguardDone,KeyguardUpdateMonitor#onFingerprintAuthenticated,KeyguardSecurityContainerController#onInit,KeyguardViewMediator#doKeyguardLocked,KeyguardViewMediator#setupLocked,KeyguardSecurityModel#getSecurityMode,BluetoothControllerImpl#<init>/updateConnected; A13=KeyguardViewMediator#handleKeyguardDone,KeyguardUpdateMonitor#onFingerprintAuthenticated,KeyguardSecurityContainerController#<init>,KeyguardViewMediator#doKeyguardLocked,KeyguardViewMediator#setupLocked,KeyguardSecurityModel#getSecurityMode,FaceUnlockManager#startFaceUnlock,BluetoothControllerImpl#<init>/updateConnected
+- CALLBACK_SEMANTICS_COMPARISON: A14 intercept skip/proceed ≡ A13 before skip / after side-effect.
+- ARG_RESULT_COMPARISON: SecurityMode None vs ROM PIN/pattern/password; doKeyguardLocked skipped when skip=true.
+- A14_ONLY_BRANCHES: none; A13-only FaceUnlockManager.startFaceUnlock / isShowMessageWhenFaceUnlockSuccess gated by system_noscreenlock_nofaceunlock
+- WHY_USER_BEHAVIOR_IS_EQUIVALENT: Trusted network/device or always-on option disables lockscreen (optional skip animation). Fingerprint/strong-auth once still tracked.
+- KEY_OWNERSHIP_EVIDENCE: system_noscreenlock / _skip / _req / _wifi / _bt: LITERAL_READ in isUnlocked/isTrusted on both. A13 extra system_noscreenlock_nofaceunlock on FaceUnlockManager.
+- A14_KEY_OWNER_REFERENCE: app/src/main/java/tv/withaibuild/customiuizer/mods/SystemLockScreenHooks.kt::NoScreenLockHook
+- A13_KEY_OWNER_REFERENCE: app/src/main/java/tv/withaibuild/customiuizer/mods/SystemLockScreenMoreHooks.kt::NoScreenLockHook
+- PROOF_CONCLUSION: `PRESENT_A13_VARIANT`
+
+## PROOF_R5_isTrustedBt_system_noscreenlock_bt
+
+- PROOF_ID: `PROOF_R5_isTrustedBt_system_noscreenlock_bt`
+- BODY_RELATION: `REVIEWED_VARIANT`
+- A14_OWNER_PATH: `app/src/main/java/tv/withaibuild/customiuizer/mods/SystemLockScreenHooks.kt`
+- A14_SYMBOL: `isTrustedBt`
+- A14_INSTALLER: `A14 installer/spec gate for system_noscreenlock_bt`
+- A14_HOOK_TARGETS: `(no host member literals)`
+- A14_CALLBACK_PHASE: `unknown`
+- A13_OWNER_PATH: `app/src/main/java/tv/withaibuild/customiuizer/mods/SystemLockScreenMoreHooks.kt`
+- A13_SYMBOL: `isTrustedBt`
+- A13_INSTALLER: `A13 installer gate for system_noscreenlock_bt`
+- A13_HOOK_TARGETS: `(no host member literals)`
+- A13_CALLBACK_PHASE: `unknown`
+- PREFERENCE_KEYS: `system_noscreenlock_bt`
+- VALUE_DOMAIN: owner-local preference domain
+- DEFAULT_SEMANTICS: same persisted keys consumed by both owners
+- RESULT/ARGUMENT_BEHAVIOR: A14 ops: no result/argument rewrite literals. A13 ops: no result/argument rewrite literals. Keys system_noscreenlock_bt rewrite the same host members.
+- API33_VARIANT_REASON: A14 callback unknown vs A13 unknown on members A14[(none)] / A13[(none)]. Inner preference reads of system_noscreenlock_bt match; intercept proceed-once maps to before returnAndSkip or after side-effect.
+- DIFF_SUMMARY: Shared members (none). Differ: A14 phases unknown vs A13 unknown; A14 no result/argument rewrite literals vs A13 no result/argument rewrite literals.
+- VALUE_DEFAULT_COMPARISON: both consume system_noscreenlock_bt in the owner body or installer gate
+- HOOK_TARGET_COMPARISON: A14=(none); A13=(none)
+- CALLBACK_SEMANTICS_COMPARISON: A14 unknown vs A13 unknown; skipped paths do not invoke the original, proceed-once equals after side-effect
+- ARG_RESULT_COMPARISON: A14=no result/argument rewrite literals; A13=no result/argument rewrite literals
+- A14_ONLY_BRANCHES: none beyond intercept scaffolding for this owner pair
+- WHY_USER_BEHAVIOR_IS_EQUIVALENT: User-visible contract of system_noscreenlock_bt is the same host rewrite; callback adapter and null-safety differ.
+- KEY_OWNERSHIP_EVIDENCE: system_noscreenlock_bt: LITERAL_READ and/or INSTALLER_CALLEE in isTrustedBt/isTrustedBt
+- A14_KEY_OWNER_REFERENCE: app/src/main/java/tv/withaibuild/customiuizer/mods/SystemLockScreenHooks.kt::isTrustedBt
+- A13_KEY_OWNER_REFERENCE: app/src/main/java/tv/withaibuild/customiuizer/mods/SystemLockScreenMoreHooks.kt::isTrustedBt
+- PROOF_CONCLUSION: `PRESENT_A13_VARIANT`
+
+## PROOF_R5_isAuthOnce_system_noscreenlock_req
+
+- PROOF_ID: `PROOF_R5_isAuthOnce_system_noscreenlock_req`
+- BODY_RELATION: `IDENTICAL`
+- A14_OWNER_PATH: `app/src/main/java/tv/withaibuild/customiuizer/mods/SystemLockScreenHooks.kt`
+- A14_SYMBOL: `isAuthOnce`
+- A14_INSTALLER: `A14 installer/spec gate for system_noscreenlock_req`
+- A14_HOOK_TARGETS: `(no host member literals)`
+- A14_CALLBACK_PHASE: `unknown`
+- A13_OWNER_PATH: `app/src/main/java/tv/withaibuild/customiuizer/mods/SystemLockScreenMoreHooks.kt`
+- A13_SYMBOL: `isAuthOnce`
+- A13_INSTALLER: `A13 installer gate for system_noscreenlock_req`
+- A13_HOOK_TARGETS: `(no host member literals)`
+- A13_CALLBACK_PHASE: `unknown`
+- PREFERENCE_KEYS: `system_noscreenlock_req`
+- VALUE_DOMAIN: owner-local preference domain
+- DEFAULT_SEMANTICS: identical owner body; shared defaults
+- RESULT/ARGUMENT_BEHAVIOR: no result/argument rewrite literals
+- API33_VARIANT_REASON: Normalized bodies are IDENTICAL. A14/A13 both hook (none).
+- KEY_OWNERSHIP_EVIDENCE: system_noscreenlock_req: LITERAL_READ and/or INSTALLER_CALLEE in isAuthOnce/isAuthOnce
+- A14_KEY_OWNER_REFERENCE: app/src/main/java/tv/withaibuild/customiuizer/mods/SystemLockScreenHooks.kt::isAuthOnce
+- A13_KEY_OWNER_REFERENCE: app/src/main/java/tv/withaibuild/customiuizer/mods/SystemLockScreenMoreHooks.kt::isAuthOnce
+- PROOF_CONCLUSION: `PRESENT_EQUIVALENT`
+
+## PROOF_R5_isTrustedWiFi_system_noscreenlock_wifi
+
+- PROOF_ID: `PROOF_R5_isTrustedWiFi_system_noscreenlock_wifi`
+- BODY_RELATION: `REVIEWED_VARIANT`
+- A14_OWNER_PATH: `app/src/main/java/tv/withaibuild/customiuizer/mods/SystemLockScreenHooks.kt`
+- A14_SYMBOL: `isTrustedWiFi`
+- A14_INSTALLER: `A14 installer/spec gate for system_noscreenlock_wifi`
+- A14_HOOK_TARGETS: `(no host member literals)`
+- A14_CALLBACK_PHASE: `unknown`
+- A13_OWNER_PATH: `app/src/main/java/tv/withaibuild/customiuizer/mods/SystemLockScreenMoreHooks.kt`
+- A13_SYMBOL: `isTrustedWiFi`
+- A13_INSTALLER: `A13 installer gate for system_noscreenlock_wifi`
+- A13_HOOK_TARGETS: `(no host member literals)`
+- A13_CALLBACK_PHASE: `unknown`
+- PREFERENCE_KEYS: `system_noscreenlock_wifi`
+- VALUE_DOMAIN: owner-local preference domain
+- DEFAULT_SEMANTICS: same persisted keys consumed by both owners
+- RESULT/ARGUMENT_BEHAVIOR: A14 ops: no result/argument rewrite literals. A13 ops: no result/argument rewrite literals. Keys system_noscreenlock_wifi rewrite the same host members.
+- API33_VARIANT_REASON: A14 callback unknown vs A13 unknown on members A14[(none)] / A13[(none)]. Inner preference reads of system_noscreenlock_wifi match; intercept proceed-once maps to before returnAndSkip or after side-effect.
+- DIFF_SUMMARY: Shared members (none). Differ: A14 phases unknown vs A13 unknown; A14 no result/argument rewrite literals vs A13 no result/argument rewrite literals.
+- VALUE_DEFAULT_COMPARISON: both consume system_noscreenlock_wifi in the owner body or installer gate
+- HOOK_TARGET_COMPARISON: A14=(none); A13=(none)
+- CALLBACK_SEMANTICS_COMPARISON: A14 unknown vs A13 unknown; skipped paths do not invoke the original, proceed-once equals after side-effect
+- ARG_RESULT_COMPARISON: A14=no result/argument rewrite literals; A13=no result/argument rewrite literals
+- A14_ONLY_BRANCHES: none beyond intercept scaffolding for this owner pair
+- WHY_USER_BEHAVIOR_IS_EQUIVALENT: User-visible contract of system_noscreenlock_wifi is the same host rewrite; callback adapter and null-safety differ.
+- KEY_OWNERSHIP_EVIDENCE: system_noscreenlock_wifi: LITERAL_READ and/or INSTALLER_CALLEE in isTrustedWiFi/isTrustedWiFi
+- A14_KEY_OWNER_REFERENCE: app/src/main/java/tv/withaibuild/customiuizer/mods/SystemLockScreenHooks.kt::isTrustedWiFi
+- A13_KEY_OWNER_REFERENCE: app/src/main/java/tv/withaibuild/customiuizer/mods/SystemLockScreenMoreHooks.kt::isTrustedWiFi
+- PROOF_CONCLUSION: `PRESENT_A13_VARIANT`
+
+## PROOF_R5F_MIUIVolumeDialogHook_system_nosilentvibrate
+
+- PROOF_ID: `PROOF_R5F_MIUIVolumeDialogHook_system_nosilentvibrate`
+- BODY_RELATION: `REVIEWED_VARIANT`
+- A14_OWNER_PATH: `app/src/main/java/tv/withaibuild/customiuizer/mods/SystemUIControlCenterHooks.kt`
+- A14_SYMBOL: `initControlCenter`
+- A14_INSTALLER: `A14 installer/spec gate for system_nosilentvibrate,system_volumetimer`
+- A14_HOOK_TARGETS: `com.android.systemui.miui.volume.MiuiVolumeDialogImpl#vibrateH`
+- A14_CALLBACK_PHASE: `unknown`
+- A13_OWNER_PATH: `app/src/main/java/tv/withaibuild/customiuizer/mods/SystemUIControlCenterHooks.kt`
+- A13_SYMBOL: `MIUIVolumeDialogHook`
+- A13_INSTALLER: `A13 installer gate for system_nosilentvibrate,system_volumetimer`
+- A13_HOOK_TARGETS: `com.android.systemui.shared.plugins.PluginInstance$Factory#getClassLoader,com.android.systemui.miui.volume.MiuiVolumeDialogImpl#vibrateH`
+- A13_CALLBACK_PHASE: `after,before`
+- PREFERENCE_KEYS: `system_nosilentvibrate,system_volumetimer`
+- VALUE_DOMAIN: owner-local preference domain
+- DEFAULT_SEMANTICS: Both booleans default false.
+- RESULT/ARGUMENT_BEHAVIOR: vibrateH replaced with DO_NOTHING on both (no proceed).
+- API33_VARIANT_REASON: A13 must wait for PluginInstance$Factory#getClassLoader(miui.systemui.plugin); A14 initControlCenter already receives that loader.
+- DIFF_SUMMARY: Classifier paired A13 plugin dispatcher with A14 initControlCenter. For these two keys both install vibrateH DO_NOTHING and VolumeTimerValuesRes.
+- VALUE_DEFAULT_COMPARISON: Both booleans default false.
+- HOOK_TARGET_COMPARISON: A14=com.android.systemui.miui.volume.MiuiVolumeDialogImpl#vibrateH; A13=com.android.systemui.shared.plugins.PluginInstance$Factory#getClassLoader,com.android.systemui.miui.volume.MiuiVolumeDialogImpl#vibrateH
+- CALLBACK_SEMANTICS_COMPARISON: Replacement/no-op of vibrateH is the same skip semantics.
+- ARG_RESULT_COMPARISON: No result value; method skipped.
+- A14_ONLY_BRANCHES: unrelated CC color/hide-edit dispatch in initControlCenter, not these keys
+- WHY_USER_BEHAVIOR_IS_EQUIVALENT: Silent-mode volume dialog does not vibrate; volume timer resources still apply.
+- KEY_OWNERSHIP_EVIDENCE: A13 after plugin ClassLoader, if nosilentvibrate hooks vibrateH DO_NOTHING; if volumetimer calls VolumeTimerValuesRes. A14 initControlCenter does the same two installs on the plugin loader.
+- A14_KEY_OWNER_REFERENCE: app/src/main/java/tv/withaibuild/customiuizer/mods/SystemUIControlCenterHooks.kt::initControlCenter
+- A13_KEY_OWNER_REFERENCE: app/src/main/java/tv/withaibuild/customiuizer/mods/SystemUIControlCenterHooks.kt::MIUIVolumeDialogHook
+- PROOF_CONCLUSION: `PRESENT_A13_VARIANT`
+
+## PROOF_R5F_NoSOSHook_system_nosos
+
+- PROOF_ID: `PROOF_R5F_NoSOSHook_system_nosos`
+- BODY_RELATION: `REVIEWED_VARIANT`
+- A14_OWNER_PATH: `app/src/main/java/tv/withaibuild/customiuizer/mods/SystemLockScreenHooks.kt`
+- A14_SYMBOL: `NoSOSHook`
+- A14_INSTALLER: `SystemUiFeatures.NoSOSFeature getBoolean(system_nosos)`
+- A14_HOOK_TARGETS: `com.android.keyguard.EmergencyButtonController#updateEmergencyCallButton`
+- A14_CALLBACK_PHASE: `intercept`
+- A13_OWNER_PATH: `app/src/main/java/tv/withaibuild/customiuizer/mods/SystemSecurityAndSystemHooks.kt`
+- A13_SYMBOL: `NoSOSHook`
+- A13_INSTALLER: `SystemUiInstaller.java getBoolean(system_nosos)`
+- A13_HOOK_TARGETS: `com.android.keyguard.EmergencyButton#updateEmergencyCallButton`
+- A13_CALLBACK_PHASE: `after`
+- PREFERENCE_KEYS: `system_nosos`
+- VALUE_DOMAIN: owner-local preference domain
+- DEFAULT_SEMANTICS: Boolean default false keeps SOS button.
+- RESULT/ARGUMENT_BEHAVIOR: A14 skipped result=null without proceed. A13 after side-effect, no result rewrite.
+- API33_VARIANT_REASON: AOSP/MIUI14 lockscreen emergency view is EmergencyButton; EmergencyButtonController is API34/HyperOS. Hide-if-visible contract is the same.
+- DIFF_SUMMARY: A13 after EmergencyButton.updateEmergencyCallButton: if VISIBLE set INVISIBLE on thisObject Button. A14 skip EmergencyButtonController.updateEmergencyCallButton and set mView INVISIBLE. API33 keyguard still owns EmergencyButton, not Controller.
+- VALUE_DEFAULT_COMPARISON: Boolean default false keeps SOS button.
+- HOOK_TARGET_COMPARISON: A14=com.android.keyguard.EmergencyButtonController#updateEmergencyCallButton; A13=com.android.keyguard.EmergencyButton#updateEmergencyCallButton
+- CALLBACK_SEMANTICS_COMPARISON: A14 intercept skip original; A13 after original then hide. User-visible end state INVISIBLE.
+- ARG_RESULT_COMPARISON: A14 result_assign[null,null] skip; A13 no result literal. Hide is a View visibility write.
+- A14_ONLY_BRANCHES: Skip original controller update; hide mView instead of the Button thisObject.
+- WHY_USER_BEHAVIOR_IS_EQUIVALENT: Lockscreen emergency/SOS button is hidden when the toggle is on. Host class is the API33 variant.
+- KEY_OWNERSHIP_EVIDENCE: Installer getBoolean(system_nosos); hook has no inner key read.
+- A14_KEY_OWNER_REFERENCE: app/src/main/java/tv/withaibuild/customiuizer/mods/SystemLockScreenHooks.kt::NoSOSHook
+- A13_KEY_OWNER_REFERENCE: app/src/main/java/tv/withaibuild/customiuizer/mods/SystemSecurityAndSystemHooks.kt::NoSOSHook
+- PROOF_CONCLUSION: `PRESENT_A13_VARIANT`
+
+## PROOF_R5F_ShowNotificationsAfterUnlockHook_system_notifafterunlock
+
+- PROOF_ID: `PROOF_R5F_ShowNotificationsAfterUnlockHook_system_notifafterunlock`
+- BODY_RELATION: `REVIEWED_VARIANT`
+- A14_OWNER_PATH: `app/src/main/java/tv/withaibuild/customiuizer/mods/SystemLockScreenHooks.kt`
+- A14_SYMBOL: `ShowNotificationsAfterUnlockHook`
+- A14_INSTALLER: `A14 installer/spec gate for system_notifafterunlock`
+- A14_HOOK_TARGETS: `com.android.systemui.statusbar.notification.interruption.KeyguardNotificationVisibilityProviderImpl#shouldHideNotification`
+- A14_CALLBACK_PHASE: `intercept`
+- A13_OWNER_PATH: `app/src/main/java/tv/withaibuild/customiuizer/mods/SystemNotificationMoreHooks.kt`
+- A13_SYMBOL: `ShowNotificationsAfterUnlockHook`
+- A13_INSTALLER: `A13 installer gate for system_notifafterunlock`
+- A13_HOOK_TARGETS: `com.android.systemui.statusbar.notification.ExpandedNotification#hasShownAfterUnlock,ExpandedNotification#setHasShownAfterUnlock,com.android.systemui.statusbar.notification.MiuiNotificationCompat#isKeptOnKeyguard`
+- A13_CALLBACK_PHASE: `after`
+- PREFERENCE_KEYS: `system_notifafterunlock`
+- VALUE_DOMAIN: owner-local preference domain
+- DEFAULT_SEMANTICS: boolean installer gate
+- RESULT/ARGUMENT_BEHAVIOR: A13 constant false/true. A14 field write then proceed shouldHideNotification.
+- API33_VARIANT_REASON: ExpandedNotification/MiuiNotificationCompat vs KeyguardNotificationVisibilityProviderImpl.
+- DIFF_SUMMARY: A13 hasShownAfterUnlock=false, setHasShownAfterUnlock forces mHasShownAfterUnlock false, isKeptOnKeyguard true. A14 shouldHideNotification sets mSbn.mHasShownAfterUnlock=false then proceed.
+- VALUE_DEFAULT_COMPARISON: boolean installer gate
+- HOOK_TARGET_COMPARISON: A14=com.android.systemui.statusbar.notification.interruption.KeyguardNotificationVisibilityProviderImpl#shouldHideNotification; A13=com.android.systemui.statusbar.notification.ExpandedNotification#hasShownAfterUnlock,ExpandedNotification#setHasShownAfterUnlock,com.android.systemui.statusbar.notification.MiuiNotificationCompat#isKeptOnKeyguard
+- CALLBACK_SEMANTICS_COMPARISON: A13 constant-return / after field. A14 intercept proceed-once.
+- ARG_RESULT_COMPARISON: A13 hasShownAfterUnlock result false; isKeptOnKeyguard true. A14 does not replace shouldHideNotification result.
+- A14_ONLY_BRANCHES: none
+- WHY_USER_BEHAVIOR_IS_EQUIVALENT: Notifications remain in the shade after unlock instead of being consumed as already-shown.
+- KEY_OWNERSHIP_EVIDENCE: system_notifafterunlock: INSTALLER_CALLEE → ShowNotificationsAfterUnlockHook
+- A14_KEY_OWNER_REFERENCE: app/src/main/java/tv/withaibuild/customiuizer/mods/SystemLockScreenHooks.kt::ShowNotificationsAfterUnlockHook
+- A13_KEY_OWNER_REFERENCE: app/src/main/java/tv/withaibuild/customiuizer/mods/SystemNotificationMoreHooks.kt::ShowNotificationsAfterUnlockHook
+- PROOF_CONCLUSION: `PRESENT_A13_VARIANT`
+
+## PROOF_R5F_NotificationChannelSettingsHook_system_notifchannelsettings
+
+- PROOF_ID: `PROOF_R5F_NotificationChannelSettingsHook_system_notifchannelsettings`
+- BODY_RELATION: `REVIEWED_VARIANT`
+- A14_OWNER_PATH: `app/src/main/java/tv/withaibuild/customiuizer/mods/SystemNotificationHooks.kt`
+- A14_SYMBOL: `NotificationChannelSettingsHook`
+- A14_INSTALLER: `A14 installer/spec gate for system_notifchannelsettings`
+- A14_HOOK_TARGETS: `com.android.systemui.statusbar.notification.row.MiuiNotificationMenuRow#createMenuViews`
+- A14_CALLBACK_PHASE: `intercept`
+- A13_OWNER_PATH: `app/src/main/java/tv/withaibuild/customiuizer/mods/SystemNotificationMoreHooks.kt`
+- A13_SYMBOL: `NotificationChannelSettingsHook`
+- A13_INSTALLER: `A13 installer gate for system_notifchannelsettings`
+- A13_HOOK_TARGETS: `com.android.systemui.statusbar.notification.row.MiuiNotificationMenuRow#onClickInfoItem`
+- A13_CALLBACK_PHASE: `before`
+- PREFERENCE_KEYS: `system_notifchannelsettings`
+- VALUE_DOMAIN: owner-local preference domain
+- DEFAULT_SEMANTICS: boolean installer gate
+- RESULT/ARGUMENT_BEHAVIOR: A13 returnAndSkip(null) after startActivityAsUser. A14 proceed createMenuViews then extra click listener.
+- API33_VARIANT_REASON: Info click vs createMenuViews listener; NotificationUtil package miui.statusbar vs statusbar.notification.
+- DIFF_SUMMARY: Both open ChannelNotificationSettings SubSettings with CHANNEL_ID/package/uid. Skip miscellaneous and hybrid. A13 intercepts onClickInfoItem. A14 sets mInfoItem.mIcon click in createMenuViews.
+- VALUE_DEFAULT_COMPARISON: boolean installer gate
+- HOOK_TARGET_COMPARISON: A14=com.android.systemui.statusbar.notification.row.MiuiNotificationMenuRow#createMenuViews; A13=com.android.systemui.statusbar.notification.row.MiuiNotificationMenuRow#onClickInfoItem
+- CALLBACK_SEMANTICS_COMPARISON: A13 before skip original info click. A14 proceed then overlay click.
+- ARG_RESULT_COMPARISON: A13 original onClickInfoItem not run. A14 original createMenuViews runs.
+- A14_ONLY_BRANCHES: none for the settings intent extras
+- WHY_USER_BEHAVIOR_IS_EQUIVALENT: Notification info/gear opens per-channel settings instead of app-level only.
+- KEY_OWNERSHIP_EVIDENCE: system_notifchannelsettings: INSTALLER_CALLEE → NotificationChannelSettingsHook
+- A14_KEY_OWNER_REFERENCE: app/src/main/java/tv/withaibuild/customiuizer/mods/SystemNotificationHooks.kt::NotificationChannelSettingsHook
+- A13_KEY_OWNER_REFERENCE: app/src/main/java/tv/withaibuild/customiuizer/mods/SystemNotificationMoreHooks.kt::NotificationChannelSettingsHook
+- PROOF_CONCLUSION: `PRESENT_A13_VARIANT`
+
+## PROOF_R5_NotificationImportanceHook_system_notifimportance
+
+- PROOF_ID: `PROOF_R5_NotificationImportanceHook_system_notifimportance`
+- BODY_RELATION: `REVIEWED_VARIANT`
+- A14_OWNER_PATH: `app/src/main/java/tv/withaibuild/customiuizer/mods/SystemNotificationHooks.kt`
+- A14_SYMBOL: `NotificationImportanceHook`
+- A14_INSTALLER: `A14 installer/spec gate for system_notifimportance`
+- A14_HOOK_TARGETS: `com.android.settings.notification.BaseNotificationSettings#setPrefVisible,com.android.settings.notification.ChannelNotificationSettings#setupChannelDefaultPrefs`
+- A14_CALLBACK_PHASE: `intercept`
+- A13_OWNER_PATH: `app/src/main/java/tv/withaibuild/customiuizer/mods/SystemNotificationMoreHooks.kt`
+- A13_SYMBOL: `NotificationImportanceHook`
+- A13_INSTALLER: `A13 installer gate for system_notifimportance`
+- A13_HOOK_TARGETS: `com.android.settings.notification.BaseNotificationSettings#setPrefVisible,com.android.settings.notification.ChannelNotificationSettings#setupChannelDefaultPrefs`
+- A13_CALLBACK_PHASE: `before,after`
+- PREFERENCE_KEYS: `system_notifimportance`
+- VALUE_DOMAIN: owner-local preference domain
+- DEFAULT_SEMANTICS: same persisted keys consumed by both owners
+- RESULT/ARGUMENT_BEHAVIOR: A14 ops: result_assign[null,null]; chain.proceed[chain.proceed()]. A13 ops: no result/argument rewrite literals. Keys system_notifimportance rewrite the same host members.
+- API33_VARIANT_REASON: A14 callback intercept vs A13 before,after on members A14[com.android.settings.notification.BaseNotificationSettings#setPrefVisible,com.android.settings.notification.ChannelNotificationSettings#setupChannelDefaultPrefs] / A13[com.android.settings.notification.BaseNotificationSettings#setPrefVisible,com.android.settings.notification.ChannelNotificationSettings#setupChannelDefaultPrefs]. Inner preference reads of system_notifimportance match; intercept proceed-once maps to before returnAndSkip or after side-effect.
+- DIFF_SUMMARY: Shared members com.android.settings.notification.BaseNotificationSettings#setPrefVisible,com.android.settings.notification.ChannelNotificationSettings#setupChannelDefaultPrefs. Differ: A14 phases intercept vs A13 before,after; A14 result_assign[null,null]; chain.proceed[chain.proceed()] vs A13 no result/argument rewrite literals.
+- VALUE_DEFAULT_COMPARISON: both consume system_notifimportance in the owner body or installer gate
+- HOOK_TARGET_COMPARISON: A14=com.android.settings.notification.BaseNotificationSettings#setPrefVisible,com.android.settings.notification.ChannelNotificationSettings#setupChannelDefaultPrefs; A13=com.android.settings.notification.BaseNotificationSettings#setPrefVisible,com.android.settings.notification.ChannelNotificationSettings#setupChannelDefaultPrefs
+- CALLBACK_SEMANTICS_COMPARISON: A14 intercept vs A13 before,after; skipped paths do not invoke the original, proceed-once equals after side-effect
+- ARG_RESULT_COMPARISON: A14=result_assign[null,null]; chain.proceed[chain.proceed()]; A13=no result/argument rewrite literals
+- A14_ONLY_BRANCHES: none beyond intercept scaffolding for this owner pair
+- WHY_USER_BEHAVIOR_IS_EQUIVALENT: User-visible contract of system_notifimportance is the same host rewrite; callback adapter and null-safety differ.
+- KEY_OWNERSHIP_EVIDENCE: system_notifimportance: LITERAL_READ and/or INSTALLER_CALLEE in NotificationImportanceHook/NotificationImportanceHook
+- A14_KEY_OWNER_REFERENCE: app/src/main/java/tv/withaibuild/customiuizer/mods/SystemNotificationHooks.kt::NotificationImportanceHook
+- A13_KEY_OWNER_REFERENCE: app/src/main/java/tv/withaibuild/customiuizer/mods/SystemNotificationMoreHooks.kt::NotificationImportanceHook
+- PROOF_CONCLUSION: `PRESENT_A13_VARIANT`
+
+## PROOF_R5F_NotificationRowMenuHook_system_notifrowmenu
+
+- PROOF_ID: `PROOF_R5F_NotificationRowMenuHook_system_notifrowmenu`
+- BODY_RELATION: `REVIEWED_VARIANT`
+- A14_OWNER_PATH: `app/src/main/java/tv/withaibuild/customiuizer/mods/SystemNotificationHooks.kt`
+- A14_SYMBOL: `NotificationRowMenuHook`
+- A14_INSTALLER: `A14 installer/spec gate for system_notifrowmenu`
+- A14_HOOK_TARGETS: `com.android.systemui.statusbar.notification.row.MiuiNotificationMenuRow#createMenuViews`
+- A14_CALLBACK_PHASE: `intercept`
+- A13_OWNER_PATH: `app/src/main/java/tv/withaibuild/customiuizer/mods/SystemNotificationMoreHooks.kt`
+- A13_SYMBOL: `NotificationRowMenuHook`
+- A13_INSTALLER: `A13 installer gate for system_notifrowmenu`
+- A13_HOOK_TARGETS: `MiuiNotificationMenuRow#createMenuViews`
+- A13_CALLBACK_PHASE: `after`
+- PREFERENCE_KEYS: `system_notifrowmenu`
+- VALUE_DOMAIN: owner-local preference domain
+- DEFAULT_SEMANTICS: boolean installer gate
+- RESULT/ARGUMENT_BEHAVIOR: A14 proceed then mutate menu. A13 after mutate menu. No skip of createMenuViews.
+- API33_VARIANT_REASON: Resource hook API and constructor resolution; same MiuiNotificationMenuRow.createMenuViews.
+- DIFF_SUMMARY: Same three extra menu actions injected into mMenuItems after createMenuViews. Resource injection addResource vs addFakeResource.
+- VALUE_DEFAULT_COMPARISON: boolean installer gate
+- HOOK_TARGET_COMPARISON: A14=com.android.systemui.statusbar.notification.row.MiuiNotificationMenuRow#createMenuViews; A13=MiuiNotificationMenuRow#createMenuViews
+- CALLBACK_SEMANTICS_COMPARISON: A14 intercept proceed-once ≡ A13 after.
+- ARG_RESULT_COMPARISON: Host createMenuViews result unchanged; menu list appended.
+- A14_ONLY_BRANCHES: none for the three actions
+- WHY_USER_BEHAVIOR_IS_EQUIVALENT: Notification long-press/modal menu gains App info, Force close, Open in freeform.
+- KEY_OWNERSHIP_EVIDENCE: system_notifrowmenu: INSTALLER_CALLEE → NotificationRowMenuHook; both add appinfo/forceclose/openinfw items
+- A14_KEY_OWNER_REFERENCE: app/src/main/java/tv/withaibuild/customiuizer/mods/SystemNotificationHooks.kt::NotificationRowMenuHook
+- A13_KEY_OWNER_REFERENCE: app/src/main/java/tv/withaibuild/customiuizer/mods/SystemNotificationMoreHooks.kt::NotificationRowMenuHook
+- PROOF_CONCLUSION: `PRESENT_A13_VARIANT`
+
+## PROOF_R5F_OpenNotifyInFloatingWindowHook_system_notify_openinfw
+
+- PROOF_ID: `PROOF_R5F_OpenNotifyInFloatingWindowHook_system_notify_openinfw`
+- BODY_RELATION: `REVIEWED_VARIANT`
+- A14_OWNER_PATH: `app/src/main/java/tv/withaibuild/customiuizer/mods/SystemUINotificationHooks.kt`
+- A14_SYMBOL: `OpenNotifyInFloatingWindowHook`
+- A14_INSTALLER: `A14 installer/spec gate for system_notify_openinfw`
+- A14_HOOK_TARGETS: `com.android.systemui.statusbar.phone.StatusBarNotificationActivityStarter#onNotificationClicked`
+- A14_CALLBACK_PHASE: `before`
+- A13_OWNER_PATH: `app/src/main/java/tv/withaibuild/customiuizer/mods/SystemUINotificationHooks.kt`
+- A13_SYMBOL: `OpenNotifyInFloatingWindowHook`
+- A13_INSTALLER: `A13 installer gate for system_notify_openinfw`
+- A13_HOOK_TARGETS: `com.android.systemui.statusbar.notification.policy.AppMiniWindowManager#launchMiniWindowActivity`
+- A13_CALLBACK_PHASE: `before`
+- PREFERENCE_KEYS: `system_notify_openinfw`
+- VALUE_DOMAIN: owner-local preference domain
+- DEFAULT_SEMANTICS: boolean installer gate
+- RESULT/ARGUMENT_BEHAVIOR: A13 returnAndSkip(null) so ROM mini-window launch is replaced by HookUtils.launchFreeForm. A14 before mutates click extras then original onNotificationClicked proceeds.
+- API33_VARIANT_REASON: MIUI14 AppMiniWindowManager mini-window launch vs HyperOS StatusBarNotificationActivityStarter freeform ActivityOptions on click.
+- DIFF_SUMMARY: A13 launchMiniWindowActivity returnAndSkip(null) unless package is com.miui.hybrid. A14 onNotificationClicked injects ActivityOptions KEY_LAUNCH_WINDOWING_MODE=5 and EXTRA_NAME_MIUI_FREEFORM_BOTTOM_CAPTION_VERTICAL_PADDING=22 into the PendingIntent click extra, skip hybrid.
+- VALUE_DEFAULT_COMPARISON: boolean installer gate
+- HOOK_TARGET_COMPARISON: A14=com.android.systemui.statusbar.phone.StatusBarNotificationActivityStarter#onNotificationClicked; A13=com.android.systemui.statusbar.notification.policy.AppMiniWindowManager#launchMiniWindowActivity
+- CALLBACK_SEMANTICS_COMPARISON: A13 before skip of launchMiniWindowActivity. A14 before arg rewrite then original click.
+- ARG_RESULT_COMPARISON: A13 original mini-window manager not called. A14 original click runs with freeform options.
+- A14_ONLY_BRANCHES: ActivityOptions windowingMode=5 + caption padding extra; PendingIntent.getActivity extra mutation
+- WHY_USER_BEHAVIOR_IS_EQUIVALENT: Tapping a notification opens the app in a floating/freeform window (hybrid skipped).
+- KEY_OWNERSHIP_EVIDENCE: system_notify_openinfw: INSTALLER_CALLEE → OpenNotifyInFloatingWindowHook
+- A14_KEY_OWNER_REFERENCE: app/src/main/java/tv/withaibuild/customiuizer/mods/SystemUINotificationHooks.kt::OpenNotifyInFloatingWindowHook
+- A13_KEY_OWNER_REFERENCE: app/src/main/java/tv/withaibuild/customiuizer/mods/SystemUINotificationHooks.kt::OpenNotifyInFloatingWindowHook
+- PROOF_CONCLUSION: `PRESENT_A13_VARIANT`
+
+## PROOF_R5X_OPENNOTIFY_APPS
+
+- PROOF_ID: `PROOF_R5X_OPENNOTIFY_APPS`
+- BODY_RELATION: `REVIEWED_VARIANT`
+- A14_OWNER_PATH: `app/src/main/java/tv/withaibuild/customiuizer/mods/SystemUINotificationHooks.kt`
+- A14_SYMBOL: `OpenNotifyInFloatingWindowHook`
+- A14_INSTALLER: `A14 installer/spec gate for system_notify_openinfw_apps,system_notify_openinfw_in_whitelist`
+- A14_HOOK_TARGETS: `StatusBarNotificationActivityStarter#onNotificationClicked`
+- A14_CALLBACK_PHASE: `n/a`
+- A13_OWNER_PATH: `app/src/main/java/tv/withaibuild/customiuizer/mods/SystemUINotificationHooks.kt`
+- A13_SYMBOL: `OpenNotifyInFloatingWindowHook`
+- A13_INSTALLER: `A13 installer gate for system_notify_openinfw_apps,system_notify_openinfw_in_whitelist`
+- A13_HOOK_TARGETS: `MiuiStatusBarNotificationActivityStarter#startNotificationIntent`
+- A13_CALLBACK_PHASE: `n/a`
+- PREFERENCE_KEYS: `system_notify_openinfw_apps,system_notify_openinfw_in_whitelist`
+- VALUE_DOMAIN: owner-local preference domain
+- DEFAULT_SEMANTICS: Empty set; whitelist default false.
+- RESULT/ARGUMENT_BEHAVIOR: No extra rewrite; membership gates the parent hook.
+- API33_VARIANT_REASON: Same StringSet membership test.
+- DIFF_SUMMARY: Whitelist xor app-set already described on the parent openinfw owner. These rows are the selector/mode, not a second hook.
+- VALUE_DEFAULT_COMPARISON: Empty set; whitelist default false.
+- HOOK_TARGET_COMPARISON: A14=StatusBarNotificationActivityStarter#onNotificationClicked; A13=MiuiStatusBarNotificationActivityStarter#startNotificationIntent
+- CALLBACK_SEMANTICS_COMPARISON: Same as parent OpenNotify hook.
+- ARG_RESULT_COMPARISON: StringSet.contains and whitelist boolean.
+- A14_ONLY_BRANCHES: none for these keys
+- WHY_USER_BEHAVIOR_IS_EQUIVALENT: Only selected packages (or all except selected) open notifications in a floating window.
+- KEY_OWNERSHIP_EVIDENCE: LITERAL_READ StringSet system_notify_openinfw_apps and boolean _in_whitelist inside OpenNotifyInFloatingWindowHook on both trees (A13 SystemUINotificationHooks.kt:277).
+- A14_KEY_OWNER_REFERENCE: app/src/main/java/tv/withaibuild/customiuizer/mods/SystemUINotificationHooks.kt::OpenNotifyInFloatingWindowHook
+- A13_KEY_OWNER_REFERENCE: app/src/main/java/tv/withaibuild/customiuizer/mods/SystemUINotificationHooks.kt::OpenNotifyInFloatingWindowHook
+- PROOF_CONCLUSION: `PRESENT_A13_VARIANT`
+
+## PROOF_R5_OrientationLockHook_system_orientationlock
+
+- PROOF_ID: `PROOF_R5_OrientationLockHook_system_orientationlock`
+- BODY_RELATION: `REVIEWED_VARIANT`
+- A14_OWNER_PATH: `app/src/main/java/tv/withaibuild/customiuizer/mods/SystemWindowHooks.kt`
+- A14_SYMBOL: `OrientationLockHook`
+- A14_INSTALLER: `A14 installer/spec gate for system_orientationlock`
+- A14_HOOK_TARGETS: `(no host member literals)`
+- A14_CALLBACK_PHASE: `intercept`
+- A13_OWNER_PATH: `app/src/main/java/tv/withaibuild/customiuizer/mods/SystemNotificationMoreHooks.kt`
+- A13_SYMBOL: `OrientationLockHook`
+- A13_INSTALLER: `A13 installer gate for system_orientationlock`
+- A13_HOOK_TARGETS: `(no host member literals)`
+- A13_CALLBACK_PHASE: `after`
+- PREFERENCE_KEYS: `system_orientationlock`
+- VALUE_DOMAIN: owner-local preference domain
+- DEFAULT_SEMANTICS: same persisted keys consumed by both owners
+- RESULT/ARGUMENT_BEHAVIOR: A14 ops: result_assign[null]; chain.proceed[chain.proceed()]. A13 ops: setResult[prevOrient,prevOrient]. Keys system_orientationlock rewrite the same host members.
+- API33_VARIANT_REASON: A14 callback intercept vs A13 after on members A14[(none)] / A13[(none)]. Inner preference reads of system_orientationlock match; intercept proceed-once maps to before returnAndSkip or after side-effect.
+- DIFF_SUMMARY: Shared members (none). Differ: A14 phases intercept vs A13 after; A14 result_assign[null]; chain.proceed[chain.proceed()] vs A13 setResult[prevOrient,prevOrient].
+- VALUE_DEFAULT_COMPARISON: both consume system_orientationlock in the owner body or installer gate
+- HOOK_TARGET_COMPARISON: A14=(none); A13=(none)
+- CALLBACK_SEMANTICS_COMPARISON: A14 intercept vs A13 after; skipped paths do not invoke the original, proceed-once equals after side-effect
+- ARG_RESULT_COMPARISON: A14=result_assign[null]; chain.proceed[chain.proceed()]; A13=setResult[prevOrient,prevOrient]
+- A14_ONLY_BRANCHES: none beyond intercept scaffolding for this owner pair
+- WHY_USER_BEHAVIOR_IS_EQUIVALENT: User-visible contract of system_orientationlock is the same host rewrite; callback adapter and null-safety differ.
+- KEY_OWNERSHIP_EVIDENCE: system_orientationlock: LITERAL_READ and/or INSTALLER_CALLEE in OrientationLockHook/OrientationLockHook
+- A14_KEY_OWNER_REFERENCE: app/src/main/java/tv/withaibuild/customiuizer/mods/SystemWindowHooks.kt::OrientationLockHook
+- A13_KEY_OWNER_REFERENCE: app/src/main/java/tv/withaibuild/customiuizer/mods/SystemNotificationMoreHooks.kt::OrientationLockHook
+- PROOF_CONCLUSION: `PRESENT_A13_VARIANT`
+
+## PROOF_R5F_WallpaperScaleLevelHook_system_other_wallpaper_scale
+
+- PROOF_ID: `PROOF_R5F_WallpaperScaleLevelHook_system_other_wallpaper_scale`
+- BODY_RELATION: `REVIEWED_VARIANT`
+- A14_OWNER_PATH: `app/src/main/java/tv/withaibuild/customiuizer/mods/SystemDisplayHooks.kt`
+- A14_SYMBOL: `WallpaperScaleLevelHook`
+- A14_INSTALLER: `A14 installer/spec gate for system_other_wallpaper_scale`
+- A14_HOOK_TARGETS: `com.android.server.wm.WallpaperController#<init>`
+- A14_CALLBACK_PHASE: `intercept`
+- A13_OWNER_PATH: `app/src/main/java/tv/withaibuild/customiuizer/mods/SystemNotificationMoreHooks.kt`
+- A13_SYMBOL: `WallpaperScaleLevelHook`
+- A13_INSTALLER: `A13 installer gate for system_other_wallpaper_scale`
+- A13_HOOK_TARGETS: `com.android.server.wm.WallpaperController#<init>`
+- A13_CALLBACK_PHASE: `after`
+- PREFERENCE_KEYS: `system_other_wallpaper_scale`
+- VALUE_DOMAIN: owner-local preference domain
+- DEFAULT_SEMANTICS: getInt(system_other_wallpaper_scale, 6) on both
+- RESULT/ARGUMENT_BEHAVIOR: Constructor result unchanged; field write after construct.
+- API33_VARIANT_REASON: Callback adapter only; same WallpaperController field.
+- DIFF_SUMMARY: Both set mMaxWallpaperScale = getInt(...,6)/10f and observe the key. A14 intercept proceed-once; A13 after.
+- VALUE_DEFAULT_COMPARISON: getInt(system_other_wallpaper_scale, 6) on both
+- HOOK_TARGET_COMPARISON: A14=com.android.server.wm.WallpaperController#<init>; A13=com.android.server.wm.WallpaperController#<init>
+- CALLBACK_SEMANTICS_COMPARISON: A14 intercept proceed-once ≡ A13 after.
+- ARG_RESULT_COMPARISON: No result rewrite.
+- A14_ONLY_BRANCHES: none
+- WHY_USER_BEHAVIOR_IS_EQUIVALENT: System wallpaper zoom/scale is the seekbar /10.
+- KEY_OWNERSHIP_EVIDENCE: system_other_wallpaper_scale: LITERAL_READ in both constructors (scanner keys_only13 is false-positive)
+- A14_KEY_OWNER_REFERENCE: app/src/main/java/tv/withaibuild/customiuizer/mods/SystemDisplayHooks.kt::WallpaperScaleLevelHook
+- A13_KEY_OWNER_REFERENCE: app/src/main/java/tv/withaibuild/customiuizer/mods/SystemNotificationMoreHooks.kt::WallpaperScaleLevelHook
+- PROOF_CONCLUSION: `PRESENT_A13_VARIANT`
+
+## PROOF_R5F_QSHapticHook_system_qshaptics
+
+- PROOF_ID: `PROOF_R5F_QSHapticHook_system_qshaptics`
+- BODY_RELATION: `REVIEWED_VARIANT`
+- A14_OWNER_PATH: `app/src/main/java/tv/withaibuild/customiuizer/mods/SystemAudioHooks.kt`
+- A14_SYMBOL: `QSHapticHook`
+- A14_INSTALLER: `A14 installer/spec gate for system_qshaptics,system_qshaptics_ignore`
+- A14_HOOK_TARGETS: `com.android.systemui.qs.tileimpl.QSTileImpl#click`
+- A14_CALLBACK_PHASE: `intercept`
+- A13_OWNER_PATH: `app/src/main/java/tv/withaibuild/customiuizer/mods/SystemNotificationAndShareHooks.kt`
+- A13_SYMBOL: `QSHapticHook`
+- A13_INSTALLER: `A13 installer gate for system_qshaptics,system_qshaptics_ignore`
+- A13_HOOK_TARGETS: `com.android.systemui.qs.tileimpl.QSFactoryImpl#createTileInternal,tile#handleClick`
+- A13_CALLBACK_PHASE: `after`
+- PREFERENCE_KEYS: `system_qshaptics,system_qshaptics_ignore`
+- VALUE_DOMAIN: owner-local preference domain
+- DEFAULT_SEMANTICS: system_qshaptics string-int default 1; ignore boolean
+- RESULT/ARGUMENT_BEHAVIOR: Neither skips click; both proceed/after then vibrate.
+- API33_VARIANT_REASON: QSFactoryImpl.createTileInternal+handleClick vs unified QSTileImpl.click.
+- DIFF_SUMMARY: opt 2 light / 3 strong HookUtils vibration; ignoreSystem flag. A13 per-tile handleClick after factory. A14 QSTileImpl.click after proceed, only if getState().state != 0.
+- VALUE_DEFAULT_COMPARISON: system_qshaptics string-int default 1; ignore boolean
+- HOOK_TARGET_COMPARISON: A14=com.android.systemui.qs.tileimpl.QSTileImpl#click; A13=com.android.systemui.qs.tileimpl.QSFactoryImpl#createTileInternal,tile#handleClick
+- CALLBACK_SEMANTICS_COMPARISON: A14 intercept proceed-once ≡ A13 after handleClick.
+- ARG_RESULT_COMPARISON: Host click result unchanged.
+- A14_ONLY_BRANCHES: skip haptic when tile state==0 (unavailable)
+- WHY_USER_BEHAVIOR_IS_EQUIVALENT: QS tile click plays light or strong haptic (or ROM default if opt=1).
+- KEY_OWNERSHIP_EVIDENCE: system_qshaptics / system_qshaptics_ignore: LITERAL_READ in both click paths
+- A14_KEY_OWNER_REFERENCE: app/src/main/java/tv/withaibuild/customiuizer/mods/SystemAudioHooks.kt::QSHapticHook
+- A13_KEY_OWNER_REFERENCE: app/src/main/java/tv/withaibuild/customiuizer/mods/SystemNotificationAndShareHooks.kt::QSHapticHook
+- PROOF_CONCLUSION: `PRESENT_A13_VARIANT`
+
+## PROOF_R5_RecentsBlurRatioHook_system_recents_blur
+
+- PROOF_ID: `PROOF_R5_RecentsBlurRatioHook_system_recents_blur`
+- BODY_RELATION: `REVIEWED_VARIANT`
+- A14_OWNER_PATH: `app/src/main/java/tv/withaibuild/customiuizer/mods/Launcher.kt`
+- A14_SYMBOL: `RecentsBlurRatioHook`
+- A14_INSTALLER: `A14 installer/spec gate for system_recents_blur`
+- A14_HOOK_TARGETS: `#fastBlurWhenEnterRecents,#fastBlurWhenGestureResetTaskView,#fastBlur`
+- A14_CALLBACK_PHASE: `intercept`
+- A13_OWNER_PATH: `app/src/main/java/tv/withaibuild/customiuizer/mods/LauncherAnimationHooks.kt`
+- A13_SYMBOL: `RecentsBlurRatioHook`
+- A13_INSTALLER: `A13 installer gate for system_recents_blur`
+- A13_HOOK_TARGETS: `#fastBlurWhenEnterRecents,#fastBlurWhenGestureResetTaskView,#fastBlur`
+- A13_CALLBACK_PHASE: `before`
+- PREFERENCE_KEYS: `system_recents_blur`
+- VALUE_DOMAIN: owner-local preference domain
+- DEFAULT_SEMANTICS: same persisted keys consumed by both owners
+- RESULT/ARGUMENT_BEHAVIOR: A14 ops: result_assign[null,null,null,null]; chain.proceed[chain.proceed(),chain.proceed()]. A13 ops: returnAndSkip[null]. Keys system_recents_blur rewrite the same host members.
+- API33_VARIANT_REASON: A14 callback intercept vs A13 before on members A14[#fastBlurWhenEnterRecents,#fastBlurWhenGestureResetTaskView,#fastBlur] / A13[#fastBlurWhenEnterRecents,#fastBlurWhenGestureResetTaskView,#fastBlur]. Inner preference reads of system_recents_blur match; intercept proceed-once maps to before returnAndSkip or after side-effect.
+- DIFF_SUMMARY: Shared members #fastBlurWhenEnterRecents,#fastBlurWhenGestureResetTaskView,#fastBlur. Differ: A14 phases intercept vs A13 before; A14 result_assign[null,null,null,null]; chain.proceed[chain.proceed(),chain.proceed()] vs A13 returnAndSkip[null].
+- VALUE_DEFAULT_COMPARISON: both consume system_recents_blur in the owner body or installer gate
+- HOOK_TARGET_COMPARISON: A14=#fastBlurWhenEnterRecents,#fastBlurWhenGestureResetTaskView,#fastBlur; A13=#fastBlurWhenEnterRecents,#fastBlurWhenGestureResetTaskView,#fastBlur
+- CALLBACK_SEMANTICS_COMPARISON: A14 intercept vs A13 before; skipped paths do not invoke the original, proceed-once equals after side-effect
+- ARG_RESULT_COMPARISON: A14=result_assign[null,null,null,null]; chain.proceed[chain.proceed(),chain.proceed()]; A13=returnAndSkip[null]
+- A14_ONLY_BRANCHES: none beyond intercept scaffolding for this owner pair
+- WHY_USER_BEHAVIOR_IS_EQUIVALENT: User-visible contract of system_recents_blur is the same host rewrite; callback adapter and null-safety differ.
+- KEY_OWNERSHIP_EVIDENCE: system_recents_blur: LITERAL_READ and/or INSTALLER_CALLEE in RecentsBlurRatioHook/RecentsBlurRatioHook
+- A14_KEY_OWNER_REFERENCE: app/src/main/java/tv/withaibuild/customiuizer/mods/Launcher.kt::RecentsBlurRatioHook
+- A13_KEY_OWNER_REFERENCE: app/src/main/java/tv/withaibuild/customiuizer/mods/LauncherAnimationHooks.kt::RecentsBlurRatioHook
+- PROOF_CONCLUSION: `PRESENT_A13_VARIANT`
+
+## PROOF_R5_HideStatusBarInRecentsHook_system_recents_hide_statusbar
+
+- PROOF_ID: `PROOF_R5_HideStatusBarInRecentsHook_system_recents_hide_statusbar`
+- BODY_RELATION: `IDENTICAL`
+- A14_OWNER_PATH: `app/src/main/java/tv/withaibuild/customiuizer/mods/Launcher.kt`
+- A14_SYMBOL: `HideStatusBarInRecentsHook`
+- A14_INSTALLER: `A14 installer/spec gate for system_recents_hide_statusbar`
+- A14_HOOK_TARGETS: `com.miui.home.launcher.common.DeviceLevelUtils#isHideStatusBarWhenEnterRecents,com.miui.home.launcher.DeviceConfig#keepStatusBarShowingForBetterPerformance`
+- A14_CALLBACK_PHASE: `unknown`
+- A13_OWNER_PATH: `app/src/main/java/tv/withaibuild/customiuizer/mods/LauncherSystemHooks.kt`
+- A13_SYMBOL: `HideStatusBarInRecentsHook`
+- A13_INSTALLER: `A13 installer gate for system_recents_hide_statusbar`
+- A13_HOOK_TARGETS: `com.miui.home.launcher.common.DeviceLevelUtils#isHideStatusBarWhenEnterRecents,com.miui.home.launcher.DeviceConfig#keepStatusBarShowingForBetterPerformance`
+- A13_CALLBACK_PHASE: `unknown`
+- PREFERENCE_KEYS: `system_recents_hide_statusbar`
+- VALUE_DOMAIN: owner-local preference domain
+- DEFAULT_SEMANTICS: identical owner body; shared defaults
+- RESULT/ARGUMENT_BEHAVIOR: no result/argument rewrite literals
+- API33_VARIANT_REASON: Normalized bodies are IDENTICAL. A14/A13 both hook com.miui.home.launcher.common.DeviceLevelUtils#isHideStatusBarWhenEnterRecents,com.miui.home.launcher.DeviceConfig#keepStatusBarShowingForBetterPerformance.
+- KEY_OWNERSHIP_EVIDENCE: system_recents_hide_statusbar: LITERAL_READ and/or INSTALLER_CALLEE in HideStatusBarInRecentsHook/HideStatusBarInRecentsHook
+- A14_KEY_OWNER_REFERENCE: app/src/main/java/tv/withaibuild/customiuizer/mods/Launcher.kt::HideStatusBarInRecentsHook
+- A13_KEY_OWNER_REFERENCE: app/src/main/java/tv/withaibuild/customiuizer/mods/LauncherSystemHooks.kt::HideStatusBarInRecentsHook
+- PROOF_CONCLUSION: `PRESENT_EQUIVALENT`
+
+## PROOF_R5F_RemoveActStartConfirmHook_system_remove_startactconfirm
+
+- PROOF_ID: `PROOF_R5F_RemoveActStartConfirmHook_system_remove_startactconfirm`
+- BODY_RELATION: `REVIEWED_VARIANT`
+- A14_OWNER_PATH: `app/src/main/java/tv/withaibuild/customiuizer/mods/SystemSecurityHooks.kt`
+- A14_SYMBOL: `RemoveActStartConfirmHook`
+- A14_INSTALLER: `SystemServerFeatures.RemoveActStartConfirmFeature getBoolean(system_remove_startactconfirm)`
+- A14_HOOK_TARGETS: `com.miui.server.SecurityManagerService$LocalService#checkAllowStartActivity`
+- A14_CALLBACK_PHASE: `unknown`
+- A13_OWNER_PATH: `app/src/main/java/tv/withaibuild/customiuizer/mods/SystemSecurityAndSystemHooks.kt`
+- A13_SYMBOL: `RemoveActStartConfirmHook`
+- A13_INSTALLER: `SystemServerInstaller.java + FeatureCatalog.removeActStartConfirm getBoolean(system_remove_startactconfirm)`
+- A13_HOOK_TARGETS: `com.miui.server.SecurityManagerService#checkAllowStartActivity`
+- A13_CALLBACK_PHASE: `unknown`
+- PREFERENCE_KEYS: `system_remove_startactconfirm`
+- VALUE_DOMAIN: owner-local preference domain
+- DEFAULT_SEMANTICS: Boolean default false keeps ROM start-activity confirm.
+- RESULT/ARGUMENT_BEHAVIOR: Both returnConstant(true); no argument rewrite.
+- API33_VARIANT_REASON: MIUI14 method lives on SecurityManagerService; HyperOS moved the binder local to $LocalService. Same allow-start constant.
+- DIFF_SUMMARY: Both force checkAllowStartActivity true. A13 hookAllMethodsSilently on SecurityManagerService (CatalogContracts.removeActStartConfirm). A14 hookAllMethods on SecurityManagerService$LocalService.
+- VALUE_DEFAULT_COMPARISON: Boolean default false keeps ROM start-activity confirm.
+- HOOK_TARGET_COMPARISON: A14=com.miui.server.SecurityManagerService$LocalService#checkAllowStartActivity; A13=com.miui.server.SecurityManagerService#checkAllowStartActivity
+- CALLBACK_SEMANTICS_COMPARISON: Both constant-return helpers (phase unknown to classifier). Original not invoked.
+- ARG_RESULT_COMPARISON: A14/A13 no result/argument rewrite literals in classifier; both constant true.
+- A14_ONLY_BRANCHES: Target class SecurityManagerService$LocalService instead of the outer service.
+- WHY_USER_BEHAVIOR_IS_EQUIVALENT: Open-app confirm is removed by forcing allow-start true. Outer vs LocalService is the API33/HyperOS ABI split.
+- KEY_OWNERSHIP_EVIDENCE: Installer/catalog getBoolean(system_remove_startactconfirm). Hook is returnConstant(true) with no inner key read.
+- A14_KEY_OWNER_REFERENCE: app/src/main/java/tv/withaibuild/customiuizer/mods/SystemSecurityHooks.kt::RemoveActStartConfirmHook
+- A13_KEY_OWNER_REFERENCE: app/src/main/java/tv/withaibuild/customiuizer/mods/SystemSecurityAndSystemHooks.kt::RemoveActStartConfirmHook
+- PROOF_CONCLUSION: `PRESENT_A13_VARIANT`
+
+## PROOF_R5_HideMemoryCleanHook_system_removecleaner
+
+- PROOF_ID: `PROOF_R5_HideMemoryCleanHook_system_removecleaner`
+- BODY_RELATION: `REVIEWED_VARIANT`
+- A14_OWNER_PATH: `app/src/main/java/tv/withaibuild/customiuizer/mods/System.kt`
+- A14_SYMBOL: `HideMemoryCleanHook`
+- A14_INSTALLER: `A14 installer/spec gate for system_removecleaner`
+- A14_HOOK_TARGETS: `(no host member literals)`
+- A14_CALLBACK_PHASE: `intercept`
+- A13_OWNER_PATH: `app/src/main/java/tv/withaibuild/customiuizer/mods/SystemStatusBarAndClockHooks.kt`
+- A13_SYMBOL: `HideMemoryCleanHook`
+- A13_INSTALLER: `A13 installer gate for system_removecleaner`
+- A13_HOOK_TARGETS: `(no host member literals)`
+- A13_CALLBACK_PHASE: `after`
+- PREFERENCE_KEYS: `system_removecleaner`
+- VALUE_DOMAIN: owner-local preference domain
+- DEFAULT_SEMANTICS: same persisted keys consumed by both owners
+- RESULT/ARGUMENT_BEHAVIOR: A14 ops: result_assign[null]; chain.proceed[chain.proceed()]. A13 ops: no result/argument rewrite literals. Keys system_removecleaner rewrite the same host members.
+- API33_VARIANT_REASON: A14 callback intercept vs A13 after on members A14[(none)] / A13[(none)]. Inner preference reads of system_removecleaner match; intercept proceed-once maps to before returnAndSkip or after side-effect.
+- DIFF_SUMMARY: Shared members (none). Differ: A14 phases intercept vs A13 after; A14 result_assign[null]; chain.proceed[chain.proceed()] vs A13 no result/argument rewrite literals.
+- VALUE_DEFAULT_COMPARISON: both consume system_removecleaner in the owner body or installer gate
+- HOOK_TARGET_COMPARISON: A14=(none); A13=(none)
+- CALLBACK_SEMANTICS_COMPARISON: A14 intercept vs A13 after; skipped paths do not invoke the original, proceed-once equals after side-effect
+- ARG_RESULT_COMPARISON: A14=result_assign[null]; chain.proceed[chain.proceed()]; A13=no result/argument rewrite literals
+- A14_ONLY_BRANCHES: none beyond intercept scaffolding for this owner pair
+- WHY_USER_BEHAVIOR_IS_EQUIVALENT: User-visible contract of system_removecleaner is the same host rewrite; callback adapter and null-safety differ.
+- KEY_OWNERSHIP_EVIDENCE: system_removecleaner: LITERAL_READ and/or INSTALLER_CALLEE in HideMemoryCleanHook/HideMemoryCleanHook
+- A14_KEY_OWNER_REFERENCE: app/src/main/java/tv/withaibuild/customiuizer/mods/System.kt::HideMemoryCleanHook
+- A13_KEY_OWNER_REFERENCE: app/src/main/java/tv/withaibuild/customiuizer/mods/SystemStatusBarAndClockHooks.kt::HideMemoryCleanHook
+- PROOF_CONCLUSION: `PRESENT_A13_VARIANT`
+
+## PROOF_R5F_HideDismissViewHook_system_removedismiss
+
+- PROOF_ID: `PROOF_R5F_HideDismissViewHook_system_removedismiss`
+- BODY_RELATION: `REVIEWED_VARIANT`
+- A14_OWNER_PATH: `app/src/main/java/tv/withaibuild/customiuizer/mods/SystemUINotificationHooks.kt`
+- A14_SYMBOL: `HideDismissViewHook`
+- A14_INSTALLER: `A14 installer/spec gate for system_removedismiss`
+- A14_HOOK_TARGETS: `com.android.systemui.shade.MiuiNotificationPanelViewController#updateDismissView`
+- A14_CALLBACK_PHASE: `before`
+- A13_OWNER_PATH: `app/src/main/java/tv/withaibuild/customiuizer/mods/SystemUINotificationHooks.kt`
+- A13_SYMBOL: `HideDismissViewHook`
+- A13_INSTALLER: `A13 installer gate for system_removedismiss`
+- A13_HOOK_TARGETS: `com.android.systemui.statusbar.phone.MiuiNotificationPanelViewController#updateDismissView`
+- A13_CALLBACK_PHASE: `before`
+- PREFERENCE_KEYS: `system_removedismiss`
+- VALUE_DOMAIN: owner-local preference domain
+- DEFAULT_SEMANTICS: boolean installer gate
+- RESULT/ARGUMENT_BEHAVIOR: Both returnAndSkip(null) after GONE. Original updateDismissView not called.
+- API33_VARIANT_REASON: MiuiNotificationPanelViewController package rename shade vs statusbar.phone.
+- DIFF_SUMMARY: Identical: mDismissView.setVisibility(GONE) then returnAndSkip(null) on updateDismissView. Class statusbar.phone vs shade.
+- VALUE_DEFAULT_COMPARISON: boolean installer gate
+- HOOK_TARGET_COMPARISON: A14=com.android.systemui.shade.MiuiNotificationPanelViewController#updateDismissView; A13=com.android.systemui.statusbar.phone.MiuiNotificationPanelViewController#updateDismissView
+- CALLBACK_SEMANTICS_COMPARISON: Same before skip on both.
+- ARG_RESULT_COMPARISON: Host result null; dismiss view stays GONE.
+- A14_ONLY_BRANCHES: none
+- WHY_USER_BEHAVIOR_IS_EQUIVALENT: Clear-all / dismiss-all button on the notification shade is hidden.
+- KEY_OWNERSHIP_EVIDENCE: system_removedismiss: INSTALLER_CALLEE → HideDismissViewHook; both GONE mDismissView then returnAndSkip
+- A14_KEY_OWNER_REFERENCE: app/src/main/java/tv/withaibuild/customiuizer/mods/SystemUINotificationHooks.kt::HideDismissViewHook
+- A13_KEY_OWNER_REFERENCE: app/src/main/java/tv/withaibuild/customiuizer/mods/SystemUINotificationHooks.kt::HideDismissViewHook
+- PROOF_CONCLUSION: `PRESENT_A13_VARIANT`
+
+## PROOF_R5F_RemoveSecureHook_system_removesecure
+
+- PROOF_ID: `PROOF_R5F_RemoveSecureHook_system_removesecure`
+- BODY_RELATION: `REVIEWED_VARIANT`
+- A14_OWNER_PATH: `app/src/main/java/tv/withaibuild/customiuizer/mods/SystemSecurityHooks.kt`
+- A14_SYMBOL: `RemoveSecureHook`
+- A14_INSTALLER: `SystemServerFeatures.RemoveSecureFeature getBoolean(system_removesecure)`
+- A14_HOOK_TARGETS: `com.android.server.wm.WindowState#isSecureLocked,com.android.server.wm.WindowSurfaceController#setSecure,com.android.server.wm.WindowSurfaceController#<init>,com.android.server.wm.WindowManagerServiceImpl#notAllowCaptureDisplay`
+- A14_CALLBACK_PHASE: `intercept`
+- A13_OWNER_PATH: `app/src/main/java/tv/withaibuild/customiuizer/mods/SystemSecurityAndSystemHooks.kt`
+- A13_SYMBOL: `RemoveSecureHook`
+- A13_INSTALLER: `SystemServerInstaller.java + FeatureCatalog.removeSecure getBoolean(system_removesecure)`
+- A13_HOOK_TARGETS: `com.android.server.wm.WindowState#isSecureLocked,com.android.server.wm.WindowSurfaceController#setSecure,com.android.server.wm.WindowSurfaceController#<init>`
+- A13_CALLBACK_PHASE: `before`
+- PREFERENCE_KEYS: `system_removesecure`
+- VALUE_DOMAIN: owner-local preference domain
+- DEFAULT_SEMANTICS: Boolean default false keeps FLAG_SECURE.
+- RESULT/ARGUMENT_BEHAVIOR: Shared: isSecureLocked false; setSecure(false); ctor flags clear 0x80. A14 extra skip notAllowCaptureDisplay=false.
+- API33_VARIANT_REASON: MIUI14 screenshot/record of secure apps is the WindowState/WindowSurfaceController FLAG_SECURE trio. notAllowCaptureDisplay is HyperOS extra capture gate, not the A13 FLAG_SECURE contract.
+- DIFF_SUMMARY: Shared FLAG_SECURE path matches CatalogContracts.removeSecure: isSecureLocked=false, setSecure arg0=false, constructor flags&=~128. A14 extra WindowManagerServiceImpl.notAllowCaptureDisplay=false.
+- VALUE_DEFAULT_COMPARISON: Boolean default false keeps FLAG_SECURE.
+- HOOK_TARGET_COMPARISON: A14=com.android.server.wm.WindowState#isSecureLocked,com.android.server.wm.WindowSurfaceController#setSecure,com.android.server.wm.WindowSurfaceController#<init>,com.android.server.wm.WindowManagerServiceImpl#notAllowCaptureDisplay; A13=com.android.server.wm.WindowState#isSecureLocked,com.android.server.wm.WindowSurfaceController#setSecure,com.android.server.wm.WindowSurfaceController#<init>
+- CALLBACK_SEMANTICS_COMPARISON: A14 intercept proceed with rewritten args; A13 before arg rewrite / returnConstant. Constructor both rewrite flags then proceed/continue.
+- ARG_RESULT_COMPARISON: A14 result_assign[null,null,false,null]; A13 no result literals (constant false + arg writes). Same FLAG_SECURE rewrite.
+- A14_ONLY_BRANCHES: WindowManagerServiceImpl.notAllowCaptureDisplay constant false.
+- WHY_USER_BEHAVIOR_IS_EQUIVALENT: Secure-content protection is stripped on the same three WindowManager members. User-visible screenshot/record of FLAG_SECURE apps on MIUI14 matches.
+- KEY_OWNERSHIP_EVIDENCE: Installer/catalog getBoolean(system_removesecure).
+- A14_KEY_OWNER_REFERENCE: app/src/main/java/tv/withaibuild/customiuizer/mods/SystemSecurityHooks.kt::RemoveSecureHook
+- A13_KEY_OWNER_REFERENCE: app/src/main/java/tv/withaibuild/customiuizer/mods/SystemSecurityAndSystemHooks.kt::RemoveSecureHook
+- PROOF_CONCLUSION: `PRESENT_A13_VARIANT`
+
+## PROOF_R5_ResizableWidgetsHook_system_resizablewidgets
+
+- PROOF_ID: `PROOF_R5_ResizableWidgetsHook_system_resizablewidgets`
+- BODY_RELATION: `REVIEWED_VARIANT`
+- A14_OWNER_PATH: `app/src/main/java/tv/withaibuild/customiuizer/mods/LauncherLayoutHooks.kt`
+- A14_SYMBOL: `ResizableWidgetsHook`
+- A14_INSTALLER: `A14 installer/spec gate for system_resizablewidgets`
+- A14_HOOK_TARGETS: `android.appwidget.AppWidgetHostView#getAppWidgetInfo`
+- A14_CALLBACK_PHASE: `intercept`
+- A13_OWNER_PATH: `app/src/main/java/tv/withaibuild/customiuizer/mods/LauncherLayoutHooks.kt`
+- A13_SYMBOL: `ResizableWidgetsHook`
+- A13_INSTALLER: `A13 installer gate for system_resizablewidgets`
+- A13_HOOK_TARGETS: `android.appwidget.AppWidgetHostView#getAppWidgetInfo`
+- A13_CALLBACK_PHASE: `after`
+- PREFERENCE_KEYS: `system_resizablewidgets`
+- VALUE_DOMAIN: owner-local preference domain
+- DEFAULT_SEMANTICS: same persisted keys consumed by both owners
+- RESULT/ARGUMENT_BEHAVIOR: A14 ops: result_assign[null]; chain.proceed[chain.proceed()]. A13 ops: setResult[widgetInfo]. Keys system_resizablewidgets rewrite the same host members.
+- API33_VARIANT_REASON: A14 callback intercept vs A13 after on members A14[android.appwidget.AppWidgetHostView#getAppWidgetInfo] / A13[android.appwidget.AppWidgetHostView#getAppWidgetInfo]. Inner preference reads of system_resizablewidgets match; intercept proceed-once maps to before returnAndSkip or after side-effect.
+- DIFF_SUMMARY: Shared members android.appwidget.AppWidgetHostView#getAppWidgetInfo. Differ: A14 phases intercept vs A13 after; A14 result_assign[null]; chain.proceed[chain.proceed()] vs A13 setResult[widgetInfo].
+- VALUE_DEFAULT_COMPARISON: both consume system_resizablewidgets in the owner body or installer gate
+- HOOK_TARGET_COMPARISON: A14=android.appwidget.AppWidgetHostView#getAppWidgetInfo; A13=android.appwidget.AppWidgetHostView#getAppWidgetInfo
+- CALLBACK_SEMANTICS_COMPARISON: A14 intercept vs A13 after; skipped paths do not invoke the original, proceed-once equals after side-effect
+- ARG_RESULT_COMPARISON: A14=result_assign[null]; chain.proceed[chain.proceed()]; A13=setResult[widgetInfo]
+- A14_ONLY_BRANCHES: none beyond intercept scaffolding for this owner pair
+- WHY_USER_BEHAVIOR_IS_EQUIVALENT: User-visible contract of system_resizablewidgets is the same host rewrite; callback adapter and null-safety differ.
+- KEY_OWNERSHIP_EVIDENCE: system_resizablewidgets: LITERAL_READ and/or INSTALLER_CALLEE in ResizableWidgetsHook/ResizableWidgetsHook
+- A14_KEY_OWNER_REFERENCE: app/src/main/java/tv/withaibuild/customiuizer/mods/LauncherLayoutHooks.kt::ResizableWidgetsHook
+- A13_KEY_OWNER_REFERENCE: app/src/main/java/tv/withaibuild/customiuizer/mods/LauncherLayoutHooks.kt::ResizableWidgetsHook
+- PROOF_CONCLUSION: `PRESENT_A13_VARIANT`
+
+## PROOF_R5_ScramblePINHook_system_scramblepin
+
+- PROOF_ID: `PROOF_R5_ScramblePINHook_system_scramblepin`
+- BODY_RELATION: `REVIEWED_VARIANT`
+- A14_OWNER_PATH: `app/src/main/java/tv/withaibuild/customiuizer/mods/SystemLockScreenHooks.kt`
+- A14_SYMBOL: `ScramblePINHook`
+- A14_INSTALLER: `A14 installer/spec gate for system_scramblepin`
+- A14_HOOK_TARGETS: `com.android.keyguard.KeyguardPINView#onFinishInflate`
+- A14_CALLBACK_PHASE: `intercept`
+- A13_OWNER_PATH: `app/src/main/java/tv/withaibuild/customiuizer/mods/SystemLockScreenHooks.kt`
+- A13_SYMBOL: `ScramblePINHook`
+- A13_INSTALLER: `A13 installer gate for system_scramblepin`
+- A13_HOOK_TARGETS: `com.android.keyguard.KeyguardPINView#onFinishInflate`
+- A13_CALLBACK_PHASE: `after`
+- PREFERENCE_KEYS: `system_scramblepin`
+- VALUE_DOMAIN: owner-local preference domain
+- DEFAULT_SEMANTICS: same persisted keys consumed by both owners
+- RESULT/ARGUMENT_BEHAVIOR: A14 ops: result_assign[null]; chain.proceed[chain.proceed()]. A13 ops: no result/argument rewrite literals. Keys system_scramblepin rewrite the same host members.
+- API33_VARIANT_REASON: A14 callback intercept vs A13 after on members A14[com.android.keyguard.KeyguardPINView#onFinishInflate] / A13[com.android.keyguard.KeyguardPINView#onFinishInflate]. Inner preference reads of system_scramblepin match; intercept proceed-once maps to before returnAndSkip or after side-effect.
+- DIFF_SUMMARY: Shared members com.android.keyguard.KeyguardPINView#onFinishInflate. Differ: A14 phases intercept vs A13 after; A14 result_assign[null]; chain.proceed[chain.proceed()] vs A13 no result/argument rewrite literals.
+- VALUE_DEFAULT_COMPARISON: both consume system_scramblepin in the owner body or installer gate
+- HOOK_TARGET_COMPARISON: A14=com.android.keyguard.KeyguardPINView#onFinishInflate; A13=com.android.keyguard.KeyguardPINView#onFinishInflate
+- CALLBACK_SEMANTICS_COMPARISON: A14 intercept vs A13 after; skipped paths do not invoke the original, proceed-once equals after side-effect
+- ARG_RESULT_COMPARISON: A14=result_assign[null]; chain.proceed[chain.proceed()]; A13=no result/argument rewrite literals
+- A14_ONLY_BRANCHES: none beyond intercept scaffolding for this owner pair
+- WHY_USER_BEHAVIOR_IS_EQUIVALENT: User-visible contract of system_scramblepin is the same host rewrite; callback adapter and null-safety differ.
+- KEY_OWNERSHIP_EVIDENCE: system_scramblepin: LITERAL_READ and/or INSTALLER_CALLEE in ScramblePINHook/ScramblePINHook
+- A14_KEY_OWNER_REFERENCE: app/src/main/java/tv/withaibuild/customiuizer/mods/SystemLockScreenHooks.kt::ScramblePINHook
+- A13_KEY_OWNER_REFERENCE: app/src/main/java/tv/withaibuild/customiuizer/mods/SystemLockScreenHooks.kt::ScramblePINHook
+- PROOF_CONCLUSION: `PRESENT_A13_VARIANT`
+
+## PROOF_R5F_ScreenAnimHook_system_screenanim_duration
+
+- PROOF_ID: `PROOF_R5F_ScreenAnimHook_system_screenanim_duration`
+- BODY_RELATION: `REVIEWED_VARIANT`
+- A14_OWNER_PATH: `app/src/main/java/tv/withaibuild/customiuizer/mods/SystemDisplayHooks.kt`
+- A14_SYMBOL: `ScreenAnimHook`
+- A14_INSTALLER: `A14 installer/spec gate for system_screenanim_duration`
+- A14_HOOK_TARGETS: `com.android.server.display.DisplayPowerController#initialize`
+- A14_CALLBACK_PHASE: `intercept`
+- A13_OWNER_PATH: `app/src/main/java/tv/withaibuild/customiuizer/mods/SystemDisplayAndWindowHooks.kt`
+- A13_SYMBOL: `ScreenAnimHook`
+- A13_INSTALLER: `A13 installer gate for system_screenanim_duration`
+- A13_HOOK_TARGETS: `com.android.server.display.DisplayPowerController#initialize`
+- A13_CALLBACK_PHASE: `before,after`
+- PREFERENCE_KEYS: `system_screenanim_duration`
+- VALUE_DOMAIN: owner-local preference domain
+- DEFAULT_SEMANTICS: getInt(...,0) then if 0 use 250 on both
+- RESULT/ARGUMENT_BEHAVIOR: No result rewrite; field/animator duration writes.
+- API33_VARIANT_REASON: A14 intercept wraps before-set + proceed + after-set; A13 splits before/after.
+- DIFF_SUMMARY: Both force mColorFadeEnabled/mColorFadeFadesConfig true then set fade-off duration (0→250). Observer refreshes duration.
+- VALUE_DEFAULT_COMPARISON: getInt(...,0) then if 0 use 250 on both
+- HOOK_TARGET_COMPARISON: A14=com.android.server.display.DisplayPowerController#initialize; A13=com.android.server.display.DisplayPowerController#initialize
+- CALLBACK_SEMANTICS_COMPARISON: A14 intercept proceed-once ≡ A13 before fields + after duration.
+- ARG_RESULT_COMPARISON: Host initialize result unchanged.
+- A14_ONLY_BRANCHES: none
+- WHY_USER_BEHAVIOR_IS_EQUIVALENT: Screen-off color-fade length is the seekbar in ms (0 means 250).
+- KEY_OWNERSHIP_EVIDENCE: system_screenanim_duration: LITERAL_READ; both set mColorFadeOffAnimator.duration and observe the key
+- A14_KEY_OWNER_REFERENCE: app/src/main/java/tv/withaibuild/customiuizer/mods/SystemDisplayHooks.kt::ScreenAnimHook
+- A13_KEY_OWNER_REFERENCE: app/src/main/java/tv/withaibuild/customiuizer/mods/SystemDisplayAndWindowHooks.kt::ScreenAnimHook
+- PROOF_CONCLUSION: `PRESENT_A13_VARIANT`
+
+## PROOF_R5F_ScreenshotConfigHook_system_screenshot
+
+- PROOF_ID: `PROOF_R5F_ScreenshotConfigHook_system_screenshot`
+- BODY_RELATION: `REVIEWED_VARIANT`
+- A14_OWNER_PATH: `app/src/main/java/tv/withaibuild/customiuizer/mods/System.kt`
+- A14_SYMBOL: `ScreenshotConfigHook`
+- A14_INSTALLER: `A14 installer/spec gate for system_screenshot,system_screenshot_format,system_screenshot_mypath,system_screenshot_path,system_screenshot_quality`
+- A14_HOOK_TARGETS: `android.content.ContentResolver#update,ContentResolver#insert,DexKit FindMethod usingStrings(saveBitmapToUri: external storage),android.graphics.Bitmap#compress`
+- A14_CALLBACK_PHASE: `intercept`
+- A13_OWNER_PATH: `app/src/main/java/tv/withaibuild/customiuizer/mods/SystemAudioAndVisualAndMoreHooks.kt`
+- A13_SYMBOL: `ScreenshotConfigHook`
+- A13_INSTALLER: `A13 installer gate for system_screenshot,system_screenshot_format,system_screenshot_mypath,system_screenshot_path,system_screenshot_quality`
+- A13_HOOK_TARGETS: `android.content.ContentResolver#update,ContentResolver#insert,com.miui.screenshot.MiuiScreenshotApplication#attachBaseContext,com.miui.screenshot.u0.f$a#a,com.miui.screenshot.x0.e$a#a,android.graphics.Bitmap#compress`
+- A13_CALLBACK_PHASE: `before,after`
+- PREFERENCE_KEYS: `system_screenshot,system_screenshot_format,system_screenshot_mypath,system_screenshot_path,system_screenshot_quality`
+- VALUE_DOMAIN: owner-local preference domain
+- DEFAULT_SEMANTICS: format default 2 (jpeg); quality default 100; path default 1
+- RESULT/ARGUMENT_BEHAVIOR: ContentValues/_display_name and Bitmap.compress args rewritten; format>2 compress format injected into screenshot saver.
+- API33_VARIANT_REASON: JPEG/path/quality are ContentResolver + Bitmap.compress on both. format>2 host lookup is MIUI screenshot obfuscation vs HyperOS DexKit, not a missing JPEG contract.
+- DIFF_SUMMARY: Shared MediaStore ContentResolver insert/update _display_name/path rewrite and Bitmap.compress quality. format>2 (PNG/WEBP) uses A13 versionCode-gated obfuscated com.miui.screenshot u0.f$a#a / x0.e$a#a vs A14 DexKit saveBitmapToUri. JPEG/path/quality do not require DexKit.
+- VALUE_DEFAULT_COMPARISON: format default 2 (jpeg); quality default 100; path default 1
+- HOOK_TARGET_COMPARISON: A14=android.content.ContentResolver#update,ContentResolver#insert,DexKit FindMethod usingStrings(saveBitmapToUri: external storage),android.graphics.Bitmap#compress; A13=android.content.ContentResolver#update,ContentResolver#insert,com.miui.screenshot.MiuiScreenshotApplication#attachBaseContext,com.miui.screenshot.u0.f$a#a,com.miui.screenshot.x0.e$a#a,android.graphics.Bitmap#compress
+- CALLBACK_SEMANTICS_COMPARISON: A14 intercept proceed vs A13 before; DexKit/obfuscated hooks are extra format>2 paths.
+- ARG_RESULT_COMPARISON: Shared ContentResolver/Bitmap.compress rewrites; format>2 host members not portable.
+- A14_ONLY_BRANCHES: DexKit FindMethod usingStrings(saveBitmapToUri: external storage) for format>2
+- WHY_USER_BEHAVIOR_IS_EQUIVALENT: Screenshot format/path/quality still rewrite MediaStore names and Bitmap.compress. PNG/WEBP is an extra saver-class lookup that A13 already has via version-gated screenshot classes.
+- KEY_OWNERSHIP_EVIDENCE: system_screenshot_format/path/mypath/quality: LITERAL_READ in both ContentResolver/Bitmap.compress paths
+- A14_KEY_OWNER_REFERENCE: app/src/main/java/tv/withaibuild/customiuizer/mods/System.kt::ScreenshotConfigHook
+- A13_KEY_OWNER_REFERENCE: app/src/main/java/tv/withaibuild/customiuizer/mods/SystemAudioAndVisualAndMoreHooks.kt::ScreenshotConfigHook
+- PROOF_CONCLUSION: `PRESENT_A13_VARIANT`
+
+## PROOF_R5_TempHideOverlaySystemUIHook_system_screenshot_overlay
+
+- PROOF_ID: `PROOF_R5_TempHideOverlaySystemUIHook_system_screenshot_overlay`
+- BODY_RELATION: `REVIEWED_VARIANT`
+- A14_OWNER_PATH: `app/src/main/java/tv/withaibuild/customiuizer/mods/SystemUIScreenshotHooks.kt`
+- A14_SYMBOL: `TempHideOverlaySystemUIHook`
+- A14_INSTALLER: `A14 installer/spec gate for system_screenshot_overlay`
+- A14_HOOK_TARGETS: `com.android.wm.shell.pip.PipTaskOrganizer#onTaskAppeared`
+- A14_CALLBACK_PHASE: `after`
+- A13_OWNER_PATH: `app/src/main/java/tv/withaibuild/customiuizer/mods/SystemUIScreenshotHooks.kt`
+- A13_SYMBOL: `TempHideOverlaySystemUIHook`
+- A13_INSTALLER: `A13 installer gate for system_screenshot_overlay`
+- A13_HOOK_TARGETS: `com.android.wm.shell.pip.PipTaskOrganizer#onTaskAppeared`
+- A13_CALLBACK_PHASE: `after`
+- PREFERENCE_KEYS: `system_screenshot_overlay`
+- VALUE_DOMAIN: owner-local preference domain
+- DEFAULT_SEMANTICS: same persisted keys consumed by both owners
+- RESULT/ARGUMENT_BEHAVIOR: A14 ops: no result/argument rewrite literals. A13 ops: no result/argument rewrite literals. Keys system_screenshot_overlay rewrite the same host members.
+- API33_VARIANT_REASON: A14 callback after vs A13 after on members A14[com.android.wm.shell.pip.PipTaskOrganizer#onTaskAppeared] / A13[com.android.wm.shell.pip.PipTaskOrganizer#onTaskAppeared]. Inner preference reads of system_screenshot_overlay match; intercept proceed-once maps to before returnAndSkip or after side-effect.
+- DIFF_SUMMARY: Shared members com.android.wm.shell.pip.PipTaskOrganizer#onTaskAppeared. Differ: A14 phases after vs A13 after; A14 no result/argument rewrite literals vs A13 no result/argument rewrite literals.
+- VALUE_DEFAULT_COMPARISON: both consume system_screenshot_overlay in the owner body or installer gate
+- HOOK_TARGET_COMPARISON: A14=com.android.wm.shell.pip.PipTaskOrganizer#onTaskAppeared; A13=com.android.wm.shell.pip.PipTaskOrganizer#onTaskAppeared
+- CALLBACK_SEMANTICS_COMPARISON: A14 after vs A13 after; skipped paths do not invoke the original, proceed-once equals after side-effect
+- ARG_RESULT_COMPARISON: A14=no result/argument rewrite literals; A13=no result/argument rewrite literals
+- A14_ONLY_BRANCHES: none beyond intercept scaffolding for this owner pair
+- WHY_USER_BEHAVIOR_IS_EQUIVALENT: User-visible contract of system_screenshot_overlay is the same host rewrite; callback adapter and null-safety differ.
+- KEY_OWNERSHIP_EVIDENCE: system_screenshot_overlay: LITERAL_READ and/or INSTALLER_CALLEE in TempHideOverlaySystemUIHook/TempHideOverlaySystemUIHook
+- A14_KEY_OWNER_REFERENCE: app/src/main/java/tv/withaibuild/customiuizer/mods/SystemUIScreenshotHooks.kt::TempHideOverlaySystemUIHook
+- A13_KEY_OWNER_REFERENCE: app/src/main/java/tv/withaibuild/customiuizer/mods/SystemUIScreenshotHooks.kt::TempHideOverlaySystemUIHook
+- PROOF_CONCLUSION: `PRESENT_A13_VARIANT`
+
+## PROOF_R5F_EnhancedSecurityHook_system_securelock
+
+- PROOF_ID: `PROOF_R5F_EnhancedSecurityHook_system_securelock`
+- BODY_RELATION: `REVIEWED_VARIANT`
+- A14_OWNER_PATH: `app/src/main/java/tv/withaibuild/customiuizer/mods/SystemLockScreenHooks.kt`
+- A14_SYMBOL: `EnhancedSecurityHook`
+- A14_INSTALLER: `A14 installer/spec gate for system_securelock`
+- A14_HOOK_TARGETS: `com.android.server.policy.PhoneWindowManager#interceptPowerKeyDown,PhoneWindowManager#powerLongPress,PhoneWindowManager#showGlobalActions,PhoneWindowManager#showGlobalActionsInternal`
+- A14_CALLBACK_PHASE: `intercept`
+- A13_OWNER_PATH: `app/src/main/java/tv/withaibuild/customiuizer/mods/SystemLockScreenHooks.kt`
+- A13_SYMBOL: `EnhancedSecurityHook`
+- A13_INSTALLER: `A13 installer gate for system_securelock`
+- A13_HOOK_TARGETS: `com.android.server.policy.PhoneWindowManager#interceptPowerKeyDown,PhoneWindowManager#powerLongPress,PhoneWindowManager#showGlobalActions,PhoneWindowManager#showGlobalActionsInternal`
+- A13_CALLBACK_PHASE: `after,before`
+- PREFERENCE_KEYS: `system_securelock`
+- VALUE_DOMAIN: owner-local preference domain
+- DEFAULT_SEMANTICS: boolean installer gate
+- RESULT/ARGUMENT_BEHAVIOR: A13 after side-effect on interceptPowerKeyDown; before returnAndSkip(null) on long-press/global actions. A14 proceed-once then removeCallbacks; skip result=null on preventPowerHook.
+- API33_VARIANT_REASON: Callback adapter intercept vs after/before; A14 findAndHookMethod vs A13 hookAllMethodsSilently.
+- DIFF_SUMMARY: Same four PWM members. If keyguard locked+secure: removeCallbacks(mEndCallLongPress) after interceptPowerKeyDown; skip powerLongPress/showGlobalActions/Internal.
+- VALUE_DEFAULT_COMPARISON: boolean installer gate
+- HOOK_TARGET_COMPARISON: A14=com.android.server.policy.PhoneWindowManager#interceptPowerKeyDown,PhoneWindowManager#powerLongPress,PhoneWindowManager#showGlobalActions,PhoneWindowManager#showGlobalActionsInternal; A13=com.android.server.policy.PhoneWindowManager#interceptPowerKeyDown,PhoneWindowManager#powerLongPress,PhoneWindowManager#showGlobalActions,PhoneWindowManager#showGlobalActionsInternal
+- CALLBACK_SEMANTICS_COMPARISON: A14 intercept skip ≡ A13 before returnAndSkip; proceed-once ≡ after.
+- ARG_RESULT_COMPARISON: Skipped global-actions result null on both.
+- A14_ONLY_BRANCHES: none (scanner-only target mismatch)
+- WHY_USER_BEHAVIOR_IS_EQUIVALENT: Secure lockscreen blocks power-menu / long-press power while the device is locked.
+- KEY_OWNERSHIP_EVIDENCE: system_securelock: INSTALLER_CALLEE → EnhancedSecurityHook (A13 hookAllMethodsSilently; scanner missed interceptPowerKeyDown/powerLongPress)
+- A14_KEY_OWNER_REFERENCE: app/src/main/java/tv/withaibuild/customiuizer/mods/SystemLockScreenHooks.kt::EnhancedSecurityHook
+- A13_KEY_OWNER_REFERENCE: app/src/main/java/tv/withaibuild/customiuizer/mods/SystemLockScreenHooks.kt::EnhancedSecurityHook
+- PROOF_CONCLUSION: `PRESENT_A13_VARIANT`
+
+## PROOF_R5F_SecureQSTilesHook_system_secureqs
+
+- PROOF_ID: `PROOF_R5F_SecureQSTilesHook_system_secureqs`
+- BODY_RELATION: `REVIEWED_VARIANT`
+- A14_OWNER_PATH: `app/src/main/java/tv/withaibuild/customiuizer/mods/SystemUIControlCenterHooks.kt`
+- A14_SYMBOL: `SecureQSTilesHook`
+- A14_INSTALLER: `A14 installer/spec gate for system_secureqs,system_secureqs_keepopened`
+- A14_HOOK_TARGETS: `com.android.systemui.qs.tileimpl.QSTileImpl#click,QSTileImpl#longClick,QSTileImpl#secondaryClick`
+- A14_CALLBACK_PHASE: `before`
+- A13_OWNER_PATH: `app/src/main/java/tv/withaibuild/customiuizer/mods/SystemUILockScreenHooks.kt`
+- A13_SYMBOL: `SecureQSTilesHook`
+- A13_INSTALLER: `A13 installer gate for system_secureqs,system_secureqs_keepopened`
+- A13_HOOK_TARGETS: `com.android.systemui.qs.tileimpl.MiuiQSFactory#createTileInternal,tile#handleClick,QSTileHost#<init>`
+- A13_CALLBACK_PHASE: `after,before`
+- PREFERENCE_KEYS: `system_secureqs,system_secureqs_keepopened`
+- VALUE_DOMAIN: owner-local preference domain
+- DEFAULT_SEMANTICS: per-tile booleans default false; keepopened boolean; A13 extra edit tile key
+- RESULT/ARGUMENT_BEHAVIOR: Both returnAndSkip(null) when locked+secure and tile is marked secure. After-unlock path invokes original handleClick/click.
+- API33_VARIANT_REASON: MIUI14 per-tile handleClick + ControlCenter collapse vs HyperOS QSTileImpl.click family.
+- DIFF_SUMMARY: Both require secure keyguard before selected QS tiles run. A13 MiuiQSFactory.createTileInternal then handleClick returnAndSkip, postQSRunnableDismissingKeyguard, HandleQSTileClick broadcast. A14 QSTileImpl.click/longClick/secondaryClick returnAndSkip then ActivityStarter.postQSRunnableDismissingKeyguard.
+- VALUE_DEFAULT_COMPARISON: per-tile booleans default false; keepopened boolean; A13 extra edit tile key
+- HOOK_TARGET_COMPARISON: A14=com.android.systemui.qs.tileimpl.QSTileImpl#click,QSTileImpl#longClick,QSTileImpl#secondaryClick; A13=com.android.systemui.qs.tileimpl.MiuiQSFactory#createTileInternal,tile#handleClick,QSTileHost#<init>
+- CALLBACK_SEMANTICS_COMPARISON: A14 before skip ≡ A13 before returnAndSkip on handleClick. A13 after on createTileInternal only installs the click hook.
+- ARG_RESULT_COMPARISON: Skipped click result null; original tile click not run until after unlock.
+- A14_ONLY_BRANCHES: none for the per-tile booleans (present on A13 via isSecureTile). A14 also hooks longClick/secondaryClick on QSTileImpl; A13 handleSecondaryClick silently.
+- WHY_USER_BEHAVIOR_IS_EQUIVALENT: Secure-marked QS tiles (wifi/bt/cell/airplane/gps/hotspot/nfc/sync/custom) dismiss keyguard before toggling; keepopened re-expands CC/settings after unlock.
+- KEY_OWNERSHIP_EVIDENCE: system_secureqs_keepopened: LITERAL_READ in both. Per-tile keys system_secureqs_{wifi,bt,mobiledata,airplane,location,hotspot,nfc,sync,custom} are LITERAL_READ in A13 isSecureTile() and A14 clickHook (scanner keys_only14 is false-positive). A13 also system_secureqs_edit.
+- A14_KEY_OWNER_REFERENCE: app/src/main/java/tv/withaibuild/customiuizer/mods/SystemUIControlCenterHooks.kt::SecureQSTilesHook
+- A13_KEY_OWNER_REFERENCE: app/src/main/java/tv/withaibuild/customiuizer/mods/SystemUILockScreenHooks.kt::SecureQSTilesHook
+- PROOF_CONCLUSION: `PRESENT_A13_VARIANT`
+
+## PROOF_R5X_SECUREQS_TILES
+
+- PROOF_ID: `PROOF_R5X_SECUREQS_TILES`
+- BODY_RELATION: `REVIEWED_VARIANT`
+- A14_OWNER_PATH: `app/src/main/java/tv/withaibuild/customiuizer/mods/SystemUIControlCenterHooks.kt`
+- A14_SYMBOL: `SecureQSTilesHook`
+- A14_INSTALLER: `A14 installer/spec gate for system_secureqs_wifi,system_secureqs_bt,system_secureqs_mobiledata,system_secureqs_airplane,system_secureqs_location,system_secureqs_hotspot,system_secureqs_nfc,system_secureqs_sync,system_secureqs_custom`
+- A14_HOOK_TARGETS: `QSTileImpl#click`
+- A14_CALLBACK_PHASE: `n/a`
+- A13_OWNER_PATH: `app/src/main/java/tv/withaibuild/customiuizer/mods/SystemUILockScreenHooks.kt`
+- A13_SYMBOL: `isSecureTile`
+- A13_INSTALLER: `A13 installer gate for system_secureqs_wifi,system_secureqs_bt,system_secureqs_mobiledata,system_secureqs_airplane,system_secureqs_location,system_secureqs_hotspot,system_secureqs_nfc,system_secureqs_sync,system_secureqs_custom`
+- A13_HOOK_TARGETS: `MiuiQSFactory#createTileInternal / tile#handleClick`
+- A13_CALLBACK_PHASE: `n/a`
+- PREFERENCE_KEYS: `system_secureqs_wifi,system_secureqs_bt,system_secureqs_mobiledata,system_secureqs_airplane,system_secureqs_location,system_secureqs_hotspot,system_secureqs_nfc,system_secureqs_sync,system_secureqs_custom`
+- VALUE_DOMAIN: owner-local preference domain
+- DEFAULT_SEMANTICS: Each tile boolean default false.
+- RESULT/ARGUMENT_BEHAVIOR: returnAndSkip until unlock then original click.
+- API33_VARIANT_REASON: Same per-tile booleans. Host click member is MIUI14 handleClick vs HyperOS QSTileImpl.click.
+- DIFF_SUMMARY: Per-tile booleans select which QS tiles require unlock. Scanner missed them because A13 maps via isSecureTile() not a *Hook named after each key.
+- VALUE_DEFAULT_COMPARISON: Each tile boolean default false.
+- HOOK_TARGET_COMPARISON: A14=QSTileImpl#click; A13=MiuiQSFactory#createTileInternal / tile#handleClick
+- CALLBACK_SEMANTICS_COMPARISON: before skip when locked+secure.
+- ARG_RESULT_COMPARISON: Skipped click result null.
+- A14_ONLY_BRANCHES: longClick/secondaryClick on QSTileImpl
+- WHY_USER_BEHAVIOR_IS_EQUIVALENT: Wifi/bt/cell/airplane/gps/hotspot/nfc/sync/custom tiles still wait for unlock when marked secure.
+- KEY_OWNERSHIP_EVIDENCE: Each system_secureqs_* boolean is LITERAL_READ in A13 isSecureTile() and A14 SecureQSTilesHook click path. Parent system_secureqs/keepopened already reviewed.
+- A14_KEY_OWNER_REFERENCE: app/src/main/java/tv/withaibuild/customiuizer/mods/SystemUIControlCenterHooks.kt::SecureQSTilesHook
+- A13_KEY_OWNER_REFERENCE: app/src/main/java/tv/withaibuild/customiuizer/mods/SystemUILockScreenHooks.kt::isSecureTile
+- PROOF_CONCLUSION: `PRESENT_A13_VARIANT`
+
+## PROOF_R5F_BrightnessPctHook_system_showpct
+
+- PROOF_ID: `PROOF_R5F_BrightnessPctHook_system_showpct`
+- BODY_RELATION: `REVIEWED_VARIANT`
+- A14_OWNER_PATH: `app/src/main/java/tv/withaibuild/customiuizer/mods/SystemUIControlCenterHooks.kt`
+- A14_SYMBOL: `BrightnessPctHook`
+- A14_INSTALLER: `A14 installer/spec gate for system_showpct`
+- A14_HOOK_TARGETS: `com.android.systemui.controlcenter.policy.MiuiBrightnessController#onStart,com.android.systemui.controlcenter.policy.MiuiBrightnessController#setToggleSliderBase,com.android.systemui.controlcenter.policy.MiuiBrightnessController#onStop,com.android.systemui.controlcenter.policy.MiuiBrightnessController#onChanged,#onStartTrackingTouch`
+- A14_CALLBACK_PHASE: `before,after`
+- A13_OWNER_PATH: `app/src/main/java/tv/withaibuild/customiuizer/mods/SystemUIControlCenterHooks.kt`
+- A13_SYMBOL: `BrightnessPctHook`
+- A13_INSTALLER: `A13 installer gate for system_showpct`
+- A13_HOOK_TARGETS: `com.android.systemui.statusbar.policy.BrightnessMirrorController#showMirror,com.android.systemui.statusbar.policy.BrightnessMirrorController#hideMirror,com.android.systemui.controlcenter.policy.MiuiBrightnessController#onStart,com.android.systemui.controlcenter.policy.MiuiBrightnessController#onStop,com.android.systemui.controlcenter.policy.MiuiBrightnessController#onChanged`
+- A13_CALLBACK_PHASE: `after,before`
+- PREFERENCE_KEYS: `system_showpct`
+- VALUE_DOMAIN: owner-local preference domain
+- DEFAULT_SEMANTICS: Boolean master; system_showpct_top default 28 used by A13 initPct.
+- RESULT/ARGUMENT_BEHAVIOR: No result rewrite; view add/remove.
+- API33_VARIANT_REASON: MIUI14 still has BrightnessMirrorController in statusbar.policy; HyperOS tracking attaches via setToggleSliderBase.
+- DIFF_SUMMARY: A13 extra BrightnessMirrorController#showMirror/hideMirror for MIUI14 shade mirror. A14 extra setToggleSliderBase + onStartTrackingTouch for HyperOS slider attach.
+- VALUE_DEFAULT_COMPARISON: Boolean master; system_showpct_top default 28 used by A13 initPct.
+- HOOK_TARGET_COMPARISON: A14=com.android.systemui.controlcenter.policy.MiuiBrightnessController#onStart,com.android.systemui.controlcenter.policy.MiuiBrightnessController#setToggleSliderBase,com.android.systemui.controlcenter.policy.MiuiBrightnessController#onStop,com.android.systemui.controlcenter.policy.MiuiBrightnessController#onChanged,#onStartTrackingTouch; A13=com.android.systemui.statusbar.policy.BrightnessMirrorController#showMirror,com.android.systemui.statusbar.policy.BrightnessMirrorController#hideMirror,com.android.systemui.controlcenter.policy.MiuiBrightnessController#onStart,com.android.systemui.controlcenter.policy.MiuiBrightnessController#onStop,com.android.systemui.controlcenter.policy.MiuiBrightnessController#onChanged
+- CALLBACK_SEMANTICS_COMPARISON: Both after show / before-after onStart/onStop/onChanged.
+- ARG_RESULT_COMPARISON: No arg/result rewrite.
+- A14_ONLY_BRANCHES: setToggleSliderBase,onStartTrackingTouch
+- WHY_USER_BEHAVIOR_IS_EQUIVALENT: Dragging brightness still shows a large percent overlay and removes it on stop.
+- KEY_OWNERSHIP_EVIDENCE: Installer-gated by system_showpct; both overlay a percent TextView while brightness tracking.
+- A14_KEY_OWNER_REFERENCE: app/src/main/java/tv/withaibuild/customiuizer/mods/SystemUIControlCenterHooks.kt::BrightnessPctHook
+- A13_KEY_OWNER_REFERENCE: app/src/main/java/tv/withaibuild/customiuizer/mods/SystemUIControlCenterHooks.kt::BrightnessPctHook
+- PROOF_CONCLUSION: `PRESENT_A13_VARIANT`
+
+## PROOF_R5_initPct_system_showpct_top
+
+- PROOF_ID: `PROOF_R5_initPct_system_showpct_top`
+- BODY_RELATION: `REVIEWED_VARIANT`
+- A14_OWNER_PATH: `app/src/main/java/tv/withaibuild/customiuizer/mods/SystemUIControlCenterHooks.kt`
+- A14_SYMBOL: `applyPctTopMargin`
+- A14_INSTALLER: `A14 installer/spec gate for system_showpct_top`
+- A14_HOOK_TARGETS: `(no host member literals)`
+- A14_CALLBACK_PHASE: `unknown`
+- A13_OWNER_PATH: `app/src/main/java/tv/withaibuild/customiuizer/mods/SystemUIControlCenterHooks.kt`
+- A13_SYMBOL: `initPct`
+- A13_INSTALLER: `A13 installer gate for system_showpct_top`
+- A13_HOOK_TARGETS: `(no host member literals)`
+- A13_CALLBACK_PHASE: `unknown`
+- PREFERENCE_KEYS: `system_showpct_top`
+- VALUE_DOMAIN: owner-local preference domain
+- DEFAULT_SEMANTICS: same persisted keys consumed by both owners
+- RESULT/ARGUMENT_BEHAVIOR: A14 ops: no result/argument rewrite literals. A13 ops: no result/argument rewrite literals. Keys system_showpct_top rewrite the same host members.
+- API33_VARIANT_REASON: A14 callback unknown vs A13 unknown on members A14[(none)] / A13[(none)]. Inner preference reads of system_showpct_top match; intercept proceed-once maps to before returnAndSkip or after side-effect.
+- DIFF_SUMMARY: Shared members (none). Differ: A14 phases unknown vs A13 unknown; A14 no result/argument rewrite literals vs A13 no result/argument rewrite literals.
+- VALUE_DEFAULT_COMPARISON: both consume system_showpct_top in the owner body or installer gate
+- HOOK_TARGET_COMPARISON: A14=(none); A13=(none)
+- CALLBACK_SEMANTICS_COMPARISON: A14 unknown vs A13 unknown; skipped paths do not invoke the original, proceed-once equals after side-effect
+- ARG_RESULT_COMPARISON: A14=no result/argument rewrite literals; A13=no result/argument rewrite literals
+- A14_ONLY_BRANCHES: none beyond intercept scaffolding for this owner pair
+- WHY_USER_BEHAVIOR_IS_EQUIVALENT: User-visible contract of system_showpct_top is the same host rewrite; callback adapter and null-safety differ.
+- KEY_OWNERSHIP_EVIDENCE: system_showpct_top: LITERAL_READ and/or INSTALLER_CALLEE in applyPctTopMargin/initPct
+- A14_KEY_OWNER_REFERENCE: app/src/main/java/tv/withaibuild/customiuizer/mods/SystemUIControlCenterHooks.kt::applyPctTopMargin
+- A13_KEY_OWNER_REFERENCE: app/src/main/java/tv/withaibuild/customiuizer/mods/SystemUIControlCenterHooks.kt::initPct
+- PROOF_CONCLUSION: `PRESENT_A13_VARIANT`
+
+## PROOF_R5F_StatusBarIconsPositionAdjustHook_system_statusbar_alarm_atleft
+
+- PROOF_ID: `PROOF_R5F_StatusBarIconsPositionAdjustHook_system_statusbar_alarm_atleft`
+- BODY_RELATION: `REVIEWED_VARIANT`
+- A14_OWNER_PATH: `app/src/main/java/tv/withaibuild/customiuizer/mods/SystemUIStatusBarHooks.kt`
+- A14_SYMBOL: `StatusBarIconsPositionAdjustHook`
+- A14_INSTALLER: `A14 installer/spec gate for system_statusbar_alarm_atleft,system_statusbar_alarm_atright,system_statusbar_btbattery_atright,system_statusbar_dnd_atleft,system_statusbar_dnd_atright,system_statusbar_gps_atleft,system_statusbar_headset_atleft,system_statusbar_headset_atright,system_statusbar_netspeed_atleft,system_statusbar_netspeed_atright,system_statusbar_netspeed_atsecondrow,system_statusbar_nfc_atleft,system_statusbar_nfc_atright,system_statusbar_sound_atleft,system_statusbar_sound_atright,system_statusbar_vpn_atright,system_statusbaricons_swap_wifi_mobile,system_statusbaricons_wifi_mobile_atleft`
+- A14_HOOK_TARGETS: `com.android.systemui.statusbar.phone.MiuiPhoneStatusBarView#onAttachedToWindow,com.android.systemui.statusbar.phone.MiuiCollapsedStatusBarFragment#updateStatusBarVisibilities,com.android.systemui.statusbar.phone.MiuiKeyguardStatusBarView#miuiOnAttachedToWindow`
+- A14_CALLBACK_PHASE: `before,after`
+- A13_OWNER_PATH: `app/src/main/java/tv/withaibuild/customiuizer/mods/SystemUIStatusBarHooks.kt`
+- A13_SYMBOL: `StatusBarIconsPositionAdjustHook`
+- A13_INSTALLER: `A13 installer gate for system_statusbar_alarm_atleft,system_statusbar_alarm_atright,system_statusbar_btbattery_atright,system_statusbar_dnd_atleft,system_statusbar_dnd_atright,system_statusbar_gps_atleft,system_statusbar_headset_atleft,system_statusbar_headset_atright,system_statusbar_netspeed_atleft,system_statusbar_netspeed_atright,system_statusbar_netspeed_atsecondrow,system_statusbar_nfc_atleft,system_statusbar_nfc_atright,system_statusbar_sound_atleft,system_statusbar_sound_atright,system_statusbar_vpn_atright,system_statusbaricons_swap_wifi_mobile,system_statusbaricons_wifi_mobile_atleft`
+- A13_HOOK_TARGETS: `com.android.systemui.statusbar.phone.StatusBarIconControllerImpl#setIconVisibility,com.android.systemui.statusbar.phone.MiuiDripLeftStatusBarIconControllerImpl#setIconVisibility,com.android.systemui.SystemUIApplication#onCreate,com.android.systemui.statusbar.phone.StatusBarIconControllerImpl#setIcon,com.android.systemui.statusbar.phone.MiuiCollapsedStatusBarFragment#initMiuiViewsOnViewCreated,com.android.systemui.statusbar.phone.MiuiPhoneStatusBarView#updateCutoutLocation,com.android.systemui.statusbar.policy.NetworkSpeedController#setDripNetworkSpeedView,com.android.systemui.statusbar.views.NetworkSpeedView#setVisibilityByController,com.android.systemui.statusbar.phone.StatusBarSignalPolicy#<init>`
+- A13_CALLBACK_PHASE: `before,after`
+- PREFERENCE_KEYS: `system_statusbar_alarm_atleft,system_statusbar_alarm_atright,system_statusbar_btbattery_atright,system_statusbar_dnd_atleft,system_statusbar_dnd_atright,system_statusbar_gps_atleft,system_statusbar_headset_atleft,system_statusbar_headset_atright,system_statusbar_netspeed_atleft,system_statusbar_netspeed_atright,system_statusbar_netspeed_atsecondrow,system_statusbar_nfc_atleft,system_statusbar_nfc_atright,system_statusbar_sound_atleft,system_statusbar_sound_atright,system_statusbar_vpn_atright,system_statusbaricons_swap_wifi_mobile,system_statusbaricons_wifi_mobile_atleft`
+- VALUE_DOMAIN: owner-local preference domain
+- DEFAULT_SEMANTICS: All atleft/atright booleans default false; swap/wifi_mobile_atleft default false.
+- RESULT/ARGUMENT_BEHAVIOR: A13 before setIconVisibility returnAndSkip/args false on the opposite side. A14 mutates blocklists then proceeds updateStatusBarVisibilities.
+- API33_VARIANT_REASON: MIUI14 still has MiuiDripLeftStatusBarIconControllerImpl; HyperOS moved left/right packing into updateStatusBarVisibilities. Same user atleft/atright toggles.
+- DIFF_SUMMARY: A13 drip-left StatusBarIconControllerImpl/MiuiDripLeftStatusBarIconControllerImpl visibility + slot-order mutation. A14 HyperOS blocklists on MiuiCollapsedStatusBarFragment#updateStatusBarVisibilities and MiuiKeyguardStatusBarView#miuiOnAttachedToWindow.
+- VALUE_DEFAULT_COMPARISON: All atleft/atright booleans default false; swap/wifi_mobile_atleft default false.
+- HOOK_TARGET_COMPARISON: A14=com.android.systemui.statusbar.phone.MiuiPhoneStatusBarView#onAttachedToWindow,com.android.systemui.statusbar.phone.MiuiCollapsedStatusBarFragment#updateStatusBarVisibilities,com.android.systemui.statusbar.phone.MiuiKeyguardStatusBarView#miuiOnAttachedToWindow; A13=com.android.systemui.statusbar.phone.StatusBarIconControllerImpl#setIconVisibility,com.android.systemui.statusbar.phone.MiuiDripLeftStatusBarIconControllerImpl#setIconVisibility,com.android.systemui.SystemUIApplication#onCreate,com.android.systemui.statusbar.phone.StatusBarIconControllerImpl#setIcon,com.android.systemui.statusbar.phone.MiuiCollapsedStatusBarFragment#initMiuiViewsOnViewCreated,com.android.systemui.statusbar.phone.MiuiPhoneStatusBarView#updateCutoutLocation,com.android.systemui.statusbar.policy.NetworkSpeedController#setDripNetworkSpeedView,com.android.systemui.statusbar.views.NetworkSpeedView#setVisibilityByController,com.android.systemui.statusbar.phone.StatusBarSignalPolicy#<init>
+- CALLBACK_SEMANTICS_COMPARISON: A13 before skip/hide on controllers vs A14 after/before blocklist apply. Skipped drip-left show equals A14 not placing the slot on that side.
+- ARG_RESULT_COMPARISON: A13 returnAndSkip[null] on some setIcon/setIconVisibility paths; A14 no skip of updateStatusBarVisibilities.
+- A14_ONLY_BRANCHES: battery_info/device_temp leftIcons from DeviceInfoMonitor placement,MiuiKeyguardStatusBarView#miuiOnAttachedToWindow
+- WHY_USER_BEHAVIOR_IS_EQUIVALENT: Alarm/DND/sound/GPS/headset/NFC/VPN/netspeed/Wi-Fi-mobile still move left or right; swap Wi-Fi/mobile still reorders signal-related slots.
+- KEY_OWNERSHIP_EVIDENCE: A13 builds left/right slot lists from atleft/atright keys and force-hides the opposite controller. A14 builds leftIcons/blocklists and applies them in updateStatusBarVisibilities / keyguard attach. A13 extra atright keys (dnd/headset/sound/nfc/netspeed) are MIUI14 bidirectional drip-left moves. A14 batterytemp/device-temp slots are not this A13 owner.
+- A14_KEY_OWNER_REFERENCE: app/src/main/java/tv/withaibuild/customiuizer/mods/SystemUIStatusBarHooks.kt::StatusBarIconsPositionAdjustHook
+- A13_KEY_OWNER_REFERENCE: app/src/main/java/tv/withaibuild/customiuizer/mods/SystemUIStatusBarHooks.kt::StatusBarIconsPositionAdjustHook
+- PROOF_CONCLUSION: `PRESENT_A13_VARIANT`
+
+## PROOF_R5F_StatusBarStyleBatteryIconHook_system_statusbar_batterystyle
+
+- PROOF_ID: `PROOF_R5F_StatusBarStyleBatteryIconHook_system_statusbar_batterystyle`
+- BODY_RELATION: `REVIEWED_VARIANT`
+- A14_OWNER_PATH: `app/src/main/java/tv/withaibuild/customiuizer/mods/SystemUIBatteryHooks.kt`
+- A14_SYMBOL: `StatusBarStyleBatteryIconHook`
+- A14_INSTALLER: `A14 installer/spec gate for system_statusbar_batterystyle,system_statusbaricons_swap_batteryicon_percentage,system_statusbar_batterystyle_fontsize,system_statusbar_batterystyle_mark_fontsize,system_statusbar_batterystyle_bold,system_statusbar_batterystyle_leftmargin,system_statusbar_batterystyle_rightmargin,system_statusbar_batterystyle_verticaloffset,system_statusbar_batterystyle_mark_verticaloffset,system_statusbaricons_battery4`
+- A14_HOOK_TARGETS: `com.android.systemui.statusbar.views.MiuiBatteryMeterView#updateAll`
+- A14_CALLBACK_PHASE: `after`
+- A13_OWNER_PATH: `app/src/main/java/tv/withaibuild/customiuizer/mods/SystemUIBatteryHooks.kt`
+- A13_SYMBOL: `StatusBarStyleBatteryIconHook`
+- A13_INSTALLER: `A13 installer gate for system_statusbar_batterystyle,system_statusbaricons_swap_batteryicon_percentage,system_statusbar_batterystyle_fontsize,system_statusbar_batterystyle_mark_fontsize,system_statusbar_batterystyle_bold,system_statusbar_batterystyle_leftmargin,system_statusbar_batterystyle_rightmargin,system_statusbar_batterystyle_verticaloffset,system_statusbar_batterystyle_mark_verticaloffset,system_statusbaricons_battery4`
+- A13_HOOK_TARGETS: `com.android.systemui.statusbar.views.MiuiBatteryMeterView#updateAll`
+- A13_CALLBACK_PHASE: `after`
+- PREFERENCE_KEYS: `system_statusbar_batterystyle,system_statusbaricons_swap_batteryicon_percentage,system_statusbar_batterystyle_fontsize,system_statusbar_batterystyle_mark_fontsize,system_statusbar_batterystyle_bold,system_statusbar_batterystyle_leftmargin,system_statusbar_batterystyle_rightmargin,system_statusbar_batterystyle_verticaloffset,system_statusbar_batterystyle_mark_verticaloffset,system_statusbaricons_battery4`
+- VALUE_DOMAIN: owner-local preference domain
+- DEFAULT_SEMANTICS: fontsize 15 -> 7.5dp threshold; verticaloffset default 8; mark verticaloffset default 17; margins default 0.
+- RESULT/ARGUMENT_BEHAVIOR: No result rewrite; view mutation only.
+- API33_VARIANT_REASON: Same host; A14 restore-on-default is lifecycle hardening, not a new toggle.
+- DIFF_SUMMARY: Same MiuiBatteryMeterView#updateAll after. A14 extracted ABI resolver + baseline restore; A13 applies paddings/textSize inline.
+- VALUE_DEFAULT_COMPARISON: fontsize 15 -> 7.5dp threshold; verticaloffset default 8; mark verticaloffset default 17; margins default 0.
+- HOOK_TARGET_COMPARISON: A14=com.android.systemui.statusbar.views.MiuiBatteryMeterView#updateAll; A13=com.android.systemui.statusbar.views.MiuiBatteryMeterView#updateAll
+- CALLBACK_SEMANTICS_COMPARISON: Both after updateAll.
+- ARG_RESULT_COMPARISON: No arg/result rewrite.
+- A14_ONLY_BRANCHES: captureBatteryBaseline / restoreBatteryBaseline when style is default
+- WHY_USER_BEHAVIOR_IS_EQUIVALENT: Swap percent/icon, font sizes, bold, margins, vertical offsets, and percent-mark hide via battery4 remain the same.
+- KEY_OWNERSHIP_EVIDENCE: A13 updateAll after reads swap/fontsize/margins/bold/battery4. A14 BatteryStyleResolver snapshot reads the same family then reconcileBatteryView.
+- A14_KEY_OWNER_REFERENCE: app/src/main/java/tv/withaibuild/customiuizer/mods/SystemUIBatteryHooks.kt::StatusBarStyleBatteryIconHook
+- A13_KEY_OWNER_REFERENCE: app/src/main/java/tv/withaibuild/customiuizer/mods/SystemUIBatteryHooks.kt::StatusBarStyleBatteryIconHook
+- PROOF_CONCLUSION: `PRESENT_A13_VARIANT`
+
+## PROOF_R5F_MonitorDeviceInfoHook_system_statusbar_batterytempandcurrent
+
+- PROOF_ID: `PROOF_R5F_MonitorDeviceInfoHook_system_statusbar_batterytempandcurrent`
+- BODY_RELATION: `REVIEWED_VARIANT`
+- A14_OWNER_PATH: `app/src/main/java/tv/withaibuild/customiuizer/mods/SystemUIMonitorAndTileHooks.kt`
+- A14_SYMBOL: `MonitorDeviceInfoHook`
+- A14_INSTALLER: `A14 installer/spec gate for system_statusbar_batterytempandcurrent,system_statusbar_showdevicetemperature,system_statusbar_batterytempandcurrent_atright,system_statusbar_showdevicetemperature_atright,system_statusbar_dualrows`
+- A14_HOOK_TARGETS: `com.android.systemui.statusbar.policy.NetworkSpeedController#<init>,com.android.systemui.statusbar.phone.StatusBarIconController$IconManager#addHolder,com.android.systemui.statusbar.phone.MiuiCollapsedStatusBarFragment#initMiuiViewsOnViewCreated`
+- A14_CALLBACK_PHASE: `after,before`
+- A13_OWNER_PATH: `app/src/main/java/tv/withaibuild/customiuizer/mods/SystemUIStatusBarHooks.kt`
+- A13_SYMBOL: `MonitorDeviceInfoHook`
+- A13_INSTALLER: `A13 installer gate for system_statusbar_batterytempandcurrent,system_statusbar_showdevicetemperature,system_statusbar_batterytempandcurrent_atright,system_statusbar_showdevicetemperature_atright,system_statusbar_dualrows`
+- A13_HOOK_TARGETS: `com.android.systemui.statusbar.policy.NetworkSpeedController#<init>,com.android.systemui.statusbar.phone.StatusBarIconController$IconManager#addHolder,com.android.systemui.statusbar.phone.MiuiCollapsedStatusBarFragment#initMiuiViewsOnViewCreated,com.android.systemui.statusbar.phone.MiuiCollapsedStatusBarFragment#showSystemIconArea,com.android.systemui.statusbar.phone.MiuiCollapsedStatusBarFragment#hideSystemIconArea`
+- A13_CALLBACK_PHASE: `after,before`
+- PREFERENCE_KEYS: `system_statusbar_batterytempandcurrent,system_statusbar_showdevicetemperature,system_statusbar_batterytempandcurrent_atright,system_statusbar_showdevicetemperature_atright,system_statusbar_dualrows`
+- VALUE_DOMAIN: owner-local preference domain
+- DEFAULT_SEMANTICS: Masters default false; atright default false; dualrows default false.
+- RESULT/ARGUMENT_BEHAVIOR: A13 addHolder before returnAndSkip(iconView) for types 91/92. A14 DeviceInfoMonitor same skip on addHolder.
+- API33_VARIANT_REASON: A13 hideSystemIconArea/showSystemIconArea are MIUI14 collapsed-fragment lifecycle for left-placed device-info TextViews.
+- DIFF_SUMMARY: A14 MonitorDeviceInfoHook is DeviceInfoMonitor.hook(lpparam,mPrefs). A13 extra hide/showSystemIconArea for left text icons. Right icons still via NetworkSpeedController ctor + IconManager#addHolder types 91/92.
+- VALUE_DEFAULT_COMPARISON: Masters default false; atright default false; dualrows default false.
+- HOOK_TARGET_COMPARISON: A14=com.android.systemui.statusbar.policy.NetworkSpeedController#<init>,com.android.systemui.statusbar.phone.StatusBarIconController$IconManager#addHolder,com.android.systemui.statusbar.phone.MiuiCollapsedStatusBarFragment#initMiuiViewsOnViewCreated; A13=com.android.systemui.statusbar.policy.NetworkSpeedController#<init>,com.android.systemui.statusbar.phone.StatusBarIconController$IconManager#addHolder,com.android.systemui.statusbar.phone.MiuiCollapsedStatusBarFragment#initMiuiViewsOnViewCreated,com.android.systemui.statusbar.phone.MiuiCollapsedStatusBarFragment#showSystemIconArea,com.android.systemui.statusbar.phone.MiuiCollapsedStatusBarFragment#hideSystemIconArea
+- CALLBACK_SEMANTICS_COMPARISON: A13 extra after hide/showSystemIconArea; A14 lifecycle inside DeviceInfoMonitor.
+- ARG_RESULT_COMPARISON: returnAndSkip custom TextIcon view from addHolder.
+- A14_ONLY_BRANCHES: com.miui.charge.ChargeUtils lookup for in-charge
+- WHY_USER_BEHAVIOR_IS_EQUIVALENT: Battery current/temp and device-temp text icons still appear left or right of the status bar.
+- KEY_OWNERSHIP_EVIDENCE: A13 MonitorDeviceInfoHook reads master toggles, atright flags, dualrows. A14 wrapper DeviceInfoMonitor.hook / buildConfig reads the same.
+- A14_KEY_OWNER_REFERENCE: app/src/main/java/tv/withaibuild/customiuizer/mods/SystemUIMonitorAndTileHooks.kt::MonitorDeviceInfoHook
+- A13_KEY_OWNER_REFERENCE: app/src/main/java/tv/withaibuild/customiuizer/mods/SystemUIStatusBarHooks.kt::MonitorDeviceInfoHook
+- PROOF_CONCLUSION: `PRESENT_A13_VARIANT`
+
+## PROOF_R5X_DEVICEINFO_STYLE
+
+- PROOF_ID: `PROOF_R5X_DEVICEINFO_STYLE`
+- BODY_RELATION: `REVIEWED_VARIANT`
+- A14_OWNER_PATH: `app/src/main/java/tv/withaibuild/customiuizer/mods/SystemUIStatusBarHooks.kt`
+- A14_SYMBOL: `initStatusbarTextIcon`
+- A14_INSTALLER: `A14 installer/spec gate for system_statusbar_batterytempandcurrent_fontsize,system_statusbar_batterytempandcurrent_bold,system_statusbar_batterytempandcurrent_align,system_statusbar_batterytempandcurrent_fixedcontent_width,system_statusbar_batterytempandcurrent_leftmargin,system_statusbar_batterytempandcurrent_rightmargin,system_statusbar_batterytempandcurrent_verticaloffset,system_statusbar_showdevicetemperature_fontsize,system_statusbar_showdevicetemperature_bold,system_statusbar_showdevicetemperature_align,system_statusbar_showdevicetemperature_fixedcontent_width,system_statusbar_showdevicetemperature_leftmargin,system_statusbar_showdevicetemperature_rightmargin,system_statusbar_showdevicetemperature_verticaloffset`
+- A14_HOOK_TARGETS: `injected status-bar text icon TextView`
+- A14_CALLBACK_PHASE: `n/a`
+- A13_OWNER_PATH: `app/src/main/java/tv/withaibuild/customiuizer/mods/SystemUIStatusBarHooks.kt`
+- A13_SYMBOL: `initStatusbarTextIcon`
+- A13_INSTALLER: `A13 installer gate for system_statusbar_batterytempandcurrent_fontsize,system_statusbar_batterytempandcurrent_bold,system_statusbar_batterytempandcurrent_align,system_statusbar_batterytempandcurrent_fixedcontent_width,system_statusbar_batterytempandcurrent_leftmargin,system_statusbar_batterytempandcurrent_rightmargin,system_statusbar_batterytempandcurrent_verticaloffset,system_statusbar_showdevicetemperature_fontsize,system_statusbar_showdevicetemperature_bold,system_statusbar_showdevicetemperature_align,system_statusbar_showdevicetemperature_fixedcontent_width,system_statusbar_showdevicetemperature_leftmargin,system_statusbar_showdevicetemperature_rightmargin,system_statusbar_showdevicetemperature_verticaloffset`
+- A13_HOOK_TARGETS: `injected status-bar text icon TextView`
+- A13_CALLBACK_PHASE: `n/a`
+- PREFERENCE_KEYS: `system_statusbar_batterytempandcurrent_fontsize,system_statusbar_batterytempandcurrent_bold,system_statusbar_batterytempandcurrent_align,system_statusbar_batterytempandcurrent_fixedcontent_width,system_statusbar_batterytempandcurrent_leftmargin,system_statusbar_batterytempandcurrent_rightmargin,system_statusbar_batterytempandcurrent_verticaloffset,system_statusbar_showdevicetemperature_fontsize,system_statusbar_showdevicetemperature_bold,system_statusbar_showdevicetemperature_align,system_statusbar_showdevicetemperature_fixedcontent_width,system_statusbar_showdevicetemperature_leftmargin,system_statusbar_showdevicetemperature_rightmargin,system_statusbar_showdevicetemperature_verticaloffset`
+- VALUE_DOMAIN: owner-local preference domain
+- DEFAULT_SEMANTICS: fontsize 16*0.5 dip path; verticaloffset 8 means no extra top margin; fixed width 10 inactive unless >10; align 1.
+- RESULT/ARGUMENT_BEHAVIOR: TextView style only.
+- API33_VARIANT_REASON: Same helper. No ROM member for the style keys.
+- DIFF_SUMMARY: Both apply fontsize, bold, align, margins, vertical offset, fixed width to the injected battery/temp text icon. Scanner cannot see interpolated keys.
+- VALUE_DEFAULT_COMPARISON: fontsize 16*0.5 dip path; verticaloffset 8 means no extra top margin; fixed width 10 inactive unless >10; align 1.
+- HOOK_TARGET_COMPARISON: A14=injected status-bar text icon TextView; A13=injected status-bar text icon TextView
+- CALLBACK_SEMANTICS_COMPARISON: Called from icon create/register, not a host skip.
+- ARG_RESULT_COMPARISON: No setResult.
+- A14_ONLY_BRANCHES: none for these style keys
+- WHY_USER_BEHAVIOR_IS_EQUIVALENT: Battery-temp and device-temp status-bar text still honor size/bold/align/margins.
+- KEY_OWNERSHIP_EVIDENCE: EXPLICIT_ALIAS via interpolated getInt/getBoolean system_statusbar_${subKey}_* in initStatusbarTextIcon. subKey is batterytempandcurrent or showdevicetemperature. Not XML-only.
+- A14_KEY_OWNER_REFERENCE: app/src/main/java/tv/withaibuild/customiuizer/mods/SystemUIStatusBarHooks.kt::initStatusbarTextIcon
+- A13_KEY_OWNER_REFERENCE: app/src/main/java/tv/withaibuild/customiuizer/mods/SystemUIStatusBarHooks.kt::initStatusbarTextIcon
+- PROOF_CONCLUSION: `PRESENT_A13_VARIANT`
+
+## PROOF_R5F_MonitorDeviceInfoHook_system_statusbar_batterytempandcurrent_atright
+
+- PROOF_ID: `PROOF_R5F_MonitorDeviceInfoHook_system_statusbar_batterytempandcurrent_atright`
+- BODY_RELATION: `REVIEWED_VARIANT`
+- A14_OWNER_PATH: `app/src/main/java/tv/withaibuild/customiuizer/mods/SystemUIStatusBarHooks.kt`
+- A14_SYMBOL: `DualRowsStatusbarHook`
+- A14_INSTALLER: `A14 installer/spec gate for system_statusbar_batterytempandcurrent_atright,system_statusbar_showdevicetemperature_atright`
+- A14_HOOK_TARGETS: `com.android.systemui.statusbar.phone.MiuiPhoneStatusBarView#onFinishInflate,com.android.systemui.statusbar.phone.MiuiPhoneStatusBarView#updateCutoutLocation`
+- A14_CALLBACK_PHASE: `after`
+- A13_OWNER_PATH: `app/src/main/java/tv/withaibuild/customiuizer/mods/SystemUIStatusBarHooks.kt`
+- A13_SYMBOL: `MonitorDeviceInfoHook`
+- A13_INSTALLER: `A13 installer gate for system_statusbar_batterytempandcurrent_atright,system_statusbar_showdevicetemperature_atright`
+- A13_HOOK_TARGETS: `com.android.systemui.statusbar.policy.NetworkSpeedController#<init>,com.android.systemui.statusbar.phone.StatusBarIconController$IconManager#addHolder,com.android.systemui.statusbar.phone.MiuiCollapsedStatusBarFragment#initMiuiViewsOnViewCreated`
+- A13_CALLBACK_PHASE: `after,before`
+- PREFERENCE_KEYS: `system_statusbar_batterytempandcurrent_atright,system_statusbar_showdevicetemperature_atright`
+- VALUE_DOMAIN: owner-local preference domain
+- DEFAULT_SEMANTICS: atright booleans default false.
+- RESULT/ARGUMENT_BEHAVIOR: addHolder returnAndSkip icon view on A13.
+- API33_VARIANT_REASON: Same as MonitorDeviceInfoHook: drip/right slot vs left container injection.
+- DIFF_SUMMARY: Wrong classifier pairing. Atright placement is implemented by A13 MonitorDeviceInfoHook vs A14 DeviceInfoMonitor placement, not by dual-row inflate. Dual-row left_ratio not reopened.
+- VALUE_DEFAULT_COMPARISON: atright booleans default false.
+- HOOK_TARGET_COMPARISON: A14=com.android.systemui.statusbar.phone.MiuiPhoneStatusBarView#onFinishInflate,com.android.systemui.statusbar.phone.MiuiPhoneStatusBarView#updateCutoutLocation; A13=com.android.systemui.statusbar.policy.NetworkSpeedController#<init>,com.android.systemui.statusbar.phone.StatusBarIconController$IconManager#addHolder,com.android.systemui.statusbar.phone.MiuiCollapsedStatusBarFragment#initMiuiViewsOnViewCreated
+- CALLBACK_SEMANTICS_COMPARISON: Not the dual-row after inflate path for these keys.
+- ARG_RESULT_COMPARISON: See MonitorDeviceInfoHook addHolder skip.
+- A14_ONLY_BRANCHES: DualRowsStatusbarHook layout keys not consumed by this A13 function
+- WHY_USER_BEHAVIOR_IS_EQUIVALENT: Battery-info and device-temp views still honor at-right vs at-left.
+- KEY_OWNERSHIP_EVIDENCE: Classifier paired atright keys with DualRowsStatusbarHook. A13 owner that consumes atright is MonitorDeviceInfoHook (TextIcon(atRight, 91/92)). A14 DualRowsStatusbarHook and DeviceInfoMonitor.buildConfig also read them for placement.
+- A14_KEY_OWNER_REFERENCE: app/src/main/java/tv/withaibuild/customiuizer/mods/SystemUIStatusBarHooks.kt::DualRowsStatusbarHook
+- A13_KEY_OWNER_REFERENCE: app/src/main/java/tv/withaibuild/customiuizer/mods/SystemUIStatusBarHooks.kt::MonitorDeviceInfoHook
+- PROOF_CONCLUSION: `PRESENT_A13_VARIANT`
+
+## PROOF_R5F_readSnapshot_system_statusbar_batterytempandcurrent_content
+
+- PROOF_ID: `PROOF_R5F_readSnapshot_system_statusbar_batterytempandcurrent_content`
+- BODY_RELATION: `REVIEWED_VARIANT`
+- A14_OWNER_PATH: `app/src/main/java/tv/withaibuild/customiuizer/mods/utils/DeviceInfoMonitor.kt`
+- A14_SYMBOL: `buildConfig`
+- A14_INSTALLER: `A14 installer/spec gate for system_statusbar_batterytempandcurrent_content,system_statusbar_batterytempandcurrent_fixcurrentratio,system_statusbar_batterytempandcurrent_hideunit,system_statusbar_batterytempandcurrent_incharge,system_statusbar_batterytempandcurrent_positive,system_statusbar_batterytempandcurrent_reverseorder,system_statusbar_batterytempandcurrent_singlerow,system_statusbar_batterytempandcurrent_temp_decimal,system_statusbar_showdevicetemperature_content,system_statusbar_showdevicetemperature_hideunit,system_statusbar_showdevicetemperature_reverseorder,system_statusbar_showdevicetemperature_singlerow`
+- A14_HOOK_TARGETS: `(no host member literals)`
+- A14_CALLBACK_PHASE: `unknown`
+- A13_OWNER_PATH: `app/src/main/java/tv/withaibuild/customiuizer/mods/utils/DeviceInfoMonitor.kt`
+- A13_SYMBOL: `readSnapshot`
+- A13_INSTALLER: `A13 installer gate for system_statusbar_batterytempandcurrent_content,system_statusbar_batterytempandcurrent_fixcurrentratio,system_statusbar_batterytempandcurrent_hideunit,system_statusbar_batterytempandcurrent_incharge,system_statusbar_batterytempandcurrent_positive,system_statusbar_batterytempandcurrent_reverseorder,system_statusbar_batterytempandcurrent_singlerow,system_statusbar_batterytempandcurrent_temp_decimal,system_statusbar_showdevicetemperature_content,system_statusbar_showdevicetemperature_hideunit,system_statusbar_showdevicetemperature_reverseorder,system_statusbar_showdevicetemperature_singlerow`
+- A13_HOOK_TARGETS: `(no host member literals)`
+- A13_CALLBACK_PHASE: `unknown`
+- PREFERENCE_KEYS: `system_statusbar_batterytempandcurrent_content,system_statusbar_batterytempandcurrent_fixcurrentratio,system_statusbar_batterytempandcurrent_hideunit,system_statusbar_batterytempandcurrent_incharge,system_statusbar_batterytempandcurrent_positive,system_statusbar_batterytempandcurrent_reverseorder,system_statusbar_batterytempandcurrent_singlerow,system_statusbar_batterytempandcurrent_temp_decimal,system_statusbar_showdevicetemperature_content,system_statusbar_showdevicetemperature_hideunit,system_statusbar_showdevicetemperature_reverseorder,system_statusbar_showdevicetemperature_singlerow`
+- VALUE_DOMAIN: owner-local preference domain
+- DEFAULT_SEMANTICS: content default 1; hideunit 0/false; remaining booleans default false.
+- RESULT/ARGUMENT_BEHAVIOR: Pure pref-to-struct; no hooks.
+- API33_VARIANT_REASON: None for these format keys. Placement keys are a different owner.
+- DIFF_SUMMARY: Same key set and defaults for formatting. A14 also packs placement (atright/dualrows) into ConfigSnapshot; A13 readSnapshot only formats and takes showBatteryDetail/showDeviceTemp as parameters.
+- VALUE_DEFAULT_COMPARISON: content default 1; hideunit 0/false; remaining booleans default false.
+- HOOK_TARGET_COMPARISON: A14=(none); A13=(none)
+- CALLBACK_SEMANTICS_COMPARISON: n/a
+- ARG_RESULT_COMPARISON: n/a
+- A14_ONLY_BRANCHES: resolveDeviceInfoPlacement atright/dualrows — not consumed by A13 readSnapshot
+- WHY_USER_BEHAVIOR_IS_EQUIVALENT: Battery/device-temp text still uses the same content option, units, single-row, reverse-order, in-charge, and current-ratio formatting.
+- KEY_OWNERSHIP_EVIDENCE: A13 readSnapshot and A14 buildConfig both copy these content/format booleans/ints into an immutable config. Atright/dualrows are A14 buildConfig extras owned by MonitorDeviceInfoHook, not this A13 helper.
+- A14_KEY_OWNER_REFERENCE: app/src/main/java/tv/withaibuild/customiuizer/mods/utils/DeviceInfoMonitor.kt::buildConfig
+- A13_KEY_OWNER_REFERENCE: app/src/main/java/tv/withaibuild/customiuizer/mods/utils/DeviceInfoMonitor.kt::readSnapshot
+- PROOF_CONCLUSION: `PRESENT_A13_VARIANT`
+
+## PROOF_R5X_CLOCK_STYLE
+
+- PROOF_ID: `PROOF_R5X_CLOCK_STYLE`
+- BODY_RELATION: `REVIEWED_VARIANT`
+- A14_OWNER_PATH: `app/src/main/java/tv/withaibuild/customiuizer/mods/SystemClockHooks.kt`
+- A14_SYMBOL: `initClockStyle / StatusBarClockTweakHook`
+- A14_INSTALLER: `A14 installer/spec gate for system_statusbar_clock_fontsize,system_statusbar_clock_align,system_statusbar_clock_bold,system_statusbar_clock_chip,system_statusbar_clock_chip_usemonet,system_statusbar_clock_chip_orientation_vertical,system_statusbar_clock_chip_startcolor,system_statusbar_clock_chip_endcolor,system_statusbar_clock_chip_customtextcolor,system_statusbar_clock_chip_textcolor,system_statusbar_clock_chip_horizpadding,system_statusbar_clock_chip_verticalpadding,system_statusbar_clock_chip_radius,system_statusbar_clock_leftmargin,system_statusbar_clock_rightmargin,system_statusbar_clock_verticaloffset,system_statusbar_clock_fixedcontent_width`
+- A14_HOOK_TARGETS: `status-bar / CC clock TextView style`
+- A14_CALLBACK_PHASE: `n/a`
+- A13_OWNER_PATH: `app/src/main/java/tv/withaibuild/customiuizer/mods/SystemStatusBarClockAndMoreHooks.kt`
+- A13_SYMBOL: `initClockStyle`
+- A13_INSTALLER: `A13 installer gate for system_statusbar_clock_fontsize,system_statusbar_clock_align,system_statusbar_clock_bold,system_statusbar_clock_chip,system_statusbar_clock_chip_usemonet,system_statusbar_clock_chip_orientation_vertical,system_statusbar_clock_chip_startcolor,system_statusbar_clock_chip_endcolor,system_statusbar_clock_chip_customtextcolor,system_statusbar_clock_chip_textcolor,system_statusbar_clock_chip_horizpadding,system_statusbar_clock_chip_verticalpadding,system_statusbar_clock_chip_radius,system_statusbar_clock_leftmargin,system_statusbar_clock_rightmargin,system_statusbar_clock_verticaloffset,system_statusbar_clock_fixedcontent_width`
+- A13_HOOK_TARGETS: `status-bar / CC clock TextView style`
+- A13_CALLBACK_PHASE: `n/a`
+- PREFERENCE_KEYS: `system_statusbar_clock_fontsize,system_statusbar_clock_align,system_statusbar_clock_bold,system_statusbar_clock_chip,system_statusbar_clock_chip_usemonet,system_statusbar_clock_chip_orientation_vertical,system_statusbar_clock_chip_startcolor,system_statusbar_clock_chip_endcolor,system_statusbar_clock_chip_customtextcolor,system_statusbar_clock_chip_textcolor,system_statusbar_clock_chip_horizpadding,system_statusbar_clock_chip_verticalpadding,system_statusbar_clock_chip_radius,system_statusbar_clock_leftmargin,system_statusbar_clock_rightmargin,system_statusbar_clock_verticaloffset,system_statusbar_clock_fixedcontent_width`
+- VALUE_DOMAIN: owner-local preference domain
+- DEFAULT_SEMANTICS: fontsize 13 inactive unless >; align 1; chip false; margins 0; fixed width 10 inactive unless >10.
+- RESULT/ARGUMENT_BEHAVIOR: View style only; no host result rewrite.
+- API33_VARIANT_REASON: No extra ROM ABI. Clock TextView styling on MIUI14 vs HyperOS clock controller.
+- DIFF_SUMMARY: Style-only TextView mutations on the hooked clock. Scanner missed interpolation keys. Chip drawable colors/padding/radius are the same literals.
+- VALUE_DEFAULT_COMPARISON: fontsize 13 inactive unless >; align 1; chip false; margins 0; fixed width 10 inactive unless >10.
+- HOOK_TARGET_COMPARISON: A14=status-bar / CC clock TextView style; A13=status-bar / CC clock TextView style
+- CALLBACK_SEMANTICS_COMPARISON: after constructor/time hooks then initClockStyle.
+- ARG_RESULT_COMPARISON: No setResult.
+- A14_ONLY_BRANCHES: HyperOS FakeStatusBarClockController path already noted on the parent clock-tweak owner
+- WHY_USER_BEHAVIOR_IS_EQUIVALENT: Status-bar clock size, alignment, bold, chip, margins, and fixed width still apply.
+- KEY_OWNERSHIP_EVIDENCE: LITERAL_READ in A13 initClockStyle (fontsize, chip*, left/right margin). align/bold via interpolated system_${subKey}_clock_align/bold with subKey=statusbar. A14 initClockStyle same family.
+- A14_KEY_OWNER_REFERENCE: app/src/main/java/tv/withaibuild/customiuizer/mods/SystemClockHooks.kt::initClockStyle / StatusBarClockTweakHook
+- A13_KEY_OWNER_REFERENCE: app/src/main/java/tv/withaibuild/customiuizer/mods/SystemStatusBarClockAndMoreHooks.kt::initClockStyle
+- PROOF_CONCLUSION: `PRESENT_A13_VARIANT`
+
+## PROOF_R5_StatusBarClockPositionHook_system_statusbar_clock_position
+
+- PROOF_ID: `PROOF_R5_StatusBarClockPositionHook_system_statusbar_clock_position`
+- BODY_RELATION: `REVIEWED_VARIANT`
+- A14_OWNER_PATH: `app/src/main/java/tv/withaibuild/customiuizer/mods/SystemUIStatusBarHooks.kt`
+- A14_SYMBOL: `StatusBarClockPositionHook`
+- A14_INSTALLER: `A14 installer/spec gate for system_statusbar_clock_position,system_statusbar_dualrows`
+- A14_HOOK_TARGETS: `com.android.systemui.statusbar.phone.MiuiPhoneStatusBarView#onFinishInflate,com.android.systemui.statusbar.phone.PhoneStatusBarView#updateLayoutForCutout,com.android.systemui.statusbar.phone.MiuiPhoneStatusBarView#updateNotificationIconAreaInnnerParent`
+- A14_CALLBACK_PHASE: `after,before`
+- A13_OWNER_PATH: `app/src/main/java/tv/withaibuild/customiuizer/mods/SystemUIStatusBarHooks.kt`
+- A13_SYMBOL: `StatusBarClockPositionHook`
+- A13_INSTALLER: `A13 installer gate for system_statusbar_clock_position,system_statusbar_dualrows`
+- A13_HOOK_TARGETS: `com.android.systemui.statusbar.phone.MiuiPhoneStatusBarView#onFinishInflate,com.android.systemui.statusbar.phone.PhoneStatusBarView#updateLayoutForCutout,com.android.systemui.statusbar.phone.MiuiPhoneStatusBarView#updateNotificationIconAreaInnnerParent`
+- A13_CALLBACK_PHASE: `after,before`
+- PREFERENCE_KEYS: `system_statusbar_clock_position,system_statusbar_dualrows`
+- VALUE_DOMAIN: owner-local preference domain
+- DEFAULT_SEMANTICS: same persisted keys consumed by both owners
+- RESULT/ARGUMENT_BEHAVIOR: A14 ops: no result/argument rewrite literals. A13 ops: no result/argument rewrite literals. Keys system_statusbar_clock_position,system_statusbar_dualrows rewrite the same host members.
+- API33_VARIANT_REASON: A14 callback after,before vs A13 after,before on members A14[com.android.systemui.statusbar.phone.MiuiPhoneStatusBarView#onFinishInflate,com.android.systemui.statusbar.phone.PhoneStatusBarView#updateLayoutForCutout,com.android.systemui.statusbar.phone.MiuiPhoneStatusBarView#updateNotificationIconAreaInnnerParent] / A13[com.android.systemui.statusbar.phone.MiuiPhoneStatusBarView#onFinishInflate,com.android.systemui.statusbar.phone.PhoneStatusBarView#updateLayoutForCutout,com.android.systemui.statusbar.phone.MiuiPhoneStatusBarView#updateNotificationIconAreaInnnerParent]. Inner preference reads of system_statusbar_clock_position,system_statusbar_dualrows match; intercept proceed-once maps to before returnAndSkip or after side-effect.
+- DIFF_SUMMARY: Shared members com.android.systemui.statusbar.phone.MiuiPhoneStatusBarView#onFinishInflate,com.android.systemui.statusbar.phone.PhoneStatusBarView#updateLayoutForCutout,com.android.systemui.statusbar.phone.MiuiPhoneStatusBarView#updateNotificationIconAreaInnnerParent. Differ: A14 phases after,before vs A13 after,before; A14 no result/argument rewrite literals vs A13 no result/argument rewrite literals.
+- VALUE_DEFAULT_COMPARISON: both consume system_statusbar_clock_position,system_statusbar_dualrows in the owner body or installer gate
+- HOOK_TARGET_COMPARISON: A14=com.android.systemui.statusbar.phone.MiuiPhoneStatusBarView#onFinishInflate,com.android.systemui.statusbar.phone.PhoneStatusBarView#updateLayoutForCutout,com.android.systemui.statusbar.phone.MiuiPhoneStatusBarView#updateNotificationIconAreaInnnerParent; A13=com.android.systemui.statusbar.phone.MiuiPhoneStatusBarView#onFinishInflate,com.android.systemui.statusbar.phone.PhoneStatusBarView#updateLayoutForCutout,com.android.systemui.statusbar.phone.MiuiPhoneStatusBarView#updateNotificationIconAreaInnnerParent
+- CALLBACK_SEMANTICS_COMPARISON: A14 after,before vs A13 after,before; skipped paths do not invoke the original, proceed-once equals after side-effect
+- ARG_RESULT_COMPARISON: A14=no result/argument rewrite literals; A13=no result/argument rewrite literals
+- A14_ONLY_BRANCHES: none beyond intercept scaffolding for this owner pair
+- WHY_USER_BEHAVIOR_IS_EQUIVALENT: User-visible contract of system_statusbar_clock_position,system_statusbar_dualrows is the same host rewrite; callback adapter and null-safety differ.
+- KEY_OWNERSHIP_EVIDENCE: system_statusbar_clock_position,system_statusbar_dualrows: LITERAL_READ and/or INSTALLER_CALLEE in StatusBarClockPositionHook/StatusBarClockPositionHook
+- A14_KEY_OWNER_REFERENCE: app/src/main/java/tv/withaibuild/customiuizer/mods/SystemUIStatusBarHooks.kt::StatusBarClockPositionHook
+- A13_KEY_OWNER_REFERENCE: app/src/main/java/tv/withaibuild/customiuizer/mods/SystemUIStatusBarHooks.kt::StatusBarClockPositionHook
+- PROOF_CONCLUSION: `PRESENT_A13_VARIANT`
+
+## PROOF_R5F_DualRowStatusbarHook_system_statusbar_dualrows_clock_span2rows
+
+- PROOF_ID: `PROOF_R5F_DualRowStatusbarHook_system_statusbar_dualrows_clock_span2rows`
+- BODY_RELATION: `REVIEWED_VARIANT`
+- A14_OWNER_PATH: `app/src/main/java/tv/withaibuild/customiuizer/mods/SystemUIStatusBarHooks.kt`
+- A14_SYMBOL: `DualRowsStatusbarHook`
+- A14_INSTALLER: `A14 installer/spec gate for system_statusbar_dualrows_clock_span2rows,system_statusbar_dualrows_firstrow_horizmargin,system_statusbar_dualrows_firstrow_horizmargin_left,system_statusbar_dualrows_firstrow_horizmargin_right,system_statusbar_dualrows_left_ratio,system_statusbar_netspeed_atsecondrow`
+- A14_HOOK_TARGETS: `com.android.systemui.statusbar.phone.MiuiPhoneStatusBarView#onFinishInflate,com.android.systemui.statusbar.phone.MiuiPhoneStatusBarView#updateCutoutLocation`
+- A14_CALLBACK_PHASE: `after`
+- A13_OWNER_PATH: `app/src/main/java/tv/withaibuild/customiuizer/mods/SystemUIStatusBarHooks.kt`
+- A13_SYMBOL: `DualRowStatusbarHook`
+- A13_INSTALLER: `A13 installer gate for system_statusbar_dualrows_clock_span2rows,system_statusbar_dualrows_firstrow_horizmargin,system_statusbar_dualrows_firstrow_horizmargin_left,system_statusbar_dualrows_firstrow_horizmargin_right,system_statusbar_dualrows_left_ratio,system_statusbar_netspeed_atsecondrow`
+- A13_HOOK_TARGETS: `com.android.systemui.statusbar.phone.MiuiPhoneStatusBarView#onFinishInflate,com.android.systemui.statusbar.phone.MiuiPhoneStatusBarView#updateCutoutLocation,com.android.systemui.statusbar.phone.MiuiCollapsedStatusBarFragment#showSystemIconArea,com.android.systemui.statusbar.phone.MiuiCollapsedStatusBarFragment#hideSystemIconArea`
+- A13_CALLBACK_PHASE: `after`
+- PREFERENCE_KEYS: `system_statusbar_dualrows_clock_span2rows,system_statusbar_dualrows_firstrow_horizmargin,system_statusbar_dualrows_firstrow_horizmargin_left,system_statusbar_dualrows_firstrow_horizmargin_right,system_statusbar_dualrows_left_ratio,system_statusbar_netspeed_atsecondrow`
+- VALUE_DOMAIN: owner-local preference domain
+- DEFAULT_SEMANTICS: left_ratio default 4; horizmargin default 0; clock_span2rows default false.
+- RESULT/ARGUMENT_BEHAVIOR: No result rewrite; layout mutation after inflate/cutout.
+- API33_VARIANT_REASON: A13 hideSystemIconArea/showSystemIconArea are MIUI14 collapsed-fragment lifecycle for the same dual-row layouts. HyperOS clock field renamed mMiuiClock -> mClock.
+- DIFF_SUMMARY: Same inflate/cutout hosts. A13 extra hide/showSystemIconArea to keep dual-row containers visible with collapsed fragment. A14 uses mClock vs A13 mMiuiClock.
+- VALUE_DEFAULT_COMPARISON: left_ratio default 4; horizmargin default 0; clock_span2rows default false.
+- HOOK_TARGET_COMPARISON: A14=com.android.systemui.statusbar.phone.MiuiPhoneStatusBarView#onFinishInflate,com.android.systemui.statusbar.phone.MiuiPhoneStatusBarView#updateCutoutLocation; A13=com.android.systemui.statusbar.phone.MiuiPhoneStatusBarView#onFinishInflate,com.android.systemui.statusbar.phone.MiuiPhoneStatusBarView#updateCutoutLocation,com.android.systemui.statusbar.phone.MiuiCollapsedStatusBarFragment#showSystemIconArea,com.android.systemui.statusbar.phone.MiuiCollapsedStatusBarFragment#hideSystemIconArea
+- CALLBACK_SEMANTICS_COMPARISON: Both after. A13 extra after on hide/showSystemIconArea.
+- ARG_RESULT_COMPARISON: No arg/result rewrite.
+- A14_ONLY_BRANCHES: dualRowsLayoutAdded / display registry
+- WHY_USER_BEHAVIOR_IS_EQUIVALENT: Status bar splits into two rows; clock can span; first-row padding and no-cutout left/right weights still apply. Dual-row ratio closed proof preserved.
+- KEY_OWNERSHIP_EVIDENCE: Both onFinishInflate read clock_span2rows and first-row horiz margins; both updateCutoutLocation read system_statusbar_dualrows_left_ratio. Dual-row ratio closed proof not reopened.
+- A14_KEY_OWNER_REFERENCE: app/src/main/java/tv/withaibuild/customiuizer/mods/SystemUIStatusBarHooks.kt::DualRowsStatusbarHook
+- A13_KEY_OWNER_REFERENCE: app/src/main/java/tv/withaibuild/customiuizer/mods/SystemUIStatusBarHooks.kt::DualRowStatusbarHook
+- PROOF_CONCLUSION: `PRESENT_A13_VARIANT`
+
+## PROOF_R5F_DualRowSignalHook_system_statusbar_dualsimin2rows
+
+- PROOF_ID: `PROOF_R5F_DualRowSignalHook_system_statusbar_dualsimin2rows`
+- BODY_RELATION: `REVIEWED_VARIANT`
+- A14_OWNER_PATH: `app/src/main/java/tv/withaibuild/customiuizer/mods/SystemUIStatusBarHooks.kt`
+- A14_SYMBOL: `DualRowSignalHook`
+- A14_INSTALLER: `A14 installer/spec gate for system_statusbar_dualsimin2rows,system_statusbar_dualsimin2rows_style,system_statusbar_dualsimin2rows_leftmargin,system_statusbar_dualsimin2rows_rightmargin,system_statusbar_dualsimin2rows_scale,system_statusbar_dualsimin2rows_verticaloffset`
+- A14_HOOK_TARGETS: `com.android.systemui.statusbar.phone.StatusBarIconControllerImpl#setMobileIcons,com.android.systemui.statusbar.StatusBarMobileView#applyMobileState,com.android.systemui.statusbar.StatusBarMobileView#updateState,com.android.systemui.statusbar.StatusBarMobileView#applyDarknessInternal,com.android.systemui.statusbar.StatusBarMobileView#onDarkChanged,com.android.systemui.statusbar.StatusBarMobileView#setDripEnd`
+- A14_CALLBACK_PHASE: `before,after`
+- A13_OWNER_PATH: `app/src/main/java/tv/withaibuild/customiuizer/mods/SystemUIStatusBarHooks.kt`
+- A13_SYMBOL: `DualRowSignalHook`
+- A13_INSTALLER: `A13 installer gate for system_statusbar_dualsimin2rows,system_statusbar_dualsimin2rows_style,system_statusbar_dualsimin2rows_leftmargin,system_statusbar_dualsimin2rows_rightmargin,system_statusbar_dualsimin2rows_scale,system_statusbar_dualsimin2rows_verticaloffset`
+- A13_HOOK_TARGETS: `com.android.systemui.statusbar.phone.StatusBarIconControllerImpl#setMobileIcons,com.android.systemui.statusbar.phone.MiuiDripLeftStatusBarIconControllerImpl#setMobileIcons,com.android.systemui.statusbar.StatusBarMobileView#initViewState,com.android.systemui.statusbar.StatusBarMobileView#updateState,com.android.systemui.statusbar.StatusBarMobileView#applyDarknessInternal,com.android.systemui.statusbar.StatusBarMobileView#init`
+- A13_CALLBACK_PHASE: `before,after`
+- PREFERENCE_KEYS: `system_statusbar_dualsimin2rows,system_statusbar_dualsimin2rows_style,system_statusbar_dualsimin2rows_leftmargin,system_statusbar_dualsimin2rows_rightmargin,system_statusbar_dualsimin2rows_scale,system_statusbar_dualsimin2rows_verticaloffset`
+- VALUE_DOMAIN: owner-local preference domain
+- DEFAULT_SEMANTICS: style default empty; scale default 10; verticaloffset default 8; margins default 0.
+- RESULT/ARGUMENT_BEHAVIOR: Both mutate iconStates in setMobileIcons before; no skip of original.
+- API33_VARIANT_REASON: applyMobileState is the HyperOS rename of initViewState. A13 init() is MIUI14 view-init; A14 setDripEnd is HyperOS drip lifecycle for the same margins.
+- DIFF_SUMMARY: HyperOS StatusBarMobileView#applyMobileState vs MIUI14 StatusBarMobileView#initViewState. A14 extra onDarkChanged/setDripEnd. A13 extra init() for padding/scale and drip-left controller.
+- VALUE_DEFAULT_COMPARISON: style default empty; scale default 10; verticaloffset default 8; margins default 0.
+- HOOK_TARGET_COMPARISON: A14=com.android.systemui.statusbar.phone.StatusBarIconControllerImpl#setMobileIcons,com.android.systemui.statusbar.StatusBarMobileView#applyMobileState,com.android.systemui.statusbar.StatusBarMobileView#updateState,com.android.systemui.statusbar.StatusBarMobileView#applyDarknessInternal,com.android.systemui.statusbar.StatusBarMobileView#onDarkChanged,com.android.systemui.statusbar.StatusBarMobileView#setDripEnd; A13=com.android.systemui.statusbar.phone.StatusBarIconControllerImpl#setMobileIcons,com.android.systemui.statusbar.phone.MiuiDripLeftStatusBarIconControllerImpl#setMobileIcons,com.android.systemui.statusbar.StatusBarMobileView#initViewState,com.android.systemui.statusbar.StatusBarMobileView#updateState,com.android.systemui.statusbar.StatusBarMobileView#applyDarknessInternal,com.android.systemui.statusbar.StatusBarMobileView#init
+- CALLBACK_SEMANTICS_COMPARISON: before+after on state methods; A14 onDarkChanged after reapplies drawables.
+- ARG_RESULT_COMPARISON: setMobileIcons args[1] rewritten to hide sub SIM; no returnAndSkip.
+- A14_ONLY_BRANCHES: StatusBarMobileView#onDarkChanged,StatusBarMobileView#setDripEnd
+- WHY_USER_BEHAVIOR_IS_EQUIVALENT: Dual SIM still collapses to one stacked two-row signal drawable with the same style/margin/scale offsets.
+- KEY_OWNERSHIP_EVIDENCE: Both read dualsimin2rows_style/margins/scale/verticaloffset. A13 extra wifi_mobile_atleft selects MiuiDripLeftStatusBarIconControllerImpl vs StatusBarIconControllerImpl.
+- A14_KEY_OWNER_REFERENCE: app/src/main/java/tv/withaibuild/customiuizer/mods/SystemUIStatusBarHooks.kt::DualRowSignalHook
+- A13_KEY_OWNER_REFERENCE: app/src/main/java/tv/withaibuild/customiuizer/mods/SystemUIStatusBarHooks.kt::DualRowSignalHook
+- PROOF_CONCLUSION: `PRESENT_A13_VARIANT`
+
+## PROOF_R5F_StatusBarClockTweakHook_system_statusbar_enable_weather_param
+
+- PROOF_ID: `PROOF_R5F_StatusBarClockTweakHook_system_statusbar_enable_weather_param`
+- BODY_RELATION: `HOLD`
+- A14_OWNER_PATH: `app/src/main/java/tv/withaibuild/customiuizer/mods/SystemClockHooks.kt`
+- A14_SYMBOL: `StatusBarClockTweakHook`
+- A14_INSTALLER: `A14 installer/spec gate for system_statusbar_enable_weather_param`
+- A14_HOOK_TARGETS: `(no host member literals)`
+- A14_CALLBACK_PHASE: `intercept`
+- A13_OWNER_PATH: `app/src/main/java/tv/withaibuild/customiuizer/mods/SystemStatusBarClockAndMoreHooks.kt`
+- A13_SYMBOL: `StatusBarClockTweakHook`
+- A13_INSTALLER: `A13 installer gate for system_statusbar_enable_weather_param`
+- A13_HOOK_TARGETS: `(no host member literals)`
+- A13_CALLBACK_PHASE: `after,before`
+- PREFERENCE_KEYS: `system_statusbar_enable_weather_param`
+- VALUE_DOMAIN: owner-local preference domain
+- DEFAULT_SEMANTICS: A14 boolean default false; A13 does not read the key.
+- RESULT/ARGUMENT_BEHAVIOR: n/a on A13
+- API33_VARIANT_REASON: HyperOS SystemUI weather ABI; do not invent a MIUI14 port.
+- KEY_OWNERSHIP_EVIDENCE: A14 StatusBarClockTweakHook reads system_statusbar_enable_weather_param and calls initWeatherInfoHook. A13 StatusBarClockTweakHook has no weather-param literal.
+- A14_KEY_OWNER_REFERENCE: app/src/main/java/tv/withaibuild/customiuizer/mods/SystemClockHooks.kt::StatusBarClockTweakHook
+- A13_KEY_OWNER_REFERENCE: app/src/main/java/tv/withaibuild/customiuizer/mods/SystemStatusBarClockAndMoreHooks.kt::StatusBarClockTweakHook
+- PROOF_CONCLUSION: `HOLD_EVIDENCE`
+
+## PROOF_R5_HorizMarginHook_system_statusbar_horizmargin
+
+- PROOF_ID: `PROOF_R5_HorizMarginHook_system_statusbar_horizmargin`
+- BODY_RELATION: `REVIEWED_VARIANT`
+- A14_OWNER_PATH: `app/src/main/java/tv/withaibuild/customiuizer/mods/SystemUIStatusBarHooks.kt`
+- A14_SYMBOL: `HorizMarginHook`
+- A14_INSTALLER: `A14 installer/spec gate for system_statusbar_horizmargin,system_statusbar_horizmargin_left,system_statusbar_horizmargin_right`
+- A14_HOOK_TARGETS: `com.android.systemui.statusbar.phone.StatusBarContentInsetsProvider#getStatusBarContentInsetsForCurrentRotation`
+- A14_CALLBACK_PHASE: `before`
+- A13_OWNER_PATH: `app/src/main/java/tv/withaibuild/customiuizer/mods/SystemUIStatusBarHooks.kt`
+- A13_SYMBOL: `HorizMarginHook`
+- A13_INSTALLER: `A13 installer gate for system_statusbar_horizmargin,system_statusbar_horizmargin_left,system_statusbar_horizmargin_right`
+- A13_HOOK_TARGETS: `com.android.systemui.statusbar.phone.StatusBarContentInsetsProvider#getStatusBarContentInsetsForCurrentRotation`
+- A13_CALLBACK_PHASE: `before`
+- PREFERENCE_KEYS: `system_statusbar_horizmargin,system_statusbar_horizmargin_left,system_statusbar_horizmargin_right`
+- VALUE_DOMAIN: owner-local preference domain
+- DEFAULT_SEMANTICS: same persisted keys consumed by both owners
+- RESULT/ARGUMENT_BEHAVIOR: A14 ops: returnAndSkip[Pair(leftMarginPx, rightMarginPx]. A13 ops: returnAndSkip[android.util.Pair(marginLeft.toInt(]. Keys system_statusbar_horizmargin,system_statusbar_horizmargin_left,system_statusbar_horizmargin_right rewrite the same host members.
+- API33_VARIANT_REASON: A14 callback before vs A13 before on members A14[com.android.systemui.statusbar.phone.StatusBarContentInsetsProvider#getStatusBarContentInsetsForCurrentRotation] / A13[com.android.systemui.statusbar.phone.StatusBarContentInsetsProvider#getStatusBarContentInsetsForCurrentRotation]. Inner preference reads of system_statusbar_horizmargin,system_statusbar_horizmargin_left,system_statusbar_horizmargin_right match; intercept proceed-once maps to before returnAndSkip or after side-effect.
+- DIFF_SUMMARY: Shared members com.android.systemui.statusbar.phone.StatusBarContentInsetsProvider#getStatusBarContentInsetsForCurrentRotation. Differ: A14 phases before vs A13 before; A14 returnAndSkip[Pair(leftMarginPx, rightMarginPx] vs A13 returnAndSkip[android.util.Pair(marginLeft.toInt(].
+- VALUE_DEFAULT_COMPARISON: both consume system_statusbar_horizmargin,system_statusbar_horizmargin_left,system_statusbar_horizmargin_right in the owner body or installer gate
+- HOOK_TARGET_COMPARISON: A14=com.android.systemui.statusbar.phone.StatusBarContentInsetsProvider#getStatusBarContentInsetsForCurrentRotation; A13=com.android.systemui.statusbar.phone.StatusBarContentInsetsProvider#getStatusBarContentInsetsForCurrentRotation
+- CALLBACK_SEMANTICS_COMPARISON: A14 before vs A13 before; skipped paths do not invoke the original, proceed-once equals after side-effect
+- ARG_RESULT_COMPARISON: A14=returnAndSkip[Pair(leftMarginPx, rightMarginPx]; A13=returnAndSkip[android.util.Pair(marginLeft.toInt(]
+- A14_ONLY_BRANCHES: none beyond intercept scaffolding for this owner pair
+- WHY_USER_BEHAVIOR_IS_EQUIVALENT: User-visible contract of system_statusbar_horizmargin,system_statusbar_horizmargin_left,system_statusbar_horizmargin_right is the same host rewrite; callback adapter and null-safety differ.
+- KEY_OWNERSHIP_EVIDENCE: system_statusbar_horizmargin,system_statusbar_horizmargin_left,system_statusbar_horizmargin_right: LITERAL_READ and/or INSTALLER_CALLEE in HorizMarginHook/HorizMarginHook
+- A14_KEY_OWNER_REFERENCE: app/src/main/java/tv/withaibuild/customiuizer/mods/SystemUIStatusBarHooks.kt::HorizMarginHook
+- A13_KEY_OWNER_REFERENCE: app/src/main/java/tv/withaibuild/customiuizer/mods/SystemUIStatusBarHooks.kt::HorizMarginHook
+- PROOF_CONCLUSION: `PRESENT_A13_VARIANT`
+
+## PROOF_R5F_MobileTypeSingleHook_system_statusbar_mobiletype_single
+
+- PROOF_ID: `PROOF_R5F_MobileTypeSingleHook_system_statusbar_mobiletype_single`
+- BODY_RELATION: `REVIEWED_VARIANT`
+- A14_OWNER_PATH: `app/src/main/java/tv/withaibuild/customiuizer/mods/SystemUIStatusBarHooks.kt`
+- A14_SYMBOL: `MobileTypeSingleHook`
+- A14_INSTALLER: `A14 installer/spec gate for system_statusbar_mobiletype_single,system_statusbar_mobiletype_single_atleft,system_statusbar_mobiletype_single_bold,system_statusbar_mobiletype_single_fontsize,system_statusbar_mobiletype_single_leftmargin,system_statusbar_mobiletype_single_rightmargin,system_statusbar_mobiletype_single_verticaloffset`
+- A14_HOOK_TARGETS: `com.android.systemui.statusbar.StatusBarMobileView#updateMobileTypeLayout,com.android.systemui.statusbar.StatusBarMobileView#applyMobileState,com.android.systemui.statusbar.StatusBarMobileView#updateState,com.android.systemui.statusbar.StatusBarMobileView#setDripEnd`
+- A14_CALLBACK_PHASE: `before,after`
+- A13_OWNER_PATH: `app/src/main/java/tv/withaibuild/customiuizer/mods/SystemUIStatusBarHooks.kt`
+- A13_SYMBOL: `MobileTypeSingleHook`
+- A13_INSTALLER: `A13 installer gate for system_statusbar_mobiletype_single,system_statusbar_mobiletype_single_atleft,system_statusbar_mobiletype_single_bold,system_statusbar_mobiletype_single_fontsize,system_statusbar_mobiletype_single_leftmargin,system_statusbar_mobiletype_single_rightmargin,system_statusbar_mobiletype_single_verticaloffset`
+- A13_HOOK_TARGETS: `com.android.systemui.statusbar.StatusBarMobileView#initViewState,com.android.systemui.statusbar.StatusBarMobileView#updateState,com.android.systemui.statusbar.StatusBarMobileView#init`
+- A13_CALLBACK_PHASE: `before,after`
+- PREFERENCE_KEYS: `system_statusbar_mobiletype_single,system_statusbar_mobiletype_single_atleft,system_statusbar_mobiletype_single_bold,system_statusbar_mobiletype_single_fontsize,system_statusbar_mobiletype_single_leftmargin,system_statusbar_mobiletype_single_rightmargin,system_statusbar_mobiletype_single_verticaloffset`
+- VALUE_DOMAIN: owner-local preference domain
+- DEFAULT_SEMANTICS: fontsize/margins default 0/stock; atleft/bold default false.
+- RESULT/ARGUMENT_BEHAVIOR: State field showMobileDataTypeSingle=true; layout GONE on left container after bind.
+- API33_VARIANT_REASON: applyMobileState vs initViewState; A14 updateMobileTypeLayout/setDripEnd are HyperOS-only members. A13 init() is MIUI14 inflate for the same style keys.
+- DIFF_SUMMARY: A14 DO_NOTHING on updateMobileTypeLayout plus applyMobileState/setDripEnd. A13 initViewState+init. Same updateState.
+- VALUE_DEFAULT_COMPARISON: fontsize/margins default 0/stock; atleft/bold default false.
+- HOOK_TARGET_COMPARISON: A14=com.android.systemui.statusbar.StatusBarMobileView#updateMobileTypeLayout,com.android.systemui.statusbar.StatusBarMobileView#applyMobileState,com.android.systemui.statusbar.StatusBarMobileView#updateState,com.android.systemui.statusbar.StatusBarMobileView#setDripEnd; A13=com.android.systemui.statusbar.StatusBarMobileView#initViewState,com.android.systemui.statusbar.StatusBarMobileView#updateState,com.android.systemui.statusbar.StatusBarMobileView#init
+- CALLBACK_SEMANTICS_COMPARISON: Highest-priority before+after on state methods.
+- ARG_RESULT_COMPARISON: No returnAndSkip of bind; A14 skips updateMobileTypeLayout entirely.
+- A14_ONLY_BRANCHES: updateMobileTypeLayout DO_NOTHING,setDripEnd
+- WHY_USER_BEHAVIOR_IS_EQUIVALENT: Mobile RAT shows as a single text label with the same typography and offsets.
+- KEY_OWNERSHIP_EVIDENCE: Both set showMobileDataTypeSingle=true and restyle the single type TextView from fontsize/bold/margins/offset/atleft.
+- A14_KEY_OWNER_REFERENCE: app/src/main/java/tv/withaibuild/customiuizer/mods/SystemUIStatusBarHooks.kt::MobileTypeSingleHook
+- A13_KEY_OWNER_REFERENCE: app/src/main/java/tv/withaibuild/customiuizer/mods/SystemUIStatusBarHooks.kt::MobileTypeSingleHook
+- PROOF_CONCLUSION: `PRESENT_A13_VARIANT`
+
+## PROOF_R5_LockScreenTopMarginHook_system_statusbar_topmargin
+
+- PROOF_ID: `PROOF_R5_LockScreenTopMarginHook_system_statusbar_topmargin`
+- BODY_RELATION: `REVIEWED_VARIANT`
+- A14_OWNER_PATH: `app/src/main/java/tv/withaibuild/customiuizer/mods/SystemUILockScreenHooks.kt`
+- A14_SYMBOL: `LockScreenTopMarginHook`
+- A14_INSTALLER: `A14 installer/spec gate for system_statusbar_topmargin,system_statusbar_topmargin_unset_lockscreen`
+- A14_HOOK_TARGETS: `com.android.systemui.SystemUIApplication#onCreate,com.android.systemui.statusbar.phone.MiuiKeyguardStatusBarView#updateViewStatusBarPaddingTop,com.android.systemui.statusbar.phone.MiuiKeyguardStatusBarView#onFinishInflate`
+- A14_CALLBACK_PHASE: `after,before`
+- A13_OWNER_PATH: `app/src/main/java/tv/withaibuild/customiuizer/mods/SystemUILockScreenHooks.kt`
+- A13_SYMBOL: `LockScreenTopMarginHook`
+- A13_INSTALLER: `A13 installer gate for system_statusbar_topmargin,system_statusbar_topmargin_unset_lockscreen`
+- A13_HOOK_TARGETS: `com.android.systemui.SystemUIApplication#onCreate,com.android.systemui.statusbar.phone.MiuiKeyguardStatusBarView#updateViewStatusBarPaddingTop,com.android.systemui.statusbar.phone.MiuiKeyguardStatusBarView#onFinishInflate`
+- A13_CALLBACK_PHASE: `after,before`
+- PREFERENCE_KEYS: `system_statusbar_topmargin,system_statusbar_topmargin_unset_lockscreen`
+- VALUE_DOMAIN: owner-local preference domain
+- DEFAULT_SEMANTICS: same persisted keys consumed by both owners
+- RESULT/ARGUMENT_BEHAVIOR: A14 ops: returnAndSkip[null]. A13 ops: returnAndSkip[null]. Keys system_statusbar_topmargin,system_statusbar_topmargin_unset_lockscreen rewrite the same host members.
+- API33_VARIANT_REASON: A14 callback after,before vs A13 after,before on members A14[com.android.systemui.SystemUIApplication#onCreate,com.android.systemui.statusbar.phone.MiuiKeyguardStatusBarView#updateViewStatusBarPaddingTop,com.android.systemui.statusbar.phone.MiuiKeyguardStatusBarView#onFinishInflate] / A13[com.android.systemui.SystemUIApplication#onCreate,com.android.systemui.statusbar.phone.MiuiKeyguardStatusBarView#updateViewStatusBarPaddingTop,com.android.systemui.statusbar.phone.MiuiKeyguardStatusBarView#onFinishInflate]. Inner preference reads of system_statusbar_topmargin,system_statusbar_topmargin_unset_lockscreen match; intercept proceed-once maps to before returnAndSkip or after side-effect.
+- DIFF_SUMMARY: Shared members com.android.systemui.SystemUIApplication#onCreate,com.android.systemui.statusbar.phone.MiuiKeyguardStatusBarView#updateViewStatusBarPaddingTop,com.android.systemui.statusbar.phone.MiuiKeyguardStatusBarView#onFinishInflate. Differ: A14 phases after,before vs A13 after,before; A14 returnAndSkip[null] vs A13 returnAndSkip[null].
+- VALUE_DEFAULT_COMPARISON: both consume system_statusbar_topmargin,system_statusbar_topmargin_unset_lockscreen in the owner body or installer gate
+- HOOK_TARGET_COMPARISON: A14=com.android.systemui.SystemUIApplication#onCreate,com.android.systemui.statusbar.phone.MiuiKeyguardStatusBarView#updateViewStatusBarPaddingTop,com.android.systemui.statusbar.phone.MiuiKeyguardStatusBarView#onFinishInflate; A13=com.android.systemui.SystemUIApplication#onCreate,com.android.systemui.statusbar.phone.MiuiKeyguardStatusBarView#updateViewStatusBarPaddingTop,com.android.systemui.statusbar.phone.MiuiKeyguardStatusBarView#onFinishInflate
+- CALLBACK_SEMANTICS_COMPARISON: A14 after,before vs A13 after,before; skipped paths do not invoke the original, proceed-once equals after side-effect
+- ARG_RESULT_COMPARISON: A14=returnAndSkip[null]; A13=returnAndSkip[null]
+- A14_ONLY_BRANCHES: none beyond intercept scaffolding for this owner pair
+- WHY_USER_BEHAVIOR_IS_EQUIVALENT: User-visible contract of system_statusbar_topmargin,system_statusbar_topmargin_unset_lockscreen is the same host rewrite; callback adapter and null-safety differ.
+- KEY_OWNERSHIP_EVIDENCE: system_statusbar_topmargin,system_statusbar_topmargin_unset_lockscreen: LITERAL_READ and/or INSTALLER_CALLEE in LockScreenTopMarginHook/LockScreenTopMarginHook
+- A14_KEY_OWNER_REFERENCE: app/src/main/java/tv/withaibuild/customiuizer/mods/SystemUILockScreenHooks.kt::LockScreenTopMarginHook
+- A13_KEY_OWNER_REFERENCE: app/src/main/java/tv/withaibuild/customiuizer/mods/SystemUILockScreenHooks.kt::LockScreenTopMarginHook
+- PROOF_CONCLUSION: `PRESENT_A13_VARIANT`
+
+## PROOF_R5F_StatusBarGesturesHook_system_statusbarcontrols
+
+- PROOF_ID: `PROOF_R5F_StatusBarGesturesHook_system_statusbarcontrols`
+- BODY_RELATION: `REVIEWED_VARIANT`
+- A14_OWNER_PATH: `app/src/main/java/tv/withaibuild/customiuizer/mods/SystemUIControlCenterHooks.kt`
+- A14_SYMBOL: `StatusBarGesturesHook`
+- A14_INSTALLER: `A14 installer/spec gate for system_statusbarcontrols,system_statusbarcontrols_single,system_statusbarcontrols_dual,system_statusbarcontrols_longpress,system_statusbarcontrols_dt,system_statusbarcontrols_sens_bright,system_statusbarcontrols_sens_vol,system_statusbarcontrols_longpress_vibrate,system_statusbarcontrols_longpress_vibrate_ignoreoff`
+- A14_HOOK_TARGETS: `com.android.systemui.statusbar.phone.PhoneStatusBarView#onInterceptTouchEvent,com.android.systemui.statusbar.phone.PhoneStatusBarView#onTouchEvent,com.android.systemui.statusbar.phone.PhoneStatusBarView#onAttachedToWindow,com.android.systemui.statusbar.phone.PhoneStatusBarView#onDetachedFromWindow`
+- A14_CALLBACK_PHASE: `before`
+- A13_OWNER_PATH: `app/src/main/java/tv/withaibuild/customiuizer/mods/SystemUIControlCenterHooks.kt`
+- A13_SYMBOL: `StatusBarGesturesHook`
+- A13_INSTALLER: `A13 installer gate for system_statusbarcontrols,system_statusbarcontrols_single,system_statusbarcontrols_dual,system_statusbarcontrols_longpress,system_statusbarcontrols_dt,system_statusbarcontrols_sens_bright,system_statusbarcontrols_sens_vol,system_statusbarcontrols_longpress_vibrate,system_statusbarcontrols_longpress_vibrate_ignoreoff`
+- A13_HOOK_TARGETS: `com.android.systemui.statusbar.phone.CentralSurfacesImpl#onTouchEvent,miui.systemui.controlcenter.windowview.ControlCenterWindowViewImpl#handleMotionEvent`
+- A13_CALLBACK_PHASE: `before,after`
+- PREFERENCE_KEYS: `system_statusbarcontrols,system_statusbarcontrols_single,system_statusbarcontrols_dual,system_statusbarcontrols_longpress,system_statusbarcontrols_dt,system_statusbarcontrols_sens_bright,system_statusbarcontrols_sens_vol,system_statusbarcontrols_longpress_vibrate,system_statusbarcontrols_longpress_vibrate_ignoreoff`
+- VALUE_DOMAIN: owner-local preference domain
+- DEFAULT_SEMANTICS: single/dual default 1; sens default 2; vibrate extras default false. A13 extras are MIUI14 haptic options for the same gesture.
+- RESULT/ARGUMENT_BEHAVIOR: Neither rewrites MotionEvent result as the primary contract; both dispatch gesture side effects in before.
+- API33_VARIANT_REASON: MIUI14 status-bar touch still goes through CentralSurfacesImpl; HyperOS uses PhoneStatusBarView (not shade.* here). CC path remains ControlCenterWindowViewImpl#handleMotionEvent on A13.
+- DIFF_SUMMARY: A13 hooks CentralSurfacesImpl#onTouchEvent plus plugin ControlCenterWindowViewImpl#handleMotionEvent. A14 hooks PhoneStatusBarView onTouch/onIntercept plus attach/detach. Classifier omitted A13 CentralSurfacesImpl.
+- VALUE_DEFAULT_COMPARISON: single/dual default 1; sens default 2; vibrate extras default false. A13 extras are MIUI14 haptic options for the same gesture.
+- HOOK_TARGET_COMPARISON: A14=com.android.systemui.statusbar.phone.PhoneStatusBarView#onInterceptTouchEvent,com.android.systemui.statusbar.phone.PhoneStatusBarView#onTouchEvent,com.android.systemui.statusbar.phone.PhoneStatusBarView#onAttachedToWindow,com.android.systemui.statusbar.phone.PhoneStatusBarView#onDetachedFromWindow; A13=com.android.systemui.statusbar.phone.CentralSurfacesImpl#onTouchEvent,miui.systemui.controlcenter.windowview.ControlCenterWindowViewImpl#handleMotionEvent
+- CALLBACK_SEMANTICS_COMPARISON: Both before on touch; A14 ignores INTERCEPT and only processes onTouchEvent name.
+- ARG_RESULT_COMPARISON: No result rewrite required for the toggle.
+- A14_ONLY_BRANCHES: PhoneStatusBarView onAttachedToWindow/onDetachedFromWindow GestureMachine prepare/clear
+- WHY_USER_BEHAVIOR_IS_EQUIVALENT: Horizontal status-bar swipe still changes brightness or volume; long-press and double-tap still fire with the same sensitivity keys.
+- KEY_OWNERSHIP_EVIDENCE: A13 gesture callback reads single/dual/longpress/dt/sens_bright/sens_vol/vibrate keys. A14 GestureMachine configPublisher publishes the same statusbarcontrols family.
+- A14_KEY_OWNER_REFERENCE: app/src/main/java/tv/withaibuild/customiuizer/mods/SystemUIControlCenterHooks.kt::StatusBarGesturesHook
+- A13_KEY_OWNER_REFERENCE: app/src/main/java/tv/withaibuild/customiuizer/mods/SystemUIControlCenterHooks.kt::StatusBarGesturesHook
+- PROOF_CONCLUSION: `PRESENT_A13_VARIANT`
+
+## PROOF_R5F_checkSlot_system_statusbaricons_airplane
+
+- PROOF_ID: `PROOF_R5F_checkSlot_system_statusbaricons_airplane`
+- BODY_RELATION: `REVIEWED_VARIANT`
+- A14_OWNER_PATH: `app/src/main/java/tv/withaibuild/customiuizer/mods/SystemUIStatusBarHooks.kt`
+- A14_SYMBOL: `buildStatusBarIconVisibilitySnapshot`
+- A14_INSTALLER: `A14 installer/spec gate for system_statusbaricons_airplane,system_statusbaricons_dnd,system_statusbaricons_headset,system_statusbaricons_hotspot,system_statusbaricons_nfc,system_statusbaricons_nosims,system_statusbaricons_profile,system_statusbaricons_secondspace,system_statusbaricons_sound,system_statusbaricons_vpn,system_statusbaricons_wifi,system_statusbaricons_wireless_headset,system_statusbaricons_dualwifi`
+- A14_HOOK_TARGETS: `(no host member literals)`
+- A14_CALLBACK_PHASE: `unknown`
+- A13_OWNER_PATH: `app/src/main/java/tv/withaibuild/customiuizer/mods/SystemUIStatusBarHooks.kt`
+- A13_SYMBOL: `checkSlot`
+- A13_INSTALLER: `A13 installer gate for system_statusbaricons_airplane,system_statusbaricons_dnd,system_statusbaricons_headset,system_statusbaricons_hotspot,system_statusbaricons_nfc,system_statusbaricons_nosims,system_statusbaricons_profile,system_statusbaricons_secondspace,system_statusbaricons_sound,system_statusbaricons_vpn,system_statusbaricons_wifi,system_statusbaricons_wireless_headset,system_statusbaricons_dualwifi`
+- A13_HOOK_TARGETS: `(no host member literals)`
+- A13_CALLBACK_PHASE: `unknown`
+- PREFERENCE_KEYS: `system_statusbaricons_airplane,system_statusbaricons_dnd,system_statusbaricons_headset,system_statusbaricons_hotspot,system_statusbaricons_nfc,system_statusbaricons_nosims,system_statusbaricons_profile,system_statusbaricons_secondspace,system_statusbaricons_sound,system_statusbaricons_vpn,system_statusbaricons_wifi,system_statusbaricons_wireless_headset,system_statusbaricons_dualwifi`
+- VALUE_DOMAIN: owner-local preference domain
+- DEFAULT_SEMANTICS: All hide booleans default false.
+- RESULT/ARGUMENT_BEHAVIOR: Pure predicate; HideIconsHook applies args[1]=false.
+- API33_VARIANT_REASON: A13 extra slave_wifi is MIUI14 dual-Wi-Fi slot. A14 wireless_headset hide is the same toggle via CommandQueue system-manager path.
+- DIFF_SUMMARY: A13 checkSlot includes wireless_headset and slave_wifi (system_statusbaricons_dualwifi). A14 checkSlot has no wireless_headset (moved to shouldHideSystemManagerIcon) and no slave_wifi.
+- VALUE_DEFAULT_COMPARISON: All hide booleans default false.
+- HOOK_TARGET_COMPARISON: A14=(none); A13=(none)
+- CALLBACK_SEMANTICS_COMPARISON: No hook phase; both are slot predicates.
+- ARG_RESULT_COMPARISON: Boolean return only.
+- A14_ONLY_BRANCHES: hideBluetoothIcn / sim/roaming/signal flags in snapshot, consumed by other owners
+- WHY_USER_BEHAVIOR_IS_EQUIVALENT: Named status-bar slots still hide when their booleans are true. wireless_headset still hides (A14 via shouldHideSystemManagerIcon). dualwifi remains A13 MIUI14 extra for the same hide-icons family.
+- KEY_OWNERSHIP_EVIDENCE: A13 checkSlot maps slot names to live pref booleans. Real A14 counterpart is checkSlot(slot, snapshot) plus shouldHideSystemManagerIcon for wireless_headset. Snapshot builder is not the hide owner.
+- A14_KEY_OWNER_REFERENCE: app/src/main/java/tv/withaibuild/customiuizer/mods/SystemUIStatusBarHooks.kt::buildStatusBarIconVisibilitySnapshot
+- A13_KEY_OWNER_REFERENCE: app/src/main/java/tv/withaibuild/customiuizer/mods/SystemUIStatusBarHooks.kt::checkSlot
+- PROOF_CONCLUSION: `PRESENT_A13_VARIANT`
+
+## PROOF_R5F_HideIconsSelectiveAlarmHook_system_statusbaricons_alarm
+
+- PROOF_ID: `PROOF_R5F_HideIconsSelectiveAlarmHook_system_statusbaricons_alarm`
+- BODY_RELATION: `REVIEWED_VARIANT`
+- A14_OWNER_PATH: `app/src/main/java/tv/withaibuild/customiuizer/mods/SystemStatusBarIconHooks.kt`
+- A14_SYMBOL: `HideIconsSelectiveAlarmHook`
+- A14_INSTALLER: `A14 installer/spec gate for system_statusbaricons_alarm,system_statusbaricons_alarmn`
+- A14_HOOK_TARGETS: `com.android.systemui.statusbar.phone.MiuiPhoneStatusBarPolicy#<init>,#onAlarmChanged,#onNextAlarmChanged`
+- A14_CALLBACK_PHASE: `intercept,after`
+- A13_OWNER_PATH: `app/src/main/java/tv/withaibuild/customiuizer/mods/SystemStatusBarMoreHooks.kt`
+- A13_SYMBOL: `HideIconsSelectiveAlarmHook`
+- A13_INSTALLER: `A13 installer gate for system_statusbaricons_alarm,system_statusbaricons_alarmn`
+- A13_HOOK_TARGETS: `com.android.systemui.statusbar.phone.MiuiPhoneStatusBarPolicy#<init>,com.android.systemui.statusbar.phone.PhoneStatusBarPolicy#updateAlarm,com.android.systemui.statusbar.phone.MiuiPhoneStatusBarPolicy#onMiuiAlarmChanged`
+- A13_CALLBACK_PHASE: `after,before`
+- PREFERENCE_KEYS: `system_statusbaricons_alarm,system_statusbaricons_alarmn`
+- VALUE_DOMAIN: owner-local preference domain
+- DEFAULT_SEMANTICS: alarmn default 0 hours.
+- RESULT/ARGUMENT_BEHAVIOR: A13 onMiuiAlarmChanged returnAndSkip(null) after applying visibility. A14 proceeds constructors then after-hooks callbacks.
+- API33_VARIANT_REASON: MIUI14 still has onMiuiAlarmChanged/updateAlarm; HyperOS moved next-alarm to policy callbacks. A13 also drives miuiDripLeftStatusBarIconController.
+- DIFF_SUMMARY: A13 hooks PhoneStatusBarPolicy#updateAlarm after and MiuiPhoneStatusBarPolicy#onMiuiAlarmChanged before+returnAndSkip. A14 hooks mNextAlarmCallback#onAlarmChanged(Boolean) and #onNextAlarmChanged(AlarmClockInfo).
+- VALUE_DEFAULT_COMPARISON: alarmn default 0 hours.
+- HOOK_TARGET_COMPARISON: A14=com.android.systemui.statusbar.phone.MiuiPhoneStatusBarPolicy#<init>,#onAlarmChanged,#onNextAlarmChanged; A13=com.android.systemui.statusbar.phone.MiuiPhoneStatusBarPolicy#<init>,com.android.systemui.statusbar.phone.PhoneStatusBarPolicy#updateAlarm,com.android.systemui.statusbar.phone.MiuiPhoneStatusBarPolicy#onMiuiAlarmChanged
+- CALLBACK_SEMANTICS_COMPARISON: A13 skip of onMiuiAlarmChanged prevents stock MIUI alarm show; A14 after-hooks overlay the same visibility.
+- ARG_RESULT_COMPARISON: A13 returnAndSkip[null] on onMiuiAlarmChanged; A14 no skip of onAlarmChanged.
+- A14_ONLY_BRANCHES: onNextAlarmChanged null -> lastState false
+- WHY_USER_BEHAVIOR_IS_EQUIVALENT: Alarm icon hidden unless next alarm is within the configured hour window; TIME_TICK/TIME_SET refresh both.
+- KEY_OWNERSHIP_EVIDENCE: Both call setIconVisibility("alarm_clock", vis) when hours-to-next-alarm <= system_statusbaricons_alarmn.
+- A14_KEY_OWNER_REFERENCE: app/src/main/java/tv/withaibuild/customiuizer/mods/SystemStatusBarIconHooks.kt::HideIconsSelectiveAlarmHook
+- A13_KEY_OWNER_REFERENCE: app/src/main/java/tv/withaibuild/customiuizer/mods/SystemStatusBarMoreHooks.kt::HideIconsSelectiveAlarmHook
+- PROOF_CONCLUSION: `PRESENT_A13_VARIANT`
+
+## PROOF_R5F_HideIconsBattery1Hook_system_statusbaricons_battery1
+
+- PROOF_ID: `PROOF_R5F_HideIconsBattery1Hook_system_statusbaricons_battery1`
+- BODY_RELATION: `REVIEWED_VARIANT`
+- A14_OWNER_PATH: `app/src/main/java/tv/withaibuild/customiuizer/mods/SystemStatusBarIconHooks.kt`
+- A14_SYMBOL: `HideIconsBattery1Hook`
+- A14_INSTALLER: `A14 installer/spec gate for system_statusbaricons_battery1`
+- A14_HOOK_TARGETS: `com.android.systemui.statusbar.views.MiuiBatteryMeterView#updateAll`
+- A14_CALLBACK_PHASE: `intercept`
+- A13_OWNER_PATH: `app/src/main/java/tv/withaibuild/customiuizer/mods/SystemStatusBarMoreHooks.kt`
+- A13_SYMBOL: `HideIconsBattery1Hook`
+- A13_INSTALLER: `A13 installer gate for system_statusbaricons_battery1`
+- A13_HOOK_TARGETS: `com.android.systemui.statusbar.views.MiuiBatteryMeterView#initMiuiView`
+- A13_CALLBACK_PHASE: `after`
+- PREFERENCE_KEYS: `system_statusbaricons_battery1`
+- VALUE_DOMAIN: owner-local preference domain
+- DEFAULT_SEMANTICS: Boolean default false.
+- RESULT/ARGUMENT_BEHAVIOR: Neither rewrites method result; visibility side-effect only.
+- API33_VARIANT_REASON: MIUI14 initMiuiView is one-shot inflate; HyperOS updateAll would restore visibility if only init were hooked.
+- DIFF_SUMMARY: A13 hides on MiuiBatteryMeterView#initMiuiView after inflate; A14 hides after updateAll intercept/proceed because HyperOS rebinds the icon on each update.
+- VALUE_DEFAULT_COMPARISON: Boolean default false.
+- HOOK_TARGET_COMPARISON: A14=com.android.systemui.statusbar.views.MiuiBatteryMeterView#updateAll; A13=com.android.systemui.statusbar.views.MiuiBatteryMeterView#initMiuiView
+- CALLBACK_SEMANTICS_COMPARISON: A14 intercept+proceed equals A13 after side-effect.
+- ARG_RESULT_COMPARISON: No arg/result rewrite.
+- A14_ONLY_BRANCHES: updateAll intercept proceed-then-GONE
+- WHY_USER_BEHAVIOR_IS_EQUIVALENT: Battery glyph ImageView is GONE for the same toggle.
+- KEY_OWNERSHIP_EVIDENCE: Installer-gated by system_statusbaricons_battery1; both set mBatteryIconView.visibility=GONE.
+- A14_KEY_OWNER_REFERENCE: app/src/main/java/tv/withaibuild/customiuizer/mods/SystemStatusBarIconHooks.kt::HideIconsBattery1Hook
+- A13_KEY_OWNER_REFERENCE: app/src/main/java/tv/withaibuild/customiuizer/mods/SystemStatusBarMoreHooks.kt::HideIconsBattery1Hook
+- PROOF_CONCLUSION: `PRESENT_A13_VARIANT`
+
+## PROOF_R5_HideIconsBattery2Hook_system_statusbaricons_battery2
+
+- PROOF_ID: `PROOF_R5_HideIconsBattery2Hook_system_statusbaricons_battery2`
+- BODY_RELATION: `REVIEWED_VARIANT`
+- A14_OWNER_PATH: `app/src/main/java/tv/withaibuild/customiuizer/mods/SystemStatusBarIconHooks.kt`
+- A14_SYMBOL: `HideIconsBattery2Hook`
+- A14_INSTALLER: `A14 installer/spec gate for system_statusbaricons_battery2,system_statusbaricons_battery3,system_statusbaricons_battery4`
+- A14_HOOK_TARGETS: `com.android.systemui.statusbar.phone.MiuiPhoneStatusBarView#onFinishInflate,com.android.systemui.statusbar.phone.KeyguardStatusBarView#onFinishInflate,com.android.systemui.statusbar.views.MiuiBatteryMeterView#updateChargeAndText`
+- A14_CALLBACK_PHASE: `intercept`
+- A13_OWNER_PATH: `app/src/main/java/tv/withaibuild/customiuizer/mods/SystemStatusBarMoreHooks.kt`
+- A13_SYMBOL: `HideIconsBattery2Hook`
+- A13_INSTALLER: `A13 installer gate for system_statusbaricons_battery2,system_statusbaricons_battery3,system_statusbaricons_battery4`
+- A13_HOOK_TARGETS: `com.android.systemui.statusbar.phone.MiuiPhoneStatusBarView#onFinishInflate,com.android.systemui.statusbar.phone.KeyguardStatusBarView#onFinishInflate,com.android.systemui.statusbar.views.MiuiBatteryMeterView#updateChargeAndText`
+- A13_CALLBACK_PHASE: `after`
+- PREFERENCE_KEYS: `system_statusbaricons_battery2,system_statusbaricons_battery3,system_statusbaricons_battery4`
+- VALUE_DOMAIN: owner-local preference domain
+- DEFAULT_SEMANTICS: same persisted keys consumed by both owners
+- RESULT/ARGUMENT_BEHAVIOR: A14 ops: result_assign[null,null,null]; chain.proceed[chain.proceed(),chain.proceed(),chain.proceed()]. A13 ops: no result/argument rewrite literals. Keys system_statusbaricons_battery2,system_statusbaricons_battery3,system_statusbaricons_battery4 rewrite the same host members.
+- API33_VARIANT_REASON: A14 callback intercept vs A13 after on members A14[com.android.systemui.statusbar.phone.MiuiPhoneStatusBarView#onFinishInflate,com.android.systemui.statusbar.phone.KeyguardStatusBarView#onFinishInflate,com.android.systemui.statusbar.views.MiuiBatteryMeterView#updateChargeAndText] / A13[com.android.systemui.statusbar.phone.MiuiPhoneStatusBarView#onFinishInflate,com.android.systemui.statusbar.phone.KeyguardStatusBarView#onFinishInflate,com.android.systemui.statusbar.views.MiuiBatteryMeterView#updateChargeAndText]. Inner preference reads of system_statusbaricons_battery2,system_statusbaricons_battery3,system_statusbaricons_battery4 match; intercept proceed-once maps to before returnAndSkip or after side-effect.
+- DIFF_SUMMARY: Shared members com.android.systemui.statusbar.phone.MiuiPhoneStatusBarView#onFinishInflate,com.android.systemui.statusbar.phone.KeyguardStatusBarView#onFinishInflate,com.android.systemui.statusbar.views.MiuiBatteryMeterView#updateChargeAndText. Differ: A14 phases intercept vs A13 after; A14 result_assign[null,null,null]; chain.proceed[chain.proceed(),chain.proceed(),chain.proceed()] vs A13 no result/argument rewrite literals.
+- VALUE_DEFAULT_COMPARISON: both consume system_statusbaricons_battery2,system_statusbaricons_battery3,system_statusbaricons_battery4 in the owner body or installer gate
+- HOOK_TARGET_COMPARISON: A14=com.android.systemui.statusbar.phone.MiuiPhoneStatusBarView#onFinishInflate,com.android.systemui.statusbar.phone.KeyguardStatusBarView#onFinishInflate,com.android.systemui.statusbar.views.MiuiBatteryMeterView#updateChargeAndText; A13=com.android.systemui.statusbar.phone.MiuiPhoneStatusBarView#onFinishInflate,com.android.systemui.statusbar.phone.KeyguardStatusBarView#onFinishInflate,com.android.systemui.statusbar.views.MiuiBatteryMeterView#updateChargeAndText
+- CALLBACK_SEMANTICS_COMPARISON: A14 intercept vs A13 after; skipped paths do not invoke the original, proceed-once equals after side-effect
+- ARG_RESULT_COMPARISON: A14=result_assign[null,null,null]; chain.proceed[chain.proceed(),chain.proceed(),chain.proceed()]; A13=no result/argument rewrite literals
+- A14_ONLY_BRANCHES: none beyond intercept scaffolding for this owner pair
+- WHY_USER_BEHAVIOR_IS_EQUIVALENT: User-visible contract of system_statusbaricons_battery2,system_statusbaricons_battery3,system_statusbaricons_battery4 is the same host rewrite; callback adapter and null-safety differ.
+- KEY_OWNERSHIP_EVIDENCE: system_statusbaricons_battery2,system_statusbaricons_battery3,system_statusbaricons_battery4: LITERAL_READ and/or INSTALLER_CALLEE in HideIconsBattery2Hook/HideIconsBattery2Hook
+- A14_KEY_OWNER_REFERENCE: app/src/main/java/tv/withaibuild/customiuizer/mods/SystemStatusBarIconHooks.kt::HideIconsBattery2Hook
+- A13_KEY_OWNER_REFERENCE: app/src/main/java/tv/withaibuild/customiuizer/mods/SystemStatusBarMoreHooks.kt::HideIconsBattery2Hook
+- PROOF_CONCLUSION: `PRESENT_A13_VARIANT`
+
+## PROOF_R5F_HideIconsHook_system_statusbaricons_ble_unlock
+
+- PROOF_ID: `PROOF_R5F_HideIconsHook_system_statusbaricons_ble_unlock`
+- BODY_RELATION: `REVIEWED_VARIANT`
+- A14_OWNER_PATH: `app/src/main/java/tv/withaibuild/customiuizer/mods/SystemUIStatusBarHooks.kt`
+- A14_SYMBOL: `HideIconsHook`
+- A14_INSTALLER: `A14 installer/spec gate for system_statusbaricons_ble_unlock,system_statusbaricons_btbattery,system_statusbaricons_gps,system_statusbaricons_volte`
+- A14_HOOK_TARGETS: `com.android.systemui.statusbar.phone.StatusBarIconControllerImpl#setIconVisibility`
+- A14_CALLBACK_PHASE: `before`
+- A13_OWNER_PATH: `app/src/main/java/tv/withaibuild/customiuizer/mods/SystemUIStatusBarHooks.kt`
+- A13_SYMBOL: `HideIconsHook`
+- A13_INSTALLER: `A13 installer gate for system_statusbaricons_ble_unlock,system_statusbaricons_btbattery,system_statusbaricons_gps,system_statusbaricons_volte`
+- A13_HOOK_TARGETS: `com.android.systemui.statusbar.phone.StatusBarIconControllerImpl#setIconVisibility,com.android.systemui.statusbar.phone.MiuiDripLeftStatusBarIconControllerImpl#setIconVisibility`
+- A13_CALLBACK_PHASE: `before`
+- PREFERENCE_KEYS: `system_statusbaricons_ble_unlock,system_statusbaricons_btbattery,system_statusbaricons_gps,system_statusbaricons_volte`
+- VALUE_DOMAIN: owner-local preference domain
+- DEFAULT_SEMANTICS: Booleans default false.
+- RESULT/ARGUMENT_BEHAVIOR: Both rewrite visibility boolean arg; do not skip the method.
+- API33_VARIANT_REASON: A13 drip-left controller is MIUI14 dual-row/drip layout; HyperOS dropped that controller for this hide path.
+- DIFF_SUMMARY: A13 extra MiuiDripLeftStatusBarIconControllerImpl#setIconVisibility when !newStyle. A14 only StatusBarIconControllerImpl.
+- VALUE_DEFAULT_COMPARISON: Booleans default false.
+- HOOK_TARGET_COMPARISON: A14=com.android.systemui.statusbar.phone.StatusBarIconControllerImpl#setIconVisibility; A13=com.android.systemui.statusbar.phone.StatusBarIconControllerImpl#setIconVisibility,com.android.systemui.statusbar.phone.MiuiDripLeftStatusBarIconControllerImpl#setIconVisibility
+- CALLBACK_SEMANTICS_COMPARISON: Both before.
+- ARG_RESULT_COMPARISON: args[1]=false on both.
+- A14_ONLY_BRANCHES: snapshot-backed checkSlot vs A13 live pref reads in checkSlot
+- WHY_USER_BEHAVIOR_IS_EQUIVALENT: Matching slots are forced hidden via setIconVisibility false.
+- KEY_OWNERSHIP_EVIDENCE: Both before-hooks call checkSlot(slot) and force args[1]=false. Keys are consumed inside checkSlot/snapshot.
+- A14_KEY_OWNER_REFERENCE: app/src/main/java/tv/withaibuild/customiuizer/mods/SystemUIStatusBarHooks.kt::HideIconsHook
+- A13_KEY_OWNER_REFERENCE: app/src/main/java/tv/withaibuild/customiuizer/mods/SystemUIStatusBarHooks.kt::HideIconsHook
+- PROOF_CONCLUSION: `PRESENT_A13_VARIANT`
+
+## PROOF_BT_ICON_ALWAYS_HIDE
+
+- PROOF_ID: `PROOF_BT_ICON_ALWAYS_HIDE`
+- BODY_RELATION: `REVIEWED_VARIANT`
+- A14_OWNER_PATH: `app/src/main/java/tv/withaibuild/customiuizer/mods/SystemStatusBarMoreHooks.kt`
+- A14_SYMBOL: `HideIconsBluetoothHook`
+- A14_INSTALLER: `A14 SystemUi features`
+- A14_HOOK_TARGETS: `bluetooth status-bar icon visibility`
+- A14_CALLBACK_PHASE: `before`
+- A13_OWNER_PATH: `app/src/main/java/tv/withaibuild/customiuizer/mods/SystemStatusBarMoreHooks.kt`
+- A13_SYMBOL: `HideIconsBluetoothHook`
+- A13_INSTALLER: `installers/SystemUiInstaller.java`
+- A13_HOOK_TARGETS: `bluetooth status-bar icon visibility`
+- A13_CALLBACK_PHASE: `before`
+- PREFERENCE_KEYS: `system_statusbaricons_bluetoothicn,system_statusbaricons_bluetooth`
+- VALUE_DOMAIN: A14 boolean vs A13 list option 3 = always hide
+- DEFAULT_SEMANTICS: stock bluetooth icon visible
+- RESULT/ARGUMENT_BEHAVIOR: A13 option 3 forces bluetooth icon visibility false
+- API33_VARIANT_REASON: A13 already exposes always-hide as bluetooth=3; A14 split a dedicated key.
+- DIFF_SUMMARY: A13 already exposes always-hide as bluetooth=3; A14 split a dedicated key.
+- VALUE_DEFAULT_COMPARISON: stock bluetooth icon visible
+- HOOK_TARGET_COMPARISON: A14=bluetooth status-bar icon visibility; A13=bluetooth status-bar icon visibility
+- CALLBACK_SEMANTICS_COMPARISON: A14=before; A13=before
+- ARG_RESULT_COMPARISON: A13 option 3 forces bluetooth icon visibility false
+- A14_ONLY_BRANCHES: A13 already exposes always-hide as bluetooth=3; A14 split a dedicated key.
+- WHY_USER_BEHAVIOR_IS_EQUIVALENT: A13 option 3 forces bluetooth icon visibility false. A13 already exposes always-hide as bluetooth=3; A14 split a dedicated key.
+- PROOF_CONCLUSION: `PRESENT_A13_VARIANT`
+
+## PROOF_R5F_HideIconsFromSystemManager_system_statusbaricons_mute
+
+- PROOF_ID: `PROOF_R5F_HideIconsFromSystemManager_system_statusbaricons_mute`
+- BODY_RELATION: `REVIEWED_VARIANT`
+- A14_OWNER_PATH: `app/src/main/java/tv/withaibuild/customiuizer/mods/SystemUIStatusBarHooks.kt`
+- A14_SYMBOL: `buildStatusBarIconVisibilitySnapshot`
+- A14_INSTALLER: `A14 installer/spec gate for system_statusbaricons_mute,system_statusbaricons_privacy,system_statusbaricons_record,system_statusbaricons_speaker`
+- A14_HOOK_TARGETS: `com.android.systemui.statusbar.CommandQueue#setIcon`
+- A14_CALLBACK_PHASE: `before`
+- A13_OWNER_PATH: `app/src/main/java/tv/withaibuild/customiuizer/mods/SystemUIStatusBarHooks.kt`
+- A13_SYMBOL: `HideIconsFromSystemManager`
+- A13_INSTALLER: `A13 installer gate for system_statusbaricons_mute,system_statusbaricons_privacy,system_statusbaricons_record,system_statusbaricons_speaker`
+- A13_HOOK_TARGETS: `com.android.systemui.statusbar.phone.StatusBarIconControllerImpl#setIcon`
+- A13_CALLBACK_PHASE: `before`
+- PREFERENCE_KEYS: `system_statusbaricons_mute,system_statusbaricons_privacy,system_statusbaricons_record,system_statusbaricons_speaker`
+- VALUE_DOMAIN: owner-local preference domain
+- DEFAULT_SEMANTICS: Booleans default false.
+- RESULT/ARGUMENT_BEHAVIOR: Both before set StatusBarIcon.visible=false; original setIcon still runs.
+- API33_VARIANT_REASON: HyperOS system-manager icons arrive via CommandQueue#setIcon; MIUI14 still uses StatusBarIconControllerImpl#setIcon.
+- DIFF_SUMMARY: A13 StatusBarIconControllerImpl#setIcon vs A14 CommandQueue#setIcon. Same slots: stealth, mute, speakerphone, call_record set visible=false.
+- VALUE_DEFAULT_COMPARISON: Booleans default false.
+- HOOK_TARGET_COMPARISON: A14=com.android.systemui.statusbar.CommandQueue#setIcon; A13=com.android.systemui.statusbar.phone.StatusBarIconControllerImpl#setIcon
+- CALLBACK_SEMANTICS_COMPARISON: Both before side-effect, no skip.
+- ARG_RESULT_COMPARISON: Field visible=false on args[1]; no returnAndSkip.
+- A14_ONLY_BRANCHES: snapshot also stores unrelated hide flags for other owners
+- WHY_USER_BEHAVIOR_IS_EQUIVALENT: Privacy/mute/speaker/record icons from system manager stay hidden.
+- KEY_OWNERSHIP_EVIDENCE: A13 before setIcon hides stealth/mute/speakerphone/call_record. Real A14 owner HideIconsFromSystemManager uses shouldHideSystemManagerIcon on the snapshot.
+- A14_KEY_OWNER_REFERENCE: app/src/main/java/tv/withaibuild/customiuizer/mods/SystemUIStatusBarHooks.kt::buildStatusBarIconVisibilitySnapshot
+- A13_KEY_OWNER_REFERENCE: app/src/main/java/tv/withaibuild/customiuizer/mods/SystemUIStatusBarHooks.kt::HideIconsFromSystemManager
+- PROOF_CONCLUSION: `PRESENT_A13_VARIANT`
+
+## PROOF_R5F_HideIconsSignalHook_system_statusbaricons_roaming
+
+- PROOF_ID: `PROOF_R5F_HideIconsSignalHook_system_statusbaricons_roaming`
+- BODY_RELATION: `REVIEWED_VARIANT`
+- A14_OWNER_PATH: `app/src/main/java/tv/withaibuild/customiuizer/mods/SystemUIStatusBarHooks.kt`
+- A14_SYMBOL: `HideIconsSignalHook`
+- A14_INSTALLER: `A14 installer/spec gate for system_statusbaricons_roaming,system_statusbaricons_sim1,system_statusbaricons_sim2,system_statusbaricons_sim_nodata,system_statusbaricons_volte`
+- A14_HOOK_TARGETS: `com.android.systemui.statusbar.StatusBarMobileView#applyMobileState,com.android.systemui.statusbar.StatusBarMobileView#updateState`
+- A14_CALLBACK_PHASE: `before`
+- A13_OWNER_PATH: `app/src/main/java/tv/withaibuild/customiuizer/mods/SystemUIStatusBarHooks.kt`
+- A13_SYMBOL: `HideIconsSignalHook`
+- A13_INSTALLER: `A13 installer gate for system_statusbaricons_roaming,system_statusbaricons_sim1,system_statusbaricons_sim2,system_statusbaricons_sim_nodata,system_statusbaricons_volte`
+- A13_HOOK_TARGETS: `com.android.systemui.statusbar.StatusBarMobileView#initViewState,com.android.systemui.statusbar.StatusBarMobileView#updateState`
+- A13_CALLBACK_PHASE: `before`
+- PREFERENCE_KEYS: `system_statusbaricons_roaming,system_statusbaricons_sim1,system_statusbaricons_sim2,system_statusbaricons_sim_nodata,system_statusbaricons_volte`
+- VALUE_DOMAIN: owner-local preference domain
+- DEFAULT_SEMANTICS: Booleans default false.
+- RESULT/ARGUMENT_BEHAVIOR: State object field writes; original method proceeds.
+- API33_VARIANT_REASON: HyperOS renamed StatusBarMobileView#initViewState to applyMobileState.
+- DIFF_SUMMARY: applyMobileState vs initViewState. Same updateState. A13 also reads signal/wificonnected in this same function.
+- VALUE_DEFAULT_COMPARISON: Booleans default false.
+- HOOK_TARGET_COMPARISON: A14=com.android.systemui.statusbar.StatusBarMobileView#applyMobileState,com.android.systemui.statusbar.StatusBarMobileView#updateState; A13=com.android.systemui.statusbar.StatusBarMobileView#initViewState,com.android.systemui.statusbar.StatusBarMobileView#updateState
+- CALLBACK_SEMANTICS_COMPARISON: Both before on bind/update.
+- ARG_RESULT_COMPARISON: No returnAndSkip; field visible/roaming/volte=false.
+- A14_ONLY_BRANCHES: StatusBarIconVisibilityResolver ABI
+- WHY_USER_BEHAVIOR_IS_EQUIVALENT: SIM1/SIM2/no-data/roaming/VoLTE indicators still hide by mutating MobileIconState before bind.
+- KEY_OWNERSHIP_EVIDENCE: A13 before-hook sets mobileIconState.visible/roaming/volte/speechHd from these prefs. A14 StatusBarIconVisibilityEffect does the same from snapshot.
+- A14_KEY_OWNER_REFERENCE: app/src/main/java/tv/withaibuild/customiuizer/mods/SystemUIStatusBarHooks.kt::HideIconsSignalHook
+- A13_KEY_OWNER_REFERENCE: app/src/main/java/tv/withaibuild/customiuizer/mods/SystemUIStatusBarHooks.kt::HideIconsSignalHook
+- PROOF_CONCLUSION: `PRESENT_A13_VARIANT`
+
+## PROOF_R5F_HideIconsSignalHook_system_statusbaricons_signal
+
+- PROOF_ID: `PROOF_R5F_HideIconsSignalHook_system_statusbaricons_signal`
+- BODY_RELATION: `REVIEWED_VARIANT`
+- A14_OWNER_PATH: `app/src/main/java/tv/withaibuild/customiuizer/mods/SystemUIStatusBarHooks.kt`
+- A14_SYMBOL: `buildStatusBarIconVisibilitySnapshot`
+- A14_INSTALLER: `A14 installer/spec gate for system_statusbaricons_signal,system_statusbaricons_signal_wificonnected`
+- A14_HOOK_TARGETS: `com.android.systemui.statusbar.StatusBarMobileView#applyMobileState,com.android.systemui.statusbar.StatusBarMobileView#updateState`
+- A14_CALLBACK_PHASE: `before`
+- A13_OWNER_PATH: `app/src/main/java/tv/withaibuild/customiuizer/mods/SystemUIStatusBarHooks.kt`
+- A13_SYMBOL: `HideIconsSignalHook`
+- A13_INSTALLER: `A13 installer gate for system_statusbaricons_signal,system_statusbaricons_signal_wificonnected`
+- A13_HOOK_TARGETS: `com.android.systemui.statusbar.StatusBarMobileView#initViewState,com.android.systemui.statusbar.StatusBarMobileView#updateState`
+- A13_CALLBACK_PHASE: `before`
+- PREFERENCE_KEYS: `system_statusbaricons_signal,system_statusbaricons_signal_wificonnected`
+- VALUE_DOMAIN: owner-local preference domain
+- DEFAULT_SEMANTICS: Booleans default false.
+- RESULT/ARGUMENT_BEHAVIOR: visible=false on MobileIconState; proceed.
+- API33_VARIANT_REASON: applyMobileState vs initViewState HyperOS rename.
+- DIFF_SUMMARY: Same as roaming group: initViewState vs applyMobileState for hiding the mobile signal view.
+- VALUE_DEFAULT_COMPARISON: Booleans default false.
+- HOOK_TARGET_COMPARISON: A14=com.android.systemui.statusbar.StatusBarMobileView#applyMobileState,com.android.systemui.statusbar.StatusBarMobileView#updateState; A13=com.android.systemui.statusbar.StatusBarMobileView#initViewState,com.android.systemui.statusbar.StatusBarMobileView#updateState
+- CALLBACK_SEMANTICS_COMPARISON: Both before.
+- ARG_RESULT_COMPARISON: Field rewrite only.
+- A14_ONLY_BRANCHES: other snapshot hide flags unused by this A13 function
+- WHY_USER_BEHAVIOR_IS_EQUIVALENT: Mobile signal icon hides always, or only while Wi-Fi is connected, per the two keys.
+- KEY_OWNERSHIP_EVIDENCE: A13 HideIconsSignalHook reads both keys and sets visible=false (optionally only when wifiAvailable). Snapshot pairing is classifier noise; real A14 owner is HideIconsSignalHook.
+- A14_KEY_OWNER_REFERENCE: app/src/main/java/tv/withaibuild/customiuizer/mods/SystemUIStatusBarHooks.kt::buildStatusBarIconVisibilitySnapshot
+- A13_KEY_OWNER_REFERENCE: app/src/main/java/tv/withaibuild/customiuizer/mods/SystemUIStatusBarHooks.kt::HideIconsSignalHook
+- PROOF_CONCLUSION: `PRESENT_A13_VARIANT`
+
+## PROOF_R5F_HideIconsVoWiFiHook_system_statusbaricons_vowifi
+
+- PROOF_ID: `PROOF_R5F_HideIconsVoWiFiHook_system_statusbaricons_vowifi`
+- BODY_RELATION: `REVIEWED_VARIANT`
+- A14_OWNER_PATH: `app/src/main/java/tv/withaibuild/customiuizer/mods/SystemUIStatusBarHooks.kt`
+- A14_SYMBOL: `HideIconsVoWiFiHook`
+- A14_INSTALLER: `A14 installer/spec gate for system_statusbaricons_vowifi`
+- A14_HOOK_TARGETS: `com.android.systemui.MiuiOperatorCustomizedPolicy$MiuiOperatorConfig#<init>`
+- A14_CALLBACK_PHASE: `before`
+- A13_OWNER_PATH: `app/src/main/java/tv/withaibuild/customiuizer/mods/SystemUIStatusBarHooks.kt`
+- A13_SYMBOL: `HideIconsVoWiFiHook`
+- A13_INSTALLER: `A13 installer gate for system_statusbaricons_vowifi`
+- A13_HOOK_TARGETS: `com.android.systemui.MiuiOperatorCustomizedPolicy$MiuiOperatorConfig#getHideVowifi`
+- A13_CALLBACK_PHASE: `unknown`
+- PREFERENCE_KEYS: `system_statusbaricons_vowifi`
+- VALUE_DOMAIN: owner-local preference domain
+- DEFAULT_SEMANTICS: Boolean default false.
+- RESULT/ARGUMENT_BEHAVIOR: A13 constant true result; A14 constructor argument rewrite, original ctor proceeds.
+- API33_VARIANT_REASON: MIUI14 still has getHideVowifi(); HyperOS bakes the flag into MiuiOperatorConfig constructor argument 3.
+- DIFF_SUMMARY: A13 findAndHookMethodSilently getHideVowifi returnConstant(true). A14 constructor before sets args[3]=true (hideVowifi field).
+- VALUE_DEFAULT_COMPARISON: Boolean default false.
+- HOOK_TARGET_COMPARISON: A14=com.android.systemui.MiuiOperatorCustomizedPolicy$MiuiOperatorConfig#<init>; A13=com.android.systemui.MiuiOperatorCustomizedPolicy$MiuiOperatorConfig#getHideVowifi
+- CALLBACK_SEMANTICS_COMPARISON: A13 replacement getter vs A14 before ctor.
+- ARG_RESULT_COMPARISON: A13 returnConstant true; A14 args[3]=true.
+- A14_ONLY_BRANCHES: constructor arg[3] write
+- WHY_USER_BEHAVIOR_IS_EQUIVALENT: VoWiFi operator icon is treated as hidden.
+- KEY_OWNERSHIP_EVIDENCE: Installer-gated by system_statusbaricons_vowifi.
+- A14_KEY_OWNER_REFERENCE: app/src/main/java/tv/withaibuild/customiuizer/mods/SystemUIStatusBarHooks.kt::HideIconsVoWiFiHook
+- A13_KEY_OWNER_REFERENCE: app/src/main/java/tv/withaibuild/customiuizer/mods/SystemUIStatusBarHooks.kt::HideIconsVoWiFiHook
+- PROOF_CONCLUSION: `PRESENT_A13_VARIANT`
+
+## PROOF_R5_DisplayWifiStandardHook_system_statusbaricons_wifistandard
+
+- PROOF_ID: `PROOF_R5_DisplayWifiStandardHook_system_statusbaricons_wifistandard`
+- BODY_RELATION: `REVIEWED_VARIANT`
+- A14_OWNER_PATH: `app/src/main/java/tv/withaibuild/customiuizer/mods/SystemStatusBarIconHooks.kt`
+- A14_SYMBOL: `DisplayWifiStandardHook`
+- A14_INSTALLER: `A14 installer/spec gate for system_statusbaricons_wifistandard`
+- A14_HOOK_TARGETS: `com.android.systemui.statusbar.StatusBarWifiView#applyWifiState`
+- A14_CALLBACK_PHASE: `intercept`
+- A13_OWNER_PATH: `app/src/main/java/tv/withaibuild/customiuizer/mods/SystemStatusBarMoreHooks.kt`
+- A13_SYMBOL: `DisplayWifiStandardHook`
+- A13_INSTALLER: `A13 installer gate for system_statusbaricons_wifistandard`
+- A13_HOOK_TARGETS: `com.android.systemui.statusbar.StatusBarWifiView#applyWifiState`
+- A13_CALLBACK_PHASE: `before`
+- PREFERENCE_KEYS: `system_statusbaricons_wifistandard`
+- VALUE_DOMAIN: owner-local preference domain
+- DEFAULT_SEMANTICS: same persisted keys consumed by both owners
+- RESULT/ARGUMENT_BEHAVIOR: A14 ops: result_assign[null]; chain.proceed[chain.proceed()]. A13 ops: no result/argument rewrite literals. Keys system_statusbaricons_wifistandard rewrite the same host members.
+- API33_VARIANT_REASON: A14 callback intercept vs A13 before on members A14[com.android.systemui.statusbar.StatusBarWifiView#applyWifiState] / A13[com.android.systemui.statusbar.StatusBarWifiView#applyWifiState]. Inner preference reads of system_statusbaricons_wifistandard match; intercept proceed-once maps to before returnAndSkip or after side-effect.
+- DIFF_SUMMARY: Shared members com.android.systemui.statusbar.StatusBarWifiView#applyWifiState. Differ: A14 phases intercept vs A13 before; A14 result_assign[null]; chain.proceed[chain.proceed()] vs A13 no result/argument rewrite literals.
+- VALUE_DEFAULT_COMPARISON: both consume system_statusbaricons_wifistandard in the owner body or installer gate
+- HOOK_TARGET_COMPARISON: A14=com.android.systemui.statusbar.StatusBarWifiView#applyWifiState; A13=com.android.systemui.statusbar.StatusBarWifiView#applyWifiState
+- CALLBACK_SEMANTICS_COMPARISON: A14 intercept vs A13 before; skipped paths do not invoke the original, proceed-once equals after side-effect
+- ARG_RESULT_COMPARISON: A14=result_assign[null]; chain.proceed[chain.proceed()]; A13=no result/argument rewrite literals
+- A14_ONLY_BRANCHES: none beyond intercept scaffolding for this owner pair
+- WHY_USER_BEHAVIOR_IS_EQUIVALENT: User-visible contract of system_statusbaricons_wifistandard is the same host rewrite; callback adapter and null-safety differ.
+- KEY_OWNERSHIP_EVIDENCE: system_statusbaricons_wifistandard: LITERAL_READ and/or INSTALLER_CALLEE in DisplayWifiStandardHook/DisplayWifiStandardHook
+- A14_KEY_OWNER_REFERENCE: app/src/main/java/tv/withaibuild/customiuizer/mods/SystemStatusBarIconHooks.kt::DisplayWifiStandardHook
+- A13_KEY_OWNER_REFERENCE: app/src/main/java/tv/withaibuild/customiuizer/mods/SystemStatusBarMoreHooks.kt::DisplayWifiStandardHook
+- PROOF_CONCLUSION: `PRESENT_A13_VARIANT`
+
+## PROOF_R5F_TapToUnlockHook_system_taptounlock
+
+- PROOF_ID: `PROOF_R5F_TapToUnlockHook_system_taptounlock`
+- BODY_RELATION: `REVIEWED_VARIANT`
+- A14_OWNER_PATH: `app/src/main/java/tv/withaibuild/customiuizer/mods/SystemLockScreenHooks.kt`
+- A14_SYMBOL: `TapToUnlockHook`
+- A14_INSTALLER: `A14 installer/spec gate for system_taptounlock`
+- A14_HOOK_TARGETS: `com.android.systemui.shade.NotificationPanelViewController.mTouchHandler#handleMiuiTouch`
+- A14_CALLBACK_PHASE: `intercept`
+- A13_OWNER_PATH: `app/src/main/java/tv/withaibuild/customiuizer/mods/SystemAudioAndVisualAndMoreHooks.kt`
+- A13_SYMBOL: `TapToUnlockHook`
+- A13_INSTALLER: `A13 installer gate for system_taptounlock`
+- A13_HOOK_TARGETS: `com.android.keyguard.injector.KeyguardPanelViewInjector#onTouchEvent,KeyguardPanelViewInjector#onInterceptTouchEvent`
+- A13_CALLBACK_PHASE: `after`
+- PREFERENCE_KEYS: `system_taptounlock`
+- VALUE_DOMAIN: owner-local preference domain
+- DEFAULT_SEMANTICS: boolean installer gate
+- RESULT/ARGUMENT_BEHAVIOR: A13 after side-effect, host result unchanged. A14 proceed-once then may set result true.
+- API33_VARIANT_REASON: MIUI14 KeyguardPanelViewInjector vs shade NotificationPanelViewController.mTouchHandler.handleMiuiTouch.
+- DIFF_SUMMARY: A13 processLSEvent hit-tests mBottomAreaView.mIndicationArea then showGenericBouncer(true). A14 handleMiuiTouch: keyguard+!QS, KeyguardBottomAreaInjector touch, showBouncer(true).
+- VALUE_DEFAULT_COMPARISON: boolean installer gate
+- HOOK_TARGET_COMPARISON: A14=com.android.systemui.shade.NotificationPanelViewController.mTouchHandler#handleMiuiTouch; A13=com.android.keyguard.injector.KeyguardPanelViewInjector#onTouchEvent,KeyguardPanelViewInjector#onInterceptTouchEvent
+- CALLBACK_SEMANTICS_COMPARISON: A14 intercept proceed-once ≡ A13 after.
+- ARG_RESULT_COMPARISON: A13 no setResult. A14 result=true after proceed on successful tap.
+- A14_ONLY_BRANCHES: pointerCount>1 / ACTION filter / mCurrentScreen==0 early out; result=true on ACTION_UP
+- WHY_USER_BEHAVIOR_IS_EQUIVALENT: Tap the lockscreen hint/bottom area (within touch slop) shows the bouncer.
+- KEY_OWNERSHIP_EVIDENCE: system_taptounlock: INSTALLER_CALLEE → TapToUnlockHook; both tap indication/bottom area then show bouncer
+- A14_KEY_OWNER_REFERENCE: app/src/main/java/tv/withaibuild/customiuizer/mods/SystemLockScreenHooks.kt::TapToUnlockHook
+- A13_KEY_OWNER_REFERENCE: app/src/main/java/tv/withaibuild/customiuizer/mods/SystemAudioAndVisualAndMoreHooks.kt::TapToUnlockHook
+- PROOF_CONCLUSION: `PRESENT_A13_VARIANT`
+
+## PROOF_R5_ToastTimeHook_system_toasttime
+
+- PROOF_ID: `PROOF_R5_ToastTimeHook_system_toasttime`
+- BODY_RELATION: `REVIEWED_VARIANT`
+- A14_OWNER_PATH: `app/src/main/java/tv/withaibuild/customiuizer/mods/System.kt`
+- A14_SYMBOL: `ToastTimeHook`
+- A14_INSTALLER: `A14 installer/spec gate for system_toasttime`
+- A14_HOOK_TARGETS: `com.android.server.notification.NotificationManagerService#showNextToastLocked`
+- A14_CALLBACK_PHASE: `intercept`
+- A13_OWNER_PATH: `app/src/main/java/tv/withaibuild/customiuizer/mods/SystemAudioAndVisualAndMoreHooks.kt`
+- A13_SYMBOL: `ToastTimeHook`
+- A13_INSTALLER: `A13 installer gate for system_toasttime`
+- A13_HOOK_TARGETS: `com.android.server.notification.NotificationManagerService#showNextToastLocked`
+- A13_CALLBACK_PHASE: `after,before`
+- PREFERENCE_KEYS: `system_toasttime`
+- VALUE_DOMAIN: owner-local preference domain
+- DEFAULT_SEMANTICS: same persisted keys consumed by both owners
+- RESULT/ARGUMENT_BEHAVIOR: A14 ops: result_assign[null,null]; chain.proceed[chain.proceed(),chain.proceed()]. A13 ops: no result/argument rewrite literals. Keys system_toasttime rewrite the same host members.
+- API33_VARIANT_REASON: A14 callback intercept vs A13 after,before on members A14[com.android.server.notification.NotificationManagerService#showNextToastLocked] / A13[com.android.server.notification.NotificationManagerService#showNextToastLocked]. Inner preference reads of system_toasttime match; intercept proceed-once maps to before returnAndSkip or after side-effect.
+- DIFF_SUMMARY: Shared members com.android.server.notification.NotificationManagerService#showNextToastLocked. Differ: A14 phases intercept vs A13 after,before; A14 result_assign[null,null]; chain.proceed[chain.proceed(),chain.proceed()] vs A13 no result/argument rewrite literals.
+- VALUE_DEFAULT_COMPARISON: both consume system_toasttime in the owner body or installer gate
+- HOOK_TARGET_COMPARISON: A14=com.android.server.notification.NotificationManagerService#showNextToastLocked; A13=com.android.server.notification.NotificationManagerService#showNextToastLocked
+- CALLBACK_SEMANTICS_COMPARISON: A14 intercept vs A13 after,before; skipped paths do not invoke the original, proceed-once equals after side-effect
+- ARG_RESULT_COMPARISON: A14=result_assign[null,null]; chain.proceed[chain.proceed(),chain.proceed()]; A13=no result/argument rewrite literals
+- A14_ONLY_BRANCHES: none beyond intercept scaffolding for this owner pair
+- WHY_USER_BEHAVIOR_IS_EQUIVALENT: User-visible contract of system_toasttime is the same host rewrite; callback adapter and null-safety differ.
+- KEY_OWNERSHIP_EVIDENCE: system_toasttime: LITERAL_READ and/or INSTALLER_CALLEE in ToastTimeHook/ToastTimeHook
+- A14_KEY_OWNER_REFERENCE: app/src/main/java/tv/withaibuild/customiuizer/mods/System.kt::ToastTimeHook
+- A13_KEY_OWNER_REFERENCE: app/src/main/java/tv/withaibuild/customiuizer/mods/SystemAudioAndVisualAndMoreHooks.kt::ToastTimeHook
+- PROOF_CONCLUSION: `PRESENT_A13_VARIANT`
+
+## PROOF_USB_DEFAULT_R1_LATCH
+
+- PROOF_ID: `PROOF_USB_DEFAULT_R1_LATCH`
+- BODY_RELATION: `REVIEWED_VARIANT`
+- A14_OWNER_PATH: `app/src/main/java/tv/withaibuild/customiuizer/mods/utils/feature/SystemServerFeatures.kt`
+- A14_SYMBOL: `UsbDefaultFunctionFeature`
+- A14_INSTALLER: `SystemServerFeatures.kt::UsbDefaultFunctionFeatureId`
+- A14_HOOK_TARGETS: `UsbDeviceManager / HAL setEnabledFunctions`
+- A14_CALLBACK_PHASE: `after/intercept`
+- A13_OWNER_PATH: `app/src/main/java/tv/withaibuild/customiuizer/mods/SystemSettingsMoreHooks.kt`
+- A13_SYMBOL: `USBConfigHook`
+- A13_INSTALLER: `installers/SystemServerInstaller.java + SettingsInstaller.java`
+- A13_HOOK_TARGETS: `UsbDeviceManager.setCurrentFunction; UsbConnectLatch rising-edge`
+- A13_CALLBACK_PHASE: `after`
+- PREFERENCE_KEYS: `system_usb_default_function,system_defaultusb,system_defaultusb_unsecure`
+- VALUE_DOMAIN: follow-system/charge/MTP/PTP mapped onto A13 function strings
+- DEFAULT_SEMANTICS: none = follow system; unsecure latch ignored when none
+- RESULT/ARGUMENT_BEHAVIOR: A13 setCurrentFunction; disconnect clears UsbConnectLatch
+- API33_VARIANT_REASON: A14 HAL setEnabledFunctions(JZI) is not copied; A13 owns setCurrentFunction + R1 latch.
+- DIFF_SUMMARY: A14 HAL setEnabledFunctions(JZI) is not copied; A13 owns setCurrentFunction + R1 latch.
+- VALUE_DEFAULT_COMPARISON: none = follow system; unsecure latch ignored when none
+- HOOK_TARGET_COMPARISON: A14=UsbDeviceManager / HAL setEnabledFunctions; A13=UsbDeviceManager.setCurrentFunction; UsbConnectLatch rising-edge
+- CALLBACK_SEMANTICS_COMPARISON: A14=after/intercept; A13=after
+- ARG_RESULT_COMPARISON: A13 setCurrentFunction; disconnect clears UsbConnectLatch
+- A14_ONLY_BRANCHES: A14 HAL setEnabledFunctions(JZI) is not copied; A13 owns setCurrentFunction + R1 latch.
+- WHY_USER_BEHAVIOR_IS_EQUIVALENT: A13 setCurrentFunction; disconnect clears UsbConnectLatch. A14 HAL setEnabledFunctions(JZI) is not copied; A13 owns setCurrentFunction + R1 latch.
+- PROOF_CONCLUSION: `PRESENT_A13_VARIANT`
+
+## PROOF_R5_SelectiveVibrationHook_system_vibration
+
+- PROOF_ID: `PROOF_R5_SelectiveVibrationHook_system_vibration`
+- BODY_RELATION: `REVIEWED_VARIANT`
+- A14_OWNER_PATH: `app/src/main/java/tv/withaibuild/customiuizer/mods/SystemAudioHooks.kt`
+- A14_SYMBOL: `SelectiveVibrationHook`
+- A14_INSTALLER: `A14 installer/spec gate for system_vibration,system_vibration_apps`
+- A14_HOOK_TARGETS: `com.android.server.vibrator.VibratorManagerService#systemReady,com.android.server.vibrator.VibratorManagerService#vibrate`
+- A14_CALLBACK_PHASE: `intercept`
+- A13_OWNER_PATH: `app/src/main/java/tv/withaibuild/customiuizer/mods/SystemNotificationMoreHooks.kt`
+- A13_SYMBOL: `SelectiveVibrationHook`
+- A13_INSTALLER: `A13 installer gate for system_vibration,system_vibration_apps`
+- A13_HOOK_TARGETS: `com.android.server.vibrator.VibratorManagerService#systemReady,com.android.server.vibrator.VibratorManagerService#vibrate`
+- A13_CALLBACK_PHASE: `after,before`
+- PREFERENCE_KEYS: `system_vibration,system_vibration_apps`
+- VALUE_DOMAIN: owner-local preference domain
+- DEFAULT_SEMANTICS: same persisted keys consumed by both owners
+- RESULT/ARGUMENT_BEHAVIOR: A14 ops: result_assign[null,null,null]; chain.proceed[chain.proceed(),chain.proceed()]. A13 ops: returnAndSkip[null]. Keys system_vibration,system_vibration_apps rewrite the same host members.
+- API33_VARIANT_REASON: A14 callback intercept vs A13 after,before on members A14[com.android.server.vibrator.VibratorManagerService#systemReady,com.android.server.vibrator.VibratorManagerService#vibrate] / A13[com.android.server.vibrator.VibratorManagerService#systemReady,com.android.server.vibrator.VibratorManagerService#vibrate]. Inner preference reads of system_vibration,system_vibration_apps match; intercept proceed-once maps to before returnAndSkip or after side-effect.
+- DIFF_SUMMARY: Shared members com.android.server.vibrator.VibratorManagerService#systemReady,com.android.server.vibrator.VibratorManagerService#vibrate. Differ: A14 phases intercept vs A13 after,before; A14 result_assign[null,null,null]; chain.proceed[chain.proceed(),chain.proceed()] vs A13 returnAndSkip[null].
+- VALUE_DEFAULT_COMPARISON: both consume system_vibration,system_vibration_apps in the owner body or installer gate
+- HOOK_TARGET_COMPARISON: A14=com.android.server.vibrator.VibratorManagerService#systemReady,com.android.server.vibrator.VibratorManagerService#vibrate; A13=com.android.server.vibrator.VibratorManagerService#systemReady,com.android.server.vibrator.VibratorManagerService#vibrate
+- CALLBACK_SEMANTICS_COMPARISON: A14 intercept vs A13 after,before; skipped paths do not invoke the original, proceed-once equals after side-effect
+- ARG_RESULT_COMPARISON: A14=result_assign[null,null,null]; chain.proceed[chain.proceed(),chain.proceed()]; A13=returnAndSkip[null]
+- A14_ONLY_BRANCHES: none beyond intercept scaffolding for this owner pair
+- WHY_USER_BEHAVIOR_IS_EQUIVALENT: User-visible contract of system_vibration,system_vibration_apps is the same host rewrite; callback adapter and null-safety differ.
+- KEY_OWNERSHIP_EVIDENCE: system_vibration,system_vibration_apps: LITERAL_READ and/or INSTALLER_CALLEE in SelectiveVibrationHook/SelectiveVibrationHook
+- A14_KEY_OWNER_REFERENCE: app/src/main/java/tv/withaibuild/customiuizer/mods/SystemAudioHooks.kt::SelectiveVibrationHook
+- A13_KEY_OWNER_REFERENCE: app/src/main/java/tv/withaibuild/customiuizer/mods/SystemNotificationMoreHooks.kt::SelectiveVibrationHook
+- PROOF_CONCLUSION: `PRESENT_A13_VARIANT`
+
+## PROOF_R5X_VIBRATION_AMP
+
+- PROOF_ID: `PROOF_R5X_VIBRATION_AMP`
+- BODY_RELATION: `REVIEWED_VARIANT`
+- A14_OWNER_PATH: `app/src/main/java/tv/withaibuild/customiuizer/mods/SystemAudioAndVisualAndMoreHooks.kt`
+- A14_SYMBOL: `MuffledVibrationHook`
+- A14_INSTALLER: `A14 installer/spec gate for system_vibration_amp,system_vibration_amp_period_start,system_vibration_amp_period_end`
+- A14_HOOK_TARGETS: `VibratorService#doVibratorOn`
+- A14_CALLBACK_PHASE: `n/a`
+- A13_OWNER_PATH: `app/src/main/java/tv/withaibuild/customiuizer/mods/SystemAudioAndVisualAndMoreHooks.kt`
+- A13_SYMBOL: `MuffledVibrationHook`
+- A13_INSTALLER: `A13 installer gate for system_vibration_amp,system_vibration_amp_period_start,system_vibration_amp_period_end`
+- A13_HOOK_TARGETS: `com.android.server.VibratorService#doVibratorOn`
+- A13_CALLBACK_PHASE: `n/a`
+- PREFERENCE_KEYS: `system_vibration_amp,system_vibration_amp_period_start,system_vibration_amp_period_end`
+- VALUE_DOMAIN: owner-local preference domain
+- DEFAULT_SEMANTICS: Master false; period defaults 0.
+- RESULT/ARGUMENT_BEHAVIOR: Amplitude/duration args scaled; original proceeds.
+- API33_VARIANT_REASON: Same doVibratorOn arg scale. Concatenation vs literal getInt is A13 key-build, not a ROM gap.
+- DIFF_SUMMARY: Scanner missed concatenated period keys. Master boolean installs the amplitude scaler. Quiet-window hours come from period_start/end.
+- VALUE_DEFAULT_COMPARISON: Master false; period defaults 0.
+- HOOK_TARGET_COMPARISON: A14=VibratorService#doVibratorOn; A13=com.android.server.VibratorService#doVibratorOn
+- CALLBACK_SEMANTICS_COMPARISON: before arg rewrite vs intercept proceed(args).
+- ARG_RESULT_COMPARISON: args[1] amplitude or args[0] duration.
+- A14_ONLY_BRANCHES: none
+- WHY_USER_BEHAVIOR_IS_EQUIVALENT: Vibration amplitude still scales inside the quiet period defined by start/end.
+- KEY_OWNERSHIP_EVIDENCE: system_vibration_amp INSTALLER_CALLEE FeatureCatalog.muffledVibration. Period start/end: A13 concatenates system_vibration_amp_period + _start/_end in MuffledVibrationHook; settings page System_VibrationAmp.kt. A14 reads the same period keys.
+- A14_KEY_OWNER_REFERENCE: app/src/main/java/tv/withaibuild/customiuizer/mods/SystemAudioAndVisualAndMoreHooks.kt::MuffledVibrationHook
+- A13_KEY_OWNER_REFERENCE: app/src/main/java/tv/withaibuild/customiuizer/mods/SystemAudioAndVisualAndMoreHooks.kt::MuffledVibrationHook
+- PROOF_CONCLUSION: `PRESENT_A13_VARIANT`
+
+## PROOF_R5F_MuffledVibrationHook_system_vibration_amp_notif
+
+- PROOF_ID: `PROOF_R5F_MuffledVibrationHook_system_vibration_amp_notif`
+- BODY_RELATION: `REVIEWED_VARIANT`
+- A14_OWNER_PATH: `app/src/main/java/tv/withaibuild/customiuizer/mods/SystemAudioHooks.kt`
+- A14_SYMBOL: `MuffledVibrationHook`
+- A14_INSTALLER: `A14 installer/spec gate for system_vibration_amp_notif,system_vibration_amp_other,system_vibration_amp_ringer`
+- A14_HOOK_TARGETS: `com.android.server.VibratorService#doVibratorOn`
+- A14_CALLBACK_PHASE: `intercept`
+- A13_OWNER_PATH: `app/src/main/java/tv/withaibuild/customiuizer/mods/SystemAudioAndVisualAndMoreHooks.kt`
+- A13_SYMBOL: `MuffledVibrationHook`
+- A13_INSTALLER: `A13 installer gate for system_vibration_amp_notif,system_vibration_amp_other,system_vibration_amp_ringer`
+- A13_HOOK_TARGETS: `com.android.server.VibratorService#doVibratorOn`
+- A13_CALLBACK_PHASE: `before`
+- PREFERENCE_KEYS: `system_vibration_amp_notif,system_vibration_amp_other,system_vibration_amp_ringer`
+- VALUE_DOMAIN: owner-local preference domain
+- DEFAULT_SEMANTICS: ratios default 100; period hours/minutes default 0 on both
+- RESULT/ARGUMENT_BEHAVIOR: A13 before: args[1] amplitude or args[0] duration scaled. A14 same then chain.proceed(args).
+- API33_VARIANT_REASON: Callback adapter only on the same SystemServer member.
+- DIFF_SUMMARY: Same doVibratorOn scale by usage (ringtone 6 / notification 5,7-9 / other) inside quiet period. A13 before mutates args; A14 intercept mutates args then proceed(args).
+- VALUE_DEFAULT_COMPARISON: ratios default 100; period hours/minutes default 0 on both
+- HOOK_TARGET_COMPARISON: A14=com.android.server.VibratorService#doVibratorOn; A13=com.android.server.VibratorService#doVibratorOn
+- CALLBACK_SEMANTICS_COMPARISON: A14 intercept proceed-with-rewritten-args ≡ A13 before arg rewrite then original.
+- ARG_RESULT_COMPARISON: Argument rewrite only; host result not replaced.
+- A14_ONLY_BRANCHES: none (period keys present on A13 via concatenation; scanner false-positive keys_only14)
+- WHY_USER_BEHAVIOR_IS_EQUIVALENT: During the quiet window, ringer/notif/other vibration is scaled by the three percent sliders; ratio 1.0 leaves ROM amplitude.
+- KEY_OWNERSHIP_EVIDENCE: system_vibration_amp_{ringer,notif,other}: LITERAL_READ in both doVibratorOn bodies. Period keys also on both (A13 concatenates system_vibration_amp_period).
+- A14_KEY_OWNER_REFERENCE: app/src/main/java/tv/withaibuild/customiuizer/mods/SystemAudioHooks.kt::MuffledVibrationHook
+- A13_KEY_OWNER_REFERENCE: app/src/main/java/tv/withaibuild/customiuizer/mods/SystemAudioAndVisualAndMoreHooks.kt::MuffledVibrationHook
+- PROOF_CONCLUSION: `PRESENT_A13_VARIANT`
+
+## PROOF_R5F_AudioVisualizerHook_system_visualizer
+
+- PROOF_ID: `PROOF_R5F_AudioVisualizerHook_system_visualizer`
+- BODY_RELATION: `REVIEWED_VARIANT`
+- A14_OWNER_PATH: `app/src/main/java/tv/withaibuild/customiuizer/mods/SystemAudioHooks.kt`
+- A14_SYMBOL: `AudioVisualizerHook`
+- A14_INSTALLER: `A14 installer/spec gate for system_visualizer`
+- A14_HOOK_TARGETS: `com.android.systemui.shade.MiuiNotificationPanelViewController#onViewAttachedToWindow,CentralSurfacesImpl#start,ScreenObserver#onScreenTurnedOff/On,NotificationMediaManager#updateMediaMetaData`
+- A14_CALLBACK_PHASE: `intercept`
+- A13_OWNER_PATH: `app/src/main/java/tv/withaibuild/customiuizer/mods/SystemAudioAndVisualAndMoreHooks.kt`
+- A13_SYMBOL: `AudioVisualizerHook`
+- A13_INSTALLER: `A13 installer gate for system_visualizer`
+- A13_HOOK_TARGETS: `StatusBar#makeStatusBarView,com.android.systemui.statusbar.phone.ScrimController#onScreenTurnedOff,ScrimController#onScreenTurnedOn,KeyguardStateControllerImpl#notifyKeyguardState,NotificationMediaManager#updateMediaMetaData`
+- A13_CALLBACK_PHASE: `after,before`
+- PREFERENCE_KEYS: `system_visualizer`
+- VALUE_DOMAIN: owner-local preference domain
+- DEFAULT_SEMANTICS: boolean installer gate; off does not install
+- RESULT/ARGUMENT_BEHAVIOR: Side-effect view insert; A13 before on updateMediaMetaData early-outs when screen off. No host result replace of the visualizer contract.
+- API33_VARIANT_REASON: StatusBar/ScrimController vs shade panel + CentralSurfacesImpl ScreenObserver.
+- DIFF_SUMMARY: Shared AudioVisualizer widget + updateMediaMetaData art + screen off/on. A13 StatusBar.makeStatusBarView + ScrimController. A14 shade panel onViewAttachedToWindow + CentralSurfacesImpl ScreenObserver.
+- VALUE_DEFAULT_COMPARISON: boolean installer gate; off does not install
+- HOOK_TARGET_COMPARISON: A14=com.android.systemui.shade.MiuiNotificationPanelViewController#onViewAttachedToWindow,CentralSurfacesImpl#start,ScreenObserver#onScreenTurnedOff/On,NotificationMediaManager#updateMediaMetaData; A13=StatusBar#makeStatusBarView,com.android.systemui.statusbar.phone.ScrimController#onScreenTurnedOff,ScrimController#onScreenTurnedOn,KeyguardStateControllerImpl#notifyKeyguardState,NotificationMediaManager#updateMediaMetaData
+- CALLBACK_SEMANTICS_COMPARISON: A14 intercept proceed-once ≡ A13 after; A13 before on updateMediaMetaData.
+- ARG_RESULT_COMPARISON: No setResult; AudioVisualizer.updateScreenOn/art updates.
+- A14_ONLY_BRANCHES: doze-aware updateScreenOn(!screenAndDoze[1]); tagged reuse/dispose of existing visualizer
+- WHY_USER_BEHAVIOR_IS_EQUIVALENT: Lockscreen audio visualizer over wallpaper while media plays; hidden when screen off or not keyguard.
+- KEY_OWNERSHIP_EVIDENCE: system_visualizer: INSTALLER_CALLEE → AudioVisualizerHook; both inject AudioVisualizer and drive it from media metadata + screen/keyguard
+- A14_KEY_OWNER_REFERENCE: app/src/main/java/tv/withaibuild/customiuizer/mods/SystemAudioHooks.kt::AudioVisualizerHook
+- A13_KEY_OWNER_REFERENCE: app/src/main/java/tv/withaibuild/customiuizer/mods/SystemAudioAndVisualAndMoreHooks.kt::AudioVisualizerHook
+- PROOF_CONCLUSION: `PRESENT_A13_VARIANT`
+
+## PROOF_R5F_shouldDisplayAudioVisualizer_system_visualizer_animdur
+
+- PROOF_ID: `PROOF_R5F_shouldDisplayAudioVisualizer_system_visualizer_animdur`
+- BODY_RELATION: `REVIEWED_VARIANT`
+- A14_OWNER_PATH: `app/src/main/java/tv/withaibuild/customiuizer/utils/AudioVisualizer.kt`
+- A14_SYMBOL: `handlePreferenceChanged`
+- A14_INSTALLER: `A14 installer/spec gate for system_visualizer_animdur,system_visualizer_color,system_visualizer_colorval,system_visualizer_controller,system_visualizer_drawer,system_visualizer_dyntime,system_visualizer_glowlevel,system_visualizer_render,system_visualizer_style,system_visualizer_transp,system_visualizer_custom`
+- A14_HOOK_TARGETS: `(no host member literals)`
+- A14_CALLBACK_PHASE: `unknown`
+- A13_OWNER_PATH: `app/src/main/java/tv/withaibuild/customiuizer/utils/AudioVisualizer.kt`
+- A13_SYMBOL: `shouldDisplayAudioVisualizer`
+- A13_INSTALLER: `A13 installer gate for system_visualizer_animdur,system_visualizer_color,system_visualizer_colorval,system_visualizer_controller,system_visualizer_drawer,system_visualizer_dyntime,system_visualizer_glowlevel,system_visualizer_render,system_visualizer_style,system_visualizer_transp,system_visualizer_custom`
+- A13_HOOK_TARGETS: `(no host member literals)`
+- A13_CALLBACK_PHASE: `unknown`
+- PREFERENCE_KEYS: `system_visualizer_animdur,system_visualizer_color,system_visualizer_colorval,system_visualizer_controller,system_visualizer_drawer,system_visualizer_dyntime,system_visualizer_glowlevel,system_visualizer_render,system_visualizer_style,system_visualizer_transp,system_visualizer_custom`
+- VALUE_DOMAIN: owner-local preference domain
+- DEFAULT_SEMANTICS: animdur 65; transp 40; color/style 1; render 0; glow 50; colorval WHITE; dyntime 10; drawer/controller/custom default false.
+- RESULT/ARGUMENT_BEHAVIOR: No hooks; field updates then redraw.
+- API33_VARIANT_REASON: Observer key prefix / snapshot wiring only; not a ROM ABI gap.
+- DIFF_SUMMARY: A13 observer keys use pref_key_ prefix; A14 uses canonical system_visualizer_* names. Same fields: animDur, transparency, colorMode, barStyle, renderType, glowLevel, customColor, randomizeInterval, showInDrawer, showWithControllerOnly, showOnCustom.
+- VALUE_DEFAULT_COMPARISON: animdur 65; transp 40; color/style 1; render 0; glow 50; colorval WHITE; dyntime 10; drawer/controller/custom default false.
+- HOOK_TARGET_COMPARISON: A14=(none); A13=(none)
+- CALLBACK_SEMANTICS_COMPARISON: Preference observer vs A13 pref_key observer; same assignments.
+- ARG_RESULT_COMPARISON: n/a
+- A14_ONLY_BRANCHES: none beyond documented extras
+- WHY_USER_BEHAVIOR_IS_EQUIVALENT: Visualizer still honors duration, color, style, render, glow, drawer, controller-only, custom-app, and transparency.
+- KEY_OWNERSHIP_EVIDENCE: Classifier matched A13 shouldDisplayAudioVisualizer (playing&&attached&&viewVisible&&windowVisible predicate) to the whole file. Real A13 owner is AudioVisualizer init plus observer (pref_key_system_visualizer_*). A14 handlePreferenceChanged plus init read the same keys; both inits also read system_visualizer_custom.
+- A14_KEY_OWNER_REFERENCE: app/src/main/java/tv/withaibuild/customiuizer/utils/AudioVisualizer.kt::handlePreferenceChanged
+- A13_KEY_OWNER_REFERENCE: app/src/main/java/tv/withaibuild/customiuizer/utils/AudioVisualizer.kt::shouldDisplayAudioVisualizer
+- PROOF_CONCLUSION: `PRESENT_A13_VARIANT`
+
+## PROOF_R5_BlurMTKVolumeBarHook_system_volumebar_blur_mtk
+
+- PROOF_ID: `PROOF_R5_BlurMTKVolumeBarHook_system_volumebar_blur_mtk`
+- BODY_RELATION: `IDENTICAL`
+- A14_OWNER_PATH: `app/src/main/java/tv/withaibuild/customiuizer/mods/SystemUIControlCenterHooks.kt`
+- A14_SYMBOL: `BlurMTKVolumeBarHook`
+- A14_INSTALLER: `A14 installer/spec gate for system_volumebar_blur_mtk`
+- A14_HOOK_TARGETS: `com.android.systemui.miui.volume.Util#isSupportBlurS`
+- A14_CALLBACK_PHASE: `unknown`
+- A13_OWNER_PATH: `app/src/main/java/tv/withaibuild/customiuizer/mods/SystemUIControlCenterHooks.kt`
+- A13_SYMBOL: `BlurMTKVolumeBarHook`
+- A13_INSTALLER: `A13 installer gate for system_volumebar_blur_mtk`
+- A13_HOOK_TARGETS: `com.android.systemui.miui.volume.Util#isSupportBlurS`
+- A13_CALLBACK_PHASE: `unknown`
+- PREFERENCE_KEYS: `system_volumebar_blur_mtk`
+- VALUE_DOMAIN: owner-local preference domain
+- DEFAULT_SEMANTICS: identical owner body; shared defaults
+- RESULT/ARGUMENT_BEHAVIOR: no result/argument rewrite literals
+- API33_VARIANT_REASON: Normalized bodies are IDENTICAL. A14/A13 both hook com.android.systemui.miui.volume.Util#isSupportBlurS.
+- KEY_OWNERSHIP_EVIDENCE: system_volumebar_blur_mtk: LITERAL_READ and/or INSTALLER_CALLEE in BlurMTKVolumeBarHook/BlurMTKVolumeBarHook
+- A14_KEY_OWNER_REFERENCE: app/src/main/java/tv/withaibuild/customiuizer/mods/SystemUIControlCenterHooks.kt::BlurMTKVolumeBarHook
+- A13_KEY_OWNER_REFERENCE: app/src/main/java/tv/withaibuild/customiuizer/mods/SystemUIControlCenterHooks.kt::BlurMTKVolumeBarHook
+- PROOF_CONCLUSION: `PRESENT_EQUIVALENT`
+
+## PROOF_R5F_BlurVolumeDialogBackgroundHook_system_volumeblur_collapsed
+
+- PROOF_ID: `PROOF_R5F_BlurVolumeDialogBackgroundHook_system_volumeblur_collapsed`
+- BODY_RELATION: `REVIEWED_VARIANT`
+- A14_OWNER_PATH: `app/src/main/java/tv/withaibuild/customiuizer/mods/SystemUIControlCenterHooks.kt`
+- A14_SYMBOL: `BlurVolumeDialogBackgroundHook`
+- A14_INSTALLER: `A14 installer/spec gate for system_volumeblur_collapsed,system_volumeblur_expanded`
+- A14_HOOK_TARGETS: `com.android.systemui.miui.volume.MiuiVolumeDialogImpl#updateDialogWindowH,com.android.systemui.miui.volume.MiuiVolumeDialogImpl#showH`
+- A14_CALLBACK_PHASE: `after`
+- A13_OWNER_PATH: `app/src/main/java/tv/withaibuild/customiuizer/mods/SystemUIControlCenterHooks.kt`
+- A13_SYMBOL: `BlurVolumeDialogBackgroundHook`
+- A13_INSTALLER: `A13 installer gate for system_volumeblur_collapsed,system_volumeblur_expanded`
+- A13_HOOK_TARGETS: `com.android.systemui.miui.volume.MiuiVolumeDialogImpl#updateDialogWindowH,com.android.systemui.miui.volume.MiuiVolumeDialogImpl#showH,com.android.systemui.miui.volume.MiuiVolumeDialogImpl#initDialog`
+- A13_CALLBACK_PHASE: `after,before`
+- PREFERENCE_KEYS: `system_volumeblur_collapsed,system_volumeblur_expanded`
+- VALUE_DOMAIN: owner-local preference domain
+- DEFAULT_SEMANTICS: Int 0 / 100f; blur inactive at 0.
+- RESULT/ARGUMENT_BEHAVIOR: No result rewrite; Window flag clear + startBlurAnim.
+- API33_VARIANT_REASON: A13 initDialog is MIUI14 plugin lifecycle to bind prefs once; A14 snapshot observer replaces it.
+- DIFF_SUMMARY: Shared updateDialogWindowH/showH startBlurAnim. A13 extra initDialog observer + miui_volume_dim_behind_* fraction->0. A14 extra mWindow.setDimAmount(0).
+- VALUE_DEFAULT_COMPARISON: Int 0 / 100f; blur inactive at 0.
+- HOOK_TARGET_COMPARISON: A14=com.android.systemui.miui.volume.MiuiVolumeDialogImpl#updateDialogWindowH,com.android.systemui.miui.volume.MiuiVolumeDialogImpl#showH; A13=com.android.systemui.miui.volume.MiuiVolumeDialogImpl#updateDialogWindowH,com.android.systemui.miui.volume.MiuiVolumeDialogImpl#showH,com.android.systemui.miui.volume.MiuiVolumeDialogImpl#initDialog
+- CALLBACK_SEMANTICS_COMPARISON: Both after on show/update; A13 extra before initDialog.
+- ARG_RESULT_COMPARISON: No arg/result rewrite.
+- A14_ONLY_BRANCHES: setDimAmount(0) on updateDialogWindowH
+- WHY_USER_BEHAVIOR_IS_EQUIVALENT: Collapsed/expanded blur ratios still drive startBlurAnim; dim-behind is forced off.
+- KEY_OWNERSHIP_EVIDENCE: A13 initDialog before loads collapsed/expanded /100f; A14 volumeBlurSnapshot reads the same keys.
+- A14_KEY_OWNER_REFERENCE: app/src/main/java/tv/withaibuild/customiuizer/mods/SystemUIControlCenterHooks.kt::BlurVolumeDialogBackgroundHook
+- A13_KEY_OWNER_REFERENCE: app/src/main/java/tv/withaibuild/customiuizer/mods/SystemUIControlCenterHooks.kt::BlurVolumeDialogBackgroundHook
+- PROOF_CONCLUSION: `PRESENT_A13_VARIANT`
+
+## PROOF_R5F_VolumeDialogAutohideDelayHook_system_volumedialogdelay_collapsed
+
+- PROOF_ID: `PROOF_R5F_VolumeDialogAutohideDelayHook_system_volumedialogdelay_collapsed`
+- BODY_RELATION: `REVIEWED_VARIANT`
+- A14_OWNER_PATH: `app/src/main/java/tv/withaibuild/customiuizer/mods/SystemUIControlCenterHooks.kt`
+- A14_SYMBOL: `VolumeDialogAutohideDelayHook`
+- A14_INSTALLER: `A14 installer/spec gate for system_volumedialogdelay_collapsed,system_volumedialogdelay_expanded`
+- A14_HOOK_TARGETS: `com.android.systemui.miui.volume.MiuiVolumeDialogImpl#computeTimeoutH`
+- A14_CALLBACK_PHASE: `before`
+- A13_OWNER_PATH: `app/src/main/java/tv/withaibuild/customiuizer/mods/SystemUIControlCenterHooks.kt`
+- A13_SYMBOL: `VolumeDialogAutohideDelayHook`
+- A13_INSTALLER: `A13 installer gate for system_volumedialogdelay_collapsed,system_volumedialogdelay_expanded`
+- A13_HOOK_TARGETS: `com.android.systemui.miui.volume.MiuiVolumeDialogImpl#computeTimeoutH`
+- A13_CALLBACK_PHASE: `before`
+- PREFERENCE_KEYS: `system_volumedialogdelay_collapsed,system_volumedialogdelay_expanded`
+- VALUE_DOMAIN: owner-local preference domain
+- DEFAULT_SEMANTICS: Ints default 0 (stock timeout).
+- RESULT/ARGUMENT_BEHAVIOR: Both before returnAndSkip timeout millis.
+- API33_VARIANT_REASON: A13 tries mIsSafetyShowing then mSafetyWarning; A14 frozen ABI picks one field. Same method.
+- DIFF_SUMMARY: A14 installer is a one-liner to VolumeDialogAutohideDelayHook.install; effect still before-hooks computeTimeoutH with hovering 16000 / safety / expanded-or-collapsed timeout.
+- VALUE_DEFAULT_COMPARISON: Ints default 0 (stock timeout).
+- HOOK_TARGET_COMPARISON: A14=com.android.systemui.miui.volume.MiuiVolumeDialogImpl#computeTimeoutH; A13=com.android.systemui.miui.volume.MiuiVolumeDialogImpl#computeTimeoutH
+- CALLBACK_SEMANTICS_COMPARISON: Both before skip original computeTimeoutH when opt>0 or hovering/safety.
+- ARG_RESULT_COMPARISON: A13 returnAndSkip[16000, opt-or-5000, opt]; A14 effect same pattern.
+- A14_ONLY_BRANCHES: VolumeDialogAutohideDelayResolver ABI
+- WHY_USER_BEHAVIOR_IS_EQUIVALENT: Volume dialog auto-hide timeout follows collapsed vs expanded prefs; hover stays 16000.
+- KEY_OWNERSHIP_EVIDENCE: A13 before computeTimeoutH reads both delay ints. A14 VolumeDialogAutohideDelayHook.install + Effect reads the same keys.
+- A14_KEY_OWNER_REFERENCE: app/src/main/java/tv/withaibuild/customiuizer/mods/SystemUIControlCenterHooks.kt::VolumeDialogAutohideDelayHook
+- A13_KEY_OWNER_REFERENCE: app/src/main/java/tv/withaibuild/customiuizer/mods/SystemUIControlCenterHooks.kt::VolumeDialogAutohideDelayHook
+- PROOF_CONCLUSION: `PRESENT_A13_VARIANT`
+
+## PROOF_R5_ViewWifiPasswordHook_system_wifipassword
+
+- PROOF_ID: `PROOF_R5_ViewWifiPasswordHook_system_wifipassword`
+- BODY_RELATION: `REVIEWED_VARIANT`
+- A14_OWNER_PATH: `app/src/main/java/tv/withaibuild/customiuizer/mods/System.kt`
+- A14_SYMBOL: `ViewWifiPasswordHook`
+- A14_INSTALLER: `A14 installer/spec gate for system_wifipassword`
+- A14_HOOK_TARGETS: `com.android.settings.wifi.SavedAccessPointPreference#onBindViewHolder,miuix.appcompat.app.AlertDialog\$Builder#setTitle,miuix.appcompat.app.AlertDialog\$Builder#setMessage,miuix.appcompat.app.AlertDialog#onCreate,com.android.settings.wifi.MiuiSavedAccessPointsWifiSettings#showDeleteDialog`
+- A14_CALLBACK_PHASE: `intercept`
+- A13_OWNER_PATH: `app/src/main/java/tv/withaibuild/customiuizer/mods/SystemSettingsAndConnectivityHooks.kt`
+- A13_SYMBOL: `ViewWifiPasswordHook`
+- A13_INSTALLER: `A13 installer gate for system_wifipassword`
+- A13_HOOK_TARGETS: `com.android.settings.wifi.SavedAccessPointPreference#onBindViewHolder,miuix.appcompat.app.AlertDialog\$Builder#setTitle,miuix.appcompat.app.AlertDialog\$Builder#setMessage,miuix.appcompat.app.AlertDialog#onCreate,com.android.settings.wifi.MiuiSavedAccessPointsWifiSettings#showDeleteDialog`
+- A13_CALLBACK_PHASE: `after,before`
+- PREFERENCE_KEYS: `system_wifipassword`
+- VALUE_DOMAIN: owner-local preference domain
+- DEFAULT_SEMANTICS: same persisted keys consumed by both owners
+- RESULT/ARGUMENT_BEHAVIOR: A14 ops: result_assign[null,null,null,null]; chain.proceed[chain.proceed(),chain.proceed(),chain.proceed()]. A13 ops: no result/argument rewrite literals. Keys system_wifipassword rewrite the same host members.
+- API33_VARIANT_REASON: A14 callback intercept vs A13 after,before on members A14[com.android.settings.wifi.SavedAccessPointPreference#onBindViewHolder,miuix.appcompat.app.AlertDialog\$Builder#setTitle,miuix.appcompat.app.AlertDialog\$Builder#setMessage,miuix.appcompat.app.AlertDialog#onCreate,com.android.settings.wifi.MiuiSavedAccessPointsWifiSettings#showDeleteDialog] / A13[com.android.settings.wifi.SavedAccessPointPreference#onBindViewHolder,miuix.appcompat.app.AlertDialog\$Builder#setTitle,miuix.appcompat.app.AlertDialog\$Builder#setMessage,miuix.appcompat.app.AlertDialog#onCreate,com.android.settings.wifi.MiuiSavedAccessPointsWifiSettings#showDeleteDialog]. Inner preference reads of system_wifipassword match; intercept proceed-once maps to before returnAndSkip or after side-effect.
+- DIFF_SUMMARY: Shared members com.android.settings.wifi.SavedAccessPointPreference#onBindViewHolder,miuix.appcompat.app.AlertDialog\$Builder#setTitle,miuix.appcompat.app.AlertDialog\$Builder#setMessage,miuix.appcompat.app.AlertDialog#onCreate,com.android.settings.wifi.MiuiSavedAccessPointsWifiSettings#showDeleteDialog. Differ: A14 phases intercept vs A13 after,before; A14 result_assign[null,null,null,null]; chain.proceed[chain.proceed(),chain.proceed(),chain.proceed()] vs A13 no result/argument rewrite literals.
+- VALUE_DEFAULT_COMPARISON: both consume system_wifipassword in the owner body or installer gate
+- HOOK_TARGET_COMPARISON: A14=com.android.settings.wifi.SavedAccessPointPreference#onBindViewHolder,miuix.appcompat.app.AlertDialog\$Builder#setTitle,miuix.appcompat.app.AlertDialog\$Builder#setMessage,miuix.appcompat.app.AlertDialog#onCreate,com.android.settings.wifi.MiuiSavedAccessPointsWifiSettings#showDeleteDialog; A13=com.android.settings.wifi.SavedAccessPointPreference#onBindViewHolder,miuix.appcompat.app.AlertDialog\$Builder#setTitle,miuix.appcompat.app.AlertDialog\$Builder#setMessage,miuix.appcompat.app.AlertDialog#onCreate,com.android.settings.wifi.MiuiSavedAccessPointsWifiSettings#showDeleteDialog
+- CALLBACK_SEMANTICS_COMPARISON: A14 intercept vs A13 after,before; skipped paths do not invoke the original, proceed-once equals after side-effect
+- ARG_RESULT_COMPARISON: A14=result_assign[null,null,null,null]; chain.proceed[chain.proceed(),chain.proceed(),chain.proceed()]; A13=no result/argument rewrite literals
+- A14_ONLY_BRANCHES: none beyond intercept scaffolding for this owner pair
+- WHY_USER_BEHAVIOR_IS_EQUIVALENT: User-visible contract of system_wifipassword is the same host rewrite; callback adapter and null-safety differ.
+- KEY_OWNERSHIP_EVIDENCE: system_wifipassword: LITERAL_READ and/or INSTALLER_CALLEE in ViewWifiPasswordHook/ViewWifiPasswordHook
+- A14_KEY_OWNER_REFERENCE: app/src/main/java/tv/withaibuild/customiuizer/mods/System.kt::ViewWifiPasswordHook
+- A13_KEY_OWNER_REFERENCE: app/src/main/java/tv/withaibuild/customiuizer/mods/SystemSettingsAndConnectivityHooks.kt::ViewWifiPasswordHook
+- PROOF_CONCLUSION: `PRESENT_A13_VARIANT`
+
+## PROOF_R5_AlarmCompatHook_various_alarmcompat
+
+- PROOF_ID: `PROOF_R5_AlarmCompatHook_various_alarmcompat`
+- BODY_RELATION: `REVIEWED_VARIANT`
+- A14_OWNER_PATH: `app/src/main/java/tv/withaibuild/customiuizer/mods/Various.kt`
+- A14_SYMBOL: `AlarmCompatHook`
+- A14_INSTALLER: `A14 installer/spec gate for various_alarmcompat`
+- A14_HOOK_TARGETS: `(no host member literals)`
+- A14_CALLBACK_PHASE: `intercept`
+- A13_OWNER_PATH: `app/src/main/java/tv/withaibuild/customiuizer/mods/Various.kt`
+- A13_SYMBOL: `AlarmCompatHook`
+- A13_INSTALLER: `A13 installer gate for various_alarmcompat`
+- A13_HOOK_TARGETS: `(no host member literals)`
+- A13_CALLBACK_PHASE: `before`
+- PREFERENCE_KEYS: `various_alarmcompat`
+- VALUE_DOMAIN: owner-local preference domain
+- DEFAULT_SEMANTICS: same persisted keys consumed by both owners
+- RESULT/ARGUMENT_BEHAVIOR: A14 ops: result_assign[null]. A13 ops: no result/argument rewrite literals. Keys various_alarmcompat rewrite the same host members.
+- API33_VARIANT_REASON: A14 callback intercept vs A13 before on members A14[(none)] / A13[(none)]. Inner preference reads of various_alarmcompat match; intercept proceed-once maps to before returnAndSkip or after side-effect.
+- DIFF_SUMMARY: Shared members (none). Differ: A14 phases intercept vs A13 before; A14 result_assign[null] vs A13 no result/argument rewrite literals.
+- VALUE_DEFAULT_COMPARISON: both consume various_alarmcompat in the owner body or installer gate
+- HOOK_TARGET_COMPARISON: A14=(none); A13=(none)
+- CALLBACK_SEMANTICS_COMPARISON: A14 intercept vs A13 before; skipped paths do not invoke the original, proceed-once equals after side-effect
+- ARG_RESULT_COMPARISON: A14=result_assign[null]; A13=no result/argument rewrite literals
+- A14_ONLY_BRANCHES: none beyond intercept scaffolding for this owner pair
+- WHY_USER_BEHAVIOR_IS_EQUIVALENT: User-visible contract of various_alarmcompat is the same host rewrite; callback adapter and null-safety differ.
+- KEY_OWNERSHIP_EVIDENCE: various_alarmcompat: LITERAL_READ and/or INSTALLER_CALLEE in AlarmCompatHook/AlarmCompatHook
+- A14_KEY_OWNER_REFERENCE: app/src/main/java/tv/withaibuild/customiuizer/mods/Various.kt::AlarmCompatHook
+- A13_KEY_OWNER_REFERENCE: app/src/main/java/tv/withaibuild/customiuizer/mods/Various.kt::AlarmCompatHook
+- PROOF_CONCLUSION: `PRESENT_A13_VARIANT`
+
+## PROOF_R5_AlarmCompatServiceHook_various_alarmcompat_apps
+
+- PROOF_ID: `PROOF_R5_AlarmCompatServiceHook_various_alarmcompat_apps`
+- BODY_RELATION: `REVIEWED_VARIANT`
+- A14_OWNER_PATH: `app/src/main/java/tv/withaibuild/customiuizer/mods/Various.kt`
+- A14_SYMBOL: `AlarmCompatServiceHook`
+- A14_INSTALLER: `A14 installer/spec gate for various_alarmcompat_apps`
+- A14_HOOK_TARGETS: `com.android.server.alarm.AlarmManagerService#onBootPhase,com.android.server.alarm.AlarmManagerService#getNextAlarmClockImpl`
+- A14_CALLBACK_PHASE: `intercept`
+- A13_OWNER_PATH: `app/src/main/java/tv/withaibuild/customiuizer/mods/Various.kt`
+- A13_SYMBOL: `AlarmCompatServiceHook`
+- A13_INSTALLER: `A13 installer gate for various_alarmcompat_apps`
+- A13_HOOK_TARGETS: `com.android.server.alarm.AlarmManagerService#onBootPhase,com.android.server.alarm.AlarmManagerService#getNextAlarmClockImpl`
+- A13_CALLBACK_PHASE: `after`
+- PREFERENCE_KEYS: `various_alarmcompat_apps`
+- VALUE_DOMAIN: owner-local preference domain
+- DEFAULT_SEMANTICS: same persisted keys consumed by both owners
+- RESULT/ARGUMENT_BEHAVIOR: A14 ops: result_assign[null,null]; chain.proceed[chain.proceed(),chain.proceed()]. A13 ops: setResult[if (time == 0L]. Keys various_alarmcompat_apps rewrite the same host members.
+- API33_VARIANT_REASON: A14 callback intercept vs A13 after on members A14[com.android.server.alarm.AlarmManagerService#onBootPhase,com.android.server.alarm.AlarmManagerService#getNextAlarmClockImpl] / A13[com.android.server.alarm.AlarmManagerService#onBootPhase,com.android.server.alarm.AlarmManagerService#getNextAlarmClockImpl]. Inner preference reads of various_alarmcompat_apps match; intercept proceed-once maps to before returnAndSkip or after side-effect.
+- DIFF_SUMMARY: Shared members com.android.server.alarm.AlarmManagerService#onBootPhase,com.android.server.alarm.AlarmManagerService#getNextAlarmClockImpl. Differ: A14 phases intercept vs A13 after; A14 result_assign[null,null]; chain.proceed[chain.proceed(),chain.proceed()] vs A13 setResult[if (time == 0L].
+- VALUE_DEFAULT_COMPARISON: both consume various_alarmcompat_apps in the owner body or installer gate
+- HOOK_TARGET_COMPARISON: A14=com.android.server.alarm.AlarmManagerService#onBootPhase,com.android.server.alarm.AlarmManagerService#getNextAlarmClockImpl; A13=com.android.server.alarm.AlarmManagerService#onBootPhase,com.android.server.alarm.AlarmManagerService#getNextAlarmClockImpl
+- CALLBACK_SEMANTICS_COMPARISON: A14 intercept vs A13 after; skipped paths do not invoke the original, proceed-once equals after side-effect
+- ARG_RESULT_COMPARISON: A14=result_assign[null,null]; chain.proceed[chain.proceed(),chain.proceed()]; A13=setResult[if (time == 0L]
+- A14_ONLY_BRANCHES: none beyond intercept scaffolding for this owner pair
+- WHY_USER_BEHAVIOR_IS_EQUIVALENT: User-visible contract of various_alarmcompat_apps is the same host rewrite; callback adapter and null-safety differ.
+- KEY_OWNERSHIP_EVIDENCE: various_alarmcompat_apps: LITERAL_READ and/or INSTALLER_CALLEE in AlarmCompatServiceHook/AlarmCompatServiceHook
+- A14_KEY_OWNER_REFERENCE: app/src/main/java/tv/withaibuild/customiuizer/mods/Various.kt::AlarmCompatServiceHook
+- A13_KEY_OWNER_REFERENCE: app/src/main/java/tv/withaibuild/customiuizer/mods/Various.kt::AlarmCompatServiceHook
+- PROOF_CONCLUSION: `PRESENT_A13_VARIANT`
+
+## PROOF_R5_AnswerCallInHeadUpHook_various_answerinheadup
+
+- PROOF_ID: `PROOF_R5_AnswerCallInHeadUpHook_various_answerinheadup`
+- BODY_RELATION: `REVIEWED_VARIANT`
+- A14_OWNER_PATH: `app/src/main/java/tv/withaibuild/customiuizer/mods/Various.kt`
+- A14_SYMBOL: `AnswerCallInHeadUpHook`
+- A14_INSTALLER: `A14 installer/spec gate for various_answerinheadup`
+- A14_HOOK_TARGETS: `com.android.incallui.InCallPresenter#answerIncomingCall`
+- A14_CALLBACK_PHASE: `intercept`
+- A13_OWNER_PATH: `app/src/main/java/tv/withaibuild/customiuizer/mods/Various.kt`
+- A13_SYMBOL: `AnswerCallInHeadUpHook`
+- A13_INSTALLER: `A13 installer gate for various_answerinheadup`
+- A13_HOOK_TARGETS: `com.android.incallui.InCallPresenter#answerIncomingCall`
+- A13_CALLBACK_PHASE: `before`
+- PREFERENCE_KEYS: `various_answerinheadup`
+- VALUE_DOMAIN: owner-local preference domain
+- DEFAULT_SEMANTICS: same persisted keys consumed by both owners
+- RESULT/ARGUMENT_BEHAVIOR: A14 ops: result_assign[null]. A13 ops: no result/argument rewrite literals. Keys various_answerinheadup rewrite the same host members.
+- API33_VARIANT_REASON: A14 callback intercept vs A13 before on members A14[com.android.incallui.InCallPresenter#answerIncomingCall] / A13[com.android.incallui.InCallPresenter#answerIncomingCall]. Inner preference reads of various_answerinheadup match; intercept proceed-once maps to before returnAndSkip or after side-effect.
+- DIFF_SUMMARY: Shared members com.android.incallui.InCallPresenter#answerIncomingCall. Differ: A14 phases intercept vs A13 before; A14 result_assign[null] vs A13 no result/argument rewrite literals.
+- VALUE_DEFAULT_COMPARISON: both consume various_answerinheadup in the owner body or installer gate
+- HOOK_TARGET_COMPARISON: A14=com.android.incallui.InCallPresenter#answerIncomingCall; A13=com.android.incallui.InCallPresenter#answerIncomingCall
+- CALLBACK_SEMANTICS_COMPARISON: A14 intercept vs A13 before; skipped paths do not invoke the original, proceed-once equals after side-effect
+- ARG_RESULT_COMPARISON: A14=result_assign[null]; A13=no result/argument rewrite literals
+- A14_ONLY_BRANCHES: none beyond intercept scaffolding for this owner pair
+- WHY_USER_BEHAVIOR_IS_EQUIVALENT: User-visible contract of various_answerinheadup is the same host rewrite; callback adapter and null-safety differ.
+- KEY_OWNERSHIP_EVIDENCE: various_answerinheadup: LITERAL_READ and/or INSTALLER_CALLEE in AnswerCallInHeadUpHook/AnswerCallInHeadUpHook
+- A14_KEY_OWNER_REFERENCE: app/src/main/java/tv/withaibuild/customiuizer/mods/Various.kt::AnswerCallInHeadUpHook
+- A13_KEY_OWNER_REFERENCE: app/src/main/java/tv/withaibuild/customiuizer/mods/Various.kt::AnswerCallInHeadUpHook
+- PROOF_CONCLUSION: `PRESENT_A13_VARIANT`
+
+## PROOF_R5F_AppInfoHook_various_appdetails
+
+- PROOF_ID: `PROOF_R5F_AppInfoHook_various_appdetails`
+- BODY_RELATION: `REVIEWED_VARIANT`
+- A14_OWNER_PATH: `app/src/main/java/tv/withaibuild/customiuizer/mods/Various.kt`
+- A14_SYMBOL: `AppInfoHook`
+- A14_INSTALLER: `SecurityCenterFeatures AppInfoFeature getBoolean(various_appdetails)`
+- A14_HOOK_TARGETS: `com.miui.appmanager.AMAppInfomationActivity#onCreate,androidx.fragment.app.Fragment#<init>,#onPreferenceTreeClick`
+- A14_CALLBACK_PHASE: `intercept`
+- A13_OWNER_PATH: `app/src/main/java/tv/withaibuild/customiuizer/mods/Various.kt`
+- A13_SYMBOL: `AppInfoHook`
+- A13_INSTALLER: `SecurityCenterInstaller.java getBoolean(various_appdetails)`
+- A13_HOOK_TARGETS: `com.miui.appmanager.AMAppInfomationActivity#onCreate,androidx.fragment.app.Fragment#<init>,fragment#onPreferenceTreeClick`
+- A13_CALLBACK_PHASE: `before,after`
+- PREFERENCE_KEYS: `various_appdetails`
+- VALUE_DOMAIN: owner-local preference domain
+- DEFAULT_SEMANTICS: Boolean default false keeps stock app-info page.
+- RESULT/ARGUMENT_BEHAVIOR: Click paths skip true for copy/store/launch. onCreate proceeds then posts UI adds.
+- API33_VARIANT_REASON: Same SecurityCenter app-info host and row keys. Click hook install is once-guarded on A13 vs per-create on A14.
+- DIFF_SUMMARY: Same AMAppInfomationActivity.onCreate injects version/file/data/uid/sdk/store/launch rows and onPreferenceTreeClick copy/launch. A13 once-only tryInstallAppInfoPreferenceClickHook plus android.app.Fragment class probe; A14 hooks onPreferenceTreeClick inside every onCreate intercept. compact only14_targets #onPreferenceTreeClick is the helper vs inline split.
+- VALUE_DEFAULT_COMPARISON: Boolean default false keeps stock app-info page.
+- HOOK_TARGET_COMPARISON: A14=com.miui.appmanager.AMAppInfomationActivity#onCreate,androidx.fragment.app.Fragment#<init>,#onPreferenceTreeClick; A13=com.miui.appmanager.AMAppInfomationActivity#onCreate,androidx.fragment.app.Fragment#<init>,fragment#onPreferenceTreeClick
+- CALLBACK_SEMANTICS_COMPARISON: A14 intercept proceed then post; A13 after post. Click before/intercept skip original.
+- ARG_RESULT_COMPARISON: A14 result_assign[null,null,true,true]; A13 click returnAndSkip(true); onCreate no result rewrite.
+- A14_ONLY_BRANCHES: Inline onPreferenceTreeClick intercept per onCreate; no android.app.Fragment constructor probe.
+- WHY_USER_BEHAVIOR_IS_EQUIVALENT: App details still show extra APK metadata and store/launch actions with the same click behavior.
+- KEY_OWNERSHIP_EVIDENCE: Installer getBoolean(various_appdetails). Added preference keys apk_versioncode/apk_filename/data_path/app_uid/target_sdk/open_in_store/launch_app are synthetic, not module prefs.
+- A14_KEY_OWNER_REFERENCE: app/src/main/java/tv/withaibuild/customiuizer/mods/Various.kt::AppInfoHook
+- A13_KEY_OWNER_REFERENCE: app/src/main/java/tv/withaibuild/customiuizer/mods/Various.kt::AppInfoHook
+- PROOF_CONCLUSION: `PRESENT_A13_VARIANT`
+
+## PROOF_R5_AppsDefaultSortHook_various_appsort
+
+- PROOF_ID: `PROOF_R5_AppsDefaultSortHook_various_appsort`
+- BODY_RELATION: `REVIEWED_VARIANT`
+- A14_OWNER_PATH: `app/src/main/java/tv/withaibuild/customiuizer/mods/Various.kt`
+- A14_SYMBOL: `AppsDefaultSortHook`
+- A14_INSTALLER: `A14 installer/spec gate for various_appsort`
+- A14_HOOK_TARGETS: `com.miui.appmanager.AppManagerMainActivity#onCreate`
+- A14_CALLBACK_PHASE: `intercept`
+- A13_OWNER_PATH: `app/src/main/java/tv/withaibuild/customiuizer/mods/Various.kt`
+- A13_SYMBOL: `AppsDefaultSortHook`
+- A13_INSTALLER: `A13 installer gate for various_appsort`
+- A13_HOOK_TARGETS: `com.miui.appmanager.AppManagerMainActivity#onCreate`
+- A13_CALLBACK_PHASE: `before`
+- PREFERENCE_KEYS: `various_appsort`
+- VALUE_DOMAIN: owner-local preference domain
+- DEFAULT_SEMANTICS: same persisted keys consumed by both owners
+- RESULT/ARGUMENT_BEHAVIOR: A14 ops: result_assign[null,null]. A13 ops: no result/argument rewrite literals. Keys various_appsort rewrite the same host members.
+- API33_VARIANT_REASON: A14 callback intercept vs A13 before on members A14[com.miui.appmanager.AppManagerMainActivity#onCreate] / A13[com.miui.appmanager.AppManagerMainActivity#onCreate]. Inner preference reads of various_appsort match; intercept proceed-once maps to before returnAndSkip or after side-effect.
+- DIFF_SUMMARY: Shared members com.miui.appmanager.AppManagerMainActivity#onCreate. Differ: A14 phases intercept vs A13 before; A14 result_assign[null,null] vs A13 no result/argument rewrite literals.
+- VALUE_DEFAULT_COMPARISON: both consume various_appsort in the owner body or installer gate
+- HOOK_TARGET_COMPARISON: A14=com.miui.appmanager.AppManagerMainActivity#onCreate; A13=com.miui.appmanager.AppManagerMainActivity#onCreate
+- CALLBACK_SEMANTICS_COMPARISON: A14 intercept vs A13 before; skipped paths do not invoke the original, proceed-once equals after side-effect
+- ARG_RESULT_COMPARISON: A14=result_assign[null,null]; A13=no result/argument rewrite literals
+- A14_ONLY_BRANCHES: none beyond intercept scaffolding for this owner pair
+- WHY_USER_BEHAVIOR_IS_EQUIVALENT: User-visible contract of various_appsort is the same host rewrite; callback adapter and null-safety differ.
+- KEY_OWNERSHIP_EVIDENCE: various_appsort: LITERAL_READ and/or INSTALLER_CALLEE in AppsDefaultSortHook/AppsDefaultSortHook
+- A14_KEY_OWNER_REFERENCE: app/src/main/java/tv/withaibuild/customiuizer/mods/Various.kt::AppsDefaultSortHook
+- A13_KEY_OWNER_REFERENCE: app/src/main/java/tv/withaibuild/customiuizer/mods/Various.kt::AppsDefaultSortHook
+- PROOF_CONCLUSION: `PRESENT_A13_VARIANT`
+
+## PROOF_R5_InCallBrightnessHook_various_calluibright
+
+- PROOF_ID: `PROOF_R5_InCallBrightnessHook_various_calluibright`
+- BODY_RELATION: `REVIEWED_VARIANT`
+- A14_OWNER_PATH: `app/src/main/java/tv/withaibuild/customiuizer/mods/Various.kt`
+- A14_SYMBOL: `InCallBrightnessHook`
+- A14_INSTALLER: `A14 installer/spec gate for various_calluibright,various_calluibright_night,various_calluibright_type,various_calluibright_val`
+- A14_HOOK_TARGETS: `com.android.incallui.InCallActivity#onCreate`
+- A14_CALLBACK_PHASE: `intercept,before,after`
+- A13_OWNER_PATH: `app/src/main/java/tv/withaibuild/customiuizer/mods/Various.kt`
+- A13_SYMBOL: `InCallBrightnessHook`
+- A13_INSTALLER: `A13 installer gate for various_calluibright,various_calluibright_night,various_calluibright_type,various_calluibright_val`
+- A13_HOOK_TARGETS: `com.android.incallui.InCallActivity#onCreate`
+- A13_CALLBACK_PHASE: `after,before`
+- PREFERENCE_KEYS: `various_calluibright,various_calluibright_night,various_calluibright_type,various_calluibright_val`
+- VALUE_DOMAIN: owner-local preference domain
+- DEFAULT_SEMANTICS: same persisted keys consumed by both owners
+- RESULT/ARGUMENT_BEHAVIOR: A14 ops: result_assign[null]; chain.proceed[chain.proceed()]. A13 ops: no result/argument rewrite literals. Keys various_calluibright,various_calluibright_night,various_calluibright_type,various_calluibright_val rewrite the same host members.
+- API33_VARIANT_REASON: A14 callback intercept,before,after vs A13 after,before on members A14[com.android.incallui.InCallActivity#onCreate] / A13[com.android.incallui.InCallActivity#onCreate]. Inner preference reads of various_calluibright,various_calluibright_night,various_calluibright_type,various_calluibright_val match; intercept proceed-once maps to before returnAndSkip or after side-effect.
+- DIFF_SUMMARY: Shared members com.android.incallui.InCallActivity#onCreate. Differ: A14 phases intercept,before,after vs A13 after,before; A14 result_assign[null]; chain.proceed[chain.proceed()] vs A13 no result/argument rewrite literals.
+- VALUE_DEFAULT_COMPARISON: both consume various_calluibright,various_calluibright_night,various_calluibright_type,various_calluibright_val in the owner body or installer gate
+- HOOK_TARGET_COMPARISON: A14=com.android.incallui.InCallActivity#onCreate; A13=com.android.incallui.InCallActivity#onCreate
+- CALLBACK_SEMANTICS_COMPARISON: A14 intercept,before,after vs A13 after,before; skipped paths do not invoke the original, proceed-once equals after side-effect
+- ARG_RESULT_COMPARISON: A14=result_assign[null]; chain.proceed[chain.proceed()]; A13=no result/argument rewrite literals
+- A14_ONLY_BRANCHES: none beyond intercept scaffolding for this owner pair
+- WHY_USER_BEHAVIOR_IS_EQUIVALENT: User-visible contract of various_calluibright,various_calluibright_night,various_calluibright_type,various_calluibright_val is the same host rewrite; callback adapter and null-safety differ.
+- KEY_OWNERSHIP_EVIDENCE: various_calluibright,various_calluibright_night,various_calluibright_type,various_calluibright_val: LITERAL_READ and/or INSTALLER_CALLEE in InCallBrightnessHook/InCallBrightnessHook
+- A14_KEY_OWNER_REFERENCE: app/src/main/java/tv/withaibuild/customiuizer/mods/Various.kt::InCallBrightnessHook
+- A13_KEY_OWNER_REFERENCE: app/src/main/java/tv/withaibuild/customiuizer/mods/Various.kt::InCallBrightnessHook
+- PROOF_CONCLUSION: `PRESENT_A13_VARIANT`
+
+## PROOF_R5X_CALLUI_NIGHT
+
+- PROOF_ID: `PROOF_R5X_CALLUI_NIGHT`
+- BODY_RELATION: `REVIEWED_VARIANT`
+- A14_OWNER_PATH: `app/src/main/java/tv/withaibuild/customiuizer/mods/Various.kt`
+- A14_SYMBOL: `CallUIBrightnessHook`
+- A14_INSTALLER: `A14 installer/spec gate for various_calluibright_night_start,various_calluibright_night_end`
+- A14_HOOK_TARGETS: `InCallUI brightness window`
+- A14_CALLBACK_PHASE: `n/a`
+- A13_OWNER_PATH: `app/src/main/java/tv/withaibuild/customiuizer/mods/Various.kt`
+- A13_SYMBOL: `CallUIBrightnessHook`
+- A13_INSTALLER: `A13 installer gate for various_calluibright_night_start,various_calluibright_night_end`
+- A13_HOOK_TARGETS: `InCallUI brightness window`
+- A13_CALLBACK_PHASE: `n/a`
+- PREFERENCE_KEYS: `various_calluibright_night_start,various_calluibright_night_end`
+- VALUE_DOMAIN: owner-local preference domain
+- DEFAULT_SEMANTICS: Start/end default 0 in the concatenated ints.
+- RESULT/ARGUMENT_BEHAVIOR: Brightness write uses the resolved window; no extra host skip.
+- API33_VARIANT_REASON: Same InCallUI brightness owner.
+- DIFF_SUMMARY: Night window hours are helpers of Call UI brightness, not a separate ROM ABI. Scanner missed concatenation.
+- VALUE_DEFAULT_COMPARISON: Start/end default 0 in the concatenated ints.
+- HOOK_TARGET_COMPARISON: A14=InCallUI brightness window; A13=InCallUI brightness window
+- CALLBACK_SEMANTICS_COMPARISON: Same Call UI brightness hook.
+- ARG_RESULT_COMPARISON: No extra result rewrite for these keys.
+- A14_ONLY_BRANCHES: none
+- WHY_USER_BEHAVIOR_IS_EQUIVALENT: Call-screen brightness still uses the night start/end window when type selects night mode.
+- KEY_OWNERSHIP_EVIDENCE: A13 concatenates various_calluibright_night + _start/_end (Various.kt:1049). Settings Various_CallUIBright.kt uses pref_key_various_calluibright_night_. PhoneInstaller gates on various_calluibright.
+- A14_KEY_OWNER_REFERENCE: app/src/main/java/tv/withaibuild/customiuizer/mods/Various.kt::CallUIBrightnessHook
+- A13_KEY_OWNER_REFERENCE: app/src/main/java/tv/withaibuild/customiuizer/mods/Various.kt::CallUIBrightnessHook
+- PROOF_CONCLUSION: `PRESENT_A13_VARIANT`
+
+## PROOF_R5X_NO_ACCESS_LOGS
+
+- PROOF_ID: `PROOF_R5X_NO_ACCESS_LOGS`
+- BODY_RELATION: `REVIEWED_VARIANT`
+- A14_OWNER_PATH: `app/src/main/java/tv/withaibuild/customiuizer/mods/SystemDisplayHooks.kt`
+- A14_SYMBOL: `NoAccessDeviceLogsRequest`
+- A14_INSTALLER: `A14 installer/spec gate for various_disable_access_devicelogs`
+- A14_HOOK_TARGETS: `device-log access confirmation members`
+- A14_CALLBACK_PHASE: `n/a`
+- A13_OWNER_PATH: `app/src/main/java/tv/withaibuild/customiuizer/mods/SystemDisplayAndWindowHooks.kt`
+- A13_SYMBOL: `NoAccessDeviceLogsRequest`
+- A13_INSTALLER: `A13 installer gate for various_disable_access_devicelogs`
+- A13_HOOK_TARGETS: `device-log access confirmation members`
+- A13_CALLBACK_PHASE: `n/a`
+- PREFERENCE_KEYS: `various_disable_access_devicelogs`
+- VALUE_DOMAIN: owner-local preference domain
+- DEFAULT_SEMANTICS: Boolean default false keeps the ROM prompt.
+- RESULT/ARGUMENT_BEHAVIOR: Prompt path skipped or forced allow per the catalog member.
+- API33_VARIANT_REASON: AOSP device-log permission prompt exists on API33. CatalogContracts.noAccessDeviceLogsRequest lists the A13 members.
+- DIFF_SUMMARY: Both skip/allow the device-logs access prompt via NoAccessDeviceLogsRequest. Catalog contract vs FeatureSpec.
+- VALUE_DEFAULT_COMPARISON: Boolean default false keeps the ROM prompt.
+- HOOK_TARGET_COMPARISON: A14=device-log access confirmation members; A13=device-log access confirmation members
+- CALLBACK_SEMANTICS_COMPARISON: before skip vs intercept skip.
+- ARG_RESULT_COMPARISON: Skip original prompt.
+- A14_ONLY_BRANCHES: none beyond intercept scaffolding
+- WHY_USER_BEHAVIOR_IS_EQUIVALENT: Apps no longer get the device-logs access prompt when the toggle is on.
+- KEY_OWNERSHIP_EVIDENCE: INSTALLER_CALLEE A13 SystemServerInstaller.java:98 FeatureDispatcher noAccessDeviceLogsRequest; FeatureCatalog preferenceKeys various_disable_access_devicelogs. A14 SystemServer feature same key.
+- A14_KEY_OWNER_REFERENCE: app/src/main/java/tv/withaibuild/customiuizer/mods/SystemDisplayHooks.kt::NoAccessDeviceLogsRequest
+- A13_KEY_OWNER_REFERENCE: app/src/main/java/tv/withaibuild/customiuizer/mods/SystemDisplayAndWindowHooks.kt::NoAccessDeviceLogsRequest
+- PROOF_CONCLUSION: `PRESENT_A13_VARIANT`
+
+## PROOF_R5F_DisableDockSuggestHook_various_disable_dock_suggest
+
+- PROOF_ID: `PROOF_R5F_DisableDockSuggestHook_various_disable_dock_suggest`
+- BODY_RELATION: `REVIEWED_VARIANT`
+- A14_OWNER_PATH: `app/src/main/java/tv/withaibuild/customiuizer/mods/Various.kt`
+- A14_SYMBOL: `DisableDockSuggestHook`
+- A14_INSTALLER: `SecurityCenterFeatures DisableDockSuggestFeature getBoolean(various_disable_dock_suggest)`
+- A14_HOOK_TARGETS: `android.util.MiuiMultiWindowUtils#getFreeformSuggestionList(Context)`
+- A14_CALLBACK_PHASE: `intercept`
+- A13_OWNER_PATH: `app/src/main/java/tv/withaibuild/customiuizer/mods/Various.kt`
+- A13_SYMBOL: `DisableDockSuggestHook`
+- A13_INSTALLER: `SecurityCenterInstaller.java getBoolean(various_disable_dock_suggest)`
+- A13_HOOK_TARGETS: `android.util.MiuiMultiWindowUtils#getFreeformSuggestionList (hookAllMethodsSilently)`
+- A13_CALLBACK_PHASE: `before`
+- PREFERENCE_KEYS: `various_disable_dock_suggest`
+- VALUE_DOMAIN: owner-local preference domain
+- DEFAULT_SEMANTICS: Boolean default false keeps ROM dock suggestions.
+- RESULT/ARGUMENT_BEHAVIOR: A13 returnAndSkip(ArrayList("xx.yy.zz")) unless stack whitelist. A14 dockSuggestionResult proceeds only for scoped editor caller.
+- API33_VARIANT_REASON: Same MiuiMultiWindowUtils suggestion list. Caller detection is stack-walk (A13) vs install-time caller scope (A14). Dummy list contract unchanged.
+- DIFF_SUMMARY: Both return a dummy one-element blacklist from getFreeformSuggestionList except dock-edit callers. A13 stack-walk whitelist DockAppEditActivity/BubblesSettings then returnAndSkip(blackList). A14 exact Context overload plus ThreadLocal caller-scope (fail-closed, no stack scan).
+- VALUE_DEFAULT_COMPARISON: Boolean default false keeps ROM dock suggestions.
+- HOOK_TARGET_COMPARISON: A14=android.util.MiuiMultiWindowUtils#getFreeformSuggestionList(Context); A13=android.util.MiuiMultiWindowUtils#getFreeformSuggestionList (hookAllMethodsSilently)
+- CALLBACK_SEMANTICS_COMPARISON: A14 intercept proceed-or-cleared; A13 before skip unless stack match then original.
+- ARG_RESULT_COMPARISON: A14 chain.proceed[]; A13 returnAndSkip[blackList]. Cleared result is the same dummy list type.
+- A14_ONLY_BRANCHES: installDockSuggestionCallerScope; exact Context overload; fail-closed unknown callers (A13 whitelist BubblesSettings by stack name).
+- WHY_USER_BEHAVIOR_IS_EQUIVALENT: Dock freeform suggestions stay cleared except while editing the dock. User-visible disable-suggest toggle matches.
+- KEY_OWNERSHIP_EVIDENCE: Installer getBoolean(various_disable_dock_suggest).
+- A14_KEY_OWNER_REFERENCE: app/src/main/java/tv/withaibuild/customiuizer/mods/Various.kt::DisableDockSuggestHook
+- A13_KEY_OWNER_REFERENCE: app/src/main/java/tv/withaibuild/customiuizer/mods/Various.kt::DisableDockSuggestHook
+- PROOF_CONCLUSION: `PRESENT_A13_VARIANT`
+
+## PROOF_R5_DisableSideBarSuggestionHook_various_disable_freeform_suggest_blacklist
+
+- PROOF_ID: `PROOF_R5_DisableSideBarSuggestionHook_various_disable_freeform_suggest_blacklist`
+- BODY_RELATION: `IDENTICAL`
+- A14_OWNER_PATH: `app/src/main/java/tv/withaibuild/customiuizer/mods/SystemWindowHooks.kt`
+- A14_SYMBOL: `DisableSideBarSuggestionHook`
+- A14_INSTALLER: `A14 installer/spec gate for various_disable_freeform_suggest_blacklist`
+- A14_HOOK_TARGETS: `(no host member literals)`
+- A14_CALLBACK_PHASE: `unknown`
+- A13_OWNER_PATH: `app/src/main/java/tv/withaibuild/customiuizer/mods/SystemFreeformAndMultiWindowHooks.kt`
+- A13_SYMBOL: `DisableSideBarSuggestionHook`
+- A13_INSTALLER: `A13 installer gate for various_disable_freeform_suggest_blacklist`
+- A13_HOOK_TARGETS: `(no host member literals)`
+- A13_CALLBACK_PHASE: `unknown`
+- PREFERENCE_KEYS: `various_disable_freeform_suggest_blacklist`
+- VALUE_DOMAIN: owner-local preference domain
+- DEFAULT_SEMANTICS: identical owner body; shared defaults
+- RESULT/ARGUMENT_BEHAVIOR: no result/argument rewrite literals
+- API33_VARIANT_REASON: Normalized bodies are IDENTICAL. A14/A13 both hook (none).
+- KEY_OWNERSHIP_EVIDENCE: various_disable_freeform_suggest_blacklist: LITERAL_READ and/or INSTALLER_CALLEE in DisableSideBarSuggestionHook/DisableSideBarSuggestionHook
+- A14_KEY_OWNER_REFERENCE: app/src/main/java/tv/withaibuild/customiuizer/mods/SystemWindowHooks.kt::DisableSideBarSuggestionHook
+- A13_KEY_OWNER_REFERENCE: app/src/main/java/tv/withaibuild/customiuizer/mods/SystemFreeformAndMultiWindowHooks.kt::DisableSideBarSuggestionHook
+- PROOF_CONCLUSION: `PRESENT_EQUIVALENT`
+
+## PROOF_R5_AppsDisableHook_various_disableapp
+
+- PROOF_ID: `PROOF_R5_AppsDisableHook_various_disableapp`
+- BODY_RELATION: `REVIEWED_VARIANT`
+- A14_OWNER_PATH: `app/src/main/java/tv/withaibuild/customiuizer/mods/Various.kt`
+- A14_SYMBOL: `AppsDisableHook`
+- A14_INSTALLER: `A14 installer/spec gate for various_disableapp`
+- A14_HOOK_TARGETS: `com.miui.appmanager.ApplicationsDetailsActivity#onCreateOptionsMenu,com.miui.appmanager.ApplicationsDetailsActivity#onOptionsItemSelected`
+- A14_CALLBACK_PHASE: `intercept`
+- A13_OWNER_PATH: `app/src/main/java/tv/withaibuild/customiuizer/mods/Various.kt`
+- A13_SYMBOL: `AppsDisableHook`
+- A13_INSTALLER: `A13 installer gate for various_disableapp`
+- A13_HOOK_TARGETS: `com.miui.appmanager.ApplicationsDetailsActivity#onCreateOptionsMenu,com.miui.appmanager.ApplicationsDetailsActivity#onOptionsItemSelected`
+- A13_CALLBACK_PHASE: `after`
+- PREFERENCE_KEYS: `various_disableapp`
+- VALUE_DOMAIN: owner-local preference domain
+- DEFAULT_SEMANTICS: same persisted keys consumed by both owners
+- RESULT/ARGUMENT_BEHAVIOR: A14 ops: result_assign[null,null,true]; chain.proceed[chain.proceed(),chain.proceed()]. A13 ops: setResult[true]. Keys various_disableapp rewrite the same host members.
+- API33_VARIANT_REASON: A14 callback intercept vs A13 after on members A14[com.miui.appmanager.ApplicationsDetailsActivity#onCreateOptionsMenu,com.miui.appmanager.ApplicationsDetailsActivity#onOptionsItemSelected] / A13[com.miui.appmanager.ApplicationsDetailsActivity#onCreateOptionsMenu,com.miui.appmanager.ApplicationsDetailsActivity#onOptionsItemSelected]. Inner preference reads of various_disableapp match; intercept proceed-once maps to before returnAndSkip or after side-effect.
+- DIFF_SUMMARY: Shared members com.miui.appmanager.ApplicationsDetailsActivity#onCreateOptionsMenu,com.miui.appmanager.ApplicationsDetailsActivity#onOptionsItemSelected. Differ: A14 phases intercept vs A13 after; A14 result_assign[null,null,true]; chain.proceed[chain.proceed(),chain.proceed()] vs A13 setResult[true].
+- VALUE_DEFAULT_COMPARISON: both consume various_disableapp in the owner body or installer gate
+- HOOK_TARGET_COMPARISON: A14=com.miui.appmanager.ApplicationsDetailsActivity#onCreateOptionsMenu,com.miui.appmanager.ApplicationsDetailsActivity#onOptionsItemSelected; A13=com.miui.appmanager.ApplicationsDetailsActivity#onCreateOptionsMenu,com.miui.appmanager.ApplicationsDetailsActivity#onOptionsItemSelected
+- CALLBACK_SEMANTICS_COMPARISON: A14 intercept vs A13 after; skipped paths do not invoke the original, proceed-once equals after side-effect
+- ARG_RESULT_COMPARISON: A14=result_assign[null,null,true]; chain.proceed[chain.proceed(),chain.proceed()]; A13=setResult[true]
+- A14_ONLY_BRANCHES: none beyond intercept scaffolding for this owner pair
+- WHY_USER_BEHAVIOR_IS_EQUIVALENT: User-visible contract of various_disableapp is the same host rewrite; callback adapter and null-safety differ.
+- KEY_OWNERSHIP_EVIDENCE: various_disableapp: LITERAL_READ and/or INSTALLER_CALLEE in AppsDisableHook/AppsDisableHook
+- A14_KEY_OWNER_REFERENCE: app/src/main/java/tv/withaibuild/customiuizer/mods/Various.kt::AppsDisableHook
+- A13_KEY_OWNER_REFERENCE: app/src/main/java/tv/withaibuild/customiuizer/mods/Various.kt::AppsDisableHook
+- PROOF_CONCLUSION: `PRESENT_A13_VARIANT`
+
+## PROOF_R5F_AddSideBarExpandReceiverHook_various_enable_expand_sidebar
+
+- PROOF_ID: `PROOF_R5F_AddSideBarExpandReceiverHook_various_enable_expand_sidebar`
+- BODY_RELATION: `REVIEWED_VARIANT`
+- A14_OWNER_PATH: `app/src/main/java/tv/withaibuild/customiuizer/mods/Various.kt`
+- A14_SYMBOL: `AddSideBarExpandReceiverHook`
+- A14_INSTALLER: `SecurityCenterFeatures process com.miui.securitycenter:ui && getBoolean(various_enable_expand_sidebar)`
+- A14_HOOK_TARGETS: `com.android.systemui.navigationbar.gestural.RegionSamplingHelper constructors,RegionSamplingHelper#onViewDetachedFromWindow,#onTouch,#draw`
+- A14_CALLBACK_PHASE: `intercept`
+- A13_OWNER_PATH: `app/src/main/java/tv/withaibuild/customiuizer/mods/Various.kt`
+- A13_SYMBOL: `AddSideBarExpandReceiverHook`
+- A13_INSTALLER: `SecurityCenterInstaller.java getBoolean(various_enable_expand_sidebar)`
+- A13_HOOK_TARGETS: `com.android.systemui.navigationbar.gestural.RegionSamplingHelper constructors,RegionSamplingHelper#onViewDetachedFromWindow,RegionSamplingHelper start(Rect) skip,OnTouchListener#onTouch,background#draw`
+- A13_CALLBACK_PHASE: `after,before`
+- PREFERENCE_KEYS: `various_enable_expand_sidebar,various_swipe_expand_sidebar`
+- VALUE_DOMAIN: owner-local preference domain
+- DEFAULT_SEMANTICS: various_enable_expand_sidebar false skips install. various_swipe_expand_sidebar false shrinks/hides the line on both.
+- RESULT/ARGUMENT_BEHAVIOR: onTouch skip false when source!=9999; draw skip null; start(Rect) skip null.
+- API33_VARIANT_REASON: Same SecurityCenter sidebar host. Resource replacement API and receiver registration helper differ; hide/expand contract does not.
+- DIFF_SUMMARY: Same RegionSamplingHelper owner: ShowSideBar receiver, shrink sidebar height when swipe-expand off, skip non-9999 onTouch, skip draw, skip start(Rect), unregister on detach. A13 density replacement vs A14 theme value replacement; A13 Context.registerReceiver vs A14 ModuleHelper.registerModuleReceiver.
+- VALUE_DEFAULT_COMPARISON: various_enable_expand_sidebar false skips install. various_swipe_expand_sidebar false shrinks/hides the line on both.
+- HOOK_TARGET_COMPARISON: A14=com.android.systemui.navigationbar.gestural.RegionSamplingHelper constructors,RegionSamplingHelper#onViewDetachedFromWindow,#onTouch,#draw; A13=com.android.systemui.navigationbar.gestural.RegionSamplingHelper constructors,RegionSamplingHelper#onViewDetachedFromWindow,RegionSamplingHelper start(Rect) skip,OnTouchListener#onTouch,background#draw
+- CALLBACK_SEMANTICS_COMPARISON: A14 intercept skip/proceed; A13 before returnAndSkip / after register. Same skip set.
+- ARG_RESULT_COMPARISON: A14 result_assign[false,null,null,null]; A13 returnAndSkip[false,null,null].
+- A14_ONLY_BRANCHES: Theme value replacement; module-owned receiver registration/WeakReference owner tracking.
+- WHY_USER_BEHAVIOR_IS_EQUIVALENT: Enable-expand-sidebar still registers the ShowSideBar receiver; swipe-expand off still collapses the dock line and ignores real touches.
+- KEY_OWNERSHIP_EVIDENCE: Installer various_enable_expand_sidebar. Body getBoolean(various_swipe_expand_sidebar) to keep/remove dock line. SharedPreferences dock_line_location in sp_video_box is ROM dock state, not a module pref (compact keys_only13).
+- A14_KEY_OWNER_REFERENCE: app/src/main/java/tv/withaibuild/customiuizer/mods/Various.kt::AddSideBarExpandReceiverHook
+- A13_KEY_OWNER_REFERENCE: app/src/main/java/tv/withaibuild/customiuizer/mods/Various.kt::AddSideBarExpandReceiverHook
+- PROOF_CONCLUSION: `PRESENT_A13_VARIANT`
+
+## PROOF_R5F_GboardPaddingHook_various_gboardpadding_land
+
+- PROOF_ID: `PROOF_R5F_GboardPaddingHook_various_gboardpadding_land`
+- BODY_RELATION: `REVIEWED_VARIANT`
+- A14_OWNER_PATH: `app/src/main/java/tv/withaibuild/customiuizer/mods/Various.kt`
+- A14_SYMBOL: `GboardPaddingHook`
+- A14_INSTALLER: `InputMethodFeatures same package prefix and int>0 gate`
+- A14_HOOK_TARGETS: `android.os.SystemProperties#get`
+- A14_CALLBACK_PHASE: `intercept`
+- A13_OWNER_PATH: `app/src/main/java/tv/withaibuild/customiuizer/mods/Various.kt`
+- A13_SYMBOL: `GboardPaddingHook`
+- A13_INSTALLER: `InputMethodInstaller.java pkg startsWith com.google.android.inputmethod && (port>0 || land>0)`
+- A13_HOOK_TARGETS: `android.os.SystemProperties#get`
+- A13_CALLBACK_PHASE: `before`
+- PREFERENCE_KEYS: `various_gboardpadding_land,various_gboardpadding_port`
+- VALUE_DOMAIN: owner-local preference domain
+- DEFAULT_SEMANTICS: Both ints default 0 meaning no rewrite and installer skip.
+- RESULT/ARGUMENT_BEHAVIOR: When opt>0, skip original get with opt.toString().
+- API33_VARIANT_REASON: Same public SystemProperties.get keys. before returnAndSkip vs intercept skip.
+- DIFF_SUMMARY: Identical SystemProperties.get rewrite for ro.com.google.ime.kb_pad_port_b / kb_pad_land_b to the int preference string. Adapter only.
+- VALUE_DEFAULT_COMPARISON: Both ints default 0 meaning no rewrite and installer skip.
+- HOOK_TARGET_COMPARISON: A14=android.os.SystemProperties#get; A13=android.os.SystemProperties#get
+- CALLBACK_SEMANTICS_COMPARISON: A14 intercept skip; A13 before returnAndSkip. Else proceed/return original.
+- ARG_RESULT_COMPARISON: A14 result_assign[null] or skip string; A13 returnAndSkip[opt.toString()].
+- A14_ONLY_BRANCHES: none beyond intercept scaffolding.
+- WHY_USER_BEHAVIOR_IS_EQUIVALENT: Gboard bottom padding still comes from the same two ints via the same property names.
+- KEY_OWNERSHIP_EVIDENCE: Installer and body getInt various_gboardpadding_port / various_gboardpadding_land default 0. Skip only when opt>0.
+- A14_KEY_OWNER_REFERENCE: app/src/main/java/tv/withaibuild/customiuizer/mods/Various.kt::GboardPaddingHook
+- A13_KEY_OWNER_REFERENCE: app/src/main/java/tv/withaibuild/customiuizer/mods/Various.kt::GboardPaddingHook
+- PROOF_CONCLUSION: `PRESENT_A13_VARIANT`
+
+## PROOF_R5F_HideReportButtonHook_various_hide_report_ondetails
+
+- PROOF_ID: `PROOF_R5F_HideReportButtonHook_various_hide_report_ondetails`
+- BODY_RELATION: `REVIEWED_VARIANT`
+- A14_OWNER_PATH: `app/src/main/java/tv/withaibuild/customiuizer/mods/Various.kt`
+- A14_SYMBOL: `HideReportButtonHook`
+- A14_INSTALLER: `SecurityCenterFeatures.SecurityCenterHideReportButtonFeature getBoolean(various_hide_report_ondetails)`
+- A14_HOOK_TARGETS: `com.miui.appmanager.ApplicationsDetailsActivity#onCreateOptionsMenu`
+- A14_CALLBACK_PHASE: `intercept`
+- A13_OWNER_PATH: `app/src/main/java/tv/withaibuild/customiuizer/mods/Various.kt`
+- A13_SYMBOL: `HideReportButtonHook`
+- A13_INSTALLER: `SecurityCenterInstaller.java getBoolean(various_hide_report_ondetails)`
+- A13_HOOK_TARGETS: `com.miui.appmanager.ApplicationsDetailsActivity#onCreateOptionsMenu`
+- A13_CALLBACK_PHASE: `after`
+- PREFERENCE_KEYS: `various_hide_report_ondetails`
+- VALUE_DOMAIN: owner-local preference domain
+- DEFAULT_SEMANTICS: Boolean default false keeps report menu item.
+- RESULT/ARGUMENT_BEHAVIOR: after/intercept proceed then setVisible(false) on item 4. No result rewrite.
+- API33_VARIANT_REASON: Same ApplicationsDetailsActivity menu owner. A13 SecurityCenter installer vs A14 FeatureSpec.
+- DIFF_SUMMARY: Preserve prior PRESENT_A13_VARIANT. Both hide ApplicationsDetailsActivity options menu item 4 after the menu is created. A13 after+null-safe shouldHideReportMenuItem(4); A14 intercept proceed then reportMenu?.isVisible=false.
+- VALUE_DEFAULT_COMPARISON: Boolean default false keeps report menu item.
+- HOOK_TARGET_COMPARISON: A14=com.miui.appmanager.ApplicationsDetailsActivity#onCreateOptionsMenu; A13=com.miui.appmanager.ApplicationsDetailsActivity#onCreateOptionsMenu
+- CALLBACK_SEMANTICS_COMPARISON: A14 intercept proceed-once then hide; A13 after hide. Original onCreateOptionsMenu runs.
+- ARG_RESULT_COMPARISON: no result/argument rewrite literals; visibility write only.
+- A14_ONLY_BRANCHES: none beyond intercept scaffolding.
+- WHY_USER_BEHAVIOR_IS_EQUIVALENT: App-details Report item stays hidden. Not missing-in-A13.
+- KEY_OWNERSHIP_EVIDENCE: Installer getBoolean(various_hide_report_ondetails). Menu itemId 4 via shouldHideReportMenuItem on A13.
+- A14_KEY_OWNER_REFERENCE: app/src/main/java/tv/withaibuild/customiuizer/mods/Various.kt::HideReportButtonHook
+- A13_KEY_OWNER_REFERENCE: app/src/main/java/tv/withaibuild/customiuizer/mods/Various.kt::HideReportButtonHook
+- PROOF_CONCLUSION: `PRESENT_A13_VARIANT`
+
+## PROOF_R5_AppInfoDuringMiuiInstallHook_various_installappinfo
+
+- PROOF_ID: `PROOF_R5_AppInfoDuringMiuiInstallHook_various_installappinfo`
+- BODY_RELATION: `REVIEWED_VARIANT`
+- A14_OWNER_PATH: `app/src/main/java/tv/withaibuild/customiuizer/mods/Various.kt`
+- A14_SYMBOL: `AppInfoDuringMiuiInstallHook`
+- A14_INSTALLER: `A14 installer/spec gate for various_installappinfo`
+- A14_HOOK_TARGETS: `(no host member literals)`
+- A14_CALLBACK_PHASE: `intercept`
+- A13_OWNER_PATH: `app/src/main/java/tv/withaibuild/customiuizer/mods/Various.kt`
+- A13_SYMBOL: `AppInfoDuringMiuiInstallHook`
+- A13_INSTALLER: `A13 installer gate for various_installappinfo`
+- A13_HOOK_TARGETS: `(no host member literals)`
+- A13_CALLBACK_PHASE: `after`
+- PREFERENCE_KEYS: `various_installappinfo`
+- VALUE_DOMAIN: owner-local preference domain
+- DEFAULT_SEMANTICS: same persisted keys consumed by both owners
+- RESULT/ARGUMENT_BEHAVIOR: A14 ops: result_assign[null]; chain.proceed[chain.proceed()]. A13 ops: no result/argument rewrite literals. Keys various_installappinfo rewrite the same host members.
+- API33_VARIANT_REASON: A14 callback intercept vs A13 after on members A14[(none)] / A13[(none)]. Inner preference reads of various_installappinfo match; intercept proceed-once maps to before returnAndSkip or after side-effect.
+- DIFF_SUMMARY: Shared members (none). Differ: A14 phases intercept vs A13 after; A14 result_assign[null]; chain.proceed[chain.proceed()] vs A13 no result/argument rewrite literals.
+- VALUE_DEFAULT_COMPARISON: both consume various_installappinfo in the owner body or installer gate
+- HOOK_TARGET_COMPARISON: A14=(none); A13=(none)
+- CALLBACK_SEMANTICS_COMPARISON: A14 intercept vs A13 after; skipped paths do not invoke the original, proceed-once equals after side-effect
+- ARG_RESULT_COMPARISON: A14=result_assign[null]; chain.proceed[chain.proceed()]; A13=no result/argument rewrite literals
+- A14_ONLY_BRANCHES: none beyond intercept scaffolding for this owner pair
+- WHY_USER_BEHAVIOR_IS_EQUIVALENT: User-visible contract of various_installappinfo is the same host rewrite; callback adapter and null-safety differ.
+- KEY_OWNERSHIP_EVIDENCE: various_installappinfo: LITERAL_READ and/or INSTALLER_CALLEE in AppInfoDuringMiuiInstallHook/AppInfoDuringMiuiInstallHook
+- A14_KEY_OWNER_REFERENCE: app/src/main/java/tv/withaibuild/customiuizer/mods/Various.kt::AppInfoDuringMiuiInstallHook
+- A13_KEY_OWNER_REFERENCE: app/src/main/java/tv/withaibuild/customiuizer/mods/Various.kt::AppInfoDuringMiuiInstallHook
+- PROOF_CONCLUSION: `PRESENT_A13_VARIANT`
+
+## PROOF_R5F_PurePackageInstallerHook_various_installer_purify
+
+- PROOF_ID: `PROOF_R5F_PurePackageInstallerHook_various_installer_purify`
+- BODY_RELATION: `REVIEWED_VARIANT`
+- A14_OWNER_PATH: `app/src/main/java/tv/withaibuild/customiuizer/mods/Various.kt`
+- A14_SYMBOL: `PurePackageInstallerHook`
+- A14_INSTALLER: `PackageInstallerFeatures.PackageInstallerPurifyFeature getBoolean(various_installer_purify)`
+- A14_HOOK_TARGETS: `android.app.SharedPreferencesImpl#getBoolean,android.provider.Settings.System#getInt,android.provider.Settings.Secure#getInt,com.miui.packageInstaller.ui.listcomponets.SafeModeTipViewObject$ViewHolder#updateSuggestionMsgState`
+- A14_CALLBACK_PHASE: `intercept`
+- A13_OWNER_PATH: `app/src/main/java/tv/withaibuild/customiuizer/mods/Various.kt`
+- A13_SYMBOL: `PurePackageInstallerHook`
+- A13_INSTALLER: `PackageInstallerRouter.java pkg==com.miui.packageinstaller && getBoolean(various_installer_purify)`
+- A13_HOOK_TARGETS: `android.app.SharedPreferencesImpl#getBoolean,android.provider.Settings.System#getInt,android.provider.Settings.Secure#getInt,com.miui.packageInstaller.ui.listcomponets.SafeModeTipViewObject$ViewHolder#updateSuggestionMsgState`
+- A13_CALLBACK_PHASE: `before,after`
+- PREFERENCE_KEYS: `various_installer_purify`
+- VALUE_DOMAIN: owner-local preference domain
+- DEFAULT_SEMANTICS: Boolean default false keeps installer ads/recommend/verify UI.
+- RESULT/ARGUMENT_BEHAVIOR: Boolean/int get skip with purified constants; tip after hide GONE.
+- API33_VARIANT_REASON: Same Various.PurePackageInstallerHook members. A13 router vs A14 FeatureSpec. silently vs hard hook on optional tip class.
+- DIFF_SUMMARY: Preserve prior PRESENT_A13_VARIANT. Same pref rewrites: ads_enable/app_store_recommend/secure_verify_enable=false, secure_verify_cloud_once=true, virus_scan_install=0, miui_safe_mode=0, SafeMode tip GONE height 0. A13 findAndHookMethodSilently on tip ViewHolder vs A14 findAndHookMethod.
+- VALUE_DEFAULT_COMPARISON: Boolean default false keeps installer ads/recommend/verify UI.
+- HOOK_TARGET_COMPARISON: A14=android.app.SharedPreferencesImpl#getBoolean,android.provider.Settings.System#getInt,android.provider.Settings.Secure#getInt,com.miui.packageInstaller.ui.listcomponets.SafeModeTipViewObject$ViewHolder#updateSuggestionMsgState; A13=android.app.SharedPreferencesImpl#getBoolean,android.provider.Settings.System#getInt,android.provider.Settings.Secure#getInt,com.miui.packageInstaller.ui.listcomponets.SafeModeTipViewObject$ViewHolder#updateSuggestionMsgState
+- CALLBACK_SEMANTICS_COMPARISON: A14 intercept skip/proceed; A13 before returnAndSkip / after hide.
+- ARG_RESULT_COMPARISON: Same constant map: false/true/0 plus GONE. Adapter only.
+- A14_ONLY_BRANCHES: none beyond intercept scaffolding and non-silent tip hook.
+- WHY_USER_BEHAVIOR_IS_EQUIVALENT: Installer ads/recommend/verify/safe-mode UI still purified. Not missing-in-A13 and not the force-MIUI-installer owner.
+- KEY_OWNERSHIP_EVIDENCE: Installer getBoolean(various_installer_purify). Distinct from various_miuiinstaller. Helpers purifiedInstallerBoolean/SystemInt/SecureInt match A14 inline keys.
+- A14_KEY_OWNER_REFERENCE: app/src/main/java/tv/withaibuild/customiuizer/mods/Various.kt::PurePackageInstallerHook
+- A13_KEY_OWNER_REFERENCE: app/src/main/java/tv/withaibuild/customiuizer/mods/Various.kt::PurePackageInstallerHook
+- PROOF_CONCLUSION: `PRESENT_A13_VARIANT`
+
+## PROOF_R5F_MiuiPackageInstallerHook_various_miuiinstaller
+
+- PROOF_ID: `PROOF_R5F_MiuiPackageInstallerHook_various_miuiinstaller`
+- BODY_RELATION: `REVIEWED_VARIANT`
+- A14_OWNER_PATH: `app/src/main/java/tv/withaibuild/customiuizer/mods/Various.kt`
+- A14_SYMBOL: `MiuiPackageInstallerHook`
+- A14_INSTALLER: `PackageInstallerFeatures MiuiPackageInstallerFeature same boolean`
+- A14_HOOK_TARGETS: `com.miui.packageInstaller.InstallStart#getCallingPackage`
+- A14_CALLBACK_PHASE: `intercept`
+- A13_OWNER_PATH: `app/src/main/java/tv/withaibuild/customiuizer/mods/Various.kt`
+- A13_SYMBOL: `MiuiPackageInstallerHook`
+- A13_INSTALLER: `PackageInstallerRouter.java pkg==com.miui.packageinstaller && getBoolean(various_miuiinstaller)`
+- A13_HOOK_TARGETS: `android.os.SystemProperties#getBoolean,com.miui.packageInstaller.InstallStart#getCallingPackage`
+- A13_CALLBACK_PHASE: `before`
+- PREFERENCE_KEYS: `various_miuiinstaller`
+- VALUE_DOMAIN: owner-local preference domain
+- DEFAULT_SEMANTICS: Boolean default false keeps ROM installer routing.
+- RESULT/ARGUMENT_BEHAVIOR: getCallingPackage skip "com.android.fileexplorer". A13 also skip true for allow_sys_app_update.
+- API33_VARIANT_REASON: Calling-package spoof is the force-MIUI-installer contract. allow_sys_app_update is an A13 extra, not an A14-only HyperOS rule.
+- DIFF_SUMMARY: Both spoof InstallStart.getCallingPackage to com.android.fileexplorer so MIUI installer is used. A13 extra: SystemProperties.getBoolean persist.sys.allow_sys_app_update=true.
+- VALUE_DEFAULT_COMPARISON: Boolean default false keeps ROM installer routing.
+- HOOK_TARGET_COMPARISON: A14=com.miui.packageInstaller.InstallStart#getCallingPackage; A13=android.os.SystemProperties#getBoolean,com.miui.packageInstaller.InstallStart#getCallingPackage
+- CALLBACK_SEMANTICS_COMPARISON: A14 intercept skip; A13 before returnAndSkip. Original getCallingPackage not invoked.
+- ARG_RESULT_COMPARISON: A14 result_assign[null] skip fileexplorer; A13 returnAndSkip[true,"com.android.fileexplorer"].
+- A14_ONLY_BRANCHES: none. A13-only persist.sys.allow_sys_app_update=true.
+- WHY_USER_BEHAVIOR_IS_EQUIVALENT: Toggling various_miuiinstaller still forces the MIUI installer via getCallingPackage=fileexplorer. Purify is a separate owner.
+- KEY_OWNERSHIP_EVIDENCE: Installer getBoolean(various_miuiinstaller). Distinct from various_installer_purify / PurePackageInstallerHook.
+- A14_KEY_OWNER_REFERENCE: app/src/main/java/tv/withaibuild/customiuizer/mods/Various.kt::MiuiPackageInstallerHook
+- A13_KEY_OWNER_REFERENCE: app/src/main/java/tv/withaibuild/customiuizer/mods/Various.kt::MiuiPackageInstallerHook
+- PROOF_CONCLUSION: `PRESENT_A13_VARIANT`
+
+## PROOF_R5_PersistBatteryOptimizationHook_various_persist_batteryoptimization
+
+- PROOF_ID: `PROOF_R5_PersistBatteryOptimizationHook_various_persist_batteryoptimization`
+- BODY_RELATION: `REVIEWED_VARIANT`
+- A14_OWNER_PATH: `app/src/main/java/tv/withaibuild/customiuizer/mods/Various.kt`
+- A14_SYMBOL: `PersistBatteryOptimizationHook`
+- A14_INSTALLER: `A14 installer/spec gate for various_persist_batteryoptimization`
+- A14_HOOK_TARGETS: `com.miui.powerkeeper.utils.CommonAdapter#addPowerSaveWhitelistApps,com.miui.powerkeeper.millet.MilletPolicy#dealSleepModeWhiteList,com.miui.powerkeeper.statemachine.ForceDozeController#restoreWhiteListAppsIfQuitForceIdle`
+- A14_CALLBACK_PHASE: `intercept`
+- A13_OWNER_PATH: `app/src/main/java/tv/withaibuild/customiuizer/mods/Various.kt`
+- A13_SYMBOL: `PersistBatteryOptimizationHook`
+- A13_INSTALLER: `A13 installer gate for various_persist_batteryoptimization`
+- A13_HOOK_TARGETS: `com.miui.powerkeeper.utils.CommonAdapter#addPowerSaveWhitelistApps,com.miui.powerkeeper.millet.MilletPolicy#dealSleepModeWhiteList,com.miui.powerkeeper.statemachine.ForceDozeController#restoreWhiteListAppsIfQuitForceIdle`
+- A13_CALLBACK_PHASE: `before`
+- PREFERENCE_KEYS: `various_persist_batteryoptimization`
+- VALUE_DOMAIN: owner-local preference domain
+- DEFAULT_SEMANTICS: same persisted keys consumed by both owners
+- RESULT/ARGUMENT_BEHAVIOR: A14 ops: result_assign[null,null]; chain.proceed[chain.proceed()]. A13 ops: returnAndSkip[null]. Keys various_persist_batteryoptimization rewrite the same host members.
+- API33_VARIANT_REASON: A14 callback intercept vs A13 before on members A14[com.miui.powerkeeper.utils.CommonAdapter#addPowerSaveWhitelistApps,com.miui.powerkeeper.millet.MilletPolicy#dealSleepModeWhiteList,com.miui.powerkeeper.statemachine.ForceDozeController#restoreWhiteListAppsIfQuitForceIdle] / A13[com.miui.powerkeeper.utils.CommonAdapter#addPowerSaveWhitelistApps,com.miui.powerkeeper.millet.MilletPolicy#dealSleepModeWhiteList,com.miui.powerkeeper.statemachine.ForceDozeController#restoreWhiteListAppsIfQuitForceIdle]. Inner preference reads of various_persist_batteryoptimization match; intercept proceed-once maps to before returnAndSkip or after side-effect.
+- DIFF_SUMMARY: Shared members com.miui.powerkeeper.utils.CommonAdapter#addPowerSaveWhitelistApps,com.miui.powerkeeper.millet.MilletPolicy#dealSleepModeWhiteList,com.miui.powerkeeper.statemachine.ForceDozeController#restoreWhiteListAppsIfQuitForceIdle. Differ: A14 phases intercept vs A13 before; A14 result_assign[null,null]; chain.proceed[chain.proceed()] vs A13 returnAndSkip[null].
+- VALUE_DEFAULT_COMPARISON: both consume various_persist_batteryoptimization in the owner body or installer gate
+- HOOK_TARGET_COMPARISON: A14=com.miui.powerkeeper.utils.CommonAdapter#addPowerSaveWhitelistApps,com.miui.powerkeeper.millet.MilletPolicy#dealSleepModeWhiteList,com.miui.powerkeeper.statemachine.ForceDozeController#restoreWhiteListAppsIfQuitForceIdle; A13=com.miui.powerkeeper.utils.CommonAdapter#addPowerSaveWhitelistApps,com.miui.powerkeeper.millet.MilletPolicy#dealSleepModeWhiteList,com.miui.powerkeeper.statemachine.ForceDozeController#restoreWhiteListAppsIfQuitForceIdle
+- CALLBACK_SEMANTICS_COMPARISON: A14 intercept vs A13 before; skipped paths do not invoke the original, proceed-once equals after side-effect
+- ARG_RESULT_COMPARISON: A14=result_assign[null,null]; chain.proceed[chain.proceed()]; A13=returnAndSkip[null]
+- A14_ONLY_BRANCHES: none beyond intercept scaffolding for this owner pair
+- WHY_USER_BEHAVIOR_IS_EQUIVALENT: User-visible contract of various_persist_batteryoptimization is the same host rewrite; callback adapter and null-safety differ.
+- KEY_OWNERSHIP_EVIDENCE: various_persist_batteryoptimization: LITERAL_READ and/or INSTALLER_CALLEE in PersistBatteryOptimizationHook/PersistBatteryOptimizationHook
+- A14_KEY_OWNER_REFERENCE: app/src/main/java/tv/withaibuild/customiuizer/mods/Various.kt::PersistBatteryOptimizationHook
+- A13_KEY_OWNER_REFERENCE: app/src/main/java/tv/withaibuild/customiuizer/mods/Various.kt::PersistBatteryOptimizationHook
+- PROOF_CONCLUSION: `PRESENT_A13_VARIANT`
+
+## PROOF_R5_PrivacyAppsLayoutHook_various_privacyapps_column_nums4
+
+- PROOF_ID: `PROOF_R5_PrivacyAppsLayoutHook_various_privacyapps_column_nums4`
+- BODY_RELATION: `REVIEWED_VARIANT`
+- A14_OWNER_PATH: `app/src/main/java/tv/withaibuild/customiuizer/mods/Various.kt`
+- A14_SYMBOL: `PrivacyAppsLayoutHook`
+- A14_INSTALLER: `A14 installer/spec gate for various_privacyapps_column_nums4`
+- A14_HOOK_TARGETS: `com.miui.privacyapps.ui.PrivacyAppsActivity#onCreate`
+- A14_CALLBACK_PHASE: `intercept`
+- A13_OWNER_PATH: `app/src/main/java/tv/withaibuild/customiuizer/mods/Various.kt`
+- A13_SYMBOL: `PrivacyAppsLayoutHook`
+- A13_INSTALLER: `A13 installer gate for various_privacyapps_column_nums4`
+- A13_HOOK_TARGETS: `com.miui.privacyapps.ui.PrivacyAppsActivity#onCreate`
+- A13_CALLBACK_PHASE: `after`
+- PREFERENCE_KEYS: `various_privacyapps_column_nums4`
+- VALUE_DOMAIN: owner-local preference domain
+- DEFAULT_SEMANTICS: same persisted keys consumed by both owners
+- RESULT/ARGUMENT_BEHAVIOR: A14 ops: result_assign[null]; chain.proceed[chain.proceed()]. A13 ops: no result/argument rewrite literals. Keys various_privacyapps_column_nums4 rewrite the same host members.
+- API33_VARIANT_REASON: A14 callback intercept vs A13 after on members A14[com.miui.privacyapps.ui.PrivacyAppsActivity#onCreate] / A13[com.miui.privacyapps.ui.PrivacyAppsActivity#onCreate]. Inner preference reads of various_privacyapps_column_nums4 match; intercept proceed-once maps to before returnAndSkip or after side-effect.
+- DIFF_SUMMARY: Shared members com.miui.privacyapps.ui.PrivacyAppsActivity#onCreate. Differ: A14 phases intercept vs A13 after; A14 result_assign[null]; chain.proceed[chain.proceed()] vs A13 no result/argument rewrite literals.
+- VALUE_DEFAULT_COMPARISON: both consume various_privacyapps_column_nums4 in the owner body or installer gate
+- HOOK_TARGET_COMPARISON: A14=com.miui.privacyapps.ui.PrivacyAppsActivity#onCreate; A13=com.miui.privacyapps.ui.PrivacyAppsActivity#onCreate
+- CALLBACK_SEMANTICS_COMPARISON: A14 intercept vs A13 after; skipped paths do not invoke the original, proceed-once equals after side-effect
+- ARG_RESULT_COMPARISON: A14=result_assign[null]; chain.proceed[chain.proceed()]; A13=no result/argument rewrite literals
+- A14_ONLY_BRANCHES: none beyond intercept scaffolding for this owner pair
+- WHY_USER_BEHAVIOR_IS_EQUIVALENT: User-visible contract of various_privacyapps_column_nums4 is the same host rewrite; callback adapter and null-safety differ.
+- KEY_OWNERSHIP_EVIDENCE: various_privacyapps_column_nums4: LITERAL_READ and/or INSTALLER_CALLEE in PrivacyAppsLayoutHook/PrivacyAppsLayoutHook
+- A14_KEY_OWNER_REFERENCE: app/src/main/java/tv/withaibuild/customiuizer/mods/Various.kt::PrivacyAppsLayoutHook
+- A13_KEY_OWNER_REFERENCE: app/src/main/java/tv/withaibuild/customiuizer/mods/Various.kt::PrivacyAppsLayoutHook
+- PROOF_CONCLUSION: `PRESENT_A13_VARIANT`
+
+## PROOF_R5F_OpenByDefaultHook_various_replace_defaultopen_with_openbydefault
+
+- PROOF_ID: `PROOF_R5F_OpenByDefaultHook_various_replace_defaultopen_with_openbydefault`
+- BODY_RELATION: `REVIEWED_VARIANT`
+- A14_OWNER_PATH: `app/src/main/java/tv/withaibuild/customiuizer/mods/Various.kt`
+- A14_SYMBOL: `OpenByDefaultHook`
+- A14_INSTALLER: `SecurityCenterFeatures OpenByDefaultFeature same boolean`
+- A14_HOOK_TARGETS: `com.miui.appmanager.ApplicationsDetailsActivity#initView`
+- A14_CALLBACK_PHASE: `intercept`
+- A13_OWNER_PATH: `app/src/main/java/tv/withaibuild/customiuizer/mods/Various.kt`
+- A13_SYMBOL: `OpenByDefaultHook`
+- A13_INSTALLER: `SecurityCenterInstaller.java getBoolean(various_replace_defaultopen_with_openbydefault)`
+- A13_HOOK_TARGETS: `com.miui.appmanager.ApplicationsDetailsActivity#initView,com.miui.appmanager.ApplicationsDetailsActivity#onClick`
+- A13_CALLBACK_PHASE: `before`
+- PREFERENCE_KEYS: `various_replace_defaultopen_with_openbydefault`
+- VALUE_DOMAIN: owner-local preference domain
+- DEFAULT_SEMANTICS: Boolean default false keeps stock default-open row/behavior.
+- RESULT/ARGUMENT_BEHAVIOR: A13 onClick returnAndSkip(null) after startActivity. A14 click listener on injected view; initView proceeds.
+- API33_VARIANT_REASON: MIUI14 still has am_detail_default; retitle+onClick is the A13 ABI. Injected banner is the A14 layout variant. Same settings page.
+- DIFF_SUMMARY: Same destination Intent android.settings.APP_OPEN_BY_DEFAULT_SETTINGS with package: extra. A13 retitles existing am_detail_default and intercepts that row onClick. A14 injects a new AppDetailBannerItemView after initView anchored on am_storage_view because HyperOS dropped the default-open row.
+- VALUE_DEFAULT_COMPARISON: Boolean default false keeps stock default-open row/behavior.
+- HOOK_TARGET_COMPARISON: A14=com.miui.appmanager.ApplicationsDetailsActivity#initView; A13=com.miui.appmanager.ApplicationsDetailsActivity#initView,com.miui.appmanager.ApplicationsDetailsActivity#onClick
+- CALLBACK_SEMANTICS_COMPARISON: A14 intercept proceed then mutate view tree. A13 before retitle plus before skip onClick.
+- ARG_RESULT_COMPARISON: A14 result_assign[null] proceed; A13 returnAndSkip[null] on matching click.
+- A14_ONLY_BRANCHES: Inject BannerItem; no onClick hook; uses am_storage_view not am_detail_default.
+- WHY_USER_BEHAVIOR_IS_EQUIVALENT: Tap still opens system Open by default for the current package. Host widget differs by ROM layout.
+- KEY_OWNERSHIP_EVIDENCE: Installer getBoolean(various_replace_defaultopen_with_openbydefault).
+- A14_KEY_OWNER_REFERENCE: app/src/main/java/tv/withaibuild/customiuizer/mods/Various.kt::OpenByDefaultHook
+- A13_KEY_OWNER_REFERENCE: app/src/main/java/tv/withaibuild/customiuizer/mods/Various.kt::OpenByDefaultHook
+- PROOF_CONCLUSION: `PRESENT_A13_VARIANT`
+
+## PROOF_R5_AppsRestrictPowerHook_various_restrictapp
+
+- PROOF_ID: `PROOF_R5_AppsRestrictPowerHook_various_restrictapp`
+- BODY_RELATION: `REVIEWED_VARIANT`
+- A14_OWNER_PATH: `app/src/main/java/tv/withaibuild/customiuizer/mods/Various.kt`
+- A14_SYMBOL: `AppsRestrictPowerHook`
+- A14_INSTALLER: `A14 installer/spec gate for various_restrictapp`
+- A14_HOOK_TARGETS: `com.miui.powerkeeper.provider.PowerKeeperConfigureManager#pkgHasIcon,com.miui.powerkeeper.provider.PreSetGroup#initGroup,com.miui.powerkeeper.provider.PreSetApp#isPreSetApp,com.miui.powerkeeper.utils.Utils#pkgHasIcon`
+- A14_CALLBACK_PHASE: `intercept`
+- A13_OWNER_PATH: `app/src/main/java/tv/withaibuild/customiuizer/mods/Various.kt`
+- A13_SYMBOL: `AppsRestrictPowerHook`
+- A13_INSTALLER: `A13 installer gate for various_restrictapp`
+- A13_HOOK_TARGETS: `com.miui.powerkeeper.provider.PowerKeeperConfigureManager#pkgHasIcon,com.miui.powerkeeper.provider.PreSetGroup#initGroup,com.miui.powerkeeper.provider.PreSetApp#isPreSetApp,com.miui.powerkeeper.utils.Utils#pkgHasIcon`
+- A13_CALLBACK_PHASE: `after`
+- PREFERENCE_KEYS: `various_restrictapp`
+- VALUE_DOMAIN: owner-local preference domain
+- DEFAULT_SEMANTICS: same persisted keys consumed by both owners
+- RESULT/ARGUMENT_BEHAVIOR: A14 ops: result_assign[null]; chain.proceed[chain.proceed()]. A13 ops: no result/argument rewrite literals. Keys various_restrictapp rewrite the same host members.
+- API33_VARIANT_REASON: A14 callback intercept vs A13 after on members A14[com.miui.powerkeeper.provider.PowerKeeperConfigureManager#pkgHasIcon,com.miui.powerkeeper.provider.PreSetGroup#initGroup,com.miui.powerkeeper.provider.PreSetApp#isPreSetApp,com.miui.powerkeeper.utils.Utils#pkgHasIcon] / A13[com.miui.powerkeeper.provider.PowerKeeperConfigureManager#pkgHasIcon,com.miui.powerkeeper.provider.PreSetGroup#initGroup,com.miui.powerkeeper.provider.PreSetApp#isPreSetApp,com.miui.powerkeeper.utils.Utils#pkgHasIcon]. Inner preference reads of various_restrictapp match; intercept proceed-once maps to before returnAndSkip or after side-effect.
+- DIFF_SUMMARY: Shared members com.miui.powerkeeper.provider.PowerKeeperConfigureManager#pkgHasIcon,com.miui.powerkeeper.provider.PreSetGroup#initGroup,com.miui.powerkeeper.provider.PreSetApp#isPreSetApp,com.miui.powerkeeper.utils.Utils#pkgHasIcon. Differ: A14 phases intercept vs A13 after; A14 result_assign[null]; chain.proceed[chain.proceed()] vs A13 no result/argument rewrite literals.
+- VALUE_DEFAULT_COMPARISON: both consume various_restrictapp in the owner body or installer gate
+- HOOK_TARGET_COMPARISON: A14=com.miui.powerkeeper.provider.PowerKeeperConfigureManager#pkgHasIcon,com.miui.powerkeeper.provider.PreSetGroup#initGroup,com.miui.powerkeeper.provider.PreSetApp#isPreSetApp,com.miui.powerkeeper.utils.Utils#pkgHasIcon; A13=com.miui.powerkeeper.provider.PowerKeeperConfigureManager#pkgHasIcon,com.miui.powerkeeper.provider.PreSetGroup#initGroup,com.miui.powerkeeper.provider.PreSetApp#isPreSetApp,com.miui.powerkeeper.utils.Utils#pkgHasIcon
+- CALLBACK_SEMANTICS_COMPARISON: A14 intercept vs A13 after; skipped paths do not invoke the original, proceed-once equals after side-effect
+- ARG_RESULT_COMPARISON: A14=result_assign[null]; chain.proceed[chain.proceed()]; A13=no result/argument rewrite literals
+- A14_ONLY_BRANCHES: none beyond intercept scaffolding for this owner pair
+- WHY_USER_BEHAVIOR_IS_EQUIVALENT: User-visible contract of various_restrictapp is the same host rewrite; callback adapter and null-safety differ.
+- KEY_OWNERSHIP_EVIDENCE: various_restrictapp: LITERAL_READ and/or INSTALLER_CALLEE in AppsRestrictPowerHook/AppsRestrictPowerHook
+- A14_KEY_OWNER_REFERENCE: app/src/main/java/tv/withaibuild/customiuizer/mods/Various.kt::AppsRestrictPowerHook
+- A13_KEY_OWNER_REFERENCE: app/src/main/java/tv/withaibuild/customiuizer/mods/Various.kt::AppsRestrictPowerHook
+- PROOF_CONCLUSION: `PRESENT_A13_VARIANT`
+
+## PROOF_R5_ShowTempInBatteryHook_various_show_battery_temperature
+
+- PROOF_ID: `PROOF_R5_ShowTempInBatteryHook_various_show_battery_temperature`
+- BODY_RELATION: `REVIEWED_VARIANT`
+- A14_OWNER_PATH: `app/src/main/java/tv/withaibuild/customiuizer/mods/Various.kt`
+- A14_SYMBOL: `ShowTempInBatteryHook`
+- A14_INSTALLER: `A14 installer/spec gate for various_show_battery_temperature`
+- A14_HOOK_TARGETS: `#handleMessage`
+- A14_CALLBACK_PHASE: `intercept`
+- A13_OWNER_PATH: `app/src/main/java/tv/withaibuild/customiuizer/mods/Various.kt`
+- A13_SYMBOL: `ShowTempInBatteryHook`
+- A13_INSTALLER: `A13 installer gate for various_show_battery_temperature`
+- A13_HOOK_TARGETS: `#handleMessage`
+- A13_CALLBACK_PHASE: `after,intercept`
+- PREFERENCE_KEYS: `various_show_battery_temperature`
+- VALUE_DOMAIN: owner-local preference domain
+- DEFAULT_SEMANTICS: same persisted keys consumed by both owners
+- RESULT/ARGUMENT_BEHAVIOR: A14 ops: result_assign[null]; chain.proceed[chain.proceed()]. A13 ops: no result/argument rewrite literals. Keys various_show_battery_temperature rewrite the same host members.
+- API33_VARIANT_REASON: A14 callback intercept vs A13 after,intercept on members A14[#handleMessage] / A13[#handleMessage]. Inner preference reads of various_show_battery_temperature match; intercept proceed-once maps to before returnAndSkip or after side-effect.
+- DIFF_SUMMARY: Shared members #handleMessage. Differ: A14 phases intercept vs A13 after,intercept; A14 result_assign[null]; chain.proceed[chain.proceed()] vs A13 no result/argument rewrite literals.
+- VALUE_DEFAULT_COMPARISON: both consume various_show_battery_temperature in the owner body or installer gate
+- HOOK_TARGET_COMPARISON: A14=#handleMessage; A13=#handleMessage
+- CALLBACK_SEMANTICS_COMPARISON: A14 intercept vs A13 after,intercept; skipped paths do not invoke the original, proceed-once equals after side-effect
+- ARG_RESULT_COMPARISON: A14=result_assign[null]; chain.proceed[chain.proceed()]; A13=no result/argument rewrite literals
+- A14_ONLY_BRANCHES: none beyond intercept scaffolding for this owner pair
+- WHY_USER_BEHAVIOR_IS_EQUIVALENT: User-visible contract of various_show_battery_temperature is the same host rewrite; callback adapter and null-safety differ.
+- KEY_OWNERSHIP_EVIDENCE: various_show_battery_temperature: LITERAL_READ and/or INSTALLER_CALLEE in ShowTempInBatteryHook/ShowTempInBatteryHook
+- A14_KEY_OWNER_REFERENCE: app/src/main/java/tv/withaibuild/customiuizer/mods/Various.kt::ShowTempInBatteryHook
+- A13_KEY_OWNER_REFERENCE: app/src/main/java/tv/withaibuild/customiuizer/mods/Various.kt::ShowTempInBatteryHook
+- PROOF_CONCLUSION: `PRESENT_A13_VARIANT`
+
+## PROOF_R5_ShowCallUIHook_various_showcallui
+
+- PROOF_ID: `PROOF_R5_ShowCallUIHook_various_showcallui`
+- BODY_RELATION: `REVIEWED_VARIANT`
+- A14_OWNER_PATH: `app/src/main/java/tv/withaibuild/customiuizer/mods/Various.kt`
+- A14_SYMBOL: `ShowCallUIHook`
+- A14_INSTALLER: `A14 installer/spec gate for various_showcallui`
+- A14_HOOK_TARGETS: `com.android.incallui.InCallPresenter#startUi`
+- A14_CALLBACK_PHASE: `intercept`
+- A13_OWNER_PATH: `app/src/main/java/tv/withaibuild/customiuizer/mods/Various.kt`
+- A13_SYMBOL: `ShowCallUIHook`
+- A13_INSTALLER: `A13 installer gate for various_showcallui`
+- A13_HOOK_TARGETS: `com.android.incallui.InCallPresenter#startUi`
+- A13_CALLBACK_PHASE: `after`
+- PREFERENCE_KEYS: `various_showcallui`
+- VALUE_DOMAIN: owner-local preference domain
+- DEFAULT_SEMANTICS: same persisted keys consumed by both owners
+- RESULT/ARGUMENT_BEHAVIOR: A14 ops: result_assign[null,true]; chain.proceed[chain.proceed()]. A13 ops: setResult[true]. Keys various_showcallui rewrite the same host members.
+- API33_VARIANT_REASON: A14 callback intercept vs A13 after on members A14[com.android.incallui.InCallPresenter#startUi] / A13[com.android.incallui.InCallPresenter#startUi]. Inner preference reads of various_showcallui match; intercept proceed-once maps to before returnAndSkip or after side-effect.
+- DIFF_SUMMARY: Shared members com.android.incallui.InCallPresenter#startUi. Differ: A14 phases intercept vs A13 after; A14 result_assign[null,true]; chain.proceed[chain.proceed()] vs A13 setResult[true].
+- VALUE_DEFAULT_COMPARISON: both consume various_showcallui in the owner body or installer gate
+- HOOK_TARGET_COMPARISON: A14=com.android.incallui.InCallPresenter#startUi; A13=com.android.incallui.InCallPresenter#startUi
+- CALLBACK_SEMANTICS_COMPARISON: A14 intercept vs A13 after; skipped paths do not invoke the original, proceed-once equals after side-effect
+- ARG_RESULT_COMPARISON: A14=result_assign[null,true]; chain.proceed[chain.proceed()]; A13=setResult[true]
+- A14_ONLY_BRANCHES: none beyond intercept scaffolding for this owner pair
+- WHY_USER_BEHAVIOR_IS_EQUIVALENT: User-visible contract of various_showcallui is the same host rewrite; callback adapter and null-safety differ.
+- KEY_OWNERSHIP_EVIDENCE: various_showcallui: LITERAL_READ and/or INSTALLER_CALLEE in ShowCallUIHook/ShowCallUIHook
+- A14_KEY_OWNER_REFERENCE: app/src/main/java/tv/withaibuild/customiuizer/mods/Various.kt::ShowCallUIHook
+- A13_KEY_OWNER_REFERENCE: app/src/main/java/tv/withaibuild/customiuizer/mods/Various.kt::ShowCallUIHook
+- PROOF_CONCLUSION: `PRESENT_A13_VARIANT`
+
+## PROOF_R5_InterceptPermHook_various_skip_interceptperm
+
+- PROOF_ID: `PROOF_R5_InterceptPermHook_various_skip_interceptperm`
+- BODY_RELATION: `REVIEWED_VARIANT`
+- A14_OWNER_PATH: `app/src/main/java/tv/withaibuild/customiuizer/mods/Various.kt`
+- A14_SYMBOL: `InterceptPermHook`
+- A14_INSTALLER: `A14 installer/spec gate for various_skip_interceptperm`
+- A14_HOOK_TARGETS: `(no host member literals)`
+- A14_CALLBACK_PHASE: `intercept`
+- A13_OWNER_PATH: `app/src/main/java/tv/withaibuild/customiuizer/mods/Various.kt`
+- A13_SYMBOL: `InterceptPermHook`
+- A13_INSTALLER: `A13 installer gate for various_skip_interceptperm`
+- A13_HOOK_TARGETS: `(no host member literals)`
+- A13_CALLBACK_PHASE: `before,intercept`
+- PREFERENCE_KEYS: `various_skip_interceptperm`
+- VALUE_DOMAIN: owner-local preference domain
+- DEFAULT_SEMANTICS: same persisted keys consumed by both owners
+- RESULT/ARGUMENT_BEHAVIOR: A14 ops: result_assign[null,null]. A13 ops: no result/argument rewrite literals. Keys various_skip_interceptperm rewrite the same host members.
+- API33_VARIANT_REASON: A14 callback intercept vs A13 before,intercept on members A14[(none)] / A13[(none)]. Inner preference reads of various_skip_interceptperm match; intercept proceed-once maps to before returnAndSkip or after side-effect.
+- DIFF_SUMMARY: Shared members (none). Differ: A14 phases intercept vs A13 before,intercept; A14 result_assign[null,null] vs A13 no result/argument rewrite literals.
+- VALUE_DEFAULT_COMPARISON: both consume various_skip_interceptperm in the owner body or installer gate
+- HOOK_TARGET_COMPARISON: A14=(none); A13=(none)
+- CALLBACK_SEMANTICS_COMPARISON: A14 intercept vs A13 before,intercept; skipped paths do not invoke the original, proceed-once equals after side-effect
+- ARG_RESULT_COMPARISON: A14=result_assign[null,null]; A13=no result/argument rewrite literals
+- A14_ONLY_BRANCHES: none beyond intercept scaffolding for this owner pair
+- WHY_USER_BEHAVIOR_IS_EQUIVALENT: User-visible contract of various_skip_interceptperm is the same host rewrite; callback adapter and null-safety differ.
+- KEY_OWNERSHIP_EVIDENCE: various_skip_interceptperm: LITERAL_READ and/or INSTALLER_CALLEE in InterceptPermHook/InterceptPermHook
+- A14_KEY_OWNER_REFERENCE: app/src/main/java/tv/withaibuild/customiuizer/mods/Various.kt::InterceptPermHook
+- A13_KEY_OWNER_REFERENCE: app/src/main/java/tv/withaibuild/customiuizer/mods/Various.kt::InterceptPermHook
+- PROOF_CONCLUSION: `PRESENT_A13_VARIANT`
+
+## PROOF_R5_SkipSecurityScanHook_various_skip_securityscan
+
+- PROOF_ID: `PROOF_R5_SkipSecurityScanHook_various_skip_securityscan`
+- BODY_RELATION: `REVIEWED_VARIANT`
+- A14_OWNER_PATH: `app/src/main/java/tv/withaibuild/customiuizer/mods/Various.kt`
+- A14_SYMBOL: `SkipSecurityScanHook`
+- A14_INSTALLER: `A14 installer/spec gate for various_skip_securityscan`
+- A14_HOOK_TARGETS: `com.miui.securityscan.model.ModelFactory#produceSystemGroupModel,com.miui.securityscan.model.ModelFactory#produceManualGroupModel,com.miui.common.customview.ScoreTextView#setScore,com.miui.securityscan.ui.main.MainContentFrame#onClick`
+- A14_CALLBACK_PHASE: `intercept`
+- A13_OWNER_PATH: `app/src/main/java/tv/withaibuild/customiuizer/mods/Various.kt`
+- A13_SYMBOL: `SkipSecurityScanHook`
+- A13_INSTALLER: `A13 installer gate for various_skip_securityscan`
+- A13_HOOK_TARGETS: `com.miui.securityscan.model.ModelFactory#produceSystemGroupModel,com.miui.securityscan.model.ModelFactory#produceManualGroupModel,com.miui.common.customview.ScoreTextView#setScore,com.miui.securityscan.ui.main.MainContentFrame#onClick`
+- A13_CALLBACK_PHASE: `before`
+- PREFERENCE_KEYS: `various_skip_securityscan`
+- VALUE_DOMAIN: owner-local preference domain
+- DEFAULT_SEMANTICS: same persisted keys consumed by both owners
+- RESULT/ARGUMENT_BEHAVIOR: A14 ops: result_assign[null,null,null]; chain.proceed[chain.proceed(),chain.proceed()]. A13 ops: returnAndSkip[ArrayList<Any>(,res]. Keys various_skip_securityscan rewrite the same host members.
+- API33_VARIANT_REASON: A14 callback intercept vs A13 before on members A14[com.miui.securityscan.model.ModelFactory#produceSystemGroupModel,com.miui.securityscan.model.ModelFactory#produceManualGroupModel,com.miui.common.customview.ScoreTextView#setScore,com.miui.securityscan.ui.main.MainContentFrame#onClick] / A13[com.miui.securityscan.model.ModelFactory#produceSystemGroupModel,com.miui.securityscan.model.ModelFactory#produceManualGroupModel,com.miui.common.customview.ScoreTextView#setScore,com.miui.securityscan.ui.main.MainContentFrame#onClick]. Inner preference reads of various_skip_securityscan match; intercept proceed-once maps to before returnAndSkip or after side-effect.
+- DIFF_SUMMARY: Shared members com.miui.securityscan.model.ModelFactory#produceSystemGroupModel,com.miui.securityscan.model.ModelFactory#produceManualGroupModel,com.miui.common.customview.ScoreTextView#setScore,com.miui.securityscan.ui.main.MainContentFrame#onClick. Differ: A14 phases intercept vs A13 before; A14 result_assign[null,null,null]; chain.proceed[chain.proceed(),chain.proceed()] vs A13 returnAndSkip[ArrayList<Any>(,res].
+- VALUE_DEFAULT_COMPARISON: both consume various_skip_securityscan in the owner body or installer gate
+- HOOK_TARGET_COMPARISON: A14=com.miui.securityscan.model.ModelFactory#produceSystemGroupModel,com.miui.securityscan.model.ModelFactory#produceManualGroupModel,com.miui.common.customview.ScoreTextView#setScore,com.miui.securityscan.ui.main.MainContentFrame#onClick; A13=com.miui.securityscan.model.ModelFactory#produceSystemGroupModel,com.miui.securityscan.model.ModelFactory#produceManualGroupModel,com.miui.common.customview.ScoreTextView#setScore,com.miui.securityscan.ui.main.MainContentFrame#onClick
+- CALLBACK_SEMANTICS_COMPARISON: A14 intercept vs A13 before; skipped paths do not invoke the original, proceed-once equals after side-effect
+- ARG_RESULT_COMPARISON: A14=result_assign[null,null,null]; chain.proceed[chain.proceed(),chain.proceed()]; A13=returnAndSkip[ArrayList<Any>(,res]
+- A14_ONLY_BRANCHES: none beyond intercept scaffolding for this owner pair
+- WHY_USER_BEHAVIOR_IS_EQUIVALENT: User-visible contract of various_skip_securityscan is the same host rewrite; callback adapter and null-safety differ.
+- KEY_OWNERSHIP_EVIDENCE: various_skip_securityscan: LITERAL_READ and/or INSTALLER_CALLEE in SkipSecurityScanHook/SkipSecurityScanHook
+- A14_KEY_OWNER_REFERENCE: app/src/main/java/tv/withaibuild/customiuizer/mods/Various.kt::SkipSecurityScanHook
+- A13_KEY_OWNER_REFERENCE: app/src/main/java/tv/withaibuild/customiuizer/mods/Various.kt::SkipSecurityScanHook
+- PROOF_CONCLUSION: `PRESENT_A13_VARIANT`
+
+## PROOF_BACKUP_V2
+
+- PROOF_ID: `PROOF_BACKUP_V2`
+- BODY_RELATION: `REVIEWED_VARIANT`
+- A14_OWNER_PATH: `app/src/main/java/tv/withaibuild/customiuizer/utils/BackupFormatV2.kt`
+- A14_SYMBOL: `BackupFormatV2`
+- A14_INSTALLER: `app/src/main/java/tv/withaibuild/customiuizer/utils/BackupRestore.kt`
+- A14_HOOK_TARGETS: `(settings app, no host hook)`
+- A14_CALLBACK_PHASE: `n/a`
+- A13_OWNER_PATH: `app/src/main/java/tv/withaibuild/customiuizer/utils/BackupFormatV2.kt`
+- A13_SYMBOL: `BackupFormatV2`
+- A13_INSTALLER: `app/src/main/java/tv/withaibuild/customiuizer/utils/BackupRestore.kt`
+- A13_HOOK_TARGETS: `(settings app, no host hook)`
+- A13_CALLBACK_PHASE: `n/a`
+- PREFERENCE_KEYS: ``
+- VALUE_DOMAIN: typed backup entries / CUI2
+- DEFAULT_SEMANTICS: encode V2; restore auto-detects V2 vs legacy
+- RESULT/ARGUMENT_BEHAVIOR: CRC/size bounds; rollback on commit failure
+- API33_VARIANT_REASON: A13 V2 contract matches A14 M2 typed backup; no API34 host types.
+- DIFF_SUMMARY: A13 V2 contract matches A14 M2 typed backup; no API34 host types.
+- VALUE_DEFAULT_COMPARISON: encode V2; restore auto-detects V2 vs legacy
+- HOOK_TARGET_COMPARISON: A14=(settings app, no host hook); A13=(settings app, no host hook)
+- CALLBACK_SEMANTICS_COMPARISON: A14=n/a; A13=n/a
+- ARG_RESULT_COMPARISON: CRC/size bounds; rollback on commit failure
+- A14_ONLY_BRANCHES: A13 V2 contract matches A14 M2 typed backup; no API34 host types.
+- WHY_USER_BEHAVIOR_IS_EQUIVALENT: CRC/size bounds; rollback on commit failure. A13 V2 contract matches A14 M2 typed backup; no API34 host types.
+- PROOF_CONCLUSION: `PRESENT_A13_VARIANT`

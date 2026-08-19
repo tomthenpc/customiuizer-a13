@@ -50,8 +50,8 @@ class FakeSharedPreferences : SharedPreferences {
     var failFirstRegister: Boolean = false
     private var firstRegisterFailed = false
 
-    private var getAllException: RuntimeException? = null
-    private var registerException: RuntimeException? = null
+    private var getAllException: Throwable? = null
+    private var registerException: Throwable? = null
 
     fun put(key: String, value: Any?) {
         values[key] = value
@@ -89,11 +89,11 @@ class FakeSharedPreferences : SharedPreferences {
         if (value == null) remove(key) else put(key, value)
     }
 
-    fun setGetAllException(e: RuntimeException?) {
+    fun setGetAllException(e: Throwable?) {
         getAllException = e
     }
 
-    fun setRegisterException(e: RuntimeException?) {
+    fun setRegisterException(e: Throwable?) {
         registerException = e
     }
 

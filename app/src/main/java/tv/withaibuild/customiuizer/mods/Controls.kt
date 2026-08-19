@@ -937,6 +937,55 @@ object Controls {
         })
     }
 
+    /**
+     * Hides the gestural IME dismiss/back-alt affordance after [NavigationBarView.updateNavButtonIcons]
+     * has applied the ROM visibility. Proceeds exactly once via the after-hook.
+     */
+    @JvmStatic
+    fun HideImeDismissButtonHook(lpparam: PackageReadyParam) {
+        val navBarViewClass = XposedHelpers.findClassIfExists(
+            "com.android.systemui.navigationbar.NavigationBarView",
+            lpparam.classLoader
+        ) ?: return
+
+        val backButtonDispatcherClass = XposedHelpers.findClassIfExists(
+            "com.android.systemui.navigationbar.buttons.ButtonDispatcher",
+            lpparam.classLoader
+        ) ?: return
+
+        val navigationIconHintsField = XposedHelpers.findFieldIfExists(navBarViewClass, "mNavigationIconHints")
+            ?: return
+        val navBarModeField = XposedHelpers.findFieldIfExists(navBarViewClass, "mNavBarMode")
+            ?: return
+        val getBackButtonMethod = XposedHelpers.findMethodExactIfExists(navBarViewClass, "getBackButton")
+            ?: return
+        val setVisibilityMethod = XposedHelpers.findMethodExactIfExists(
+            backButtonDispatcherClass,
+            "setVisibility",
+            Int::class.javaPrimitiveType
+        ) ?: return
+
+        ModuleHelper.findAndHookMethod(navBarViewClass, "updateNavButtonIcons", object : MethodHook() {
+            override fun after(param: AfterHookCallback) {
+                val thisObject = param.getThisObject() ?: return
+                val navigationIconHints = navigationIconHintsField.getInt(thisObject)
+                val navBarMode = navBarModeField.getInt(thisObject)
+                if (!shouldHideImeDismissButton(navigationIconHints, navBarMode)) return
+                val backButton = getBackButtonMethod.invoke(thisObject) ?: return
+                setVisibilityMethod.invoke(backButton, View.INVISIBLE)
+            }
+        })
+    }
+
+    /**
+     * True when the back button is in IME-alternate mode and the nav bar is fully gestural.
+     * Bit 0 of navigationIconHints is BACK_ALT; navBarMode 2 is gestural.
+     */
+    @JvmStatic
+    internal fun shouldHideImeDismissButton(navigationIconHints: Int, navBarMode: Int): Boolean {
+        return (navigationIconHints and 0x1) != 0 && navBarMode == 2
+    }
+
     @JvmStatic
     fun PowerDoubleTapActionHook(lpparam: SystemServerStartingParam) {
         val dtFromVolumeDown = MainModule.mPrefs.getBoolean("controls_volumedowndt_torch")

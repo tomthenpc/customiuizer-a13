@@ -173,7 +173,7 @@ public class ResourceHooks {
                             NAMES[i],
                             buildHookArgs(i, createReplacementHook(KINDS[i]))
                         );
-                    } catch (OutOfMemoryError oom) { throw oom; } catch (Throwable t) {
+                    } catch (Throwable t) {
                         logNonFatal(t);
                         installedMask.compareAndSet(mask | bit, mask);
                         anyFailed = true;
@@ -184,7 +184,7 @@ public class ResourceHooks {
 
             int finalMask = installedMask.get();
             installState.set(finalMask == ALL_METHODS_MASK ? InstallState.INSTALLED : InstallState.PARTIAL_FAILED);
-        } catch (OutOfMemoryError oom) { throw oom; } catch (Throwable t) {
+        } catch (Throwable t) {
             logNonFatal(t);
             installState.set(InstallState.PARTIAL_FAILED);
         }
@@ -215,7 +215,7 @@ public class ResourceHooks {
             int fakeResId = getFakeResId(resName);
             fakes.put(fakeResId, resId);
             return fakeResId;
-        } catch (OutOfMemoryError oom) { throw oom; } catch (Throwable t) {
+        } catch (Throwable t) {
             logNonFatal(t);
             return 0;
         }
@@ -231,7 +231,7 @@ public class ResourceHooks {
             if (context == null || fakes.size() == 0) return null;
             Resources modRes = ModuleHelper.getModuleRes(context);
             return callModuleResource(modRes, kind, modResId, chain);
-        } catch (OutOfMemoryError oom) { throw oom; } catch (Throwable t) {
+        } catch (Throwable t) {
             logNonFatal(t);
             return null;
         }
@@ -242,7 +242,7 @@ public class ResourceHooks {
             applyHooks();
             unresolved.put(pkg + ":" + type + "/" + name, new Pair<>(ReplacementType.ID, replacementResId));
             active.set(new SparseArray<Pair<ReplacementType, Object>>());
-        } catch (OutOfMemoryError oom) { throw oom; } catch (Throwable t) {
+        } catch (Throwable t) {
             logNonFatal(t);
         }
     }
@@ -252,7 +252,7 @@ public class ResourceHooks {
             applyHooks();
             unresolved.put(pkg + ":" + type + "/" + name, new Pair<>(ReplacementType.DENSITY, replacementResValue));
             active.set(new SparseArray<Pair<ReplacementType, Object>>());
-        } catch (OutOfMemoryError oom) { throw oom; } catch (Throwable t) {
+        } catch (Throwable t) {
             logNonFatal(t);
         }
     }
@@ -262,7 +262,7 @@ public class ResourceHooks {
             applyHooks();
             unresolved.put(pkg + ":" + type + "/" + name, new Pair<>(ReplacementType.OBJECT, replacementResValue));
             active.set(new SparseArray<Pair<ReplacementType, Object>>());
-        } catch (OutOfMemoryError oom) { throw oom; } catch (Throwable t) {
+        } catch (Throwable t) {
             logNonFatal(t);
         }
     }
@@ -286,10 +286,8 @@ public class ResourceHooks {
                 pkgName = res.getResourcePackageName(resId);
                 resType = res.getResourceTypeName(resId);
                 resName = res.getResourceEntryName(resId);
-            } catch (OutOfMemoryError oom) {
-                throw oom;
             } catch (Throwable t) {
-                if (t instanceof VirtualMachineError || t instanceof ThreadDeath) throw t;
+                RuntimeFatality.throwIfFatal(t);
             }
             if (pkgName == null || resType == null || resName == null) return null;
 
@@ -323,7 +321,7 @@ public class ResourceHooks {
             if (mContext == null) return null;
             Resources modRes = ModuleHelper.getModuleRes(mContext);
             return callModuleResource(modRes, kind, modResId, chain);
-        } catch (OutOfMemoryError oom) { throw oom; } catch (Throwable t) {
+        } catch (Throwable t) {
             logNonFatal(t);
             return null;
         }
@@ -348,19 +346,18 @@ public class ResourceHooks {
                 default:
                     return null;
             }
-        } catch (OutOfMemoryError oom) { throw oom; } catch (Throwable t) {
+        } catch (Throwable t) {
             logNonFatal(t);
             return null;
         }
     }
 
     private static void logNonFatal(Throwable t) {
+        RuntimeFatality.throwIfFatal(t);
         try {
             XposedHelpers.log(t);
-        } catch (OutOfMemoryError oom) {
-            throw oom;
         } catch (Throwable ex) {
-            if (ex instanceof VirtualMachineError || ex instanceof ThreadDeath) throw ex;
+            RuntimeFatality.throwIfFatal(ex);
         }
     }
 }

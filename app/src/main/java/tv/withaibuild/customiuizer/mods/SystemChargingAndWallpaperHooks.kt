@@ -7,6 +7,7 @@ import android.os.Binder
 import android.os.Handler
 import android.os.Looper
 import android.text.TextUtils
+import android.util.TypedValue
 import android.widget.TextView
 import io.github.libxposed.api.XposedModuleInterface.PackageReadyParam
 import io.github.libxposed.api.XposedModuleInterface.SystemServerStartingParam
@@ -23,6 +24,10 @@ import java.io.FileInputStream
 import java.util.*
 
 object SystemChargingAndWallpaperHooks {
+
+    @JvmStatic
+    internal fun resolveChargingInfoFontSizeSp(raw: Int): Float? =
+        if (raw in 17..40) raw / 2f else null
 
     @JvmStatic
     fun ChargingInfoHook(lpparam: PackageReadyParam) {
@@ -79,10 +84,17 @@ object SystemChargingAndWallpaperHooks {
 
         ModuleHelper.hookAllConstructors("com.android.systemui.statusbar.phone.KeyguardIndicationTextView", lpparam.classLoader, object : MethodHook() {
             override fun after(param: AfterHookCallback) {
-                val opt = MainModule.mPrefs.getStringAsInt("system_charginginfo_view", 1)
-                if (opt != 1) return
                 val indicator = param.thisObject as? TextView ?: return
-                indicator.setSingleLine(false)
+                val opt = MainModule.mPrefs.getStringAsInt("system_charginginfo_view", 1)
+                if (opt == 1) {
+                    indicator.setSingleLine(false)
+                }
+                val sizeSp = resolveChargingInfoFontSizeSp(
+                    MainModule.mPrefs.getInt("system_charginginfo_fontsize", 16)
+                )
+                if (sizeSp != null) {
+                    indicator.setTextSize(TypedValue.COMPLEX_UNIT_SP, sizeSp)
+                }
             }
         })
     }

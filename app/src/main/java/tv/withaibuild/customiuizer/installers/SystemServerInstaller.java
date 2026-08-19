@@ -18,7 +18,9 @@ import tv.withaibuild.customiuizer.mods.SystemSecurityAndSystemHooks;
 import tv.withaibuild.customiuizer.mods.SystemSettingsMoreHooks;
 import tv.withaibuild.customiuizer.mods.Various;
 import tv.withaibuild.customiuizer.mods.catalog.FeatureDispatcher;
+import tv.withaibuild.customiuizer.utils.UsbDefaultFunctionMapper;
 import tv.withaibuild.customiuizer.mods.catalog.FeatureRuntime;
+import tv.withaibuild.customiuizer.mods.utils.RuntimeFatality;
 
 public final class SystemServerInstaller {
 
@@ -49,7 +51,7 @@ public final class SystemServerInstaller {
         if (MainModule.mPrefs.getInt("system_applock_timeout", 1) > 1) FeatureDispatcher.installById("appLockTimeout", serverRuntime);
         if (MainModule.mPrefs.getInt("system_dimtime", 0) > 0) FeatureDispatcher.installById("screenDimTime", serverRuntime);
         if (MainModule.mPrefs.getInt("system_toasttime", 0) > 0) FeatureDispatcher.installById("toastTime", serverRuntime);
-        if (!"none".equals(MainModule.mPrefs.getString("system_defaultusb", "none"))) SystemSettingsMoreHooks.USBConfigHook(lpparam);
+        if (UsbDefaultFunctionMapper.toA13Function(MainModule.mPrefs.getString("system_defaultusb", "none")) != null) SystemSettingsMoreHooks.USBConfigHook(lpparam);
         if (MainModule.mPrefs.getBoolean("system_removesecure")) FeatureDispatcher.installById("removeSecure", serverRuntime);
         if (MainModule.mPrefs.getBoolean("system_remove_startactconfirm")) FeatureDispatcher.installById("removeActStartConfirm", serverRuntime);
         if (MainModule.mPrefs.getBoolean("system_securelock")) FeatureDispatcher.installById("enhancedSecurity", serverRuntime);
@@ -109,7 +111,7 @@ public final class SystemServerInstaller {
                 }
             }
         } catch (Throwable t) {
-            rethrowIfFatal(t);
+            RuntimeFatality.throwIfFatal(t);
             XposedHelpers.log(t);
         }
         try {
@@ -117,18 +119,9 @@ public final class SystemServerInstaller {
                 return !MainModule.mPrefs.getStringSet("controls_mediaplayer_apps").isEmpty();
             }
         } catch (Throwable t) {
-            rethrowIfFatal(t);
+            RuntimeFatality.throwIfFatal(t);
             XposedHelpers.log(t);
         }
         return false;
-    }
-
-    private static void rethrowIfFatal(Throwable t) {
-        if (t instanceof VirtualMachineError) {
-            throw (VirtualMachineError) t;
-        }
-        if (t instanceof ThreadDeath) {
-            throw (ThreadDeath) t;
-        }
     }
 }
