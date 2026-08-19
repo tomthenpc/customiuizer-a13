@@ -2,6 +2,22 @@
 
 [简体中文](CHANGELOG.md) | English
 
+## r13.12.1 — 2026-08-19
+
+`versionCode 139`, hotfix-only release for the MultiAction selector-result regression introduced in r13.12.0.
+
+### Fixes
+
+- Fixed MultiAction incorrectly gating child-selector results with `isAdded`, which dropped app/shortcut/activity selections on return.
+- Result delivery now uses source-selector lifecycle validation while allowing back-stack targets to consume plain result data, matching the existing `openSubFragment(replace + back stack)` navigation contract.
+
+### Verification
+
+- Preserves r13.12.0 MultiAction normalization, spinner OOB protection, action/handler contract checks, and Launcher restart-scope checks.
+- Static gates, unit tests, Release compile, Lint, R8, and signed-artifact inspection run before publication.
+- DEVICE_VERIFIED = NO
+- LOG_VERIFIED = NO
+
 ## r13.12.0 — 2026-08-19
 
 `versionCode 138`, targeting MIUI 14 / Android 13 with capability-detected HyperOS 1 / Android 13 compatibility.

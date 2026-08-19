@@ -247,6 +247,12 @@ class ScopeProtectionTest(unittest.TestCase):
             "app/src/main/java/tv/withaibuild/customiuizer/MainModule.java",
             "app/src/main/java/tv/withaibuild/customiuizer/installers/SystemUiInstaller.java",
             "app/src/main/java/tv/withaibuild/customiuizer/installers/LauncherInstaller.java",
+            "app/src/main/java/tv/withaibuild/customiuizer/subs/MultiAction.kt",
+            "app/src/main/java/tv/withaibuild/customiuizer/subs/AppSelector.kt",
+            "app/src/main/java/tv/withaibuild/customiuizer/subs/ActivitySelector.kt",
+            "app/src/main/java/tv/withaibuild/customiuizer/subs/ShortcutSelector.kt",
+            "app/src/main/java/tv/withaibuild/customiuizer/subs/SelectorResultDelivery.kt",
+            "app/src/main/java/tv/withaibuild/customiuizer/subs/MultiActionSelectionState.kt",
         }
         for path in changed:
             if path in allowed:
