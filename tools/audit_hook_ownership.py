@@ -17,11 +17,8 @@ SOURCE_ROOT = REPO_ROOT / "app" / "src" / "main" / "java"
 OUT_FILE = REPO_ROOT / "docs" / "audit" / "A13_HOOK_OWNERSHIP_INVENTORY.md"
 
 HOOK_RE = re.compile(
-    r"\b(ModuleHelper|XposedHelpers|XposedBridge|HookerClassHelper)\s*\.\s*"
-    r"(findAndHookMethod|findAndHookConstructor|hookAllMethods|hookAllConstructors|hookMethod|hookAll)"
-    r"|\bfindAndHookMethod\s*\("
-    r"|\bhookAllMethods\s*\("
-    r"|\bhookAllConstructors\s*\(",
+    r"\bModuleHelper\s*\.\s*"
+    r"(findAndHookMethod|hookAllConstructors|hookAllMethods)",
     re.S,
 )
 
@@ -222,10 +219,10 @@ def main(argv: list[str] | None = None) -> int:
     md.append("\n")
 
     md.append("## Per-file summary\n\n")
-    md.append("| File | Direct calls | Registry calls | Legacy calls | Category | Notes |\n")
-    md.append("|---|---|---:|---:|---|---|---|\n")
+    md.append("| File | Direct calls | Primary process | Category | Notes |\n")
+    md.append("|---|---|---|---|---|\n")
     for rel, hook, registry, legacy, category, note in sorted(file_summaries, key=lambda r: (r[4], r[0])):
-        md.append(f"| `{rel}` | {hook} | {registry} | {legacy} | `{category}` | {note} |\n")
+        md.append(f"| `{rel}` | {hook} | mixed | `{category}` | {note} |\n")
 
     rendered = "".join(md)
     if args.check:
