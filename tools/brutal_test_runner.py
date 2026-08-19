@@ -292,7 +292,9 @@ def mutate_install_phase(root: Path, cfg: dict) -> None:
 def mutate_remove_dispatch(root: Path, cfg: dict) -> None:
     roots = [root / p for p in cfg.get("installer_roots", ["app/src/main/java"])]
     for base in roots:
-        for path in [*base.rglob("*.kt"), *base.rglob("*.java")]:
+        for path in sorted([*base.rglob("*.kt"), *base.rglob("*.java")]):
+            if "SystemUiInstaller" not in path.name:
+                continue
             text = path.read_text(encoding="utf-8")
             changed, count = re.subn(
                 r"(?m)^.*FeatureDispatcher\.installById\([^\n]*\n",
@@ -303,7 +305,7 @@ def mutate_remove_dispatch(root: Path, cfg: dict) -> None:
             if count:
                 path.write_text(changed, encoding="utf-8")
                 return
-    raise RuntimeError("FeatureDispatcher.installById call not found")
+    raise RuntimeError("FeatureDispatcher.installById call not found in SystemUiInstaller")
 
 
 def mutation_source_file(root: Path, body: str) -> None:
