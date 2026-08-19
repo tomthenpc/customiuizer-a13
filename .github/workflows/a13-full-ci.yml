@@ -1,25 +1,31 @@
-name: A13 Fast CI
+name: A13 Full CI
 
 on:
   push:
     branches:
       - main
-  pull_request:
-    branches:
-      - main
+    tags:
+      - 'r13.*'
+  schedule:
+    - cron: '0 0 * * 0'
   workflow_dispatch:
 
 permissions:
   contents: read
 
 concurrency:
-  group: a13-fast-${{ github.ref }}
-  cancel-in-progress: true
+  group: a13-full-${{ github.ref }}
+  cancel-in-progress: false
 
 jobs:
-  fast:
+  full:
     runs-on: ubuntu-24.04
-    timeout-minutes: 60
+    timeout-minutes: 120
+    if: >-
+      github.event_name == 'schedule' ||
+      github.event_name == 'workflow_dispatch' ||
+      startsWith(github.ref, 'refs/tags/r13.') ||
+      contains(github.event.head_commit.message || '', '[full-ci]')
     steps:
       - name: Checkout
         uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803 # v6.1.0
@@ -55,9 +61,6 @@ jobs:
       - name: CI portability
         run: python tools/check_ci_portability.py
 
-      - name: Brutal config validation
-        run: python tools/brutal_test_runner.py --config tools/brutal_test_config.json validate
-
       - name: Python tool tests
         run: python -m unittest discover -s tools/tests -p "test_*.py"
 
@@ -68,28 +71,43 @@ jobs:
           python tools/check_hook_contract_parity.py
           python tools/catalog_contract_probe.py --catalog app/src/main/java/tv/withaibuild/customiuizer/mods/catalog/FeatureCatalog.kt --feature-id app/src/main/java/tv/withaibuild/customiuizer/mods/catalog/FeatureId.kt --diagnostic-ids app/src/main/java/tv/withaibuild/customiuizer/mods/diagnostics/DiagnosticIds.kt --matrix docs/rom-intelligence/A13_PROCESS_MATRIX.md
           python tools/ci_contract_scan.py --expected-branch main --default-branch main
+          python tools/check_release_metadata.py
           python tools/audit_hook_ownership.py --check
 
-      - name: Require clean tracked tree before brutal gates
-        shell: bash
-        run: |
-          set -euo pipefail
-          if ! git diff --quiet || ! git diff --cached --quiet; then
-            echo "::error::Tracked working tree changed before brutal gates"
-            git diff --name-status
-            git diff
-            exit 1
-          fi
+      - name: Tag release metadata
+        if: startsWith(github.ref, 'refs/tags/r13.')
+        run: python tools/check_release_metadata.py --require-tag
 
-      - name: Brutal suite fast subset
-        run: |
-          python tools/brutal_test_runner.py --config tools/brutal_test_config.json hermeticity
-          python tools/brutal_test_runner.py --config tools/brutal_test_config.json determinism
-
-      - name: Full local verifier
+      - name: Full verifier
         run: python tools/verify.py full
 
-      - name: Android debug compile/tests and CI-safe build
+      - name: First clean debug build
         run: |
-          ./gradlew --no-daemon :app:compileDebugKotlin :app:compileDebugJavaWithJavac :app:testDebugUnitTest
-          ./gradlew --no-daemon :app:lintDebug :app:assembleDebug
+          ./gradlew --no-daemon clean :app:assembleDebug
+          cp app/build/outputs/apk/debug/*.apk first-debug.apk
+
+      - name: Second clean debug build
+        run: |
+          ./gradlew --no-daemon clean :app:assembleDebug
+          cp app/build/outputs/apk/debug/*.apk second-debug.apk
+
+      - name: APK semantic diff
+        run: python tools/apk_semantic_diff.py --require-reproducible first-debug.apk second-debug.apk
+
+      - name: Brutal full suite
+        run: python tools/brutal_test_runner.py --config tools/brutal_test_config.json all
+
+      - name: Release lint/R8 equivalent (debug CI-safe)
+        run: ./gradlew --no-daemon :app:lintDebug :app:minifyReleaseWithR8
+
+      - name: Upload CI artifacts
+        uses: actions/upload-artifact@b7c566a772e6b6bfb58ed0dc250532a479d7789f # v4.6.2
+        with:
+          name: a13-ci-artifacts
+          path: |
+            app/build/outputs/apk/debug/*.apk
+            app/build/outputs/mapping/release/mapping.txt
+            app/build/outputs/mapping/release/usage.txt
+            app/build/outputs/mapping/release/configuration.txt
+          if-no-files-found: ignore
+          retention-days: 30

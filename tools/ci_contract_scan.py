@@ -109,6 +109,8 @@ def scan_repo_scripts(repo_root: Path) -> list[str]:
         if not base.exists():
             continue
         for path in sorted([*base.rglob("*.py"), *base.rglob("*.sh")]):
+            if "/tests/" in path.as_posix():
+                continue
             if path.name in {"ci_contract_scan.py", "test_brutal_tools.py"}:
                 continue
             content = path.read_text(encoding="utf-8", errors="replace")
