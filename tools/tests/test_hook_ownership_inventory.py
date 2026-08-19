@@ -95,5 +95,75 @@ class HookOwnershipInventoryCompletenessTest(unittest.TestCase):
         )
 
 
+class HookRegexDecouplingTest(unittest.TestCase):
+    """Contract: canonical HOOK_RE and OWNERSHIP_REPORT_HOOK_RE are independent."""
+
+    def test_canonical_hook_re_covers_all_helper_forms(self) -> None:
+        import sys
+        sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
+        from audit_hook_ownership import HOOK_RE
+
+        must_match = [
+            "ModuleHelper.findAndHookMethod(",
+            "XposedHelpers.findAndHookMethod(",
+            "XposedBridge.hookAllMethods(",
+            "HookerClassHelper.findAndHookMethod(",
+            "findAndHookMethod(",
+            "hookAllMethods(",
+            "hookAllConstructors(",
+        ]
+        for sample in must_match:
+            self.assertIsNotNone(
+                HOOK_RE.search(sample),
+                f"canonical HOOK_RE must match: {sample}",
+            )
+
+    def test_ownership_report_regex_is_narrower(self) -> None:
+        import sys
+        sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
+        from audit_hook_ownership import HOOK_RE, OWNERSHIP_REPORT_HOOK_RE
+
+        must_not_match = [
+            "XposedHelpers.findAndHookMethod(",
+            "XposedBridge.hookAllMethods(",
+            "HookerClassHelper.findAndHookMethod(",
+            "findAndHookMethod(",
+        ]
+        for sample in must_not_match:
+            self.assertIsNone(
+                OWNERSHIP_REPORT_HOOK_RE.search(sample),
+                f"OWNERSHIP_REPORT_HOOK_RE must NOT match: {sample}",
+            )
+
+        must_match = [
+            "ModuleHelper.findAndHookMethod(",
+            "ModuleHelper.hookAllConstructors(",
+            "ModuleHelper.hookAllMethods(",
+        ]
+        for sample in must_match:
+            self.assertIsNotNone(
+                OWNERSHIP_REPORT_HOOK_RE.search(sample),
+                f"OWNERSHIP_REPORT_HOOK_RE must match: {sample}",
+            )
+
+    def test_ownership_change_does_not_alter_legacy_census(self) -> None:
+        import sys
+        sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
+        from build_legacy_exception_registry import scan_legacy_call_sites, build_registry
+
+        sites = scan_legacy_call_sites()
+        registry = build_registry(sites)
+        self.assertEqual(
+            registry["totalLegacyCallSites"],
+            522,
+            "Legacy census must remain 522 call sites",
+        )
+        self.assertEqual(
+            registry["totalLegacyGroups"],
+            212,
+            "Legacy census must remain 212 groups",
+        )
+
+
 if __name__ == "__main__":
     unittest.main()

@@ -17,6 +17,15 @@ SOURCE_ROOT = REPO_ROOT / "app" / "src" / "main" / "java"
 OUT_FILE = REPO_ROOT / "docs" / "audit" / "A13_HOOK_OWNERSHIP_INVENTORY.md"
 
 HOOK_RE = re.compile(
+    r"\b(ModuleHelper|XposedHelpers|XposedBridge|HookerClassHelper)\s*\.\s*"
+    r"(findAndHookMethod|findAndHookConstructor|hookAllMethods|hookAllConstructors|hookMethod|hookAll)"
+    r"|\bfindAndHookMethod\s*\("
+    r"|\bhookAllMethods\s*\("
+    r"|\bhookAllConstructors\s*\(",
+    re.S,
+)
+
+OWNERSHIP_REPORT_HOOK_RE = re.compile(
     r"\bModuleHelper\s*\.\s*"
     r"(findAndHookMethod|hookAllConstructors|hookAllMethods)",
     re.S,
@@ -162,7 +171,7 @@ def main(argv: list[str] | None = None) -> int:
         file_typed = typed_funcs.get(path, set())
 
         for i, line in enumerate(lines, start=1):
-            if not HOOK_RE.search(line):
+            if not OWNERSHIP_REPORT_HOOK_RE.search(line):
                 continue
 
             total += 1
