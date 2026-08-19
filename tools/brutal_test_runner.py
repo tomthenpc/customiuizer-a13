@@ -183,7 +183,17 @@ def mutate_remove_fetch_depth(root: Path, cfg: dict) -> None:
 
 
 def mutate_wrong_branch(root: Path, cfg: dict) -> None:
-    replace_first(workflow_path(root, cfg), re.escape(cfg["expected_branch"]), "main")
+    path = workflow_path(root, cfg)
+    text = path.read_text(encoding="utf-8")
+    changed = re.sub(
+        r"(?m)^(\s*-\s*)" + re.escape(cfg["expected_branch"]) + r"\s*$",
+        r"\g<1>devin/stale-ci-branch",
+        text,
+        count=1,
+    )
+    if changed == text:
+        raise RuntimeError("YAML branch entry not found for mutation")
+    path.write_text(changed, encoding="utf-8")
 
 
 def mutate_signing_leak(root: Path, cfg: dict) -> None:
@@ -249,12 +259,21 @@ def mutate_preference_default(root: Path, cfg: dict) -> None:
 def mutate_process_scope(root: Path, cfg: dict) -> None:
     path = root / cfg["catalog_file"]
     text = path.read_text(encoding="utf-8")
-    m = re.search(r"processScope\s*=\s*ProcessScope\.([A-Z0-9_]+)", text)
-    if not m:
-        raise RuntimeError("processScope not found")
-    replacements = ["SYSTEM_UI", "ANDROID", "LAUNCHER", "GENERIC_APP"]
-    target = next((x for x in replacements if x != m.group(1)), "SYSTEM_UI")
-    changed = text[:m.start(1)] + target + text[m.end(1):]
+    target_id = 'id = "packagePermissions"'
+    idx = text.find(target_id)
+    if idx < 0:
+        raise RuntimeError("packagePermissions FeatureSpec not found")
+    region_start = text.rfind("FeatureSpec(", 0, idx)
+    region_end = text.find(")", idx) + 1
+    region = text[region_start:region_end]
+    mutated_region = region.replace(
+        "ProcessScope.SYSTEM_SERVER",
+        "ProcessScope.SYSTEM_UI",
+        1,
+    )
+    if mutated_region == region:
+        raise RuntimeError("ProcessScope.SYSTEM_SERVER not found in packagePermissions")
+    changed = text[:region_start] + mutated_region + text[region_end:]
     path.write_text(changed, encoding="utf-8")
 
 
@@ -306,14 +325,14 @@ def mutate_fatal_swallow(root: Path, cfg: dict) -> None:
 def mutate_static_context(root: Path, cfg: dict) -> None:
     mutation_source_file(
         root,
-        "object InjectedHazard { @JvmField var context: android.content.Context? = null }",
+        "object InjectedHazard {\n    @JvmField\n    var context: android.content.Context? = null\n}",
     )
 
 
 def mutate_eager_thread(root: Path, cfg: dict) -> None:
     mutation_source_file(
         root,
-        'object InjectedHazard { val worker = android.os.HandlerThread("bad").apply { start() } }',
+        'object InjectedHazard {\n    val worker = android.os.HandlerThread("bad").apply { start() }\n}',
     )
 
 
@@ -404,7 +423,22 @@ def mutation_test(root: Path, cfg: dict, timeout: int, selected: set[str] | None
         gate = cfg["gates"][case["gate"]]
         try:
             with detached_worktree(root) as work:
+                before_tracked = tracked_hashes(work)
+                before_all = set(
+                    p.relative_to(work).as_posix()
+                    for p in work.rglob("*") if p.is_file() and ".git" not in p.parts
+                )
                 mutator(work, cfg)
+                after_tracked = tracked_hashes(work)
+                after_all = set(
+                    p.relative_to(work).as_posix()
+                    for p in work.rglob("*") if p.is_file() and ".git" not in p.parts
+                )
+                new_files = (set(after_tracked) - set(before_tracked)) | (after_all - before_all)
+                changed_files = {k for k in set(before_tracked) & set(after_tracked) if before_tracked[k] != after_tracked[k]}
+                if not new_files and not changed_files:
+                    results.append((name, "MUTATION_NOT_APPLIED", "mutator produced no file changes"))
+                    continue
                 result = run(gate, work, timeout)
                 status = "KILLED" if result.returncode != 0 else "SURVIVED"
                 tail = result.stdout[-2500:]
