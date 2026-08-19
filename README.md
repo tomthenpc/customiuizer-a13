@@ -4,7 +4,13 @@
 
 CustoMIUIzer A13 是面向 **MIUI 14 / Android 13** 的系统界面与交互定制模块，并为 **HyperOS 1 / Android 13** 提供基于能力探测的兼容路径。项目使用独立包名、版本线和现代 libxposed API。
 
-- 当前版本：`r13.12.0`（versionCode `138`）
+> **维护状态**
+>
+> 本项目已停止主动开发，维护者已转向其他系统。
+> 当前版本继续作为 MIUI 14 / Android 13 的稳定维护版本保留。
+> 后续仅在出现严重问题、必要兼容修复或有实际使用需求时更新。
+
+- 当前版本：`r13.12.2`（versionCode `140`）
 - 应用 ID：`tv.withaibuild.customiuizer.r13`
 - 源码仓库：<https://github.com/tomthenpc/customiuizer-a13>
 - 用户下载：<https://github.com/Xposed-Modules-Repo/tv.withaibuild.customiuizer.r13/releases>
@@ -43,7 +49,7 @@ CustoMIUIzer A13 是面向 **MIUI 14 / Android 13** 的系统界面与交互定�
 
 本版本变化见 [CHANGELOG.md](CHANGELOG.md)。工程规则、架构与兼容文档见 [AGENTS.md](AGENTS.md)、[ARCHITECTURE.md](ARCHITECTURE.md)、[COMPATIBILITY.md](COMPATIBILITY.md) 与 [docs/A13_PARITY.md](docs/A13_PARITY.md)。
 
-`r13.12.0` 修复手势/自定义动作保存后回到“无动作”的问题，并补齐桌面手势页的重启入口；同时纳入 USB 默认用途、安装器净化、文件夹模糊、备份格式和若干状态栏/桌面视觉能力。详见 [CHANGELOG.md](CHANGELOG.md)。
+`r13.12.2` 已包含并取代 `r13.12.0` / `r13.12.1`。本版本最终纳入 USB 默认用途、安装器净化、桌面 Dock 高度、隐藏输入法关闭按钮、状态栏视觉能力、文件夹模糊关闭、Backup V2 + 旧备份恢复、自定义电池指示条颜色与息屏 dim 比例等新增能力，并修复 MultiAction / 手势持久化、Spinner 越界、Launcher 重启范围、USB 重插、应用/快捷方式/Activity 选择结果回传等问题。详见 [CHANGELOG.md](CHANGELOG.md)。
 
 ## 构建与验证
 

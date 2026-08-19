@@ -4,7 +4,13 @@
 
 CustoMIUIzer A13 customizes the system UI and interactions on **MIUI 14 / Android 13**, with capability-based compatibility paths for **HyperOS 1 / Android 13**. It uses an independent package, release line, and modern libxposed API.
 
-- Current version: `r13.12.0` (versionCode `138`)
+> **Maintenance status**
+>
+> Active development has ended as the maintainer has moved to other systems.
+> The project remains available as a stable maintenance build for MIUI 14 / Android 13.
+> Future updates, if any, will be limited to critical fixes, necessary compatibility work, or actual maintainer needs.
+
+- Current version: `r13.12.2` (versionCode `140`)
 - Application ID: `tv.withaibuild.customiuizer.r13`
 - Source repository: <https://github.com/tomthenpc/customiuizer-a13>
 - User downloads: <https://github.com/Xposed-Modules-Repo/tv.withaibuild.customiuizer.r13/releases>
@@ -43,7 +49,7 @@ Known deployed baseline: Redmi Note 11T Pro (`xaga`), MIUI `V14.0.10.0.TLOINXM`.
 
 See [CHANGELOG_EN.md](CHANGELOG_EN.md) for release changes and [AGENTS.md](AGENTS.md), [ARCHITECTURE.md](ARCHITECTURE.md), [COMPATIBILITY.md](COMPATIBILITY.md), and [docs/A13_PARITY.md](docs/A13_PARITY.md) for engineering rules, architecture, and compatibility.
 
-`r13.12.0` fixes gesture/custom-action values snapping back to "No action" and adds the Launcher restart control on gesture pages. It also includes USB default-mode mapping, installer purify, folder blur, backup format, and several status-bar/desktop visual capabilities. See [CHANGELOG_EN.md](CHANGELOG_EN.md).
+`r13.12.2` supersedes `r13.12.0` / `r13.12.1`. This final release adds USB default mode, installer purify, Launcher dock height, hiding the IME dismiss button, status-bar visual options, folder-blur disable, Backup V2 with legacy restore, BatteryIndicator custom colors, and dim-ratio adjustment, and fixes MultiAction / gesture persistence, spinner OOB, Launcher restart scope, USB replug latch, app/shortcut/Activity result relay, and final MultiAction result delivery. See [CHANGELOG_EN.md](CHANGELOG_EN.md).
 
 ## Build and verification
 
