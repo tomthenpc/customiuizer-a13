@@ -48,7 +48,7 @@
 - File: `CustoMIUIzer-A13-r13.12.0.apk`
 - versionName: `r13.12.0`
 - versionCode: `138`
-- SHA-256: filled after signed artifact audit.
+- SHA-256: `643e93834c7028a4355f9915efbfe3aa49393ff18577331a76a485c6d9382e29`
 
 ## r13.11.1 — 2026-08-08
 
