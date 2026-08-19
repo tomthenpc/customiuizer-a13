@@ -128,6 +128,13 @@ def check_compat_contracts() -> int:
     )
 
 
+def check_text_encoding() -> int:
+    return run(
+        [find_python(), str(REPO_ROOT / "tools" / "check_text_encoding.py")],
+        "check-text-encoding",
+    )
+
+
 def check_hook_contract_parity() -> int:
     return run(
         [find_python(), str(REPO_ROOT / "tools" / "check_hook_contract_parity.py")],
@@ -183,6 +190,8 @@ def full_mode() -> int:
     if check_compat_contracts() != 0:
         return 1
     if check_hook_contract_parity() != 0:
+        return 1
+    if check_text_encoding() != 0:
         return 1
     if compile_debug() != 0:
         return 1

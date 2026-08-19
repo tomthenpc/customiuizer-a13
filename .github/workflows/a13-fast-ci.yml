@@ -55,6 +55,9 @@ jobs:
       - name: CI portability
         run: python tools/check_ci_portability.py
 
+      - name: Text encoding gate
+        run: python tools/check_text_encoding.py
+
       - name: Python tool tests
         run: python -m unittest discover -s tools/tests -p "test_*.py"
 
