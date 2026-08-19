@@ -348,7 +348,7 @@ class AppSelector : SubFragmentWithSearch() {
     override fun onActivityResult(requestCode: Int, resultCode: Int, data: Intent?) {
         if (resultCode == Activity.RESULT_OK && requestCode == targetRequestCode) {
             @Suppress("DEPRECATION")
-            if (SelectorResultDelivery.canDeliverFromSource(isAdded, targetFragment != null)) {
+            if (SelectorResultDelivery.canAcceptAtBackStackTarget(targetFragment != null, isAdded)) {
                 targetFragment?.onActivityResult(targetRequestCode, Activity.RESULT_OK, data)
                 finish()
             }

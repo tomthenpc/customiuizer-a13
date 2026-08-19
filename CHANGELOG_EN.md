@@ -2,6 +2,22 @@
 
 [简体中文](CHANGELOG.md) | English
 
+## r13.12.2 — 2026-08-19
+
+`versionCode 140`, finalizes the Activity-selection relay hotfix path left incomplete in r13.12.1.
+
+### Fixes
+
+- Fixed the two-hop return path `MultiAction -> AppSelector -> ActivitySelector -> AppSelector -> MultiAction`, where AppSelector (as back-stack relay target) incorrectly applied source `isAdded` gating and dropped Activity results.
+- Preserved source-side stale-result protection: ActivitySelector still requires a live source and existing target; back-stack relay only requires target existence before forwarding to MultiAction.
+
+### Verification
+
+- Preserves r13.12.0 action normalization, spinner OOB protection, action/toggle contracts, and Launcher restart-scope checks.
+- Static gates, unit tests, Release compile, Lint, R8, and signed-artifact inspection run before publication.
+- DEVICE_VERIFIED = NO
+- LOG_VERIFIED = NO
+
 ## r13.12.1 — 2026-08-19
 
 `versionCode 139`, hotfix-only release for the MultiAction selector-result regression introduced in r13.12.0.
