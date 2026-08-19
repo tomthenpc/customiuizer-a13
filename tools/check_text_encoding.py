@@ -25,15 +25,13 @@ KNOWN_TEXT_FILENAMES = frozenset({
 })
 
 MOJIBAKE_SEQUENCES = [
-    "é¡¹",  # 项 decoded as GBK then stored as UTF-8
-    "淇®",  # 修
-    "鏂°",  # 新
-    "绔\u00af",  # 端
-    "瀹\u0192",  # 实/宝
-    "鐗\u0088",  # 特
-    "è\u0178\u201c",  # common double-mojibake
-    "ä¿®",  # 修 (alternative)
-    "æ\u201d\u0178",  # common GBK corruption
+    "\u00e9\u00a1\u00b9",
+    "\u6dc7\u00ae",
+    "\u93c2\u00b0",
+    "\u7e94\u00af",
+    "\u7039\u0192",
+    "\u9417\u0088",
+    "\u00e4\u00bf\u00ae",
 ]
 
 MOJIBAKE_PATTERNS = re.compile("|".join(re.escape(s) for s in MOJIBAKE_SEQUENCES))

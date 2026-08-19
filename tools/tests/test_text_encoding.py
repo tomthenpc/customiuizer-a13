@@ -61,7 +61,7 @@ class TextEncodingTest(unittest.TestCase):
         self.assertTrue(any("U+FFFD" in v["reason"] for v in violations))
 
     def test_known_mojibake_detected(self) -> None:
-        root = _git_repo({"bad.md": "This is é¡¹ broken text\n".encode("utf-8")})
+        root = _git_repo({"bad.md": "This is \u00e9\u00a1\u00b9 broken text\n".encode("utf-8")})
         violations = check(root)
         self.assertTrue(any("mojibake" in v["reason"] for v in violations))
 
