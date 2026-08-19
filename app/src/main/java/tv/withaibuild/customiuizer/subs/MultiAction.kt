@@ -1,7 +1,6 @@
 package tv.withaibuild.customiuizer.subs
 
 import android.annotation.SuppressLint
-import android.app.Activity
 import android.content.Intent
 import android.graphics.BitmapFactory
 import android.os.Bundle
@@ -231,28 +230,29 @@ class MultiAction : SubFragment() {
     }
 
     override fun onActivityResult(requestCode: Int, resultCode: Int, data: Intent?) {
-        if (!isAdded) {
-            super.onActivityResult(requestCode, resultCode, data)
-            return
-        }
-        if (resultCode == Activity.RESULT_OK) {
-            when (requestCode) {
-                0 -> {
-                    appValue = data?.getStringExtra("app")
-                    appUser = data?.getIntExtra("user", 0) ?: 0
-                }
-                1 -> {
-                    shortcutValue = data?.getStringExtra("shortcut_contents")
-                    shortcutName = data?.getStringExtra("shortcut_name")
-                    shortcutIcon = data?.getStringExtra("shortcut_icon")
-                    shortcutIntent = data?.getParcelableExtra("shortcut_intent")
-                }
-                2 -> {
-                    activityValue = data?.getStringExtra("activity")
-                    activityUser = data?.getIntExtra("user", 0) ?: 0
-                }
-            }
-        }
+        val nextState = MultiActionSelectionStateReducer.reduce(
+            MultiActionSelectionState(
+                appValue = appValue,
+                appUser = appUser,
+                shortcutValue = shortcutValue,
+                shortcutName = shortcutName,
+                shortcutIcon = shortcutIcon,
+                shortcutIntent = shortcutIntent,
+                activityValue = activityValue,
+                activityUser = activityUser
+            ),
+            requestCode,
+            resultCode,
+            data
+        )
+        appValue = nextState.appValue
+        appUser = nextState.appUser
+        shortcutValue = nextState.shortcutValue
+        shortcutName = nextState.shortcutName
+        shortcutIcon = nextState.shortcutIcon
+        shortcutIntent = nextState.shortcutIntent
+        activityValue = nextState.activityValue
+        activityUser = nextState.activityUser
         super.onActivityResult(requestCode, resultCode, data)
     }
 

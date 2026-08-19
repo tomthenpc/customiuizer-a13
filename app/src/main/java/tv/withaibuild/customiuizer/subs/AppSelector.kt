@@ -257,7 +257,7 @@ class AppSelector : SubFragmentWithSearch() {
                     }
                     intent.putExtra("user", app.user)
                     @Suppress("DEPRECATION")
-                    if (isAdded) {
+                    if (SelectorResultDelivery.canDeliverFromSource(isAdded, targetFragment != null)) {
                         targetFragment?.onActivityResult(targetRequestCode, Activity.RESULT_OK, intent)
                         finish()
                     }
@@ -348,8 +348,10 @@ class AppSelector : SubFragmentWithSearch() {
     override fun onActivityResult(requestCode: Int, resultCode: Int, data: Intent?) {
         if (resultCode == Activity.RESULT_OK && requestCode == targetRequestCode) {
             @Suppress("DEPRECATION")
-            targetFragment?.onActivityResult(targetRequestCode, Activity.RESULT_OK, data)
-            finish()
+            if (SelectorResultDelivery.canDeliverFromSource(isAdded, targetFragment != null)) {
+                targetFragment?.onActivityResult(targetRequestCode, Activity.RESULT_OK, data)
+                finish()
+            }
         }
         super.onActivityResult(requestCode, resultCode, data)
     }

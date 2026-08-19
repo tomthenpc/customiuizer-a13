@@ -1,5 +1,7 @@
 package tv.withaibuild.customiuizer.subs
 
+import android.app.Activity
+import android.content.Intent
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse
 import org.junit.Assert.assertTrue
@@ -181,5 +183,72 @@ class LauncherGestureRestartScopeTest {
         val installer = repoFile("app/src/main/java/tv/withaibuild/customiuizer/installers/LauncherInstaller.java").readText()
         assertTrue(installer.contains("HomescreenSwipesHook"))
         assertTrue(installer.contains("launcher_swipedown_action"))
+    }
+}
+
+class MultiActionSelectorResultRegressionTest {
+
+    @Test
+    fun backStackTargetCanAcceptResultWhileNotAdded() {
+        assertTrue(
+            SelectorResultDelivery.canAcceptAtBackStackTarget(
+                targetExists = true,
+                _targetIsAdded = false
+            )
+        )
+    }
+
+    @Test
+    fun staleSourceCannotDeliverResult() {
+        assertFalse(SelectorResultDelivery.canDeliverFromSource(sourceIsAdded = false, targetExists = true))
+        assertFalse(SelectorResultDelivery.canDeliverFromSource(sourceIsAdded = true, targetExists = false))
+    }
+
+    @Test
+    fun appShortcutActivityResultsUpdatePendingStateAndPersistContract() {
+        var state = MultiActionSelectionState()
+
+        state = MultiActionSelectionStateReducer.reduce(
+            state,
+            0,
+            Activity.RESULT_OK,
+            Intent().apply {
+                putExtra("app", "com.example.app|MainActivity")
+                putExtra("user", 10)
+            }
+        )
+        assertEquals("com.example.app|MainActivity", state.appValue)
+        assertEquals(10, state.appUser)
+
+        state = MultiActionSelectionStateReducer.reduce(
+            state,
+            1,
+            Activity.RESULT_OK,
+            Intent().apply {
+                putExtra("shortcut_contents", "com.example.shortcut|Entry")
+                putExtra("shortcut_name", "Shortcut Name")
+                putExtra("shortcut_icon", "/tmp/icon.png")
+            }
+        )
+        assertEquals("com.example.shortcut|Entry", state.shortcutValue)
+        assertEquals("Shortcut Name", state.shortcutName)
+        assertEquals("/tmp/icon.png", state.shortcutIcon)
+        assertEquals(null, state.shortcutIntent)
+
+        state = MultiActionSelectionStateReducer.reduce(
+            state,
+            2,
+            Activity.RESULT_OK,
+            Intent().apply {
+                putExtra("activity", "com.example.activity|SomeActivity")
+                putExtra("user", 0)
+            }
+        )
+        assertEquals("com.example.activity|SomeActivity", state.activityValue)
+        assertEquals(0, state.activityUser)
+
+        val values = intArrayOf(1, 8, 9, 10, 20)
+        assertEquals(8, MultiActionContract.persistSelection(8, values))
+        assertEquals(1, MultiActionContract.persistSelection(0, values))
     }
 }

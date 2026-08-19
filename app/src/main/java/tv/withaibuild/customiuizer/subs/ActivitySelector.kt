@@ -118,8 +118,10 @@ class ActivitySelector : SubFragmentWithSearch() {
                 putExtra("activity", "${appData.pkgName}|${appData.actName}")
                 putExtra("user", user)
             }
-            targetFragment?.onActivityResult(targetRequestCode, Activity.RESULT_OK, intent)
-            finish()
+            if (SelectorResultDelivery.canDeliverFromSource(isAdded, targetFragment != null)) {
+                targetFragment?.onActivityResult(targetRequestCode, Activity.RESULT_OK, intent)
+                finish()
+            }
         }
         list.onItemLongClickListener = AdapterView.OnItemLongClickListener { parent, _, position, _ ->
             val appData = (parent.adapter as? AppDataAdapter)?.getItem(position) ?: return@OnItemLongClickListener true

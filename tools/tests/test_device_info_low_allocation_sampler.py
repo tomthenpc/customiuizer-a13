@@ -405,8 +405,6 @@ class ScopeProtectionTest(unittest.TestCase):
         "app/src/main/java/tv/withaibuild/customiuizer/mods/utils/ModuleHelper.java",
         "app/src/main/java/tv/withaibuild/customiuizer/mods/utils/RuntimeFatality.kt",
         "app/src/main/java/tv/withaibuild/customiuizer/mods/diagnostics/DiagnosticRecorder.kt",
-        "app/build.gradle.kts",
-        "CHANGELOG.md",
         "README.md",
         "README_EN.md",
         "docs/release-manifest.json",

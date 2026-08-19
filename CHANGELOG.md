@@ -2,6 +2,22 @@
 
 简体中文 | [English](CHANGELOG_EN.md)
 
+## r13.12.1 — 2026-08-19
+
+`versionCode 139`，仅包含 r13.12.0 引入的 MultiAction 选择器结果回传回归热修复。
+
+### 修复
+
+- 修复 MultiAction 在子选择器页面返回时误用 `isAdded` 拦截结果，导致应用/快捷方式/Activity 选择结果丢失的问题。
+- 结果回传改为“源选择器生命周期校验 + 回栈目标允许接收”，保持 `openSubFragment(replace + back stack)` 的既有导航契约。
+
+### 验证状态
+
+- 保留 r13.12.0 的 MultiAction 持久化规范化、Spinner 越界保护、动作/处理器契约与 Launcher 重启范围校验。
+- 静态门禁、单元测试、Release 编译、Lint、R8 与签名产物检查在发布前执行。
+- DEVICE_VERIFIED = NO
+- LOG_VERIFIED = NO
+
 ## r13.12.0 — 2026-08-19
 
 `versionCode 138`，面向 MIUI 14 / Android 13，并为 HyperOS 1 / Android 13 提供能力探测兼容。
