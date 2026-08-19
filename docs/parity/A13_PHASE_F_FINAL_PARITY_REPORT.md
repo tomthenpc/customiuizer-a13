@@ -2,8 +2,9 @@
 
 AUTHORITATIVE_BASE_SHA = d5a369bbf883ee416d6529f61625d4c36f6d4e3e
 A14_REFERENCE_SHA = d20d96b543a49a584970e312da7d704958a155aa
-VERIFIED_TREE_SHA = (this commit)
-REPORT_HEAD_SHA = (this commit)
+R5_PRE_REPORT_HEAD = fe692cdebfbb92c23a57381a8ba0097de3025669
+VERIFIED_TREE_SHA = fe692cdebfbb92c23a57381a8ba0097de3025669
+REPORT_HEAD_SHA = (this F-R5C docs corrective commit)
 
 A14_PRODUCT_FEATURE_COUNT = 585
 A13_PRODUCT_FEATURE_COUNT = 579
@@ -36,6 +37,8 @@ XML_ONLY_UNPROVEN_KEYS = 0
 FALSE_OWNER_ASSIGNMENTS_REMOVED = 7
 NO_FINGERPRINT_WAKE_GROUP_KEYS = controls_fingerprintwake
 FINGERPRINT_SUCCESS_GROUP_KEYS = controls_fingerprintsuccess,controls_fingerprintsuccess_ignore
+INVENTORY_FEATURES_NEWLY_PORTED = 0
+INVENTORY_EXISTING_A13_FEATURES_UPGRADED = 0
 FEATURES_NEWLY_PORTED = 0
 EXISTING_A13_FEATURES_UPGRADED = 0
 PARTIAL_WITH_NEW_PORT_COUNT = 0
@@ -44,7 +47,28 @@ DEFRAUD_APPS_FINAL_STATE = HOLD_EVIDENCE
 FSGESTURES_FINAL_STATE = PRESENT_A13_VARIANT
 MIUIZER_LOCALE_FINAL_STATE = PRESENT_A13_VARIANT
 
-PRODUCTION_CHANGED = NO
+PRODUCTION_CHANGED = YES
+PRODUCTION_COMMITS = fb1ec40a20bdc739cb19acd06c6dd10cb477df09
+TEST_REVIEW_COMMIT = fb29903b2dae495855c15fed1e0eb23bbac4ecdc
+ACTUAL_EXISTING_A13_FEATURES_UPGRADED = 2
+UPGRADED_FEATURES =
+- system_dimtime
+- system_batteryindicator_colorval1-4 / BatteryIndicator custom colors
+
+INVENTORY_FEATURES_NEWLY_PORTED and INVENTORY_EXISTING_A13_FEATURES_UPGRADED
+(and the unprefixed FEATURES_NEWLY_PORTED / EXISTING_A13_FEATURES_UPGRADED
+aliases) are inventory classification counters from the frozen F-R5 generator.
+They are not the R5 git production-change count. They stay 0 because those
+two upgrades were existing A13 capabilities, not NEW_PORT / inventory-upgrade
+rows. Do not rewrite the counters to hide that distinction.
+
+STATIC_VERIFIED = YES
+BUILD_VERIFIED = YES
+LOG_VERIFIED = NO
+DEVICE_VERIFIED = NO
+The lack of device/log verification is not a static Gate failure.
+63 ROM-dependent rows remain HOLD_EVIDENCE.
+
 Owner-group PRESENT is explicit reviewed manifests or IDENTICAL bodies only.
 Prefix, ranked-first, same-XML, and same-basename-alone are not ownership proof.
 Non-identical candidates without an explicit review stay SOURCE_REVIEW_REQUIRED.

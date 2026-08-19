@@ -262,3 +262,23 @@ system_epm                            = HOLD_EVIDENCE
 system_statusbar_enable_weather_param = HOLD_EVIDENCE
 system_drawer_hidedate                = HOLD_EVIDENCE
 ```
+
+## Phase F-R5C publication-truth corrective
+
+Docs/report only. Inventory classification, HOLD rows, and production source
+are unchanged. The F-R5 final report had `PRODUCTION_CHANGED = NO` and
+`EXISTING_A13_FEATURES_UPGRADED = 0` as generator counters; the git record is:
+
+```text
+PRODUCTION_CHANGED                    = YES
+PRODUCTION_COMMITS                    = fb1ec40a20bdc739cb19acd06c6dd10cb477df09
+TEST_REVIEW_COMMIT                    = fb29903b2dae495855c15fed1e0eb23bbac4ecdc
+R5_PRE_REPORT_HEAD                    = fe692cdebfbb92c23a57381a8ba0097de3025669
+ACTUAL_EXISTING_A13_FEATURES_UPGRADED = 2
+INVENTORY_FEATURES_NEWLY_PORTED       = 0
+INVENTORY_EXISTING_A13_FEATURES_UPGRADED = 0
+STATIC_VERIFIED                       = YES
+BUILD_VERIFIED                        = YES
+LOG_VERIFIED                          = NO
+DEVICE_VERIFIED                       = NO
+```
