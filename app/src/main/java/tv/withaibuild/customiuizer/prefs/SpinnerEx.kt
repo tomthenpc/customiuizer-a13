@@ -49,21 +49,19 @@ open class SpinnerEx @JvmOverloads constructor(
         }
     }
 
-    private fun findIndex(valInt: Int, vals: IntArray?): Int {
-        vals ?: return -1
-        return vals.indexOf(valInt)
-    }
-
     fun init(valInt: Int) {
         val currentEntries = entries ?: return
         val currentValues = entryValues ?: return
         val newAdapter = ArrayAdapterEx(context, android.R.layout.simple_spinner_item, currentEntries)
         adapter = newAdapter
-        setSelection(findIndex(valInt, currentValues))
+        val index = SpinnerSelection.indexOfValue(valInt, currentValues)
+        if (index >= 0) {
+            setSelection(index)
+        }
     }
 
     fun getSelectedArrayValue(): Int {
-        return entryValues?.get(selectedItemPosition) ?: 0
+        return SpinnerSelection.valueAt(entryValues, selectedItemPosition) ?: 0
     }
 
     private inner class ArrayAdapterEx(

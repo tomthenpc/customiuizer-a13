@@ -12,6 +12,14 @@ import tv.withaibuild.customiuizer.utils.Helpers
 
 class Launcher : SubFragment() {
 
+    override fun onCreate(savedInstanceState: Bundle?) {
+        super.onCreate(savedInstanceState)
+        if (sub == "pref_key_launcher_cat_gestures") {
+            toolbarMenu = true
+            activeMenus = LauncherGestureRestartScope.RESTART_MENU
+        }
+    }
+
     override fun onCreatePreferences(savedInstanceState: Bundle?, rootKey: String?) {
         super.onCreatePreferences(savedInstanceState, rootKey)
         selectSub()

@@ -44,7 +44,7 @@ class AppSelector : SubFragmentWithSearch() {
         this.padded = false
         super.onCreate(savedInstanceState)
 
-        val args = requireArguments()
+        val args = arguments ?: Bundle()
         standalone = args.getBoolean("standalone")
         multi = args.getBoolean("multi")
         bwlist = args.getBoolean("bw")
@@ -257,8 +257,10 @@ class AppSelector : SubFragmentWithSearch() {
                     }
                     intent.putExtra("user", app.user)
                     @Suppress("DEPRECATION")
-                    targetFragment?.onActivityResult(targetRequestCode, Activity.RESULT_OK, intent)
-                    finish()
+                    if (isAdded) {
+                        targetFragment?.onActivityResult(targetRequestCode, Activity.RESULT_OK, intent)
+                        finish()
+                    }
                 }
             }
             view?.findViewById<View>(R.id.am_progressBar)?.visibility = View.GONE

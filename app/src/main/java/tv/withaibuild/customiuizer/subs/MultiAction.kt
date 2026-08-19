@@ -15,6 +15,7 @@ import tv.withaibuild.customiuizer.R
 import tv.withaibuild.customiuizer.SubFragment
 import tv.withaibuild.customiuizer.prefs.SpinnerEx
 import tv.withaibuild.customiuizer.prefs.SpinnerExFake
+import tv.withaibuild.customiuizer.prefs.SpinnerSelection
 import tv.withaibuild.customiuizer.utils.AppHelper
 import tv.withaibuild.customiuizer.utils.Helpers
 import java.io.File
@@ -68,7 +69,9 @@ class MultiAction : SubFragment() {
         actionSpinner.entries = resources.getStringArray(entriesResId) as Array<CharSequence>
         actionSpinner.entryValues = resources.getIntArray(entryValuesResId)
         actionSpinner.tag = "${key}_action"
-        actionSpinner.init(AppHelper.getIntOfAppPrefs("${key}_action", 1))
+        val actionValues = actionSpinner.entryValues ?: intArrayOf()
+        val savedAction = AppHelper.getIntOfAppPrefs("${key}_action", MultiActionContract.NO_ACTION)
+        actionSpinner.init(MultiActionContract.normalize(savedAction, actionValues))
         actionSpinner.onItemSelectedListener = object : AdapterView.OnItemSelectedListener {
             override fun onItemSelected(parent: AdapterView<*>?, view: View?, position: Int, id: Long) {
                 updateControls(parent as? SpinnerEx ?: return, position)
@@ -107,7 +110,7 @@ class MultiAction : SubFragment() {
                 if (event.action == MotionEvent.ACTION_UP) {
                     val appSelect = AppSelector()
                     appSelect.setTargetFragment(this@MultiAction, 0)
-                    openSubFragment(appSelect, null, Helpers.SettingsType.Edit, Helpers.ActionBarType.HomeUp, R.string.select_app, R.layout.prefs_app_selector)
+                    openSubFragment(appSelect, Bundle(), Helpers.SettingsType.Edit, Helpers.ActionBarType.HomeUp, R.string.select_app, R.layout.prefs_app_selector)
                 }
                 false
             })
@@ -161,7 +164,9 @@ class MultiAction : SubFragment() {
 
         val toggleSpinner = view.findViewById<SpinnerEx>(R.id.toggle)
         toggleSpinner.tag = "${key}_toggle"
-        toggleSpinner.init(AppHelper.getIntOfAppPrefs("${key}_toggle", 1))
+        val toggleValues = toggleSpinner.entryValues ?: intArrayOf()
+        val savedToggle = AppHelper.getIntOfAppPrefs("${key}_toggle", 1)
+        toggleSpinner.init(MultiActionContract.normalize(savedToggle, toggleValues, 1))
 
         activityLaunch = view.findViewById(R.id.activity_to_launch)
         activityLaunch?.apply {
@@ -217,15 +222,19 @@ class MultiAction : SubFragment() {
         shortcuts.visibility = View.GONE
         activities.visibility = View.GONE
         toggles.visibility = View.GONE
-        when (spinner.entryValues?.get(position)) {
+        when (SpinnerSelection.valueAt(spinner.entryValues, position)) {
             8 -> apps.visibility = View.VISIBLE
             9 -> shortcuts.visibility = View.VISIBLE
-            10 -> toggles.visibility = View.VISIBLE
+            MultiActionContract.TOGGLE_ACTION -> toggles.visibility = View.VISIBLE
             20 -> activities.visibility = View.VISIBLE
         }
     }
 
     override fun onActivityResult(requestCode: Int, resultCode: Int, data: Intent?) {
+        if (!isAdded) {
+            super.onActivityResult(requestCode, resultCode, data)
+            return
+        }
         if (resultCode == Activity.RESULT_OK) {
             when (requestCode) {
                 0 -> {
@@ -252,8 +261,35 @@ class MultiAction : SubFragment() {
         val tmpIconFile = File(filesDir, "shortcuts/tmp.png")
         if (tmpIconFile.exists()) {
             val prefIconFile = File(shortcutIconPath)
-            prefIconFile?.delete()
+            prefIconFile.delete()
             tmpIconFile.renameTo(prefIconFile)
+        }
+        val actionSpinner = view?.findViewById<SpinnerEx>(R.id.action)
+        val actionValues = actionSpinner?.entryValues
+        if (actionSpinner != null && actionValues != null) {
+            val persisted = MultiActionContract.persistSelection(
+                SpinnerSelection.valueAt(
+                    actionValues,
+                    actionSpinner.selectedItemPosition
+                ),
+                actionValues
+            )
+            val legalIndex = SpinnerSelection.indexOfValue(persisted, actionValues)
+            if (legalIndex >= 0) actionSpinner.setSelection(legalIndex)
+        }
+        val toggleSpinner = view?.findViewById<SpinnerEx>(R.id.toggle)
+        val toggleValues = toggleSpinner?.entryValues
+        if (toggleSpinner != null && toggleValues != null) {
+            val persistedToggle = MultiActionContract.persistSelection(
+                SpinnerSelection.valueAt(
+                    toggleValues,
+                    toggleSpinner.selectedItemPosition
+                ),
+                toggleValues,
+                1
+            )
+            val toggleIndex = SpinnerSelection.indexOfValue(persistedToggle, toggleValues)
+            if (toggleIndex >= 0) toggleSpinner.setSelection(toggleIndex)
         }
         if (appUser != -1) AppHelper.appPrefs?.edit()?.putInt("${key}_app_user", appUser)?.apply()
         if (activityUser != -1) AppHelper.appPrefs?.edit()?.putInt("${key}_activity_user", activityUser)?.apply()

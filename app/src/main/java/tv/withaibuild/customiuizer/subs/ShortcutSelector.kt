@@ -101,8 +101,10 @@ class ShortcutSelector : SubFragmentWithSearch() {
             intent.putExtra("shortcut_contents", keyContents)
             intent.putExtra("shortcut_name", data?.getStringExtra(Intent.EXTRA_SHORTCUT_NAME))
             intent.putExtra("shortcut_intent", data?.getParcelableExtra<Intent>(Intent.EXTRA_SHORTCUT_INTENT))
-            targetFragment?.onActivityResult(targetRequestCode, Activity.RESULT_OK, intent)
-            finish()
+            if (isAdded) {
+                targetFragment?.onActivityResult(targetRequestCode, Activity.RESULT_OK, intent)
+                finish()
+            }
         }
         super.onActivityResult(requestCode, resultCode, data)
     }
