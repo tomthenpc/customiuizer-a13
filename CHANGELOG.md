@@ -2,6 +2,22 @@
 
 简体中文 | [English](CHANGELOG_EN.md)
 
+## r13.12.2 — 2026-08-19
+
+`versionCode 140`，完成 r13.12.1 未完全覆盖的 Activity 选择结果中继热修复。
+
+### 修复
+
+- 修复 `MultiAction -> AppSelector -> ActivitySelector -> AppSelector -> MultiAction` 两跳返回路径中，AppSelector 作为回栈中继目标时误按 source `isAdded` 校验导致结果丢失的问题。
+- 保持 source 侧 stale 结果保护：ActivitySelector 仍需 source 有效且 target 存在；回栈中继只校验 target 存在并继续转发给 MultiAction。
+
+### 验证状态
+
+- 保留 r13.12.0 动作值规范化、Spinner 越界保护、动作/Toggle 合同与 Launcher 重启范围校验。
+- 静态门禁、单元测试、Release 编译、Lint、R8 与签名产物检查在发布前执行。
+- DEVICE_VERIFIED = NO
+- LOG_VERIFIED = NO
+
 ## r13.12.1 — 2026-08-19
 
 `versionCode 139`，仅包含 r13.12.0 引入的 MultiAction 选择器结果回传回归热修复。

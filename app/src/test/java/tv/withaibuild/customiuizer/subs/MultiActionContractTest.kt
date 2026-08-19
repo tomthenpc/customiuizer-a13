@@ -205,6 +205,57 @@ class MultiActionSelectorResultRegressionTest {
     }
 
     @Test
+    fun activityTwoHopRelayAllowsBackStackIntermediaryAndUpdatesMultiAction() {
+        val activityFirstHopAllowed = SelectorResultDelivery.canDeliverFromSource(
+            sourceIsAdded = true,
+            targetExists = true
+        )
+        assertTrue(activityFirstHopAllowed)
+
+        val appSelectorRelayAllowed = SelectorResultDelivery.canAcceptAtBackStackTarget(
+            targetExists = true,
+            _targetIsAdded = false
+        )
+        assertTrue(appSelectorRelayAllowed)
+
+        var state = MultiActionSelectionState()
+        if (activityFirstHopAllowed && appSelectorRelayAllowed) {
+            state = MultiActionSelectionStateReducer.reduce(
+                state,
+                2,
+                Activity.RESULT_OK,
+                Intent().apply {
+                    putExtra("activity", "com.example.activity|RelayedActivity")
+                    putExtra("user", 99)
+                }
+            )
+        }
+        assertEquals("com.example.activity|RelayedActivity", state.activityValue)
+        assertEquals(99, state.activityUser)
+    }
+
+    @Test
+    fun activityTwoHopRelayRejectsDetachedSourceOrMissingTarget() {
+        val detachedSource = SelectorResultDelivery.canDeliverFromSource(
+            sourceIsAdded = false,
+            targetExists = true
+        )
+        assertFalse(detachedSource)
+
+        val missingTargetAtSource = SelectorResultDelivery.canDeliverFromSource(
+            sourceIsAdded = true,
+            targetExists = false
+        )
+        assertFalse(missingTargetAtSource)
+
+        val missingRelayTarget = SelectorResultDelivery.canAcceptAtBackStackTarget(
+            targetExists = false,
+            _targetIsAdded = false
+        )
+        assertFalse(missingRelayTarget)
+    }
+
+    @Test
     fun appShortcutActivityResultsUpdatePendingStateAndPersistContract() {
         var state = MultiActionSelectionState()
 
