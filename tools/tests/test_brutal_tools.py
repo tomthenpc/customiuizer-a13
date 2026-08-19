@@ -112,5 +112,29 @@ class CatalogParserTest(unittest.TestCase):
         self.assertEqual("a", catalog_contract_probe.field(blocks[0], "id"))
 
 
+class BrutalConfigContractTest(unittest.TestCase):
+    """Fail fast if brutal_test_config.json is missing required fields."""
+
+    CONFIG = Path(__file__).resolve().parents[1] / "brutal_test_config.json"
+
+    def test_determinism_fields_present(self) -> None:
+        cfg = json.loads(self.CONFIG.read_text(encoding="utf-8"))
+        self.assertIn("determinism_command", cfg, "brutal_test_config.json must define determinism_command")
+        self.assertIsInstance(cfg["determinism_command"], str)
+        self.assertTrue(cfg["determinism_command"].strip(), "determinism_command must not be empty")
+        self.assertIn("determinism_outputs", cfg, "brutal_test_config.json must define determinism_outputs")
+        self.assertIsInstance(cfg["determinism_outputs"], list)
+        self.assertGreater(len(cfg["determinism_outputs"]), 0, "determinism_outputs must not be empty")
+        for p in cfg["determinism_outputs"]:
+            self.assertIsInstance(p, str)
+            self.assertTrue(p.strip(), "determinism_outputs entries must not be empty")
+
+    def test_hermetic_commands_present(self) -> None:
+        cfg = json.loads(self.CONFIG.read_text(encoding="utf-8"))
+        self.assertIn("hermetic_commands", cfg)
+        self.assertIsInstance(cfg["hermetic_commands"], list)
+        self.assertGreater(len(cfg["hermetic_commands"]), 0)
+
+
 if __name__ == "__main__":
     unittest.main()

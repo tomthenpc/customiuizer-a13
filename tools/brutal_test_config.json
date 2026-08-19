@@ -19,6 +19,10 @@
     "tests": "python -m unittest discover -s tools/tests -p \"test_*.py\"",
     "hazard": "python tools/source_hazard_scan.py --strict-all --path app/src/main/java"
   },
+  "determinism_command": "python tools/audit_hook_ownership.py",
+  "determinism_outputs": [
+    "docs/audit/A13_HOOK_OWNERSHIP_INVENTORY.md"
+  ],
   "hermetic_commands": [
     "python -m unittest discover -s tools/tests -p \"test_*.py\"",
     "python tools/ci_contract_scan.py --expected-branch main --default-branch main",
