@@ -354,7 +354,8 @@ class ParityInventoryTest(unittest.TestCase):
                 parity_inventory.main()
             finally:
                 sys.argv = old
-            rows = list(csv.DictReader((out / "A13_A14_FEATURE_MATRIX.csv").open(encoding="utf-8")))
+            with (out / "A13_A14_FEATURE_MATRIX.csv").open(encoding="utf-8") as fh:
+                rows = list(csv.DictReader(fh))
             usb = next(r for r in rows if r["a14_pref_keys"] == "system_usb_default_function")
             self.assertEqual(usb["parity_state"], "PRESENT_A13_VARIANT")
             self.assertEqual(usb["implementation_mode"], "NO_IMPLEMENTATION")

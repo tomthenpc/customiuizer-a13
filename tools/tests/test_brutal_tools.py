@@ -136,5 +136,113 @@ class BrutalConfigContractTest(unittest.TestCase):
         self.assertGreater(len(cfg["hermetic_commands"]), 0)
 
 
+class StaticOwnerHazardTest(unittest.TestCase):
+    """Tests for STATIC_STRONG_ANDROID_OWNER detection of Context fields."""
+
+    def _scan(self, code: str) -> set[str]:
+        with tempfile.TemporaryDirectory() as td:
+            root = Path(td)
+            p = root / "app" / "src" / "main" / "java" / "x" / "Test.kt"
+            p.parent.mkdir(parents=True)
+            p.write_text(code, encoding="utf-8")
+            return {f.rule for f in source_hazard_scan.collect(root, ["app/src/main/java"])}
+
+    def test_object_context_field_detected(self):
+        rules = self._scan(
+            "package x\nobject Bad {\n    @JvmField\n    var ctx: Context? = null\n}\n"
+        )
+        self.assertIn("STATIC_STRONG_ANDROID_OWNER", rules)
+
+    def test_object_fq_context_field_detected(self):
+        rules = self._scan(
+            "package x\nobject Bad {\n    @JvmField\n    var ctx: android.content.Context? = null\n}\n"
+        )
+        self.assertIn("STATIC_STRONG_ANDROID_OWNER", rules)
+
+    def test_companion_context_field_detected(self):
+        rules = self._scan(
+            "package x\nclass Foo {\n    companion object {\n        @JvmField\n        var ctx: Context? = null\n    }\n}\n"
+        )
+        self.assertIn("STATIC_STRONG_ANDROID_OWNER", rules)
+
+    def test_local_context_variable_ignored(self):
+        rules = self._scan(
+            "package x\nclass Foo {\n    fun doWork() {\n        val ctx: Context? = null\n    }\n}\n"
+        )
+        self.assertNotIn("STATIC_STRONG_ANDROID_OWNER", rules)
+
+    def test_instance_context_field_ignored(self):
+        rules = self._scan(
+            "package x\nclass Foo {\n    var ctx: Context? = null\n}\n"
+        )
+        self.assertNotIn("STATIC_STRONG_ANDROID_OWNER", rules)
+
+    def test_weak_reference_context_ignored(self):
+        rules = self._scan(
+            "package x\nobject Bad {\n    var ctx: WeakReference<Context>? = null\n}\n"
+        )
+        self.assertNotIn("STATIC_STRONG_ANDROID_OWNER", rules)
+
+
+class EagerHandlerThreadHazardTest(unittest.TestCase):
+    """Tests for EAGER_HANDLER_THREAD detection."""
+
+    def _scan(self, code: str) -> set[str]:
+        with tempfile.TemporaryDirectory() as td:
+            root = Path(td)
+            p = root / "app" / "src" / "main" / "java" / "x" / "Test.kt"
+            p.parent.mkdir(parents=True)
+            p.write_text(code, encoding="utf-8")
+            return {f.rule for f in source_hazard_scan.collect(root, ["app/src/main/java"])}
+
+    def test_apply_start_detected(self):
+        rules = self._scan(
+            'package x\nobject Bad {\n    val w = android.os.HandlerThread("bad").apply { start() }\n}\n'
+        )
+        self.assertIn("EAGER_HANDLER_THREAD", rules)
+
+    def test_chained_start_detected(self):
+        rules = self._scan(
+            'package x\nobject Bad {\n    val w = android.os.HandlerThread("bad")\n    init { w.start() }\n}\n'
+        )
+        self.assertIn("EAGER_HANDLER_THREAD", rules)
+
+    def test_no_start_ignored(self):
+        rules = self._scan(
+            'package x\nclass Foo {\n    val w = android.os.HandlerThread("worker")\n}\n'
+        )
+        self.assertNotIn("EAGER_HANDLER_THREAD", rules)
+
+    def test_lazy_lifecycle_start_ignored(self):
+        # start() is far from construction (in a separate method, >160 chars apart)
+        padding = "    " + "// lifecycle logic\n" * 12
+        rules = self._scan(
+            'package x\nclass Foo {\n    val w = android.os.HandlerThread("worker")\n'
+            + padding
+            + '    fun onStart() {\n        w.start()\n    }\n}\n'
+        )
+        self.assertNotIn("EAGER_HANDLER_THREAD", rules)
+
+
+class WrongBranchMutatorTest(unittest.TestCase):
+    """Tests for the wrong CI branch mutator."""
+
+    def test_mutator_replaces_yaml_branch(self):
+        from tools.brutal_test_runner import mutate_wrong_branch
+        with tempfile.TemporaryDirectory() as td:
+            root = Path(td)
+            wf = root / ".github" / "workflows" / "ci.yml"
+            wf.parent.mkdir(parents=True)
+            wf.write_text(
+                "on:\n  push:\n    branches:\n      - main\njobs:\n  x:\n    runs-on: ubuntu-latest\n",
+                encoding="utf-8",
+            )
+            cfg = {"fast_workflows": [".github/workflows/ci.yml"], "expected_branch": "main"}
+            mutate_wrong_branch(root, cfg)
+            text = wf.read_text(encoding="utf-8")
+            self.assertIn("devin/stale-ci-branch", text)
+            self.assertNotIn("- main", text)
+
+
 if __name__ == "__main__":
     unittest.main()
