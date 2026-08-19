@@ -4,7 +4,7 @@
 
 CustoMIUIzer A13 是面向 **MIUI 14 / Android 13** 的系统界面与交互定制模块，并为 **HyperOS 1 / Android 13** 提供基于能力探测的兼容路径。项目使用独立包名、版本线和现代 libxposed API。
 
-- 当前版本：`r13.11.1`（versionCode `137`）
+- 当前版本：`r13.12.0`（versionCode `138`）
 - 应用 ID：`tv.withaibuild.customiuizer.r13`
 - 源码仓库：<https://github.com/tomthenpc/customiuizer-a13>
 - 用户下载：<https://github.com/Xposed-Modules-Repo/tv.withaibuild.customiuizer.r13/releases>
@@ -43,6 +43,27 @@ CustoMIUIzer A13 是面向 **MIUI 14 / Android 13** 的系统界面与交互定�
 
 本版本变化见 [CHANGELOG.md](CHANGELOG.md)。工程规则、架构与兼容文档见 [AGENTS.md](AGENTS.md)、[ARCHITECTURE.md](ARCHITECTURE.md)、[COMPATIBILITY.md](COMPATIBILITY.md) 与 [docs/A13_PARITY.md](docs/A13_PARITY.md)。
 
-`r13.11.1` 进一步加固设置页与应用选择器的异步生命周期，并优化状态栏时钟默认格式的高频刷新路径；同时延续按进程安装、ROM 兼容探测、异常边界和资源生命周期治理。
+`r13.12.0` 修复手势/自定义动作保存后回到“无动作”的问题，并补齐桌面手势页的重启入口；同时纳入 USB 默认用途、安装器净化、文件夹模糊、备份格式和若干状态栏/桌面视觉能力。详见 [CHANGELOG.md](CHANGELOG.md)。
+
+## 构建与验证
+
+```bash
+python tools/verify.py full
+```
+
+## 支持与联系
+
+如果这个项目对你有帮助，可以通过 [PayPal](https://paypal.me/Jinjitv) 支持后续开发与维护。
+
+- 源码仓库：<https://github.com/tomthenpc/customiuizer-a13>
+- 用户下载：<https://github.com/Xposed-Modules-Repo/tv.withaibuild.customiuizer.r13/releases>
+
+## 开发说明
+
+- 稳定与行为保持优先；兼容逻辑限制在 ROM / ClassLoader 边界；
+- 高频 Hook 避免临时数组、集合、Regex、格式化、重复反射和远程偏好读取；
+- Java 到 Kotlin 采用行为等价迁移，并配套测试和静态门禁；
+- 保留 `MainModule.java`、`XposedHelpers.java`、`MemberUtilsX.java` 的 JVM / 框架边界；
+- 细粒度历史见 Git commits 和 tags，发布变化见 [CHANGELOG.md](CHANGELOG.md)。
 
 项目依据 GPL-3.0 分发，派生自 Mikanoshi/CustoMIUIzer，并参考 MonwF/customiuizer 的 Android 13 实现。

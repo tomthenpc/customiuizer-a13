@@ -2,6 +2,54 @@
 
 [简体中文](CHANGELOG.md) | English
 
+## r13.12.0 — 2026-08-19
+
+`versionCode 138`, targeting MIUI 14 / Android 13 with capability-detected HyperOS 1 / Android 13 compatibility.
+
+### New features
+
+- USB default-mode options mapped onto the existing A13 hook.
+- Installer purify, and hiding the app-details report entry.
+- Launcher dock height and hiding the IME dismiss button.
+- Additional status-bar visual options.
+- Folder blur can be disabled without discarding opacity.
+- Settings backup V2 with legacy restore.
+- Battery indicator custom colors from existing colorval prefs; screen-dim ratio writes AOSP fields from the 0–99% slider.
+
+### Fixes
+
+- Custom/gesture actions no longer snap back to "No action": invalid or unknown values normalize to legal default 1, and save no longer uses an out-of-range spinner index.
+- The Launcher gesture page now exposes Restart Launcher, matching hook ownership in the Launcher process.
+- USB default mode reapplies after unplug/replug.
+
+### Stability and compatibility
+
+- Selector results are delivered only while the owning Fragment is added.
+- Features still install per process; disabled features create no business hooks.
+- 63 ROM/device-gated capabilities remain holds; they are not guessed without device evidence.
+
+### Performance
+
+- No new device performance claims. Existing clock and gesture hot paths keep bounded state caches; this release does not add speculative micro-optimizations.
+
+### Architecture and maintenance
+
+- A13 architecture vs A14 product capability review is statically closed. Existing capabilities are proven against the A13 ABI; Dynamic Island stays out of A13.
+
+### Verification
+
+- Static gates, unit tests, Release compile, Lint, R8, and signed-artifact inspection run before publication.
+- DEVICE_VERIFIED = NO
+- LOG_VERIFIED = NO
+- No ADB; this release does not claim on-device or MIUI/HyperOS runtime verification.
+
+### Artifact
+
+- File: `CustoMIUIzer-A13-r13.12.0.apk`
+- versionName: `r13.12.0`
+- versionCode: `138`
+- SHA-256: filled after signed artifact audit.
+
 ## r13.11.1 — 2026-08-08
 
 `versionCode 137`, released as the completed Android 13 performance, lifecycle, and build-governance milestone.
