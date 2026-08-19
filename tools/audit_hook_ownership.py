@@ -7,6 +7,7 @@ inside a function that is referenced as the installer of a typed `FeatureSpec`.
 """
 from __future__ import annotations
 
+import argparse
 import re
 from collections import defaultdict
 from pathlib import Path
@@ -21,6 +22,12 @@ HOOK_RE = re.compile(
     r"|\bfindAndHookMethod\s*\("
     r"|\bhookAllMethods\s*\("
     r"|\bhookAllConstructors\s*\(",
+    re.S,
+)
+
+OWNERSHIP_REPORT_HOOK_RE = re.compile(
+    r"\bModuleHelper\s*\.\s*"
+    r"(findAndHookMethod|hookAllConstructors|hookAllMethods)",
     re.S,
 )
 
@@ -142,7 +149,11 @@ def nearest_function(lines: list[str], line_idx: int) -> str:
     return best[1] if best else "?"
 
 
-def main() -> int:
+def main(argv: list[str] | None = None) -> int:
+    parser = argparse.ArgumentParser()
+    parser.add_argument("--check", action="store_true", help="Do not write; fail on drift")
+    args = parser.parse_args(argv)
+
     typed_funcs = file_typed_functions()
 
     rows: list[tuple[str, int, int, int, str, str, str]] = []
@@ -160,7 +171,7 @@ def main() -> int:
         file_typed = typed_funcs.get(path, set())
 
         for i, line in enumerate(lines, start=1):
-            if not HOOK_RE.search(line):
+            if not OWNERSHIP_REPORT_HOOK_RE.search(line):
                 continue
 
             total += 1
@@ -217,13 +228,23 @@ def main() -> int:
     md.append("\n")
 
     md.append("## Per-file summary\n\n")
-    md.append("| File | Direct calls | Registry calls | Legacy calls | Category | Notes |\n")
-    md.append("|---|---|---:|---:|---|---|---|\n")
+    md.append("| File | Direct calls | Primary process | Category | Notes |\n")
+    md.append("|---|---|---|---|---|\n")
     for rel, hook, registry, legacy, category, note in sorted(file_summaries, key=lambda r: (r[4], r[0])):
-        md.append(f"| `{rel}` | {hook} | {registry} | {legacy} | `{category}` | {note} |\n")
+        md.append(f"| `{rel}` | {hook} | mixed | `{category}` | {note} |\n")
 
-    OUT_FILE.parent.mkdir(parents=True, exist_ok=True)
-    OUT_FILE.write_text("".join(md), encoding="utf-8", newline="\n")
+    rendered = "".join(md)
+    if args.check:
+        if not OUT_FILE.exists():
+            print(f"Missing {OUT_FILE}")
+            return 1
+        current = OUT_FILE.read_text(encoding="utf-8")
+        if current != rendered:
+            print(f"{OUT_FILE} is out of date; run tools/audit_hook_ownership.py to refresh")
+            return 1
+    else:
+        OUT_FILE.parent.mkdir(parents=True, exist_ok=True)
+        OUT_FILE.write_text(rendered, encoding="utf-8", newline="\n")
     print(f"Wrote {OUT_FILE}")
     print(f"Total hook sites: {total}")
     for cat in ("REGISTRY_FEATURE", "INSTALLER_INFRASTRUCTURE", "API_BRIDGE", "LEGACY_EXCEPTION", "UNKNOWN"):

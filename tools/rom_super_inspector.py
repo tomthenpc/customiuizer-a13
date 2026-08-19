@@ -315,15 +315,15 @@ def main(argv: list[str] | None = None) -> int:
         print(f"ERROR: {args.rom} is not a directory", file=sys.stderr)
         return 1
 
-    liblp = try_import_liblp()
-    if liblp is None:
-        print("ERROR: liblp Python package not installed", file=sys.stderr)
-        return 2
-
     images = find_super_images(args.rom)
     if not images:
         print(f"No super image found under {args.rom}", file=sys.stderr)
         return 0 if args.allow_missing else 1
+
+    liblp = try_import_liblp()
+    if liblp is None:
+        print("ERROR: liblp Python package not installed", file=sys.stderr)
+        return 2
 
     rows: list[dict[str, Any]] = []
     for img in images:

@@ -137,9 +137,7 @@ class MultiActionArrayContractTest {
                 if (value == MultiActionContract.NO_ACTION) continue
                 assertTrue("$labels value $value has no GlobalActions handler", handled.contains(value))
             }
-            if (valuesName != "global_launch_actions_val") {
-                assertTrue("$valuesName must expose toggle 10", values.contains(MultiActionContract.TOGGLE_ACTION))
-            }
+            assertTrue("$valuesName must expose toggle 10", values.contains(MultiActionContract.TOGGLE_ACTION))
         }
     }
 

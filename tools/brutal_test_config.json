@@ -1,6 +1,6 @@
 {
   "name": "A13",
-  "expected_branch": "devin/a13-rom-intelligence-audit",
+  "expected_branch": "main",
   "catalog_file": "app/src/main/java/tv/withaibuild/customiuizer/mods/catalog/FeatureCatalog.kt",
   "feature_id_file": "app/src/main/java/tv/withaibuild/customiuizer/mods/catalog/FeatureId.kt",
   "process_matrix": "docs/rom-intelligence/A13_PROCESS_MATRIX.md",
@@ -10,16 +10,22 @@
   "fast_workflows": [
     ".github/workflows/a13-fast-ci.yml"
   ],
-  "full_workflows": [],
+  "full_workflows": [
+    ".github/workflows/a13-full-ci.yml"
+  ],
   "gates": {
-    "ci": "python tools/ci_contract_scan.py --expected-branch devin/a13-rom-intelligence-audit --default-branch main",
+    "ci": "python tools/ci_contract_scan.py --expected-branch main --default-branch main",
     "catalog": "python tools/catalog_contract_probe.py --catalog app/src/main/java/tv/withaibuild/customiuizer/mods/catalog/FeatureCatalog.kt --feature-id app/src/main/java/tv/withaibuild/customiuizer/mods/catalog/FeatureId.kt --diagnostic-ids app/src/main/java/tv/withaibuild/customiuizer/mods/diagnostics/DiagnosticIds.kt --matrix docs/rom-intelligence/A13_PROCESS_MATRIX.md",
     "tests": "python -m unittest discover -s tools/tests -p \"test_*.py\"",
     "hazard": "python tools/source_hazard_scan.py --strict-all --path app/src/main/java"
   },
+  "determinism_command": "python tools/audit_hook_ownership.py",
+  "determinism_outputs": [
+    "docs/audit/A13_HOOK_OWNERSHIP_INVENTORY.md"
+  ],
   "hermetic_commands": [
     "python -m unittest discover -s tools/tests -p \"test_*.py\"",
-    "python tools/ci_contract_scan.py --expected-branch devin/a13-rom-intelligence-audit --default-branch main",
+    "python tools/ci_contract_scan.py --expected-branch main --default-branch main",
     "python tools/catalog_contract_probe.py --catalog app/src/main/java/tv/withaibuild/customiuizer/mods/catalog/FeatureCatalog.kt --feature-id app/src/main/java/tv/withaibuild/customiuizer/mods/catalog/FeatureId.kt --diagnostic-ids app/src/main/java/tv/withaibuild/customiuizer/mods/diagnostics/DiagnosticIds.kt --matrix docs/rom-intelligence/A13_PROCESS_MATRIX.md"
   ],
   "mutations": [

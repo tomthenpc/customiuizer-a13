@@ -30,6 +30,8 @@ def run(command: str, cwd: Path, timeout: int, env: dict[str, str] | None = None
         cwd=cwd,
         shell=True,
         text=True,
+        encoding="utf-8",
+        errors="replace",
         stdout=subprocess.PIPE,
         stderr=subprocess.STDOUT,
         timeout=timeout,
@@ -41,6 +43,8 @@ def repo_root() -> Path:
     result = subprocess.run(
         ["git", "rev-parse", "--show-toplevel"],
         text=True,
+        encoding="utf-8",
+        errors="replace",
         capture_output=True,
         check=True,
     )
@@ -78,6 +82,8 @@ def detached_worktree(root: Path):
         stdout=subprocess.PIPE,
         stderr=subprocess.STDOUT,
         text=True,
+        encoding="utf-8",
+        errors="replace",
     )
     try:
         yield target
@@ -87,6 +93,8 @@ def detached_worktree(root: Path):
             cwd=root,
             stdout=subprocess.PIPE,
             stderr=subprocess.STDOUT,
+            encoding="utf-8",
+            errors="replace",
             text=True,
         )
         shutil.rmtree(temp_parent, ignore_errors=True)
